@@ -21,6 +21,6 @@ jobs:
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
     - name: Build and jpackage with Maven
-      run: clean install package jpackage::jpackage@win
+      run: mvn -B package jpackage::jpackage@win --file pom.xml
       env:
         GITHUB_TOKEN: ${{ github.token }}
