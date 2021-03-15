@@ -131,7 +131,6 @@
 				<artifactId>jpackage-maven-plugin</artifactId>
 				<version>1.4.0</version>
 				<configuration>
-					<type>EXE</type>
 					<input>target/lib</input>
 					<destination>target/release</destination>
 					<mainJar>sampleconverter-${project.version}.jar</mainJar>
@@ -141,19 +140,22 @@
 					<copyright>(c) 2021 by ${project.organization.name}</copyright>
 					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
-					<licenseFile>LICENSE</licenseFile>
 				</configuration>
 				<executions>
 					<execution>
 						<id>mac</id>
 						<configuration>
-							<icon>icons/icons.icns</icon>
+							<type>DMG</type>
+							<icon>icons/SampleConverter.icns</icon>
 						</configuration>
 					</execution>
 					<execution>
 						<id>win</id>
 						<configuration>
-							<icon>SampleConverter.ico</icon>
+							<type>EXE</type>
+							<!-- Currently broken on Macos (jpackage uses removed command). -->
+							<licenseFile>LICENSE</licenseFile>
+							<icon>icons/SampleConverter.ico</icon>
 							<winMenu>true</winMenu>
 							<winPerUserInstall>true</winPerUserInstall>
 							<winUpgradeUuid>18d24064-0bfa-425d-8b7f-e5efd5990d26</winUpgradeUuid>
