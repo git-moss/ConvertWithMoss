@@ -22,5 +22,7 @@ jobs:
 
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@win --file pom.xml
+    - name: Publish package
+      run: mvn --batch-mode deploy
       env:
-        GITHUB_TOKEN: ${{ github.token }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
