@@ -161,6 +161,14 @@
 							<winUpgradeUuid>18d24064-0bfa-425d-8b7f-e5efd5990d26</winUpgradeUuid>
 						</configuration>
 					</execution>
+					<execution>
+						<id>linux</id>
+						<configuration>
+							<type>DEB</type>
+							<licenseFile>LICENSE</licenseFile>
+							<icon>src/main/resources/de/mossgrabers/sampleconverter/images/AppIcon.png</icon>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 
