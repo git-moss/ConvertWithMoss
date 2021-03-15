@@ -1,0 +1,76 @@
+.hbox, .vbox {
+	-fx-padding: 15.0;
+	-fx-spacing: 10.0;
+}
+
+.grid {
+	-fx-background-insets: 0.0 0.0 0.0 0.0;
+	-fx-padding: 15.0 15.0 15.0 15.0;
+	-fx-hgap: 10.0;
+	-fx-vgap: 10.0;
+}
+
+.tab-pane:top *.tab-header-area {
+    -fx-padding: 0.0 0.0 0.0 0.0;
+}
+
+.tab-pane .tab-header-background {
+	-fx-opacity: 0.0;
+}
+
+.tab-pane .tab-content-area {
+	-fx-border-color: -fx-box-border;
+}
+
+.titled-pane>*.content {
+	-fx-background-insets: 0.0;
+	-fx-padding: 0.0;
+}
+
+.padding {
+    -fx-padding: 15.0;
+}
+
+.paddingLeft {
+    -fx-padding: 0.0 0.0 0.0 15.0;
+}
+
+.paddingLeftTop {
+    -fx-padding: 15.0 0.0 0.0 15.0;
+}
+
+.paddingTop {
+    -fx-padding: 15.0 0.0 0.0 0.0;
+}
+
+.paddingRight {
+    -fx-padding: 0.0 15.0 0.0 0.0;
+}
+
+.paddingLeftBottomRight {
+    -fx-padding: 0.0 15.0 15.0 15.0;
+}
+
+.no-padding {
+	-fx-padding: 0.0;
+}
+
+.tile-pane {
+    -fx-hgap: 15.0;
+    -fx-vgap: 15.0;
+}
+
+.titled-separator {
+    -fx-font-weight: bold;
+    -fx-padding: 0.0 10.0 0.0 0.0;
+}
+
+.flat-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0.0;
+}
+
+.logging {
+    -fx-font-family: monospace;
+    -fx-font-size: 14pt;
+}
