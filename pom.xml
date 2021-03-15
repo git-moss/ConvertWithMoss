@@ -136,7 +136,30 @@
 					<destination>target/release</destination>
 					<mainJar>sampleconverter-${project.version}.jar</mainJar>
 					<mainClass>${main.class}</mainClass>
+					<name>${project.name}</name>
+					<app-version>${project.version}</app-version>
+					<copyright>(c) 2021 by ${project.organization.name}</copyright>
+					<description>A tool for converting multi-sample from one format to another.</description>
+					<vendor>${project.organization.name}</vendor>
+					<licenseFile>LICENSE</licenseFile>
 				</configuration>
+				<executions>
+					<execution>
+						<id>mac</id>
+						<configuration>
+							<icon>icons/icons.icns</icon>
+						</configuration>
+					</execution>
+					<execution>
+						<id>win</id>
+						<configuration>
+							<icon>SampleConverter.ico</icon>
+							<winMenu>true</winMenu>
+							<winPerUserInstall>true</winPerUserInstall>
+							<winUpgradeUuid>18d24064-0bfa-425d-8b7f-e5efd5990d26</winUpgradeUuid>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 
 			<!-- Check for outdated libraries -->
