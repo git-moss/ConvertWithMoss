@@ -172,6 +172,14 @@
 				</executions>
 			</plugin>
 
+			<distributionManagement>
+				<repository>
+					<id>github</id>
+					<name>GitHub Packages</name>
+					<url>https://maven.pkg.github.com/git-moss/SampleConverter</url>
+				</repository>
+			</distributionManagement>			
+
 			<!-- Check for outdated libraries -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
