@@ -33,7 +33,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: SanmpleConverter-Installers
-        path: target/release/SampleConverter*.deb
+        path: target/release/sampleconverter*.deb
   # Build and publish Macos Installer
   publish-macos:
     runs-on: macos-latest
