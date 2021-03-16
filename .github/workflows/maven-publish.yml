@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 jobs:
   # Build and publish Windows Installer
-  publish:
+  publish-win:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
@@ -20,7 +20,7 @@ jobs:
         name: SanmpleConverter-Installers
         path: target/release/SampleConverter*.exe
   # Build and publish Ubuntu Installer
-  publish:
+  publish-linux:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -35,7 +35,7 @@ jobs:
         name: SanmpleConverter-Installers
         path: target/release/SampleConverter*.deb
   # Build and publish Macos Installer
-  publish:
+  publish-macos:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
