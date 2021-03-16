@@ -1,4 +1,4 @@
-name: Build and publish to GitHub Packages
+name: Build and publish jpackage result to GitHub
 on:
   push:
     branches: [ master ]
@@ -13,7 +13,8 @@ jobs:
         java-version: 15
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@win --file pom.xml
-    - name: Publish package
-      run: mvn -B deploy --file pom.xml
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish jpackage result
+      uses: actions/upload-artifact@v2
+      with:
+        name: jpackage-result-windows
+        path: target/release/SampleConverter-*.exe
