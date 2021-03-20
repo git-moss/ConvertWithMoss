@@ -140,6 +140,7 @@
 					<copyright>(c) 2021 by ${project.organization.name}</copyright>
 					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
+					<licenseFile>LICENSE</licenseFile>
 				</configuration>
 				<executions>
 					<execution>
@@ -153,8 +154,6 @@
 						<id>win</id>
 						<configuration>
 							<type>MSI</type>
-							<!-- Currently broken on Macos (jpackage uses removed command). -->
-							<licenseFile>LICENSE</licenseFile>
 							<icon>icons/SampleConverter.ico</icon>
 							<winMenu>true</winMenu>
 							<winPerUserInstall>true</winPerUserInstall>
@@ -165,7 +164,6 @@
 						<id>linux</id>
 						<configuration>
 							<type>DEB</type>
-							<licenseFile>LICENSE</licenseFile>
 							<icon>src/main/resources/de/mossgrabers/sampleconverter/images/AppIcon.png</icon>
 						</configuration>
 					</execution>
