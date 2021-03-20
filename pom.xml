@@ -65,8 +65,8 @@
 				<configuration>
 					<optimize>true</optimize>
 					<fork>true</fork>
-					<source>15</source>
-					<target>15</target>
+					<source>16</source>
+					<target>16</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
@@ -152,7 +152,7 @@
 					<execution>
 						<id>win</id>
 						<configuration>
-							<type>EXE</type>
+							<type>MSI</type>
 							<!-- Currently broken on Macos (jpackage uses removed command). -->
 							<licenseFile>LICENSE</licenseFile>
 							<icon>icons/SampleConverter.ico</icon>

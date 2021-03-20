@@ -9,9 +9,11 @@ import de.mossgrabers.sampleconverter.core.ICreatorDescriptor;
 import de.mossgrabers.sampleconverter.core.IDetectorDescriptor;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.creator.BitwigMultisampleCreatorDescriptor;
-import de.mossgrabers.sampleconverter.creator.SfzCreatorDescriptor;
-import de.mossgrabers.sampleconverter.detector.WaveDetectorDescriptor;
+import de.mossgrabers.sampleconverter.creator.bitwig.BitwigMultisampleCreatorDescriptor;
+import de.mossgrabers.sampleconverter.creator.sfz.SfzCreatorDescriptor;
+import de.mossgrabers.sampleconverter.detector.bitwig.BitwigMultisampleDetectorDescriptor;
+import de.mossgrabers.sampleconverter.detector.sfz.SfzDetectorDescriptor;
+import de.mossgrabers.sampleconverter.detector.wav.WavDetectorDescriptor;
 import de.mossgrabers.sampleconverter.ui.tools.AbstractFrame;
 import de.mossgrabers.sampleconverter.ui.tools.DefaultApplication;
 import de.mossgrabers.sampleconverter.ui.tools.EndApplicationException;
@@ -31,7 +33,6 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -42,6 +43,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 
@@ -53,18 +55,23 @@ import java.util.function.Consumer;
 public class SampleConverterApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {
     private static final String  DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
+    private static final String  DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
     private static final String  DESTINATION_PATH                    = "DestinationPath";
+    private static final String  DESTINATION_TYPE                    = "DestinationType";
     private static final String  SOURCE_PATH                         = "SourcePath";
+    private static final String  SOURCE_TYPE                         = "SourceType";
+
+    final IDetectorDescriptor [] detectorDescriptors                 =
+    {
+        new WavDetectorDescriptor (),
+        new BitwigMultisampleDetectorDescriptor (),
+        new SfzDetectorDescriptor ()
+    };
 
     final ICreatorDescriptor []  creatorDescriptors                  =
     {
         new BitwigMultisampleCreatorDescriptor (),
         new SfzCreatorDescriptor ()
-    };
-
-    final IDetectorDescriptor [] detectorDescriptors                 =
-    {
-        new WaveDetectorDescriptor ()
     };
 
     private BorderPane           mainPane;
@@ -74,6 +81,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     private File                 sourceFolder;
     private File                 outputFolder;
     private CheckBox             createFolderStructure;
+    private CheckBox             addNewFiles;
 
     private TabPane              sourceTabPane;
     private TabPane              destinationTabPane;
@@ -108,9 +116,9 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
     /** {@inheritDoc} */
     @Override
-    public void initialise (final Stage stage, final String baseTitle) throws EndApplicationException
+    public void initialise (final Stage stage, final Optional<String> baseTitleOptional) throws EndApplicationException
     {
-        super.initialise (stage, baseTitle, true, true, true);
+        super.initialise (stage, baseTitleOptional, true, true, true);
 
         // The main button panel
         final ButtonPanel buttonPanel = new ButtonPanel (Orientation.VERTICAL);
@@ -126,9 +134,9 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         final Button sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         sourceFolderSelectButton.setOnAction (event -> {
 
-            final File file = Functions.getFolderFromUser (this.getStage (), this.config, Functions.getText ("@IDS_MAIN_SELECT_SOURCE_HEADER"));
-            if (file != null)
-                this.sourcePathField.setText (file.getAbsolutePath ());
+            final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, Functions.getText ("@IDS_MAIN_SELECT_SOURCE_HEADER"));
+            if (file.isPresent ())
+                this.sourcePathField.setText (file.get ().getAbsolutePath ());
 
         });
         sourceFolderPanel.setRight (sourceFolderSelectButton);
@@ -155,9 +163,9 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         final Button destinationFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION"));
         destinationFolderSelectButton.setOnAction (event -> {
 
-            final File file = Functions.getFolderFromUser (this.getStage (), this.config, Functions.getText ("@IDS_MAIN_SELECT_DESTINATION_HEADER"));
-            if (file != null)
-                this.destinationPathField.setText (file.getAbsolutePath ());
+            final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, Functions.getText ("@IDS_MAIN_SELECT_DESTINATION_HEADER"));
+            if (file.isPresent ())
+                this.destinationPathField.setText (file.get ().getAbsolutePath ());
 
         });
         destinationFolderPanel.setRight (destinationFolderSelectButton);
@@ -172,9 +180,9 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         destinationPane.setCenter (this.destinationTabPane);
 
         final BoxPanel bottom = new BoxPanel (Orientation.HORIZONTAL);
-        this.createFolderStructure = bottom.createCheckBox ("Create folder structure");
-        this.createFolderStructure.setTooltip (new Tooltip ("Recreates the folder structure which is found below the source folder in the destination folder."));
+        this.createFolderStructure = bottom.createCheckBox ("@IDS_MAIN_CREATE_FOLDERS", "@IDS_MAIN_CREATE_FOLDERS_TOOLTIP");
         this.createFolderStructure.setSelected (true);
+        this.addNewFiles = bottom.createCheckBox ("@IDS_MAIN_ADD_NEW", "@IDS_MAIN_ADD_NEW_TOOLTIP");
         destinationPane.setBottom (bottom.getPane ());
 
         final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
@@ -235,11 +243,17 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
             this.destinationPathField.setText (destinationPath);
 
         this.createFolderStructure.setSelected (this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true));
+        this.addNewFiles.setSelected (this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false));
 
         for (final IDetectorDescriptor detectorDescriptor: this.detectorDescriptors)
             detectorDescriptor.loadSettings (this.config);
         for (final ICreatorDescriptor creatorDescriptor: this.creatorDescriptors)
             creatorDescriptor.loadSettings (this.config);
+
+        final int sourceType = this.config.getInteger (SOURCE_TYPE, 0);
+        this.sourceTabPane.getSelectionModel ().select (sourceType);
+        final int destinationType = this.config.getInteger (DESTINATION_TYPE, 0);
+        this.destinationTabPane.getSelectionModel ().select (destinationType);
     }
 
 
@@ -252,12 +266,18 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
         this.config.setProperty (SOURCE_PATH, this.sourcePathField.getText ());
         this.config.setProperty (DESTINATION_PATH, this.destinationPathField.getText ());
-        this.config.setProperty (DESTINATION_CREATE_FOLDER_STRUCTURE, Boolean.toString (this.createFolderStructure.isSelected ()));
+        this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure.isSelected ());
+        this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles.isSelected ());
 
         for (final IDetectorDescriptor detectorDescriptor: this.detectorDescriptors)
             detectorDescriptor.saveSettings (this.config);
         for (final ICreatorDescriptor creatorDescriptor: this.creatorDescriptors)
             creatorDescriptor.saveSettings (this.config);
+
+        final int sourceSelectedIndex = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
+        this.config.setInteger (SOURCE_TYPE, sourceSelectedIndex);
+        final int destinationSelectedIndex = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
+        this.config.setInteger (DESTINATION_TYPE, destinationSelectedIndex);
 
         // Store configuration
         super.exit ();
@@ -266,6 +286,11 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     }
 
 
+    /**
+     * Execute the conversion.
+     *
+     * @param onlyAnalyse Do not create output files if true
+     */
     private void execute (final boolean onlyAnalyse)
     {
         this.onlyAnalyse = onlyAnalyse;
@@ -341,12 +366,15 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
             return false;
         }
 
-        // Output folder must be empty
-        final String [] content = this.outputFolder.list ();
-        if (content == null || content.length > 0)
+        // Output folder must be empty or add new must be active
+        if (!this.addNewFiles.isSelected ())
         {
-            Functions.message ("The output folder is not empty. Please select an empty folder.");
-            return false;
+            final String [] content = this.outputFolder.list ();
+            if (content == null || content.length > 0)
+            {
+                Functions.message ("The output folder is not empty. Please select an empty folder.");
+                return false;
+            }
         }
 
         return true;

@@ -540,7 +540,7 @@ public final class Functions
      * @param filter The filefilter applied to the dialog
      * @return The file or null
      */
-    public static File getFileFromUser (final Window owner, final boolean open, final String title, final BasicConfig config, final FileChooser.ExtensionFilter filter)
+    public static Optional<File> getFileFromUser (final Window owner, final boolean open, final String title, final BasicConfig config, final FileChooser.ExtensionFilter filter)
     {
         return getFileFromUser (owner, open, title, config, filter == null ? null : new FileChooser.ExtensionFilter []
         {
@@ -561,7 +561,7 @@ public final class Functions
      * @param filters The file filters applied to the dialog
      * @return The file or null
      */
-    public static File getFileFromUser (final Window owner, final boolean open, final String title, final BasicConfig config, final FileChooser.ExtensionFilter [] filters)
+    public static Optional<File> getFileFromUser (final Window owner, final boolean open, final String title, final BasicConfig config, final FileChooser.ExtensionFilter [] filters)
     {
         final FileChooser chooser = new FileChooser ();
         if (title != null && title.length () > 0)
@@ -579,14 +579,14 @@ public final class Functions
 
         final File file = open ? chooser.showOpenDialog (owner) : chooser.showSaveDialog (owner);
         if (file == null)
-            return null;
+            return Optional.empty ();
 
         // Store the current path
         final String parent = file.getParent ();
         if (config != null && parent != null)
             config.setActivePath (parent);
 
-        return file;
+        return Optional.of (file);
     }
 
 
@@ -660,7 +660,7 @@ public final class Functions
      *            from the properties file. May be null.
      * @return The folder or null
      */
-    public static File getFolderFromUser (final Window owner, final BasicConfig config, final String title)
+    public static Optional<File> getFolderFromUser (final Window owner, final BasicConfig config, final String title)
     {
         final String currentPath = config == null ? null : config.getActivePath ();
 
@@ -676,13 +676,13 @@ public final class Functions
 
         final File file = chooser.showDialog (owner);
         if (file == null)
-            return null;
+            return Optional.empty ();
 
         // Store the current path
         if (config != null)
             config.setActivePath (file);
 
-        return file;
+        return Optional.of (file);
     }
 
 

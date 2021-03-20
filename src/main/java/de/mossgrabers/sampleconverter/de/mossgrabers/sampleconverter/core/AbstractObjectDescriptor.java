@@ -19,7 +19,7 @@ public abstract class AbstractObjectDescriptor implements IObjectDescriptor
      *
      * @param name The name of the object.
      */
-    public AbstractObjectDescriptor (final String name)
+    protected AbstractObjectDescriptor (final String name)
     {
         this.name = name;
     }

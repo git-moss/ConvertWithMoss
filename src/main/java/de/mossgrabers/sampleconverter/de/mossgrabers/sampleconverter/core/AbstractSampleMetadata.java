@@ -5,6 +5,7 @@
 package de.mossgrabers.sampleconverter.core;
 
 import java.io.File;
+import java.util.Optional;
 
 
 /**
@@ -14,21 +15,25 @@ import java.io.File;
  */
 public abstract class AbstractSampleMetadata implements ISampleMetadata
 {
-    protected final File file;
+    protected final File       file;
 
-    protected int        start;
-    protected int        stop;
-    protected boolean    hasLoop;
-    protected int        loopStart;
-    protected int        loopEnd;
-    protected int        keyLow;
-    protected int        keyRoot;
-    protected int        keyHigh;
-    protected int        crossfadeLow;
-    protected int        crossfadeHigh;
-    protected String     combinedName;
-    protected boolean    isMonoFile;
-    protected String     nameWithoutLayer;
+    protected int              start;
+    protected int              stop;
+    protected boolean          hasLoop;
+    protected int              loopStart;
+    protected int              loopEnd;
+    protected int              keyRoot;
+    protected int              keyLow;
+    protected int              keyHigh;
+    protected int              crossfadeNotesLow;
+    protected int              crossfadeNotesHigh;
+    protected int              velocityLow;
+    protected int              velocityHigh;
+    protected int              crossfadeVelocitiesLow;
+    protected int              crossfadeVelocitiesHigh;
+    protected boolean          isMonoFile;
+    protected Optional<String> combinedName;
+    protected Optional<String> nameWithoutLayer;
 
 
     /**
@@ -36,7 +41,7 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
      *
      * @param file The file where the sample is stored
      */
-    public AbstractSampleMetadata (final File file)
+    protected AbstractSampleMetadata (final File file)
     {
         this.file = file;
     }
@@ -148,33 +153,97 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public int getCrossfadeLow ()
+    public int getNoteCrossfadeLow ()
     {
-        return this.crossfadeLow;
+        return this.crossfadeNotesLow;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setCrossfadeLow (final int crossfadeLow)
+    public void setNoteCrossfadeLow (final int crossfadeLow)
     {
-        this.crossfadeLow = crossfadeLow;
+        this.crossfadeNotesLow = crossfadeLow;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public int getCrossfadeHigh ()
+    public int getNoteCrossfadeHigh ()
     {
-        return this.crossfadeHigh;
+        return this.crossfadeNotesHigh;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setCrossfadeHigh (final int crossfadeHigh)
+    public void setNoteCrossfadeHigh (final int crossfadeHigh)
     {
-        this.crossfadeHigh = crossfadeHigh;
+        this.crossfadeNotesHigh = crossfadeHigh;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getVelocityLow ()
+    {
+        return this.velocityLow;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setVelocityLow (final int velocityLow)
+    {
+        this.velocityLow = velocityLow;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getVelocityHigh ()
+    {
+        return this.velocityHigh;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setVelocityHigh (final int velocityHigh)
+    {
+        this.velocityHigh = velocityHigh;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getVelocityCrossfadeLow ()
+    {
+        return this.crossfadeVelocitiesLow;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setVelocityCrossfadeLow (final int crossfadeLow)
+    {
+        this.crossfadeVelocitiesLow = crossfadeLow;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getVelocityCrossfadeHigh ()
+    {
+        return this.crossfadeVelocitiesHigh;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setVelocityCrossfadeHigh (final int crossfadeHigh)
+    {
+        this.crossfadeVelocitiesHigh = crossfadeHigh;
     }
 
 
@@ -182,13 +251,13 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     @Override
     public void setCombinedName (final String combinedName)
     {
-        this.combinedName = combinedName;
+        this.combinedName = Optional.ofNullable (combinedName);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public String getCombinedName ()
+    public Optional<String> getCombinedName ()
     {
         return this.combinedName;
     }
@@ -196,9 +265,9 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public String getUpdatedFilename ()
+    public Optional<String> getUpdatedFilename ()
     {
-        return this.combinedName == null ? this.getFilename () : this.combinedName;
+        return this.combinedName.isEmpty () ? Optional.ofNullable (this.getFilename ()) : this.combinedName;
     }
 
 
@@ -214,7 +283,7 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     @Override
     public void setNameWithoutLayer (final String nameWithoutLayer)
     {
-        this.nameWithoutLayer = nameWithoutLayer;
+        this.nameWithoutLayer = Optional.ofNullable (nameWithoutLayer);
     }
 
 
@@ -222,6 +291,6 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     @Override
     public String getNameWithoutLayer ()
     {
-        return this.nameWithoutLayer == null ? this.getFilename () : this.nameWithoutLayer;
+        return this.nameWithoutLayer.isEmpty () ? this.getFilename () : this.nameWithoutLayer.get ();
     }
 }

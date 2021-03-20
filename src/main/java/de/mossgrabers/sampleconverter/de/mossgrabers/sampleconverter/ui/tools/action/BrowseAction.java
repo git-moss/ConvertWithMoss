@@ -12,6 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.util.Optional;
 
 
 /**
@@ -86,8 +87,8 @@ public class BrowseAction extends Action
     @Override
     public void handle (final ActionEvent e)
     {
-        final File file = Functions.getFileFromUser (this.dest.getScene ().getWindow (), this.open, this.title, this.config, this.filter);
-        if (file != null)
-            this.dest.setText (file.getAbsolutePath ());
+        final Optional<File> file = Functions.getFileFromUser (this.dest.getScene ().getWindow (), this.open, this.title, this.config, this.filter);
+        if (file.isPresent ())
+            this.dest.setText (file.get ().getAbsolutePath ());
     }
 }

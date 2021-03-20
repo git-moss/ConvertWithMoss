@@ -6,27 +6,26 @@ package de.mossgrabers.sampleconverter.detector;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.util.KeyMapping;
 
 import java.io.File;
 import java.util.List;
 
 
 /**
- * A detected multi-sample source consisting of a couple of wave files in a folder.
+ * Holds the data of a multi-sample source.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class WavMultisampleSource implements IMultisampleSource
+public class MultisampleSource implements IMultisampleSource
 {
-    private final File                        folder;
-    private final List<List<ISampleMetadata>> sampleMetadata;
-    private final KeyMapping                  keyMapping;
-    private final String                      creator;
-    private final String                      category;
-    private final String []                   keywords;
-    private final String []                   subPath;
-    private final String                      name;
+    private final File                  folder;
+    private final String []             subPath;
+    private final String                name;
+    private String                      description;
+    private String                      creator;
+    private String                      category;
+    private String []                   keywords;
+    private List<List<ISampleMetadata>> sampleMetadata;
 
 
     /**
@@ -34,23 +33,13 @@ public class WavMultisampleSource implements IMultisampleSource
      *
      * @param folder The folder
      * @param subPath The names of the sub folders which contain the samples
-     * @param sampleMetadata The sample file information in an ordered map
-     * @param keyMapping
      * @param name The name of the multi-sample
-     * @param creator The creator (author) of the multi sample
-     * @param category The sound category of the multi-sample
-     * @param keywords The keywords of the multi-sample
      */
-    public WavMultisampleSource (final File folder, final String [] subPath, final List<List<ISampleMetadata>> sampleMetadata, final KeyMapping keyMapping, final String name, final String creator, final String category, final String [] keywords)
+    public MultisampleSource (final File folder, final String [] subPath, final String name)
     {
         this.folder = folder;
         this.subPath = subPath;
-        this.sampleMetadata = sampleMetadata;
-        this.keyMapping = keyMapping;
         this.name = name;
-        this.creator = creator;
-        this.category = category;
-        this.keywords = keywords;
     }
 
 
@@ -80,17 +69,17 @@ public class WavMultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public KeyMapping getKeyMapping ()
+    public String getName ()
     {
-        return this.keyMapping;
+        return this.name;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public String getName ()
+    public String getDescription ()
     {
-        return this.name;
+        return this.description;
     }
 
 
@@ -115,5 +104,45 @@ public class WavMultisampleSource implements IMultisampleSource
     public String [] getKeywords ()
     {
         return this.keywords;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setDescription (final String description)
+    {
+        this.description = description;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setCreator (final String creator)
+    {
+        this.creator = creator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setCategory (final String category)
+    {
+        this.category = category;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setKeywords (final String [] keywords)
+    {
+        this.keywords = keywords;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSampleMetadata (final List<List<ISampleMetadata>> sampleMetadata)
+    {
+        this.sampleMetadata = sampleMetadata;
     }
 }

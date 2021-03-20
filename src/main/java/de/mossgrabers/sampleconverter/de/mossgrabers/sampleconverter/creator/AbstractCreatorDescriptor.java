@@ -25,7 +25,7 @@ public abstract class AbstractCreatorDescriptor extends AbstractObjectDescriptor
      * @param name The name of the object.
      * @param creator The creator to describe
      */
-    public AbstractCreatorDescriptor (final String name, final ICreator creator)
+    protected AbstractCreatorDescriptor (final String name, final ICreator creator)
     {
         super (name);
 

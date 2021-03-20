@@ -19,7 +19,7 @@ public interface IDetector
     /**
      * Start the detection.
      *
-     * @param notifier Where to notify about progress and errors.
+     * @param notifier Where to notify about progress and errors
      * @param folder The folder hwere to start the detection
      * @param consumer Where to report the found multi-samples
      */

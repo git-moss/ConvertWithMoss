@@ -278,6 +278,18 @@ public class BasicConfig
 
 
     /**
+     * Set a boolean value.
+     *
+     * @param name The name of the preference
+     * @param value The value to set
+     */
+    public void setBoolean (final String name, final boolean value)
+    {
+        this.preferences.putBoolean (name, value);
+    }
+
+
+    /**
      * Get an integer preference.
      *
      * @param name The name of the preference
@@ -287,6 +299,18 @@ public class BasicConfig
     public int getInteger (final String name, final int defaultValue)
     {
         return this.preferences.getInt (name, defaultValue);
+    }
+
+
+    /**
+     * Set an integer preference.
+     *
+     * @param name The name of the preference
+     * @param value The value to set
+     */
+    public void setInteger (final String name, final int value)
+    {
+        this.preferences.putInt (name, value);
     }
 
 

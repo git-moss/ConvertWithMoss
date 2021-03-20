@@ -4,8 +4,6 @@
 
 package de.mossgrabers.sampleconverter.core;
 
-import de.mossgrabers.sampleconverter.util.KeyMapping;
-
 import java.io.File;
 import java.util.List;
 
@@ -18,7 +16,7 @@ import java.util.List;
 public interface IMultisampleSource
 {
     /**
-     * Get the folder which contains the multisample source.
+     * Get the folder which contains the multisample source or the file itself.
      *
      * @return The folder
      */
@@ -42,19 +40,19 @@ public interface IMultisampleSource
 
 
     /**
-     * Get the key mapping, which is how the samples are mapped to the keys.
-     *
-     * @return The key mapping
-     */
-    KeyMapping getKeyMapping ();
-
-
-    /**
      * Get the name of the multi sample.
      *
      * @return The name
      */
     String getName ();
+
+
+    /**
+     * Get a description of the multi sample.
+     *
+     * @return The description
+     */
+    String getDescription ();
 
 
     /**
@@ -79,4 +77,44 @@ public interface IMultisampleSource
      * @return The keywords
      */
     String [] getKeywords ();
+
+
+    /**
+     * Set the description.
+     *
+     * @param description The description
+     */
+    void setDescription (String description);
+
+
+    /**
+     * Set the creator (author).
+     *
+     * @param creator The creator (author) of the multi sample
+     */
+    void setCreator (String creator);
+
+
+    /**
+     * Set the category.
+     *
+     * @param category The sound category of the multi-sample
+     */
+    void setCategory (String category);
+
+
+    /**
+     *
+     *
+     * @param keywords The keywords of the multi-sample
+     */
+    void setKeywords (String [] keywords);
+
+
+    /**
+     * Set the sample data.
+     *
+     * @param sampleMetadata The sample file information in an ordered map
+     */
+    void setSampleMetadata (List<List<ISampleMetadata>> sampleMetadata);
 }
