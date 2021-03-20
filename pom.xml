@@ -136,7 +136,7 @@
 					<mainJar>sampleconverter-${project.version}.jar</mainJar>
 					<mainClass>${main.class}</mainClass>
 					<name>${project.name}</name>
-					<app-version>${project.version}</app-version>
+					<appVersion>${project.version}</appVersion>
 					<copyright>(c) 2021 by ${project.organization.name}</copyright>
 					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
