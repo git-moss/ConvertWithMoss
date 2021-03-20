@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.creator;
+package de.mossgrabers.sampleconverter.creator.bitwig;
 
 import de.mossgrabers.sampleconverter.core.ICreator;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
@@ -18,6 +18,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -37,9 +38,15 @@ public class BitwigMultisampleCreator implements ICreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource, final INotifier notifier) throws IOException
     {
+        final File multiFile = new File (destinationFolder, multisampleSource.getName () + ".multisample");
+        if (multiFile.exists ())
+        {
+            notifier.notify (Functions.getMessage ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ()));
+            return;
+        }
+
         final String metadata = createMetadata (multisampleSource);
 
-        final File multiFile = new File (destinationFolder, multisampleSource.getName () + ".multisample");
         notifier.notify (Functions.getMessage ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ()));
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
@@ -76,35 +83,20 @@ public class BitwigMultisampleCreator implements ICreator
         final StringBuilder sb = new StringBuilder (XML_HEADER);
         sb.append ("\n<multisample name=\"").append (multisampleSource.getName ()).append ("\">\n");
 
-        sb.append ("   <generator>MultisampleGenerator</generator>\n");
+        sb.append ("   <generator>SampleConverter</generator>\n");
         sb.append ("   <category>").append (multisampleSource.getCategory ()).append ("</category>\n");
         sb.append ("   <creator>").append (multisampleSource.getCreator ()).append ("</creator>\n");
-        sb.append ("   <description/>\n");
+        sb.append ("   <description>").append (multisampleSource.getDescription ()).append ("</description>\n");
 
         sb.append ("   <keywords>\n");
         for (final String keyword: multisampleSource.getKeywords ())
             sb.append ("      <keyword>").append (keyword).append ("</keyword>\n");
         sb.append ("   </keywords>\n");
 
-        final List<List<ISampleMetadata>> sampleMetadata = multisampleSource.getSampleMetadata ();
-
-        final int size = sampleMetadata.size ();
-        final int range = 127 / size;
-        int low = 0;
-        int high = range;
-        int count = 1;
-
-        for (final List<ISampleMetadata> layer: sampleMetadata)
+        for (final List<ISampleMetadata> layer: multisampleSource.getSampleMetadata ())
         {
             for (final ISampleMetadata info: layer)
-                createSample (sb, info, low, high);
-
-            low = high + 1;
-            if (count == size - 1)
-                high = 127;
-            else
-                high += range;
-            count++;
+                createSample (sb, info);
         }
 
         sb.append ("</multisample>\n");
@@ -117,14 +109,12 @@ public class BitwigMultisampleCreator implements ICreator
      *
      * @param sb Where to add the XML code
      * @param info Where to get the sample info from
-     * @param velocityLow The lower velocity range
-     * @param velocityHigh The upper velocity range
      */
-    private static void createSample (final StringBuilder sb, final ISampleMetadata info, final int velocityLow, final int velocityHigh)
+    private static void createSample (final StringBuilder sb, final ISampleMetadata info)
     {
         sb.append ("   <sample file=\"").append (info.getUpdatedFilename ()).append ("\" gain=\"0.000\" sample-start=\"").append (info.getStart ()).append (".000\" sample-stop=\"").append (info.getStop ()).append (".000\" tune=\"0.0\">\n");
-        sb.append ("      <key high=\"").append (info.getKeyHigh ()).append ("\" high-fade=\"").append (info.getCrossfadeHigh ()).append ("\" low=\"").append (info.getKeyLow ()).append ("\" low-fade=\"").append (info.getCrossfadeLow ()).append ("\" root=\"").append (info.getKeyRoot ()).append ("\" track=\"true\"/>\n");
-        sb.append ("      <velocity low=\"").append (velocityLow).append ("\" high=\"").append (velocityHigh).append ("\"/>\n");
+        sb.append ("      <key low=\"").append (info.getKeyLow ()).append ("\" low-fade=\"").append (info.getNoteCrossfadeLow ()).append ("\" root=\"").append (info.getKeyRoot ()).append ("\" high=\"").append (info.getKeyHigh ()).append ("\" high-fade=\"").append (info.getNoteCrossfadeHigh ()).append ("\" track=\"true\"/>\n");
+        sb.append ("      <velocity low=\"").append (info.getVelocityLow ()).append ("\" low-fade=\"").append (info.getVelocityCrossfadeLow ()).append ("\" high=\"").append (info.getVelocityHigh ()).append ("\" high-fade=\"").append (info.getVelocityCrossfadeHigh ()).append ("\"/>\n");
         sb.append ("      <loop mode=\"").append (info.hasLoop () ? "loop" : "off").append ("\" start=\"").append (info.getLoopStart ()).append (".000\" stop=\"").append (info.getLoopEnd ()).append (".000\"/>\n");
         sb.append ("   </sample>\n");
     }
@@ -139,7 +129,10 @@ public class BitwigMultisampleCreator implements ICreator
      */
     private static void addFileToZip (final ZipOutputStream zos, final ISampleMetadata info) throws IOException
     {
-        zos.putNextEntry (new ZipEntry (info.getUpdatedFilename ()));
+        final Optional<String> filename = info.getUpdatedFilename ();
+        if (filename.isEmpty ())
+            return;
+        zos.putNextEntry (new ZipEntry (filename.get ()));
         info.writeSample (zos);
         zos.closeEntry ();
     }

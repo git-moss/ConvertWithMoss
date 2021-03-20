@@ -45,7 +45,7 @@ public abstract class AbstractDialog extends Dialog<Boolean>
      * @param owner The owner of the dialog
      * @param title The title of the dialog
      */
-    public AbstractDialog (final Window owner, final String title)
+    protected AbstractDialog (final Window owner, final String title)
     {
         this (owner, title, true, false, -1, -1);
     }
@@ -58,7 +58,7 @@ public abstract class AbstractDialog extends Dialog<Boolean>
      * @param title The title of the dialog
      * @param isModal Should the dialog be modal?
      */
-    public AbstractDialog (final Window owner, final String title, final boolean isModal)
+    protected AbstractDialog (final Window owner, final String title, final boolean isModal)
     {
         this (owner, title, isModal, false, -1, -1);
     }
@@ -90,7 +90,7 @@ public abstract class AbstractDialog extends Dialog<Boolean>
      * @param minHeight The minimum height of the dialog, ignored if resizable is false or value
      *            &lt;= 0
      */
-    public AbstractDialog (final Window owner, final String title, final boolean isModal, final boolean isResizable, final int minWidth, final int minHeight)
+    protected AbstractDialog (final Window owner, final String title, final boolean isModal, final boolean isResizable, final int minWidth, final int minHeight)
     {
         this.initModality (isModal ? Modality.APPLICATION_MODAL : Modality.NONE);
         this.setTitle (Functions.getText (title));

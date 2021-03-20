@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
 import java.util.MissingResourceException;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 
@@ -50,7 +51,7 @@ public abstract class AbstractFrame
      * @param minWidth The minimum width of the stage
      * @param minHeight The minimum height of the stage
      */
-    public AbstractFrame (final String path, final double minWidth, final double minHeight)
+    protected AbstractFrame (final String path, final double minWidth, final double minHeight)
     {
         this.minWidth = minWidth;
         this.minHeight = minHeight;
@@ -73,26 +74,25 @@ public abstract class AbstractFrame
      * Initialise the application.
      *
      * @param stage The stage where to add widgets
-     * @param baseTitle The title to use for window
+     * @param baseTitleOptional The title to use for window
      * @exception EndApplicationException Oops, something crashed...
      */
-    public abstract void initialise (final Stage stage, final String baseTitle) throws EndApplicationException;
+    public abstract void initialise (final Stage stage, final Optional<String> baseTitleOptional) throws EndApplicationException;
 
 
     /**
      * Initialise the application.
      *
      * @param stage The stage where to add widgets
-     * @param baseTitle The title to use for window
+     * @param baseTitleOptional The title to use for window
      * @param hasMenuBar True if the frame has a menu bar
      * @param hasToolBar True if the frame has a tool bar
      * @param hasStatusBar True if the frame has a status bar
      * @exception EndApplicationException Oops, something crashed...
      */
-    protected void initialise (final Stage stage, final String baseTitle, final boolean hasMenuBar, final boolean hasToolBar, final boolean hasStatusBar) throws EndApplicationException
+    protected void initialise (final Stage stage, final Optional<String> baseTitleOptional, final boolean hasMenuBar, final boolean hasToolBar, final boolean hasStatusBar) throws EndApplicationException
     {
         this.stage = stage;
-        this.baseTitle = baseTitle;
         this.stage.minWidthProperty ().set (this.minWidth);
         this.stage.minHeightProperty ().set (this.minHeight);
         this.stage.titleProperty ().bind (this.title);
@@ -104,8 +104,7 @@ public abstract class AbstractFrame
         this.initStrings ();
         this.initTitleBar ();
 
-        if (this.baseTitle == null)
-            this.baseTitle = Functions.getMessage ("TITLE");
+        this.baseTitle = baseTitleOptional.isEmpty () ? Functions.getMessage ("TITLE") : baseTitleOptional.get ();
 
         this.stage.setScene (this.scene);
         this.stage.setOnCloseRequest (this::exit);

@@ -9,6 +9,7 @@ import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Optional;
 
 
 /**
@@ -141,33 +142,97 @@ public interface ISampleMetadata
     /**
      * Get the number of notes to crossfade on the lower end of the range.
      *
-     * @return The number of notes to crossfade
+     * @return The number of notes to crossfade (0-127)
      */
-    int getCrossfadeLow ();
+    int getNoteCrossfadeLow ();
 
 
     /**
      * Set the number of notes to crossfade on the lower end of the range.
      *
-     * @param crossfadeLow The number of notes to crossfade
+     * @param crossfadeLow The number of notes to crossfade (0-127)
      */
-    void setCrossfadeLow (int crossfadeLow);
+    void setNoteCrossfadeLow (int crossfadeLow);
 
 
     /**
      * Get the number of notes to crossfade on the higher end of the range.
      *
-     * @return The number of notes to crossfade
+     * @return The number of notes to crossfade (0-127)
      */
-    int getCrossfadeHigh ();
+    int getNoteCrossfadeHigh ();
 
 
     /**
      * Set the number of notes to crossfade on the higher end of the range.
      *
-     * @param crossfadeHigh The number of notes to crossfade
+     * @param crossfadeHigh The number of notes to crossfade (0-127)
      */
-    void setCrossfadeHigh (int crossfadeHigh);
+    void setNoteCrossfadeHigh (int crossfadeHigh);
+
+
+    /**
+     * Get the lowest velocity of the velocity range to which the sample is mapped.
+     *
+     * @return The lowest velocity of the velocity range to which the sample is mapped
+     */
+    int getVelocityLow ();
+
+
+    /**
+     * Set the lowest velocity of the velocity range to which the sample is mapped.
+     *
+     * @param velocityLow The lowest velocity of the velocity range to which the sample is mapped
+     */
+    void setVelocityLow (int velocityLow);
+
+
+    /**
+     * Get the highest velocity of the velocity range to which the sample is mapped.
+     *
+     * @return The highest velocity of the velocity range to which the sample is mapped
+     */
+    int getVelocityHigh ();
+
+
+    /**
+     * Set the highest velocity of the velocity range to which the sample is mapped.
+     *
+     * @param velocityHigh The highest velocity of the velocity range to which the sample is mapped
+     */
+    void setVelocityHigh (final int velocityHigh);
+
+
+    /**
+     * Get the number of velocity values to crossfade on the lower end of the range.
+     *
+     * @return The number of of velocity values to crossfade (0-127)
+     */
+    int getVelocityCrossfadeLow ();
+
+
+    /**
+     * Set the number of of velocity values to crossfade on the lower end of the range.
+     *
+     * @param crossfadeLow The number of velocity values to crossfade (0-127)
+     */
+    void setVelocityCrossfadeLow (int crossfadeLow);
+
+
+    /**
+     * Get the number of notes to crossfade on the higher end of the range.
+     *
+     * @return The number of of velocity values to crossfade (0-127)
+     */
+    int getVelocityCrossfadeHigh ();
+
+
+    /**
+     * Set the number of notes to crossfade on the higher end of the range.
+     *
+     * @param crossfadeHigh The number of velocity values to crossfade (0-127)
+     */
+    void setVelocityCrossfadeHigh (int crossfadeHigh);
 
 
     /**
@@ -193,7 +258,7 @@ public interface ISampleMetadata
      *
      * @return The name
      */
-    String getCombinedName ();
+    Optional<String> getCombinedName ();
 
 
     /**
@@ -202,7 +267,7 @@ public interface ISampleMetadata
      *
      * @return The updated name
      */
-    String getUpdatedFilename ();
+    Optional<String> getUpdatedFilename ();
 
 
     /**

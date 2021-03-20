@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.detector;
+package de.mossgrabers.sampleconverter.detector.bitwig;
 
 import de.mossgrabers.sampleconverter.core.AbstractSampleMetadata;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class WavSampleMetadata extends AbstractSampleMetadata
+public class BitwigSampleMetadata extends AbstractSampleMetadata
 {
     private final WaveFile waveFile;
 
@@ -41,7 +41,7 @@ public class WavSampleMetadata extends AbstractSampleMetadata
      * @throws IOException Could not read the file
      * @throws CompressionNotSupportedException The wave file is compressed, which is not supported
      */
-    public WavSampleMetadata (final File file) throws IOException, ParseException, CompressionNotSupportedException
+    public BitwigSampleMetadata (final File file) throws IOException, ParseException, CompressionNotSupportedException
     {
         super (file);
 
@@ -88,10 +88,7 @@ public class WavSampleMetadata extends AbstractSampleMetadata
     @Override
     public void combine (final ISampleMetadata sample) throws CombinationNotPossibleException
     {
-        if (!(sample instanceof WavSampleMetadata))
-            throw new CombinationNotPossibleException (Functions.getMessage ("IDS_NOTIFY_ERR_ONLY_WAV"));
-
-        this.waveFile.combine (((WavSampleMetadata) sample).waveFile);
+        // Intentionally empty
     }
 
 
@@ -99,7 +96,7 @@ public class WavSampleMetadata extends AbstractSampleMetadata
     @Override
     public void writeSample (final OutputStream outputStream) throws IOException
     {
-        if (this.getCombinedName () == null)
+        if (this.getCombinedName ().isEmpty ())
         {
             final byte [] buffer = new byte [10000];
             try (final FileInputStream fis = new FileInputStream (this.getFile ()))

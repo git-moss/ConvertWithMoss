@@ -2,10 +2,11 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.detector;
+package de.mossgrabers.sampleconverter.detector.wav;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
+import de.mossgrabers.sampleconverter.detector.AbstractDetectorDescriptor;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
@@ -22,8 +23,6 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 
 import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 
@@ -32,37 +31,35 @@ import java.util.function.Consumer;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class WaveDetectorDescriptor extends AbstractDetectorDescriptor
+public class WavDetectorDescriptor extends AbstractDetectorDescriptor<WavMultisampleDetectorTask>
 {
-    private static final String         COMMA_SPLIT             = ",";
+    private static final String COMMA_SPLIT              = ",";
 
-    private static final String         WAV_DETECTION_PATTERN   = "WavDetectionPattern";
-    private static final String         WAV_IS_ASCENDING        = "WavIsAscending";
-    private static final String         WAV_MONO_SPLITS_PATTERN = "WavMonoSPlitPattern";
-    private static final String         WAV_PREFER_FOLDER_NAME  = "WavPreferFolderName";
-    private static final String         WAV_DEFAULT_CREATOR     = "WavDefaultCreator";
-    private static final String         WAV_CREATORS            = "WavCreators";
-    private static final String         WAV_CROSSFADE_NOTES     = "WavCrossfadeNotes";
-    private static final String         WAV_POSTFIX             = "WavPostfix";
+    private static final String WAV_DETECTION_PATTERN    = "WavDetectionPattern";
+    private static final String WAV_IS_ASCENDING         = "WavIsAscending";
+    private static final String WAV_MONO_SPLITS_PATTERN  = "WavMonoSPlitPattern";
+    private static final String WAV_PREFER_FOLDER_NAME   = "WavPreferFolderName";
+    private static final String WAV_DEFAULT_CREATOR      = "WavDefaultCreator";
+    private static final String WAV_CREATORS             = "WavCreators";
+    private static final String WAV_CROSSFADE_NOTES      = "WavCrossfadeNotes";
+    private static final String WAV_CROSSFADE_VELOCITIES = "WavCrossfadeVelocities";
+    private static final String WAV_POSTFIX              = "WavPostfix";
 
-    private TextField                   detectionPatternField;
-    private ToggleGroup                 sortAscendingGroup;
-    private TextField                   monoSplitsField;
-    private CheckBox                    preferFolderNameCheckBox;
-    private TextField                   defaultCreatorField;
-    private TextField                   creatorsField;
-    private TextField                   crossfadeNotesField;
-    private TextField                   postfixField;
-
-    private INotifier                   notifier;
-    private final ExecutorService       executor                = Executors.newSingleThreadExecutor ();
-    private WaveMultisampleDetectorTask detector;
+    private TextField           detectionPatternField;
+    private ToggleGroup         sortAscendingGroup;
+    private TextField           monoSplitsField;
+    private CheckBox            preferFolderNameCheckBox;
+    private TextField           defaultCreatorField;
+    private TextField           creatorsField;
+    private TextField           crossfadeNotesField;
+    private TextField           crossfadeVelocitiesField;
+    private TextField           postfixField;
 
 
     /**
      * Constructor.
      */
-    public WaveDetectorDescriptor ()
+    public WavDetectorDescriptor ()
     {
         super ("WAV");
     }
@@ -93,22 +90,33 @@ public class WaveDetectorDescriptor extends AbstractDetectorDescriptor
         {
             crossfadeNotes = 0;
         }
+        if (crossfadeNotes > 127)
+        {
+            Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_NOTES");
+            this.updateButtonStates (true);
+            this.crossfadeNotesField.selectAll ();
+            return;
+        }
 
-        this.detector = new WaveMultisampleDetectorTask ();
-        this.detector.configure (notifier, consumer, folder, velocityLayerPatterns, isAscending, monoSplitPatterns, postfixTexts, isPreferFolderName, crossfadeNotes, creatorTags, creatorName);
-        this.detector.setOnCancelled (event -> this.updateButtonStates (true));
-        this.detector.setOnFailed (event -> this.updateButtonStates (true));
-        this.detector.setOnSucceeded (event -> this.updateButtonStates (true));
-        this.detector.setOnRunning (event -> this.updateButtonStates (false));
-        this.detector.setOnScheduled (event -> this.updateButtonStates (false));
-        this.executor.execute (this.detector);
-    }
+        int crossfadeVelocities;
+        try
+        {
+            crossfadeVelocities = Integer.parseInt (this.crossfadeVelocitiesField.getText ());
+        }
+        catch (final NumberFormatException ex)
+        {
+            crossfadeVelocities = 0;
+        }
+        if (crossfadeVelocities > 127)
+        {
+            this.updateButtonStates (true);
+            Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_VELOCITIES");
+            return;
+        }
 
-
-    private void updateButtonStates (final boolean canClose)
-    {
-        if (this.notifier != null)
-            this.notifier.updateButtonStates (canClose);
+        final WavMultisampleDetectorTask detector = new WavMultisampleDetectorTask ();
+        detector.configure (notifier, consumer, folder, velocityLayerPatterns, isAscending, monoSplitPatterns, postfixTexts, isPreferFolderName, crossfadeNotes, crossfadeVelocities, creatorTags, creatorName);
+        this.startDetection (detector);
     }
 
 
@@ -123,6 +131,7 @@ public class WaveDetectorDescriptor extends AbstractDetectorDescriptor
         config.setProperty (WAV_DEFAULT_CREATOR, this.defaultCreatorField.getText ());
         config.setProperty (WAV_CREATORS, this.creatorsField.getText ());
         config.setProperty (WAV_CROSSFADE_NOTES, this.crossfadeNotesField.getText ());
+        config.setProperty (WAV_CROSSFADE_VELOCITIES, this.crossfadeVelocitiesField.getText ());
         config.setProperty (WAV_POSTFIX, this.postfixField.getText ());
     }
 
@@ -138,6 +147,7 @@ public class WaveDetectorDescriptor extends AbstractDetectorDescriptor
         this.defaultCreatorField.setText (config.getProperty (WAV_DEFAULT_CREATOR, "moss"));
         this.creatorsField.setText (config.getProperty (WAV_CREATORS, ""));
         this.crossfadeNotesField.setText (Integer.toString (config.getInteger (WAV_CROSSFADE_NOTES, 0)));
+        this.crossfadeVelocitiesField.setText (Integer.toString (config.getInteger (WAV_CROSSFADE_VELOCITIES, 0)));
         this.postfixField.setText (config.getProperty (WAV_POSTFIX, ""));
     }
 
@@ -188,31 +198,13 @@ public class WaveDetectorDescriptor extends AbstractDetectorDescriptor
 
         panel.createSeparator ("@IDS_WAV_OPTIONS");
 
-        this.crossfadeNotesField = panel.createPositiveIntegerField ("@IDS_WAV_CROSSFADE");
+        this.crossfadeNotesField = panel.createPositiveIntegerField ("@IDS_WAV_CROSSFADE_NOTES");
+        this.crossfadeVelocitiesField = panel.createPositiveIntegerField ("@IDS_WAV_CROSSFADE_VELOCITIES");
         this.postfixField = panel.createField ("@IDS_WAV_POSTFIX", comma, -1);
 
         final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
         scrollPane.fitToWidthProperty ().set (true);
         scrollPane.fitToHeightProperty ().set (true);
         return scrollPane;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void shutdown ()
-    {
-        this.executor.shutdown ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void cancel ()
-    {
-        if (this.detector == null)
-            return;
-        this.detector.cancel (true);
-        this.detector = null;
     }
 }

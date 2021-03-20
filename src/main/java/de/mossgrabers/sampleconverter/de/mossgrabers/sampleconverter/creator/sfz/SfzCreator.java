@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.creator;
+package de.mossgrabers.sampleconverter.creator.sfz;
 
 import de.mossgrabers.sampleconverter.core.ICreator;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
@@ -16,6 +16,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -26,21 +27,27 @@ import java.util.List;
  */
 public class SfzCreator implements ICreator
 {
-    // @formatter:off
-    private static final String SFZ_HEADER  = "/////////////////////////////////////////////////////////////////////////////\n" +
-                                              "//sfz created by MultisampleGenerator\n" +
-                                              "\n" +
-                                              "<group>\n";
-    // @formatter:on
+    private static final String SFZ_HEADER = """
+            /////////////////////////////////////////////////////////////////////////////
+            // sfz created by SampleConverter
+
+            <group>
+            """;
 
 
     /** {@inheritDoc} */
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource, final INotifier notifier) throws IOException
     {
+        final File multiFile = new File (destinationFolder, multisampleSource.getName () + ".sfz");
+        if (multiFile.exists ())
+        {
+            notifier.notify (Functions.getMessage ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ()));
+            return;
+        }
+
         final String metadata = createMetadata (multisampleSource);
 
-        final File multiFile = new File (destinationFolder, multisampleSource.getName () + ".sfz");
         notifier.notify (Functions.getMessage ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ()));
 
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
@@ -58,7 +65,10 @@ public class SfzCreator implements ICreator
         {
             for (final ISampleMetadata info: layer)
             {
-                try (final FileOutputStream fos = new FileOutputStream (new File (sampleFolder, info.getUpdatedFilename ())))
+                final Optional<String> filename = info.getUpdatedFilename ();
+                if (filename.isEmpty ())
+                    continue;
+                try (final FileOutputStream fos = new FileOutputStream (new File (sampleFolder, filename.get ())))
                 {
                     notifier.notify (Functions.getMessage ("IDS_NOTIFY_PROGRESS"));
                     info.writeSample (fos);
@@ -83,26 +93,11 @@ public class SfzCreator implements ICreator
         // Metadata (name, category, creator, keywords) is currently not available in the
         // specification but has a suggestion: https://github.com/sfz/opcode-suggestions/issues/19
 
-        final List<List<ISampleMetadata>> sampleMetadata = multisampleSource.getSampleMetadata ();
-        final int size = sampleMetadata.size ();
-        final int range = 127 / size;
-        int low = 0;
-        int high = range;
-        int count = 1;
-
         final String name = multisampleSource.getName ();
-
-        for (final List<ISampleMetadata> layer: sampleMetadata)
+        for (final List<ISampleMetadata> layer: multisampleSource.getSampleMetadata ())
         {
             for (final ISampleMetadata info: layer)
-                createSample (name, sb, info, low, high);
-
-            low = high + 1;
-            if (count == size - 1)
-                high = 127;
-            else
-                high += range;
-            count++;
+                createSample (name, sb, info);
         }
 
         return sb.toString ();
@@ -115,10 +110,8 @@ public class SfzCreator implements ICreator
      * @param name The name of the multi-sample
      * @param sb Where to add the XML code
      * @param info Where to get the sample info from
-     * @param velocityLow The lower velocity range
-     * @param velocityHigh The upper velocity range
      */
-    private static void createSample (final String name, final StringBuilder sb, final ISampleMetadata info, final int velocityLow, final int velocityHigh)
+    private static void createSample (final String name, final StringBuilder sb, final ISampleMetadata info)
     {
         sb.append ("\n<region>\n");
         sb.append ("sample=").append (name).append ('\\').append (info.getUpdatedFilename ()).append ('\n');
@@ -128,16 +121,23 @@ public class SfzCreator implements ICreator
         final int keyHigh = info.getKeyHigh ();
         sb.append ("lokey=").append (keyLow).append (" hikey=").append (keyHigh).append ('\n');
 
-        final int crossfadeLow = info.getCrossfadeLow ();
+        final int crossfadeLow = info.getNoteCrossfadeLow ();
         if (crossfadeLow > 0)
             sb.append ("xfin_lokey=").append (Math.max (0, keyLow - crossfadeLow)).append (" xfin_hikey=").append (keyLow).append ('\n');
-        final int crossfadeHigh = info.getCrossfadeHigh ();
+        final int crossfadeHigh = info.getNoteCrossfadeHigh ();
         if (crossfadeHigh > 0)
             sb.append ("xfout_lokey=").append (keyHigh).append (" xfout_hikey=").append (Math.min (127, keyHigh + crossfadeHigh)).append ('\n');
 
-        // TODO: Velocity crossfade could be added as well
-
+        final int velocityLow = info.getVelocityLow ();
+        final int velocityHigh = info.getVelocityHigh ();
         sb.append ("lovel=").append (velocityLow).append (" hivel=").append (velocityHigh).append ('\n');
+
+        final int crossfadeVelocityLow = info.getVelocityCrossfadeLow ();
+        if (crossfadeVelocityLow > 0)
+            sb.append ("xfin_lovel=").append (Math.max (0, velocityLow - crossfadeVelocityLow)).append (" xfin_hivel=").append (velocityLow).append ('\n');
+        final int crossfadeVelocityHigh = info.getVelocityCrossfadeHigh ();
+        if (crossfadeVelocityHigh > 0)
+            sb.append ("xfout_lovel=").append (velocityHigh).append (" xfout_hivel=").append (Math.min (127, velocityHigh + crossfadeVelocityHigh)).append ('\n');
 
         sb.append ("offset=").append (info.getStart ()).append (" end=").append (info.getStop ()).append ('\n');
         if (info.hasLoop ())

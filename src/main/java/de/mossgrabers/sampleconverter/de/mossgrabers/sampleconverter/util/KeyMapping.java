@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -122,38 +123,47 @@ public class KeyMapping
         }
     }
 
-    final Map<Integer, List<ISampleMetadata>> orderedSampleMetadata = new TreeMap<> ();
-    final Set<String>                         extractedNames        = new HashSet<> ();
-    private String                            name;
+    private final List<List<ISampleMetadata>> orderedSampleMetadata;
+    private final Set<String>                 extractedNames = new HashSet<> ();
+    private final String                      name;
 
 
     /**
      * Constructor.
      *
      * @param sampleInfos The sample infos from which to get the filenames and set the key ranges.
+     * @param isAscending Sort ascending otherwise descending
      * @param crossfadeNotes The number of notes to crossfade ranges
+     * @param crossfadeVelocities The number of velocity steps to crossfade ranges
      * @param layerPatterns The layer patterns
      * @param leftChannelPatterns The left channel detection patterns
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    public KeyMapping (final ISampleMetadata [] sampleInfos, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    public KeyMapping (final ISampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
-        final Map<Integer, List<ISampleMetadata>> layers = detectLayers (sampleInfos, layerPatterns);
-
-        for (final Entry<Integer, List<ISampleMetadata>> entry: layers.entrySet ())
-        {
-            final List<ISampleMetadata> layer = entry.getValue ();
-            final Map<Integer, List<ISampleMetadata>> noteMap = this.detectNotes (layer);
-
-            final Map<Integer, ISampleMetadata> layerNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
-            this.orderedSampleMetadata.put (entry.getKey (), createKeyMaps (layerNoteMap));
-
-            if (crossfadeNotes > 0 && crossfadeNotes < 128)
-                createCrossfades (layerNoteMap, crossfadeNotes);
-        }
-
         this.name = this.calculateCommonName (this.findShortestFilename ());
+
+        this.orderedSampleMetadata = this.createLayers (sampleInfos, isAscending, crossfadeNotes, layerPatterns, leftChannelPatterns);
+
+        // Calculate velocity crossfades
+        final int range = 127 / this.orderedSampleMetadata.size ();
+        int low = 0;
+        int high = range;
+        final int crossfadeVel = Math.min (range, crossfadeVelocities);
+        for (final List<ISampleMetadata> layer: this.orderedSampleMetadata)
+        {
+            for (final ISampleMetadata info: layer)
+            {
+                info.setVelocityLow (low);
+                info.setVelocityCrossfadeLow (0);
+                final int velHigh = Math.min (high + crossfadeVel, 127);
+                info.setVelocityHigh (velHigh);
+                info.setVelocityCrossfadeHigh (velHigh == 127 ? 0 : Math.min (velHigh - low, crossfadeVel));
+            }
+            low = high + 1;
+            high = Math.min (high + range, 127);
+        }
     }
 
 
@@ -171,12 +181,56 @@ public class KeyMapping
     /**
      * Get the sample metadata ordered by their root notes.
      *
+     * @return The sample metadata list by layer
+     */
+    public List<List<ISampleMetadata>> getSampleMetadata ()
+    {
+        return this.orderedSampleMetadata;
+    }
+
+
+    /**
+     * Detect and create a layer order.
+     *
+     * @param sampleInfos The sample infos from which to get the filenames and set the key ranges.
+     * @param isAscending Sort ascending otherwise descending
+     * @param crossfadeNotes The number of notes to crossfade ranges
+     * @param layerPatterns The layer patterns
+     * @param leftChannelPatterns The left channel detection patterns
+     * @return The create layers
+     * @throws MultisampleException Found duplicated MIDI notes
+     * @throws CombinationNotPossibleException Could not create stereo files
+     */
+    private List<List<ISampleMetadata>> createLayers (final ISampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    {
+        final Map<Integer, List<ISampleMetadata>> sampleMetadata = new TreeMap<> ();
+        final Map<Integer, List<ISampleMetadata>> layers = detectLayers (sampleInfos, layerPatterns);
+
+        for (final Entry<Integer, List<ISampleMetadata>> entry: layers.entrySet ())
+        {
+            final List<ISampleMetadata> layer = entry.getValue ();
+            final Map<Integer, List<ISampleMetadata>> noteMap = this.detectNotes (layer);
+            final Map<Integer, ISampleMetadata> layerNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
+            sampleMetadata.put (entry.getKey (), createKeyMaps (layerNoteMap));
+
+            if (crossfadeNotes > 0 && crossfadeNotes < 128)
+                createCrossfades (layerNoteMap, crossfadeNotes);
+        }
+
+        return orderLayers (sampleMetadata, isAscending);
+    }
+
+
+    /**
+     * Get the sample metadata ordered by their root notes.
+     *
+     * @param sampleMetadata The layers to sort
      * @param isAscending Sort ascending otherwise descending
      * @return The sample metadata list by layer
      */
-    public List<List<ISampleMetadata>> getOrderedSampleMetadata (final boolean isAscending)
+    private static List<List<ISampleMetadata>> orderLayers (final Map<Integer, List<ISampleMetadata>> sampleMetadata, final boolean isAscending)
     {
-        final Collection<List<ISampleMetadata>> layers = this.orderedSampleMetadata.values ();
+        final Collection<List<ISampleMetadata>> layers = sampleMetadata.values ();
         final List<List<ISampleMetadata>> reorderedSampleMetadata = new ArrayList<> (layers.size ());
 
         if (isAscending)
@@ -315,14 +369,15 @@ public class KeyMapping
         final Map<Integer, List<ISampleMetadata>> layers = new TreeMap<> ();
 
         // If no layers are detected create one layer which contains all samples
-        final Pattern pattern = getLayerPattern (sampleInfos, layerPatterns);
-        if (pattern == null)
+        final Optional<Pattern> patternResult = getLayerPattern (sampleInfos, layerPatterns);
+        if (patternResult.isEmpty ())
         {
             layers.put (Integer.valueOf (0), new ArrayList<> (Arrays.asList (sampleInfos)));
             return layers;
         }
 
         // Now match all sample names with the detected layer pattern
+        final Pattern pattern = patternResult.get ();
         for (final ISampleMetadata si: sampleInfos)
         {
             final String filename = si.getFilename ();
@@ -356,10 +411,10 @@ public class KeyMapping
      * @return The matching pattern or null
      * @throws MultisampleException If a pattern could not be parsed
      */
-    private static Pattern getLayerPattern (final ISampleMetadata [] sampleInfos, final String [] layerPatterns) throws MultisampleException
+    private static Optional<Pattern> getLayerPattern (final ISampleMetadata [] sampleInfos, final String [] layerPatterns) throws MultisampleException
     {
         if (layerPatterns.length == 0)
-            return null;
+            return Optional.empty ();
         final String filename = sampleInfos[0].getFilename ();
         for (final String layerPattern: layerPatterns)
         {
@@ -384,9 +439,9 @@ public class KeyMapping
 
             final Pattern p = Pattern.compile (query);
             if (p.matcher (filename).matches ())
-                return p;
+                return Optional.of (p);
         }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -403,11 +458,13 @@ public class KeyMapping
         final Map<Integer, List<ISampleMetadata>> orderedNotes = new TreeMap<> ();
         for (final ISampleMetadata sample: samples)
         {
-            final String filename = sample.getUpdatedFilename ();
-            this.extractedNames.add (filename);
+            final Optional<String> filename = sample.getUpdatedFilename ();
+            if (filename.isEmpty ())
+                continue;
+            this.extractedNames.add (filename.get ());
             final int midiNote = sample.getKeyRoot ();
             if (midiNote <= 0)
-                throw new NoteNotDetectedException (filename);
+                throw new NoteNotDetectedException (filename.get ());
             orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (sample);
         }
 
@@ -572,8 +629,8 @@ public class KeyMapping
                 final int crossfadeLow = range / 2;
                 final int crossfadeHigh = crossfadeLow + range % 2;
 
-                previousSampleMetadata.setCrossfadeHigh (range);
-                sampleMetadata.setCrossfadeLow (range);
+                previousSampleMetadata.setNoteCrossfadeHigh (range);
+                sampleMetadata.setNoteCrossfadeLow (range);
 
                 sampleMetadata.setKeyLow (sampleMetadata.getKeyLow () - crossfadeLow - 1);
                 previousSampleMetadata.setKeyHigh (previousSampleMetadata.getKeyHigh () + crossfadeHigh - 1);

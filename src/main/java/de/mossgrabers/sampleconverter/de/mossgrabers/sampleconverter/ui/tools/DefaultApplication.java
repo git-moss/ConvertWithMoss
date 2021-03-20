@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 
 import java.lang.reflect.Constructor;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -39,18 +40,18 @@ public class DefaultApplication extends Application
      *
      * @return The configured title
      */
-    public String getConfiguredTitle ()
+    public Optional<String> getConfiguredTitle ()
     {
         if (this.frameClass == null)
-            return null;
+            return Optional.empty ();
         final Package p = this.frameClass.getPackage ();
         if (p != null)
         {
             final String implTitle = p.getImplementationTitle ();
             final String version = p.getImplementationVersion ();
             if (implTitle != null && version != null)
-                return new StringBuilder (implTitle).append (' ').append (version).toString ();
+                return Optional.of (new StringBuilder (implTitle).append (' ').append (version).toString ());
         }
-        return null;
+        return Optional.empty ();
     }
 }

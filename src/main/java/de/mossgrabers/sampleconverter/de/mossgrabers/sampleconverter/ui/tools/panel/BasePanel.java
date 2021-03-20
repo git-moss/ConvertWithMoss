@@ -440,8 +440,21 @@ public class BasePanel
      */
     public CheckBox createCheckBox (final String label)
     {
+        return this.createCheckBox (label, null);
+    }
+
+
+    /**
+     * Creates and adds a check box to the panel.
+     *
+     * @param label The text that is displayed beneath the check box
+     * @param tooltip Tooltip text
+     * @return The created check box button
+     */
+    public CheckBox createCheckBox (final String label, final String tooltip)
+    {
         final CheckBox button = new CheckBox ();
-        this.addButton (button, null, label, null);
+        this.addButton (button, null, label, tooltip);
         return button;
     }
 
