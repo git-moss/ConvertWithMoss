@@ -17,9 +17,9 @@ import de.mossgrabers.sampleconverter.file.wav.WaveFile;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.List;
 
 
@@ -100,15 +100,7 @@ public class WavSampleMetadata extends AbstractSampleMetadata
     public void writeSample (final OutputStream outputStream) throws IOException
     {
         if (this.getCombinedName ().isEmpty ())
-        {
-            final byte [] buffer = new byte [10000];
-            try (final FileInputStream fis = new FileInputStream (this.getFile ()))
-            {
-                int length;
-                while ((length = fis.read (buffer)) > 0)
-                    outputStream.write (buffer, 0, length);
-            }
-        }
+            Files.copy (this.getFile ().toPath (), outputStream);
         else
             this.waveFile.write (outputStream);
     }

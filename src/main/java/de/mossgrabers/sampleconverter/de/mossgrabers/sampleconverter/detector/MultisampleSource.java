@@ -5,7 +5,7 @@
 package de.mossgrabers.sampleconverter.detector;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 
 import java.io.File;
 import java.util.List;
@@ -18,14 +18,14 @@ import java.util.List;
  */
 public class MultisampleSource implements IMultisampleSource
 {
-    private final File                  folder;
-    private final String []             subPath;
-    private final String                name;
-    private String                      description;
-    private String                      creator;
-    private String                      category;
-    private String []                   keywords;
-    private List<List<ISampleMetadata>> sampleMetadata;
+    private final File           folder;
+    private final String []      subPath;
+    private final String         name;
+    private String               description = "";
+    private String               creator     = "";
+    private String               category    = "";
+    private String []            keywords    = new String [0];
+    private List<IVelocityLayer> sampleMetadata;
 
 
     /**
@@ -61,7 +61,7 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public List<List<ISampleMetadata>> getSampleMetadata ()
+    public List<IVelocityLayer> getSampleMetadata ()
     {
         return this.sampleMetadata;
     }
@@ -141,7 +141,7 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public void setSampleMetadata (final List<List<ISampleMetadata>> sampleMetadata)
+    public void setVelocityLayers (final List<IVelocityLayer> sampleMetadata)
     {
         this.sampleMetadata = sampleMetadata;
     }

@@ -72,7 +72,7 @@ public abstract class AbstractDialog extends Dialog<Boolean>
      * @param isModal Should the dialog be modal?
      * @param isResizable True if the dialog should be resizable
      */
-    public AbstractDialog (final Window owner, final String title, final boolean isModal, final boolean isResizable)
+    protected AbstractDialog (final Window owner, final String title, final boolean isModal, final boolean isResizable)
     {
         this (owner, title, isModal, isResizable, -1, -1);
     }

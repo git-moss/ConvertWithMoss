@@ -7,20 +7,13 @@ package de.mossgrabers.sampleconverter.detector.bitwig;
 import de.mossgrabers.sampleconverter.core.AbstractSampleMetadata;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
-import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
-import de.mossgrabers.sampleconverter.exception.ParseException;
-import de.mossgrabers.sampleconverter.file.wav.DataChunk;
-import de.mossgrabers.sampleconverter.file.wav.FormatChunk;
-import de.mossgrabers.sampleconverter.file.wav.SampleChunk;
-import de.mossgrabers.sampleconverter.file.wav.SampleChunk.SampleLoop;
-import de.mossgrabers.sampleconverter.file.wav.WaveFile;
-import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 
 /**
@@ -30,57 +23,20 @@ import java.util.List;
  */
 public class BitwigSampleMetadata extends AbstractSampleMetadata
 {
-    private final WaveFile waveFile;
+    private final File zipFile;
 
 
     /**
      * Constructor.
-     *
-     * @param file The file where the sample is stored
-     * @throws ParseException Could not parse the file
-     * @throws IOException Could not read the file
-     * @throws CompressionNotSupportedException The wave file is compressed, which is not supported
+     * 
+     * @param zipFile The ZIP file which contains the WAV files
+     * @param filename The name of the samples' file
      */
-    public BitwigSampleMetadata (final File file) throws IOException, ParseException, CompressionNotSupportedException
+    public BitwigSampleMetadata (final File zipFile, final String filename)
     {
-        super (file);
+        super (filename);
 
-        this.waveFile = new WaveFile (file);
-        final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
-
-        final int numberOfChannels = formatChunk.getNumberOfChannels ();
-        if (numberOfChannels > 2)
-            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), file.getAbsolutePath ()));
-        this.isMonoFile = numberOfChannels == 1;
-
-        final DataChunk dataChunk = this.waveFile.getDataChunk ();
-
-        this.start = 0;
-        this.stop = dataChunk.calculateLength (formatChunk);
-
-        final SampleChunk sampleChunk = this.waveFile.getSampleChunk ();
-        if (sampleChunk == null)
-        {
-            this.hasLoop = false;
-            this.loopStart = 0;
-            this.loopEnd = this.stop;
-            return;
-        }
-
-        this.keyRoot = sampleChunk.getMIDIUnityNote ();
-
-        this.hasLoop = sampleChunk.getNumSampleLoops () > 0;
-        final List<SampleLoop> loops = sampleChunk.getLoops ();
-        if (loops.isEmpty ())
-        {
-            this.loopStart = 0;
-            this.loopEnd = this.stop;
-            return;
-        }
-
-        final SampleLoop sampleLoop = loops.get (0);
-        this.loopStart = sampleLoop.getStart ();
-        this.loopEnd = sampleLoop.getEnd ();
+        this.zipFile = zipFile;
     }
 
 
@@ -96,17 +52,16 @@ public class BitwigSampleMetadata extends AbstractSampleMetadata
     @Override
     public void writeSample (final OutputStream outputStream) throws IOException
     {
-        if (this.getCombinedName ().isEmpty ())
+        try (final ZipFile zf = new ZipFile (this.zipFile))
         {
-            final byte [] buffer = new byte [10000];
-            try (final FileInputStream fis = new FileInputStream (this.getFile ()))
+            final ZipEntry entry = zf.getEntry (this.filename);
+            if (entry == null)
+                return;
+
+            try (final InputStream in = zf.getInputStream (entry))
             {
-                int length;
-                while ((length = fis.read (buffer)) > 0)
-                    outputStream.write (buffer, 0, length);
+                in.transferTo (outputStream);
             }
         }
-        else
-            this.waveFile.write (outputStream);
     }
 }

@@ -228,4 +228,54 @@ public class XMLUtils
         // in the CDATA section. !!!
         return builder.length () > 0 ? builder.toString () : content.trim ();
     }
+
+
+    /**
+     * Get an integer attribute from an element.
+     *
+     * @param element The element
+     * @param attributeName The name of the attribute from which to get the value
+     * @param defaultValue If the attribute is not present or it does not contain a valid integer
+     *            this default value is returned
+     * @return The value
+     */
+    public static int getIntegerAttribute (final Element element, final String attributeName, final int defaultValue)
+    {
+        final String attribute = element.getAttribute (attributeName);
+        if (attribute == null)
+            return defaultValue;
+        try
+        {
+            return Integer.parseInt (attribute);
+        }
+        catch (final NumberFormatException ex)
+        {
+            return defaultValue;
+        }
+    }
+
+
+    /**
+     * Get a double attribute from an element.
+     *
+     * @param element The element
+     * @param attributeName The name of the attribute from which to get the value
+     * @param defaultValue If the attribute is not present or it does not contain a valid double
+     *            this default value is returned
+     * @return The value
+     */
+    public static double getDoubleAttribute (final Element element, final String attributeName, final double defaultValue)
+    {
+        final String attribute = element.getAttribute (attributeName);
+        if (attribute == null)
+            return defaultValue;
+        try
+        {
+            return Double.parseDouble (attribute);
+        }
+        catch (final NumberFormatException ex)
+        {
+            return defaultValue;
+        }
+    }
 }

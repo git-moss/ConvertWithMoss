@@ -16,24 +16,26 @@ import java.util.Optional;
 public abstract class AbstractSampleMetadata implements ISampleMetadata
 {
     protected final File       file;
+    protected final String     filename;
 
-    protected int              start;
-    protected int              stop;
-    protected boolean          hasLoop;
-    protected int              loopStart;
-    protected int              loopEnd;
-    protected int              keyRoot;
-    protected int              keyLow;
-    protected int              keyHigh;
-    protected int              crossfadeNotesLow;
-    protected int              crossfadeNotesHigh;
-    protected int              velocityLow;
-    protected int              velocityHigh;
-    protected int              crossfadeVelocitiesLow;
-    protected int              crossfadeVelocitiesHigh;
-    protected boolean          isMonoFile;
-    protected Optional<String> combinedName;
-    protected Optional<String> nameWithoutLayer;
+    protected int              start                   = -1;
+    protected int              stop                    = -1;
+    // TODO replace with enum
+    protected boolean          hasLoop                 = false;
+    protected int              loopStart               = -1;
+    protected int              loopEnd                 = -1;
+    protected int              keyRoot                 = 60;
+    protected int              keyLow                  = 0;
+    protected int              keyHigh                 = 127;
+    protected int              crossfadeNotesLow       = 0;
+    protected int              crossfadeNotesHigh      = 0;
+    protected int              velocityLow             = 0;
+    protected int              velocityHigh            = 127;
+    protected int              crossfadeVelocitiesLow  = 0;
+    protected int              crossfadeVelocitiesHigh = 0;
+    protected boolean          isMonoFile              = false;
+    protected Optional<String> combinedName            = Optional.empty ();
+    protected Optional<String> nameWithoutLayer        = Optional.empty ();
 
 
     /**
@@ -43,6 +45,30 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
      */
     protected AbstractSampleMetadata (final File file)
     {
+        this (file.getName (), file);
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param filename The name of the file where the sample is stored
+     */
+    protected AbstractSampleMetadata (final String filename)
+    {
+        this (filename, null);
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param filename The name of the file where the sample is stored
+     * @param file The file where the sample is stored
+     */
+    private AbstractSampleMetadata (final String filename, final File file)
+    {
+        this.filename = filename;
         this.file = file;
     }
 
@@ -59,7 +85,7 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     @Override
     public String getFilename ()
     {
-        return this.file.getName ();
+        return this.filename;
     }
 
 
@@ -73,9 +99,25 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
+    public void setStart (int start)
+    {
+        this.start = start;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int getStop ()
     {
         return this.stop;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setStop (int stop)
+    {
+        this.stop = stop;
     }
 
 
@@ -89,6 +131,14 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
+    public void setHasLoop (boolean hasLoop)
+    {
+        this.hasLoop = hasLoop;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int getLoopStart ()
     {
         return this.loopStart;
@@ -97,9 +147,25 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
+    public void setLoopStart (int loopStart)
+    {
+        this.loopStart = loopStart;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int getLoopEnd ()
     {
         return this.loopEnd;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setLoopEnd (int loopEnd)
+    {
+        this.loopEnd = loopEnd;
     }
 
 

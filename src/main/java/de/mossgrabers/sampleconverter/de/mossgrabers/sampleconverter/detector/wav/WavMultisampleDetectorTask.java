@@ -6,7 +6,7 @@ package de.mossgrabers.sampleconverter.detector.wav;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.detector.MultisampleSource;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
@@ -157,8 +157,8 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             multisampleSource.setCategory (TagDetector.detectCategory (parts));
             multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
 
-            final List<List<ISampleMetadata>> sampleMetadata = keyMapping.getSampleMetadata ();
-            multisampleSource.setSampleMetadata (sampleMetadata);
+            final List<IVelocityLayer> sampleMetadata = keyMapping.getSampleMetadata ();
+            multisampleSource.setVelocityLayers (sampleMetadata);
 
             this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_DETECED_LAYERS", Integer.toString (sampleMetadata.size ())));
             if (this.waitForDelivery ())

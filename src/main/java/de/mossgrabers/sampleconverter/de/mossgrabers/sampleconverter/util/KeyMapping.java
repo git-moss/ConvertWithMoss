@@ -5,6 +5,8 @@
 package de.mossgrabers.sampleconverter.util;
 
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.MultisampleException;
 import de.mossgrabers.sampleconverter.exception.NoteNotDetectedException;
@@ -123,9 +125,9 @@ public class KeyMapping
         }
     }
 
-    private final List<List<ISampleMetadata>> orderedSampleMetadata;
-    private final Set<String>                 extractedNames = new HashSet<> ();
-    private final String                      name;
+    private final List<IVelocityLayer> orderedSampleMetadata;
+    private final Set<String>          extractedNames = new HashSet<> ();
+    private final String               name;
 
 
     /**
@@ -151,9 +153,9 @@ public class KeyMapping
         int low = 0;
         int high = range;
         final int crossfadeVel = Math.min (range, crossfadeVelocities);
-        for (final List<ISampleMetadata> layer: this.orderedSampleMetadata)
+        for (final IVelocityLayer layer: this.orderedSampleMetadata)
         {
-            for (final ISampleMetadata info: layer)
+            for (final ISampleMetadata info: layer.getSampleMetadata ())
             {
                 info.setVelocityLow (low);
                 info.setVelocityCrossfadeLow (0);
@@ -183,7 +185,7 @@ public class KeyMapping
      *
      * @return The sample metadata list by layer
      */
-    public List<List<ISampleMetadata>> getSampleMetadata ()
+    public List<IVelocityLayer> getSampleMetadata ()
     {
         return this.orderedSampleMetadata;
     }
@@ -201,7 +203,7 @@ public class KeyMapping
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    private List<List<ISampleMetadata>> createLayers (final ISampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    private List<IVelocityLayer> createLayers (final ISampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
         final Map<Integer, List<ISampleMetadata>> sampleMetadata = new TreeMap<> ();
         final Map<Integer, List<ISampleMetadata>> layers = detectLayers (sampleInfos, layerPatterns);
@@ -228,18 +230,24 @@ public class KeyMapping
      * @param isAscending Sort ascending otherwise descending
      * @return The sample metadata list by layer
      */
-    private static List<List<ISampleMetadata>> orderLayers (final Map<Integer, List<ISampleMetadata>> sampleMetadata, final boolean isAscending)
+    private static List<IVelocityLayer> orderLayers (final Map<Integer, List<ISampleMetadata>> sampleMetadata, final boolean isAscending)
     {
         final Collection<List<ISampleMetadata>> layers = sampleMetadata.values ();
-        final List<List<ISampleMetadata>> reorderedSampleMetadata = new ArrayList<> (layers.size ());
+        final List<IVelocityLayer> reorderedSampleMetadata = new ArrayList<> (layers.size ());
 
-        if (isAscending)
-            reorderedSampleMetadata.addAll (layers);
-        else
-        {
-            // Reorder descending
-            layers.forEach (layer -> reorderedSampleMetadata.add (0, layer));
-        }
+        // Reorder descending
+        layers.forEach (layer -> {
+
+            final IVelocityLayer velocityLayer = new VelocityLayer (layer);
+            if (isAscending)
+                reorderedSampleMetadata.add (velocityLayer);
+            else
+                reorderedSampleMetadata.add (0, velocityLayer);
+
+        });
+
+        for (int i = 0; i < reorderedSampleMetadata.size (); i++)
+            reorderedSampleMetadata.get (i).setName ("Velocity Layer " + (i + 1));
 
         return reorderedSampleMetadata;
     }

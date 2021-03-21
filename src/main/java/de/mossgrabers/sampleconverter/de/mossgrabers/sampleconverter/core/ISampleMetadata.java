@@ -60,6 +60,14 @@ public interface ISampleMetadata
 
 
     /**
+     * Get the start of the playback.
+     *
+     * @param start The start of the playback
+     */
+    void setStart (int start);
+
+
+    /**
      * Get the end of the playback.
      *
      * @return The end of the playback
@@ -68,11 +76,27 @@ public interface ISampleMetadata
 
 
     /**
+     * Get the stop of the playback.
+     *
+     * @param stop The stop of the playback
+     */
+    void setStop (int stop);
+
+
+    /**
      * Is there a loop section.
      *
-     * @return True if there is a loop.
+     * @return True if there is a loop
      */
     boolean hasLoop ();
+
+
+    /**
+     * Is there a loop section.
+     *
+     * @param hasLoop True if there is a loop
+     */
+    void setHasLoop (boolean hasLoop);
 
 
     /**
@@ -84,11 +108,27 @@ public interface ISampleMetadata
 
 
     /**
+     * Set the start of the loop.
+     *
+     * @param loopStart The start of the loop
+     */
+    void setLoopStart (int loopStart);
+
+
+    /**
      * Get the end of the loop.
      *
      * @return The end of the loop
      */
     int getLoopEnd ();
+
+
+    /**
+     * Set the end of the loop.
+     *
+     * @param loopEnd The end of the loop
+     */
+    void setLoopEnd (int loopEnd);
 
 
     /**

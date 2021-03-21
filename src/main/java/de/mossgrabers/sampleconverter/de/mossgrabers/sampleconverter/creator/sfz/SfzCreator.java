@@ -8,6 +8,7 @@ import de.mossgrabers.sampleconverter.core.ICreator;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.File;
@@ -31,7 +32,6 @@ public class SfzCreator implements ICreator
             /////////////////////////////////////////////////////////////////////////////
             // sfz created by SampleConverter
 
-            <group>
             """;
 
 
@@ -60,10 +60,10 @@ public class SfzCreator implements ICreator
         if (!sampleFolder.mkdir ())
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERROR_SAMPLE_FOLDER", sampleFolder.getAbsolutePath ()));
 
-        final List<List<ISampleMetadata>> sampleMetadata = multisampleSource.getSampleMetadata ();
-        for (final List<ISampleMetadata> layer: sampleMetadata)
+        final List<IVelocityLayer> sampleMetadata = multisampleSource.getSampleMetadata ();
+        for (final IVelocityLayer layer: sampleMetadata)
         {
-            for (final ISampleMetadata info: layer)
+            for (final ISampleMetadata info: layer.getSampleMetadata ())
             {
                 final Optional<String> filename = info.getUpdatedFilename ();
                 if (filename.isEmpty ())
@@ -94,9 +94,14 @@ public class SfzCreator implements ICreator
         // specification but has a suggestion: https://github.com/sfz/opcode-suggestions/issues/19
 
         final String name = multisampleSource.getName ();
-        for (final List<ISampleMetadata> layer: multisampleSource.getSampleMetadata ())
+        for (final IVelocityLayer layer: multisampleSource.getSampleMetadata ())
         {
-            for (final ISampleMetadata info: layer)
+            sb.append ("<group>\n");
+            final String layerName = layer.getName ();
+            if (layerName != null && layerName.isBlank ())
+                sb.append ("group_label=\n").append (layerName);
+
+            for (final ISampleMetadata info: layer.getSampleMetadata ())
                 createSample (name, sb, info);
         }
 
@@ -114,12 +119,13 @@ public class SfzCreator implements ICreator
     private static void createSample (final String name, final StringBuilder sb, final ISampleMetadata info)
     {
         sb.append ("\n<region>\n");
-        sb.append ("sample=").append (name).append ('\\').append (info.getUpdatedFilename ()).append ('\n');
+        final Optional<String> filename = info.getUpdatedFilename ();
+        sb.append ("sample=").append (name).append ('\\').append (filename.isPresent () ? filename.get () : "").append ('\n');
         sb.append ("pitch_keycenter=").append (info.getKeyRoot ()).append ('\n');
 
         final int keyLow = info.getKeyLow ();
         final int keyHigh = info.getKeyHigh ();
-        sb.append ("lokey=").append (keyLow).append (" hikey=").append (keyHigh).append ('\n');
+        sb.append ("lokey=").append (check (keyLow, 0)).append (" hikey=").append (check (keyHigh, 127)).append ('\n');
 
         final int crossfadeLow = info.getNoteCrossfadeLow ();
         if (crossfadeLow > 0)
@@ -130,7 +136,7 @@ public class SfzCreator implements ICreator
 
         final int velocityLow = info.getVelocityLow ();
         final int velocityHigh = info.getVelocityHigh ();
-        sb.append ("lovel=").append (velocityLow).append (" hivel=").append (velocityHigh).append ('\n');
+        sb.append ("lovel=").append (check (velocityLow, 0)).append (" hivel=").append (check (velocityHigh, 127)).append ('\n');
 
         final int crossfadeVelocityLow = info.getVelocityCrossfadeLow ();
         if (crossfadeVelocityLow > 0)
@@ -142,5 +148,11 @@ public class SfzCreator implements ICreator
         sb.append ("offset=").append (info.getStart ()).append (" end=").append (info.getStop ()).append ('\n');
         if (info.hasLoop ())
             sb.append ("loop_mode=loop_continuous loop_start=").append (info.getLoopStart ()).append (" loop_end=").append (info.getLoopEnd ()).append ('\n');
+    }
+
+
+    private static int check (final int value, final int defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
     }
 }
