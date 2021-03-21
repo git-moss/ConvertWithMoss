@@ -34,9 +34,9 @@ public interface IMultisampleSource
     /**
      * Get the description of the samples which belong to the multi-sample.
      *
-     * @return The descriptions in an ordered map
+     * @return The descriptions
      */
-    List<List<ISampleMetadata>> getSampleMetadata ();
+    List<IVelocityLayer> getSampleMetadata ();
 
 
     /**
@@ -114,7 +114,7 @@ public interface IMultisampleSource
     /**
      * Set the sample data.
      *
-     * @param sampleMetadata The sample file information in an ordered map
+     * @param sampleMetadata The sample file information
      */
-    void setSampleMetadata (List<List<ISampleMetadata>> sampleMetadata);
+    void setVelocityLayers (List<IVelocityLayer> sampleMetadata);
 }

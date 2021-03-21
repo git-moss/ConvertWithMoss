@@ -8,6 +8,7 @@ import de.mossgrabers.sampleconverter.core.ICreator;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.BufferedWriter;
@@ -58,9 +59,9 @@ public class BitwigMultisampleCreator implements ICreator
             zos.closeEntry ();
 
             // Add all samples
-            for (final List<ISampleMetadata> layer: multisampleSource.getSampleMetadata ())
+            for (final IVelocityLayer layer: multisampleSource.getSampleMetadata ())
             {
-                for (final ISampleMetadata info: layer)
+                for (final ISampleMetadata info: layer.getSampleMetadata ())
                 {
                     notifier.notify (Functions.getMessage ("IDS_NOTIFY_PROGRESS"));
                     addFileToZip (zos, info);
@@ -93,10 +94,25 @@ public class BitwigMultisampleCreator implements ICreator
             sb.append ("      <keyword>").append (keyword).append ("</keyword>\n");
         sb.append ("   </keywords>\n");
 
-        for (final List<ISampleMetadata> layer: multisampleSource.getSampleMetadata ())
+        final List<IVelocityLayer> velocityLayers = multisampleSource.getSampleMetadata ();
+
+        for (final IVelocityLayer layer: velocityLayers)
         {
-            for (final ISampleMetadata info: layer)
-                createSample (sb, info);
+            final String name = layer.getName ();
+            if (name != null && !name.isBlank ())
+                sb.append ("   <group color=\"d92e24\" name=\"").append (name).append ("\"/>\n");
+        }
+
+        int index = 0;
+        for (final IVelocityLayer layer: velocityLayers)
+        {
+            final String name = layer.getName ();
+            final int idx = name == null || name.isBlank () ? -1 : index;
+
+            for (final ISampleMetadata sample: layer.getSampleMetadata ())
+                createSample (sb, idx, sample);
+
+            index++;
         }
 
         sb.append ("</multisample>\n");
@@ -108,15 +124,27 @@ public class BitwigMultisampleCreator implements ICreator
      * Creates the metadata for one sample.
      *
      * @param sb Where to add the XML code
+     * @param groupIndex The index of the group to which this sample belongs
      * @param info Where to get the sample info from
      */
-    private static void createSample (final StringBuilder sb, final ISampleMetadata info)
+    private static void createSample (final StringBuilder sb, final int groupIndex, final ISampleMetadata info)
     {
-        sb.append ("   <sample file=\"").append (info.getUpdatedFilename ()).append ("\" gain=\"0.000\" sample-start=\"").append (info.getStart ()).append (".000\" sample-stop=\"").append (info.getStop ()).append (".000\" tune=\"0.0\">\n");
-        sb.append ("      <key low=\"").append (info.getKeyLow ()).append ("\" low-fade=\"").append (info.getNoteCrossfadeLow ()).append ("\" root=\"").append (info.getKeyRoot ()).append ("\" high=\"").append (info.getKeyHigh ()).append ("\" high-fade=\"").append (info.getNoteCrossfadeHigh ()).append ("\" track=\"true\"/>\n");
-        sb.append ("      <velocity low=\"").append (info.getVelocityLow ()).append ("\" low-fade=\"").append (info.getVelocityCrossfadeLow ()).append ("\" high=\"").append (info.getVelocityHigh ()).append ("\" high-fade=\"").append (info.getVelocityCrossfadeHigh ()).append ("\"/>\n");
-        sb.append ("      <loop mode=\"").append (info.hasLoop () ? "loop" : "off").append ("\" start=\"").append (info.getLoopStart ()).append (".000\" stop=\"").append (info.getLoopEnd ()).append (".000\"/>\n");
+        final Optional<String> filename = info.getUpdatedFilename ();
+        sb.append ("   <sample file=\"").append (filename.isPresent () ? filename.get () : "");
+        if (groupIndex >= 0)
+            sb.append ("\" group=\"").append (groupIndex);
+        sb.append ("\" gain=\"0.000\" sample-start=\"").append (info.getStart ()).append (".000\" sample-stop=\"").append (info.getStop ()).append (".000\" tune=\"0.0\">\n");
+        sb.append ("      <key low=\"").append (check (info.getKeyLow (), 0)).append ("\" low-fade=\"").append (check (info.getNoteCrossfadeLow (), 0)).append ("\" root=\"").append (info.getKeyRoot ()).append ("\" high=\"").append (check (info.getKeyHigh (), 127)).append ("\" high-fade=\"").append (check (info.getNoteCrossfadeHigh (), 0)).append ("\" track=\"true\"/>\n");
+        sb.append ("      <velocity low=\"").append (check (info.getVelocityLow (), 0)).append ("\" low-fade=\"").append (check (info.getVelocityCrossfadeLow (), 0)).append ("\" high=\"").append (check (info.getVelocityHigh (), 127)).append ("\" high-fade=\"").append (check (info.getVelocityCrossfadeHigh (), 0)).append ("\"/>\n");
+        if (info.hasLoop ())
+            sb.append ("      <loop mode=\"").append ("loop").append ("\" start=\"").append (check (info.getLoopStart (), 0)).append (".000\" stop=\"").append (check (info.getLoopEnd (), info.getStop ())).append (".000\"/>\n");
         sb.append ("   </sample>\n");
+    }
+
+
+    private static int check (final int value, final int defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
     }
 
 

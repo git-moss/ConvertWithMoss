@@ -8,6 +8,7 @@ import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 
 /**
@@ -48,7 +49,10 @@ public class MultisampleException extends Exception
         final StringBuilder sb = new StringBuilder (message).append ("\nKey: ").append (keySamples.getKey ()).append ('\n');
         final List<ISampleMetadata> samples = keySamples.getValue ();
         for (int i = 0; i < samples.size (); i++)
-            sb.append ("* Sample ").append (i + 1).append (": ").append (samples.get (i).getUpdatedFilename ()).append ('\n');
+        {
+            final Optional<String> filename = samples.get (i).getUpdatedFilename ();
+            sb.append ("* Sample ").append (i + 1).append (": ").append (filename.isPresent () ? filename.get () : "").append ('\n');
+        }
         return sb.toString ();
     }
 }
