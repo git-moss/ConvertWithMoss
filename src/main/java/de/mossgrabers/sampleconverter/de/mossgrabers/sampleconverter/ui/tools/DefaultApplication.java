@@ -13,7 +13,7 @@ import java.util.Optional;
 
 
 /**
- * An application extension providing several features like menus, toolbar, statusbar, etc. The
+ * An application extension providing several features like menus, tool-bar, status-bar, etc. The
  * first parameter for the Application must be the class name of a sub class of TopLevelFrame.
  *
  * @author J&uuml;rgen Mo&szlig;graber

@@ -5,7 +5,7 @@
 package de.mossgrabers.sampleconverter.exception;
 
 /**
- * Exception that indicates that only uncompressed wav files are supported.
+ * Exception that indicates that only uncompressed WAV files are supported.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */

@@ -5,7 +5,7 @@
 package de.mossgrabers.sampleconverter.core;
 
 /**
- * Executes a multisample format conversion.
+ * Executes a multi-sample format conversion.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */

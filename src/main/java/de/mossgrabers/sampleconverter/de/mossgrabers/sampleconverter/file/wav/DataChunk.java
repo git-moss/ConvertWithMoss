@@ -35,13 +35,15 @@ public class DataChunk extends WavChunk
      * @param chunk The format chunk, necessary for the calculation (sample size and number of
      *            channels
      * @return The length of the audio file in samples
-     * @throws CompressionNotSupportedException
+     * @throws CompressionNotSupportedException If the compression/encoding used for the data is not
+     *             supported
      */
     public int calculateLength (final FormatChunk chunk) throws CompressionNotSupportedException
     {
-        if (chunk.getCompressionCode () != 1)
-            throw new CompressionNotSupportedException ("Only wave files with uncompressed data are supported.");
-        return this.chunk.getData ().length / (chunk.getNumberOfChannels () * chunk.getSignicantBitsPerSample () / 8);
+        final int compressionCode = chunk.getCompressionCode ();
+        if (compressionCode == FormatChunk.WAVE_FORMAT_PCM || compressionCode == FormatChunk.WAVE_FORMAT_IEEE_FLOAT)
+            return this.chunk.getData ().length / (chunk.getNumberOfChannels () * chunk.getSignicantBitsPerSample () / 8);
+        throw new CompressionNotSupportedException ("Unsupported data compression: " + FormatChunk.getCompression (compressionCode));
     }
 
 

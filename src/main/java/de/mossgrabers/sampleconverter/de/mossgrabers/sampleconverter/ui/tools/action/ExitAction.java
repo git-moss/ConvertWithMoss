@@ -18,7 +18,7 @@ public class ExitAction extends Action
     /**
      * Exit the application.
      *
-     * @param e Information about the action that occured.
+     * @param e Information about the action that occurred.
      */
     @Override
     public void handle (final ActionEvent e)

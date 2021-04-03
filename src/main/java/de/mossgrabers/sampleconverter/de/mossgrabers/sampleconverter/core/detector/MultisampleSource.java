@@ -2,12 +2,13 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.detector;
+package de.mossgrabers.sampleconverter.core.detector;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -143,6 +144,6 @@ public class MultisampleSource implements IMultisampleSource
     @Override
     public void setVelocityLayers (final List<IVelocityLayer> sampleMetadata)
     {
-        this.sampleMetadata = sampleMetadata;
+        this.sampleMetadata = new ArrayList<> (sampleMetadata);
     }
 }

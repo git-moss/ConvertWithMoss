@@ -20,8 +20,15 @@ public interface ICreator
      *
      * @param destinationFolder Where to store the created file
      * @param multisampleSource The multi-sample source from which to create
-     * @param notifier Callback for notification messages
      * @throws IOException Could not store the file
      */
-    void create (File destinationFolder, IMultisampleSource multisampleSource, INotifier notifier) throws IOException;
+    void create (File destinationFolder, IMultisampleSource multisampleSource) throws IOException;
+
+
+    /**
+     * Set the notifier for information and error logging.
+     *
+     * @param notifier The notifier
+     */
+    void configure (INotifier notifier);
 }

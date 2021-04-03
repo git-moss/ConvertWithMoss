@@ -19,10 +19,10 @@ import java.util.List;
  */
 public class SampleChunk extends WavChunk
 {
-    private static final int       CHUNK_SIZE = 36;
-    private static final int       LOOP_SIZE  = 24;
+    private static final int            CHUNK_SIZE = 36;
+    private static final int            LOOP_SIZE  = 24;
 
-    private final List<SampleLoop> loops;
+    private final List<SampleChunkLoop> loops;
 
 
     /**
@@ -45,7 +45,7 @@ public class SampleChunk extends WavChunk
 
         this.loops = new ArrayList<> (numSampleLoops);
         for (int i = 0; i < numSampleLoops; i++)
-            this.loops.add (new SampleLoop (CHUNK_SIZE + i * LOOP_SIZE));
+            this.loops.add (new SampleChunkLoop (CHUNK_SIZE + i * LOOP_SIZE));
     }
 
 
@@ -170,7 +170,7 @@ public class SampleChunk extends WavChunk
      *
      * @return The loops, never null
      */
-    public List<SampleLoop> getLoops ()
+    public List<SampleChunkLoop> getLoops ()
     {
         return new ArrayList<> (this.loops);
     }
@@ -202,7 +202,7 @@ public class SampleChunk extends WavChunk
     /**
      * The sample loop section of a smpl chunk.
      */
-    public class SampleLoop
+    public class SampleChunkLoop
     {
         private int offset;
 
@@ -212,7 +212,7 @@ public class SampleChunk extends WavChunk
          *
          * @param offset The offset into the data array
          */
-        public SampleLoop (final int offset)
+        public SampleChunkLoop (final int offset)
         {
             this.offset = offset;
         }

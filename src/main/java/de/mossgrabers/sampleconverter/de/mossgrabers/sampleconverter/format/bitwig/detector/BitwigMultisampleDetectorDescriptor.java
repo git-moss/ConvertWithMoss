@@ -2,11 +2,10 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.detector.bitwig;
+package de.mossgrabers.sampleconverter.format.bitwig.detector;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
-import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.detector.AbstractDetectorDescriptor;
+import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorDescriptor;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
 
@@ -36,14 +35,11 @@ public class BitwigMultisampleDetectorDescriptor extends AbstractDetectorDescrip
 
     /** {@inheritDoc} */
     @Override
-    public void detect (final INotifier notifier, final File folder, final Consumer<IMultisampleSource> consumer)
+    public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.notifier = notifier;
-
         final BitwigMultisampleDetectorTask detector = new BitwigMultisampleDetectorTask ();
-        detector.configure (notifier, consumer, folder);
+        detector.configure (consumer, folder);
         this.startDetection (detector);
-
     }
 
 

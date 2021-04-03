@@ -5,7 +5,7 @@
 package de.mossgrabers.sampleconverter.ui.tools;
 
 /**
- * Thrown to signal that the app had an initialization problem and should shut down.
+ * Thrown to signal that the application had an initialization problem and should shut down.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */

@@ -17,7 +17,7 @@ import javafx.scene.layout.BorderPane;
 
 
 /**
- * A button with an additional drop down button which displays a popup menu.
+ * A button with an additional drop down button which displays a pop-up menu.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */

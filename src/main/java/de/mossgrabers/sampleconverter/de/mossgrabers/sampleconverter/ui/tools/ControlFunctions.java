@@ -35,7 +35,7 @@ public final class ControlFunctions
 
 
     /**
-     * Moves the selected item up in the given listbox. If none is selected or it is the first
+     * Moves the selected item up in the given list box. If none is selected or it is the first
      * nothing happens.
      *
      * @param list A list view
@@ -52,7 +52,7 @@ public final class ControlFunctions
 
 
     /**
-     * Moves the selected item down in the given listbox. If none is selected or it is the last
+     * Moves the selected item down in the given list box. If none is selected or it is the last
      * nothing happens.
      *
      * @param list A list view

@@ -2,17 +2,18 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.detector.wav;
+package de.mossgrabers.sampleconverter.format.wav;
 
 import de.mossgrabers.sampleconverter.core.AbstractSampleMetadata;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.LoopType;
+import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
 import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.file.wav.DataChunk;
 import de.mossgrabers.sampleconverter.file.wav.FormatChunk;
 import de.mossgrabers.sampleconverter.file.wav.SampleChunk;
-import de.mossgrabers.sampleconverter.file.wav.SampleChunk.SampleLoop;
 import de.mossgrabers.sampleconverter.file.wav.WaveFile;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
@@ -20,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.List;
 
 
 /**
@@ -45,7 +45,7 @@ public class WavSampleMetadata extends AbstractSampleMetadata
     {
         super (file);
 
-        this.waveFile = new WaveFile (file);
+        this.waveFile = new WaveFile (file, false);
         final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
 
         final int numberOfChannels = formatChunk.getNumberOfChannels ();
@@ -60,27 +60,33 @@ public class WavSampleMetadata extends AbstractSampleMetadata
 
         final SampleChunk sampleChunk = this.waveFile.getSampleChunk ();
         if (sampleChunk == null)
-        {
-            this.hasLoop = false;
-            this.loopStart = 0;
-            this.loopEnd = this.stop;
             return;
-        }
 
         this.keyRoot = sampleChunk.getMIDIUnityNote ();
 
-        this.hasLoop = sampleChunk.getNumSampleLoops () > 0;
-        final List<SampleLoop> loops = sampleChunk.getLoops ();
-        if (loops.isEmpty ())
-        {
-            this.loopStart = 0;
-            this.loopEnd = this.stop;
-            return;
-        }
+        final int midiPitchFraction = sampleChunk.getMIDIPitchFraction ();
+        // 0x0 (= 0 cent) to 0x80000000 (= 50 cent), tune is [-1..1], which is [-100..100] cent
+        this.tune = Math.max (0, Math.min (1, midiPitchFraction * 0.5 / 0x80000000));
 
-        final SampleLoop sampleLoop = loops.get (0);
-        this.loopStart = sampleLoop.getStart ();
-        this.loopEnd = sampleLoop.getEnd ();
+        sampleChunk.getLoops ().forEach (sampleLoop -> {
+            final SampleLoop loop = new SampleLoop ();
+            switch (sampleLoop.getType ())
+            {
+                default:
+                case 0:
+                    loop.setType (LoopType.FORWARD);
+                    break;
+                case 1:
+                    loop.setType (LoopType.ALTERNATING);
+                    break;
+                case 2:
+                    loop.setType (LoopType.BACKWARDS);
+                    break;
+            }
+            loop.setStart (sampleLoop.getStart ());
+            loop.setEnd (sampleLoop.getEnd ());
+            this.loops.add (loop);
+        });
     }
 
 

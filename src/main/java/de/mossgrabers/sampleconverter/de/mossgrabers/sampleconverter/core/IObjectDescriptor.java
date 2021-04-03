@@ -28,4 +28,12 @@ public interface IObjectDescriptor
      * @return The pane
      */
     Node getEditPane ();
+
+
+    /**
+     * Set the notifier for information and error logging.
+     *
+     * @param notifier The notifier
+     */
+    void configure (INotifier notifier);
 }

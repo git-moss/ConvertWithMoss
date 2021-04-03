@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.detector;
+package de.mossgrabers.sampleconverter.core.detector;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
@@ -32,15 +32,24 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     /**
      * Configure the detector.
      *
-     * @param notifier Where to notify about progress and errors
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
      */
-    public void configure (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
+    public void configure (final Consumer<IMultisampleSource> consumer, final File sourceFolder)
     {
-        this.notifier = Optional.of (notifier);
         this.consumer = Optional.ofNullable (consumer);
         this.sourceFolder = Optional.ofNullable (sourceFolder);
+    }
+
+
+    /**
+     * Set the notifier for information and error logging.
+     *
+     * @param notifier The notifier
+     */
+    protected void configure (final INotifier notifier)
+    {
+        this.notifier = Optional.of (notifier);
     }
 
 
@@ -57,16 +66,16 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
         catch (final RuntimeException ex)
         {
-            this.notifier.get ().notifyError (ex.getMessage (), ex);
+            this.log (ex);
         }
         final boolean cancelled = this.isCancelled ();
-        this.notifier.get ().notify (Functions.getMessage (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED"));
+        this.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");
         return Boolean.valueOf (cancelled);
     }
 
 
     /**
-     * Detect recursivly all potential multi-sample files in the given folder.
+     * Detect recursively all potential multi-sample files in the given folder.
      *
      * @param folder The folder to start detection.
      */
@@ -119,5 +128,58 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         for (int i = 0; i < pathNames.size (); i++)
             result[i + 1] = pathNames.get (i);
         return result;
+    }
+
+
+    /**
+     * Gets the name of the file without the ending. E.g. the filename 'aFile.jpeg' will return
+     * 'aFile'.
+     *
+     * @param file The file from which to get the name
+     * @return The name of the file without the ending
+     */
+    protected static String getNameWithoutType (final File file)
+    {
+        final String filename = file.getName ();
+        final int pos = filename.lastIndexOf ('.');
+        return pos == -1 ? filename : filename.substring (0, pos);
+    }
+
+
+    /**
+     * Log the message to the notifier.
+     *
+     * @param messageID The ID of the message to get
+     * @param replaceStrings Replaces the %1..%n in the message with the strings
+     */
+    public void log (final String messageID, final String... replaceStrings)
+    {
+        if (this.notifier.isPresent ())
+            this.notifier.get ().notify (Functions.getMessage (messageID, replaceStrings));
+    }
+
+
+    /**
+     * Log the message to the notifier.
+     *
+     * @param messageID The ID of the message to get
+     * @param throwable A throwable
+     */
+    public void log (final String messageID, final Throwable throwable)
+    {
+        if (this.notifier.isPresent ())
+            this.notifier.get ().notifyError (Functions.getMessage (messageID), throwable);
+    }
+
+
+    /**
+     * Log the message to the notifier.
+     *
+     * @param throwable A throwable
+     */
+    public void log (final Throwable throwable)
+    {
+        if (this.notifier.isPresent ())
+            this.notifier.get ().notifyError (throwable.getMessage (), throwable);
     }
 }

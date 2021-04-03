@@ -16,8 +16,9 @@ module de.mossgrabers.sampleconverter
     exports de.mossgrabers.sampleconverter.ui.tools;
     exports de.mossgrabers.sampleconverter.core;
     exports de.mossgrabers.sampleconverter.util;
-    exports de.mossgrabers.sampleconverter.detector;
-    exports de.mossgrabers.sampleconverter.creator;
+    exports de.mossgrabers.sampleconverter.format.bitwig;
+    exports de.mossgrabers.sampleconverter.format.sfz;
+    exports de.mossgrabers.sampleconverter.format.wav;
     exports de.mossgrabers.sampleconverter.exception;
     exports de.mossgrabers.sampleconverter.file.riff;
     exports de.mossgrabers.sampleconverter.file.wav;

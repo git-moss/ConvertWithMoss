@@ -10,7 +10,7 @@ import java.util.Map;
 
 
 /**
- * Enumeration for known RIFF ids.
+ * Enumeration for known RIFF IDs.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
@@ -28,6 +28,8 @@ public enum RiffID
     JUNK_ID("Junk", "JUNK"),
     /** ID for WAVE chunks. */
     WAVE_ID("Wave", "WAVE"),
+    /** ID for "inst" chunks. */
+    INST_ID("Instrument", "inst"),
     /** ID for "smpl" chunks. */
     SMPL_ID("Sample", "smpl"),
     /** ID for "fmt " chunks. */
@@ -112,10 +114,10 @@ public enum RiffID
 
 
     /**
-     * Lookup the matching enum for the given RIFF ID.
+     * Lookup the matching enumeration for the given RIFF ID.
      *
      * @param id The id to lookup
-     * @return The enum or null if not defined
+     * @return The enumeration or null if not defined
      */
     public static RiffID fromId (final int id)
     {
@@ -172,7 +174,7 @@ public enum RiffID
 
 
     /**
-     * Checks wether the argument represents a valid RIFF Group ID.
+     * Checks whether the argument represents a valid RIFF Group ID.
      *
      * @param id Chunk ID to be checked
      * @return True when the chunk ID is a valid Group ID

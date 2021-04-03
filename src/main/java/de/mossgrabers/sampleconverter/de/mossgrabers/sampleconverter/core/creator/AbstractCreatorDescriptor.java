@@ -2,11 +2,12 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.creator;
+package de.mossgrabers.sampleconverter.core.creator;
 
 import de.mossgrabers.sampleconverter.core.AbstractObjectDescriptor;
 import de.mossgrabers.sampleconverter.core.ICreator;
 import de.mossgrabers.sampleconverter.core.ICreatorDescriptor;
+import de.mossgrabers.sampleconverter.core.INotifier;
 
 
 /**
@@ -38,5 +39,13 @@ public abstract class AbstractCreatorDescriptor extends AbstractObjectDescriptor
     public ICreator getCreator ()
     {
         return this.creator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void configure (final INotifier notifier)
+    {
+        this.creator.configure (notifier);
     }
 }

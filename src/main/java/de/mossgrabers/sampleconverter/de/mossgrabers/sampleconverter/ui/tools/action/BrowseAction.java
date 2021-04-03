@@ -80,7 +80,7 @@ public class BrowseAction extends Action
 
 
     /**
-     * Show the file chooser dialog and enter the selected fileame into the text field.
+     * Show the file chooser dialog and enter the selected filename into the text field.
      *
      * @param e Information about the action event
      */

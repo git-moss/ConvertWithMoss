@@ -23,8 +23,8 @@ import java.util.ResourceBundle;
 
 
 /**
- * Encapsulates a stage and adds a scene to it which provides several features like menus, toolbar,
- * statusbar, etc. Use as top level windows ("frames").
+ * Encapsulates a stage and adds a scene to it which provides several features like menus, tool-bar,
+ * status-bar, etc. Use as top level windows ("frames").
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
@@ -81,7 +81,7 @@ public abstract class AbstractFrame
 
 
     /**
-     * Initialise the application.
+     * Initialize the application.
      *
      * @param stage The stage where to add widgets
      * @param baseTitleOptional The title to use for window
@@ -114,7 +114,7 @@ public abstract class AbstractFrame
 
 
     /**
-     * Initialise the configuration file.
+     * Initialize the configuration file.
      *
      * @throws EndApplicationException The application should end because of an startup error
      */
@@ -179,7 +179,7 @@ public abstract class AbstractFrame
 
 
     /**
-     * Initialise the scene.
+     * Initialize the scene.
      *
      * @return The created scene
      */
@@ -194,7 +194,7 @@ public abstract class AbstractFrame
 
 
     /**
-     * Initialise the string resources.
+     * Initialize the string resources.
      *
      * @throws EndApplicationException Could not read the string resources
      */
@@ -212,7 +212,7 @@ public abstract class AbstractFrame
 
 
     /**
-     * Set the app image and title.
+     * Set the application image and title.
      */
     protected void initTitleBar ()
     {

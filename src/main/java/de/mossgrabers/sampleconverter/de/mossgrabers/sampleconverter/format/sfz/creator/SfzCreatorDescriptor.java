@@ -2,9 +2,9 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.creator.sfz;
+package de.mossgrabers.sampleconverter.format.sfz.creator;
 
-import de.mossgrabers.sampleconverter.creator.AbstractCreatorDescriptor;
+import de.mossgrabers.sampleconverter.core.creator.AbstractCreatorDescriptor;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 
 import javafx.scene.Node;

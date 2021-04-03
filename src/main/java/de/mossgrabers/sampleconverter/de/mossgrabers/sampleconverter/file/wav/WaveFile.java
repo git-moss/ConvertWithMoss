@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
@@ -27,30 +28,64 @@ import java.util.Arrays;
  */
 public class WaveFile
 {
-    SampleChunk sampleChunk;
-    FormatChunk formatChunk;
-    DataChunk   dataChunk;
+    InstrumentChunk instrumentChunk;
+    SampleChunk     sampleChunk;
+    FormatChunk     formatChunk;
+    DataChunk       dataChunk;
 
 
     /**
-     * Conbstructor.
+     * Constructor.
      *
      * @param wavFile The WAV file
+     * @param ignoreChunkErrors Ignores unknown or missing chunk errors if true
      * @throws IOException Could not read the file
      * @throws ParseException Error parsing the chunks
      */
-    public WaveFile (final File wavFile) throws IOException, ParseException
+    public WaveFile (final File wavFile, final boolean ignoreChunkErrors) throws IOException, ParseException
     {
-        final Visitor visitor = new Visitor ();
         try (final FileInputStream stream = new FileInputStream (wavFile))
         {
-            new RIFFParser ().parse (stream, visitor);
+            this.read (stream, ignoreChunkErrors);
         }
+    }
 
+
+    /**
+     * Constructor.
+     *
+     * @param inputStream The input stream which provides the WAV file
+     * @param ignoreChunkErrors Ignores unknown or missing chunk errors if true
+     * @throws IOException Could not read the file
+     * @throws ParseException Error parsing the chunks
+     */
+    public WaveFile (final InputStream inputStream, final boolean ignoreChunkErrors) throws IOException, ParseException
+    {
+        this.read (inputStream, ignoreChunkErrors);
+    }
+
+
+    private void read (final InputStream inputStream, final boolean ignoreChunkErrors) throws IOException, ParseException
+    {
+        new RIFFParser ().parse (inputStream, new Visitor (), ignoreChunkErrors);
+
+        if (ignoreChunkErrors)
+            return;
         if (this.formatChunk == null)
             throw new ParseException ("No format chunk found in WAV file.");
         if (this.dataChunk == null)
             throw new ParseException ("No data chunk found in WAV file.");
+    }
+
+
+    /**
+     * Get the instrument chunk if present in the WAV file.
+     *
+     * @return The instrument chunk or null if not present
+     */
+    public InstrumentChunk getInstrumentChunk ()
+    {
+        return this.instrumentChunk;
     }
 
 
@@ -66,7 +101,7 @@ public class WaveFile
 
 
     /**
-     * Get the format chunk if present in the wav file.
+     * Get the format chunk if present in the WAV file.
      *
      * @return The format chunk or null if not present
      */
@@ -77,7 +112,7 @@ public class WaveFile
 
 
     /**
-     * Get the data chunk if present in the wav file.
+     * Get the data chunk if present in the WAV file.
      *
      * @return The data chunk or null if not present
      */
@@ -197,6 +232,10 @@ public class WaveFile
         {
             switch (RiffID.fromId (chunk.getId ()))
             {
+                case INST_ID:
+                    WaveFile.this.instrumentChunk = new InstrumentChunk (chunk);
+                    break;
+
                 case FMT_ID:
                     WaveFile.this.formatChunk = new FormatChunk (chunk);
                     break;

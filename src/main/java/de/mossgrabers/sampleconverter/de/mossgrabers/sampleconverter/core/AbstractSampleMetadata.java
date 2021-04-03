@@ -5,6 +5,8 @@
 package de.mossgrabers.sampleconverter.core;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -17,25 +19,31 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 {
     protected final File       file;
     protected final String     filename;
+    protected boolean          isMonoFile              = false;
+    protected int              sampleRate              = 44100;
 
+    protected Optional<String> combinedFilename        = Optional.empty ();
+    protected Optional<String> filenameWithoutLayer    = Optional.empty ();
+
+    protected PlayLogic        playLogic               = PlayLogic.ALWAYS;
     protected int              start                   = -1;
     protected int              stop                    = -1;
-    // TODO replace with enum
-    protected boolean          hasLoop                 = false;
-    protected int              loopStart               = -1;
-    protected int              loopEnd                 = -1;
     protected int              keyRoot                 = 60;
     protected int              keyLow                  = 0;
     protected int              keyHigh                 = 127;
     protected int              crossfadeNotesLow       = 0;
     protected int              crossfadeNotesHigh      = 0;
-    protected int              velocityLow             = 0;
+    protected int              velocityLow             = 1;
     protected int              velocityHigh            = 127;
     protected int              crossfadeVelocitiesLow  = 0;
     protected int              crossfadeVelocitiesHigh = 0;
-    protected boolean          isMonoFile              = false;
-    protected Optional<String> combinedName            = Optional.empty ();
-    protected Optional<String> nameWithoutLayer        = Optional.empty ();
+
+    protected double           gain                    = 0;
+    protected double           tune                    = 0;
+    protected double           keyTracking             = 1.0;
+    protected boolean          isReversed              = false;
+
+    protected List<SampleLoop> loops                   = new ArrayList<> (1);
 
 
     /**
@@ -91,6 +99,30 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
+    public int getSampleRate ()
+    {
+        return this.sampleRate;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public PlayLogic getPlayLogic ()
+    {
+        return this.playLogic;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPlayLogic (final PlayLogic playLogic)
+    {
+        this.playLogic = playLogic;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int getStart ()
     {
         return this.start;
@@ -99,7 +131,7 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public void setStart (int start)
+    public void setStart (final int start)
     {
         this.start = start;
     }
@@ -115,7 +147,7 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public void setStop (int stop)
+    public void setStop (final int stop)
     {
         this.stop = stop;
     }
@@ -123,49 +155,17 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public boolean hasLoop ()
+    public void addLoop (final SampleLoop loop)
     {
-        return this.hasLoop;
+        this.loops.add (loop);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setHasLoop (boolean hasLoop)
+    public List<SampleLoop> getLoops ()
     {
-        this.hasLoop = hasLoop;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public int getLoopStart ()
-    {
-        return this.loopStart;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setLoopStart (int loopStart)
-    {
-        this.loopStart = loopStart;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public int getLoopEnd ()
-    {
-        return this.loopEnd;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setLoopEnd (int loopEnd)
-    {
-        this.loopEnd = loopEnd;
+        return this.loops;
     }
 
 
@@ -315,9 +315,73 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
+    public void setGain (final double gain)
+    {
+        this.gain = gain;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getGain ()
+    {
+        return this.gain;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTune (final double tune)
+    {
+        this.tune = tune;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getTune ()
+    {
+        return this.tune;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getKeyTracking ()
+    {
+        return this.keyTracking;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setKeyTracking (final double keyTracking)
+    {
+        this.keyTracking = keyTracking;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isReversed ()
+    {
+        return this.isReversed;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setReversed (final boolean isReversed)
+    {
+        this.isReversed = isReversed;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void setCombinedName (final String combinedName)
     {
-        this.combinedName = Optional.ofNullable (combinedName);
+        this.combinedFilename = Optional.ofNullable (combinedName);
     }
 
 
@@ -325,7 +389,7 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     @Override
     public Optional<String> getCombinedName ()
     {
-        return this.combinedName;
+        return this.combinedFilename;
     }
 
 
@@ -333,7 +397,7 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     @Override
     public Optional<String> getUpdatedFilename ()
     {
-        return this.combinedName.isEmpty () ? Optional.ofNullable (this.getFilename ()) : this.combinedName;
+        return this.combinedFilename.isEmpty () ? Optional.ofNullable (this.getFilename ()) : this.combinedFilename;
     }
 
 
@@ -347,16 +411,16 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public void setNameWithoutLayer (final String nameWithoutLayer)
+    public void setFilenameWithoutLayer (final String nameWithoutLayer)
     {
-        this.nameWithoutLayer = Optional.ofNullable (nameWithoutLayer);
+        this.filenameWithoutLayer = Optional.ofNullable (nameWithoutLayer);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public String getNameWithoutLayer ()
+    public String getFilenameWithoutLayer ()
     {
-        return this.nameWithoutLayer.isEmpty () ? this.getFilename () : this.nameWithoutLayer.get ();
+        return this.filenameWithoutLayer.isEmpty () ? this.getFilename () : this.filenameWithoutLayer.get ();
     }
 }

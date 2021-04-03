@@ -18,6 +18,11 @@
 	-fx-opacity: 0.0;
 }
 
+.tab-pane > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+	-fx-background-color: green;
+	-fx-opacity: 0.1;
+}
+
 .tab-pane .tab-content-area {
 	-fx-border-color: -fx-box-border;
 }

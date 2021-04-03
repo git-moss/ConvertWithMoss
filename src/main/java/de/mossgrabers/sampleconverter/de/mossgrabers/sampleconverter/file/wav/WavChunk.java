@@ -83,6 +83,32 @@ public class WavChunk implements IChunk
 
 
     /**
+     * Convert one byte to an integer.
+     *
+     * @param offset The offset into the data array
+     * @return The integer value
+     */
+    protected int byteAsUnsignedInt (final int offset)
+    {
+        final byte [] data = this.getData ();
+        return Byte.toUnsignedInt (data[offset]);
+    }
+
+
+    /**
+     * Convert one byte to an integer.
+     *
+     * @param offset The offset into the data array
+     * @return The integer value
+     */
+    protected int byteAsSignedInt (final int offset)
+    {
+        final byte [] data = this.getData ();
+        return data[offset];
+    }
+
+
+    /**
      * Convert an integer into 4 bytes. MSB is first byte.
      *
      * @param offset The offset into the data array

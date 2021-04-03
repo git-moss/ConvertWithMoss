@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.detector;
+package de.mossgrabers.sampleconverter.core.detector;
 
 import de.mossgrabers.sampleconverter.core.AbstractObjectDescriptor;
 import de.mossgrabers.sampleconverter.core.IDetectorDescriptor;
@@ -22,10 +22,9 @@ import java.util.concurrent.Executors;
  */
 public abstract class AbstractDetectorDescriptor<T extends AbstractDetectorTask> extends AbstractObjectDescriptor implements IDetectorDescriptor
 {
-    protected final ExecutorService executor = Executors.newSingleThreadExecutor ();
-    protected INotifier             notifier;
-
-    private Optional<T>             detector;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor ();
+    private INotifier             notifier;
+    private Optional<T>           detector = Optional.empty ();
 
 
     /**
@@ -36,6 +35,14 @@ public abstract class AbstractDetectorDescriptor<T extends AbstractDetectorTask>
     protected AbstractDetectorDescriptor (final String name)
     {
         super (name);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void configure (final INotifier notifier)
+    {
+        this.notifier = notifier;
     }
 
 
@@ -66,6 +73,7 @@ public abstract class AbstractDetectorDescriptor<T extends AbstractDetectorTask>
     protected void startDetection (final T detector)
     {
         this.detector = Optional.of (detector);
+        detector.configure (this.notifier);
         detector.setOnCancelled (event -> this.updateButtonStates (true));
         detector.setOnFailed (event -> this.updateButtonStates (true));
         detector.setOnSucceeded (event -> this.updateButtonStates (true));

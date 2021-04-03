@@ -5,7 +5,7 @@
 package de.mossgrabers.sampleconverter.file.wav;
 
 import de.mossgrabers.sampleconverter.exception.ParseException;
-import de.mossgrabers.sampleconverter.file.wav.SampleChunk.SampleLoop;
+import de.mossgrabers.sampleconverter.file.wav.SampleChunk.SampleChunkLoop;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,9 +63,19 @@ public class DumpSampleChunk
             {
                 try
                 {
-                    final WaveFile sampleFile = new WaveFile (file);
+                    final WaveFile sampleFile = new WaveFile (file, true);
 
-                    log (sampleFile.getFormatChunk ().infoText (), file);
+                    final InstrumentChunk instrumentChunk = sampleFile.getInstrumentChunk ();
+                    if (instrumentChunk == null)
+                        log ("No instrument chunk.", file);
+                    else
+                        log (instrumentChunk.infoText (), file);
+
+                    final FormatChunk formatChunk = sampleFile.getFormatChunk ();
+                    if (formatChunk == null)
+                        log ("No format chunk.", file);
+                    else
+                        log (formatChunk.infoText (), file);
 
                     final SampleChunk sampleChunk = sampleFile.getSampleChunk ();
                     if (sampleChunk == null)
@@ -81,13 +91,13 @@ public class DumpSampleChunk
                     if (midiPitchFraction != 0)
                         log ("Found MIDI pitch fraction " + midiPitchFraction, file);
 
-                    final List<SampleLoop> loops = sampleChunk.getLoops ();
+                    final List<SampleChunkLoop> loops = sampleChunk.getLoops ();
                     final int loopSize = loops.size ();
                     if (loopSize > 1)
                         log ("Found " + loopSize + " loops", file);
                     if (!loops.isEmpty ())
                     {
-                        final SampleLoop loop = loops.get (0);
+                        final SampleChunkLoop loop = loops.get (0);
                         final int loopFraction = loop.getFraction ();
                         if (loopFraction != 0)
                             log ("Found loop with fraction " + loopFraction, file);
