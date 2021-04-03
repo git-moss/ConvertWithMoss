@@ -12,9 +12,9 @@ package de.mossgrabers.sampleconverter.core;
 public interface IConfiguration
 {
     /**
-     * Only analyse or also convert?
+     * Only analyze or also convert?
      *
-     * @return True if only the analyse part should be run
+     * @return True if only the analyze part should be run
      */
     boolean isOnlyAnalyse ();
 
@@ -28,7 +28,7 @@ public interface IConfiguration
 
 
     /**
-     * Get the output folder where to store the created multisamples.
+     * Get the output folder where to store the created multi-samples.
      *
      * @return The output folder
      */
@@ -60,7 +60,7 @@ public interface IConfiguration
 
 
     /**
-     * Get the name of the creator to write into the multisamples.
+     * Get the name of the creator to write into the multi-samples.
      *
      * @return The creator
      */
@@ -84,7 +84,7 @@ public interface IConfiguration
 
 
     /**
-     * A static text to remove from the end of multisample names.
+     * A static text to remove from the end of multi-sample names.
      *
      * @return A comma separated list of static texts
      */

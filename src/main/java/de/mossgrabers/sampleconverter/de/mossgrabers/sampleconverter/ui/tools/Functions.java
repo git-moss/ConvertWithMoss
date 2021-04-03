@@ -63,7 +63,7 @@ public final class Functions
 
 
     /**
-     * Initialise the Singleton object.
+     * Initialize the Singleton object.
      *
      * @param messages A resource bundle which contains message texts
      * @param defaultOwner The default owner stage to use for dialogs
@@ -149,19 +149,19 @@ public final class Functions
      * the exception has no message the class name of the Exception is inserted.
      *
      * @param messageID The ID of the message to get
-     * @param ex An exception
+     * @param throwable A throwable
      * @return The message
      * @see ResourceBundle#getString
      */
-    public static String getMessage (final String messageID, final Throwable ex)
+    public static String getMessage (final String messageID, final Throwable throwable)
     {
-        final String msg = ex.getLocalizedMessage ();
-        return getMessage (messageID, msg == null ? ex.getClass ().getName () : msg);
+        final String msg = throwable.getLocalizedMessage ();
+        return getMessage (messageID, msg == null ? throwable.getClass ().getName () : msg);
     }
 
 
     /**
-     * Reads the text from the functions-resourcebundle if text starts with '@' otherwise the text
+     * Reads the text from the functions-resource bundle if text starts with '@' otherwise the text
      * itself is returned.
      *
      * @param text The text or a message id starting with '@'
@@ -537,7 +537,7 @@ public final class Functions
      * @param title The title of the dialog. If it starts with '@' the matching string is loaded
      *            from the properties file
      * @param config Read/Writes the current path and the size of the dialog from this config file
-     * @param filter The filefilter applied to the dialog
+     * @param filter The file filter applied to the dialog
      * @return The file or null
      */
     public static Optional<File> getFileFromUser (final Window owner, final boolean open, final String title, final BasicConfig config, final FileChooser.ExtensionFilter filter)
@@ -556,8 +556,8 @@ public final class Functions
      * @param open True: Open-file False: Save-file
      * @param title The title of the dialog. If it starts with '@' the matching string is loaded
      *            from the properties file. May be null.
-     * @param config Read/Writes the current path and the size of the dialog from this config file.
-     *            May be null.
+     * @param config Read/Writes the current path and the size of the dialog from this configuration
+     *            file. May be null.
      * @param filters The file filters applied to the dialog
      * @return The file or null
      */
@@ -596,8 +596,9 @@ public final class Functions
      * @param owner The owner Window
      * @param title The title of the dialog. If it starts with '@' the matching string is loaded
      *            from the properties file
-     * @param config Read/Writes the current path and the size of the dialog from this config file
-     * @param filter The filefilter applied to the dialog
+     * @param config Read/Writes the current path and the size of the dialog from this configuration
+     *            file
+     * @param filter The file filter applied to the dialog
      * @return The files or null
      */
     public static List<File> getFilesFromUser (final Window owner, final String title, final BasicConfig config, final FileChooser.ExtensionFilter filter)
@@ -615,8 +616,8 @@ public final class Functions
      * @param owner The owner window
      * @param title The title of the dialog. If it starts with '@' the matching string is loaded
      *            from the properties file. May be null.
-     * @param config Read/Writes the current path and the size of the dialog from this config file.
-     *            May be null.
+     * @param config Read/Writes the current path and the size of the dialog from this configuration
+     *            file. May be null.
      * @param filters The file filters applied to the dialog
      * @return The files or null if canceled
      */
@@ -654,8 +655,8 @@ public final class Functions
      * Requests a folder from the user.
      *
      * @param owner The owner window
-     * @param config Read/Writes the current path and the size of the dialog from this config file.
-     *            May be null.
+     * @param config Read/Writes the current path and the size of the dialog from this configuration
+     *            file. May be null.
      * @param title The title of the dialog. If it starts with '@' the matching string is loaded
      *            from the properties file. May be null.
      * @return The folder or null

@@ -9,6 +9,7 @@ import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -40,7 +41,7 @@ public interface ISampleMetadata
      *
      * @return The name without the layer text
      */
-    String getNameWithoutLayer ();
+    String getFilenameWithoutLayer ();
 
 
     /**
@@ -48,7 +49,23 @@ public interface ISampleMetadata
      *
      * @param nameWithoutLayer The name without the layer text
      */
-    void setNameWithoutLayer (String nameWithoutLayer);
+    void setFilenameWithoutLayer (String nameWithoutLayer);
+
+
+    /**
+     * When is the sample played back?
+     *
+     * @return The play logic to apply
+     */
+    PlayLogic getPlayLogic ();
+
+
+    /**
+     * Set when is the sample should be played back.
+     *
+     * @param playLogic The play logic to apply
+     */
+    void setPlayLogic (PlayLogic playLogic);
 
 
     /**
@@ -84,81 +101,49 @@ public interface ISampleMetadata
 
 
     /**
-     * Is there a loop section.
+     * Add a loop.
      *
-     * @return True if there is a loop
+     * @param loop The loop to add
      */
-    boolean hasLoop ();
+    void addLoop (SampleLoop loop);
 
 
     /**
-     * Is there a loop section.
+     * Get all loops of the sample.
      *
-     * @param hasLoop True if there is a loop
+     * @return The loops, if any
      */
-    void setHasLoop (boolean hasLoop);
+    List<SampleLoop> getLoops ();
 
 
     /**
-     * Get the start of the loop.
+     * Get the lowest key of the key-range to which the sample is mapped.
      *
-     * @return The start of the loop
-     */
-    int getLoopStart ();
-
-
-    /**
-     * Set the start of the loop.
-     *
-     * @param loopStart The start of the loop
-     */
-    void setLoopStart (int loopStart);
-
-
-    /**
-     * Get the end of the loop.
-     *
-     * @return The end of the loop
-     */
-    int getLoopEnd ();
-
-
-    /**
-     * Set the end of the loop.
-     *
-     * @param loopEnd The end of the loop
-     */
-    void setLoopEnd (int loopEnd);
-
-
-    /**
-     * Get the lowest key of the keyrange to which the sample is mapped.
-     *
-     * @return The lowest key of the keyrange to which the sample is mapped
+     * @return The lowest key of the key-range to which the sample is mapped
      */
     int getKeyLow ();
 
 
     /**
-     * Set the lowest key of the keyrange to which the sample is mapped.
+     * Set the lowest key of the key-range to which the sample is mapped.
      *
-     * @param keyLow The lowest key of the keyrange to which the sample is mapped
+     * @param keyLow The lowest key of the key-range to which the sample is mapped
      */
     void setKeyLow (int keyLow);
 
 
     /**
-     * Get the highest key of the keyrange to which the sample is mapped.
+     * Get the highest key of the key-range to which the sample is mapped.
      *
-     * @return The highest key of the keyrange to which the sample is mapped
+     * @return The highest key of the key-range to which the sample is mapped
      */
     int getKeyHigh ();
 
 
     /**
-     * Set the highest key of the keyrange to which the sample is mapped.
+     * Set the highest key of the key-range to which the sample is mapped.
      *
-     * @param keyHigh The highest key of the keyrange to which the sample is mapped
+     * @param keyHigh The highest key of the key-range to which the sample is mapped
      */
     void setKeyHigh (int keyHigh);
 
@@ -180,7 +165,7 @@ public interface ISampleMetadata
 
 
     /**
-     * Get the number of notes to crossfade on the lower end of the range.
+     * Get the@Override number of notes to crossfade on the lower end of the range.
      *
      * @return The number of notes to crossfade (0-127)
      */
@@ -276,6 +261,72 @@ public interface ISampleMetadata
 
 
     /**
+     * Get the gain of the sample.
+     *
+     * @return The gain in the range of [-12 .. 12] dB
+     */
+    double getGain ();
+
+
+    /**
+     * Set the gain of the sample.
+     *
+     * @param gain The gain in the range of [-12 .. 12] dB
+     */
+    void setGain (double gain);
+
+
+    /**
+     * Get the key tracking of the sample.
+     *
+     * @return The tuning in the range of [-100 .. 100] cent
+     */
+    double getTune ();
+
+
+    /**
+     * Set the fine tuning of the sample.
+     *
+     * @param tune The tuning in the range of [-1 .. 1] representing [-100..100] cent
+     */
+    void setTune (double tune);
+
+
+    /**
+     * Get the key tracking of the sample.
+     *
+     * @return The key tracking in the range of [0..1] representing [0..100] %. 100% is full
+     *         tracking, 0% is no tracking
+     */
+    double getKeyTracking ();
+
+
+    /**
+     * Set the key tracking of the sample.
+     *
+     * @param keyTracking The key tracking in the range of [0..1] representing [0..100] %. 100% is
+     *            full tracking, 0% is no tracking
+     */
+    void setKeyTracking (double keyTracking);
+
+
+    /**
+     * Get the sample playback direction.
+     *
+     * @return True if reversed
+     */
+    boolean isReversed ();
+
+
+    /**
+     * Set the sample playback direction.
+     *
+     * @param isReversed True to playback the sample reversed
+     */
+    void setReversed (boolean isReversed);
+
+
+    /**
      * Combines two mono files into a stereo file. Format and sample chunks must be identical.
      *
      * @param sample The other sample to include
@@ -285,7 +336,7 @@ public interface ISampleMetadata
 
 
     /**
-     * If the encapsulated wavefile got combined with another one, it is not stored yet. This sets
+     * If the encapsulated wave file got combined with another one, it is not stored yet. This sets
      * the new name and indicates that it is not stored yet.
      *
      * @param combinedName The name to use for the new combined file
@@ -316,6 +367,14 @@ public interface ISampleMetadata
      * @return True if mono
      */
     boolean isMono ();
+
+
+    /**
+     * The number of sample slices per second. This value is unaffected by the number of channels.
+     *
+     * @return The four bytes converted to an integer
+     */
+    int getSampleRate ();
 
 
     /**

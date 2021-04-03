@@ -119,7 +119,7 @@ public class BasePanel
 
 
     /**
-     * Limits the textfield to numbers.
+     * Limits the text field to numbers.
      *
      * @param field The field to limit
      */
@@ -212,12 +212,12 @@ public class BasePanel
 
 
     /**
-     * Creates and adds a combobox to the panel.
+     * Creates and adds a combo box to the panel.
      *
      * @param <E> The type of the combobox's content
-     * @param label The name of the label which is added to the combobox
-     * @param content The content of the combobox
-     * @return The created combobox
+     * @param label The name of the label which is added to the combo box
+     * @param content The content of the combo box
+     * @return The created combo box
      */
     public <E> ComboBox<E> createComboBox (final String label, @SuppressWarnings("unchecked") final E... content)
     {
@@ -226,12 +226,12 @@ public class BasePanel
 
 
     /**
-     * Creates and adds a combobox to the panel.
+     * Creates and adds a combo box to the panel.
      *
      * @param <E> The type of the combobox's content
-     * @param label The name of the label which is added to the combobox
-     * @param content The content of the combobox
-     * @return The created combobox
+     * @param label The name of the label which is added to the combo box
+     * @param content The content of the combo box
+     * @return The created combo box
      */
     public <E> ComboBox<E> createComboBox (final String label, final List<E> content)
     {
@@ -242,11 +242,11 @@ public class BasePanel
 
 
     /**
-     * Creates and adds a listbox to the panel.
+     * Creates and adds a list box to the panel.
      *
      * @param <E> The type of the combobox's content
-     * @param label The name of the label which is added to the listbox
-     * @param content The content of the listbox
+     * @param label The name of the label which is added to the list box
+     * @param content The content of the list box
      * @return The created list box
      */
     public <E> ListView<E> createListBox (final String label, final Collection<E> content)
@@ -258,11 +258,11 @@ public class BasePanel
 
 
     /**
-     * Creates and adds a listbox to the panel.
+     * Creates and adds a list box to the panel.
      *
      * @param <E> The type of the combobox's content
-     * @param label The name of the label which is added to the listbox
-     * @param content The content of the listbox
+     * @param label The name of the label which is added to the list box
+     * @param content The content of the list box
      * @return The created list box
      */
     public <E> ListView<E> createListBox (final String label, @SuppressWarnings("unchecked") final E... content)
@@ -272,11 +272,11 @@ public class BasePanel
 
 
     /**
-     * Adds a listbox to the panel.
+     * Adds a list box to the panel.
      *
      * @param <E> The type of the combobox's content
-     * @param label The name of the label which is added to the listbox
-     * @param list The listbox to add
+     * @param label The name of the label which is added to the list box
+     * @param list The list box to add
      * @return The created list box
      */
     public <E> ListView<E> createListBox (final String label, final ListView<E> list)
@@ -416,7 +416,7 @@ public class BasePanel
 
     /**
      * Creates and adds a button to the panel. Beneath the button there is a drop down button
-     * displayed which displays the given popup menu when clicked. The component checks for changes
+     * displayed which displays the given pop-up menu when clicked. The component checks for changes
      * in the menu. If it is empty the drop down button is disabled.
      *
      * @param icon An icon which is displayed on the button

@@ -116,7 +116,7 @@ public abstract class AbstractDialog extends Dialog<Boolean>
 
 
     /**
-     * Sets the ok button.
+     * Sets the OK button.
      *
      * @param okString The button to set as the OK (default) button
      */
@@ -127,7 +127,7 @@ public abstract class AbstractDialog extends Dialog<Boolean>
 
 
     /**
-     * Sets the ok and cancel button.
+     * Sets the OK and cancel button.
      *
      * @param okString The button to set as the OK (default) button
      * @param cancelString The button to set as the CANCEL (Esc) button
@@ -205,7 +205,7 @@ public abstract class AbstractDialog extends Dialog<Boolean>
     /**
      * Show the WAIT-Cursor for the mouse.
      *
-     * @param busy True if the WAIT-Curor should be shown
+     * @param busy True if the WAIT-Cursor should be shown
      */
     public void setBusy (final boolean busy)
     {
@@ -214,7 +214,7 @@ public abstract class AbstractDialog extends Dialog<Boolean>
 
 
     /**
-     * Start the initialisation for the dialog. Every subclass must call this function in the
+     * Start the initialization for the dialog. Every subclass must call this function in the
      * constructor!
      */
     protected final void basicInit ()

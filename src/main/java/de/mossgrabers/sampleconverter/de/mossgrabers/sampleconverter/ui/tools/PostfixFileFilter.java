@@ -12,9 +12,9 @@ import java.io.File;
  * extensions that it knows about.
  * <p>
  * Extensions are of the type ".foo", which is typically found on Windows and Unix boxes, but not on
- * Macinthosh. Case is ignored.
+ * Macintosh. Case is ignored.
  * <p>
- * Example - create a new filter that filers out all files but gif and jpg image files: <pre>
+ * Example - create a new filter that filers out all files but GIF and JPG image files: <pre>
  *            JFileChooser chooser = new JFileChooser ();
  *            FileFilter filter = new FileFilter (
  *                          new String [] {&quot;gif&quot;, &quot;jpg&quot;}, &quot;JPEG &amp; GIF Images&quot;)
@@ -32,7 +32,7 @@ public class PostfixFileFilter extends javax.swing.filechooser.FileFilter
 
     /**
      * Creates a file filter from the given string array and description. The endings will be
-     * included in the description. Example: new FileFilter(String {"gif", "jpg"}, "Gif and JPG
+     * included in the description. Example: new FileFilter(String {"gif", "jpg"}, "GIF and JPG
      * Images");
      * <p>
      * Note that the "." before the extension must not be given!
@@ -49,7 +49,7 @@ public class PostfixFileFilter extends javax.swing.filechooser.FileFilter
 
     /**
      * Creates a file filter from the given string array and description. Example: new
-     * FileFilter(String {"gif", "jpg"}, "Gif and JPG Images");
+     * FileFilter(String {"gif", "jpg"}, "GIF and JPG Images");
      * <p>
      * Note that the "." before the extension must not be given!
      *

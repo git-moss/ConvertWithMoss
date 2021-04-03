@@ -24,7 +24,7 @@ public class VelocityLayer implements IVelocityLayer
      */
     public VelocityLayer ()
     {
-        // Intentionally emtpy
+        // Intentionally empty
     }
 
 
@@ -60,7 +60,7 @@ public class VelocityLayer implements IVelocityLayer
 
     /** {@inheritDoc} */
     @Override
-    public void setName (String name)
+    public void setName (final String name)
     {
         this.name = name;
     }

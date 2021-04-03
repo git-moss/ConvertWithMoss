@@ -8,6 +8,9 @@ import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.file.riff.RIFFChunk;
 import de.mossgrabers.sampleconverter.file.riff.RiffID;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * Accessor for a format chunk ("fmt ") in a WAV file.
@@ -16,7 +19,70 @@ import de.mossgrabers.sampleconverter.file.riff.RiffID;
  */
 public class FormatChunk extends WavChunk
 {
-    private static final int CHUNK_SIZE = 16;
+    private static final int                  CHUNK_SIZE                 = 16;
+
+    /** Unknown data format. */
+    public static final int                   WAVE_FORMAT_UNKNOWN        = 0x0000;
+    /** PCM data format. */
+    public static final int                   WAVE_FORMAT_PCM            = 0x0001;
+    /** ADPCM data format. */
+    public static final int                   WAVE_FORMAT_ADPCM          = 0x0002;
+    /** IEEE float 32 bit data format. */
+    public static final int                   WAVE_FORMAT_IEEE_FLOAT     = 0x0003;
+    /** ALAW data format. */
+    public static final int                   WAVE_FORMAT_ALAW           = 0x0006;
+    /** MULAW data format. */
+    public static final int                   WAVE_FORMAT_MULAW          = 0x0007;
+    /** OKI ADPCM data format. */
+    public static final int                   WAVE_FORMAT_OKI_ADPCM      = 0x0010;
+    /** IMA ADPCM data format. */
+    public static final int                   WAVE_FORMAT_DVI_ADPCM      = 0x0011;
+    /** DIGI data format. */
+    public static final int                   WAVE_FORMAT_DIGISTD        = 0x0015;
+    /** ITU G.723 ADPCM (Yamaha) data format. */
+    public static final int                   WAVE_FORMAT_DIGIFIX        = 0x0016;
+    /** Microsoft GSM 6.10 data format. */
+    public static final int                   WAVE_FORMAT_GSM_6_10       = 0x0031;
+    /** ITU G.721 ADPCM data format. */
+    public static final int                   WAVE_FORMAT_ITU_G721_ADPCM = 0x0040;
+    /** MPEG data format. */
+    public static final int                   WAVE_FORMAT_MPEG           = 0x0050;
+    /** IBM FORMAT MULAW data format. */
+    public static final int                   WAVE_IBM_FORMAT_MULAW      = 0x0101;
+    /** IBM FORMAT ALAW data format. */
+    public static final int                   WAVE_IBM_FORMAT_ALAW       = 0x0102;
+    /** IBM FORMAT ADPCM data format. */
+    public static final int                   WAVE_IBM_FORMAT_ADPCM      = 0x0103;
+    /** SX7383 data format. */
+    public static final int                   WAVE_FORMAT_SX7383         = 0x1C07;
+    /** Extensible data format. */
+    public static final int                   WAVE_FORMAT_EXTENSIBLE     = 0xFFFE;
+    /** Experimental data format. */
+    public static final int                   WAVE_FORMAT_EXPERIMENTAL   = 0xFFFF;
+
+    private static final Map<Integer, String> COMPRESSION_NAMES          = new HashMap<> ();
+    static
+    {
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_UNKNOWN), "Unknown");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_PCM), "PCM/uncompressed");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_ADPCM), "Microsoft ADPCM");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_IEEE_FLOAT), "IEEE Float");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_ALAW), "ITU G.711 a-law");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_MULAW), "ITU G.711 µ-law");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_OKI_ADPCM), "OKI ADPCM");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_DVI_ADPCM), "IMA ADPCM");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_DIGISTD), "DIGISTD");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_DIGIFIX), "ITU G.723 ADPCM (Yamaha)");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_GSM_6_10), "Microsoft GSM 6.10");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_ITU_G721_ADPCM), "ITU G.721 ADPCM");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_MPEG), "MPEG");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_IBM_FORMAT_MULAW), "IBM FORMAT MULAW");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_IBM_FORMAT_ALAW), "IBM FORMAT ALAW");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_IBM_FORMAT_ADPCM), "IBM FORMAT ADPCM");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_SX7383), "SX7383");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_EXTENSIBLE), "Extensible");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_EXPERIMENTAL), "Experimental");
+    }
 
 
     /**
@@ -28,6 +94,19 @@ public class FormatChunk extends WavChunk
     public FormatChunk (final RIFFChunk chunk) throws ParseException
     {
         super (RiffID.FMT_ID, chunk, CHUNK_SIZE);
+    }
+
+
+    /**
+     * Get the name if a compression format.
+     *
+     * @param key The ID of the format
+     * @return The name
+     */
+    public static String getCompression (final int key)
+    {
+        final String compressionName = COMPRESSION_NAMES.get (Integer.valueOf (key));
+        return compressionName == null ? "Unknown " + Integer.toHexString (key) : compressionName;
     }
 
 
@@ -141,7 +220,7 @@ public class FormatChunk extends WavChunk
     public String infoText ()
     {
         final StringBuilder sb = new StringBuilder ();
-        sb.append ("Compression Code: ").append (this.getCompressionCode ()).append ('\n');
+        sb.append ("Compression Code: ").append (FormatChunk.getCompression (this.getCompressionCode ())).append ('\n');
         sb.append ("Number of Channels: ").append (this.getNumberOfChannels ()).append ('\n');
         sb.append ("Sample Rate: ").append (this.getSampleRate ()).append ('\n');
         sb.append ("Average bytes per second: ").append (this.getAverageBytesPerSecond ()).append ('\n');

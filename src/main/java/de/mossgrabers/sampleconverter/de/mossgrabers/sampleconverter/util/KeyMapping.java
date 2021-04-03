@@ -398,7 +398,7 @@ public class KeyMapping
                 final Integer id = Integer.valueOf (number);
                 final String prefix = matcher.group ("prefix");
                 final String postfix = matcher.group ("postfix");
-                si.setNameWithoutLayer (prefix + postfix);
+                si.setFilenameWithoutLayer (prefix + postfix);
                 layers.computeIfAbsent (id, key -> new ArrayList<> ()).add (si);
             }
             catch (final NumberFormatException ex)
@@ -500,7 +500,7 @@ public class KeyMapping
         final Map<Integer, List<ISampleMetadata>> orderedNotes = new TreeMap<> ();
         for (final ISampleMetadata sample: samples)
         {
-            final String filename = sample.getNameWithoutLayer ();
+            final String filename = sample.getFilenameWithoutLayer ();
             final int midiNote = this.lookupMidiNote (keyMap, filename);
             if (midiNote == -1)
                 throw new NoteNotDetectedException (filename);

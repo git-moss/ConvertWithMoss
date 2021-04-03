@@ -23,9 +23,9 @@ public interface INotifier
      * Display an error notification and log it to the console.
      *
      * @param message The message to display
-     * @param ex The exception to log
+     * @param throwable The throwable to log
      */
-    void notifyError (String message, Exception ex);
+    void notifyError (String message, Throwable throwable);
 
 
     /**

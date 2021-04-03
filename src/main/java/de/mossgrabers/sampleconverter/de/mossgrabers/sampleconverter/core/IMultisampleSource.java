@@ -16,7 +16,7 @@ import java.util.List;
 public interface IMultisampleSource
 {
     /**
-     * Get the folder which contains the multisample source or the file itself.
+     * Get the folder which contains the multi-sample source or the file itself.
      *
      * @return The folder
      */

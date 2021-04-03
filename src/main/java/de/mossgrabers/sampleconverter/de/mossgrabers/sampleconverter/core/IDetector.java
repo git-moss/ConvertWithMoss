@@ -17,11 +17,18 @@ import java.util.function.Consumer;
 public interface IDetector
 {
     /**
+     * Set the notifier for information and error logging.
+     *
+     * @param notifier The notifier
+     */
+    void configure (INotifier notifier);
+
+
+    /**
      * Start the detection.
      *
-     * @param notifier Where to notify about progress and errors
-     * @param folder The folder hwere to start the detection
+     * @param folder The folder where to start the detection
      * @param consumer Where to report the found multi-samples
      */
-    void detect (INotifier notifier, File folder, Consumer<IMultisampleSource> consumer);
+    void detect (File folder, Consumer<IMultisampleSource> consumer);
 }

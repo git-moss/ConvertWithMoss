@@ -53,15 +53,16 @@ public class RIFFParser
      *
      * @param in The input stream for getting the data to parse
      * @param callback The callback interface
+     * @param ignoreUnknownChunks Ignores unknown chunks if true otherwise raises an exception
      * @return The number of parsed bytes
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    public long parse (final InputStream in, final RIFFVisitor callback) throws ParseException, IOException
+    public long parse (final InputStream in, final RIFFVisitor callback, final boolean ignoreUnknownChunks) throws ParseException, IOException
     {
         this.in = new RIFFPrimitivesInputStream (in);
         this.visitor = callback;
-        this.parseFile ();
+        this.parseFile (ignoreUnknownChunks);
         return this.getPosition (this.in);
     }
 
@@ -69,10 +70,11 @@ public class RIFFParser
     /**
      * Parses a RIFF file.
      *
+     * @param ignoreUnknownChunks Ignores unknown chunks if true otherwise raises an exception
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseFile () throws ParseException, IOException
+    private void parseFile (final boolean ignoreUnknownChunks) throws ParseException, IOException
     {
         final int id = this.in.readFourCC ();
 
@@ -94,7 +96,8 @@ public class RIFFParser
 
             case UNKNOWN:
             default:
-                this.raiseRiffParseError (id, riffID);
+                if (!ignoreUnknownChunks)
+                    this.raiseRiffParseError (id, riffID);
                 break;
         }
     }
@@ -296,7 +299,7 @@ public class RIFFParser
      * @param parent The parent chunk
      * @param id The chunk id
      * @param size The size to read
-     * @param position The current postition
+     * @param position The current position
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
@@ -364,7 +367,7 @@ public class RIFFParser
 
 
     /**
-     * Checks wether the ID of the chunk has been declared as a property chunk.
+     * Checks whether the ID of the chunk has been declared as a property chunk.
      *
      * @param chunk The chunk to test
      * @return True if it is a property chunk
@@ -376,7 +379,7 @@ public class RIFFParser
 
 
     /**
-     * Checks wether the ID of the chunk has been declared as a collection chunk.
+     * Checks whether the ID of the chunk has been declared as a collection chunk.
      *
      * @param chunk Chunk to be tested
      * @return True when the parameter is a collection chunk
@@ -488,7 +491,7 @@ public class RIFFParser
 
 
     /**
-     * Checks wether the argument represents a valid RIFF Group Type.
+     * Checks whether the argument represents a valid RIFF Group Type.
      *
      * @param id Chunk ID to be checked.
      * @return True when the chunk ID is a valid Group ID

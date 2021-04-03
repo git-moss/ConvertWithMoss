@@ -9,11 +9,11 @@ import de.mossgrabers.sampleconverter.core.ICreatorDescriptor;
 import de.mossgrabers.sampleconverter.core.IDetectorDescriptor;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.creator.bitwig.BitwigMultisampleCreatorDescriptor;
-import de.mossgrabers.sampleconverter.creator.sfz.SfzCreatorDescriptor;
-import de.mossgrabers.sampleconverter.detector.bitwig.BitwigMultisampleDetectorDescriptor;
-import de.mossgrabers.sampleconverter.detector.sfz.SfzDetectorDescriptor;
-import de.mossgrabers.sampleconverter.detector.wav.WavDetectorDescriptor;
+import de.mossgrabers.sampleconverter.format.bitwig.creator.BitwigMultisampleCreatorDescriptor;
+import de.mossgrabers.sampleconverter.format.bitwig.detector.BitwigMultisampleDetectorDescriptor;
+import de.mossgrabers.sampleconverter.format.sfz.creator.SfzCreatorDescriptor;
+import de.mossgrabers.sampleconverter.format.sfz.detector.SfzDetectorDescriptor;
+import de.mossgrabers.sampleconverter.format.wav.detector.WavDetectorDescriptor;
 import de.mossgrabers.sampleconverter.ui.tools.AbstractFrame;
 import de.mossgrabers.sampleconverter.ui.tools.DefaultApplication;
 import de.mossgrabers.sampleconverter.ui.tools.EndApplicationException;
@@ -54,42 +54,42 @@ import java.util.function.Consumer;
  */
 public class SampleConverterApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {
-    private static final String  DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
-    private static final String  DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
-    private static final String  DESTINATION_PATH                    = "DestinationPath";
-    private static final String  DESTINATION_TYPE                    = "DestinationType";
-    private static final String  SOURCE_PATH                         = "SourcePath";
-    private static final String  SOURCE_TYPE                         = "SourceType";
+    private static final String          DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
+    private static final String          DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
+    private static final String          DESTINATION_PATH                    = "DestinationPath";
+    private static final String          DESTINATION_TYPE                    = "DestinationType";
+    private static final String          SOURCE_PATH                         = "SourcePath";
+    private static final String          SOURCE_TYPE                         = "SourceType";
 
-    final IDetectorDescriptor [] detectorDescriptors                 =
+    private final IDetectorDescriptor [] detectorDescriptors                 =
     {
         new WavDetectorDescriptor (),
         new BitwigMultisampleDetectorDescriptor (),
         new SfzDetectorDescriptor ()
     };
 
-    final ICreatorDescriptor []  creatorDescriptors                  =
+    private final ICreatorDescriptor []  creatorDescriptors                  =
     {
         new BitwigMultisampleCreatorDescriptor (),
         new SfzCreatorDescriptor ()
     };
 
-    private BorderPane           mainPane;
-    private BorderPane           executePane;
-    private TextField            sourcePathField;
-    private TextField            destinationPathField;
-    private File                 sourceFolder;
-    private File                 outputFolder;
-    private CheckBox             createFolderStructure;
-    private CheckBox             addNewFiles;
+    private BorderPane                   mainPane;
+    private BorderPane                   executePane;
+    private TextField                    sourcePathField;
+    private TextField                    destinationPathField;
+    private File                         sourceFolder;
+    private File                         outputFolder;
+    private CheckBox                     createFolderStructure;
+    private CheckBox                     addNewFiles;
 
-    private TabPane              sourceTabPane;
-    private TabPane              destinationTabPane;
-    private TextArea             loggingArea;
+    private TabPane                      sourceTabPane;
+    private TabPane                      destinationTabPane;
+    private TextArea                     loggingArea;
 
-    private boolean              onlyAnalyse                         = true;
-    private Button               closeButton;
-    private Button               cancelButton;
+    private boolean                      onlyAnalyse                         = true;
+    private Button                       closeButton;
+    private Button                       cancelButton;
 
 
     /**
@@ -152,7 +152,10 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
         final ObservableList<Tab> tabs = this.sourceTabPane.getTabs ();
         for (final IDetectorDescriptor detectorDescriptor: this.detectorDescriptors)
+        {
             tabs.add (new Tab (detectorDescriptor.getName (), detectorDescriptor.getEditPane ()));
+            detectorDescriptor.configure (this);
+        }
 
         // Destination pane
         final BorderPane destinationPane = new BorderPane ();
@@ -187,7 +190,10 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
         final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
         for (final ICreatorDescriptor creatorDescriptor: this.creatorDescriptors)
+        {
             destinationTabs.add (new Tab (creatorDescriptor.getName (), creatorDescriptor.getEditPane ()));
+            creatorDescriptor.configure (this);
+        }
 
         // Tie it all together ...
         final HBox grid = new HBox ();
@@ -309,7 +315,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
         Platform.runLater ( () -> {
             this.notify ("Detecting and converting multisamples...\n");
-            this.detectorDescriptors[selectedDetector].detect (this, this.sourceFolder, this);
+            this.detectorDescriptors[selectedDetector].detect (this.sourceFolder, this);
         });
     }
 
@@ -399,7 +405,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
             final boolean createStructure = this.createFolderStructure.isSelected ();
             final File multisampleOutputFolder = calcOutputFolder (this.outputFolder, multisampleSource.getSubPath (), createStructure);
-            creator.create (multisampleOutputFolder, multisampleSource, this);
+            creator.create (multisampleOutputFolder, multisampleSource);
         }
         catch (final IOException | RuntimeException ex)
         {
@@ -421,7 +427,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
     /** {@inheritDoc} */
     @Override
-    public void notifyError (final String message, final Exception ex)
+    public void notifyError (final String message, final Throwable throwable)
     {
         Platform.runLater ( () -> {
             this.loggingArea.appendText (message);
@@ -429,7 +435,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
             final StringWriter sw = new StringWriter ();
             final PrintWriter pw = new PrintWriter (sw);
-            ex.printStackTrace (pw);
+            throwable.printStackTrace (pw);
             this.loggingArea.appendText (sw.toString ());
             this.loggingArea.appendText ("\n");
             this.loggingArea.end ();
@@ -452,7 +458,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
             return out;
 
         File result = out;
-        for (int i = parts.length - 1; i >= 2; i--)
+        for (int i = parts.length - 1; i >= 1; i--)
         {
             result = new File (result, parts[i]);
             if (!result.exists () && !result.mkdirs ())
