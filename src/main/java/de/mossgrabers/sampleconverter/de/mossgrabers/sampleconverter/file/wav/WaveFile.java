@@ -174,7 +174,7 @@ public class WaveFile
             throw new CombinationNotPossibleException ("Format chunks are not identical.");
 
         final SampleChunk otherSample = otherWave.getSampleChunk ();
-        if (!Arrays.equals (this.sampleChunk.getData (), otherSample.getData ()))
+        if (!Arrays.equals (this.sampleChunk == null ? null : this.sampleChunk.getData (), otherSample == null ? null : otherSample.getData ()))
             throw new CombinationNotPossibleException ("Sample chunks are not identical.");
 
         final int numberOfChannels = this.formatChunk.getNumberOfChannels ();
@@ -205,7 +205,7 @@ public class WaveFile
         @Override
         public boolean enteringGroup (final RIFFChunk group)
         {
-            // Intentionally empty
+            // Wave file format has only flat chunks
             return false;
         }
 

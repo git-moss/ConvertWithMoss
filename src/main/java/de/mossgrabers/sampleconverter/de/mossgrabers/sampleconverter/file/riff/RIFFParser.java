@@ -35,7 +35,7 @@ public class RIFFParser
     /** List of stop chunks the visitor is interested in. */
     private final HashSet<Integer>    stopChunkTypes = new HashSet<> ();
     /** List of group chunks the visitor is interested in. */
-    private HashSet<RIFFChunk>        groupChunks;
+    private HashSet<RIFFChunk>        groupChunks    = new HashSet<> ();
 
     /** Reference to the input stream. */
     private RIFFPrimitivesInputStream in;
@@ -362,7 +362,7 @@ public class RIFFParser
      */
     protected boolean isGroupChunk (final RIFFChunk chunk)
     {
-        return this.groupChunks != null && this.groupChunks.contains (chunk);
+        return this.groupChunks.contains (chunk);
     }
 
 
@@ -414,12 +414,7 @@ public class RIFFParser
      */
     public void declareGroupChunk (final int type, final int id)
     {
-        final RIFFChunk chunk = new RIFFChunk (type, id);
-        if (this.groupChunks == null)
-        {
-            this.groupChunks = new HashSet<> ();
-        }
-        this.groupChunks.add (chunk);
+        this.groupChunks.add (new RIFFChunk (type, id));
     }
 
 

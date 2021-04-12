@@ -107,7 +107,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             final ZipEntry entry = zipFile.getEntry ("multisample.xml");
             if (entry == null)
             {
-                this.log ("IDS_NOTIFY_ERR_NO_METADATA_FILE");
+                this.logError ("IDS_NOTIFY_ERR_NO_METADATA_FILE");
                 return Optional.empty ();
             }
 
@@ -115,7 +115,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         }
         catch (final IOException ex)
         {
-            this.log ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Optional.empty ();
         }
     }
@@ -142,7 +142,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         }
         catch (final SAXException ex)
         {
-            this.log ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", ex);
+            this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", ex);
             return Optional.empty ();
         }
     }
@@ -161,7 +161,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
         if (!BitwigMultisampleTag.MULTISAMPLE.equals (top.getNodeName ()))
         {
-            this.log ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+            this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
             return Optional.empty ();
         }
 
@@ -171,13 +171,13 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final String name = top.getAttribute ("name");
         if (name.isBlank ())
         {
-            this.log ("IDS_NOTIFY_ERR_BAD_METADATA_NO_NAME");
+            this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_NO_NAME");
             return Optional.empty ();
         }
 
         final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder.get (), name);
 
-        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name);
+        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, this.subtractPaths (this.sourceFolder, multiSampleFile));
         this.parseMetadata (top, multisampleSource);
 
         // Parse all groups
@@ -197,7 +197,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             }
             else
             {
-                this.log ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+                this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
                 return Optional.empty ();
             }
         }
@@ -223,7 +223,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             }
             else
             {
-                this.log ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+                this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
                 return Optional.empty ();
             }
         }
@@ -307,7 +307,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final String filename = sampleElement.getAttribute ("file");
         if (filename == null || filename.isBlank ())
         {
-            this.log ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+            this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
             return;
         }
 
@@ -387,7 +387,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                     }
                     catch (final IOException ex)
                     {
-                        this.log ("IDS_NOTIFY_ERR_BROKEN_WAV", ex.getMessage ());
+                        this.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex.getMessage ());
                     }
                 }
                 sampleMetadata.addLoop (loop);
@@ -434,7 +434,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             });
 
             if (!sb.isEmpty ())
-                this.log ("IDS_NOTIFY_UNSUPPORTED_ELEMENTS", tagName, sb.toString ());
+                this.logError ("IDS_NOTIFY_UNSUPPORTED_ELEMENTS", tagName, sb.toString ());
         }
     }
 
@@ -476,7 +476,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             });
 
             if (!sb.isEmpty ())
-                this.log ("IDS_NOTIFY_UNSUPPORTED_ATTRIBUTES", tagName, sb.toString ());
+                this.logError ("IDS_NOTIFY_UNSUPPORTED_ATTRIBUTES", tagName, sb.toString ());
         }
     }
 }

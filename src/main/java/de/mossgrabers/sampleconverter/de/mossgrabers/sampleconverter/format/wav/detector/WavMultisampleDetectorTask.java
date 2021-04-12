@@ -117,7 +117,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             }
             catch (final IOException | ParseException | CompressionNotSupportedException ex)
             {
-                this.notifier.get ().notify (String.format (Functions.getMessage ("IDS_NOTIFY_SKIPPED"), folder.getAbsolutePath (), wavFiles[i]));
+                this.notifier.get ().notifyError (String.format (Functions.getMessage ("IDS_NOTIFY_SKIPPED"), folder.getAbsolutePath (), wavFiles[i]));
                 return;
             }
         }
@@ -147,7 +147,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             final String name = cleanupName (this.isPreferFolderName ? folder.getName () : keyMapping.getName (), this.postfixTexts);
             if (name.isEmpty ())
             {
-                this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_NO_NAME"));
+                this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_NO_NAME"));
                 return Optional.empty ();
             }
 
@@ -160,7 +160,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
                 parts = subpaths.toArray (new String [subpaths.size ()]);
             }
 
-            final MultisampleSource multisampleSource = new MultisampleSource (folder, parts, name);
+            final MultisampleSource multisampleSource = new MultisampleSource (folder, parts, name, this.subtractPaths (this.sourceFolder, folder));
             multisampleSource.setCreator (TagDetector.detect (parts, this.creatorTags, this.creatorName));
             multisampleSource.setCategory (TagDetector.detectCategory (parts));
             multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
@@ -176,7 +176,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
         }
         catch (final MultisampleException | CombinationNotPossibleException ex)
         {
-            this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED"));
+            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED"));
             return Optional.empty ();
         }
     }

@@ -378,7 +378,8 @@ public interface ISampleMetadata
 
 
     /**
-     * Write the data of the sample to the given output stream.
+     * Write the data of the sample to the given output stream. The implementation must write a
+     * fully well-formed WAV file.
      *
      * @param outputStream The stream to where to write the data
      * @throws IOException Could not write the data

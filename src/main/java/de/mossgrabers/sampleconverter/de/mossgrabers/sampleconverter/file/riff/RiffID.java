@@ -20,24 +20,86 @@ public enum RiffID
     RIFF_ID("RIFF", "RIFF"),
     /** ID for ListGroupExpression. */
     LIST_ID("List", "LIST"),
-    /** ID for NULL chunks. */
+    /** ID for NULL chunk. */
     NULL_ID("Null", "    "),
-    /** ID for NULL chunks. */
+    /** ID for NULL chunk. */
     NULL_NUL_ID("Null Nul", "\0\0\0\0"),
-    /** ID for JUNK chunks. */
+    /** ID for JUNK chunk. */
     JUNK_ID("Junk", "JUNK"),
-    /** ID for WAVE chunks. */
-    WAVE_ID("Wave", "WAVE"),
-    /** ID for "inst" chunks. */
-    INST_ID("Instrument", "inst"),
-    /** ID for "smpl" chunks. */
-    SMPL_ID("Sample", "smpl"),
-    /** ID for "fmt " chunks. */
-    FMT_ID("Format", "fmt "),
-    /** ID for "data" chunks. */
-    DATA_ID("Data", "data"),
     /** Unknown ID. */
-    UNKNOWN("Unknown", null);
+    UNKNOWN("Unknown", null),
+
+    ////////////////////////////////////////////////////
+    // Wave RIFF IDs
+
+    /** ID for WAVE chunk. */
+    WAVE_ID("Wave", "WAVE"),
+    /** ID for "inst" chunk. */
+    INST_ID("Instrument", "inst"),
+    /** ID for "smpl" chunk. */
+    SMPL_ID("Sample", "smpl"),
+    /** ID for "fmt " chunk. */
+    FMT_ID("Format", "fmt "),
+    /** ID for "data" chunk. */
+    DATA_ID("Data", "data"),
+
+    ////////////////////////////////////////////////////
+    // SoundFont 2 RIFF IDs
+
+    /** ID for SoundFont 2 chunk. */
+    SF_SFBK_ID("SoundFont 2", "sfbk"),
+    /** ID for INFO chunk. */
+    SF_INFO_ID("Info", "INFO"),
+    /** ID for IFIL chunk. */
+    SF_IFIL_ID("SoundFont Specification Version Level", "ifil"),
+    /** ID for ISNG chunk. */
+    SF_ISNG_ID("SoundFont Wavetable Sound Engine", "isng"),
+    /** ID for INAM chunk. */
+    SF_INAM_ID("SoundFont Compatible Bank", "INAM"),
+    /** ID for IROM chunk. */
+    SF_IROM_ID("Wavetable Sound Data ROM", "irom"),
+    /** ID for IVER chunk. */
+    SF_IVER_ID("Wavetable Sound Data ROM Revision", "iver"),
+    /** ID for ICRD chunk. */
+    SF_ICRD_ID("Creation Date", "ICRD"),
+    /** ID for IENG chunk. */
+    SF_IENG_ID("Sound Designer", "IENG"),
+    /** ID for IPRD chunk. */
+    SF_IPRD_ID("Intended Product", "IPRD"),
+    /** ID for ICOP chunk. */
+    SF_ICOP_ID("Copyright", "ICOP"),
+    /** ID for ICMT chunk. */
+    SF_ICMT_ID("Comments", "ICMT"),
+    /** ID for ISFT chunk. */
+    SF_ISFT_ID("Creation Tool", "ISFT"),
+
+    /** ID for SoundFont Data chunk. */
+    SF_DATA_ID("SoundFont Data", "sdta"),
+    /** ID for Sample Data chunk. */
+    SF_SMPL_ID("Sample Data", "smpl"),
+    /** ID for Sample Data 24bit chunk. */
+    SF_SM24_ID("Sample Data 24bit", "sm24"),
+
+    /** ID for Articulation chunk. */
+    SF_PDTA_ID("Articulation", "pdta"),
+    /** ID for Preset chunk. */
+    SF_PHDR_ID("Preset", "phdr"),
+    /** ID for Preset Zone chunk. */
+    SF_PBAG_ID("Preset Zone", "pbag"),
+    /** ID for preset Zone Generator chunk. */
+    SF_PGEN_ID("Preset Zone Generators", "pgen"),
+    /** ID for preset Zone Generator chunk. */
+    SF_PMOD_ID("Preset Zone Modulators", "pmod"),
+    /** ID for instrument chunk. */
+    SF_INST_ID("Instrument", "inst"),
+    /** ID for instrument zones chunk. */
+    SF_IBAG_ID("Instrument Zones", "ibag"),
+    /** ID for instrument zone modulators chunk. */
+    SF_IMOD_ID("Instrument Zone Modulators", "imod"),
+    /** ID for instrument zone generators chunk. */
+    SF_IGEN_ID("Instrument Zone Generators", "igen"),
+    /** ID for sample descriptors chunk. */
+    SF_SHDR_ID("Sample Descriptors", "shdr");
 
 
     private static final Map<Integer, RiffID> ID_LOOKUP = new HashMap<> ();

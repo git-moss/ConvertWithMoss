@@ -9,6 +9,7 @@ module de.mossgrabers.sampleconverter
     requires java.logging;
     requires transitive java.prefs;
     requires transitive javafx.controls;
+    requires javafx.web;
     requires transitive java.xml;
 
 

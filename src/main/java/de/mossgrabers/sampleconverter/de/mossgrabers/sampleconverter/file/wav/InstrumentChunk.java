@@ -39,7 +39,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getUnshiftedNote ()
     {
-        return this.byteAsUnsignedInt (0x00);
+        return this.chunk.byteAsUnsignedInt (0x00);
     }
 
 
@@ -52,7 +52,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getFineTune ()
     {
-        return this.byteAsSignedInt (0x01);
+        return this.chunk.byteAsSignedInt (0x01);
     }
 
 
@@ -65,7 +65,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getGain ()
     {
-        return this.byteAsSignedInt (0x02);
+        return this.chunk.byteAsSignedInt (0x02);
     }
 
 
@@ -76,7 +76,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getLowNote ()
     {
-        return this.byteAsUnsignedInt (0x03);
+        return this.chunk.byteAsUnsignedInt (0x03);
     }
 
 
@@ -87,7 +87,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getHighNote ()
     {
-        return this.byteAsUnsignedInt (0x04);
+        return this.chunk.byteAsUnsignedInt (0x04);
     }
 
 
@@ -98,7 +98,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getLowVelocity ()
     {
-        return this.byteAsUnsignedInt (0x05);
+        return this.chunk.byteAsUnsignedInt (0x05);
     }
 
 
@@ -109,7 +109,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getHighVelocity ()
     {
-        return this.byteAsUnsignedInt (0x06);
+        return this.chunk.byteAsUnsignedInt (0x06);
     }
 
 

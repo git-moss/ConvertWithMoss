@@ -51,9 +51,22 @@ public abstract class AbstractCreator implements ICreator
      * Log the message to the notifier.
      *
      * @param messageID The ID of the message to get
+     * @param replaceStrings Replaces the %1..%n in the message with the strings
+     */
+    protected void logError (final String messageID, final String... replaceStrings)
+    {
+        if (this.notifier.isPresent ())
+            this.notifier.get ().notifyError (Functions.getMessage (messageID, replaceStrings));
+    }
+
+
+    /**
+     * Log the message to the notifier.
+     *
+     * @param messageID The ID of the message to get
      * @param throwable A throwable
      */
-    protected void log (final String messageID, final Throwable throwable)
+    protected void logError (final String messageID, final Throwable throwable)
     {
         if (this.notifier.isPresent ())
             this.notifier.get ().notifyError (Functions.getMessage (messageID), throwable);
@@ -65,7 +78,7 @@ public abstract class AbstractCreator implements ICreator
      *
      * @param throwable A throwable
      */
-    protected void log (final Throwable throwable)
+    protected void logError (final Throwable throwable)
     {
         if (this.notifier.isPresent ())
             this.notifier.get ().notifyError (throwable.getMessage (), throwable);
@@ -85,7 +98,7 @@ public abstract class AbstractCreator implements ICreator
         }
         catch (final ParserConfigurationException ex)
         {
-            this.log ("IDS_NOTIFY_ERR_PARSER", ex);
+            this.logError ("IDS_NOTIFY_ERR_PARSER", ex);
             return Optional.empty ();
         }
     }

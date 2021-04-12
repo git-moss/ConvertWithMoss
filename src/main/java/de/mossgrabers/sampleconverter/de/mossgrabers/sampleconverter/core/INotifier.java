@@ -12,7 +12,7 @@ package de.mossgrabers.sampleconverter.core;
 public interface INotifier
 {
     /**
-     * Display a notification and log it to the console.
+     * Display a notification.
      *
      * @param message The message to display
      */
@@ -20,7 +20,15 @@ public interface INotifier
 
 
     /**
-     * Display an error notification and log it to the console.
+     * Display an error message.
+     *
+     * @param message The message to display
+     */
+    void notifyError (final String message);
+
+
+    /**
+     * Display an error notification.
      *
      * @param message The message to display
      * @param throwable The throwable to log
