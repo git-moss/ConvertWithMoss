@@ -48,7 +48,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         final File multiFile = new File (destinationFolder, multisampleSource.getName () + ".multisample");
         if (multiFile.exists ())
         {
-            this.log ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
+            this.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
             return;
         }
 
@@ -144,7 +144,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         }
         catch (final TransformerException ex)
         {
-            this.log (ex);
+            this.logError (ex);
             return Optional.empty ();
         }
     }

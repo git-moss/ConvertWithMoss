@@ -9,6 +9,7 @@ import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -22,11 +23,12 @@ public class MultisampleSource implements IMultisampleSource
     private final File           folder;
     private final String []      subPath;
     private final String         name;
-    private String               description = "";
-    private String               creator     = "";
-    private String               category    = "";
-    private String []            keywords    = new String [0];
-    private List<IVelocityLayer> sampleMetadata;
+    private final String         mappingName;
+    private String               description    = "";
+    private String               creator        = "";
+    private String               category       = "";
+    private String []            keywords       = new String [0];
+    private List<IVelocityLayer> sampleMetadata = Collections.emptyList ();
 
 
     /**
@@ -35,12 +37,14 @@ public class MultisampleSource implements IMultisampleSource
      * @param folder The folder
      * @param subPath The names of the sub folders which contain the samples
      * @param name The name of the multi-sample
+     * @param mappingName The name to display for the mapping process.
      */
-    public MultisampleSource (final File folder, final String [] subPath, final String name)
+    public MultisampleSource (final File folder, final String [] subPath, final String name, final String mappingName)
     {
         this.folder = folder;
         this.subPath = subPath;
         this.name = name;
+        this.mappingName = mappingName;
     }
 
 
@@ -120,7 +124,8 @@ public class MultisampleSource implements IMultisampleSource
     @Override
     public void setCreator (final String creator)
     {
-        this.creator = creator;
+        if (creator != null)
+            this.creator = creator;
     }
 
 
@@ -145,5 +150,13 @@ public class MultisampleSource implements IMultisampleSource
     public void setVelocityLayers (final List<IVelocityLayer> sampleMetadata)
     {
         this.sampleMetadata = new ArrayList<> (sampleMetadata);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String getMappingName ()
+    {
+        return this.mappingName;
     }
 }

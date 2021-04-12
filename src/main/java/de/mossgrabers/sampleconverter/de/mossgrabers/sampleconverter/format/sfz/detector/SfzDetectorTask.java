@@ -144,7 +144,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (globalName.isPresent ())
             name = globalName.get ();
 
-        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name);
+        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, this.subtractPaths (this.sourceFolder, multiSampleFile));
 
         // Use same guessing on the filename...
         multisampleSource.setCategory (TagDetector.detectCategory (parts));
@@ -189,7 +189,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                         sampleBaseFolder = new File (basePath, defaultPath.replace ('\\', '/'));
                         if (!sampleBaseFolder.exists ())
                         {
-                            this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FOLDER_DOES_NOT_EXIST", sampleBaseFolder.getAbsolutePath ()));
+                            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FOLDER_DOES_NOT_EXIST", sampleBaseFolder.getAbsolutePath ()));
                             return velocityLayers;
                         }
                     }
@@ -490,7 +490,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         });
 
         if (!sb.isEmpty ())
-            this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_UNSUPPORTED_OPCODES", sb.toString ()));
+            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_UNSUPPORTED_OPCODES", sb.toString ()));
     }
 
 
@@ -578,7 +578,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
     {
         if (!sampleFile.exists ())
         {
-            this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
+            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
             return false;
         }
 
@@ -587,14 +587,14 @@ public class SfzDetectorTask extends AbstractDetectorTask
             final FormatChunk formatChunk = new WaveFile (sampleFile, true).getFormatChunk ();
             if (formatChunk == null)
             {
-                this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_WAV", sampleFile.getAbsolutePath ()));
+                this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_WAV", sampleFile.getAbsolutePath ()));
                 return false;
             }
 
             final int numberOfChannels = formatChunk.getNumberOfChannels ();
             if (numberOfChannels > 2)
             {
-                this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), sampleFile.getAbsolutePath ()));
+                this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), sampleFile.getAbsolutePath ()));
                 return false;
             }
         }

@@ -38,9 +38,9 @@ public class SfzCreator extends AbstractCreator
     private static final String                FOLDER_POSTFIX   = " Samples";
     private static final String                SFZ_HEADER       = """
             /////////////////////////////////////////////////////////////////////////////
-            //// sfz created by SampleConverter
-
+            ////
             """;
+    private static final String                COMMENT_PREFIX   = "//// ";
 
     private static final Map<LoopType, String> LOOP_TYPE_MAPPER = new EnumMap<> (LoopType.class);
     static
@@ -59,7 +59,7 @@ public class SfzCreator extends AbstractCreator
         final File multiFile = new File (destinationFolder, sampleName + ".sfz");
         if (multiFile.exists ())
         {
-            this.log ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
+            this.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
             return;
         }
 
@@ -112,14 +112,25 @@ public class SfzCreator extends AbstractCreator
     {
         final StringBuilder sb = new StringBuilder (SFZ_HEADER);
 
+        // Metadata (category, creator, keywords) is currently not available in the
+        // specification but has a suggestion: https://github.com/sfz/opcode-suggestions/issues/19
+        // until then add it as a comment
+        final String creator = multisampleSource.getCreator ();
+        if (creator != null && !creator.isBlank ())
+            sb.append (COMMENT_PREFIX).append ("Creator : ").append (creator).append (LINE_FEED);
+        final String category = multisampleSource.getCategory ();
+        if (category != null && !category.isBlank ())
+            sb.append (COMMENT_PREFIX).append ("Category: ").append (category).append (LINE_FEED);
+        final String description = multisampleSource.getDescription ();
+        if (description != null && !description.isBlank ())
+            sb.append (COMMENT_PREFIX).append (description.replace ("\n", "\n" + COMMENT_PREFIX)).append (LINE_FEED);
+        sb.append (LINE_FEED);
+
         final String name = multisampleSource.getName ();
 
         sb.append ('<').append (SfzHeader.GLOBAL).append (">").append (LINE_FEED);
         if (name != null && !name.isBlank ())
             sb.append (SfzOpcode.GLOBAL_LABEL).append ('=').append (name).append (LINE_FEED);
-
-        // Metadata (category, creator, keywords) is currently not available in the
-        // specification but has a suggestion: https://github.com/sfz/opcode-suggestions/issues/19
 
         for (final IVelocityLayer layer: multisampleSource.getSampleMetadata ())
         {

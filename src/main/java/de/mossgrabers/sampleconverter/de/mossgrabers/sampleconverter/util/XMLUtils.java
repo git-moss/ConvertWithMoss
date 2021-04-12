@@ -271,7 +271,7 @@ public class XMLUtils
         // !!! This is not nice, but the JAXP parser seems to add also
         // the returns that surround the CDATA section to the data
         // in the CDATA section. !!!
-        return builder.length () > 0 ? builder.toString () : content.trim ();
+        return builder.isEmpty () ? content.trim () : builder.toString ();
     }
 
 

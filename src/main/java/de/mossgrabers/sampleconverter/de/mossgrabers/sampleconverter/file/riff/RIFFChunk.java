@@ -218,6 +218,107 @@ public class RIFFChunk implements IChunk
 
 
     /**
+     * Convert 4 bytes to an integer. MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @return The integer value
+     */
+    public int fourBytesAsInt (final int offset)
+    {
+        return Byte.toUnsignedInt (this.data[offset + 3]) << 24 | Byte.toUnsignedInt (this.data[offset + 2]) << 16 | Byte.toUnsignedInt (this.data[offset + 1]) << 8 | Byte.toUnsignedInt (this.data[offset + 0]);
+    }
+
+
+    /**
+     * Convert 2 bytes to an integer MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @return The integer value
+     */
+    public int twoBytesAsInt (final int offset)
+    {
+        return Byte.toUnsignedInt (this.data[offset + 1]) << 8 | Byte.toUnsignedInt (this.data[offset]);
+    }
+
+
+    /**
+     * Convert one byte to an integer.
+     *
+     * @param offset The offset into the data array
+     * @return The integer value
+     */
+    public int byteAsUnsignedInt (final int offset)
+    {
+        return Byte.toUnsignedInt (this.data[offset]);
+    }
+
+
+    /**
+     * Convert one byte to an integer.
+     *
+     * @param offset The offset into the data array
+     * @return The integer value
+     */
+    public int byteAsSignedInt (final int offset)
+    {
+        return this.data[offset];
+    }
+
+
+    /**
+     * Read a null terminated string from the data chunk.
+     *
+     * @param offset The offset into the data array
+     * @param defaultValue The value to return if no string is found
+     * @return The string
+     */
+    public String getNullTerminatedString (final int offset, final String defaultValue)
+    {
+        final StringBuilder sb = new StringBuilder ();
+
+        int counter = offset;
+        while (counter < this.data.length)
+        {
+            if (this.data[counter] == 0)
+                return sb.toString ();
+            sb.append (Character.valueOf ((char) this.data[counter]));
+            counter++;
+        }
+
+        // No null terminator detected, return the default value
+        return defaultValue;
+    }
+
+
+    /**
+     * Convert an integer into 4 bytes. MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @param value The integer to convert
+     */
+    public void intAsFourBytes (final int offset, final int value)
+    {
+        this.data[offset + 0] = (byte) value;
+        this.data[offset + 1] = (byte) (value >> 8);
+        this.data[offset + 2] = (byte) (value >> 16);
+        this.data[offset + 3] = (byte) (value >> 24);
+    }
+
+
+    /**
+     * Convert an integer into 2 bytes. MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @param value The integer to convert
+     */
+    public void intAsTwoBytes (final int offset, final int value)
+    {
+        this.data[offset + 0] = (byte) value;
+        this.data[offset + 1] = (byte) (value >> 8);
+    }
+
+
+    /**
      * Set if the parser runs into a problem but can continue parsing.
      *
      * @param message The notification message to store

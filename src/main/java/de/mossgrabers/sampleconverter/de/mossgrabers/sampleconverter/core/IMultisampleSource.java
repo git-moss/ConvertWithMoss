@@ -117,4 +117,12 @@ public interface IMultisampleSource
      * @param sampleMetadata The sample file information
      */
     void setVelocityLayers (List<IVelocityLayer> sampleMetadata);
+
+
+    /**
+     * Get the name to display for the mapping process.
+     *
+     * @return The name, usually the source file
+     */
+    String getMappingName ();
 }

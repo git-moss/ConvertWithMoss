@@ -66,7 +66,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
         catch (final RuntimeException ex)
         {
-            this.log (ex);
+            this.logError (ex);
         }
         final boolean cancelled = this.isCancelled ();
         this.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");
@@ -163,9 +163,22 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * Log the message to the notifier.
      *
      * @param messageID The ID of the message to get
+     * @param replaceStrings Replaces the %1..%n in the message with the strings
+     */
+    protected void logError (final String messageID, final String... replaceStrings)
+    {
+        if (this.notifier.isPresent ())
+            this.notifier.get ().notifyError (Functions.getMessage (messageID, replaceStrings));
+    }
+
+
+    /**
+     * Log the message to the notifier.
+     *
+     * @param messageID The ID of the message to get
      * @param throwable A throwable
      */
-    public void log (final String messageID, final Throwable throwable)
+    public void logError (final String messageID, final Throwable throwable)
     {
         if (this.notifier.isPresent ())
             this.notifier.get ().notifyError (Functions.getMessage (messageID), throwable);
@@ -177,9 +190,24 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      *
      * @param throwable A throwable
      */
-    public void log (final Throwable throwable)
+    public void logError (final Throwable throwable)
     {
         if (this.notifier.isPresent ())
             this.notifier.get ().notifyError (throwable.getMessage (), throwable);
+    }
+
+
+    protected String subtractPaths (final Optional<File> sourceFolder, final File folder)
+    {
+        final String analysePath = folder.getAbsolutePath ();
+
+        if (sourceFolder.isEmpty ())
+            return analysePath;
+
+        final String sourcePath = sourceFolder.get ().getAbsolutePath ();
+        if (analysePath.startsWith (sourcePath))
+            return analysePath.substring (sourcePath.length ());
+
+        return analysePath;
     }
 }

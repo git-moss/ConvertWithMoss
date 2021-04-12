@@ -11,6 +11,7 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.format.bitwig.creator.BitwigMultisampleCreatorDescriptor;
 import de.mossgrabers.sampleconverter.format.bitwig.detector.BitwigMultisampleDetectorDescriptor;
+import de.mossgrabers.sampleconverter.format.sf2.detector.Sf2DetectorDescriptor;
 import de.mossgrabers.sampleconverter.format.sfz.creator.SfzCreatorDescriptor;
 import de.mossgrabers.sampleconverter.format.sfz.detector.SfzDetectorDescriptor;
 import de.mossgrabers.sampleconverter.format.wav.detector.WavDetectorDescriptor;
@@ -18,6 +19,7 @@ import de.mossgrabers.sampleconverter.ui.tools.AbstractFrame;
 import de.mossgrabers.sampleconverter.ui.tools.DefaultApplication;
 import de.mossgrabers.sampleconverter.ui.tools.EndApplicationException;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
+import de.mossgrabers.sampleconverter.ui.tools.control.LoggerBox;
 import de.mossgrabers.sampleconverter.ui.tools.control.TitledSeparator;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
 import de.mossgrabers.sampleconverter.ui.tools.panel.ButtonPanel;
@@ -28,10 +30,8 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -41,8 +41,6 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -65,7 +63,8 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     {
         new WavDetectorDescriptor (),
         new BitwigMultisampleDetectorDescriptor (),
-        new SfzDetectorDescriptor ()
+        new SfzDetectorDescriptor (),
+        new Sf2DetectorDescriptor ()
     };
 
     private final ICreatorDescriptor []  creatorDescriptors                  =
@@ -85,11 +84,11 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
     private TabPane                      sourceTabPane;
     private TabPane                      destinationTabPane;
-    private TextArea                     loggingArea;
 
     private boolean                      onlyAnalyse                         = true;
     private Button                       closeButton;
     private Button                       cancelButton;
+    private final LoggerBox              loggingArea                         = new LoggerBox ();
 
 
     /**
@@ -208,9 +207,6 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
         // Execution pane
         this.executePane = new BorderPane ();
-        this.loggingArea = new TextArea ();
-        this.loggingArea.getStyleClass ().add ("logging");
-        this.loggingArea.setEditable (false);
 
         // The execution button panel
         final ButtonPanel exButtonPanel = new ButtonPanel (Orientation.VERTICAL);
@@ -219,10 +215,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         this.closeButton = exButtonPanel.createButton ("@IDS_EXEC_CLOSE");
         this.closeButton.setOnAction (event -> this.closeExecution ());
 
-        final ScrollPane scrollPane = new ScrollPane (this.loggingArea);
-        scrollPane.fitToWidthProperty ().set (true);
-        scrollPane.fitToHeightProperty ().set (true);
-        this.executePane.setCenter (scrollPane);
+        this.executePane.setCenter (this.loggingArea.getWebView ());
         this.executePane.setRight (exButtonPanel.getPane ());
         this.executePane.setVisible (false);
 
@@ -314,7 +307,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         this.executePane.setVisible (true);
 
         Platform.runLater ( () -> {
-            this.notify ("Detecting and converting multisamples...\n");
+            this.notify (Functions.getMessage ("IDS_NOTIFY_DETECTING"));
             this.detectorDescriptors[selectedDetector].detect (this.sourceFolder, this);
         });
     }
@@ -396,7 +389,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
             return;
 
         final ICreator creator = this.creatorDescriptors[selectedCreator].getCreator ();
-        this.notify ("Mapping: " + multisampleSource.getFolder () + "\n");
+        this.notify (Functions.getMessage ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ()));
 
         try
         {
@@ -409,7 +402,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         }
         catch (final IOException | RuntimeException ex)
         {
-            this.notifyError (" -> Could not create multisample.\n", ex);
+            this.notifyError (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED"), ex);
         }
     }
 
@@ -418,10 +411,15 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void notify (final String message)
     {
-        Platform.runLater ( () -> {
-            this.loggingArea.appendText (message);
-            this.loggingArea.end ();
-        });
+        this.loggingArea.notify (message);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void notifyError (final String message)
+    {
+        this.loggingArea.notifyError (message);
     }
 
 
@@ -429,17 +427,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void notifyError (final String message, final Throwable throwable)
     {
-        Platform.runLater ( () -> {
-            this.loggingArea.appendText (message);
-            this.loggingArea.appendText ("\n");
-
-            final StringWriter sw = new StringWriter ();
-            final PrintWriter pw = new PrintWriter (sw);
-            throwable.printStackTrace (pw);
-            this.loggingArea.appendText (sw.toString ());
-            this.loggingArea.appendText ("\n");
-            this.loggingArea.end ();
-        });
+        this.loggingArea.notifyError (message, throwable);
     }
 
 
