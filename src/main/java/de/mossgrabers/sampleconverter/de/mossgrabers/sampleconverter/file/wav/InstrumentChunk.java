@@ -20,6 +20,17 @@ public class InstrumentChunk extends WavChunk
 
 
     /**
+     * Constructor. Creates an empty instrument chunk.
+     */
+    public InstrumentChunk ()
+    {
+        super (RiffID.INST_ID, new RIFFChunk (0, RiffID.INST_ID.getId (), CHUNK_SIZE));
+
+        this.chunk.setData (new byte [CHUNK_SIZE]);
+    }
+
+
+    /**
      * Constructor.
      *
      * @param chunk The RIFF chunk which contains the data
@@ -127,7 +138,7 @@ public class InstrumentChunk extends WavChunk
         sb.append ("Low Note: ").append (this.getLowNote ()).append ('\n');
         sb.append ("High Note: ").append (this.getHighNote ()).append ('\n');
         sb.append ("Low Velocity: ").append (this.getLowVelocity ()).append ('\n');
-        sb.append ("High Velocity: ").append (this.getHighVelocity ()).append ('\n');
+        sb.append ("High Velocity: ").append (this.getHighVelocity ());
         return sb.toString ();
     }
 }

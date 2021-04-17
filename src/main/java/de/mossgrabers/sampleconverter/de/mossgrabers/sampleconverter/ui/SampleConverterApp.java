@@ -402,7 +402,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         }
         catch (final IOException | RuntimeException ex)
         {
-            this.notifyError (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED"), ex);
+            this.notifyError (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ()), ex);
         }
     }
 

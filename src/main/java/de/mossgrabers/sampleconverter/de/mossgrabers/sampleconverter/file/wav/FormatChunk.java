@@ -20,6 +20,7 @@ import java.util.Map;
 public class FormatChunk extends WavChunk
 {
     private static final int                  CHUNK_SIZE                 = 16;
+    private static final int                  CHUNK_SIZE_EX              = 20;
 
     /** Unknown data format. */
     public static final int                   WAVE_FORMAT_UNKNOWN        = 0x0000;
@@ -86,6 +87,27 @@ public class FormatChunk extends WavChunk
 
 
     /**
+     * Constructor. Creates an empty format chunk and initializes it as PCM format.
+     *
+     * @param numberOfChannels The number of channels of the sample
+     * @param sampleRate The sample rate
+     * @param bitsPerSample The resolution the sample in bits
+     * @param addFormatEx If true 4 additional empty bytes will be written
+     */
+    public FormatChunk (final int numberOfChannels, final int sampleRate, final int bitsPerSample, final boolean addFormatEx)
+    {
+        super (RiffID.FMT_ID, new RIFFChunk (0, RiffID.FMT_ID.getId (), addFormatEx ? CHUNK_SIZE_EX : CHUNK_SIZE));
+
+        this.chunk.setData (new byte [addFormatEx ? CHUNK_SIZE_EX : CHUNK_SIZE]);
+
+        this.setCompressionCode (WAVE_FORMAT_PCM);
+        this.setNumberOfChannels (numberOfChannels);
+        this.setSampleRate (sampleRate);
+        this.setSignicantBitsPerSample (bitsPerSample);
+    }
+
+
+    /**
      * Constructor.
      *
      * @param chunk The RIFF chunk which contains the data
@@ -112,17 +134,26 @@ public class FormatChunk extends WavChunk
 
     /**
      * The first word of format data specifies the type of compression used on the Wave data
-     * included in the Wave chunk found in this "RIFF" chunk. The following is a list of the common
-     * compression codes used today.
+     * included in the Wave chunk found in this "RIFF" chunk.
      *
-     * @return 0 (0x0000) Unknown, 1 (0x0001) PCM/uncompressed, 2 (0x0002) Microsoft ADPCM, 6
-     *         (0x0006) ITU G.711 a-law, 7 (0x0007) ITU G.711 Âμ-law, 17 (0x0011) IMA ADPCM, 20
-     *         (0x0016) ITU G.723 ADPCM (Yamaha), 49 (0x0031) GSM 6.10, 64 (0x0040) ITU G.721 ADPCM,
-     *         80 (0x0050) MPEG, 65,536 (0xFFFF) Experimental
+     * @return See the WAVE_FORMAT_* constants in this class
      */
     public int getCompressionCode ()
     {
         return this.chunk.twoBytesAsInt (0x00);
+    }
+
+
+    /**
+     * The first word of format data specifies the type of compression used on the Wave data
+     * included in the Wave chunk found in this "RIFF" chunk. The following is a list of the common
+     * compression codes used today.
+     *
+     * @param compressionCode Use the WAVE_FORMAT_* constants in this class
+     */
+    public void setCompressionCode (final int compressionCode)
+    {
+        this.chunk.intAsTwoBytes (0x00, compressionCode);
     }
 
 
@@ -146,6 +177,8 @@ public class FormatChunk extends WavChunk
     public void setNumberOfChannels (final int channels)
     {
         this.chunk.intAsTwoBytes (0x02, channels);
+
+        this.updateBlockAlign ();
     }
 
 
@@ -157,6 +190,20 @@ public class FormatChunk extends WavChunk
     public int getSampleRate ()
     {
         return this.chunk.fourBytesAsInt (0x04);
+    }
+
+
+    /**
+     * Set the number of sample slices per second. This value is unaffected by the number of
+     * channels.
+     *
+     * @param sampleRate The four bytes converted to an integer
+     */
+    public void setSampleRate (final int sampleRate)
+    {
+        this.chunk.intAsFourBytes (0x04, sampleRate);
+
+        this.updateAverageBytesPerSecond ();
     }
 
 
@@ -175,12 +222,14 @@ public class FormatChunk extends WavChunk
 
 
     /**
-     * Set the average bytes per second.
-     *
-     * @param averageBytesPerSecond The average bytes per second
+     * Update the average bytes per second, which is: sampleRate * blockAlign * numberOfChannels
      */
-    public void setAverageBytesPerSecond (final int averageBytesPerSecond)
+    private void updateAverageBytesPerSecond ()
     {
+        final int sampleRate = this.getSampleRate ();
+        final int numberOfChannels = this.getNumberOfChannels ();
+        final int blockAlign = this.getBlockAlign ();
+        final int averageBytesPerSecond = sampleRate * blockAlign * numberOfChannels;
         this.chunk.intAsFourBytes (0x08, averageBytesPerSecond);
     }
 
@@ -199,6 +248,23 @@ public class FormatChunk extends WavChunk
 
 
     /**
+     * Update the number of bytes per sample slice. This value is not affected by the number of
+     * channels and can be calculated with the formula: BlockAlign = SignificantBitsPerSample / 8 *
+     * NumChannels
+     */
+    private void updateBlockAlign ()
+    {
+        final int bitsPerSample = this.getSignicantBitsPerSample ();
+        final int numberOfChannels = this.getNumberOfChannels ();
+        final int blockAlign = bitsPerSample / 8 * numberOfChannels;
+        this.chunk.intAsTwoBytes (0x0C, blockAlign);
+
+        this.updateAverageBytesPerSecond ();
+    }
+
+
+    /**
+     * This is an extension of the format WAVE_FORMAT_PCM.<br/>
      * This value specifies the number of bits used to define each sample. This value is usually 8,
      * 16, 24 or 32. If the number of bits is not byte aligned (a multiple of 8) then the number of
      * bytes used per sample is rounded up to the nearest byte size and the unused bytes are set to
@@ -208,7 +274,26 @@ public class FormatChunk extends WavChunk
      */
     public int getSignicantBitsPerSample ()
     {
-        return this.chunk.twoBytesAsInt (0x0E);
+        if (0x0E < this.chunk.getData ().length)
+            return this.chunk.twoBytesAsInt (0x0E);
+        return 0;
+    }
+
+
+    /**
+     * This is an extension of the format WAVE_FORMAT_PCM.<br/>
+     * This value specifies the number of bits used to define each sample. This value is usually 8,
+     * 16, 24 or 32. If the number of bits is not byte aligned (a multiple of 8) then the number of
+     * bytes used per sample is rounded up to the nearest byte size and the unused bytes are set to
+     * 0 and ignored.
+     *
+     * @param bitsPerSample The bits per sample
+     */
+    public void setSignicantBitsPerSample (final int bitsPerSample)
+    {
+        this.chunk.intAsTwoBytes (0x0E, bitsPerSample);
+
+        this.updateBlockAlign ();
     }
 
 
@@ -226,6 +311,7 @@ public class FormatChunk extends WavChunk
         sb.append ("Average bytes per second: ").append (this.getAverageBytesPerSecond ()).append ('\n');
         sb.append ("Block align: ").append (this.getBlockAlign ()).append ('\n');
         sb.append ("Significant bits per sample: ").append (this.getSignicantBitsPerSample ()).append ('\n');
+        sb.append ("Extra bytes: ").append (this.chunk.getSize () - CHUNK_SIZE);
         return sb.toString ();
     }
 }

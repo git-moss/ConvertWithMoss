@@ -5,8 +5,6 @@
 package de.mossgrabers.sampleconverter.format.bitwig;
 
 import de.mossgrabers.sampleconverter.core.AbstractSampleMetadata;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.file.wav.FormatChunk;
 import de.mossgrabers.sampleconverter.file.wav.WaveFile;
@@ -40,14 +38,6 @@ public class BitwigSampleMetadata extends AbstractSampleMetadata
         super (filename);
 
         this.zipFile = zipFile;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void combine (final ISampleMetadata sample) throws CombinationNotPossibleException
-    {
-        // Intentionally empty
     }
 
 

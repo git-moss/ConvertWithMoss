@@ -5,7 +5,6 @@
 package de.mossgrabers.sampleconverter.format.wav;
 
 import de.mossgrabers.sampleconverter.core.AbstractSampleMetadata;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.LoopType;
 import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
@@ -90,14 +89,15 @@ public class WavSampleMetadata extends AbstractSampleMetadata
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public void combine (final ISampleMetadata sample) throws CombinationNotPossibleException
+    /**
+     * Combines two mono files into a stereo file. Format and sample chunks must be identical.
+     *
+     * @param sample The other sample to include
+     * @throws CombinationNotPossibleException Could not combine the wave files
+     */
+    public void combine (final WavSampleMetadata sample) throws CombinationNotPossibleException
     {
-        if (!(sample instanceof WavSampleMetadata))
-            throw new CombinationNotPossibleException (Functions.getMessage ("IDS_NOTIFY_ERR_ONLY_WAV"));
-
-        this.waveFile.combine (((WavSampleMetadata) sample).waveFile);
+        this.waveFile.combine (sample.waveFile);
     }
 
 

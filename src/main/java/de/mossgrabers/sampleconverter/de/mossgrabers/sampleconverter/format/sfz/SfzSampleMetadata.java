@@ -5,8 +5,6 @@
 package de.mossgrabers.sampleconverter.format.sfz;
 
 import de.mossgrabers.sampleconverter.core.AbstractSampleMetadata;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
 import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.file.wav.DataChunk;
@@ -35,14 +33,6 @@ public class SfzSampleMetadata extends AbstractSampleMetadata
     public SfzSampleMetadata (final File file)
     {
         super (file);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void combine (final ISampleMetadata sample) throws CombinationNotPossibleException
-    {
-        // Intentionally empty
     }
 
 

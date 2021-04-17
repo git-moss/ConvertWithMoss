@@ -22,7 +22,6 @@ public class RIFFChunk implements IChunk
     private int                             id;
     private int                             type;
     private long                            size;
-    private long                            position;
     private byte []                         data;
 
     private final Map<RIFFChunk, RIFFChunk> propertyChunks   = new HashMap<> ();
@@ -39,7 +38,7 @@ public class RIFFChunk implements IChunk
      */
     public RIFFChunk (final int type, final int id)
     {
-        this (type, id, -1, -1);
+        this (type, id, -1);
     }
 
 
@@ -49,11 +48,10 @@ public class RIFFChunk implements IChunk
      * @param type The type of the chunk
      * @param id The chunk ID
      * @param size The size of the chunk
-     * @param position The position in the file
      */
-    public RIFFChunk (final int type, final int id, final long size, final long position)
+    public RIFFChunk (final int type, final int id, final long size)
     {
-        this (type, id, size, position, null);
+        this (type, id, size, null);
     }
 
 
@@ -63,15 +61,13 @@ public class RIFFChunk implements IChunk
      * @param type The type of the chunk
      * @param id The chunk ID
      * @param size The size of the chunk
-     * @param position The position in the file
      * @param propGroup
      */
-    public RIFFChunk (final int type, final int id, final long size, final long position, final RIFFChunk propGroup)
+    public RIFFChunk (final int type, final int id, final long size, final RIFFChunk propGroup)
     {
         this.id = id;
         this.type = type;
         this.size = size;
-        this.position = position;
 
         if (propGroup == null)
             return;
@@ -107,17 +103,6 @@ public class RIFFChunk implements IChunk
     public long getSize ()
     {
         return this.size;
-    }
-
-
-    /**
-     * Get the position of the chunk in the RIFF file.
-     *
-     * @return The position within the file
-     */
-    public long getPosition ()
-    {
-        return this.position;
     }
 
 

@@ -26,6 +26,20 @@ public class SampleChunk extends WavChunk
 
 
     /**
+     * Constructor. Creates an empty sample chunk.
+     */
+    public SampleChunk ()
+    {
+        super (RiffID.SMPL_ID, new RIFFChunk (0, RiffID.SMPL_ID.getId (), CHUNK_SIZE));
+
+        this.chunk.setData (new byte [CHUNK_SIZE + LOOP_SIZE]);
+
+        this.loops = new ArrayList<> (1);
+        this.loops.add (new SampleChunkLoop (CHUNK_SIZE));
+    }
+
+
+    /**
      * Constructor.
      *
      * @param chunk The RIFF chunk which contains the data
@@ -200,7 +214,7 @@ public class SampleChunk extends WavChunk
 
 
     /**
-     * The sample loop section of a smpl chunk.
+     * The sample loop section of a sample chunk.
      */
     public class SampleChunkLoop
     {

@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.util;
+package de.mossgrabers.sampleconverter.format.wav.detector;
 
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
@@ -10,6 +10,7 @@ import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.MultisampleException;
 import de.mossgrabers.sampleconverter.exception.NoteNotDetectedException;
+import de.mossgrabers.sampleconverter.format.wav.WavSampleMetadata;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +32,7 @@ import java.util.regex.Pattern;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class KeyMapping
+public class WavKeyMapping
 {
     /** The names of notes. */
     private static final String []            NOTE_NAMES_FLAT         =
@@ -133,7 +134,8 @@ public class KeyMapping
     /**
      * Constructor.
      *
-     * @param sampleInfos The sample infos from which to get the filenames and set the key ranges.
+     * @param sampleInfos The sample information from which to get the filenames and set the key
+     *            ranges.
      * @param isAscending Sort ascending otherwise descending
      * @param crossfadeNotes The number of notes to crossfade ranges
      * @param crossfadeVelocities The number of velocity steps to crossfade ranges
@@ -142,7 +144,7 @@ public class KeyMapping
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    public KeyMapping (final ISampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    public WavKeyMapping (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
         this.name = this.calculateCommonName (this.findShortestFilename ());
 
@@ -203,16 +205,16 @@ public class KeyMapping
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    private List<IVelocityLayer> createLayers (final ISampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    private List<IVelocityLayer> createLayers (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
-        final Map<Integer, List<ISampleMetadata>> sampleMetadata = new TreeMap<> ();
-        final Map<Integer, List<ISampleMetadata>> layers = detectLayers (sampleInfos, layerPatterns);
+        final Map<Integer, List<WavSampleMetadata>> sampleMetadata = new TreeMap<> ();
+        final Map<Integer, List<WavSampleMetadata>> layers = detectLayers (sampleInfos, layerPatterns);
 
-        for (final Entry<Integer, List<ISampleMetadata>> entry: layers.entrySet ())
+        for (final Entry<Integer, List<WavSampleMetadata>> entry: layers.entrySet ())
         {
-            final List<ISampleMetadata> layer = entry.getValue ();
-            final Map<Integer, List<ISampleMetadata>> noteMap = this.detectNotes (layer);
-            final Map<Integer, ISampleMetadata> layerNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
+            final List<WavSampleMetadata> layer = entry.getValue ();
+            final Map<Integer, List<WavSampleMetadata>> noteMap = this.detectNotes (layer);
+            final Map<Integer, WavSampleMetadata> layerNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
             sampleMetadata.put (entry.getKey (), createKeyMaps (layerNoteMap));
 
             if (crossfadeNotes > 0 && crossfadeNotes < 128)
@@ -230,15 +232,15 @@ public class KeyMapping
      * @param isAscending Sort ascending otherwise descending
      * @return The sample metadata list by layer
      */
-    private static List<IVelocityLayer> orderLayers (final Map<Integer, List<ISampleMetadata>> sampleMetadata, final boolean isAscending)
+    private static List<IVelocityLayer> orderLayers (final Map<Integer, List<WavSampleMetadata>> sampleMetadata, final boolean isAscending)
     {
-        final Collection<List<ISampleMetadata>> layers = sampleMetadata.values ();
+        final Collection<List<WavSampleMetadata>> layers = sampleMetadata.values ();
         final List<IVelocityLayer> reorderedSampleMetadata = new ArrayList<> (layers.size ());
 
         // Reorder descending
         layers.forEach (layer -> {
 
-            final IVelocityLayer velocityLayer = new VelocityLayer (layer);
+            final IVelocityLayer velocityLayer = new VelocityLayer (new ArrayList<> (layer));
             if (isAscending)
                 reorderedSampleMetadata.add (velocityLayer);
             else
@@ -264,13 +266,13 @@ public class KeyMapping
      * @throws MultisampleException If there are more than 2 samples assigned to a note
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    private static Map<Integer, ISampleMetadata> convertSplitStereo (final Map<Integer, List<ISampleMetadata>> noteMap, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    private static Map<Integer, WavSampleMetadata> convertSplitStereo (final Map<Integer, List<WavSampleMetadata>> noteMap, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
         // Check if each note has assigned 1 or 2 files all other cases give an exception
         int noOfAssignedSamples = -1;
-        for (final Entry<Integer, List<ISampleMetadata>> entry: noteMap.entrySet ())
+        for (final Entry<Integer, List<WavSampleMetadata>> entry: noteMap.entrySet ())
         {
-            final List<ISampleMetadata> samples = entry.getValue ();
+            final List<WavSampleMetadata> samples = entry.getValue ();
 
             final int size = samples.size ();
             if (noOfAssignedSamples == -1)
@@ -294,8 +296,8 @@ public class KeyMapping
 
         if (noOfAssignedSamples == 1)
         {
-            final Map<Integer, ISampleMetadata> result = new TreeMap<> ();
-            for (final Entry<Integer, List<ISampleMetadata>> entry: noteMap.entrySet ())
+            final Map<Integer, WavSampleMetadata> result = new TreeMap<> ();
+            for (final Entry<Integer, List<WavSampleMetadata>> entry: noteMap.entrySet ())
                 result.put (entry.getKey (), entry.getValue ().get (0));
             return result;
         }
@@ -311,12 +313,12 @@ public class KeyMapping
      * @return The combined samples assigned to notes
      * @throws CombinationNotPossibleException Could not combine the samples
      */
-    private static Map<Integer, ISampleMetadata> combineAllMonoToStereo (final Map<Integer, List<ISampleMetadata>> noteMap, final String [] leftChannelPatterns) throws CombinationNotPossibleException
+    private static Map<Integer, WavSampleMetadata> combineAllMonoToStereo (final Map<Integer, List<WavSampleMetadata>> noteMap, final String [] leftChannelPatterns) throws CombinationNotPossibleException
     {
-        final Map<Integer, ISampleMetadata> result = new TreeMap<> ();
-        for (final Entry<Integer, List<ISampleMetadata>> entry: noteMap.entrySet ())
+        final Map<Integer, WavSampleMetadata> result = new TreeMap<> ();
+        for (final Entry<Integer, List<WavSampleMetadata>> entry: noteMap.entrySet ())
         {
-            final List<ISampleMetadata> samples = entry.getValue ();
+            final List<WavSampleMetadata> samples = entry.getValue ();
             result.put (entry.getKey (), combineMonoToStereo (samples.get (0), samples.get (1), leftChannelPatterns));
         }
         return result;
@@ -332,7 +334,7 @@ public class KeyMapping
      * @return First item is the left channel, second is the right channel
      * @throws CombinationNotPossibleException Could not detect the left channel
      */
-    private static ISampleMetadata combineMonoToStereo (final ISampleMetadata first, final ISampleMetadata second, final String [] leftChannelPatterns) throws CombinationNotPossibleException
+    private static WavSampleMetadata combineMonoToStereo (final WavSampleMetadata first, final WavSampleMetadata second, final String [] leftChannelPatterns) throws CombinationNotPossibleException
     {
         for (final String pattern: leftChannelPatterns)
         {
@@ -355,7 +357,7 @@ public class KeyMapping
      * @throws CombinationNotPossibleException The files are not mono files or have different sample
      *             or loop lengths
      */
-    private static ISampleMetadata combineLeftRight (final ISampleMetadata leftChannel, final ISampleMetadata rightChannel, final String pattern) throws CombinationNotPossibleException
+    private static WavSampleMetadata combineLeftRight (final WavSampleMetadata leftChannel, final WavSampleMetadata rightChannel, final String pattern) throws CombinationNotPossibleException
     {
         leftChannel.combine (rightChannel);
         leftChannel.setCombinedName (leftChannel.getFilename ().replace (pattern, ""));
@@ -372,9 +374,9 @@ public class KeyMapping
      * @throws MultisampleException There was a pattern detected but (or more) of the samples could
      *             not be matched
      */
-    private static Map<Integer, List<ISampleMetadata>> detectLayers (final ISampleMetadata [] sampleInfos, final String [] layerPatterns) throws MultisampleException
+    private static Map<Integer, List<WavSampleMetadata>> detectLayers (final WavSampleMetadata [] sampleInfos, final String [] layerPatterns) throws MultisampleException
     {
-        final Map<Integer, List<ISampleMetadata>> layers = new TreeMap<> ();
+        final Map<Integer, List<WavSampleMetadata>> layers = new TreeMap<> ();
 
         // If no layers are detected create one layer which contains all samples
         final Optional<Pattern> patternResult = getLayerPattern (sampleInfos, layerPatterns);
@@ -386,7 +388,7 @@ public class KeyMapping
 
         // Now match all sample names with the detected layer pattern
         final Pattern pattern = patternResult.get ();
-        for (final ISampleMetadata si: sampleInfos)
+        for (final WavSampleMetadata si: sampleInfos)
         {
             final String filename = si.getFilename ();
             final Matcher matcher = pattern.matcher (filename);
@@ -461,10 +463,10 @@ public class KeyMapping
      * @return The map with note and sample metadata pairs ordered by the note
      * @throws NoteNotDetectedException NOte could not be detected from filename
      */
-    private Map<Integer, List<ISampleMetadata>> createNoteMap (final List<ISampleMetadata> samples) throws NoteNotDetectedException
+    private Map<Integer, List<WavSampleMetadata>> createNoteMap (final List<WavSampleMetadata> samples) throws NoteNotDetectedException
     {
-        final Map<Integer, List<ISampleMetadata>> orderedNotes = new TreeMap<> ();
-        for (final ISampleMetadata sample: samples)
+        final Map<Integer, List<WavSampleMetadata>> orderedNotes = new TreeMap<> ();
+        for (final WavSampleMetadata sample: samples)
         {
             final Optional<String> filename = sample.getUpdatedFilename ();
             if (filename.isEmpty ())
@@ -493,12 +495,12 @@ public class KeyMapping
      * @return The map with note and sample metadata pairs ordered by the note
      * @throws NoteNotDetectedException NOte could not be detected from filename
      */
-    private Map<Integer, List<ISampleMetadata>> createNoteMap (final List<ISampleMetadata> samples, final Map<String, Integer> keyMap) throws NoteNotDetectedException
+    private Map<Integer, List<WavSampleMetadata>> createNoteMap (final List<WavSampleMetadata> samples, final Map<String, Integer> keyMap) throws NoteNotDetectedException
     {
         this.extractedNames.clear ();
 
-        final Map<Integer, List<ISampleMetadata>> orderedNotes = new TreeMap<> ();
-        for (final ISampleMetadata sample: samples)
+        final Map<Integer, List<WavSampleMetadata>> orderedNotes = new TreeMap<> ();
+        for (final WavSampleMetadata sample: samples)
         {
             final String filename = sample.getFilenameWithoutLayer ();
             final int midiNote = this.lookupMidiNote (keyMap, filename);
@@ -519,7 +521,7 @@ public class KeyMapping
      * @return The key map
      * @throws MultisampleException Could not detect a note map
      */
-    private Map<Integer, List<ISampleMetadata>> detectNotes (final List<ISampleMetadata> samples) throws MultisampleException
+    private Map<Integer, List<WavSampleMetadata>> detectNotes (final List<WavSampleMetadata> samples) throws MultisampleException
     {
         // First try to detect the notes from the sample chunk
         try
@@ -548,14 +550,14 @@ public class KeyMapping
      * @param orderedNotes The sample metadata ordered by their MIDI root note
      * @return The ordered samples
      */
-    private static List<ISampleMetadata> createKeyMaps (final Map<Integer, ISampleMetadata> orderedNotes)
+    private static List<WavSampleMetadata> createKeyMaps (final Map<Integer, WavSampleMetadata> orderedNotes)
     {
-        final List<ISampleMetadata> ordered = new ArrayList<> ();
+        final List<WavSampleMetadata> ordered = new ArrayList<> ();
 
-        ISampleMetadata previous = null;
-        for (final Map.Entry<Integer, ISampleMetadata> e: orderedNotes.entrySet ())
+        WavSampleMetadata previous = null;
+        for (final Map.Entry<Integer, WavSampleMetadata> e: orderedNotes.entrySet ())
         {
-            final ISampleMetadata current = e.getValue ();
+            final WavSampleMetadata current = e.getValue ();
             if (previous == null)
                 current.setKeyLow (0);
             else
@@ -625,10 +627,10 @@ public class KeyMapping
      * @param noteMap The note map ordered by notes ascending
      * @param crossfadeNotes The number of notes to crossfade
      */
-    private static void createCrossfades (final Map<Integer, ISampleMetadata> noteMap, final int crossfadeNotes)
+    private static void createCrossfades (final Map<Integer, WavSampleMetadata> noteMap, final int crossfadeNotes)
     {
-        ISampleMetadata previousSampleMetadata = null;
-        for (final ISampleMetadata sampleMetadata: noteMap.values ())
+        WavSampleMetadata previousSampleMetadata = null;
+        for (final WavSampleMetadata sampleMetadata: noteMap.values ())
         {
             if (previousSampleMetadata != null)
             {

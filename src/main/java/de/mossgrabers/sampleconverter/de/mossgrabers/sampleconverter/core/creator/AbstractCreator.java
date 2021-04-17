@@ -102,4 +102,16 @@ public abstract class AbstractCreator implements ICreator
             return Optional.empty ();
         }
     }
+
+
+    /**
+     * Removes illegal characters from file names.
+     *
+     * @param filename A potential filename
+     * @return The filename with illegal characters replaced by an underscore
+     */
+    protected static String createSafeFilename (final String filename)
+    {
+        return filename.replaceAll ("[\\\\/:*?\"<>|&\\.]", "_");
+    }
 }

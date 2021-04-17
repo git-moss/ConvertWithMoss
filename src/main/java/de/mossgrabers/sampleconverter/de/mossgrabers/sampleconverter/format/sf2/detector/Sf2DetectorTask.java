@@ -5,6 +5,7 @@
 package de.mossgrabers.sampleconverter.format.sf2.detector;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
+import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.VelocityLayer;
@@ -97,10 +98,6 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         try
         {
             final Sf2File sf2File = new Sf2File (sourceFile);
-
-            // TODO remove
-            // this.notifier.get ().notify (sf2File.printInfo ());
-
             final String name = getNameWithoutType (sourceFile);
             final String [] parts = createPathParts (sourceFile.getParentFile (), this.sourceFolder.get (), name);
             return this.parseSF2File (sourceFile, sf2File, parts);
@@ -155,9 +152,6 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 final Sf2Instrument instrument = zone.getInstrument ();
                 final VelocityLayer layer = new VelocityLayer (instrument.getName ());
 
-                // TODO combine mono to stereo depending on sample type and/or panning (check for
-                // same sample and loop length as well as sample rate!)
-
                 for (int instrumentZoneIndex = 0; instrumentZoneIndex < instrument.getZoneCount (); instrumentZoneIndex++)
                 {
                     final Sf2InstrumentZone instrZone = instrument.getZone (instrumentZoneIndex);
@@ -173,12 +167,209 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 layers.add (layer);
             }
 
-            source.setVelocityLayers (layers);
+            source.setVelocityLayers (this.combineToStereo (layers));
 
             multisamples.add (source);
         }
 
         return multisamples;
+    }
+
+
+    /**
+     * SF2 contains only mono files. Combine them to stereo, if setup as split-stereo or (only)
+     * panned left/right. If it is a pure mono file (not panned) leave it as it is.
+     *
+     * @param layers The layers which contain the samples to combine
+     * @return The layers with combined samples for convenience
+     */
+    private List<IVelocityLayer> combineToStereo (final List<IVelocityLayer> layers)
+    {
+        for (final IVelocityLayer layer: layers)
+        {
+            final List<ISampleMetadata> sampleMetadataOfLayer = layer.getSampleMetadata ();
+
+            final int initialCapacity = sampleMetadataOfLayer.size () / 2;
+            final List<ISampleMetadata> resultSamples = new ArrayList<> (initialCapacity);
+            final List<Sf2SampleMetadata> leftSamples = new ArrayList<> (initialCapacity);
+            final List<Sf2SampleMetadata> rightSamples = new ArrayList<> (initialCapacity);
+            final List<Sf2SampleMetadata> panLeftSamples = new ArrayList<> (initialCapacity);
+            final List<Sf2SampleMetadata> panRightSamples = new ArrayList<> (initialCapacity);
+
+            for (final ISampleMetadata sampleMetadata: sampleMetadataOfLayer)
+            {
+                final Sf2SampleMetadata sf2SampleMetadata = (Sf2SampleMetadata) sampleMetadata;
+                final Sf2SampleDescriptor sample = sf2SampleMetadata.getSample ();
+
+                // Store left and right samples in different lists first
+                switch (sample.getSampleType ())
+                {
+                    case Sf2SampleDescriptor.LEFT:
+                        leftSamples.add (sf2SampleMetadata);
+                        break;
+
+                    case Sf2SampleDescriptor.RIGHT:
+                        rightSamples.add (sf2SampleMetadata);
+                        break;
+
+                    default:
+                    case Sf2SampleDescriptor.MONO:
+                        final int panorama = sf2SampleMetadata.getPanorama ();
+                        if (panorama == 0)
+                            resultSamples.add (sampleMetadata);
+                        else if (panorama < 0)
+                            panLeftSamples.add (sf2SampleMetadata);
+                        else
+                            panRightSamples.add (sf2SampleMetadata);
+                        break;
+                }
+            }
+
+            if (leftSamples.size () != rightSamples.size ())
+                this.logError ("IDS_NOTIFY_ERR_DIFFERENT_NUMBER_LEFT_RIGHT", Integer.toString (leftSamples.size ()), Integer.toString (rightSamples.size ()));
+
+            resultSamples.addAll (this.combineLinkedSamples (leftSamples, rightSamples));
+            resultSamples.addAll (this.combinePanoramaSamples (panLeftSamples, panRightSamples));
+
+            layer.setSampleMetadata (resultSamples);
+        }
+
+        return layers;
+    }
+
+
+    /**
+     * Match the left and right hand side samples. The left hand side is linked to the right hand
+     * side via an index.
+     *
+     * @param leftSamples The left hand side mono samples
+     * @param rightSamples The right hand side mono samples
+     * @return The stereo combined result samples
+     */
+    private List<ISampleMetadata> combineLinkedSamples (final List<Sf2SampleMetadata> leftSamples, final List<Sf2SampleMetadata> rightSamples)
+    {
+        final List<ISampleMetadata> resultSamples = new ArrayList<> ();
+
+        for (final Sf2SampleMetadata leftSample: leftSamples)
+        {
+            final int rightSampleIndex = leftSample.getSample ().getLinkedSample ();
+
+            Sf2SampleMetadata rightSample;
+            boolean found = false;
+            for (int i = 0; i < rightSamples.size (); i++)
+            {
+                rightSample = rightSamples.get (i);
+                final Sf2SampleDescriptor sample = rightSample.getSample ();
+                // Match via the linked index
+                if (sample.getSampleIndex () == rightSampleIndex)
+                {
+                    if (this.compareSampleFormat (leftSample, rightSample))
+                    {
+                        // Store the matching right side sample with the left side one
+                        leftSample.setRightSample (sample);
+                        resultSamples.add (leftSample);
+                        rightSamples.remove (i);
+                        found = true;
+                    }
+                    break;
+                }
+            }
+            // No match found, keep the left sample
+            if (!found)
+                resultSamples.add (leftSample);
+        }
+
+        // Add all unmatched right samples
+        if (!rightSamples.isEmpty ())
+            resultSamples.addAll (rightSamples);
+
+        return resultSamples;
+    }
+
+
+    /**
+     * Match the left and right hand side samples. The left and right hand side are identified by
+     * their panning, key- and velocity-range.
+     *
+     * @param panLeftSamples The left hand side mono samples
+     * @param panRightSamples The right hand side mono samples
+     * @return The stereo combined result samples
+     */
+    private List<ISampleMetadata> combinePanoramaSamples (final List<Sf2SampleMetadata> panLeftSamples, final List<Sf2SampleMetadata> panRightSamples)
+    {
+        final List<ISampleMetadata> resultSamples = new ArrayList<> ();
+
+        for (final Sf2SampleMetadata panLeftSample: panLeftSamples)
+        {
+            final int keyLow = panLeftSample.getKeyLow ();
+            final int keyHigh = panLeftSample.getKeyHigh ();
+            final int velocityLow = panLeftSample.getVelocityLow ();
+            final int velocityHigh = panLeftSample.getVelocityHigh ();
+
+            Sf2SampleMetadata panRightSample;
+            boolean found = false;
+            for (int i = 0; i < panRightSamples.size (); i++)
+            {
+                panRightSample = panRightSamples.get (i);
+                // Match by the key and velocity range
+                if (keyLow == panRightSample.getKeyLow () && keyHigh == panRightSample.getKeyHigh () && velocityLow == panRightSample.getVelocityLow () && velocityHigh == panRightSample.getVelocityHigh ())
+                {
+                    if (this.compareSampleFormat (panLeftSample, panRightSample))
+                    {
+                        // Store the matching right side sample with the left side one
+                        panLeftSample.setRightSample (panRightSample.getSample ());
+                        resultSamples.add (panLeftSample);
+                        panRightSamples.remove (i);
+                        found = true;
+                    }
+                    break;
+                }
+            }
+            // No match found, keep the left sample
+            if (!found)
+                resultSamples.add (panLeftSample);
+        }
+
+        // Add all unmatched right samples
+        if (!panRightSamples.isEmpty ())
+            resultSamples.addAll (panRightSamples);
+
+        return resultSamples;
+    }
+
+
+    private boolean compareSampleFormat (final Sf2SampleMetadata leftSample, final Sf2SampleMetadata rightSample)
+    {
+        final Sf2SampleDescriptor left = leftSample.getSample ();
+        final Sf2SampleDescriptor right = rightSample.getSample ();
+
+        if (left.getOriginalPitch () != right.getOriginalPitch () || left.getPitchCorrection () != right.getPitchCorrection ())
+        {
+            this.logError ("IDS_NOTIFY_ERR_DIFFERENT_PITCH", left.getName (), right.getName ());
+            return false;
+        }
+
+        if (left.getSampleRate () != right.getSampleRate ())
+        {
+            this.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_RATE", left.getName (), right.getName ());
+            return false;
+        }
+
+        // Loops must have the same start and length
+        final long leftStart = left.getStartloop () - left.getStart ();
+        final long rightStart = right.getStartloop () - right.getStart ();
+        final long leftLoopLength = left.getEndloop () - left.getStartloop ();
+        final long rightLoopLength = right.getEndloop () - right.getStartloop ();
+        if (!leftSample.getLoops ().isEmpty () && (leftStart != rightStart || leftLoopLength != rightLoopLength))
+            this.logError ("IDS_NOTIFY_ERR_DIFFERENT_LOOP_LENGTH", left.getName (), right.getName (), Long.toString (leftStart), Long.toString (leftLoopLength), Long.toString (rightStart), Long.toString (rightLoopLength));
+
+        // Only show the warning if there is no loop
+        final long leftLength = left.getEnd () - left.getStart ();
+        final long rightLength = right.getEnd () - right.getStart ();
+        if (leftLength != rightLength)
+            this.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_LENGTH", left.getName (), Long.toString (leftLength), right.getName (), Long.toString (rightLength));
+
+        return true;
     }
 
 
@@ -191,7 +382,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      */
     private static Sf2SampleMetadata createSampleMetadata (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
     {
-        final Sf2SampleMetadata sampleMetadata = new Sf2SampleMetadata (sample);
+        final Sf2SampleMetadata sampleMetadata = new Sf2SampleMetadata (sample, generators.getSignedValue (Generator.PANORAMA));
 
         // Set the pitch
         final int overridingRootKey = generators.getUnsignedValue (Generator.OVERRIDING_ROOT_KEY).intValue ();
@@ -199,7 +390,8 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         pitch += generators.getSignedValue (Generator.COARSE_TUNE).intValue ();
         sampleMetadata.setKeyRoot (pitch);
         final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
-        sampleMetadata.setTune (sample.getPitchCorrection () + (double) fineTune);
+        final double tune = Math.min (1, Math.max (-1, (sample.getPitchCorrection () + (double) fineTune) / 100));
+        sampleMetadata.setTune (tune);
         final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
         sampleMetadata.setKeyTracking (Math.min (100, Math.max (0, scaleTuning)) / 100.0);
 

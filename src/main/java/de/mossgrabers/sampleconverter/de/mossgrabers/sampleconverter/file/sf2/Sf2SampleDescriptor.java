@@ -35,6 +35,10 @@ public class Sf2SampleDescriptor
     /** A linked sample located in the ROM. */
     public static final int ROM_LINKED = 32776;
 
+    private final int       sampleIndex;
+    private final byte []   sampleData;
+    private final byte []   sample24Data;
+
     private String          name;
     private long            start;
     private long            end;
@@ -43,7 +47,23 @@ public class Sf2SampleDescriptor
     private long            sampleRate;
     private int             originalPitch;
     private int             pitchCorrection;
+    private int             sampleLink;
     private int             sampleType;
+
+
+    /**
+     * Constructor.
+     *
+     * @param sampleIndex The index of the sample
+     * @param sample24Data
+     * @param sampleData
+     */
+    public Sf2SampleDescriptor (final int sampleIndex, final byte [] sampleData, final byte [] sample24Data)
+    {
+        this.sampleIndex = sampleIndex;
+        this.sampleData = sampleData;
+        this.sample24Data = sample24Data;
+    }
 
 
     /**
@@ -57,7 +77,10 @@ public class Sf2SampleDescriptor
     {
         final byte [] data = chunk.getData ();
 
-        this.name = new String (data, offset, 20, StandardCharsets.US_ASCII).trim ();
+        int pos = 0;
+        while (pos < 20 && data[offset + pos] != 0)
+            pos++;
+        this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
 
         this.start = chunk.fourBytesAsInt (offset + 20);
         this.end = chunk.fourBytesAsInt (offset + 24);
@@ -69,11 +92,22 @@ public class Sf2SampleDescriptor
         this.originalPitch = chunk.byteAsUnsignedInt (offset + 40);
         this.pitchCorrection = chunk.byteAsSignedInt (offset + 41);
 
-        // Sample link not supported: WORD at offset + 42
+        this.sampleLink = chunk.byteAsUnsignedInt (offset + 42);
 
         this.sampleType = chunk.twoBytesAsInt (offset + 44);
         if (this.sampleType >= LINKED)
             throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_UNSUPPORTED_SAMPLE_TYPE"));
+    }
+
+
+    /**
+     * Get the index of the sample.
+     *
+     * @return The index of the sample
+     */
+    public int getSampleIndex ()
+    {
+        return this.sampleIndex;
     }
 
 
@@ -171,6 +205,17 @@ public class Sf2SampleDescriptor
 
 
     /**
+     * Get the ID of the linked left or right sample, if any.
+     *
+     * @return The ID of the linked sample
+     */
+    public int getLinkedSample ()
+    {
+        return this.sampleLink;
+    }
+
+
+    /**
      * The type of the sample.
      *
      * @return monoSample = 1, rightSample = 2, leftSample = 4, all other types are not supported
@@ -179,5 +224,27 @@ public class Sf2SampleDescriptor
     public int getSampleType ()
     {
         return this.sampleType;
+    }
+
+
+    /**
+     * Get the raw sample data (16 bit).
+     *
+     * @return The sampleData
+     */
+    public byte [] getSampleData ()
+    {
+        return this.sampleData;
+    }
+
+
+    /**
+     * Get the additional 8 bit to form 24 bit.
+     *
+     * @return The additional 8 bit or null if it is a 16 bit sample
+     */
+    public byte [] getSample24Data ()
+    {
+        return this.sample24Data;
     }
 }

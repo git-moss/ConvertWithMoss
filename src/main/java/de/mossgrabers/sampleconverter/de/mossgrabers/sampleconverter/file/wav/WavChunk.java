@@ -26,6 +26,19 @@ public class WavChunk implements IChunk
      *
      * @param riffId The RIFF id
      * @param chunk The RIFF chunk which contains the data
+     */
+    protected WavChunk (final RiffID riffId, final RIFFChunk chunk)
+    {
+        this.riffId = riffId;
+        this.chunk = chunk;
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param riffId The RIFF id
+     * @param chunk The RIFF chunk which contains the data
      * @param chunkSize The size of the data
      * @throws ParseException Length of data does not match the expected chunk size
      */

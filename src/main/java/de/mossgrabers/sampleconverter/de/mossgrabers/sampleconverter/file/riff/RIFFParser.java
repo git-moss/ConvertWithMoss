@@ -131,7 +131,7 @@ public class RIFFParser
             throw new ParseException ("Invalid FORM Type: \"" + RiffID.toASCII (type) + "\"");
 
         final RIFFChunk propGroup = props == null ? null : props.get (Integer.valueOf (type));
-        final RIFFChunk chunk = new RIFFChunk (type, RiffID.RIFF_ID.getId (), size, offset, propGroup);
+        final RIFFChunk chunk = new RIFFChunk (type, RiffID.RIFF_ID.getId (), size, propGroup);
 
         boolean visitorWantsToEnterGroup = false;
         if (this.isGroupChunk (chunk))
@@ -194,7 +194,7 @@ public class RIFFParser
             throw new ParseException ("Invalid LIST Type: \"" + type + "\"");
 
         final RIFFChunk propGroup = props == null ? null : props.get (Integer.valueOf (type));
-        final RIFFChunk chunk = new RIFFChunk (type, RiffID.LIST_ID.getId (), size, scan, propGroup);
+        final RIFFChunk chunk = new RIFFChunk (type, RiffID.LIST_ID.getId (), size, propGroup);
 
         boolean visitorWantsToEnterGroup = false;
         if (this.isGroupChunk (chunk))
@@ -219,7 +219,7 @@ public class RIFFParser
                         this.parseLocalChunk (chunk, id);
                     else
                     {
-                        this.parseGarbage (chunk, id, finish - this.getPosition (this.in), this.getPosition (this.in));
+                        this.parseGarbage (chunk, id, finish - this.getPosition (this.in));
                         final ParseException pex = new ParseException ("Invalid Chunk: \"" + id + "\" at offset:" + idscan);
                         chunk.setParserMessage (pex.getMessage ());
                     }
@@ -252,8 +252,8 @@ public class RIFFParser
     private void parseLocalChunk (final RIFFChunk parent, final int id) throws ParseException, IOException
     {
         final long size = this.in.readULONG ();
-        final long scan = this.getPosition (this.in);
-        final RIFFChunk chunk = new RIFFChunk (parent == null ? 0 : parent.getType (), id, size, scan);
+        this.getPosition (this.in);
+        final RIFFChunk chunk = new RIFFChunk (parent == null ? 0 : parent.getType (), id, size);
 
         if (size < 0)
             throw new ParseException ("Found negative chunk length. File is broken?!");
@@ -299,13 +299,12 @@ public class RIFFParser
      * @param parent The parent chunk
      * @param id The chunk id
      * @param size The size to read
-     * @param position The current position
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseGarbage (final RIFFChunk parent, final int id, final long size, final long position) throws ParseException, IOException
+    private void parseGarbage (final RIFFChunk parent, final int id, final long size) throws ParseException, IOException
     {
-        final RIFFChunk chunk = new RIFFChunk (parent.getType (), id, size, position);
+        final RIFFChunk chunk = new RIFFChunk (parent.getType (), id, size);
 
         if (this.isDataChunk (chunk))
         {

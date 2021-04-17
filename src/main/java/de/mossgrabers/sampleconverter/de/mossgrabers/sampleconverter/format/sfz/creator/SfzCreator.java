@@ -55,7 +55,7 @@ public class SfzCreator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = multisampleSource.getName ();
+        final String sampleName = createSafeFilename (multisampleSource.getName ());
         final File multiFile = new File (destinationFolder, sampleName + ".sfz");
         if (multiFile.exists ())
         {
