@@ -4,7 +4,7 @@
 
 package de.mossgrabers.sampleconverter.exception;
 
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.format.wav.WavSampleMetadata;
 
 import java.util.List;
 import java.util.Map.Entry;
@@ -38,16 +38,16 @@ public class MultisampleException extends Exception
      * @param message The message
      * @param keySamples The samples assigned to a key which caused the problem
      */
-    public MultisampleException (final String message, final Entry<Integer, List<ISampleMetadata>> keySamples)
+    public MultisampleException (final String message, final Entry<Integer, List<WavSampleMetadata>> keySamples)
     {
         super (format (message, keySamples));
     }
 
 
-    private static String format (final String message, final Entry<Integer, List<ISampleMetadata>> keySamples)
+    private static String format (final String message, final Entry<Integer, List<WavSampleMetadata>> keySamples)
     {
         final StringBuilder sb = new StringBuilder (message).append ("\nKey: ").append (keySamples.getKey ()).append ('\n');
-        final List<ISampleMetadata> samples = keySamples.getValue ();
+        final List<WavSampleMetadata> samples = keySamples.getValue ();
         for (int i = 0; i < samples.size (); i++)
         {
             final Optional<String> filename = samples.get (i).getUpdatedFilename ();

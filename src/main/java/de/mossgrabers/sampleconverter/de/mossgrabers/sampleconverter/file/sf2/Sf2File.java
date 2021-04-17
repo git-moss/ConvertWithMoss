@@ -32,36 +32,51 @@ import java.util.Set;
  */
 public class Sf2File
 {
-    /** The length of the PBAG structure. */
-    private static final int          LENGTH_PBAG   = 4;
-    /** The length of the PGEN structure. */
-    private static final int          LENGTH_PGEN   = 4;
-    /** The length of the INST structure. */
-    private static final int          LENGTH_INST   = 22;
-    /** The length of the IBAG structure. */
-    private static final int          LENGTH_IBAG   = 4;
-    /** The length of the IGEN structure. */
-    private static final int          LENGTH_IGEN   = 4;
-    /** The length of the SHDR structure. */
-    private static final int          LENGTH_SHDR   = 46;
+    private static final String       SOUND_ENGINE_DEFAULT = "EMU8000";
 
-    private double                    version       = -1;
+    /** The length of the PBAG structure. */
+    private static final int          LENGTH_PBAG          = 4;
+    /** The length of the PGEN structure. */
+    private static final int          LENGTH_PGEN          = 4;
+    /** The length of the INST structure. */
+    private static final int          LENGTH_INST          = 22;
+    /** The length of the IBAG structure. */
+    private static final int          LENGTH_IBAG          = 4;
+    /** The length of the IGEN structure. */
+    private static final int          LENGTH_IGEN          = 4;
+    /** The length of the SHDR structure. */
+    private static final int          LENGTH_SHDR          = 46;
+
+    private double                    version              = -1;
     private String                    soundEngine;
     private String                    compatibleBank;
     private String                    soundDataROM;
-    private double                    romRevision   = -1;
+    private double                    romRevision          = -1;
     private String                    creationDate;
     private String                    soundDesigner;
     private String                    intendedProduct;
     private String                    copyright;
     private String                    comment;
     private String                    creationTool;
+
+    /**
+     * The smpl sub-chunk, if present, contains one or more “samples” of digital audio information
+     * in the form of linearly coded sixteen bit, signed, little endian (least significant byte
+     * first) words. Each sample is followed by a minimum of forty-six zero valued sample data
+     * points. These zero valued data points are necessary to guarantee that any reasonable upward
+     * pitch shift using any reasonable interpolator can loop on zero data at the end of the sound.
+     */
     private byte []                   sampleData;
+    /**
+     * The sm24 sub-chunk, if present, contains the least significant byte counterparts to each
+     * sample data point contained in the smpl chunk. Note this means for every two bytes in the
+     * [smpl] sub-chunk there is a 1-byte counterpart in [sm24] sub-chunk.
+     */
     private byte []                   sample24Data;
 
-    private final List<Sf2Preset>     presets       = new ArrayList<> ();
-    private final List<Sf2Instrument> instruments   = new ArrayList<> ();
-    private final Set<String>         ignoredChunks = new HashSet<> ();
+    private final List<Sf2Preset>     presets              = new ArrayList<> ();
+    private final List<Sf2Instrument> instruments          = new ArrayList<> ();
+    private final Set<String>         ignoredChunks        = new HashSet<> ();
 
 
     /**
@@ -259,10 +274,11 @@ public class Sf2File
         // Check mandatory fields
         if (this.version < 0)
             throw new ParseException ("No version found in SF2 file.");
+        // These fields are mandatory too but there are several SF2 files without them...
         if (this.soundEngine == null)
-            throw new ParseException ("No sound engine found in SF2 file.");
+            this.soundEngine = SOUND_ENGINE_DEFAULT;
         if (this.compatibleBank == null)
-            throw new ParseException ("No compatible bank found in SF2 file.");
+            this.compatibleBank = "";
     }
 
 
@@ -311,7 +327,7 @@ public class Sf2File
                     Sf2File.this.version = chunk.twoBytesAsInt (0) + chunk.twoBytesAsInt (2) / 100.0;
                     break;
                 case SF_ISNG_ID:
-                    Sf2File.this.soundEngine = chunk.getNullTerminatedString (0, "EMU8000").trim ();
+                    Sf2File.this.soundEngine = chunk.getNullTerminatedString (0, SOUND_ENGINE_DEFAULT).trim ();
                     break;
                 case SF_INAM_ID:
                     Sf2File.this.compatibleBank = chunk.getNullTerminatedString (0, "").trim ();
@@ -631,7 +647,7 @@ public class Sf2File
             final List<Sf2SampleDescriptor> samples = new ArrayList<> ();
             for (int i = 0; i < size / LENGTH_SHDR; i++)
             {
-                final Sf2SampleDescriptor sampleDescriptor = new Sf2SampleDescriptor ();
+                final Sf2SampleDescriptor sampleDescriptor = new Sf2SampleDescriptor (i, Sf2File.this.sampleData, Sf2File.this.sample24Data);
                 sampleDescriptor.readHeader (i * LENGTH_SHDR, chunk);
                 samples.add (sampleDescriptor);
             }

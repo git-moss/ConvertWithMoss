@@ -84,7 +84,10 @@ public class Sf2Preset
     {
         final byte [] data = chunk.getData ();
 
-        this.name = new String (data, offset, 20, StandardCharsets.US_ASCII).trim ();
+        int pos = 0;
+        while (pos < 20 && data[offset + pos] != 0)
+            pos++;
+        this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
         this.number = chunk.twoBytesAsInt (offset + 20);
         this.bankNumber = chunk.twoBytesAsInt (offset + 22);
         this.firstZoneIndex = chunk.twoBytesAsInt (offset + 24);

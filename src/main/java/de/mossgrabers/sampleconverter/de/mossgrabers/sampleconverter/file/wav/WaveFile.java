@@ -35,7 +35,25 @@ public class WaveFile
 
 
     /**
-     * Constructor.
+     * Constructor. Creates a new file in memory.
+     *
+     * @param numberOfChannels The number of channels of the sample
+     * @param sampleRate The sample rate
+     * @param bitsPerSample The resolution the sample in bits
+     * @param lengthInSamples The number of samples of the wave
+     */
+    public WaveFile (final int numberOfChannels, final int sampleRate, final int bitsPerSample, final int lengthInSamples)
+    {
+        this.instrumentChunk = new InstrumentChunk ();
+
+        this.formatChunk = new FormatChunk (numberOfChannels, sampleRate, bitsPerSample, true);
+
+        this.dataChunk = new DataChunk (this.formatChunk, lengthInSamples);
+    }
+
+
+    /**
+     * Constructor. Reads the given WAV file.
      *
      * @param wavFile The WAV file
      * @param ignoreChunkErrors Ignores unknown or missing chunk errors if true
@@ -52,7 +70,7 @@ public class WaveFile
 
 
     /**
-     * Constructor.
+     * Constructor. Reads a WAV file from a stream.
      *
      * @param inputStream The input stream which provides the WAV file
      * @param ignoreChunkErrors Ignores unknown or missing chunk errors if true
@@ -182,17 +200,16 @@ public class WaveFile
             throw new CombinationNotPossibleException ("Can only combine mono files.");
 
         this.formatChunk.setNumberOfChannels (2);
-        this.formatChunk.setAverageBytesPerSecond (this.formatChunk.getAverageBytesPerSecond () * 2);
 
         // Interleave left and right channel
         final byte [] leftData = this.dataChunk.getData ();
         final byte [] rightData = otherWave.dataChunk.getData ();
         final byte [] combinedData = new byte [leftData.length * 2];
-        final int blockAlign = this.formatChunk.getBlockAlign ();
-        for (int count = 0; count < leftData.length; count += blockAlign)
+        final int blockSize = this.formatChunk.getSignicantBitsPerSample () / 8;
+        for (int count = 0; count < leftData.length; count += blockSize)
         {
-            System.arraycopy (leftData, count, combinedData, count * 2, blockAlign);
-            System.arraycopy (rightData, count, combinedData, count * 2 + blockAlign, blockAlign);
+            System.arraycopy (leftData, count, combinedData, count * 2, blockSize);
+            System.arraycopy (rightData, count, combinedData, count * 2 + blockSize, blockSize);
         }
         this.dataChunk.setData (combinedData);
     }

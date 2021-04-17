@@ -12,8 +12,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 
 /**
@@ -28,6 +30,20 @@ public class DumpSampleChunk
     {
         System.setProperty ("java.util.logging.SimpleFormatter.format", "%5$s%n");
         LOGGER = Logger.getLogger ("de.mossgrabers.wav.DumpSampleChunk");
+
+        try
+        {
+
+            // This block configure the logger with handler and formatter
+            final FileHandler fh = new FileHandler ("C:/temp/MyLogFile.log");
+            LOGGER.addHandler (fh);
+            final SimpleFormatter formatter = new SimpleFormatter ();
+            fh.setFormatter (formatter);
+        }
+        catch (final SecurityException | IOException ex)
+        {
+            ex.printStackTrace ();
+        }
     }
 
 
@@ -59,68 +75,71 @@ public class DumpSampleChunk
                 return;
             }
 
-            if (file.getName ().toLowerCase (Locale.US).endsWith (".wav"))
+            if (!file.getName ().toLowerCase (Locale.US).endsWith (".wav"))
+                return;
+
+            try
             {
-                try
+                final WaveFile sampleFile = new WaveFile (file, true);
+                log ("\n" + file.getAbsolutePath ());
+
+                final InstrumentChunk instrumentChunk = sampleFile.getInstrumentChunk ();
+                if (instrumentChunk == null)
+                    log ("Instrument chunk: None");
+                else
                 {
-                    final WaveFile sampleFile = new WaveFile (file, true);
-
-                    final InstrumentChunk instrumentChunk = sampleFile.getInstrumentChunk ();
-                    if (instrumentChunk == null)
-                        log ("No instrument chunk.", file);
-                    else
-                        log (instrumentChunk.infoText (), file);
-
-                    final FormatChunk formatChunk = sampleFile.getFormatChunk ();
-                    if (formatChunk == null)
-                        log ("No format chunk.", file);
-                    else
-                        log (formatChunk.infoText (), file);
-
-                    final SampleChunk sampleChunk = sampleFile.getSampleChunk ();
-                    if (sampleChunk == null)
-                    {
-                        log ("Found Sample without SMPL chunk ", file);
-                        return;
-                    }
-
-                    final int midiUnityNote = sampleChunk.getMIDIUnityNote ();
-                    if (midiUnityNote != 0)
-                        log ("Found MIDI unity note " + midiUnityNote, file);
-                    final int midiPitchFraction = sampleChunk.getMIDIPitchFraction ();
-                    if (midiPitchFraction != 0)
-                        log ("Found MIDI pitch fraction " + midiPitchFraction, file);
-
-                    final List<SampleChunkLoop> loops = sampleChunk.getLoops ();
-                    final int loopSize = loops.size ();
-                    if (loopSize > 1)
-                        log ("Found " + loopSize + " loops", file);
-                    if (!loops.isEmpty ())
-                    {
-                        final SampleChunkLoop loop = loops.get (0);
-                        final int loopFraction = loop.getFraction ();
-                        if (loopFraction != 0)
-                            log ("Found loop with fraction " + loopFraction, file);
-                        final int loopType = loop.getType ();
-                        if (loopType > 0)
-                            log ("Found loop type " + loopType, file);
-                    }
+                    log ("Instrument chunk:");
+                    log ("  " + instrumentChunk.infoText ().replace ("\n", "\n  "));
                 }
-                catch (IOException | ParseException ex)
+
+                final FormatChunk formatChunk = sampleFile.getFormatChunk ();
+                if (formatChunk == null)
+                    log ("No format chunk: None");
+                else
                 {
-                    log (ex.getMessage (), file);
+                    log ("Format chunk:");
+                    log ("  " + formatChunk.infoText ().replace ("\n", "\n  "));
                 }
+
+                final SampleChunk sampleChunk = sampleFile.getSampleChunk ();
+                if (sampleChunk == null)
+                {
+                    log ("No SMPL chunk.");
+                    return;
+                }
+
+                final int midiUnityNote = sampleChunk.getMIDIUnityNote ();
+                if (midiUnityNote != 0)
+                    log ("Found MIDI unity note " + midiUnityNote);
+                final int midiPitchFraction = sampleChunk.getMIDIPitchFraction ();
+                if (midiPitchFraction != 0)
+                    log ("Found MIDI pitch fraction " + midiPitchFraction);
+
+                final List<SampleChunkLoop> loops = sampleChunk.getLoops ();
+                final int loopSize = loops.size ();
+                if (loopSize > 1)
+                    log ("Found " + loopSize + " loops");
+                if (!loops.isEmpty ())
+                {
+                    final SampleChunkLoop loop = loops.get (0);
+                    final int loopFraction = loop.getFraction ();
+                    if (loopFraction != 0)
+                        log ("Found loop with fraction " + loopFraction);
+                    final int loopType = loop.getType ();
+                    if (loopType > 0)
+                        log ("Found loop type " + loopType);
+                }
+            }
+            catch (IOException | ParseException ex)
+            {
+                log (ex.getMessage ());
             }
         });
     }
 
 
-    private static void log (final String message, final File file)
+    private static void log (final String message)
     {
-        LOGGER.log (Level.INFO, "{0} in: {1}", new Object []
-        {
-            message,
-            file.getAbsolutePath ()
-        });
+        LOGGER.log (Level.INFO, "{0}", message);
     }
 }

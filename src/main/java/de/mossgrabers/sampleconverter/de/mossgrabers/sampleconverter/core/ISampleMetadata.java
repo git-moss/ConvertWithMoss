@@ -4,8 +4,6 @@
 
 package de.mossgrabers.sampleconverter.core;
 
-import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -324,15 +322,6 @@ public interface ISampleMetadata
      * @param isReversed True to playback the sample reversed
      */
     void setReversed (boolean isReversed);
-
-
-    /**
-     * Combines two mono files into a stereo file. Format and sample chunks must be identical.
-     *
-     * @param sample The other sample to include
-     * @throws CombinationNotPossibleException Could not combine the wave files
-     */
-    void combine (ISampleMetadata sample) throws CombinationNotPossibleException;
 
 
     /**

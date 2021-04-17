@@ -14,7 +14,6 @@ import de.mossgrabers.sampleconverter.exception.MultisampleException;
 import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.format.wav.WavSampleMetadata;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
-import de.mossgrabers.sampleconverter.util.KeyMapping;
 import de.mossgrabers.sampleconverter.util.TagDetector;
 
 import java.io.File;
@@ -143,7 +142,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
     {
         try
         {
-            final KeyMapping keyMapping = new KeyMapping (sampleFileMetadata, this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.velocityLayerPatterns, this.monoSplitPatterns);
+            final WavKeyMapping keyMapping = new WavKeyMapping (sampleFileMetadata, this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.velocityLayerPatterns, this.monoSplitPatterns);
             final String name = cleanupName (this.isPreferFolderName ? folder.getName () : keyMapping.getName (), this.postfixTexts);
             if (name.isEmpty ())
             {

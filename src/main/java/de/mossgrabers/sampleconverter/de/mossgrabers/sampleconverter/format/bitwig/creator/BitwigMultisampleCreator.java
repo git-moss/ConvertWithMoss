@@ -45,7 +45,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final File multiFile = new File (destinationFolder, multisampleSource.getName () + ".multisample");
+        final File multiFile = new File (destinationFolder, createSafeFilename (multisampleSource.getName ()) + ".multisample");
         if (multiFile.exists ())
         {
             this.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
