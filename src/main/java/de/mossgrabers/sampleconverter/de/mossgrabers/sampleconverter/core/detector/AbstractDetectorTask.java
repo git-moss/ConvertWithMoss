@@ -206,7 +206,10 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
         final String sourcePath = sourceFolder.get ().getAbsolutePath ();
         if (analysePath.startsWith (sourcePath))
-            return analysePath.substring (sourcePath.length ());
+        {
+            final String n = analysePath.substring (sourcePath.length ());
+            return n.isEmpty () ? analysePath : n;
+        }
 
         return analysePath;
     }

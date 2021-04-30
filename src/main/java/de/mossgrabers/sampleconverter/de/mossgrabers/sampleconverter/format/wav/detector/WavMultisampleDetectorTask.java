@@ -175,7 +175,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
         }
         catch (final MultisampleException | CombinationNotPossibleException ex)
         {
-            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED"));
+            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ()));
             return Optional.empty ();
         }
     }
