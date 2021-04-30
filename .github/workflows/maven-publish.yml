@@ -17,8 +17,8 @@ jobs:
     - name: Publish jpackage result
       uses: actions/upload-artifact@v2
       with:
-        name: SanmpleConverter-Installers
-        path: target/release/SampleConverter*.msi
+        name: ConvertWithMoss-Installers
+        path: target/release/ConvertWithMoss*.msi
   # Build and publish Ubuntu Installer
   publish-linux:
     runs-on: ubuntu-latest
@@ -32,8 +32,8 @@ jobs:
     - name: Publish jpackage result
       uses: actions/upload-artifact@v2
       with:
-        name: SanmpleConverter-Installers
-        path: target/release/sampleconverter*.deb
+        name: ConvertWithMoss-Installers
+        path: target/release/convertwithmoss*.deb
   # Build and publish Macos Installer
   publish-macos:
     runs-on: macos-latest
@@ -47,5 +47,5 @@ jobs:
     - name: Publish jpackage result
       uses: actions/upload-artifact@v2
       with:
-        name: SanmpleConverter-Installers
-        path: target/release/SampleConverter*.dmg
+        name: ConvertWithMoss-Installers
+        path: target/release/ConvertWithMoss*.dmg

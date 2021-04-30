@@ -6,7 +6,7 @@
 	<groupId>de.mossgrabers</groupId>
 	<artifactId>sampleconverter</artifactId>
 	<packaging>jar</packaging>
-	<name>SampleConverter</name>
+	<name>ConvertWithMoss</name>
 	<organization>
 		<name>Jürgen Moßgraber</name>
 		<url>http://www.mossgrabers.de</url>
