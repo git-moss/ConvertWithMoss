@@ -14,11 +14,11 @@ date:   \today
 
 Converts multisamples in a specific source format to a different destination format. Furthermore, it can create multisample files from plain WAV files.
 
-## Installation
+# Installation
 
 Run the matching installer for your operating system. After that you can start the application ConvertWithMoss.
 
-## Parameters respected for the conversion
+# Parameters respected for the conversion
 
 The conversion process reads and write metadata (name, category, creator, description and keywords) if supported by the format. If the source format does not support the information a guessing algorithm is applied to the name.
 
@@ -26,18 +26,18 @@ Furthermore, samples can be grouped in velocity layers and key ranges. Each samp
 
 The converter does not support any sophisticated synthesizer parameters like envelopes, filters or modulation.
 
-## Usage
+# Usage
 
 1. Select a source folder, which contains one or multiple folders with multisamples in the selected source format. The files can also be located in sub-folders.
 2. Select the output folder where you want to create the multisamples. This folder must be empty. You can add a non-existing folder to the name, which then is automatically created. E.g. you could select the Desktop and then add a folder *Conversions*.
 3. Press the *Convert* button to start the conversion. The progress is shown with notification messages in the log area, which you should check for potential errors like defect source files, skipped folder, etc. Alternatively, press *Analyse* to execute the same process as *Convert* but does not write any files. Use this to check for errors before finally running the conversion.
 
-### Options
+## Options
 
 * **Create folder structure**: If enabled, sub-folders from the source folder are created as well in the output folder. For example, if I select my whole "Sounds" folder, there are sub-folders like "Sounds\\07 Synth\\Lead\\01W Emerson'70 Samples". In that case the output folder would contain e.g. "07 Synth\\Lead\\01W Emerson'70.multisample" if Bitwig multisample is selected as the destination format.
 * **Add new files**: Starts the conversion even if the output folder is not empty but only adds files which are not already present.
 
-## Supported formats
+# Supported formats
 
 The following multisample formats are supported as the source format:
 
