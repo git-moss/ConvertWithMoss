@@ -10,7 +10,7 @@ date:   \today
 \pagebreak 
 </div>
 
-# Sample Converter
+# ConvertWithMoss
 
 Converts multisamples in a specific source format to a different destination format. Furthermore, it can create multisample files from plain WAV files.
 
