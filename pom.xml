@@ -162,7 +162,8 @@
 							<type>MSI</type>
 							<icon>icons/SampleConverter.ico</icon>
 							<winMenu>true</winMenu>
-							<winPerUserInstall>true</winPerUserInstall>
+							<winPerUserInstall>false</winPerUserInstall>
+							<winDirChooser>true</winDirChooser>
 							<winUpgradeUuid>18d24064-0bfa-425d-8b7f-e5efd5990d26</winUpgradeUuid>
 						</configuration>
 					</execution>
