@@ -55,5 +55,5 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ConvertWithMoss-Installers
-        path: target/release/ConvertWithMoss-x64-*.dmg
+        path: target/release/ConvertWithMoss*.dmg
 
