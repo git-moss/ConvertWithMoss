@@ -57,7 +57,7 @@ jobs:
         name: ConvertWithMoss-Installers
         path: target/release/ConvertWithMoss-x64-*.dmg
   # Build and publish Macos Installer - ARM
-  publish-macos:
+  publish-macos-arm:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
