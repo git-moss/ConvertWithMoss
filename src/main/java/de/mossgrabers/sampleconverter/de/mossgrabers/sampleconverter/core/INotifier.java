@@ -12,28 +12,38 @@ package de.mossgrabers.sampleconverter.core;
 public interface INotifier
 {
     /**
-     * Display a notification.
+     * Log the message to the notifier.
      *
-     * @param message The message to display
+     * @param messageID The ID of the message to get
+     * @param replaceStrings Replaces the %1..%n in the message with the strings
      */
-    void notify (String message);
+    void log (String messageID, String... replaceStrings);
 
 
     /**
-     * Display an error message.
+     * Log the message to the notifier.
      *
-     * @param message The message to display
+     * @param messageID The ID of the message to get
+     * @param replaceStrings Replaces the %1..%n in the message with the strings
      */
-    void notifyError (final String message);
+    void logError (String messageID, String... replaceStrings);
 
 
     /**
-     * Display an error notification.
+     * Log the message to the notifier.
      *
-     * @param message The message to display
-     * @param throwable The throwable to log
+     * @param messageID The ID of the message to get
+     * @param throwable A throwable
      */
-    void notifyError (String message, Throwable throwable);
+    void logError (String messageID, Throwable throwable);
+
+
+    /**
+     * Log the message to the notifier.
+     *
+     * @param throwable A throwable
+     */
+    void logError (Throwable throwable);
 
 
     /**

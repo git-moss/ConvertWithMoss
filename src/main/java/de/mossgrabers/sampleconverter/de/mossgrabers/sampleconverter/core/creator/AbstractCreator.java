@@ -4,16 +4,20 @@
 
 package de.mossgrabers.sampleconverter.core.creator;
 
-import de.mossgrabers.sampleconverter.core.ICreator;
+import de.mossgrabers.sampleconverter.core.AbstractCoreTask;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.ui.tools.Functions;
+import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import java.io.IOException;
 import java.util.Optional;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 
 /**
@@ -21,67 +25,17 @@ import java.util.Optional;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public abstract class AbstractCreator implements ICreator
+public abstract class AbstractCreator extends AbstractCoreTask implements ICreator
 {
-    protected Optional<INotifier> notifier = Optional.empty ();
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void configure (final INotifier notifier)
-    {
-        this.notifier = Optional.of (notifier);
-    }
-
-
     /**
-     * Log the message to the notifier.
+     * Constructor.
      *
-     * @param messageID The ID of the message to get
-     * @param replaceStrings Replaces the %1..%n in the message with the strings
+     * @param name The name of the object.
+     * @param notifier The notifier
      */
-    protected void log (final String messageID, final String... replaceStrings)
+    protected AbstractCreator (final String name, final INotifier notifier)
     {
-        if (this.notifier.isPresent ())
-            this.notifier.get ().notify (Functions.getMessage (messageID, replaceStrings));
-    }
-
-
-    /**
-     * Log the message to the notifier.
-     *
-     * @param messageID The ID of the message to get
-     * @param replaceStrings Replaces the %1..%n in the message with the strings
-     */
-    protected void logError (final String messageID, final String... replaceStrings)
-    {
-        if (this.notifier.isPresent ())
-            this.notifier.get ().notifyError (Functions.getMessage (messageID, replaceStrings));
-    }
-
-
-    /**
-     * Log the message to the notifier.
-     *
-     * @param messageID The ID of the message to get
-     * @param throwable A throwable
-     */
-    protected void logError (final String messageID, final Throwable throwable)
-    {
-        if (this.notifier.isPresent ())
-            this.notifier.get ().notifyError (Functions.getMessage (messageID), throwable);
-    }
-
-
-    /**
-     * Log the message to the notifier.
-     *
-     * @param throwable A throwable
-     */
-    protected void logError (final Throwable throwable)
-    {
-        if (this.notifier.isPresent ())
-            this.notifier.get ().notifyError (throwable.getMessage (), throwable);
+        super (name, notifier);
     }
 
 
@@ -98,7 +52,7 @@ public abstract class AbstractCreator implements ICreator
         }
         catch (final ParserConfigurationException ex)
         {
-            this.logError ("IDS_NOTIFY_ERR_PARSER", ex);
+            this.notifier.logError ("IDS_NOTIFY_ERR_PARSER", ex);
             return Optional.empty ();
         }
     }
@@ -113,5 +67,52 @@ public abstract class AbstractCreator implements ICreator
     protected static String createSafeFilename (final String filename)
     {
         return filename.replaceAll ("[\\\\/:*?\"<>|&\\.]", "_");
+    }
+
+
+    protected static int check (final int value, final int defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
+    }
+
+
+    /**
+     * Adds a file to the ZIP output stream.
+     *
+     * @param alreadyStored Set with the already files to prevent trying to add duplicated files
+     * @param zos The ZIP output stream
+     * @param info The file to add
+     * @throws IOException Could not read the file
+     */
+    protected static void addFileToZip (final Set<String> alreadyStored, final ZipOutputStream zos, final ISampleMetadata info) throws IOException
+    {
+        addFileToZip (alreadyStored, zos, info, null);
+    }
+
+
+    /**
+     * Adds a file to the ZIP output stream.
+     *
+     * @param alreadyStored Set with the already files to prevent trying to add duplicated files
+     * @param zos The ZIP output stream
+     * @param info The file to add
+     * @param path Optional path (may be null), must not end with a slash
+     * @throws IOException Could not read the file
+     */
+    protected static void addFileToZip (final Set<String> alreadyStored, final ZipOutputStream zos, final ISampleMetadata info, final String path) throws IOException
+    {
+        final Optional<String> filename = info.getUpdatedFilename ();
+        if (filename.isEmpty ())
+            return;
+        String name = filename.get ();
+        if (path != null)
+            name = path + "/" + name;
+        if (alreadyStored.contains (name))
+            return;
+        alreadyStored.add (name);
+        final ZipEntry entry = new ZipEntry (name);
+        zos.putNextEntry (entry);
+        info.writeSample (zos);
+        zos.closeEntry ();
     }
 }

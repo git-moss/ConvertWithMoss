@@ -2,17 +2,16 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.sfz.creator;
+package de.mossgrabers.sampleconverter.format.sfz;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
+import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.LoopType;
 import de.mossgrabers.sampleconverter.core.PlayLogic;
 import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
-import de.mossgrabers.sampleconverter.format.sfz.SfzHeader;
-import de.mossgrabers.sampleconverter.format.sfz.SfzOpcode;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.File;
@@ -51,6 +50,17 @@ public class SfzCreator extends AbstractCreator
     }
 
 
+    /**
+     * Constructor.
+     *
+     * @param notifier The notifier
+     */
+    public SfzCreator (final INotifier notifier)
+    {
+        super ("SFZ", notifier);
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
@@ -59,13 +69,13 @@ public class SfzCreator extends AbstractCreator
         final File multiFile = new File (destinationFolder, sampleName + ".sfz");
         if (multiFile.exists ())
         {
-            this.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
+            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
             return;
         }
 
         final String metadata = createMetadata (multisampleSource);
 
-        this.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
         {
@@ -74,8 +84,13 @@ public class SfzCreator extends AbstractCreator
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, sampleName + FOLDER_POSTFIX);
-        if (!sampleFolder.mkdir ())
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERROR_SAMPLE_FOLDER", sampleFolder.getAbsolutePath ()));
+        if (!sampleFolder.exists () && !sampleFolder.mkdir ())
+        {
+            // Necessary to check again, since another process could have created the folder
+            // meanwhile!
+            if (!sampleFolder.exists ())
+                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERROR_SAMPLE_FOLDER", sampleFolder.getAbsolutePath ()));
+        }
 
         int outputCount = 0;
         final List<IVelocityLayer> sampleMetadata = multisampleSource.getSampleMetadata ();
@@ -88,17 +103,17 @@ public class SfzCreator extends AbstractCreator
                     continue;
                 try (final FileOutputStream fos = new FileOutputStream (new File (sampleFolder, filename.get ())))
                 {
-                    this.log ("IDS_NOTIFY_PROGRESS");
+                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
                     outputCount++;
                     if (outputCount % 80 == 0)
-                        this.log ("IDS_NOTIFY_LINE_FEED");
+                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
 
                     info.writeSample (fos);
                 }
             }
         }
 
-        this.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
@@ -280,11 +295,5 @@ public class SfzCreator extends AbstractCreator
 
             sb.append (LINE_FEED);
         }
-    }
-
-
-    private static int check (final int value, final int defaultValue)
-    {
-        return value < 0 ? defaultValue : value;
     }
 }

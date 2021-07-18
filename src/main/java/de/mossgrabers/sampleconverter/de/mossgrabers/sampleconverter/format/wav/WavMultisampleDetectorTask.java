@@ -2,9 +2,10 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.wav.detector;
+package de.mossgrabers.sampleconverter.format.wav;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
+import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
@@ -12,17 +13,14 @@ import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
 import de.mossgrabers.sampleconverter.exception.MultisampleException;
 import de.mossgrabers.sampleconverter.exception.ParseException;
-import de.mossgrabers.sampleconverter.format.wav.WavSampleMetadata;
-import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.util.TagDetector;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 
@@ -49,6 +47,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
     /**
      * Configure the detector.
      *
+     * @param notifier The notifier
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
      * @param velocityLayerPatterns Detection patterns for velocity layers
@@ -61,9 +60,9 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
      * @param creatorTags Potential names for creators to choose from
      * @param creatorName Default name for the creator if none is detected
      */
-    public void configure (final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] velocityLayerPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final boolean isPreferFolderName, final int crossfadeNotes, final int crossfadeVelocities, final String [] creatorTags, final String creatorName)
+    public WavMultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] velocityLayerPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final boolean isPreferFolderName, final int crossfadeNotes, final int crossfadeVelocities, final String [] creatorTags, final String creatorName)
     {
-        super.configure (consumer, sourceFolder);
+        super (notifier, consumer, sourceFolder, ".wav");
 
         this.velocityLayerPatterns = velocityLayerPatterns;
         this.isAscending = isAscending;
@@ -81,26 +80,25 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
     @Override
     protected void detect (final File folder)
     {
-        // Detect all WAV files in the folder
-        this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_ANALYZING", folder.getAbsolutePath ()));
+        this.notifier.log ("IDS_NOTIFY_ANALYZING", folder.getAbsolutePath ());
         if (this.waitForDelivery ())
             return;
 
-        final File [] wavFiles = folder.listFiles ( (parent, name) -> {
-
-            if (this.isCancelled ())
-                return false;
-
-            final File f = new File (parent, name);
-            if (f.isDirectory ())
-            {
-                this.detect (f);
-                return false;
-            }
-            return name.toLowerCase (Locale.US).endsWith (".wav");
-        });
-        if (wavFiles.length == 0)
+        final List<IMultisampleSource> multisample = this.readFile (folder);
+        if (multisample.isEmpty ())
             return;
+
+        // Check for task cancellation
+        if (!this.isCancelled ())
+            this.consumer.accept (multisample.get (0));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected List<IMultisampleSource> readFile (final File folder)
+    {
+        final File [] wavFiles = this.listFiles (folder, ".wav");
 
         // Analyze all WAV files
         final WavSampleMetadata [] sampleFiles = new WavSampleMetadata [wavFiles.length];
@@ -108,7 +106,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
         {
             // Check for task cancellation
             if (this.isCancelled ())
-                return;
+                return Collections.emptyList ();
 
             try
             {
@@ -116,18 +114,12 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             }
             catch (final IOException | ParseException | CompressionNotSupportedException ex)
             {
-                this.notifier.get ().notifyError (String.format (Functions.getMessage ("IDS_NOTIFY_SKIPPED"), folder.getAbsolutePath (), wavFiles[i]));
-                return;
+                this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), wavFiles[i].getAbsolutePath ());
+                return Collections.emptyList ();
             }
         }
 
-        final Optional<IMultisampleSource> multisample = this.createMultisample (folder, sampleFiles);
-        if (multisample.isEmpty ())
-            return;
-
-        // Check for task cancellation
-        if (!this.isCancelled ())
-            this.consumer.get ().accept (multisample.get ());
+        return this.createMultisample (folder, sampleFiles);
     }
 
 
@@ -138,7 +130,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
      * @param sampleFileMetadata The detected sample files
      * @return The multi-sample
      */
-    private Optional<IMultisampleSource> createMultisample (final File folder, final WavSampleMetadata [] sampleFileMetadata)
+    private List<IMultisampleSource> createMultisample (final File folder, final WavSampleMetadata [] sampleFileMetadata)
     {
         try
         {
@@ -146,11 +138,11 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             final String name = cleanupName (this.isPreferFolderName ? folder.getName () : keyMapping.getName (), this.postfixTexts);
             if (name.isEmpty ())
             {
-                this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_NO_NAME"));
-                return Optional.empty ();
+                this.notifier.logError ("IDS_NOTIFY_NO_NAME");
+                return Collections.emptyList ();
             }
 
-            String [] parts = createPathParts (folder, this.sourceFolder.get (), name);
+            String [] parts = createPathParts (folder, this.sourceFolder, name);
             if (parts.length > 1)
             {
                 // Remove the samples folder
@@ -167,16 +159,16 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             final List<IVelocityLayer> sampleMetadata = keyMapping.getSampleMetadata ();
             multisampleSource.setVelocityLayers (sampleMetadata);
 
-            this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_DETECED_LAYERS", Integer.toString (sampleMetadata.size ())));
+            this.notifier.log ("IDS_NOTIFY_DETECED_LAYERS", Integer.toString (sampleMetadata.size ()));
             if (this.waitForDelivery ())
-                return Optional.empty ();
+                return Collections.emptyList ();
 
-            return Optional.of (multisampleSource);
+            return Collections.singletonList (multisampleSource);
         }
         catch (final MultisampleException | CombinationNotPossibleException ex)
         {
-            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ()));
-            return Optional.empty ();
+            this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ());
+            return Collections.emptyList ();
         }
     }
 

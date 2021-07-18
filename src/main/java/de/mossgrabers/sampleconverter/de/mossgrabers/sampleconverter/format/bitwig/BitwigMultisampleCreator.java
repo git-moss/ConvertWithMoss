@@ -2,9 +2,10 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.bitwig.creator;
+package de.mossgrabers.sampleconverter.format.bitwig;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
+import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.LoopType;
@@ -41,6 +42,17 @@ import java.util.zip.ZipOutputStream;
  */
 public class BitwigMultisampleCreator extends AbstractCreator
 {
+    /**
+     * Constructor.
+     *
+     * @param notifier The notifier
+     */
+    public BitwigMultisampleCreator (final INotifier notifier)
+    {
+        super ("Bitwig Multisample", notifier);
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
@@ -48,7 +60,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         final File multiFile = new File (destinationFolder, createSafeFilename (multisampleSource.getName ()) + ".multisample");
         if (multiFile.exists ())
         {
-            this.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
+            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
             return;
         }
 
@@ -56,7 +68,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         if (metadata.isEmpty ())
             return;
 
-        this.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
@@ -73,17 +85,17 @@ public class BitwigMultisampleCreator extends AbstractCreator
             {
                 for (final ISampleMetadata info: layer.getSampleMetadata ())
                 {
-                    this.log ("IDS_NOTIFY_PROGRESS");
+                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
                     outputCount++;
                     if (outputCount % 80 == 0)
-                        this.log ("IDS_NOTIFY_LINE_FEED");
+                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
 
                     addFileToZip (alreadyStored, zos, info);
                 }
             }
         }
 
-        this.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
@@ -105,7 +117,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         document.appendChild (multisampleElement);
         multisampleElement.setAttribute ("name", multisampleSource.getName ());
 
-        XMLUtils.addTextElement (document, multisampleElement, "generator", "SampleConverter");
+        XMLUtils.addTextElement (document, multisampleElement, "generator", "ConvertWithMoss");
         XMLUtils.addTextElement (document, multisampleElement, "category", multisampleSource.getCategory ());
         XMLUtils.addTextElement (document, multisampleElement, "creator", multisampleSource.getCreator ());
         XMLUtils.addTextElement (document, multisampleElement, "description", multisampleSource.getDescription ());
@@ -144,7 +156,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         }
         catch (final TransformerException ex)
         {
-            this.logError (ex);
+            this.notifier.logError (ex);
             return Optional.empty ();
         }
     }
@@ -220,36 +232,6 @@ public class BitwigMultisampleCreator extends AbstractCreator
             final double crossfade = sampleLoop.getCrossfade ();
             if (crossfade > 0)
                 XMLUtils.setDoubleAttribute (loopElement, "fade", crossfade, 2);
-
         }
-    }
-
-
-    private static int check (final int value, final int defaultValue)
-    {
-        return value < 0 ? defaultValue : value;
-    }
-
-
-    /**
-     * Adds a file to the ZIP output stream.
-     *
-     * @param alreadyStored Set with the already files to prevent trying to add duplicated files
-     * @param zos The ZIP output stream
-     * @param info The file to add
-     * @throws IOException Could not read the file
-     */
-    private static void addFileToZip (final Set<String> alreadyStored, final ZipOutputStream zos, final ISampleMetadata info) throws IOException
-    {
-        final Optional<String> filename = info.getUpdatedFilename ();
-        if (filename.isEmpty ())
-            return;
-        final String name = filename.get ();
-        if (alreadyStored.contains (name))
-            return;
-        alreadyStored.add (name);
-        zos.putNextEntry (new ZipEntry (name));
-        info.writeSample (zos);
-        zos.closeEntry ();
     }
 }

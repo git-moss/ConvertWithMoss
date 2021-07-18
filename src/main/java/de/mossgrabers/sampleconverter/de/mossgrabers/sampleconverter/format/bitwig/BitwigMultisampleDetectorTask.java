@@ -2,9 +2,11 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.bitwig.detector;
+package de.mossgrabers.sampleconverter.format.bitwig;
 
+import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
+import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.LoopType;
 import de.mossgrabers.sampleconverter.core.PlayLogic;
@@ -12,13 +14,10 @@ import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
-import de.mossgrabers.sampleconverter.format.bitwig.BitwigMultisampleTag;
-import de.mossgrabers.sampleconverter.format.bitwig.BitwigSampleMetadata;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -27,15 +26,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -48,75 +43,38 @@ import java.util.zip.ZipFile;
  */
 public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 {
-    private final Map<String, Set<String>> unsupportedElements   = new HashMap<> ();
-    private final Map<String, Set<String>> unsupportedAttributes = new HashMap<> ();
+    /**
+     * Constructor.
+     *
+     * @param notifier The notifier
+     * @param consumer The consumer that handles the detected multisample sources
+     * @param sourceFolder The top source folder for the detection
+     */
+    protected BitwigMultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
+    {
+        super (notifier, consumer, sourceFolder, ".multisample");
+    }
 
 
     /** {@inheritDoc} */
     @Override
-    protected void detect (final File folder)
-    {
-        if (this.consumer.isEmpty ())
-            return;
-
-        // Detect all WAV files in the folder
-        this.log ("IDS_NOTIFY_ANALYZING", folder.getAbsolutePath ());
-        if (this.waitForDelivery ())
-            return;
-
-        final File [] multisampleFiles = folder.listFiles ( (parent, name) -> {
-
-            if (this.isCancelled ())
-                return false;
-
-            final File f = new File (parent, name);
-            if (f.isDirectory ())
-            {
-                this.detect (f);
-                return false;
-            }
-            return name.toLowerCase (Locale.US).endsWith (".multisample");
-        });
-        if (multisampleFiles.length == 0)
-            return;
-
-        for (final File multiSampleFile: multisampleFiles)
-        {
-            this.log ("IDS_NOTIFY_ANALYZING", multiSampleFile.getAbsolutePath ());
-
-            if (this.waitForDelivery ())
-                break;
-
-            final Optional<IMultisampleSource> multisample = this.readFile (multiSampleFile);
-            if (multisample.isPresent () && !this.isCancelled ())
-                this.consumer.get ().accept (multisample.get ());
-        }
-    }
-
-
-    /**
-     * Read and parse the given Bitwig multi-sample file.
-     *
-     * @param multiSampleFile The file to process
-     * @return The parse file information
-     */
-    private Optional<IMultisampleSource> readFile (final File multiSampleFile)
+    protected List<IMultisampleSource> readFile (final File multiSampleFile)
     {
         try (final ZipFile zipFile = new ZipFile (multiSampleFile))
         {
             final ZipEntry entry = zipFile.getEntry ("multisample.xml");
             if (entry == null)
             {
-                this.logError ("IDS_NOTIFY_ERR_NO_METADATA_FILE");
-                return Optional.empty ();
+                this.notifier.logError ("IDS_NOTIFY_ERR_NO_METADATA_FILE");
+                return Collections.emptyList ();
             }
 
             return this.parseMetadataFile (multiSampleFile, zipFile, entry);
         }
         catch (final IOException ex)
         {
-            this.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
-            return Optional.empty ();
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            return Collections.emptyList ();
         }
     }
 
@@ -130,10 +88,10 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
      * @return The result
      * @throws IOException Error reading the file
      */
-    private Optional<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final ZipFile zipFile, final ZipEntry entry) throws IOException
+    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final ZipFile zipFile, final ZipEntry entry) throws IOException
     {
         if (this.waitForDelivery ())
-            return Optional.empty ();
+            return Collections.emptyList ();
 
         try (final InputStream in = zipFile.getInputStream (entry))
         {
@@ -142,8 +100,8 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         }
         catch (final SAXException ex)
         {
-            this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", ex);
-            return Optional.empty ();
+            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", ex);
+            return Collections.emptyList ();
         }
     }
 
@@ -155,27 +113,27 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
      * @param document The metadata XML document
      * @return The parsed multisample source
      */
-    private Optional<IMultisampleSource> parseDescription (final File multiSampleFile, final Document document)
+    private List<IMultisampleSource> parseDescription (final File multiSampleFile, final Document document)
     {
         final Element top = document.getDocumentElement ();
 
         if (!BitwigMultisampleTag.MULTISAMPLE.equals (top.getNodeName ()))
         {
-            this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
-            return Optional.empty ();
+            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+            return Collections.emptyList ();
         }
 
-        this.checkAttributes (BitwigMultisampleTag.MULTISAMPLE, top.getAttributes ());
+        this.checkAttributes (BitwigMultisampleTag.MULTISAMPLE, top.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.MULTISAMPLE));
         this.checkChildTags (BitwigMultisampleTag.MULTISAMPLE, BitwigMultisampleTag.TOP_LEVEL_TAGS, XMLUtils.getChildElements (top));
 
         final String name = top.getAttribute ("name");
         if (name.isBlank ())
         {
-            this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_NO_NAME");
-            return Optional.empty ();
+            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_NO_NAME");
+            return Collections.emptyList ();
         }
 
-        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder.get (), name);
+        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
 
         final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, this.subtractPaths (this.sourceFolder, multiSampleFile));
         this.parseMetadata (top, multisampleSource);
@@ -188,7 +146,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         {
             if (groupNode instanceof final Element groupElement)
             {
-                this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes ());
+                this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.GROUP));
 
                 final String k = groupElement.getAttribute ("name");
                 final String layerName = k.isBlank () ? "Velocity Layer " + (groupCounter + 1) : k;
@@ -197,8 +155,8 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             }
             else
             {
-                this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
-                return Optional.empty ();
+                this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+                return Collections.emptyList ();
             }
         }
         // Additional layer for potentially un-grouped samples
@@ -210,10 +168,10 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         {
             if (layerNode instanceof final Element layerElement)
             {
-                this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes ());
+                this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LAYER));
 
                 final String k = layerElement.getAttribute ("name");
-                final String layerName = k.isBlank () ? "Velocity Layer " + (groupCounter + 1) : k;
+                final String layerName = k == null || k.isBlank () ? "Velocity Layer " + (groupCounter + 1) : k;
                 indexedVelocityLayers.put (Integer.valueOf (groupCounter), new VelocityLayer (layerName));
                 groupCounter++;
 
@@ -223,8 +181,8 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             }
             else
             {
-                this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
-                return Optional.empty ();
+                this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+                return Collections.emptyList ();
             }
         }
 
@@ -237,7 +195,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         this.printUnsupportedElements ();
         this.printUnsupportedAttributes ();
 
-        return Optional.of (multisampleSource);
+        return Collections.singletonList (multisampleSource);
     }
 
 
@@ -253,32 +211,32 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         if (categoryTag != null)
         {
             multisampleSource.setCategory (XMLUtils.readTextContent (categoryTag));
-            this.checkAttributes (BitwigMultisampleTag.CATEGORY, categoryTag.getAttributes ());
+            this.checkAttributes (BitwigMultisampleTag.CATEGORY, categoryTag.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.CATEGORY));
         }
 
         final Element creatorTag = XMLUtils.getChildElementByName (top, BitwigMultisampleTag.CREATOR);
         if (creatorTag != null)
         {
             multisampleSource.setCreator (XMLUtils.readTextContent (creatorTag));
-            this.checkAttributes (BitwigMultisampleTag.CREATOR, creatorTag.getAttributes ());
+            this.checkAttributes (BitwigMultisampleTag.CREATOR, creatorTag.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.CREATOR));
         }
 
         final Element descriptionTag = XMLUtils.getChildElementByName (top, BitwigMultisampleTag.DESCRIPTION);
         if (descriptionTag != null)
         {
             multisampleSource.setDescription (XMLUtils.readTextContent (descriptionTag));
-            this.checkAttributes (BitwigMultisampleTag.DESCRIPTION, descriptionTag.getAttributes ());
+            this.checkAttributes (BitwigMultisampleTag.DESCRIPTION, descriptionTag.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.DESCRIPTION));
         }
 
         final List<String> keywords = new ArrayList<> ();
         final Node keywordsElement = XMLUtils.getChildByName (top, BitwigMultisampleTag.KEYWORDS);
         if (keywordsElement != null)
         {
-            this.checkAttributes (BitwigMultisampleTag.KEYWORDS, keywordsElement.getAttributes ());
+            this.checkAttributes (BitwigMultisampleTag.KEYWORDS, keywordsElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.KEYWORDS));
 
             for (final Element keywordElement: XMLUtils.getChildElementsByName (keywordsElement, BitwigMultisampleTag.KEYWORD))
             {
-                this.checkAttributes (BitwigMultisampleTag.KEYWORD, keywordElement.getAttributes ());
+                this.checkAttributes (BitwigMultisampleTag.KEYWORD, keywordElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.KEYWORD));
 
                 final String k = XMLUtils.readTextContent (keywordElement);
                 if (!k.isBlank ())
@@ -298,7 +256,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
      */
     private void parseSample (final File zipFile, final Map<Integer, IVelocityLayer> indexedVelocityLayers, final Element sampleElement)
     {
-        this.checkAttributes (BitwigMultisampleTag.SAMPLE, sampleElement.getAttributes ());
+        this.checkAttributes (BitwigMultisampleTag.SAMPLE, sampleElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.SAMPLE));
         this.checkChildTags (BitwigMultisampleTag.SAMPLE, BitwigMultisampleTag.SAMPLE_TAGS, XMLUtils.getChildElements (sampleElement));
 
         final int groupIndex = XMLUtils.getIntegerAttribute (sampleElement, BitwigMultisampleTag.GROUP, -1);
@@ -307,11 +265,11 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final String filename = sampleElement.getAttribute ("file");
         if (filename == null || filename.isBlank ())
         {
-            this.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
             return;
         }
 
-        final BitwigSampleMetadata sampleMetadata = new BitwigSampleMetadata (zipFile, filename);
+        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (zipFile, filename);
 
         sampleMetadata.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-start", -1)));
         sampleMetadata.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-stop", -1)));
@@ -324,7 +282,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final Element keyElement = XMLUtils.getChildElementByName (sampleElement, BitwigMultisampleTag.KEY);
         if (keyElement != null)
         {
-            this.checkAttributes (BitwigMultisampleTag.KEY, keyElement.getAttributes ());
+            this.checkAttributes (BitwigMultisampleTag.KEY, keyElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.KEY));
 
             sampleMetadata.setKeyRoot (XMLUtils.getIntegerAttribute (keyElement, "root", -1));
             sampleMetadata.setKeyLow (XMLUtils.getIntegerAttribute (keyElement, "low", -1));
@@ -349,7 +307,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final Element velocityElement = XMLUtils.getChildElementByName (sampleElement, BitwigMultisampleTag.VELOCITY);
         if (velocityElement != null)
         {
-            this.checkAttributes (BitwigMultisampleTag.VELOCITY, velocityElement.getAttributes ());
+            this.checkAttributes (BitwigMultisampleTag.VELOCITY, velocityElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.VELOCITY));
 
             sampleMetadata.setVelocityLow (XMLUtils.getIntegerAttribute (velocityElement, "low", -1));
             sampleMetadata.setVelocityHigh (XMLUtils.getIntegerAttribute (velocityElement, "high", -1));
@@ -360,7 +318,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final Element loopElement = XMLUtils.getChildElementByName (sampleElement, BitwigMultisampleTag.LOOP);
         if (loopElement != null)
         {
-            this.checkAttributes (BitwigMultisampleTag.LOOP, loopElement.getAttributes ());
+            this.checkAttributes (BitwigMultisampleTag.LOOP, loopElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LOOP));
 
             final String attribute = loopElement.getAttribute ("mode");
             if (attribute != null)
@@ -379,104 +337,12 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 loop.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (loopElement, "start", -1)));
                 loop.setEnd ((int) Math.round (XMLUtils.getDoubleAttribute (loopElement, "stop", -1)));
                 loop.setCrossfade (XMLUtils.getDoubleAttribute (loopElement, "fade", 0));
-                if (loop.getCrossfade () > 0)
-                {
-                    try
-                    {
-                        sampleMetadata.addMissingInfoFromWaveFile ();
-                    }
-                    catch (final IOException ex)
-                    {
-                        this.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex.getMessage ());
-                    }
-                }
                 sampleMetadata.addLoop (loop);
             }
         }
 
+        this.loadMissingValues (sampleMetadata);
+
         velocityLayer.addSampleMetadata (sampleMetadata);
-    }
-
-
-    /**
-     * Check for unsupported child tags of a tag.
-     *
-     * @param tagName The name of the tag to check for its' attributes
-     * @param supportedElements The supported child elements
-     * @param childElements The present child elements
-     */
-    private void checkChildTags (final String tagName, final Set<String> supportedElements, final Element [] childElements)
-    {
-        for (final Element childElement: childElements)
-        {
-            final String nodeName = childElement.getNodeName ();
-            if (!supportedElements.contains (nodeName))
-                this.unsupportedElements.computeIfAbsent (tagName, tag -> new HashSet<> ()).add (nodeName);
-        }
-    }
-
-
-    /**
-     * Formats and reports all unsupported elements.
-     */
-    private void printUnsupportedElements ()
-    {
-        String tagName;
-        for (final Entry<String, Set<String>> entry: this.unsupportedElements.entrySet ())
-        {
-            tagName = entry.getKey ();
-
-            final StringBuilder sb = new StringBuilder ();
-            entry.getValue ().forEach (element -> {
-                if (!sb.isEmpty ())
-                    sb.append (", ");
-                sb.append (element);
-            });
-
-            if (!sb.isEmpty ())
-                this.logError ("IDS_NOTIFY_UNSUPPORTED_ELEMENTS", tagName, sb.toString ());
-        }
-    }
-
-
-    /**
-     * Check for unsupported attributes of a tag.
-     *
-     * @param tagName The name of the tag to check for its' attributes
-     * @param attributes The present attributes
-     */
-    private void checkAttributes (final String tagName, final NamedNodeMap attributes)
-    {
-        final Set<String> supportedAttributes = BitwigMultisampleTag.getAttributes (tagName);
-
-        for (int i = 0; i < attributes.getLength (); i++)
-        {
-            final String nodeName = attributes.item (i).getNodeName ();
-            if (!supportedAttributes.contains (nodeName))
-                this.unsupportedAttributes.computeIfAbsent (tagName, tag -> new HashSet<> ()).add (nodeName);
-        }
-    }
-
-
-    /**
-     * Formats and reports all unsupported attributes.
-     */
-    private void printUnsupportedAttributes ()
-    {
-        String tagName;
-        for (final Entry<String, Set<String>> entry: this.unsupportedAttributes.entrySet ())
-        {
-            tagName = entry.getKey ();
-
-            final StringBuilder sb = new StringBuilder ();
-            entry.getValue ().forEach (attribute -> {
-                if (!sb.isEmpty ())
-                    sb.append (", ");
-                sb.append (attribute);
-            });
-
-            if (!sb.isEmpty ())
-                this.logError ("IDS_NOTIFY_UNSUPPORTED_ATTRIBUTES", tagName, sb.toString ());
-        }
     }
 }

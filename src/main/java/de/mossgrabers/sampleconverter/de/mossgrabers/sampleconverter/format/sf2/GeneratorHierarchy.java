@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.sf2.detector;
+package de.mossgrabers.sampleconverter.format.sf2;
 
 import de.mossgrabers.sampleconverter.file.sf2.Generator;
 import de.mossgrabers.sampleconverter.util.Pair;

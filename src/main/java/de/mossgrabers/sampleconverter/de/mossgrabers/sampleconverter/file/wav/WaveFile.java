@@ -204,12 +204,16 @@ public class WaveFile
         // Interleave left and right channel
         final byte [] leftData = this.dataChunk.getData ();
         final byte [] rightData = otherWave.dataChunk.getData ();
-        final byte [] combinedData = new byte [leftData.length * 2];
+
+        final int length = Math.max (leftData.length, rightData.length);
+        final byte [] combinedData = new byte [length * 2];
         final int blockSize = this.formatChunk.getSignicantBitsPerSample () / 8;
-        for (int count = 0; count < leftData.length; count += blockSize)
+        for (int count = 0; count < length; count += blockSize)
         {
-            System.arraycopy (leftData, count, combinedData, count * 2, blockSize);
-            System.arraycopy (rightData, count, combinedData, count * 2 + blockSize, blockSize);
+            if (count < leftData.length)
+                System.arraycopy (leftData, count, combinedData, count * 2, Math.min (blockSize, leftData.length - count));
+            if (count < rightData.length)
+                System.arraycopy (rightData, count, combinedData, count * 2 + blockSize, Math.min (blockSize, rightData.length - count));
         }
         this.dataChunk.setData (combinedData);
     }

@@ -33,7 +33,6 @@ public class DumpSampleChunk
 
         try
         {
-
             // This block configure the logger with handler and formatter
             final FileHandler fh = new FileHandler ("C:/temp/MyLogFile.log");
             LOGGER.addHandler (fh);
@@ -68,7 +67,13 @@ public class DumpSampleChunk
      */
     private static void detect (final File folder)
     {
-        Arrays.asList (folder.listFiles ()).forEach (file -> {
+        final File [] files = folder.listFiles ();
+        if (files == null)
+        {
+            log ("Not a valid folder: " + folder.getAbsolutePath ());
+            return;
+        }
+        Arrays.asList (files).forEach (file -> {
             if (file.isDirectory ())
             {
                 detect (file);
