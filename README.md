@@ -145,7 +145,7 @@ Writes a dspreset or dslibrary file (see above) depending out the setting. Sampl
 
 ## 2.0
 
-* New: Added reading and writing of DecentSampler preset files.
+* New: Added reading and writing of DecentSampler preset and library files.
 * New: Improved note detection from file names.
 * Fixed: SFZ detector - global_label was not read.
 * Fixed: SFZ parser - Comments at line end were not removed which conflicted with attribute values.
