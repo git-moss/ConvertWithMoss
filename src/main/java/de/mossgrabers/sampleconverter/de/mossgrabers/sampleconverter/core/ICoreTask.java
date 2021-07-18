@@ -6,14 +6,32 @@ package de.mossgrabers.sampleconverter.core;
 
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 
+import javafx.scene.Node;
+
 
 /**
- * A descriptor providing some metadata for a detector.
+ * Base interface for creators and detectors providing some descriptive metadata.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public interface IDetectorDescriptor extends IObjectDescriptor, IDetector
+public interface ICoreTask
 {
+    /**
+     * Get the name of the object.
+     *
+     * @return The name
+     */
+    String getName ();
+
+
+    /**
+     * Get the pane with the edit widgets.
+     *
+     * @return The pane
+     */
+    Node getEditPane ();
+
+
     /**
      * Save the settings of the detector.
      *
@@ -31,13 +49,13 @@ public interface IDetectorDescriptor extends IObjectDescriptor, IDetector
 
 
     /**
-     * Shutdown the descriptor. Execute some necessary cleanup.
+     * Shutdown the task. Execute some necessary cleanup.
      */
     void shutdown ();
 
 
     /**
-     * Cancel the detector process.
+     * Cancel the task.
      */
     void cancel ();
 }

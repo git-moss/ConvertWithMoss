@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.wav.detector;
+package de.mossgrabers.sampleconverter.format.wav;
 
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
@@ -10,11 +10,11 @@ import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.MultisampleException;
 import de.mossgrabers.sampleconverter.exception.NoteNotDetectedException;
-import de.mossgrabers.sampleconverter.format.wav.WavSampleMetadata;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 public class WavKeyMapping
 {
     /** The names of notes. */
-    private static final String []            NOTE_NAMES_FLAT         =
+    private static final String []                  NOTE_NAMES_FLAT         =
     {
         "C",
         "Db",
@@ -50,7 +50,7 @@ public class WavKeyMapping
         "Bb",
         "B"
     };
-    private static final String []            NOTE_NAMES_SHARP        =
+    private static final String []                  NOTE_NAMES_SHARP        =
     {
         "C",
         "C#",
@@ -66,7 +66,7 @@ public class WavKeyMapping
         "B"
     };
     /** The names of notes. */
-    private static final String []            NOTE_NAMES_FLAT_GERMAN  =
+    private static final String []                  NOTE_NAMES_FLAT_GERMAN  =
     {
         "C",
         "Db",
@@ -81,7 +81,7 @@ public class WavKeyMapping
         "Bb",
         "H"
     };
-    private static final String []            NOTE_NAMES_SHARP_GERMAN =
+    private static final String []                  NOTE_NAMES_SHARP_GERMAN =
     {
         "C",
         "C#",
@@ -97,32 +97,29 @@ public class WavKeyMapping
         "H"
     };
 
-    // Order with longest strings first
-    private static final Map<String, Integer> KEY_MAP                 = new TreeMap<> ( (o1, o2) -> {
-                                                                          final int diff = o2.length () - o1.length ();
-                                                                          if (diff != 0)
-                                                                              return diff;
-                                                                          return o2.compareTo (o1);
-                                                                      });
+    private static final List<Map<String, Integer>> KEY_MAP                 = new ArrayList<> (10);
 
     static
     {
+        for (int i = 0; i < 10; i++)
+            KEY_MAP.add (new HashMap<> ());
+
         // Create note map
         for (int note = 0; note < 128; note++)
         {
             final int n = Math.abs (note % 12);
             final String octave = Integer.toString (note / 12 - 2);
             final Integer ni = Integer.valueOf (note);
-            KEY_MAP.put (NOTE_NAMES_FLAT[n] + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_SHARP[n] + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_FLAT_GERMAN[n] + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_SHARP_GERMAN[n] + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_FLAT[n] + "_" + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_SHARP[n] + "_" + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_FLAT_GERMAN[n] + "_" + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_SHARP_GERMAN[n] + "_" + octave, ni);
-            KEY_MAP.put (String.format ("%03d", ni), ni);
-            KEY_MAP.put (ni.toString (), ni);
+            KEY_MAP.get (0).put (NOTE_NAMES_FLAT[n] + octave, ni);
+            KEY_MAP.get (1).put (NOTE_NAMES_SHARP[n] + octave, ni);
+            KEY_MAP.get (2).put (NOTE_NAMES_FLAT_GERMAN[n] + octave, ni);
+            KEY_MAP.get (3).put (NOTE_NAMES_SHARP_GERMAN[n] + octave, ni);
+            KEY_MAP.get (4).put (NOTE_NAMES_FLAT[n] + "_" + octave, ni);
+            KEY_MAP.get (5).put (NOTE_NAMES_SHARP[n] + "_" + octave, ni);
+            KEY_MAP.get (6).put (NOTE_NAMES_FLAT_GERMAN[n] + "_" + octave, ni);
+            KEY_MAP.get (7).put (NOTE_NAMES_SHARP_GERMAN[n] + "_" + octave, ni);
+            KEY_MAP.get (8).put (String.format ("%03d", ni), ni);
+            KEY_MAP.get (9).put (String.format ("%02d", ni), ni);
         }
     }
 
@@ -196,7 +193,8 @@ public class WavKeyMapping
     /**
      * Detect and create a layer order.
      *
-     * @param sampleInfos The sample infos from which to get the filenames and set the key ranges.
+     * @param sampleInfos The sample information from which to get the filenames and set the key
+     *            ranges.
      * @param isAscending Sort ascending otherwise descending
      * @param crossfadeNotes The number of notes to crossfade ranges
      * @param layerPatterns The layer patterns
@@ -336,13 +334,27 @@ public class WavKeyMapping
      */
     private static WavSampleMetadata combineMonoToStereo (final WavSampleMetadata first, final WavSampleMetadata second, final String [] leftChannelPatterns) throws CombinationNotPossibleException
     {
+        final String firstFilename = first.getFilename ();
+        final String secondFilename = second.getFilename ();
+
+        // First try a safer detection at the end of the name
         for (final String pattern: leftChannelPatterns)
         {
-            if (first.getFilename ().contains (pattern))
+            if (firstFilename.endsWith (pattern))
                 return combineLeftRight (first, second, pattern);
-            if (second.getFilename ().contains (pattern))
+            if (secondFilename.endsWith (pattern))
                 return combineLeftRight (second, first, pattern);
         }
+
+        // Now, if not found, try the full name
+        for (final String pattern: leftChannelPatterns)
+        {
+            if (firstFilename.contains (pattern))
+                return combineLeftRight (first, second, pattern);
+            if (secondFilename.contains (pattern))
+                return combineLeftRight (second, first, pattern);
+        }
+
         throw new CombinationNotPossibleException ("Could not detect left channel.");
     }
 
@@ -423,7 +435,7 @@ public class WavKeyMapping
      */
     private static Optional<Pattern> getLayerPattern (final ISampleMetadata [] sampleInfos, final String [] layerPatterns) throws MultisampleException
     {
-        if (layerPatterns.length == 0)
+        if (layerPatterns.length == 0 || sampleInfos.length == 0)
             return Optional.empty ();
         final String filename = sampleInfos[0].getFilename ();
         for (final String layerPattern: layerPatterns)
@@ -491,25 +503,64 @@ public class WavKeyMapping
      * Parse the MIDI note from each filename and order the filenames by ascending MIDI notes.
      *
      * @param samples The samples to process
-     * @param keyMap The key map to use
      * @return The map with note and sample metadata pairs ordered by the note
      * @throws NoteNotDetectedException NOte could not be detected from filename
      */
-    private Map<Integer, List<WavSampleMetadata>> createNoteMap (final List<WavSampleMetadata> samples, final Map<String, Integer> keyMap) throws NoteNotDetectedException
+    private Map<Integer, List<WavSampleMetadata>> createNoteMapFromNames (final List<WavSampleMetadata> samples) throws NoteNotDetectedException
     {
         this.extractedNames.clear ();
 
-        final Map<Integer, List<WavSampleMetadata>> orderedNotes = new TreeMap<> ();
-        for (final WavSampleMetadata sample: samples)
+        if (samples.isEmpty ())
+            return new TreeMap<> ();
+
+        // Collect all potential key maps which match the first samples' name
+        Set<Integer> potentialKeyMaps = new HashSet<> ();
+        String filename = samples.get (0).getFilenameWithoutLayer ();
+        for (int keyMapIndex = 0; keyMapIndex < KEY_MAP.size (); keyMapIndex++)
         {
-            final String filename = sample.getFilenameWithoutLayer ();
+            final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex);
             final int midiNote = this.lookupMidiNote (keyMap, filename);
-            if (midiNote == -1)
-                throw new NoteNotDetectedException (filename);
-            sample.setKeyRoot (midiNote);
-            orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (sample);
+            if (midiNote > -1)
+                potentialKeyMaps.add (Integer.valueOf (keyMapIndex));
         }
-        return orderedNotes;
+
+        // Check the names of all other samples for the previously found key maps
+        for (int sampleIndex = 1; sampleIndex < samples.size (); sampleIndex++)
+        {
+            filename = samples.get (sampleIndex).getFilenameWithoutLayer ();
+            final Set<Integer> newPotentialKeyMaps = new HashSet<> ();
+            for (final Integer keyMapIndex: potentialKeyMaps)
+            {
+                final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex.intValue ());
+                final int midiNote = this.lookupMidiNote (keyMap, filename);
+                if (midiNote > -1)
+                    newPotentialKeyMaps.add (keyMapIndex);
+            }
+            potentialKeyMaps = newPotentialKeyMaps;
+        }
+
+        if (potentialKeyMaps.isEmpty ())
+            throw new NoteNotDetectedException (filename);
+
+        // Finally use the matching key maps to parse the notes, the one with the most results is
+        // the winner
+        Map<Integer, List<WavSampleMetadata>> result = null;
+        for (final Integer keyMapIndex: potentialKeyMaps)
+        {
+            final Map<Integer, List<WavSampleMetadata>> orderedNotes = new TreeMap<> ();
+            final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex.intValue ());
+            for (final WavSampleMetadata sample: samples)
+            {
+                final int midiNote = this.lookupMidiNote (keyMap, sample.getFilenameWithoutLayer ());
+                sample.setKeyRoot (midiNote);
+                orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (sample);
+            }
+
+            if (result == null || orderedNotes.size () > result.size ())
+                result = orderedNotes;
+        }
+
+        return result;
     }
 
 
@@ -533,7 +584,7 @@ public class WavKeyMapping
             // Second try to parse the note from the filename in different variations
             try
             {
-                return this.createNoteMap (samples, KEY_MAP);
+                return this.createNoteMapFromNames (samples);
             }
             catch (final NoteNotDetectedException ex2)
             {

@@ -2,10 +2,11 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.wav.detector;
+package de.mossgrabers.sampleconverter.format.wav;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
-import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorDescriptor;
+import de.mossgrabers.sampleconverter.core.INotifier;
+import de.mossgrabers.sampleconverter.core.detector.AbstractDetector;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
@@ -30,7 +31,7 @@ import java.util.function.Consumer;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class WavDetectorDescriptor extends AbstractDetectorDescriptor<WavMultisampleDetectorTask>
+public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
 {
     private static final String COMMA_SPLIT              = ",";
 
@@ -57,10 +58,12 @@ public class WavDetectorDescriptor extends AbstractDetectorDescriptor<WavMultisa
 
     /**
      * Constructor.
+     *
+     * @param notifier The notifier
      */
-    public WavDetectorDescriptor ()
+    public WavDetector (final INotifier notifier)
     {
-        super ("WAV");
+        super ("WAV", notifier);
     }
 
 
@@ -90,7 +93,7 @@ public class WavDetectorDescriptor extends AbstractDetectorDescriptor<WavMultisa
         if (crossfadeNotes > 127)
         {
             Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_NOTES");
-            this.updateButtonStates (true);
+            this.notifier.updateButtonStates (true);
             this.crossfadeNotesField.selectAll ();
             return;
         }
@@ -106,14 +109,12 @@ public class WavDetectorDescriptor extends AbstractDetectorDescriptor<WavMultisa
         }
         if (crossfadeVelocities > 127)
         {
-            this.updateButtonStates (true);
+            this.notifier.updateButtonStates (true);
             Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_VELOCITIES");
             return;
         }
 
-        final WavMultisampleDetectorTask detector = new WavMultisampleDetectorTask ();
-        detector.configure (consumer, folder, velocityLayerPatterns, isAscending, monoSplitPatterns, postfixTexts, isPreferFolderName, crossfadeNotes, crossfadeVelocities, creatorTags, creatorName);
-        this.startDetection (detector);
+        this.startDetection (new WavMultisampleDetectorTask (this.notifier, consumer, folder, velocityLayerPatterns, isAscending, monoSplitPatterns, postfixTexts, isPreferFolderName, crossfadeNotes, crossfadeVelocities, creatorTags, creatorName));
     }
 
 

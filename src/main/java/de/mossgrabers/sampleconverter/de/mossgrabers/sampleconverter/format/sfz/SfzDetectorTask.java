@@ -2,9 +2,11 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.sfz.detector;
+package de.mossgrabers.sampleconverter.format.sfz;
 
+import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
+import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.LoopType;
@@ -13,13 +15,7 @@ import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
-import de.mossgrabers.sampleconverter.exception.ParseException;
-import de.mossgrabers.sampleconverter.file.wav.FormatChunk;
-import de.mossgrabers.sampleconverter.file.wav.WaveFile;
-import de.mossgrabers.sampleconverter.format.sfz.SfzHeader;
-import de.mossgrabers.sampleconverter.format.sfz.SfzOpcode;
-import de.mossgrabers.sampleconverter.format.sfz.SfzSampleMetadata;
-import de.mossgrabers.sampleconverter.ui.tools.Functions;
+import de.mossgrabers.sampleconverter.file.Utils;
 import de.mossgrabers.sampleconverter.util.Pair;
 import de.mossgrabers.sampleconverter.util.TagDetector;
 
@@ -31,10 +27,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,7 +43,7 @@ import java.util.regex.Pattern;
 public class SfzDetectorTask extends AbstractDetectorTask
 {
     private static final Pattern               HEADER_PATTERN    = Pattern.compile ("<([a-z]+)>([^<]*)", Pattern.DOTALL);
-    private static final Pattern               ATTRIBUTE_PATTERN = Pattern.compile ("(\\b\\w+)=(.*?(?=\\s\\w+=|$))", Pattern.DOTALL);
+    private static final Pattern               ATTRIBUTE_PATTERN = Pattern.compile ("(\\b\\w+)=(.*?(?=\\s\\w+=|//|$))", Pattern.DOTALL);
 
     private static final Map<String, LoopType> LOOP_TYPE_MAPPER  = new HashMap<> (3);
     static
@@ -65,65 +61,35 @@ public class SfzDetectorTask extends AbstractDetectorTask
     private final Set<String>   allOpcodes       = new HashSet<> ();
 
 
-    /** {@inheritDoc} */
-    @Override
-    protected void detect (final File folder)
+    /**
+     * Constructor.
+     *
+     * @param notifier The notifier
+     * @param consumer The consumer that handles the detected multisample sources
+     * @param sourceFolder The top source folder for the detection
+     */
+    public SfzDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
     {
-        // Detect all SFZ files in the folder
-        this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_ANALYZING", folder.getAbsolutePath ()));
-        if (this.waitForDelivery ())
-            return;
-
-        final File [] sfzFiles = folder.listFiles ( (parent, name) -> {
-
-            if (this.isCancelled ())
-                return false;
-
-            final File f = new File (parent, name);
-            if (f.isDirectory ())
-            {
-                this.detect (f);
-                return false;
-            }
-            return name.toLowerCase (Locale.US).endsWith (".sfz");
-        });
-        if (sfzFiles.length == 0)
-            return;
-
-        for (final File sfzSampleFile: sfzFiles)
-        {
-            this.notifier.get ().notify (Functions.getMessage ("IDS_NOTIFY_ANALYZING", sfzSampleFile.getAbsolutePath ()));
-
-            if (this.waitForDelivery ())
-                break;
-
-            final Optional<IMultisampleSource> multisample = this.readFile (sfzSampleFile);
-            if (multisample.isPresent () && !this.isCancelled ())
-                this.consumer.get ().accept (multisample.get ());
-        }
+        super (notifier, consumer, sourceFolder, ".sfz");
     }
 
 
-    /**
-     * Read and parse the given SFZ file.
-     *
-     * @param sfzFile The file to process
-     * @return The parse file information
-     */
-    private Optional<IMultisampleSource> readFile (final File sfzFile)
+    /** {@inheritDoc} */
+    @Override
+    protected List<IMultisampleSource> readFile (final File file)
     {
         if (this.waitForDelivery ())
-            return Optional.empty ();
+            return Collections.emptyList ();
 
         try
         {
-            final String content = Files.readString (sfzFile.toPath ());
-            return this.parseMetadataFile (sfzFile, content);
+            final String content = Files.readString (file.toPath ());
+            return this.parseMetadataFile (file, content);
         }
         catch (final IOException ex)
         {
-            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_LOAD_FILE"), ex);
-            return Optional.empty ();
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            return Collections.emptyList ();
         }
     }
 
@@ -135,10 +101,17 @@ public class SfzDetectorTask extends AbstractDetectorTask
      * @param content The content to parse
      * @return The parsed multisample source
      */
-    private Optional<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String content)
+    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String content)
     {
+        final List<Pair<String, Map<String, String>>> result = parseSfz (content);
+        if (result.isEmpty ())
+            return Collections.emptyList ();
+
         String name = getNameWithoutType (multiSampleFile);
-        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder.get (), name);
+        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
+
+        this.processedOpcodes.add (SfzOpcode.GLOBAL_LABEL);
+        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (multiSampleFile.getParentFile (), result);
 
         final Optional<String> globalName = this.getAttribute (SfzOpcode.GLOBAL_LABEL);
         if (globalName.isPresent ())
@@ -150,14 +123,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
         multisampleSource.setCategory (TagDetector.detectCategory (parts));
         multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
 
-        final List<Pair<String, Map<String, String>>> result = parseSfz (content);
-        if (result.isEmpty ())
-            return Optional.empty ();
-
-        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (multiSampleFile.getParentFile (), result);
         multisampleSource.setVelocityLayers (velocityLayers);
 
-        return Optional.of (multisampleSource);
+        return Collections.singletonList (multisampleSource);
     }
 
 
@@ -186,10 +154,12 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     final String defaultPath = attributes.get (SfzOpcode.DEFAULT_PATH);
                     if (defaultPath != null)
                     {
-                        sampleBaseFolder = new File (basePath, defaultPath.replace ('\\', '/'));
+                        // The default path might be relative, so make sure it is fully
+                        // canonical otherwise samples will not be found
+                        sampleBaseFolder = Utils.makeCanonical (new File (basePath, defaultPath.replace ('\\', '/')));
                         if (!sampleBaseFolder.exists ())
                         {
-                            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FOLDER_DOES_NOT_EXIST", sampleBaseFolder.getAbsolutePath ()));
+                            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_FOLDER_DOES_NOT_EXIST", sampleBaseFolder.getAbsolutePath ());
                             return velocityLayers;
                         }
                     }
@@ -229,16 +199,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     final File sampleFile = new File (sampleBaseFolder, sampleName.get ());
                     if (this.checkSampleFile (sampleFile))
                     {
-                        final SfzSampleMetadata sampleMetadata = new SfzSampleMetadata (sampleFile);
+                        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (sampleFile);
                         this.parseRegion (sampleMetadata);
-                        try
-                        {
-                            sampleMetadata.addMissingInfoFromWaveFile ();
-                        }
-                        catch (final IOException ex)
-                        {
-                            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_NO_SAMPLE_LENGTH"), ex);
-                        }
+                        this.loadMissingValues (sampleMetadata);
                         layer.addSampleMetadata (sampleMetadata);
                     }
                     break;
@@ -490,7 +453,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         });
 
         if (!sb.isEmpty ())
-            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_UNSUPPORTED_OPCODES", sb.toString ()));
+            this.notifier.logError ("IDS_NOTIFY_UNSUPPORTED_OPCODES", sb.toString ());
     }
 
 
@@ -565,45 +528,5 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (value != null)
             this.processedOpcodes.add (key);
         return Optional.ofNullable (value);
-    }
-
-
-    /**
-     * Test the sample file for compatibility.
-     *
-     * @param sampleFile The sample file to check
-     * @return True if OK
-     */
-    private boolean checkSampleFile (final File sampleFile)
-    {
-        if (!sampleFile.exists ())
-        {
-            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
-            return false;
-        }
-
-        try
-        {
-            final FormatChunk formatChunk = new WaveFile (sampleFile, true).getFormatChunk ();
-            if (formatChunk == null)
-            {
-                this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_WAV", sampleFile.getAbsolutePath ()));
-                return false;
-            }
-
-            final int numberOfChannels = formatChunk.getNumberOfChannels ();
-            if (numberOfChannels > 2)
-            {
-                this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), sampleFile.getAbsolutePath ()));
-                return false;
-            }
-        }
-        catch (final IOException | ParseException ex)
-        {
-            this.notifier.get ().notifyError (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_WAV"), ex);
-            return false;
-        }
-
-        return true;
     }
 }

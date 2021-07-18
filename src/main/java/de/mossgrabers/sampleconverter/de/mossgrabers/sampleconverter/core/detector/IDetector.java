@@ -2,7 +2,10 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.core;
+package de.mossgrabers.sampleconverter.core.detector;
+
+import de.mossgrabers.sampleconverter.core.ICoreTask;
+import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 
 import java.io.File;
 import java.util.function.Consumer;
@@ -14,16 +17,8 @@ import java.util.function.Consumer;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public interface IDetector
+public interface IDetector extends ICoreTask
 {
-    /**
-     * Set the notifier for information and error logging.
-     *
-     * @param notifier The notifier
-     */
-    void configure (INotifier notifier);
-
-
     /**
      * Start the detection.
      *

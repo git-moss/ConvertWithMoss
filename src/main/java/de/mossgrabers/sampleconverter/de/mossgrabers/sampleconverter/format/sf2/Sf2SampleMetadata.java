@@ -4,7 +4,7 @@
 
 package de.mossgrabers.sampleconverter.format.sf2;
 
-import de.mossgrabers.sampleconverter.core.AbstractSampleMetadata;
+import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.sampleconverter.file.wav.DataChunk;
 import de.mossgrabers.sampleconverter.file.wav.WaveFile;
@@ -19,7 +19,7 @@ import java.util.Optional;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class Sf2SampleMetadata extends AbstractSampleMetadata
+public class Sf2SampleMetadata extends DefaultSampleMetadata
 {
     private final Sf2SampleDescriptor sample;
     private Sf2SampleDescriptor       rightSample;

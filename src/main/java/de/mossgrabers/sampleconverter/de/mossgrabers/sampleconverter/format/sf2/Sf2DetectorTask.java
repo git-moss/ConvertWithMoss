@@ -2,9 +2,10 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.sf2.detector;
+package de.mossgrabers.sampleconverter.format.sf2;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
+import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.SampleLoop;
@@ -19,7 +20,6 @@ import de.mossgrabers.sampleconverter.file.sf2.Sf2InstrumentZone;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2Preset;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2PresetZone;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2SampleDescriptor;
-import de.mossgrabers.sampleconverter.format.sf2.Sf2SampleMetadata;
 import de.mossgrabers.sampleconverter.util.Pair;
 import de.mossgrabers.sampleconverter.util.TagDetector;
 
@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
+import java.util.function.Consumer;
 
 
 /**
@@ -38,73 +38,33 @@ import java.util.Locale;
  */
 public class Sf2DetectorTask extends AbstractDetectorTask
 {
-    /** {@inheritDoc} */
-    @Override
-    protected void detect (final File folder)
+    /**
+     * Constructor.
+     *
+     * @param notifier The notifier
+     * @param consumer The consumer that handles the detected multisample sources
+     * @param sourceFolder The top source folder for the detection
+     */
+    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
     {
-        if (this.consumer.isEmpty ())
-            return;
-
-        // Detect all sf2 files in the folder
-        this.log ("IDS_NOTIFY_ANALYZING", folder.getAbsolutePath ());
-        if (this.waitForDelivery ())
-            return;
-
-        final File [] sf2Files = folder.listFiles ( (parent, name) -> {
-
-            if (this.isCancelled ())
-                return false;
-
-            final File f = new File (parent, name);
-            if (f.isDirectory ())
-            {
-                this.detect (f);
-                return false;
-            }
-            return name.toLowerCase (Locale.US).endsWith (".sf2");
-        });
-        if (sf2Files.length == 0)
-            return;
-
-        for (final File sf2File: sf2Files)
-        {
-            this.log ("IDS_NOTIFY_ANALYZING", sf2File.getAbsolutePath ());
-
-            if (this.waitForDelivery ())
-                break;
-
-            for (final IMultisampleSource multisample: this.readFile (sf2File))
-            {
-                if (this.waitForDelivery ())
-                    break;
-
-                this.consumer.get ().accept (multisample);
-
-                if (this.isCancelled ())
-                    return;
-            }
-        }
+        super (notifier, consumer, sourceFolder, ".sf2");
     }
 
 
-    /**
-     * Read and parse the given SoundFont 2 file.
-     *
-     * @param sourceFile The file to process
-     * @return The parsed multisample information
-     */
-    private List<IMultisampleSource> readFile (final File sourceFile)
+    /** {@inheritDoc} */
+    @Override
+    protected List<IMultisampleSource> readFile (final File sourceFile)
     {
         try
         {
             final Sf2File sf2File = new Sf2File (sourceFile);
             final String name = getNameWithoutType (sourceFile);
-            final String [] parts = createPathParts (sourceFile.getParentFile (), this.sourceFolder.get (), name);
+            final String [] parts = createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
             return this.parseSF2File (sourceFile, sf2File, parts);
         }
         catch (final IOException | ParseException ex)
         {
-            this.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Collections.emptyList ();
         }
     }
@@ -226,7 +186,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             }
 
             if (leftSamples.size () != rightSamples.size ())
-                this.logError ("IDS_NOTIFY_ERR_DIFFERENT_NUMBER_LEFT_RIGHT", Integer.toString (leftSamples.size ()), Integer.toString (rightSamples.size ()));
+                this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_NUMBER_LEFT_RIGHT", Integer.toString (leftSamples.size ()), Integer.toString (rightSamples.size ()));
 
             resultSamples.addAll (this.combineLinkedSamples (leftSamples, rightSamples));
             resultSamples.addAll (this.combinePanoramaSamples (panLeftSamples, panRightSamples));
@@ -345,13 +305,13 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
         if (left.getOriginalPitch () != right.getOriginalPitch () || left.getPitchCorrection () != right.getPitchCorrection ())
         {
-            this.logError ("IDS_NOTIFY_ERR_DIFFERENT_PITCH", left.getName (), right.getName ());
+            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_PITCH", left.getName (), right.getName ());
             return false;
         }
 
         if (left.getSampleRate () != right.getSampleRate ())
         {
-            this.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_RATE", left.getName (), right.getName ());
+            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_RATE", left.getName (), right.getName ());
             return false;
         }
 
@@ -361,13 +321,13 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         final long leftLoopLength = left.getEndloop () - left.getStartloop ();
         final long rightLoopLength = right.getEndloop () - right.getStartloop ();
         if (!leftSample.getLoops ().isEmpty () && (leftStart != rightStart || leftLoopLength != rightLoopLength))
-            this.logError ("IDS_NOTIFY_ERR_DIFFERENT_LOOP_LENGTH", left.getName (), right.getName (), Long.toString (leftStart), Long.toString (leftLoopLength), Long.toString (rightStart), Long.toString (rightLoopLength));
+            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_LOOP_LENGTH", left.getName (), right.getName (), Long.toString (leftStart), Long.toString (leftLoopLength), Long.toString (rightStart), Long.toString (rightLoopLength));
 
         // Only show the warning if there is no loop
         final long leftLength = left.getEnd () - left.getStart ();
         final long rightLength = right.getEnd () - right.getStart ();
         if (leftLength != rightLength)
-            this.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_LENGTH", left.getName (), Long.toString (leftLength), right.getName (), Long.toString (rightLength));
+            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_LENGTH", left.getName (), Long.toString (leftLength), right.getName (), Long.toString (rightLength));
 
         return true;
     }

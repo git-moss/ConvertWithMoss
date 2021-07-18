@@ -45,11 +45,13 @@ The following multisample formats are supported as the source format:
 2. Bitwig Studio multisample (*.multisample)
 3. SFZ (*.sfz)
 4. SoundFont 2 (*.sf2)
+5. DecentSampler (*.dspreset, *.dslibrary)
 
 The following multisample formats are supported as the destination format:
 
-1. Bitwig Studio multisample
-2. SFZ
+1. Bitwig Studio multisample (*.multisample)
+2. SFZ (*.sfz)
+3. DecentSampler (*.dspreset, *.dslibrary)
 
 ## Source formats
 
@@ -115,6 +117,14 @@ The sample data contained in the file is in mono or split stereo with 16 or 24 b
 
 The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
 
+### DecentSampler
+
+The Decent Sampler plugin is a free (but closed source) sample player plugin that allows you to play sample libraries in the DecentSampler format (files with extensions: dspreset and dslibrary). See https://www.decentsamples.com/product/decent-sampler-plugin/
+The format specification is available here: https://www.decentsamples.com/wp-content/uploads/2020/06/format-documentation.html#the-sample-element
+
+A preset file contains a single preset. A dspreset file contains only the description of the multisample. The related samples are normally kept in a separate folder. Only WAV files are supported.
+A dslibrary file contains several dspreset files incl. the samples compressed in ZIP format.
+
 ## Destination formats
 
 The following multisample formats can be the destination of a conversion.
@@ -126,3 +136,19 @@ This format can be loaded in the Bitwig Sampler device. It supports multiple lay
 ### SFZ
 
 Writes a SFZ file (see above) and puts all samples in a sub-folder with the same name.
+
+### DecentSampler
+
+Writes a dspreset or dslibrary file (see above) depending out the setting. Samples are stored in a sub-folder with the same name.
+
+# Changes
+
+## 2.0
+
+* New: Added reading and writing of DecentSampler preset files.
+* New: Improved note detection from file names.
+* Fixed: SFZ detector - global_label was not read.
+* Fixed: SFZ parser - Comments at line end were not removed which conflicted with attribute values.
+* Fixed: WAV detector - Crash if left and right mono sample had different lengths.
+* Fixed: Creating folders for SFZ could raise an exception.
+* Fixed: Source and destination tabs could be removed.

@@ -2,7 +2,10 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.core;
+package de.mossgrabers.sampleconverter.core.creator;
+
+import de.mossgrabers.sampleconverter.core.ICoreTask;
+import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +16,7 @@ import java.io.IOException;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public interface ICreator
+public interface ICreator extends ICoreTask
 {
     /**
      * Create and store a multi-sample file.
@@ -23,12 +26,4 @@ public interface ICreator
      * @throws IOException Could not store the file
      */
     void create (File destinationFolder, IMultisampleSource multisampleSource) throws IOException;
-
-
-    /**
-     * Set the notifier for information and error logging.
-     *
-     * @param notifier The notifier
-     */
-    void configure (INotifier notifier);
 }

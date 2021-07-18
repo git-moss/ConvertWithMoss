@@ -4,7 +4,7 @@
 
 package de.mossgrabers.sampleconverter.format.wav;
 
-import de.mossgrabers.sampleconverter.core.AbstractSampleMetadata;
+import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.LoopType;
 import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
@@ -27,7 +27,7 @@ import java.nio.file.Files;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class WavSampleMetadata extends AbstractSampleMetadata
+public class WavSampleMetadata extends DefaultSampleMetadata
 {
     private final WaveFile waveFile;
 

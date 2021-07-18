@@ -4,10 +4,23 @@
 
 package de.mossgrabers.sampleconverter.core;
 
+import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
+import de.mossgrabers.sampleconverter.exception.ParseException;
+import de.mossgrabers.sampleconverter.file.wav.DataChunk;
+import de.mossgrabers.sampleconverter.file.wav.FormatChunk;
+import de.mossgrabers.sampleconverter.file.wav.WaveFile;
+
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 
 /**
@@ -15,9 +28,11 @@ import java.util.Optional;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public abstract class AbstractSampleMetadata implements ISampleMetadata
+public class DefaultSampleMetadata implements ISampleMetadata
 {
-    protected final File       file;
+    protected final File       sampleFile;
+    protected final File       zipFile;
+
     protected final String     filename;
     protected boolean          isMonoFile              = false;
     protected int              sampleRate              = 44100;
@@ -49,11 +64,23 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     /**
      * Constructor.
      *
-     * @param file The file where the sample is stored
+     * @param sampleFile The file where the sample is stored
      */
-    protected AbstractSampleMetadata (final File file)
+    public DefaultSampleMetadata (final File sampleFile)
     {
-        this (file.getName (), file);
+        this (sampleFile.getName (), sampleFile, null);
+    }
+
+
+    /**
+     * Constructor for a sample stored in a ZIP file.
+     *
+     * @param zipFile The ZIP file which contains the WAV files
+     * @param filename The name of the samples' file in the ZIP file
+     */
+    public DefaultSampleMetadata (final File zipFile, final String filename)
+    {
+        this (filename, null, zipFile);
     }
 
 
@@ -62,9 +89,9 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
      *
      * @param filename The name of the file where the sample is stored
      */
-    protected AbstractSampleMetadata (final String filename)
+    public DefaultSampleMetadata (final String filename)
     {
-        this (filename, null);
+        this (filename, null, null);
     }
 
 
@@ -72,12 +99,14 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
      * Constructor.
      *
      * @param filename The name of the file where the sample is stored
-     * @param file The file where the sample is stored
+     * @param sampleFile The file where the sample is stored
+     * @param zipFile The ZIP file which contains the WAV files
      */
-    private AbstractSampleMetadata (final String filename, final File file)
+    private DefaultSampleMetadata (final String filename, final File sampleFile, final File zipFile)
     {
         this.filename = filename;
-        this.file = file;
+        this.sampleFile = sampleFile;
+        this.zipFile = zipFile;
     }
 
 
@@ -85,7 +114,7 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     @Override
     public File getFile ()
     {
-        return this.file;
+        return this.sampleFile;
     }
 
 
@@ -422,5 +451,91 @@ public abstract class AbstractSampleMetadata implements ISampleMetadata
     public String getFilenameWithoutLayer ()
     {
         return this.filenameWithoutLayer.isEmpty () ? this.getFilename () : this.filenameWithoutLayer.get ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void writeSample (final OutputStream outputStream) throws IOException
+    {
+        if (this.sampleFile != null)
+        {
+            try (final InputStream in = new FileInputStream (this.sampleFile))
+            {
+                in.transferTo (outputStream);
+            }
+            return;
+        }
+
+        if (this.zipFile == null)
+            return;
+
+        try (final ZipFile zf = new ZipFile (this.zipFile))
+        {
+            final ZipEntry entry = zf.getEntry (this.filename);
+            if (entry == null)
+                throw new FileNotFoundException (String.format ("The sample '%s' was not found in the ZIP file.", this.filename));
+
+            try (final InputStream in = zf.getInputStream (entry))
+            {
+                in.transferTo (outputStream);
+            }
+        }
+    }
+
+
+    /**
+     * Check if the sample start / stop and the sample rate is set, if not read them from the sample
+     * file.
+     *
+     * @throws IOException Could not read or parse the wave file
+     */
+    public void addMissingInfoFromWaveFile () throws IOException
+    {
+        final WaveFile waveFile;
+        try
+        {
+            if (this.sampleFile != null)
+                waveFile = new WaveFile (this.sampleFile, true);
+            else
+            {
+                if (this.zipFile == null)
+                    return;
+                try (final ZipFile zf = new ZipFile (this.zipFile))
+                {
+                    final ZipEntry entry = zf.getEntry (this.filename);
+                    if (entry == null)
+                        return;
+                    try (final InputStream in = zf.getInputStream (entry))
+                    {
+                        waveFile = new WaveFile (in, true);
+                    }
+                }
+            }
+        }
+        catch (final IOException | ParseException ex)
+        {
+            throw new IOException (ex);
+        }
+
+        final FormatChunk formatChunk = waveFile.getFormatChunk ();
+        final DataChunk dataChunk = waveFile.getDataChunk ();
+        if (formatChunk == null || dataChunk == null)
+            return;
+
+        try
+        {
+            this.sampleRate = formatChunk.getSampleRate ();
+            if (this.stop < 0)
+            {
+                if (this.start < 0)
+                    this.start = 0;
+                this.stop = dataChunk.calculateLength (formatChunk);
+            }
+        }
+        catch (final CompressionNotSupportedException ex)
+        {
+            throw new IOException (ex);
+        }
     }
 }

@@ -4,17 +4,18 @@
 
 package de.mossgrabers.sampleconverter.ui;
 
-import de.mossgrabers.sampleconverter.core.ICreator;
-import de.mossgrabers.sampleconverter.core.ICreatorDescriptor;
-import de.mossgrabers.sampleconverter.core.IDetectorDescriptor;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.format.bitwig.creator.BitwigMultisampleCreatorDescriptor;
-import de.mossgrabers.sampleconverter.format.bitwig.detector.BitwigMultisampleDetectorDescriptor;
-import de.mossgrabers.sampleconverter.format.sf2.detector.Sf2DetectorDescriptor;
-import de.mossgrabers.sampleconverter.format.sfz.creator.SfzCreatorDescriptor;
-import de.mossgrabers.sampleconverter.format.sfz.detector.SfzDetectorDescriptor;
-import de.mossgrabers.sampleconverter.format.wav.detector.WavDetectorDescriptor;
+import de.mossgrabers.sampleconverter.core.creator.ICreator;
+import de.mossgrabers.sampleconverter.core.detector.IDetector;
+import de.mossgrabers.sampleconverter.format.bitwig.BitwigMultisampleCreator;
+import de.mossgrabers.sampleconverter.format.bitwig.BitwigMultisampleDetector;
+import de.mossgrabers.sampleconverter.format.dspreset.DecentSamplerCreator;
+import de.mossgrabers.sampleconverter.format.dspreset.DecentSamplerDetector;
+import de.mossgrabers.sampleconverter.format.sf2.Sf2Detector;
+import de.mossgrabers.sampleconverter.format.sfz.SfzCreator;
+import de.mossgrabers.sampleconverter.format.sfz.SfzDetector;
+import de.mossgrabers.sampleconverter.format.wav.WavDetector;
 import de.mossgrabers.sampleconverter.ui.tools.AbstractFrame;
 import de.mossgrabers.sampleconverter.ui.tools.DefaultApplication;
 import de.mossgrabers.sampleconverter.ui.tools.EndApplicationException;
@@ -52,43 +53,32 @@ import java.util.function.Consumer;
  */
 public class SampleConverterApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {
-    private static final String          DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
-    private static final String          DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
-    private static final String          DESTINATION_PATH                    = "DestinationPath";
-    private static final String          DESTINATION_TYPE                    = "DestinationType";
-    private static final String          SOURCE_PATH                         = "SourcePath";
-    private static final String          SOURCE_TYPE                         = "SourceType";
+    private static final String DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
+    private static final String DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
+    private static final String DESTINATION_PATH                    = "DestinationPath";
+    private static final String DESTINATION_TYPE                    = "DestinationType";
+    private static final String SOURCE_PATH                         = "SourcePath";
+    private static final String SOURCE_TYPE                         = "SourceType";
 
-    private final IDetectorDescriptor [] detectorDescriptors                 =
-    {
-        new WavDetectorDescriptor (),
-        new BitwigMultisampleDetectorDescriptor (),
-        new SfzDetectorDescriptor (),
-        new Sf2DetectorDescriptor ()
-    };
+    private final IDetector []  detectors;
+    private final ICreator []   creators;
 
-    private final ICreatorDescriptor []  creatorDescriptors                  =
-    {
-        new BitwigMultisampleCreatorDescriptor (),
-        new SfzCreatorDescriptor ()
-    };
+    private BorderPane          mainPane;
+    private BorderPane          executePane;
+    private TextField           sourcePathField;
+    private TextField           destinationPathField;
+    private File                sourceFolder;
+    private File                outputFolder;
+    private CheckBox            createFolderStructure;
+    private CheckBox            addNewFiles;
 
-    private BorderPane                   mainPane;
-    private BorderPane                   executePane;
-    private TextField                    sourcePathField;
-    private TextField                    destinationPathField;
-    private File                         sourceFolder;
-    private File                         outputFolder;
-    private CheckBox                     createFolderStructure;
-    private CheckBox                     addNewFiles;
+    private TabPane             sourceTabPane;
+    private TabPane             destinationTabPane;
 
-    private TabPane                      sourceTabPane;
-    private TabPane                      destinationTabPane;
-
-    private boolean                      onlyAnalyse                         = true;
-    private Button                       closeButton;
-    private Button                       cancelButton;
-    private final LoggerBox              loggingArea                         = new LoggerBox ();
+    private boolean             onlyAnalyse                         = true;
+    private Button              closeButton;
+    private Button              cancelButton;
+    private final LoggerBox     loggingArea                         = new LoggerBox ();
 
 
     /**
@@ -109,7 +99,23 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
      */
     public SampleConverterApp () throws EndApplicationException
     {
-        super ("de/mossgrabers/sampleconverter", 400, 400);
+        super ("de/mossgrabers/sampleconverter", 1000, 800);
+
+        this.detectors = new IDetector []
+        {
+            new WavDetector (this),
+            new BitwigMultisampleDetector (this),
+            new SfzDetector (this),
+            new Sf2Detector (this),
+            new DecentSamplerDetector (this)
+        };
+
+        this.creators = new ICreator []
+        {
+            new BitwigMultisampleCreator (this),
+            new SfzCreator (this),
+            new DecentSamplerCreator (this)
+        };
     }
 
 
@@ -150,10 +156,11 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         sourcePane.setCenter (this.sourceTabPane);
 
         final ObservableList<Tab> tabs = this.sourceTabPane.getTabs ();
-        for (final IDetectorDescriptor detectorDescriptor: this.detectorDescriptors)
+        for (final IDetector detector: this.detectors)
         {
-            tabs.add (new Tab (detectorDescriptor.getName (), detectorDescriptor.getEditPane ()));
-            detectorDescriptor.configure (this);
+            final Tab tab = new Tab (detector.getName (), detector.getEditPane ());
+            tab.setClosable (false);
+            tabs.add (tab);
         }
 
         // Destination pane
@@ -188,10 +195,11 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         destinationPane.setBottom (bottom.getPane ());
 
         final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
-        for (final ICreatorDescriptor creatorDescriptor: this.creatorDescriptors)
+        for (final ICreator creator: this.creators)
         {
-            destinationTabs.add (new Tab (creatorDescriptor.getName (), creatorDescriptor.getEditPane ()));
-            creatorDescriptor.configure (this);
+            final Tab tab = new Tab (creator.getName (), creator.getEditPane ());
+            tab.setClosable (false);
+            destinationTabs.add (tab);
         }
 
         // Tie it all together ...
@@ -244,10 +252,10 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         this.createFolderStructure.setSelected (this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true));
         this.addNewFiles.setSelected (this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false));
 
-        for (final IDetectorDescriptor detectorDescriptor: this.detectorDescriptors)
-            detectorDescriptor.loadSettings (this.config);
-        for (final ICreatorDescriptor creatorDescriptor: this.creatorDescriptors)
-            creatorDescriptor.loadSettings (this.config);
+        for (final IDetector detector: this.detectors)
+            detector.loadSettings (this.config);
+        for (final ICreator creator: this.creators)
+            creator.loadSettings (this.config);
 
         final int sourceType = this.config.getInteger (SOURCE_TYPE, 0);
         this.sourceTabPane.getSelectionModel ().select (sourceType);
@@ -260,18 +268,18 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void exit ()
     {
-        for (final IDetectorDescriptor detectorDescriptor: this.detectorDescriptors)
-            detectorDescriptor.shutdown ();
+        for (final IDetector detector: this.detectors)
+            detector.shutdown ();
 
         this.config.setProperty (SOURCE_PATH, this.sourcePathField.getText ());
         this.config.setProperty (DESTINATION_PATH, this.destinationPathField.getText ());
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure.isSelected ());
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles.isSelected ());
 
-        for (final IDetectorDescriptor detectorDescriptor: this.detectorDescriptors)
-            detectorDescriptor.saveSettings (this.config);
-        for (final ICreatorDescriptor creatorDescriptor: this.creatorDescriptors)
-            creatorDescriptor.saveSettings (this.config);
+        for (final IDetector detector: this.detectors)
+            detector.saveSettings (this.config);
+        for (final ICreator creator: this.creators)
+            creator.saveSettings (this.config);
 
         final int sourceSelectedIndex = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
         this.config.setInteger (SOURCE_TYPE, sourceSelectedIndex);
@@ -307,8 +315,8 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         this.executePane.setVisible (true);
 
         Platform.runLater ( () -> {
-            this.notify (Functions.getMessage ("IDS_NOTIFY_DETECTING"));
-            this.detectorDescriptors[selectedDetector].detect (this.sourceFolder, this);
+            this.log ("IDS_NOTIFY_DETECTING");
+            this.detectors[selectedDetector].detect (this.sourceFolder, this);
         });
     }
 
@@ -320,7 +328,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     {
         final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
         if (selectedDetector >= 0)
-            this.detectorDescriptors[selectedDetector].cancel ();
+            this.detectors[selectedDetector].cancel ();
     }
 
 
@@ -388,8 +396,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         if (selectedCreator < 0)
             return;
 
-        final ICreator creator = this.creatorDescriptors[selectedCreator].getCreator ();
-        this.notify (Functions.getMessage ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ()));
+        this.log ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ());
 
         try
         {
@@ -398,36 +405,44 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
             final boolean createStructure = this.createFolderStructure.isSelected ();
             final File multisampleOutputFolder = calcOutputFolder (this.outputFolder, multisampleSource.getSubPath (), createStructure);
-            creator.create (multisampleOutputFolder, multisampleSource);
+            this.creators[selectedCreator].create (multisampleOutputFolder, multisampleSource);
         }
         catch (final IOException | RuntimeException ex)
         {
-            this.notifyError (Functions.getMessage ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ()), ex);
+            this.logError ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ());
         }
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void notify (final String message)
+    public void log (final String messageID, final String... replaceStrings)
     {
-        this.loggingArea.notify (message);
+        this.loggingArea.notify (Functions.getMessage (messageID, replaceStrings));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void notifyError (final String message)
+    public void logError (final String messageID, final String... replaceStrings)
     {
-        this.loggingArea.notifyError (message);
+        this.loggingArea.notifyError (Functions.getMessage (messageID, replaceStrings));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void notifyError (final String message, final Throwable throwable)
+    public void logError (final String messageID, final Throwable throwable)
     {
-        this.loggingArea.notifyError (message, throwable);
+        this.loggingArea.notifyError (Functions.getMessage (messageID), throwable);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void logError (final Throwable throwable)
+    {
+        this.loggingArea.notifyError (throwable.getMessage (), throwable);
     }
 
 
