@@ -12,7 +12,6 @@ import de.mossgrabers.sampleconverter.core.LoopType;
 import de.mossgrabers.sampleconverter.core.PlayLogic;
 import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
-import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -84,13 +83,7 @@ public class SfzCreator extends AbstractCreator
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, sampleName + FOLDER_POSTFIX);
-        if (!sampleFolder.exists () && !sampleFolder.mkdir ())
-        {
-            // Necessary to check again, since another process could have created the folder
-            // meanwhile!
-            if (!sampleFolder.exists ())
-                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERROR_SAMPLE_FOLDER", sampleFolder.getAbsolutePath ()));
-        }
+        safeCreateDirectory (sampleFolder);
 
         int outputCount = 0;
         final List<IVelocityLayer> sampleMetadata = multisampleSource.getSampleMetadata ();

@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.dspreset;
+package de.mossgrabers.sampleconverter.format.decentsampler;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,6 +19,15 @@ public class DecentSamplerTag
 {
     /** The root tag. */
     public static final String                    DECENTSAMPLER   = "DecentSampler";
+
+    /** The user interface tag. */
+    public static final String                    UI              = "ui";
+    /** The tabulator tag. */
+    public static final String                    TAB             = "tab";
+    /** The labeled knob tag. */
+    public static final String                    LABELED_KNOB    = "labeled-knob";
+    /** The binding tag. */
+    public static final String                    BINDING         = "binding";
 
     /** The groups tag. */
     public static final String                    GROUPS          = "groups";
