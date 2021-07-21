@@ -7,12 +7,14 @@ package de.mossgrabers.sampleconverter.core.creator;
 import de.mossgrabers.sampleconverter.core.AbstractCoreTask;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
@@ -114,5 +116,23 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         zos.putNextEntry (entry);
         info.writeSample (zos);
         zos.closeEntry ();
+    }
+
+
+    /**
+     * Create the given folder if it does not already exist
+     *
+     * @param folder The folder to create
+     * @throws IOException If the folder could not be created
+     */
+    protected static void safeCreateDirectory (final File folder) throws IOException
+    {
+        if (folder.exists () || folder.mkdir ())
+            return;
+
+        // A parallel thread might already have created the directory and mkdir did return
+        // false. Therefore check again before throwing an exception
+        if (!folder.exists ())
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERROR_SAMPLE_FOLDER", folder.getAbsolutePath ()));
     }
 }

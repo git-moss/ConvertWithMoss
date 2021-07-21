@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.dspreset;
+package de.mossgrabers.sampleconverter.format.decentsampler;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
@@ -12,7 +12,6 @@ import de.mossgrabers.sampleconverter.core.PlayLogic;
 import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
-import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
@@ -133,6 +132,16 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
+    /**
+     * Create a dspreset file.
+     *
+     * @param relativeFolderName A relative path for the samples
+     * @param destinationFolder Where to store the preset file
+     * @param multisampleSource The multi sample to store in the library
+     * @param multiFile The file of the dslibrary
+     * @param metadata The dspreset metadata description file
+     * @throws IOException Could not store the file
+     */
     private void storePreset (final String relativeFolderName, final File destinationFolder, final IMultisampleSource multisampleSource, final File multiFile, final String metadata) throws IOException
     {
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
@@ -142,11 +151,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeFolderName);
-        if (!sampleFolder.exists () && !sampleFolder.mkdir ())
-        {
-            if (!sampleFolder.exists ())
-                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERROR_SAMPLE_FOLDER", sampleFolder.getAbsolutePath ()));
-        }
+        safeCreateDirectory (sampleFolder);
 
         int outputCount = 0;
         for (final IVelocityLayer layer: multisampleSource.getSampleMetadata ())
@@ -170,6 +175,16 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
+    /**
+     * Create a dslibrary file.
+     *
+     * @param relativeFolderName A relative path for the samples
+     * @param multisampleSource The multi sample to store in the library
+     * @param sampleName The name of the multi sample
+     * @param multiFile The file of the dslibrary
+     * @param metadata The dspreset metadata description file
+     * @throws IOException Could not store the file
+     */
     private void storeLibrary (final String relativeFolderName, final IMultisampleSource multisampleSource, final String sampleName, final File multiFile, final String metadata) throws IOException
     {
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
@@ -215,12 +230,12 @@ public class DecentSamplerCreator extends AbstractCreator
 
         final Element multisampleElement = document.createElement (DecentSamplerTag.DECENTSAMPLER);
         document.appendChild (multisampleElement);
+        createUI (document, multisampleElement);
 
         // No metadata at all
 
         // Add all groups with samples
-        final Element groupsElement = document.createElement (DecentSamplerTag.GROUPS);
-        multisampleElement.appendChild (groupsElement);
+        final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
         final List<IVelocityLayer> velocityLayers = multisampleSource.getSampleMetadata ();
         for (final IVelocityLayer layer: velocityLayers)
         {
@@ -329,8 +344,75 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
+    /**
+     * Check if the toggle setting is set to preset or library.
+     *
+     * @return True if library
+     */
     private boolean isOutputFormatLibrary ()
     {
         return this.outputFormatGroup.getToggles ().get (1).isSelected ();
+    }
+
+
+    /**
+     * Create the static user interface.
+     *
+     * @param document The XML document
+     * @param root The root XML element
+     */
+    private static void createUI (final Document document, final Element root)
+    {
+        final Element uiElement = XMLUtils.addElement (document, root, DecentSamplerTag.UI);
+        final Element tabElement = XMLUtils.addElement (document, uiElement, DecentSamplerTag.TAB);
+        tabElement.setAttribute ("name", "main");
+
+        Element knobElement;
+
+        knobElement = createKnob (document, tabElement, 0, 0, "Filter Cutoff", 22000, 22000);
+        createBinding (document, knobElement, "effect", "FX_FILTER_FREQUENCY", 3000);
+        knobElement = createKnob (document, tabElement, 100, 0, "Filter Resonance", 1000, 0);
+        createBinding (document, knobElement, "effect", "FX_FILTER_RESONANCE", 2);
+        knobElement = createKnob (document, tabElement, 200, 0, "Reverb Wet Level", 1000, 0);
+        createBinding (document, knobElement, "effect", "FX_REVERB_WET_LEVEL", 1);
+        knobElement = createKnob (document, tabElement, 300, 0, "Reverb Room Size", 1000, 0);
+        createBinding (document, knobElement, "effect", "FX_REVERB_ROOM_SIZE", 1);
+
+        knobElement = createKnob (document, tabElement, 0, 100, "Attack", 2000, 0);
+        createBinding (document, knobElement, "amp", "ENV_ATTACK", 2);
+        knobElement = createKnob (document, tabElement, 100, 100, "Decay", 2000, 0);
+        createBinding (document, knobElement, "amp", "ENV_DECAY", 2);
+        knobElement = createKnob (document, tabElement, 200, 100, "Sustain", 2000, 2000);
+        createBinding (document, knobElement, "amp", "ENV_SUSTAIN", 2);
+        knobElement = createKnob (document, tabElement, 300, 100, "Release", 2000, 400);
+        createBinding (document, knobElement, "amp", "ENV_RELEASE", 2);
+    }
+
+
+    private static Element createKnob (final Document document, final Element tab, final int x, final int y, final String label, final int maxValue, final int value)
+    {
+        final Element knobElement = XMLUtils.addElement (document, tab, DecentSamplerTag.LABELED_KNOB);
+        knobElement.setAttribute ("x", Integer.toString (x));
+        knobElement.setAttribute ("y", Integer.toString (y));
+        knobElement.setAttribute ("label", label);
+        knobElement.setAttribute ("type", "float");
+        knobElement.setAttribute ("minValue", "0");
+        knobElement.setAttribute ("maxValue", Integer.toString (maxValue));
+        knobElement.setAttribute ("textColor", "FF000000");
+        knobElement.setAttribute ("value", Integer.toString (value));
+        return knobElement;
+    }
+
+
+    private static void createBinding (final Document document, final Element knobElement, final String type, final String parameter, final int translationOutputMax)
+    {
+        final Element bindingElement = XMLUtils.addElement (document, knobElement, DecentSamplerTag.BINDING);
+        bindingElement.setAttribute ("type", type);
+        bindingElement.setAttribute ("level", "instrument");
+        bindingElement.setAttribute ("position", "0");
+        bindingElement.setAttribute ("parameter", parameter);
+        bindingElement.setAttribute ("translation", "linear");
+        bindingElement.setAttribute ("translationOutputMin", "0.0");
+        bindingElement.setAttribute ("translationOutputMax", Integer.toString (translationOutputMax));
     }
 }
