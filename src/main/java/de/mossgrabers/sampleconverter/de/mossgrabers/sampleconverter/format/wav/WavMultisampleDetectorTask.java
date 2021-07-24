@@ -99,6 +99,8 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
     protected List<IMultisampleSource> readFile (final File folder)
     {
         final File [] wavFiles = this.listFiles (folder, ".wav");
+        if (wavFiles.length == 0)
+            return Collections.emptyList ();
 
         // Analyze all WAV files
         final WavSampleMetadata [] sampleFiles = new WavSampleMetadata [wavFiles.length];

@@ -143,6 +143,11 @@ Writes a dspreset or dslibrary file (see above) depending out the setting. Sampl
 
 # Changes
 
+## 2.1
+
+* Fixed: WAV detector did also deliver results for empty folders.
+* Fixed: Setup for created DecentSampler Filter and Reverb is working now.
+
 ## 2.0
 
 * New: Added reading and writing of DecentSampler preset and library files.
