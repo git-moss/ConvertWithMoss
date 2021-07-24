@@ -50,6 +50,8 @@ import java.util.zip.ZipOutputStream;
  */
 public class DecentSamplerCreator extends AbstractCreator
 {
+    private static final String MOD_AMP                  = "amp";
+    private static final String MOD_EFFECT               = "effect";
     private static final String FOLDER_POSTFIX           = "Samples";
     private boolean             isOutputFormatLibrary;
 
@@ -249,6 +251,8 @@ public class DecentSamplerCreator extends AbstractCreator
                 createSample (document, folderName, groupElement, sample);
         }
 
+        createEffects (document, multisampleElement);
+
         try
         {
             return Optional.of (XMLUtils.toString (document));
@@ -356,6 +360,26 @@ public class DecentSamplerCreator extends AbstractCreator
 
 
     /**
+     * Creates the filter and reverb effect elements.
+     *
+     * @param document The XML document
+     * @param rootElement Where to add the effect elements
+     */
+    private static void createEffects (final Document document, final Element rootElement)
+    {
+        final Element effectsElement = XMLUtils.addElement (document, rootElement, "effects");
+
+        Element effectElement = XMLUtils.addElement (document, effectsElement, "effect");
+        effectElement.setAttribute ("type", "lowpass_4pl");
+        effectElement.setAttribute ("resonance", "0.5");
+        effectElement.setAttribute ("frequency", "22000");
+
+        effectElement = XMLUtils.addElement (document, effectsElement, "effect");
+        effectElement.setAttribute ("type", "reverb");
+    }
+
+
+    /**
      * Create the static user interface.
      *
      * @param document The XML document
@@ -370,26 +394,26 @@ public class DecentSamplerCreator extends AbstractCreator
         Element knobElement;
 
         knobElement = createKnob (document, tabElement, 0, 0, "Filter Cutoff", 22000, 22000);
-        createBinding (document, knobElement, "effect", "FX_FILTER_FREQUENCY", 3000);
-        knobElement = createKnob (document, tabElement, 100, 0, "Filter Resonance", 1000, 0);
-        createBinding (document, knobElement, "effect", "FX_FILTER_RESONANCE", 2);
+        createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_FREQUENCY", 0, 3000, 0);
+        knobElement = createKnob (document, tabElement, 100, 0, "Filter Resonance", 1, 0.5);
+        createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_RESONANCE", 0.11, 2, 0);
         knobElement = createKnob (document, tabElement, 200, 0, "Reverb Wet Level", 1000, 0);
-        createBinding (document, knobElement, "effect", "FX_REVERB_WET_LEVEL", 1);
+        createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_WET_LEVEL", 0, 1, 1);
         knobElement = createKnob (document, tabElement, 300, 0, "Reverb Room Size", 1000, 0);
-        createBinding (document, knobElement, "effect", "FX_REVERB_ROOM_SIZE", 1);
+        createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_ROOM_SIZE", 0, 1, 1);
 
         knobElement = createKnob (document, tabElement, 0, 100, "Attack", 2000, 0);
-        createBinding (document, knobElement, "amp", "ENV_ATTACK", 2);
+        createBinding (document, knobElement, MOD_AMP, "ENV_ATTACK", 0, 2, 0);
         knobElement = createKnob (document, tabElement, 100, 100, "Decay", 2000, 0);
-        createBinding (document, knobElement, "amp", "ENV_DECAY", 2);
+        createBinding (document, knobElement, MOD_AMP, "ENV_DECAY", 0, 2, 0);
         knobElement = createKnob (document, tabElement, 200, 100, "Sustain", 2000, 2000);
-        createBinding (document, knobElement, "amp", "ENV_SUSTAIN", 2);
+        createBinding (document, knobElement, MOD_AMP, "ENV_SUSTAIN", 0, 2, 0);
         knobElement = createKnob (document, tabElement, 300, 100, "Release", 2000, 400);
-        createBinding (document, knobElement, "amp", "ENV_RELEASE", 2);
+        createBinding (document, knobElement, MOD_AMP, "ENV_RELEASE", 0, 2, 0);
     }
 
 
-    private static Element createKnob (final Document document, final Element tab, final int x, final int y, final String label, final int maxValue, final int value)
+    private static Element createKnob (final Document document, final Element tab, final int x, final int y, final String label, final int maxValue, final double value)
     {
         final Element knobElement = XMLUtils.addElement (document, tab, DecentSamplerTag.LABELED_KNOB);
         knobElement.setAttribute ("x", Integer.toString (x));
@@ -399,20 +423,20 @@ public class DecentSamplerCreator extends AbstractCreator
         knobElement.setAttribute ("minValue", "0");
         knobElement.setAttribute ("maxValue", Integer.toString (maxValue));
         knobElement.setAttribute ("textColor", "FF000000");
-        knobElement.setAttribute ("value", Integer.toString (value));
+        knobElement.setAttribute ("value", Double.toString (value));
         return knobElement;
     }
 
 
-    private static void createBinding (final Document document, final Element knobElement, final String type, final String parameter, final int translationOutputMax)
+    private static void createBinding (final Document document, final Element knobElement, final String type, final String parameter, final double translationOutputMin, final int translationOutputMax, final int position)
     {
         final Element bindingElement = XMLUtils.addElement (document, knobElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", type);
         bindingElement.setAttribute ("level", "instrument");
-        bindingElement.setAttribute ("position", "0");
+        bindingElement.setAttribute ("position", Integer.toString (position));
         bindingElement.setAttribute ("parameter", parameter);
         bindingElement.setAttribute ("translation", "linear");
-        bindingElement.setAttribute ("translationOutputMin", "0.0");
+        bindingElement.setAttribute ("translationOutputMin", Double.toString (translationOutputMin));
         bindingElement.setAttribute ("translationOutputMax", Integer.toString (translationOutputMax));
     }
 }
