@@ -143,6 +143,10 @@ Writes a dspreset or dslibrary file (see above) depending out the setting. Sampl
 
 # Changes
 
+## 2.1.1
+
+* Fixed: WAV detector did not read loops from WAV files.
+
 ## 2.1
 
 * Fixed: WAV detector did also deliver results for empty folders.

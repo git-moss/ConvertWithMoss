@@ -5,7 +5,6 @@
 package de.mossgrabers.sampleconverter.file.wav;
 
 import de.mossgrabers.sampleconverter.exception.ParseException;
-import de.mossgrabers.sampleconverter.file.wav.SampleChunk.SampleChunkLoop;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,13 +22,13 @@ import java.util.logging.SimpleFormatter;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class DumpSampleChunk
+public class DumpWaveFileChunks
 {
     private static final Logger LOGGER;
     static
     {
         System.setProperty ("java.util.logging.SimpleFormatter.format", "%5$s%n");
-        LOGGER = Logger.getLogger ("de.mossgrabers.wav.DumpSampleChunk");
+        LOGGER = Logger.getLogger ("de.mossgrabers.sampleconverter.file.wav.DumpWaveFileChunks");
 
         try
         {
@@ -88,51 +87,33 @@ public class DumpSampleChunk
                 final WaveFile sampleFile = new WaveFile (file, true);
                 log ("\n" + file.getAbsolutePath ());
 
-                final InstrumentChunk instrumentChunk = sampleFile.getInstrumentChunk ();
-                if (instrumentChunk == null)
-                    log ("Instrument chunk: None");
-                else
-                {
-                    log ("Instrument chunk:");
-                    log ("  " + instrumentChunk.infoText ().replace ("\n", "\n  "));
-                }
-
                 final FormatChunk formatChunk = sampleFile.getFormatChunk ();
-                if (formatChunk == null)
-                    log ("No format chunk: None");
-                else
+                if (formatChunk != null)
                 {
                     log ("Format chunk:");
                     log ("  " + formatChunk.infoText ().replace ("\n", "\n  "));
                 }
 
-                final SampleChunk sampleChunk = sampleFile.getSampleChunk ();
-                if (sampleChunk == null)
+                final InstrumentChunk instrumentChunk = sampleFile.getInstrumentChunk ();
+                if (instrumentChunk != null)
                 {
-                    log ("No SMPL chunk.");
-                    return;
+                    log ("Instrument chunk:");
+                    log ("  " + instrumentChunk.infoText ().replace ("\n", "\n  "));
                 }
 
-                final int midiUnityNote = sampleChunk.getMIDIUnityNote ();
-                if (midiUnityNote != 0)
-                    log ("Found MIDI unity note " + midiUnityNote);
-                final int midiPitchFraction = sampleChunk.getMIDIPitchFraction ();
-                if (midiPitchFraction != 0)
-                    log ("Found MIDI pitch fraction " + midiPitchFraction);
-
-                final List<SampleChunkLoop> loops = sampleChunk.getLoops ();
-                final int loopSize = loops.size ();
-                if (loopSize > 1)
-                    log ("Found " + loopSize + " loops");
-                if (!loops.isEmpty ())
+                final SampleChunk sampleChunk = sampleFile.getSampleChunk ();
+                if (sampleChunk != null)
                 {
-                    final SampleChunkLoop loop = loops.get (0);
-                    final int loopFraction = loop.getFraction ();
-                    if (loopFraction != 0)
-                        log ("Found loop with fraction " + loopFraction);
-                    final int loopType = loop.getType ();
-                    if (loopType > 0)
-                        log ("Found loop type " + loopType);
+                    log ("Sample chunk:");
+                    log ("  " + sampleChunk.infoText ().replace ("\n", "\n  "));
+                }
+
+                final List<String> unhandledChunks = sampleFile.getUnhandledChunks ();
+                if (!unhandledChunks.isEmpty ())
+                {
+                    log ("Unhandled chunks:");
+                    for (final String riffID: unhandledChunks)
+                        log ("  * " + riffID);
                 }
             }
             catch (IOException | ParseException ex)
