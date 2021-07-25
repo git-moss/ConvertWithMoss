@@ -18,7 +18,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -28,10 +30,12 @@ import java.util.Arrays;
  */
 public class WaveFile
 {
-    InstrumentChunk instrumentChunk;
-    SampleChunk     sampleChunk;
-    FormatChunk     formatChunk;
-    DataChunk       dataChunk;
+    InstrumentChunk      instrumentChunk;
+    SampleChunk          sampleChunk;
+    FormatChunk          formatChunk;
+    DataChunk            dataChunk;
+
+    private List<String> unhandledChunks = new ArrayList<> ();
 
 
     /**
@@ -137,6 +141,17 @@ public class WaveFile
     public DataChunk getDataChunk ()
     {
         return this.dataChunk;
+    }
+
+
+    /**
+     * Get the IDs of the not handled chunks.
+     *
+     * @return The chunks
+     */
+    public List<String> getUnhandledChunks ()
+    {
+        return this.unhandledChunks;
     }
 
 
@@ -251,7 +266,8 @@ public class WaveFile
         @Override
         public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
         {
-            switch (RiffID.fromId (chunk.getId ()))
+            final RiffID riffID = RiffID.fromId (chunk.getId ());
+            switch (riffID)
             {
                 case INST_ID:
                     WaveFile.this.instrumentChunk = new InstrumentChunk (chunk);
@@ -271,6 +287,7 @@ public class WaveFile
 
                 default:
                     // Ignore other chunks
+                    WaveFile.this.unhandledChunks.add (RiffID.toASCII (chunk.getType ()) + "," + RiffID.toASCII (chunk.getId ()));
                     break;
             }
         }

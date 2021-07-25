@@ -75,8 +75,6 @@ public enum RiffID
 
     /** ID for SoundFont Data chunk. */
     SF_DATA_ID("SoundFont Data", "sdta"),
-    /** ID for Sample Data chunk. */
-    SF_SMPL_ID("Sample Data", "smpl"),
     /** ID for Sample Data 24bit chunk. */
     SF_SM24_ID("Sample Data 24bit", "sm24"),
 
@@ -164,7 +162,7 @@ public enum RiffID
 
 
     /**
-     * Test if the given ID is presented by this enum.
+     * Test if the given ID is presented by this enumeration.
      *
      * @param riffId The ID to match
      * @return True if matched

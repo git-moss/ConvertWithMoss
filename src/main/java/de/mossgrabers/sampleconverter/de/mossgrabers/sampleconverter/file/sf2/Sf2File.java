@@ -363,7 +363,7 @@ public class Sf2File
                 case SF_DATA_ID:
                     // Intentionally empty
                     break;
-                case SF_SMPL_ID:
+                case SMPL_ID:
                     Sf2File.this.sampleData = chunk.getData ();
                     break;
                 case SF_SM24_ID:
