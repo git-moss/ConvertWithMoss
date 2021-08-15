@@ -141,7 +141,19 @@ Writes a SFZ file (see above) and puts all samples in a sub-folder with the same
 
 Writes a dspreset or dslibrary file (see above) depending out the setting. Samples are stored in a sub-folder with the same name.
 
+Further options:
+
+* Make monophonic: Restricts the sound to 1 note, use e.g. for lead sounds.
+* Add envelope: Create 4 knobs to edit the amplitude envelope.
+* Add filter: Adds a low pass filter and creates a cutoff and resonance knob for it.
+* Add reverb: Adds a reverb effect and  creates two parameter knobs for it.
+
 # Changes
+
+## 2.2.0
+
+* New: DecentSampler creator got some options to choose which controls to create and to make the sound monophonic.
+* Fixed: WAV detector: Upper velocity layer was not always 127.
 
 ## 2.1.1
 

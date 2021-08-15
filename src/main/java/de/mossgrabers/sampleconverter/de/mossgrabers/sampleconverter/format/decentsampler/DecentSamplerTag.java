@@ -28,6 +28,10 @@ public class DecentSamplerTag
     public static final String                    LABELED_KNOB    = "labeled-knob";
     /** The binding tag. */
     public static final String                    BINDING         = "binding";
+    /** The tags tag. */
+    public static final String                    TAGS            = "tags";
+    /** The tag tag. */
+    public static final String                    TAG             = "tag";
 
     /** The groups tag. */
     public static final String                    GROUPS          = "groups";
@@ -82,6 +86,7 @@ public class DecentSamplerTag
 
     /** Supported attributes of all tags. */
     private static final Map<String, Set<String>> ATTRIBUTES      = new HashMap<> ();
+
     static
     {
         ATTRIBUTES.put (DECENTSAMPLER, Collections.emptySet ());

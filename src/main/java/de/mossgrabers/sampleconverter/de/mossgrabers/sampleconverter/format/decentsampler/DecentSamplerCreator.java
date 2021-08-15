@@ -20,6 +20,7 @@ import org.w3c.dom.Element;
 
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 
@@ -50,14 +51,22 @@ import java.util.zip.ZipOutputStream;
  */
 public class DecentSamplerCreator extends AbstractCreator
 {
-    private static final String MOD_AMP                  = "amp";
-    private static final String MOD_EFFECT               = "effect";
-    private static final String FOLDER_POSTFIX           = "Samples";
+    private static final String MOD_AMP                   = "amp";
+    private static final String MOD_EFFECT                = "effect";
+    private static final String FOLDER_POSTFIX            = "Samples";
     private boolean             isOutputFormatLibrary;
 
-    private static final String DS_OUTPUT_FORMAT_LIBRARY = "DsOutputFormatPreset";
+    private static final String DS_OUTPUT_FORMAT_LIBRARY  = "DsOutputFormatPreset";
+    private static final String DS_OUTPUT_MAKE_MONOPHONIC = "DsOutputMakeMonophonic";
+    private static final String DS_OUTPUT_ADD_ENVELOPE    = "DsOutputAddEnvelope";
+    private static final String DS_OUTPUT_ADD_FILTER      = "DsOutputAddFilter";
+    private static final String DS_OUTPUT_ADD_REVERB      = "DsOutputAddReverb";
 
     private ToggleGroup         outputFormatGroup;
+    private CheckBox            addEnvelopeBox;
+    private CheckBox            addFilterBox;
+    private CheckBox            addReverbBox;
+    private CheckBox            makeMonophonicBox;
 
 
     /**
@@ -83,6 +92,14 @@ public class DecentSamplerCreator extends AbstractCreator
         final RadioButton order2 = panel.createRadioButton ("@IDS_DS_LIBRARY");
         order2.setToggleGroup (this.outputFormatGroup);
 
+        this.makeMonophonicBox = panel.createCheckBox ("@IDS_DS_MAKE_MONOPHONIC");
+
+        panel.createSeparator ("@IDS_DS_USER_INTERFACE");
+
+        this.addEnvelopeBox = panel.createCheckBox ("@IDS_DS_ADD_ENVELOPE");
+        this.addFilterBox = panel.createCheckBox ("@IDS_DS_ADD_FILTER");
+        this.addReverbBox = panel.createCheckBox ("@IDS_DS_ADD_REVERB");
+
         return panel.getPane ();
     }
 
@@ -92,6 +109,10 @@ public class DecentSamplerCreator extends AbstractCreator
     public void loadSettings (final BasicConfig config)
     {
         this.outputFormatGroup.selectToggle (this.outputFormatGroup.getToggles ().get (config.getBoolean (DS_OUTPUT_FORMAT_LIBRARY, true) ? 1 : 0));
+        this.makeMonophonicBox.setSelected (config.getBoolean (DS_OUTPUT_MAKE_MONOPHONIC, false));
+        this.addEnvelopeBox.setSelected (config.getBoolean (DS_OUTPUT_ADD_ENVELOPE, true));
+        this.addFilterBox.setSelected (config.getBoolean (DS_OUTPUT_ADD_FILTER, true));
+        this.addReverbBox.setSelected (config.getBoolean (DS_OUTPUT_ADD_REVERB, true));
     }
 
 
@@ -99,7 +120,11 @@ public class DecentSamplerCreator extends AbstractCreator
     @Override
     public void saveSettings (final BasicConfig config)
     {
-        config.setProperty (DS_OUTPUT_FORMAT_LIBRARY, Boolean.toString (this.isOutputFormatLibrary ()));
+        config.setBoolean (DS_OUTPUT_FORMAT_LIBRARY, this.isOutputFormatLibrary ());
+        config.setBoolean (DS_OUTPUT_MAKE_MONOPHONIC, this.makeMonophonicBox.isSelected ());
+        config.setBoolean (DS_OUTPUT_ADD_ENVELOPE, this.addEnvelopeBox.isSelected ());
+        config.setBoolean (DS_OUTPUT_ADD_FILTER, this.addFilterBox.isSelected ());
+        config.setBoolean (DS_OUTPUT_ADD_REVERB, this.addReverbBox.isSelected ());
     }
 
 
@@ -232,7 +257,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
         final Element multisampleElement = document.createElement (DecentSamplerTag.DECENTSAMPLER);
         document.appendChild (multisampleElement);
-        createUI (document, multisampleElement);
+        this.createUI (document, multisampleElement);
 
         // No metadata at all
 
@@ -251,7 +276,8 @@ public class DecentSamplerCreator extends AbstractCreator
                 createSample (document, folderName, groupElement, sample);
         }
 
-        createEffects (document, multisampleElement);
+        this.makeMonophonic (document, multisampleElement, groupsElement);
+        this.createEffects (document, multisampleElement);
 
         try
         {
@@ -262,6 +288,18 @@ public class DecentSamplerCreator extends AbstractCreator
             this.notifier.logError (ex);
             return Optional.empty ();
         }
+    }
+
+
+    private void makeMonophonic (final Document document, final Element multisampleElement, final Element groupsElement)
+    {
+        if (!this.makeMonophonicBox.isSelected ())
+            return;
+        groupsElement.setAttribute ("tags", "monophonic");
+        final Element tagsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.TAGS);
+        final Element tagElement = XMLUtils.addElement (document, tagsElement, DecentSamplerTag.TAG);
+        tagElement.setAttribute ("name", "monophonic");
+        tagElement.setAttribute ("polyphony", "1");
     }
 
 
@@ -365,17 +403,26 @@ public class DecentSamplerCreator extends AbstractCreator
      * @param document The XML document
      * @param rootElement Where to add the effect elements
      */
-    private static void createEffects (final Document document, final Element rootElement)
+    private void createEffects (final Document document, final Element rootElement)
     {
-        final Element effectsElement = XMLUtils.addElement (document, rootElement, "effects");
+        if (this.addFilterBox.isSelected () || this.addReverbBox.isSelected ())
+        {
+            final Element effectsElement = XMLUtils.addElement (document, rootElement, "effects");
 
-        Element effectElement = XMLUtils.addElement (document, effectsElement, "effect");
-        effectElement.setAttribute ("type", "lowpass_4pl");
-        effectElement.setAttribute ("resonance", "0.5");
-        effectElement.setAttribute ("frequency", "22000");
+            if (this.addFilterBox.isSelected ())
+            {
+                final Element effectElement = XMLUtils.addElement (document, effectsElement, "effect");
+                effectElement.setAttribute ("type", "lowpass_4pl");
+                effectElement.setAttribute ("resonance", "0.5");
+                effectElement.setAttribute ("frequency", "22000");
+            }
 
-        effectElement = XMLUtils.addElement (document, effectsElement, "effect");
-        effectElement.setAttribute ("type", "reverb");
+            if (this.addReverbBox.isSelected ())
+            {
+                final Element effectElement = XMLUtils.addElement (document, effectsElement, "effect");
+                effectElement.setAttribute ("type", "reverb");
+            }
+        }
     }
 
 
@@ -385,7 +432,7 @@ public class DecentSamplerCreator extends AbstractCreator
      * @param document The XML document
      * @param root The root XML element
      */
-    private static void createUI (final Document document, final Element root)
+    private void createUI (final Document document, final Element root)
     {
         final Element uiElement = XMLUtils.addElement (document, root, DecentSamplerTag.UI);
         final Element tabElement = XMLUtils.addElement (document, uiElement, DecentSamplerTag.TAB);
@@ -393,23 +440,33 @@ public class DecentSamplerCreator extends AbstractCreator
 
         Element knobElement;
 
-        knobElement = createKnob (document, tabElement, 0, 0, "Filter Cutoff", 22000, 22000);
-        createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_FREQUENCY", 0, 3000, 0);
-        knobElement = createKnob (document, tabElement, 100, 0, "Filter Resonance", 1, 0.5);
-        createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_RESONANCE", 0.11, 2, 0);
-        knobElement = createKnob (document, tabElement, 200, 0, "Reverb Wet Level", 1000, 0);
-        createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_WET_LEVEL", 0, 1, 1);
-        knobElement = createKnob (document, tabElement, 300, 0, "Reverb Room Size", 1000, 0);
-        createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_ROOM_SIZE", 0, 1, 1);
+        if (this.addFilterBox.isSelected ())
+        {
+            knobElement = createKnob (document, tabElement, 0, 0, "Filter Cutoff", 22000, 22000);
+            createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_FREQUENCY", 0, 3000, 0);
+            knobElement = createKnob (document, tabElement, 100, 0, "Filter Resonance", 1, 0.5);
+            createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_RESONANCE", 0.11, 2, 0);
+        }
 
-        knobElement = createKnob (document, tabElement, 0, 100, "Attack", 2000, 0);
-        createBinding (document, knobElement, MOD_AMP, "ENV_ATTACK", 0, 2, 0);
-        knobElement = createKnob (document, tabElement, 100, 100, "Decay", 2000, 0);
-        createBinding (document, knobElement, MOD_AMP, "ENV_DECAY", 0, 2, 0);
-        knobElement = createKnob (document, tabElement, 200, 100, "Sustain", 2000, 2000);
-        createBinding (document, knobElement, MOD_AMP, "ENV_SUSTAIN", 0, 2, 0);
-        knobElement = createKnob (document, tabElement, 300, 100, "Release", 2000, 400);
-        createBinding (document, knobElement, MOD_AMP, "ENV_RELEASE", 0, 2, 0);
+        if (this.addReverbBox.isSelected ())
+        {
+            knobElement = createKnob (document, tabElement, 200, 0, "Reverb Wet Level", 1000, 0);
+            createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_WET_LEVEL", 0, 1, 1);
+            knobElement = createKnob (document, tabElement, 300, 0, "Reverb Room Size", 1000, 0);
+            createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_ROOM_SIZE", 0, 1, 1);
+        }
+
+        if (this.addEnvelopeBox.isSelected ())
+        {
+            knobElement = createKnob (document, tabElement, 0, 100, "Attack", 2000, 0);
+            createBinding (document, knobElement, MOD_AMP, "ENV_ATTACK", 0, 2, 0);
+            knobElement = createKnob (document, tabElement, 100, 100, "Decay", 2000, 0);
+            createBinding (document, knobElement, MOD_AMP, "ENV_DECAY", 0, 2, 0);
+            knobElement = createKnob (document, tabElement, 200, 100, "Sustain", 2000, 2000);
+            createBinding (document, knobElement, MOD_AMP, "ENV_SUSTAIN", 0, 2, 0);
+            knobElement = createKnob (document, tabElement, 300, 100, "Release", 2000, 400);
+            createBinding (document, knobElement, MOD_AMP, "ENV_RELEASE", 0, 2, 0);
+        }
     }
 
 

@@ -154,16 +154,23 @@ public class WavKeyMapping
         final int crossfadeVel = Math.min (range, crossfadeVelocities);
         for (final IVelocityLayer layer: this.orderedSampleMetadata)
         {
+            int velHigh = Math.min (high + crossfadeVel, 127);
+            final int next = high + range;
+            // Make sure that the last layer always reaches 127
+            if (next > 127)
+                velHigh = 127;
+            final int crossfadeHigh = velHigh == 127 ? 0 : Math.min (velHigh - low, crossfadeVel);
+
             for (final ISampleMetadata info: layer.getSampleMetadata ())
             {
                 info.setVelocityLow (low);
                 info.setVelocityCrossfadeLow (0);
-                final int velHigh = Math.min (high + crossfadeVel, 127);
                 info.setVelocityHigh (velHigh);
-                info.setVelocityCrossfadeHigh (velHigh == 127 ? 0 : Math.min (velHigh - low, crossfadeVel));
+                info.setVelocityCrossfadeHigh (crossfadeHigh);
             }
+
             low = high + 1;
-            high = Math.min (high + range, 127);
+            high = Math.min (next, 127);
         }
     }
 
