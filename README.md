@@ -18,6 +18,32 @@ Converts multisamples in a specific source format to a different destination for
 
 Run the matching installer for your operating system. After that you can start the application ConvertWithMoss.
 
+**IMPORTANT: Macos Mojave**: Mojave prevents now software to run which is not authorized by Apple. But instead of telling you so, you get an error that the files are corrupted (so, your OS is lying to you now...).
+
+To fix it open a console and enter the application folder:
+
+    cd /Applications/ConvertWithMoss.app
+
+Then remove the evil flag with:
+
+    sudo xattr -rc .
+
+    [Enter your administrator password to execute the command]
+
+Since this seems not to work for everybody, there is another solution:
+
+Temporarily, disable the Gatekeeper with
+
+    sudo spctl --master-disable
+
+Open the application (should work now). Close it and enable Gatekeeper again to feel safe...
+
+    sudo spctl --master-enable
+
+The application should now run also with Gatekeeper enabled.
+
+Finally, have fun.
+
 # Parameters respected for the conversion
 
 The conversion process reads and write metadata (name, category, creator, description and keywords) if supported by the format. If the source format does not support the information a guessing algorithm is applied to the name.
