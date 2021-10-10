@@ -78,6 +78,7 @@ The following multisample formats are supported as the destination format:
 1. Bitwig Studio multisample (*.multisample)
 2. SFZ (*.sfz)
 3. DecentSampler (*.dspreset, *.dslibrary)
+4. Akai MPC Keygroups (*.xpm)
 
 ## Source formats
 
@@ -174,7 +175,19 @@ Further options:
 * Add filter: Adds a low pass filter and creates a cutoff and resonance knob for it.
 * Add reverb: Adds a reverb effect and  creates two parameter knobs for it.
 
+### Akai MPC Keygroups
+
+A MPC Keygroup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
+This format has some restrictions since it is based on a pad oriented workflow:
+
+* Only up to 4 velocity layers are supported. An error is displayed if the source multisample does contain more.
+* All velocity layers must contains the same number of samples covering the same keyranges. Otherwise, an error is displayed.
+
 # Changes
+
+## 3.0
+
+* New: Added writing of Akai MPC Keygroup files.
 
 ## 2.2.0
 

@@ -8,6 +8,7 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.creator.ICreator;
 import de.mossgrabers.sampleconverter.core.detector.IDetector;
+import de.mossgrabers.sampleconverter.format.akai.MPCKeygroupCreator;
 import de.mossgrabers.sampleconverter.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.sampleconverter.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.sampleconverter.format.decentsampler.DecentSamplerCreator;
@@ -114,7 +115,8 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         {
             new BitwigMultisampleCreator (this),
             new SfzCreator (this),
-            new DecentSamplerCreator (this)
+            new DecentSamplerCreator (this),
+            new MPCKeygroupCreator (this)
         };
     }
 
