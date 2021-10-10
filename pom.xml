@@ -11,7 +11,7 @@
 		<name>Jürgen Moßgraber</name>
 		<url>http://www.mossgrabers.de</url>
 	</organization>
-	<version>2.2.0</version>
+	<version>3.0.0</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
