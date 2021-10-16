@@ -13,15 +13,36 @@ public class KorgmultisampleDetector
     private static final String TAG_MULTISAMPLE = "MultiSample";
     private static final String TAG_SINGLE_ITEM = "SingleItem";
 
+    // Multisample
     private static final int    ID_AUTHOR       = 0x12;
     private static final int    ID_CATEGORY     = 0x1A;
     private static final int    ID_COMMENT      = 0x22;
     private static final int    ID_SAMPLE       = 0x2A;
 
+    // Sample
+    private static final int    ID_START        = 0x10;              // flexible Bytes
+    private static final int    ID_LOOP_START   = 0x18;              // flexible Bytes
+    private static final int    ID_END          = 0x20;              // flexible Bytes
+    private static final int    ID_LOOP_TUNE    = 0x45;              // 4 Byte
+    private static final int    ID_ONE_SHOT     = 0x48;              // 1 Byte
+    private static final int    ID_BOOST_12DB   = 0x50;              // 1 Byte
 
-    public static void main (String [] args)
+    // Key Zone
+    private static final int    ID_KEY_BOTTOM   = 0x10;              // 1 Byte
+    private static final int    ID_KEY_TOP      = 0x18;              // 1 Byte
+    private static final int    ID_KEY_ORIGINAL = 0x20;              // 1 Byte
+    private static final int    ID_FIXED_PITCH  = 0x28;              // 1 Byte
+    private static final int    ID_TUNE         = 0x35;              // 4 Byte
+    private static final int    ID_LEVEL_LEFT   = 0x3D;              // 4 Byte
+    private static final int    ID_LEVEL_RIGHT  = 0x45;              // 4 Byte
+    private static final int    ID_COLOR        = 0x50;              // 4 Byte: FF FF FF FF = White
+
+
+    public static void main (final String [] args)
     {
-        try (FileInputStream in = new FileInputStream ("C:\\Privat\\Sounds\\Wavestate\\01W a realD50.korgmultisample"))
+        final String name = "C:\\Privat\\Sounds\\Wavestate\\One.korgmultisample";
+        // final String name = "C:\\Privat\\Sounds\\Wavestate\\01W a realD50.korgmultisample";
+        try (FileInputStream in = new FileInputStream (name))
         {
             final byte [] headerTag = in.readNBytes (4);
             System.out.println ("Header Tag      : " + new String (headerTag));
@@ -40,7 +61,7 @@ public class KorgmultisampleDetector
             checkAscii (in);
             final String multiSampleTag = readAscii (in);
             System.out.println ("Multi Sample Tag: " + multiSampleTag);
-            // What are the 6 bytes? - 18 01 25 00 00 00
+            // TODO What are the 6 bytes? - 18 01 25 00 00 00
             final byte [] multiSampleHeader = in.readNBytes (6);
             dumpArray ("Multi Sample Hed: ", multiSampleHeader);
 
@@ -60,15 +81,15 @@ public class KorgmultisampleDetector
             {
                 final String version = readAscii (in);
                 System.out.println ("Version         : " + version);
-                creatorToolData = in.readNBytes (13);
-            }
-            else
-            {
-                System.out.println ("Version         : <missing>");
-                creatorToolData = in.readNBytes (12);
+                next = in.read ();
             }
 
-            // B7 68 5F 61 00 00 00 00 B1 0D 00 00 ?
+            // TODO First 3 bytes are always different when stored, is this a checksum or time?
+            // B7 68 5F 61 00 00 00 00
+            creatorToolData = in.readNBytes (8);
+
+            System.out.println ("Size Content: " + from4BytesLSB (in.readNBytes (4)));
+
             dumpArray ("CreatorTool Data: ", creatorToolData);
 
             checkAscii (in);
@@ -119,21 +140,9 @@ public class KorgmultisampleDetector
     }
 
 
-    private static void readSample (FileInputStream in) throws IOException
+    private static void readSample (final FileInputStream in) throws IOException
     {
-        // Key Zone
-        // - Color
-        // - Original / Bottom key / Top key
-        // - Fixed Pitch
-        // - Right / Left Level
-        // - Tune
-        // Sample
-        // - One Shot (on/off)
-        // - Boost 12dB (on/off)
-        // - Loop Tune (-99.9 ... 99.9)
-        // - Play start
-        // - Loop start / end
-
+        // 1 = blockSize, 2 = 0x0A, 3 = Offset to key zone data
         final byte [] sampleFileHeader = in.readNBytes (3);
 
         final int blockLength = sampleFileHeader[0];
@@ -144,6 +153,9 @@ public class KorgmultisampleDetector
         System.out.println ("Sample File     : " + sampleFile);
 
         final int rest = blockLength - 3 - sampleFile.length () - 1;
+
+        // 18 A7 F4 04 20 F9 E7 0D 18 7F 20 18 28 01 50 88 B3 84
+        // 28 01 = Fixed Pitch
 
         final byte [] sampleFileData = in.readNBytes (rest);
         dumpArray ("Sample File Data: ", sampleFileData);
@@ -169,8 +181,14 @@ public class KorgmultisampleDetector
     private static void dumpArray (final String name, final byte [] data)
     {
         System.out.print (name);
-        for (byte b: data)
+        for (final byte b: data)
             System.out.print (String.format ("%02X ", b));
         System.out.println ("");
+    }
+
+
+    private static int from4BytesLSB (final byte [] data)
+    {
+        return (data[3] & 0xFF) << 24 | (data[2] & 0xFF) << 16 | (data[1] & 0xFF) << 8 | data[0] & 0xFF;
     }
 }

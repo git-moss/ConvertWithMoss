@@ -178,12 +178,18 @@ Further options:
 ### Akai MPC Keygroups
 
 A MPC Keygroup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
-This format has some restrictions since it is based on a pad oriented workflow:
+This format has some restrictions:
 
-* Only up to 4 velocity layers are supported. An error is displayed if the source multisample does contain more.
-* All velocity layers must contains the same number of samples covering the same keyranges. Otherwise, an error is displayed.
+* A round robin keygroup can only contain up to 4 layers. An error is displayed in this case but the file is converted anyway.
+* Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
 
 # Changes
+
+## 3.1
+
+* New: Akai MPC Keygroup - round-robin groups are now converted (up to 4).
+* New: Akai MPC Keygroup - more than 4 velocity layers can now be converted; this creates multiple keygroups.
+* Fixed: Akai MPC Keygroup - root notes of samples were off by 1.
 
 ## 3.0
 
