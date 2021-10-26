@@ -185,6 +185,11 @@ This format has some restrictions:
 
 # Changes
 
+## 3.1.1 (unreleased)
+
+* New: Support WAV files in extensible format.
+* Fixed: Fixed some issues with error message formatting.
+
 ## 3.1
 
 * New: Akai MPC Keygroup - round-robin groups are now converted (up to 4).

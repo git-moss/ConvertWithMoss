@@ -56,8 +56,18 @@ public class DataChunk extends WavChunk
     public int calculateLength (final FormatChunk formatChunk) throws CompressionNotSupportedException
     {
         final int compressionCode = formatChunk.getCompressionCode ();
+
         if (compressionCode == FormatChunk.WAVE_FORMAT_PCM || compressionCode == FormatChunk.WAVE_FORMAT_IEEE_FLOAT)
             return calculateLength (formatChunk, this.chunk.getData ());
+
+        if (compressionCode == FormatChunk.WAVE_FORMAT_EXTENSIBLE)
+        {
+            final int numberOfChannels = formatChunk.getNumberOfChannels ();
+            if (numberOfChannels > 2)
+                throw new CompressionNotSupportedException ("WAV files in Extensible format are only supported for stereo files.");
+            return calculateLength (formatChunk, this.chunk.getData ());
+        }
+
         throw new CompressionNotSupportedException ("Unsupported data compression: " + FormatChunk.getCompression (compressionCode));
     }
 
