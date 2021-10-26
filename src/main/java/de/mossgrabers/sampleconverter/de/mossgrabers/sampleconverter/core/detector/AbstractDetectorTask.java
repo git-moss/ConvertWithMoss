@@ -44,7 +44,6 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     private final Map<String, Set<String>>       unsupportedElements   = new HashMap<> ();
     private final Map<String, Set<String>>       unsupportedAttributes = new HashMap<> ();
 
-
     /**
      * Constructor.
      *
@@ -377,5 +376,27 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             if (!sb.isEmpty ())
                 this.notifier.logError ("IDS_NOTIFY_UNSUPPORTED_ATTRIBUTES", tagName, sb.toString ());
         }
+    }
+
+
+    /**
+     * Fixes platform dependent slashes and resolves canonical paths.
+     *
+     * @param sampleBaseFolder The folder
+     * @param sampleName The sample name (might include further relative folders)
+     * @return The canonical file
+     */
+    protected File createCanonicalFile (final File sampleBaseFolder, final String sampleName)
+    {
+        File sampleFile = new File (sampleBaseFolder, sampleName.replace ('/', File.separatorChar).replace ('\\', File.separatorChar));
+        try
+        {
+            sampleFile = sampleFile.getCanonicalFile ();
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_PATH", ex.getMessage ());
+        }
+        return sampleFile;
     }
 }

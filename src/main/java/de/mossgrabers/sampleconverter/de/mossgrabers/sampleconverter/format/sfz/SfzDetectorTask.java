@@ -60,7 +60,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
     private final Set<String>   processedOpcodes = new HashSet<> ();
     private final Set<String>   allOpcodes       = new HashSet<> ();
 
-
     /**
      * Constructor.
      *
@@ -196,7 +195,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     if (sampleName.isEmpty ())
                         continue;
 
-                    final File sampleFile = new File (sampleBaseFolder, sampleName.get ());
+                    final File sampleFile = this.createCanonicalFile (sampleBaseFolder, sampleName.get ());
                     if (this.checkSampleFile (sampleFile))
                     {
                         final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (sampleFile);
