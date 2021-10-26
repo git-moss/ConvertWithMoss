@@ -116,7 +116,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             }
             catch (final IOException | ParseException | CompressionNotSupportedException ex)
             {
-                this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), wavFiles[i].getAbsolutePath ());
+                this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), wavFiles[i].getAbsolutePath (), ex.getMessage ());
                 return Collections.emptyList ();
             }
         }

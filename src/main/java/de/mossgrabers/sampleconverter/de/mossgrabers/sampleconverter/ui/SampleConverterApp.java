@@ -436,7 +436,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void logError (final String messageID, final Throwable throwable)
     {
-        this.loggingArea.notifyError (Functions.getMessage (messageID), throwable);
+        this.loggingArea.notifyError (Functions.getMessage (messageID, throwable));
     }
 
 
