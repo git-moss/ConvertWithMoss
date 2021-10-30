@@ -188,6 +188,7 @@ This format has some restrictions:
 ## 3.1.1 (unreleased)
 
 * New: Support WAV files in extensible format.
+* Fixed: Fixed issues with sample paths created on different OS.
 * Fixed: Fixed some issues with error message formatting.
 
 ## 3.1

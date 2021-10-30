@@ -1,8 +1,10 @@
 name: Build and publish jpackage result to GitHub
+
 on:
   push:
     branches: [ master ]
   workflow_dispatch:
+
 jobs:
   # Build and publish Windows Installer
   publish-win:
@@ -21,6 +23,7 @@ jobs:
       with:
         name: ConvertWithMoss-Installers
         path: target/release/ConvertWithMoss*.msi
+
   # Build and publish Ubuntu Installer
   publish-linux:
     runs-on: ubuntu-latest
@@ -38,6 +41,7 @@ jobs:
       with:
         name: ConvertWithMoss-Installers
         path: target/release/convertwithmoss*.deb
+
   # Build and publish Macos Installer - Intel
   publish-macos:
     runs-on: macos-latest
@@ -56,4 +60,3 @@ jobs:
       with:
         name: ConvertWithMoss-Installers
         path: target/release/ConvertWithMoss*.dmg
-
