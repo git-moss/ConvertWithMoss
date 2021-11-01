@@ -3,60 +3,36 @@ name: Build and publish jpackage result to GitHub
 on:
   push:
     branches: [ master ]
-  workflow_dispatch:
 
 jobs:
-  # Build and publish Windows Installer
-  publish-win:
-    runs-on: windows-latest
+
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: convertwithmoss*.deb
+            build_name: linux
+          - os: macos-11
+            artifact_name: ConvertWithMoss*.dmg
+            build_name: mac
+          - os: windows-latest
+            artifact_name: ConvertWithMoss*.msi
+            build_name: win
+    
+    name: ${{ matrix.os }}
+
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-java@v2
       with:
-        distribution: 'adopt'
-        java-version: 16
-        check-latest: true
+        distribution: 'temurin'
+        java-version: 17
     - name: Build and jpackage with Maven
-      run: mvn -B package jpackage::jpackage@win --file pom.xml
+      run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
     - name: Publish jpackage result
       uses: actions/upload-artifact@v2
       with:
         name: ConvertWithMoss-Installers
         path: target/release/ConvertWithMoss*.msi
-
-  # Build and publish Ubuntu Installer
-  publish-linux:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-java@v2
-      with:
-        distribution: 'adopt'
-        java-version: 16
-        check-latest: true
-    - name: Build and jpackage with Maven
-      run: mvn -B package jpackage::jpackage@linux --file pom.xml
-    - name: Publish jpackage result
-      uses: actions/upload-artifact@v2
-      with:
-        name: ConvertWithMoss-Installers
-        path: target/release/convertwithmoss*.deb
-
-  # Build and publish Macos Installer - Intel
-  publish-macos:
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-java@v2
-      with:
-        distribution: 'adopt'
-        java-version: 16
-        check-latest: true
-        architecture: x64
-    - name: Build and jpackage with Maven
-      run: mvn -B package jpackage::jpackage@mac --file pom.xml
-    - name: Publish jpackage result
-      uses: actions/upload-artifact@v2
-      with:
-        name: ConvertWithMoss-Installers
-        path: target/release/ConvertWithMoss*.dmg

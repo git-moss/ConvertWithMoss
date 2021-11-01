@@ -30,12 +30,12 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>16</version>
+			<version>17.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-web</artifactId>
-			<version>16</version>
+			<version>17.0.1</version>
 		</dependency>
 	</dependencies>
 
@@ -71,8 +71,8 @@
 				<configuration>
 					<optimize>true</optimize>
 					<fork>true</fork>
-					<source>16</source>
-					<target>16</target>
+					<source>17</source>
+					<target>17</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
