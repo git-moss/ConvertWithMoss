@@ -3,6 +3,8 @@ name: Build and publish jpackage result to GitHub
 on:
   push:
     branches: [ master ]
+  # Necessary to manually run the workflow
+  workflow_dispatch:
 
 jobs:
 
