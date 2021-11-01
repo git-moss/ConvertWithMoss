@@ -37,4 +37,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ConvertWithMoss-Installers
-        path: target/release/ConvertWithMoss*.msi
+        path: target/release/${{ matrix.artifact_name }}
