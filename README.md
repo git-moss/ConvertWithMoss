@@ -188,8 +188,11 @@ This format has some restrictions:
 ## 3.1.1 (unreleased)
 
 * New: Support WAV files in extensible format.
+* New: SFZ: Create names for groups without a name.
+* Fixed: SFZ: Key values which did not use MIDI note numbers were not read (e.g. c#3).
 * Fixed: Fixed issues with sample paths created on different OS.
 * Fixed: Fixed some issues with error message formatting.
+* Fixed: Do not create the top source folder in the output folder (only the sub-folders).
 
 ## 3.1
 
