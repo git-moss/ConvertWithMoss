@@ -463,7 +463,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
             return out;
 
         File result = out;
-        for (int i = parts.length - 1; i >= 1; i--)
+        for (int i = parts.length - 2; i >= 1; i--)
         {
             result = new File (result, parts[i]);
             if (!result.exists () && !result.mkdirs ())

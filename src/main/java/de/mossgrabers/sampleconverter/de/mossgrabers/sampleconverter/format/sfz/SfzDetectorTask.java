@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -53,12 +54,94 @@ public class SfzDetectorTask extends AbstractDetectorTask
         LOOP_TYPE_MAPPER.put ("alternate", LoopType.ALTERNATING);
     }
 
+    /** The names of notes. */
+    private static final String []            NOTE_NAMES_FLAT         =
+    {
+        "C",
+        "Db",
+        "D",
+        "Eb",
+        "E",
+        "F",
+        "Gb",
+        "G",
+        "Ab",
+        "A",
+        "Bb",
+        "B"
+    };
+    private static final String []            NOTE_NAMES_SHARP        =
+    {
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B"
+    };
+    /** The names of notes. */
+    private static final String []            NOTE_NAMES_FLAT_GERMAN  =
+    {
+        "C",
+        "Db",
+        "D",
+        "Eb",
+        "E",
+        "F",
+        "Gb",
+        "G",
+        "Ab",
+        "A",
+        "Bb",
+        "H"
+    };
+    private static final String []            NOTE_NAMES_SHARP_GERMAN =
+    {
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "H"
+    };
+
+    private static final Map<String, Integer> KEY_MAP                 = new HashMap<> ();
+
+    static
+    {
+        // Create note map
+        for (int note = 0; note < 128; note++)
+        {
+            final int n = Math.abs (note % 12);
+            final String octave = Integer.toString (note / 12 - 2);
+            final Integer ni = Integer.valueOf (note);
+            KEY_MAP.put (NOTE_NAMES_FLAT[n] + octave, ni);
+            KEY_MAP.put (NOTE_NAMES_SHARP[n] + octave, ni);
+            KEY_MAP.put (NOTE_NAMES_FLAT_GERMAN[n] + octave, ni);
+            KEY_MAP.put (NOTE_NAMES_SHARP_GERMAN[n] + octave, ni);
+            KEY_MAP.put (String.format ("%d", ni), ni);
+        }
+    }
+
     private Map<String, String> globalAttributes = Collections.emptyMap ();
     private Map<String, String> masterAttributes = Collections.emptyMap ();
     private Map<String, String> groupAttributes  = Collections.emptyMap ();
     private Map<String, String> regionAttributes = Collections.emptyMap ();
     private final Set<String>   processedOpcodes = new HashSet<> ();
     private final Set<String>   allOpcodes       = new HashSet<> ();
+
 
     /**
      * Constructor.
@@ -217,6 +300,15 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
         this.printUnsupportedOpcodes (this.diffOpcodes ());
 
+        // Fix empty names
+        for (int i = 0; i < velocityLayers.size (); i++)
+        {
+            final IVelocityLayer velocityLayer = velocityLayers.get (i);
+            final String name = velocityLayer.getName ();
+            if (name == null || name.isBlank ())
+                velocityLayer.setName ("Group " + (i + 1));
+        }
+
         return velocityLayers;
     }
 
@@ -282,7 +374,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         ////////////////////////////////////////////////////////////
         // Key range
 
-        final int key = this.getIntegerValue (SfzOpcode.KEY);
+        final int key = this.getKeyValue (SfzOpcode.KEY);
         if (key >= 0)
         {
             sampleMetadata.setKeyRoot (key);
@@ -291,12 +383,12 @@ public class SfzDetectorTask extends AbstractDetectorTask
         }
 
         // Lower bounds including crossfade
-        int lowKey = this.getIntegerValue (SfzOpcode.XF_IN_LO_KEY);
+        int lowKey = this.getKeyValue (SfzOpcode.XF_IN_LO_KEY);
         if (lowKey < 0)
-            lowKey = this.getIntegerValue (SfzOpcode.LO_KEY);
+            lowKey = this.getKeyValue (SfzOpcode.LO_KEY);
         else
         {
-            final int xfInHighKey = this.getIntegerValue (SfzOpcode.XF_IN_HI_KEY);
+            final int xfInHighKey = this.getKeyValue (SfzOpcode.XF_IN_HI_KEY);
             if (xfInHighKey >= 0)
                 sampleMetadata.setNoteCrossfadeLow (xfInHighKey - lowKey);
         }
@@ -304,12 +396,12 @@ public class SfzDetectorTask extends AbstractDetectorTask
             sampleMetadata.setKeyLow (lowKey);
 
         // Upper bounds including crossfade
-        int highKey = this.getIntegerValue (SfzOpcode.XF_OUT_HI_KEY);
+        int highKey = this.getKeyValue (SfzOpcode.XF_OUT_HI_KEY);
         if (highKey < 0)
-            highKey = this.getIntegerValue (SfzOpcode.HI_KEY);
+            highKey = this.getKeyValue (SfzOpcode.HI_KEY);
         else
         {
-            final int xfOutLowKey = this.getIntegerValue (SfzOpcode.XF_OUT_LO_KEY);
+            final int xfOutLowKey = this.getKeyValue (SfzOpcode.XF_OUT_LO_KEY);
             if (xfOutLowKey >= 0)
                 sampleMetadata.setNoteCrossfadeHigh (highKey - xfOutLowKey);
         }
@@ -317,7 +409,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
             sampleMetadata.setKeyHigh (highKey);
 
         // The center key
-        final int pitchKeyCenter = this.getIntegerValue (SfzOpcode.PITCH_KEY_CENTER);
+        final int pitchKeyCenter = this.getKeyValue (SfzOpcode.PITCH_KEY_CENTER);
         if (pitchKeyCenter >= 0)
             sampleMetadata.setKeyRoot (pitchKeyCenter);
 
@@ -457,7 +549,24 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Get the attribute integer value for the given key. The value is search starting from region
+     * Get the attribute key value for the given key. The value might be a MIDI note or a The value
+     * is searched starting from region upwards to group, master and finally global.
+     *
+     * @param key The key of the value to lookup
+     * @return The value or -1 if not found or is not an integer
+     */
+    private int getKeyValue (final String key)
+    {
+        final Optional<String> value = this.getAttribute (key);
+        if (value.isEmpty ())
+            return -1;
+        final String noteValue = value.get ().toUpperCase (Locale.US);
+        return KEY_MAP.getOrDefault (noteValue, Integer.valueOf (-1)).intValue ();
+    }
+
+
+    /**
+     * Get the attribute integer value for the given key. The value is searched starting from region
      * upwards to group, master and finally global.
      *
      * @param key The key of the value to lookup
@@ -480,7 +589,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Get the attribute double value for the given key. The value is search starting from region
+     * Get the attribute double value for the given key. The value is searched starting from region
      * upwards to group, master and finally global.
      *
      * @param key The key of the value to lookup
