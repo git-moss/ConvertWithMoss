@@ -3,6 +3,8 @@ name: Build and publish jpackage result to GitHub
 on:
   push:
     branches: [ master ]
+  # Necessary to manually run the workflow
+  workflow_dispatch:
 
 jobs:
 
@@ -35,4 +37,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ConvertWithMoss-Installers
-        path: target/release/ConvertWithMoss*.msi
+        path: target/release/${{ matrix.artifact_name }}
