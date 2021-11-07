@@ -358,6 +358,14 @@ public class SfzDetectorTask extends AbstractDetectorTask
      */
     private void parseRegion (final ISampleMetadata sampleMetadata)
     {
+        final Optional<String> optTrigger = this.getAttribute (SfzOpcode.TRIGGER);
+        if (optTrigger.isPresent ())
+        {
+            final String trigger = optTrigger.get ();
+            if (!"attack".equals (trigger))
+                this.notifier.logError ("IDS_NOTIFY_SFZ_UNSUPPORTED_TRIGGER", trigger);
+        }
+
         final Optional<String> direction = this.getAttribute (SfzOpcode.DIRECTION);
         if (direction.isPresent ())
             sampleMetadata.setReversed ("reverse".equals (direction.get ()));
