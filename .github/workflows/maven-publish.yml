@@ -8,6 +8,27 @@ on:
 
 jobs:
 
+  createmanual:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure
+        uses: actions/checkout@v2
+        
+      - name: Create output folder
+        run: |
+          mkdir output  # create output dir
+      
+      - name: Convert MD files to PDF
+        uses: docker://pandoc/latex:2.9
+        with:
+          args: --standalone --toc -V geometry:margin=2.5cm --number-sections --output=output/ConvertWithMoss-Manual.pdf README.md
+      
+      - name: Publish result
+        uses: actions/upload-artifact@v2
+        with:
+          name: ConvertWithMoss-Installers
+          path: output/ConvertWithMoss-Manual.pdf
+
   build:
     runs-on: ${{ matrix.os }}
     strategy:
