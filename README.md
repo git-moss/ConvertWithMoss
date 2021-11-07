@@ -185,11 +185,13 @@ This format has some restrictions:
 
 # Changes
 
-## 3.1.1 (unreleased)
+## 3.2
 
 * New: Support WAV files in extensible format.
 * New: SFZ: Create names for groups without a name.
+* New: SFZ: Check for trigger opcode but only 'attack' is supported.
 * Fixed: SFZ: Key values which did not use MIDI note numbers were not read (e.g. c#3).
+* Fixed: Improved handling of large chunks in WAV files.
 * Fixed: Fixed issues with sample paths created on different OS.
 * Fixed: Fixed some issues with error message formatting.
 * Fixed: Do not create the top source folder in the output folder (only the sub-folders).

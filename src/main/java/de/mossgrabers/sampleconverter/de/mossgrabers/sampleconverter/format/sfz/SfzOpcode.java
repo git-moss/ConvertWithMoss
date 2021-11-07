@@ -38,6 +38,9 @@ public class SfzOpcode
     /** ARIA. Sets what is displayed in the default info tab of Sforzando. */
     public static final String REGION_LABEL     = "region_label";
 
+    /** SFZ v1. Sets the trigger which will be used for the sample to play. */
+    public static final String TRIGGER          = "trigger";
+
     /** SFZ v1. Defines which sample file the region will play. */
     public static final String SAMPLE           = "sample";
     /** SFZ v2. The direction in which the sample is to be played. */

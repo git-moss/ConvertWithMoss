@@ -53,7 +53,7 @@ public class RIFFPrimitivesInputStream extends FilterInputStream
 
 
     /**
-     * Read 2 bytes from the input stream and interpret them as a 16 Bit signed WORD value.
+     * Read 2 bytes from the input stream and interpret them as a 16 Bit signed short value.
      *
      * @return The read word
      * @throws IOException Error reading from the file
@@ -72,7 +72,7 @@ public class RIFFPrimitivesInputStream extends FilterInputStream
 
 
     /**
-     * Read 2 bytes from the input stream and interpret them as a 16 Bit unsigned UWORD value.
+     * Read 2 bytes from the input stream and interpret them as a 16 Bit unsigned integer value.
      *
      * @return The read word
      * @throws IOException Error reading from the file
@@ -84,12 +84,12 @@ public class RIFFPrimitivesInputStream extends FilterInputStream
 
 
     /**
-     * Read 4 bytes from the input stream and interpret them as a 32 Bit signed LONG value.
+     * Read 4 bytes from the input stream and interpret them as a 32 Bit signed integer value.
      *
      * @return The read 32 bit value
      * @throws IOException Error reading from the file
      */
-    public int readLONG () throws IOException
+    public int readDWORD () throws IOException
     {
         final int b0 = this.in.read ();
         final int b1 = this.in.read ();
@@ -102,6 +102,20 @@ public class RIFFPrimitivesInputStream extends FilterInputStream
         this.position += 4;
 
         return (b0 & 0xff) + ((b1 & 0xff) << 8) + ((b2 & 0xff) << 16) + ((b3 & 0xff) << 24);
+    }
+
+
+    /**
+     * Read 4 Bytes from the input Stream and interpret them as an unsigned Integer value of type
+     * ULONG.
+     *
+     * @return The long value
+     * @throws IOException Error reading from the file
+     */
+    public long readUDWORD () throws IOException
+    {
+        final int value = this.readDWORD ();
+        return value & 0xffffffffL;
     }
 
 
@@ -149,19 +163,6 @@ public class RIFFPrimitivesInputStream extends FilterInputStream
         final byte [] buf = new byte [4];
         this.readFully (buf, 0, 4);
         return new String (buf, StandardCharsets.US_ASCII);
-    }
-
-
-    /**
-     * Read 4 Bytes from the input Stream and interpret them as an unsigned Integer value of type
-     * ULONG.
-     *
-     * @return The long value
-     * @throws IOException Error reading from the file
-     */
-    public long readULONG () throws IOException
-    {
-        return (long) this.readLONG () & 0x00ffffffff;
     }
 
 
@@ -275,10 +276,10 @@ public class RIFFPrimitivesInputStream extends FilterInputStream
         if (n == 0)
             return;
 
-        int total = 0;
-        int cur = 0;
+        long total = 0;
+        long cur = 0;
 
-        while (total < n && (cur = (int) this.in.skip (n - total)) > 0)
+        while (total < n && (cur = this.in.skip (n - total)) > 0)
             total += cur;
         if (cur == 0)
             throw new EOFException ();

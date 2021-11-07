@@ -124,7 +124,7 @@ public class RIFFParser
      */
     private void parseFORM (final Map<Integer, RIFFChunk> props) throws ParseException, IOException
     {
-        final long size = this.in.readULONG ();
+        final long size = this.in.readUDWORD ();
         final long offset = this.getPosition (this.in);
         final int type = this.in.readFourCC ();
         if (!isGroupType (type))
@@ -186,7 +186,7 @@ public class RIFFParser
      */
     private void parseLIST (final Map<Integer, RIFFChunk> props) throws ParseException, IOException
     {
-        final long size = this.in.readULONG ();
+        final long size = this.in.readUDWORD ();
         final long scan = this.getPosition (this.in);
         final int type = this.in.readFourCC ();
 
@@ -251,43 +251,51 @@ public class RIFFParser
      */
     private void parseLocalChunk (final RIFFChunk parent, final int id) throws ParseException, IOException
     {
-        final long size = this.in.readULONG ();
+        final long longSize = this.in.readUDWORD ();
         this.getPosition (this.in);
-        final RIFFChunk chunk = new RIFFChunk (parent == null ? 0 : parent.getType (), id, size);
+        final RIFFChunk chunk = new RIFFChunk (parent == null ? 0 : parent.getType (), id, longSize);
 
-        if (size < 0)
-            throw new ParseException ("Found negative chunk length. File is broken?!");
-
-        if (this.isDataChunk (chunk))
+        if (longSize < Integer.MAX_VALUE)
         {
-            final byte [] data = new byte [(int) size];
-            this.in.read (data, 0, (int) size);
-            chunk.setData (data);
-            this.visitor.visitChunk (parent, chunk);
-            return;
+            final int size = (int) longSize;
+            if (size < 0)
+                throw new ParseException ("Found negative chunk length. File is broken?!");
+
+            if (this.isDataChunk (chunk))
+            {
+                final byte [] data = new byte [size];
+                this.in.read (data, 0, size);
+                chunk.setData (data);
+                this.visitor.visitChunk (parent, chunk);
+                return;
+            }
+
+            if (this.isPropertyChunk (chunk))
+            {
+                final byte [] data = new byte [size];
+                this.in.read (data, 0, size);
+                chunk.setData (data);
+                if (parent != null)
+                    parent.putPropertyChunk (chunk);
+                return;
+            }
+
+            if (this.isCollectionChunk (chunk))
+            {
+                final byte [] data = new byte [size];
+                this.in.read (data, 0, size);
+                chunk.setData (data);
+                if (parent != null)
+                    parent.addCollectionChunk (chunk);
+                return;
+            }
+        }
+        else
+        {
+            chunk.markTooLarge ();
         }
 
-        if (this.isPropertyChunk (chunk))
-        {
-            final byte [] data = new byte [(int) size];
-            this.in.read (data, 0, (int) size);
-            chunk.setData (data);
-            if (parent != null)
-                parent.putPropertyChunk (chunk);
-            return;
-        }
-
-        if (this.isCollectionChunk (chunk))
-        {
-            final byte [] data = new byte [(int) size];
-            this.in.read (data, 0, (int) size);
-            chunk.setData (data);
-            if (parent != null)
-                parent.addCollectionChunk (chunk);
-            return;
-        }
-
-        this.in.skipFully ((int) size);
+        this.in.skipFully (longSize);
         if (this.isStopChunks)
             this.visitor.visitChunk (parent, chunk);
     }
@@ -298,42 +306,53 @@ public class RIFFParser
      *
      * @param parent The parent chunk
      * @param id The chunk id
-     * @param size The size to read
+     * @param longSize The size to read
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseGarbage (final RIFFChunk parent, final int id, final long size) throws ParseException, IOException
+    private void parseGarbage (final RIFFChunk parent, final int id, final long longSize) throws ParseException, IOException
     {
-        final RIFFChunk chunk = new RIFFChunk (parent.getType (), id, size);
+        final RIFFChunk chunk = new RIFFChunk (parent.getType (), id, longSize);
 
-        if (this.isDataChunk (chunk))
+        if (longSize < Integer.MAX_VALUE)
         {
-            final byte [] data = new byte [(int) size];
-            this.in.read (data, 0, (int) size);
-            chunk.setData (data);
-            this.visitor.visitChunk (parent, chunk);
-            return;
+            final int size = (int) longSize;
+            if (size < 0)
+                throw new ParseException ("Found negative chunk length. File is broken?!");
+
+            if (this.isDataChunk (chunk))
+            {
+                final byte [] data = new byte [size];
+                this.in.read (data, 0, size);
+                chunk.setData (data);
+                this.visitor.visitChunk (parent, chunk);
+                return;
+            }
+
+            if (this.isPropertyChunk (chunk))
+            {
+                final byte [] data = new byte [size];
+                this.in.read (data, 0, size);
+                chunk.setData (data);
+                parent.putPropertyChunk (chunk);
+                return;
+            }
+
+            if (this.isCollectionChunk (chunk))
+            {
+                final byte [] data = new byte [size];
+                this.in.read (data, 0, size);
+                chunk.setData (data);
+                parent.addCollectionChunk (chunk);
+                return;
+            }
+        }
+        else
+        {
+            chunk.markTooLarge ();
         }
 
-        if (this.isPropertyChunk (chunk))
-        {
-            final byte [] data = new byte [(int) size];
-            this.in.read (data, 0, (int) size);
-            chunk.setData (data);
-            parent.putPropertyChunk (chunk);
-            return;
-        }
-
-        if (this.isCollectionChunk (chunk))
-        {
-            final byte [] data = new byte [(int) size];
-            this.in.read (data, 0, (int) size);
-            chunk.setData (data);
-            parent.addCollectionChunk (chunk);
-            return;
-        }
-
-        this.in.skipFully ((int) size);
+        this.in.skipFully (longSize);
         if (this.isStopChunk (chunk))
             this.visitor.visitChunk (parent, chunk);
     }

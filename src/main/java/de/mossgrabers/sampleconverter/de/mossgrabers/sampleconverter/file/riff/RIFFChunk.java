@@ -4,6 +4,8 @@
 
 package de.mossgrabers.sampleconverter.file.riff;
 
+import de.mossgrabers.sampleconverter.exception.NoDataInChunkException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,6 +30,7 @@ public class RIFFChunk implements IChunk
     private final List<RIFFChunk>           collectionChunks = new ArrayList<> ();
 
     private String                          parserMessage;
+    private boolean                         tooLarge         = false;
 
 
     /**
@@ -198,6 +201,12 @@ public class RIFFChunk implements IChunk
     @Override
     public byte [] getData ()
     {
+        if (this.data == null)
+        {
+            if (this.tooLarge)
+                throw new NoDataInChunkException ("Chunk contains no data since it was too large to be loaded.");
+            throw new NoDataInChunkException ("Chunk contains no data.");
+        }
         return this.data;
     }
 
@@ -210,7 +219,8 @@ public class RIFFChunk implements IChunk
      */
     public int fourBytesAsInt (final int offset)
     {
-        return Byte.toUnsignedInt (this.data[offset + 3]) << 24 | Byte.toUnsignedInt (this.data[offset + 2]) << 16 | Byte.toUnsignedInt (this.data[offset + 1]) << 8 | Byte.toUnsignedInt (this.data[offset + 0]);
+        final byte [] d = this.getData ();
+        return Byte.toUnsignedInt (d[offset + 3]) << 24 | Byte.toUnsignedInt (d[offset + 2]) << 16 | Byte.toUnsignedInt (d[offset + 1]) << 8 | Byte.toUnsignedInt (d[offset + 0]);
     }
 
 
@@ -222,7 +232,8 @@ public class RIFFChunk implements IChunk
      */
     public int twoBytesAsInt (final int offset)
     {
-        return Byte.toUnsignedInt (this.data[offset + 1]) << 8 | Byte.toUnsignedInt (this.data[offset]);
+        final byte [] d = this.getData ();
+        return Byte.toUnsignedInt (d[offset + 1]) << 8 | Byte.toUnsignedInt (d[offset]);
     }
 
 
@@ -234,7 +245,8 @@ public class RIFFChunk implements IChunk
      */
     public int byteAsUnsignedInt (final int offset)
     {
-        return Byte.toUnsignedInt (this.data[offset]);
+        final byte [] d = this.getData ();
+        return Byte.toUnsignedInt (d[offset]);
     }
 
 
@@ -246,7 +258,8 @@ public class RIFFChunk implements IChunk
      */
     public int byteAsSignedInt (final int offset)
     {
-        return this.data[offset];
+        final byte [] d = this.getData ();
+        return d[offset];
     }
 
 
@@ -262,11 +275,12 @@ public class RIFFChunk implements IChunk
         final StringBuilder sb = new StringBuilder ();
 
         int counter = offset;
-        while (counter < this.data.length)
+        final byte [] d = this.getData ();
+        while (counter < d.length)
         {
-            if (this.data[counter] == 0)
+            if (d[counter] == 0)
                 return sb.toString ();
-            sb.append (Character.valueOf ((char) this.data[counter]));
+            sb.append (Character.valueOf ((char) d[counter]));
             counter++;
         }
 
@@ -283,10 +297,11 @@ public class RIFFChunk implements IChunk
      */
     public void intAsFourBytes (final int offset, final int value)
     {
-        this.data[offset + 0] = (byte) value;
-        this.data[offset + 1] = (byte) (value >> 8);
-        this.data[offset + 2] = (byte) (value >> 16);
-        this.data[offset + 3] = (byte) (value >> 24);
+        final byte [] d = this.getData ();
+        d[offset + 0] = (byte) value;
+        d[offset + 1] = (byte) (value >> 8);
+        d[offset + 2] = (byte) (value >> 16);
+        d[offset + 3] = (byte) (value >> 24);
     }
 
 
@@ -298,8 +313,9 @@ public class RIFFChunk implements IChunk
      */
     public void intAsTwoBytes (final int offset, final int value)
     {
-        this.data[offset + 0] = (byte) value;
-        this.data[offset + 1] = (byte) (value >> 8);
+        final byte [] d = this.getData ();
+        d[offset + 0] = (byte) value;
+        d[offset + 1] = (byte) (value >> 8);
     }
 
 
@@ -329,11 +345,8 @@ public class RIFFChunk implements IChunk
     @Override
     public boolean equals (final Object another)
     {
-        if (another instanceof RIFFChunk)
-        {
-            final RIFFChunk that = (RIFFChunk) another;
+        if (another instanceof RIFFChunk that)
             return that.id == this.id && that.type == this.type;
-        }
         return false;
     }
 
@@ -351,5 +364,14 @@ public class RIFFChunk implements IChunk
     public String toString ()
     {
         return super.toString () + "{" + RiffID.toASCII (this.getType ()) + "," + RiffID.toASCII (this.getId ()) + "}";
+    }
+
+
+    /**
+     * Marks the chunk as too large to be load.
+     */
+    public void markTooLarge ()
+    {
+        this.tooLarge = true;
     }
 }
