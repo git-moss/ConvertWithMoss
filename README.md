@@ -185,6 +185,10 @@ This format has some restrictions:
 
 # Changes
 
+## 3.2.1 (unreleased)
+
+* Fixed: SFZ: Ignore illegal characters in SFZ files.
+
 ## 3.2
 
 * New: Support WAV files in extensible format.
