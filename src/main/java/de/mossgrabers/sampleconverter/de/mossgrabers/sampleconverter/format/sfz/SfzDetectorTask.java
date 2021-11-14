@@ -22,6 +22,7 @@ import de.mossgrabers.sampleconverter.util.TagDetector;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -165,7 +166,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
         try
         {
-            final String content = Files.readString (file.toPath ());
+            final String content = this.loadTextFile (file);
             return this.parseMetadataFile (file, content);
         }
         catch (final IOException ex)
@@ -624,6 +625,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      * Get the attribute value for the given key. The value is search starting from region upwards
      * to group, master and finally global.
      *
+     * 
      * @param key The key of the value to lookup
      * @return The optional value or empty if not found
      */
@@ -644,5 +646,21 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (value != null)
             this.processedOpcodes.add (key);
         return Optional.ofNullable (value);
+    }
+
+
+    private String loadTextFile (final File file) throws IOException
+    {
+        final Path path = file.toPath ();
+        try
+        {
+            return Files.readString (path);
+        }
+        catch (final IOException ex)
+        {
+            String string = new String (Files.readAllBytes (path));
+            this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
+            return string;
+        }
     }
 }
