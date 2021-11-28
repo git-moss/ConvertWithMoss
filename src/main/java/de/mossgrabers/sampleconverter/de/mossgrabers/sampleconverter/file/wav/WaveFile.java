@@ -207,7 +207,7 @@ public class WaveFile
             throw new CombinationNotPossibleException ("Format chunks are not identical.");
 
         final SampleChunk otherSample = otherWave.getSampleChunk ();
-        if (!Arrays.equals (this.sampleChunk == null ? null : this.sampleChunk.getData (), otherSample == null ? null : otherSample.getData ()))
+        if (!this.compareSampleChunk (otherSample))
             throw new CombinationNotPossibleException ("Sample chunks are not identical.");
 
         final int numberOfChannels = this.formatChunk.getNumberOfChannels ();
@@ -231,6 +231,16 @@ public class WaveFile
                 System.arraycopy (rightData, count, combinedData, count * 2 + blockSize, Math.min (blockSize, rightData.length - count));
         }
         this.dataChunk.setData (combinedData);
+    }
+
+
+    private boolean compareSampleChunk (final SampleChunk otherSample)
+    {
+        if (this.sampleChunk == null && otherSample == null)
+            return true;
+        if (this.sampleChunk == null || otherSample == null)
+            return false;
+        return this.sampleChunk.getMIDIUnityNote () == otherSample.getMIDIUnityNote () && this.sampleChunk.getMIDIPitchFraction () == otherSample.getMIDIPitchFraction ();
     }
 
 
