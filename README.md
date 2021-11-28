@@ -209,6 +209,10 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
+## 4.0.1 (unreleased)
+
+* Fixed: WAV: Check of sample chunks when combining mono to stereo does now only require to have the same pitch.
+
 ## 4.0
 
 * New: Added reading/writing of Korg Wavestate (.korgmultisample) files.
