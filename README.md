@@ -160,6 +160,7 @@ There are currently no metadata fields (category, creator, etc.) specified in th
 ### Akai MPC Keygroups / Drum
 
 A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
+Both keygroup and drum types are supported.
 
 There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
 
@@ -210,7 +211,7 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 ## 4.0
 
-* New: Added reading of Korg Wavestate (.korgmultisample) files.
+* New: Added reading/writing of Korg Wavestate (.korgmultisample) files.
 * New: Added reading of Akai MPC Keygroup files.
 * New: Added the WAV creator detector parameters to SFZ, Decent Sampler and MPC Keygroups as well.
 * New: Added a dark mode.
