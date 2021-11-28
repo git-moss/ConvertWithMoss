@@ -72,6 +72,8 @@ The following multisample formats are supported as the source format:
 3. SFZ (*.sfz)
 4. SoundFont 2 (*.sf2)
 5. DecentSampler (*.dspreset, *.dslibrary)
+6. Akai MPC Keygroups (*.xpm)
+8. Korg wavestate/modwave (*.korgmultisample)
 
 The following multisample formats are supported as the destination format:
 
@@ -79,6 +81,7 @@ The following multisample formats are supported as the destination format:
 2. SFZ (*.sfz)
 3. DecentSampler (*.dspreset, *.dslibrary)
 4. Akai MPC Keygroups (*.xpm)
+5. Korg wavestate/modwave (*.korgmultisample)
 
 ## Source formats
 
@@ -160,6 +163,12 @@ A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a descriptio
 
 There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
 
+### Korg wavestate/modwave (*.korgmultisample)
+
+The korgmultisample format is currently used by the Korg wavestate and modwave keyboards. Files in that format can be opened with the Korg Sample Builder software and transferred to the keyboard.
+
+Since the format is pretty simple all data stored in the file is available for the conversion.
+
 ## Destination formats
 
 The following multisample formats can be the destination of a conversion.
@@ -190,6 +199,12 @@ This format has some restrictions:
 
 * A round robin keygroup can only contain up to 4 layers. An error is displayed in this case but the file is converted anyway.
 * Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
+
+### Korg wavestate/modwave (*.korgmultisample)
+
+The korgmultisample format is currently used by the Korg wavestate and modwave keyboards. Files in that format can be opened with the Korg Sample Builder software and transferred to the keyboard.
+
+Since the format supports only one layer of a multisample, multiple files are created for each layer available in the source. If there is more than one layer in the source the name of the created file has the velocity range of the layer added. Using that information a multisample with up to 4 layers can be created as Performance in the device.
 
 # Changes
 
