@@ -9,12 +9,15 @@ module de.mossgrabers.sampleconverter
     requires java.logging;
     requires transitive java.prefs;
     requires transitive javafx.controls;
-    requires javafx.web;
+    requires transitive javafx.web;
     requires transitive java.xml;
 
 
     exports de.mossgrabers.sampleconverter.ui;
     exports de.mossgrabers.sampleconverter.ui.tools;
+    exports de.mossgrabers.sampleconverter.ui.tools.action;
+    exports de.mossgrabers.sampleconverter.ui.tools.control;
+    exports de.mossgrabers.sampleconverter.ui.tools.panel;
     exports de.mossgrabers.sampleconverter.core;
     exports de.mossgrabers.sampleconverter.util;
     exports de.mossgrabers.sampleconverter.format.bitwig;

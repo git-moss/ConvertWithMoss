@@ -1,0 +1,79 @@
+.flat-button {
+    -fx-background-color: transparent;
+}
+
+.logging {
+    -fx-background-color: gray;
+}
+
+.root { 
+    -fx-accent: #1e74c6;
+    -fx-focus-color: -fx-accent;
+    -fx-base: #373e43;
+    -fx-control-inner-background: derive(-fx-base, 35%);
+    -fx-control-inner-background-alt: -fx-control-inner-background;
+}
+
+.label {
+    -fx-text-fill: lightgray;
+}
+
+.text-field {
+    -fx-prompt-text-fill: gray;
+}
+
+/*
+.titulo {
+    -fx-font-weight: bold;
+    -fx-font-size: 18px;
+}*/
+
+.button {
+    -fx-focus-traversable: false;
+}
+
+.button:hover {
+    -fx-text-fill: white;
+}
+
+.separator .line { 
+    -fx-background-color: transparent;
+    -fx-border-style: solid;
+    -fx-border-width: 1px;
+    -fx-color: black;
+}
+
+.scroll-bar {
+    -fx-background-color: derive(-fx-base, 45%)
+}
+
+.button:default {
+    -fx-base: -fx-accent ;
+} 
+
+.table-view {
+    -fx-selection-bar-non-focused: derive(-fx-base, 50%);
+}
+
+.table-view .column-header .label {
+    -fx-alignment: CENTER_LEFT;
+    -fx-font-weight: none;
+}
+
+.list-cell:even,
+.list-cell:odd,
+.table-row-cell:even,
+.table-row-cell:odd {    
+    -fx-control-inner-background: derive(-fx-base, 15%);
+}
+
+.list-cell:empty,
+.table-row-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.list-cell,
+.table-row-cell {
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color:transparent;
+}

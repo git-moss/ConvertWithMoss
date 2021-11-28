@@ -345,7 +345,7 @@ public class RIFFChunk implements IChunk
     @Override
     public boolean equals (final Object another)
     {
-        if (another instanceof RIFFChunk that)
+        if (another instanceof final RIFFChunk that)
             return that.id == this.id && that.type == this.type;
         return false;
     }

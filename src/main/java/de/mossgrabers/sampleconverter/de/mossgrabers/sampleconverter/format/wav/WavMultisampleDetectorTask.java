@@ -10,9 +10,8 @@ import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
-import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
 import de.mossgrabers.sampleconverter.exception.MultisampleException;
-import de.mossgrabers.sampleconverter.exception.ParseException;
+import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.TagDetector;
 
 import java.io.File;
@@ -39,9 +38,6 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
     private boolean   isAscending;
     private String [] monoSplitPatterns;
     private String [] postfixTexts;
-    private boolean   isPreferFolderName;
-    private String    creatorName;
-    private String [] creatorTags;
 
 
     /**
@@ -54,25 +50,20 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
      * @param isAscending Are layers ordered ascending?
      * @param monoSplitPatterns Detection pattern for mono splits (to be combined to stereo files)
      * @param postfixTexts Post-fix text to remove
-     * @param isPreferFolderName Prefer detecting metadata tags from the folder name
      * @param crossfadeNotes Number of notes to crossfade
      * @param crossfadeVelocities The number of velocity steps to crossfade ranges
-     * @param creatorTags Potential names for creators to choose from
-     * @param creatorName Default name for the creator if none is detected
+     * @param metadata Additional metadata configuration parameters
      */
-    public WavMultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] velocityLayerPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final boolean isPreferFolderName, final int crossfadeNotes, final int crossfadeVelocities, final String [] creatorTags, final String creatorName)
+    public WavMultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] velocityLayerPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities, final IMetadataConfig metadata)
     {
-        super (notifier, consumer, sourceFolder, ".wav");
+        super (notifier, consumer, sourceFolder, metadata, ".wav");
 
         this.velocityLayerPatterns = velocityLayerPatterns;
         this.isAscending = isAscending;
         this.monoSplitPatterns = monoSplitPatterns;
         this.postfixTexts = postfixTexts;
-        this.isPreferFolderName = isPreferFolderName;
         this.crossfadeNotes = crossfadeNotes;
         this.crossfadeVelocities = crossfadeVelocities;
-        this.creatorTags = creatorTags;
-        this.creatorName = creatorName;
     }
 
 
@@ -114,7 +105,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             {
                 sampleFiles[i] = new WavSampleMetadata (wavFiles[i]);
             }
-            catch (final IOException | ParseException | CompressionNotSupportedException ex)
+            catch (final IOException ex)
             {
                 this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), wavFiles[i].getAbsolutePath (), ex.getMessage ());
                 return Collections.emptyList ();
@@ -137,7 +128,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
         try
         {
             final WavKeyMapping keyMapping = new WavKeyMapping (sampleFileMetadata, this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.velocityLayerPatterns, this.monoSplitPatterns);
-            final String name = cleanupName (this.isPreferFolderName ? folder.getName () : keyMapping.getName (), this.postfixTexts);
+            final String name = cleanupName (this.metadata.isPreferFolderName () ? folder.getName () : keyMapping.getName (), this.postfixTexts);
             if (name.isEmpty ())
             {
                 this.notifier.logError ("IDS_NOTIFY_NO_NAME");
@@ -154,7 +145,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             }
 
             final MultisampleSource multisampleSource = new MultisampleSource (folder, parts, name, this.subtractPaths (this.sourceFolder, folder));
-            multisampleSource.setCreator (TagDetector.detect (parts, this.creatorTags, this.creatorName));
+            multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
             multisampleSource.setCategory (TagDetector.detectCategory (parts));
             multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
 

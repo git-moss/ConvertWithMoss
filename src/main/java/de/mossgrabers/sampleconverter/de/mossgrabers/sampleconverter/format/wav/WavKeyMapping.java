@@ -549,7 +549,7 @@ public class WavKeyMapping
         if (potentialKeyMaps.isEmpty ())
             throw new NoteNotDetectedException (filename);
 
-        // Finally use the matching key maps to parse the notes, the one with the most results is
+        // Use the matching key maps to parse the notes, the one with the most results is
         // the winner
         Map<Integer, List<WavSampleMetadata>> result = null;
         for (final Integer keyMapIndex: potentialKeyMaps)
@@ -559,12 +559,22 @@ public class WavKeyMapping
             for (final WavSampleMetadata sample: samples)
             {
                 final int midiNote = this.lookupMidiNote (keyMap, sample.getFilenameWithoutLayer ());
-                sample.setKeyRoot (midiNote);
                 orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (sample);
             }
 
             if (result == null || orderedNotes.size () > result.size ())
                 result = orderedNotes;
+        }
+
+        // Can never happen
+        if (result == null)
+            throw new NoteNotDetectedException (filename);
+
+        // Finally, set the root keys
+        for (final Map.Entry<Integer, List<WavSampleMetadata>> e: result.entrySet ())
+        {
+            for (WavSampleMetadata sample: e.getValue ())
+                sample.setKeyRoot (e.getKey ().intValue ());
         }
 
         return result;

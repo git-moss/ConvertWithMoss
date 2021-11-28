@@ -26,19 +26,13 @@ import javafx.scene.control.ToggleGroup;
 
 import javax.xml.transform.TransformerException;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 
@@ -53,6 +47,7 @@ public class DecentSamplerCreator extends AbstractCreator
 {
     private static final String MOD_AMP                   = "amp";
     private static final String MOD_EFFECT                = "effect";
+    private static final String EFFECTS_EFFECT            = "effect";
     private static final String FOLDER_POSTFIX            = "Samples";
     private boolean             isOutputFormatLibrary;
 
@@ -179,26 +174,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeFolderName);
         safeCreateDirectory (sampleFolder);
-
-        int outputCount = 0;
-        for (final IVelocityLayer layer: multisampleSource.getSampleMetadata ())
-        {
-            for (final ISampleMetadata info: layer.getSampleMetadata ())
-            {
-                final Optional<String> filename = info.getUpdatedFilename ();
-                if (filename.isEmpty ())
-                    continue;
-                try (final FileOutputStream fos = new FileOutputStream (new File (sampleFolder, filename.get ())))
-                {
-                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
-                    outputCount++;
-                    if (outputCount % 80 == 0)
-                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-
-                    info.writeSample (fos);
-                }
-            }
-        }
+        this.storeSamples (sampleFolder, multisampleSource);
     }
 
 
@@ -216,26 +192,8 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
-            zos.putNextEntry (new ZipEntry (sampleName + ".dspreset"));
-            final Writer writer = new BufferedWriter (new OutputStreamWriter (zos, StandardCharsets.UTF_8));
-            writer.write (metadata);
-            writer.flush ();
-            zos.closeEntry ();
-
-            int outputCount = 0;
-            final Set<String> alreadyStored = new HashSet<> ();
-            for (final IVelocityLayer layer: multisampleSource.getSampleMetadata ())
-            {
-                for (final ISampleMetadata info: layer.getSampleMetadata ())
-                {
-                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
-                    outputCount++;
-                    if (outputCount % 80 == 0)
-                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-
-                    addFileToZip (alreadyStored, zos, info, relativeFolderName);
-                }
-            }
+            this.zipMetadataFile (zos, sampleName + ".dspreset", metadata);
+            this.zipSamples (zos, relativeFolderName, multisampleSource);
         }
     }
 
@@ -263,7 +221,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
         // Add all groups with samples
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
-        final List<IVelocityLayer> velocityLayers = multisampleSource.getSampleMetadata ();
+        final List<IVelocityLayer> velocityLayers = multisampleSource.getLayers ();
         for (final IVelocityLayer layer: velocityLayers)
         {
             final Element groupElement = XMLUtils.addElement (document, groupsElement, DecentSamplerTag.GROUP);
@@ -411,7 +369,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
             if (this.addFilterBox.isSelected ())
             {
-                final Element effectElement = XMLUtils.addElement (document, effectsElement, "effect");
+                final Element effectElement = XMLUtils.addElement (document, effectsElement, EFFECTS_EFFECT);
                 effectElement.setAttribute ("type", "lowpass_4pl");
                 effectElement.setAttribute ("resonance", "0.5");
                 effectElement.setAttribute ("frequency", "22000");
@@ -419,7 +377,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
             if (this.addReverbBox.isSelected ())
             {
-                final Element effectElement = XMLUtils.addElement (document, effectsElement, "effect");
+                final Element effectElement = XMLUtils.addElement (document, effectsElement, EFFECTS_EFFECT);
                 effectElement.setAttribute ("type", "reverb");
             }
         }

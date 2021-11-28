@@ -53,6 +53,9 @@ public class BitwigMultisampleTag
     /** The supported sample tags. */
     public static final Set<String>               SAMPLE_TAGS    = Set.of (KEY, VELOCITY, SELECT, LOOP);
 
+    /** The group attribute. */
+    public static final String                    ATTR_GROUP     = "group";
+
     /** Supported attributes of all tags. */
     private static final Map<String, Set<String>> ATTRIBUTES     = new HashMap<> ();
     static
@@ -66,7 +69,7 @@ public class BitwigMultisampleTag
         ATTRIBUTES.put (KEYWORD, Collections.emptySet ());
         ATTRIBUTES.put (GROUP, Set.of ("name", "color"));
         ATTRIBUTES.put (LAYER, Set.of ("name"));
-        ATTRIBUTES.put (SAMPLE, Set.of ("file", "group", "sample-start", "sample-stop", "gain", "tune", "reverse", "zone-logic"));
+        ATTRIBUTES.put (SAMPLE, Set.of ("file", ATTR_GROUP, "sample-start", "sample-stop", "gain", "tune", "reverse", "zone-logic"));
         ATTRIBUTES.put (KEY, Set.of ("root", "low", "high", "low-fade", "high-fade", "tune", "track"));
         ATTRIBUTES.put (VELOCITY, Set.of ("low", "high", "low-fade", "high-fade"));
         ATTRIBUTES.put (SELECT, Collections.emptySet ());

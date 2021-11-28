@@ -5,8 +5,10 @@
 package de.mossgrabers.sampleconverter.core.creator;
 
 import de.mossgrabers.sampleconverter.core.AbstractCoreTask;
+import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
@@ -14,8 +16,14 @@ import org.w3c.dom.Document;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -134,5 +142,99 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         // false. Therefore check again before throwing an exception
         if (!folder.exists ())
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERROR_SAMPLE_FOLDER", folder.getAbsolutePath ()));
+    }
+
+
+    /**
+     * Converts an unsigned integer to a number of bytes with least significant bytes first.
+     *
+     * @param value The value to convert
+     * @param numberOfBytes The number of bytes to write
+     * @return The converted integer
+     */
+    protected static byte [] toBytesLSB (final long value, final int numberOfBytes)
+    {
+        final byte [] data = new byte [numberOfBytes];
+
+        for (int i = 0; i < numberOfBytes; i++)
+            data[i] = (byte) (value >> 8 * i & 0xFF);
+
+        return data;
+    }
+
+
+    /**
+     * Adds an UTF-8 text file to the ZIP output stream.
+     *
+     * @param zos The ZIP output stream
+     * @param fileName The name to use for the file when added
+     * @param metadata The text content of the file to add
+     * @throws IOException Could not add the file
+     */
+    protected void zipMetadataFile (final ZipOutputStream zos, final String fileName, final String metadata) throws IOException
+    {
+        zos.putNextEntry (new ZipEntry (fileName));
+        final Writer writer = new BufferedWriter (new OutputStreamWriter (zos, StandardCharsets.UTF_8));
+        writer.write (metadata);
+        writer.flush ();
+        zos.closeEntry ();
+    }
+
+
+    /**
+     * Add all samples from all layers in the given ZIP output stream.
+     *
+     * @param zos The ZIP output stream to which to add the samples
+     * @param relativeFolderName The relative folder under which to store the file in the ZIP
+     * @param multisampleSource The multisample
+     * @throws IOException Could not store the samples
+     */
+    protected void zipSamples (final ZipOutputStream zos, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
+    {
+        int outputCount = 0;
+        final Set<String> alreadyStored = new HashSet<> ();
+        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        {
+            for (final ISampleMetadata info: layer.getSampleMetadata ())
+            {
+                this.notifier.log ("IDS_NOTIFY_PROGRESS");
+                outputCount++;
+                if (outputCount % 80 == 0)
+                    this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+
+                addFileToZip (alreadyStored, zos, info, relativeFolderName);
+            }
+        }
+    }
+
+
+    /**
+     * Store all samples from all layers in the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multisample
+     * @throws IOException Could not store the samples
+     */
+    protected void storeSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException
+    {
+        int outputCount = 0;
+        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        {
+            for (final ISampleMetadata info: layer.getSampleMetadata ())
+            {
+                final Optional<String> filename = info.getUpdatedFilename ();
+                if (filename.isEmpty ())
+                    continue;
+                try (final FileOutputStream fos = new FileOutputStream (new File (sampleFolder, filename.get ())))
+                {
+                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
+                    outputCount++;
+                    if (outputCount % 80 == 0)
+                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+
+                    info.writeSample (fos);
+                }
+            }
+        }
     }
 }

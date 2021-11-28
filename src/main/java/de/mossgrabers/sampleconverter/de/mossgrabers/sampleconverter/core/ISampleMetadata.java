@@ -277,7 +277,7 @@ public interface ISampleMetadata
     /**
      * Get the key tracking of the sample.
      *
-     * @return The tuning in the range of [-100 .. 100] cent
+     * @return The tuning in the range of [-1 .. 1] representing [-100 .. 100] cent
      */
     double getTune ();
 

@@ -43,4 +43,15 @@ public enum ZonePlay
     {
         return playLogic == PlayLogic.ROUND_ROBIN ? CYCLE : VELOCITY;
     }
+
+
+    /**
+     * Convert a zone play to a play logic.
+     *
+     * @return The play logic
+     */
+    public PlayLogic to ()
+    {
+        return this == CYCLE ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS;
+    }
 }

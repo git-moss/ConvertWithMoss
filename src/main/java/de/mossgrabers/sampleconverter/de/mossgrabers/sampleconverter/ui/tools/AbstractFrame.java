@@ -31,7 +31,7 @@ import java.util.ResourceBundle;
 public abstract class AbstractFrame
 {
     private Stage                      stage;
-    private Scene                      scene;
+    protected Scene                    scene;
     private final BorderPane           rootNode = new BorderPane ();
     private final VBox                 barNode  = new VBox ();
 
@@ -40,7 +40,7 @@ public abstract class AbstractFrame
     private final double               minWidth;
     private final double               minHeight;
 
-    private final String               startPath;
+    protected final String             startPath;
     protected final BasicConfig        config;
 
 
@@ -62,6 +62,8 @@ public abstract class AbstractFrame
 
 
     /**
+     * Get the stage.
+     *
      * @return The stage
      */
     public Stage getStage ()
@@ -71,7 +73,7 @@ public abstract class AbstractFrame
 
 
     /**
-     * Initialise the application.
+     * Initialize the application.
      *
      * @param stage The stage where to add widgets
      * @param baseTitleOptional The title to use for window

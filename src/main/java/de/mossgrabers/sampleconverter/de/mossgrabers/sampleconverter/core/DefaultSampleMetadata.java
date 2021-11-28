@@ -4,11 +4,7 @@
 
 package de.mossgrabers.sampleconverter.core;
 
-import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
-import de.mossgrabers.sampleconverter.exception.ParseException;
-import de.mossgrabers.sampleconverter.file.wav.DataChunk;
-import de.mossgrabers.sampleconverter.file.wav.FormatChunk;
-import de.mossgrabers.sampleconverter.file.wav.WaveFile;
+import de.mossgrabers.sampleconverter.format.wav.WavSampleMetadata;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,7 +39,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     protected PlayLogic        playLogic               = PlayLogic.ALWAYS;
     protected int              start                   = -1;
     protected int              stop                    = -1;
-    protected int              keyRoot                 = 60;
+    protected int              keyRoot                 = -1;
     protected int              keyLow                  = 0;
     protected int              keyHigh                 = 127;
     protected int              crossfadeNotesLow       = 0;
@@ -488,54 +484,29 @@ public class DefaultSampleMetadata implements ISampleMetadata
      * Check if the sample start / stop and the sample rate is set, if not read them from the sample
      * file.
      *
+     * @param addRootKey If true, set the root key
+     * @param addLoops If true, found loops are added
      * @throws IOException Could not read or parse the wave file
      */
-    public void addMissingInfoFromWaveFile () throws IOException
+    public void addMissingInfoFromWaveFile (final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        final WaveFile waveFile;
-        try
-        {
-            if (this.sampleFile != null)
-                waveFile = new WaveFile (this.sampleFile, true);
-            else
-            {
-                if (this.zipFile == null)
-                    return;
-                try (final ZipFile zf = new ZipFile (this.zipFile))
-                {
-                    final ZipEntry entry = zf.getEntry (this.filename);
-                    if (entry == null)
-                        return;
-                    try (final InputStream in = zf.getInputStream (entry))
-                    {
-                        waveFile = new WaveFile (in, true);
-                    }
-                }
-            }
-        }
-        catch (final IOException | ParseException ex)
-        {
-            throw new IOException (ex);
-        }
+        final WavSampleMetadata wavSampleMetadata;
+        if (this.sampleFile != null)
+            wavSampleMetadata = new WavSampleMetadata (this.sampleFile);
+        else
+            wavSampleMetadata = new WavSampleMetadata (this.zipFile, this.filename);
 
-        final FormatChunk formatChunk = waveFile.getFormatChunk ();
-        final DataChunk dataChunk = waveFile.getDataChunk ();
-        if (formatChunk == null || dataChunk == null)
-            return;
+        if (this.start < 0)
+            this.start = 0;
+        if (this.stop <= 0)
+            this.stop = wavSampleMetadata.getStop ();
 
-        try
-        {
-            this.sampleRate = formatChunk.getSampleRate ();
-            if (this.stop < 0)
-            {
-                if (this.start < 0)
-                    this.start = 0;
-                this.stop = dataChunk.calculateLength (formatChunk);
-            }
-        }
-        catch (final CompressionNotSupportedException ex)
-        {
-            throw new IOException (ex);
-        }
+        // Read the this.keyRoot if not set...
+        if (addRootKey && this.keyRoot == -1)
+            this.keyRoot = wavSampleMetadata.getKeyRoot ();
+
+        // Check for loops if not already present
+        if (addLoops && this.loops.isEmpty ())
+            this.loops.addAll (wavSampleMetadata.getLoops ());
     }
 }

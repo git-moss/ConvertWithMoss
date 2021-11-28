@@ -22,7 +22,7 @@ public class MultisampleSource implements IMultisampleSource
 {
     private final File           folder;
     private final String []      subPath;
-    private final String         name;
+    private String               name;
     private final String         mappingName;
     private String               description    = "";
     private String               creator        = "";
@@ -66,7 +66,7 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public List<IVelocityLayer> getSampleMetadata ()
+    public List<IVelocityLayer> getLayers ()
     {
         return this.sampleMetadata;
     }
@@ -109,6 +109,14 @@ public class MultisampleSource implements IMultisampleSource
     public String [] getKeywords ()
     {
         return this.keywords;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setName (final String name)
+    {
+        this.name = name;
     }
 
 

@@ -27,7 +27,7 @@ public class Keygroup
 
     /**
      * Constructor for a velocity keygroup.
-     * 
+     *
      * @param instrumentElement The instrument element
      * @param layersElement The layers element
      */
@@ -39,7 +39,7 @@ public class Keygroup
 
     /**
      * Constructor for a sequence keygroup.
-     * 
+     *
      * @param instrumentElement The instrument element
      * @param layersElement The layers element
      * @param velocityLow The bottom velocity
@@ -63,7 +63,7 @@ public class Keygroup
 
     /**
      * Check if this is a sequence keygroup.
-     * 
+     *
      * @return True if it is a sequence keygroup
      */
     public boolean isSequence ()
@@ -74,7 +74,7 @@ public class Keygroup
 
     /**
      * Get the instrument element.
-     * 
+     *
      * @return The instrument element
      */
     public Element getInstrumentElement ()

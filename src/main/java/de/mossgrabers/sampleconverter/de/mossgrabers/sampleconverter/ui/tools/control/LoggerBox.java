@@ -9,6 +9,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 
 import javafx.application.Platform;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 
@@ -33,7 +34,7 @@ public class LoggerBox
                     </style>
                 </head>
                 <body>
-                    <div id='content'></div>
+                    <div id="content"></div>
                 </body>
             </html>
             """;
@@ -47,9 +48,19 @@ public class LoggerBox
      */
     public LoggerBox ()
     {
-        this.webView.getStyleClass ().add ("logging");
         this.engine = this.webView.getEngine ();
         this.engine.loadContent (EMPTY_DOCUMENT);
+    }
+
+
+    /**
+     * Set the background light or dark.
+     *
+     * @param enable Enable dark
+     */
+    public void setDarkmode (final boolean enable)
+    {
+        this.webView.setBlendMode (enable ? BlendMode.OVERLAY : BlendMode.LIGHTEN);
     }
 
 

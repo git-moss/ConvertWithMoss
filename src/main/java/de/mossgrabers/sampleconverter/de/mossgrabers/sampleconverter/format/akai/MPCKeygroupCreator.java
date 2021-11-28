@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -88,8 +89,7 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         // Store all samples
         int outputCount = 0;
-        final List<IVelocityLayer> sampleMetadata = multisampleSource.getSampleMetadata ();
-        for (final IVelocityLayer layer: sampleMetadata)
+        for (final IVelocityLayer layer: multisampleSource.getLayers ())
         {
             for (final ISampleMetadata info: layer.getSampleMetadata ())
             {
@@ -131,19 +131,20 @@ public class MPCKeygroupCreator extends AbstractCreator
         final Document document = optionalDocument.get ();
         document.setXmlStandalone (true);
 
-        final Element multisampleElement = document.createElement ("MPCVObject");
+        final Element multisampleElement = document.createElement (MPCKeygroupTag.ROOT);
         document.appendChild (multisampleElement);
-        final Element versionElement = document.createElement ("Version");
-        XMLUtils.addTextElement (document, versionElement, "File_Version", FILE_VERSION);
+        final Element versionElement = document.createElement (MPCKeygroupTag.ROOT_VERSION);
+        XMLUtils.addTextElement (document, versionElement, MPCKeygroupTag.VERSION_FILE_VERSION, FILE_VERSION);
 
-        final Element programElement = createProgramElement (multisampleSource, document);
+        final Element programElement = createProgramElement (document, multisampleSource);
         multisampleElement.appendChild (programElement);
-        final Element instrumentsElement = document.createElement ("Instruments");
+        final Element instrumentsElement = document.createElement (MPCKeygroupTag.PROGRAM_INSTRUMENTS);
         programElement.appendChild (instrumentsElement);
 
         final Map<String, List<Keygroup>> keygroupsMap = new HashMap<> ();
 
-        for (final IVelocityLayer velocityLayer: multisampleSource.getSampleMetadata ())
+        // Need to stack the parts of velocity layers in key ranges
+        for (final IVelocityLayer velocityLayer: multisampleSource.getLayers ())
         {
             for (final ISampleMetadata sampleMetadata: velocityLayer.getSampleMetadata ())
             {
@@ -155,14 +156,14 @@ public class MPCKeygroupCreator extends AbstractCreator
                 }
 
                 final Keygroup keygroup = keygroupOpt.get ();
-                keygroup.addLayer (createLayerElement (sampleName, document, keygroup.getLayerCount (), sampleMetadata));
+                keygroup.addLayer (createLayerElement (document, keygroup.getLayerCount (), sampleMetadata, sampleName));
             }
         }
 
         final int size = calcInstrumentNumber (keygroupsMap) - 1;
         if (size > 128)
             this.notifier.logError ("IDS_MPC_MORE_THAN_128_KEYGROUPS", Integer.toString (size));
-        XMLUtils.addTextElement (document, programElement, "KeygroupNumKeygroups", Integer.toString (size));
+        XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, Integer.toString (size));
 
         try
         {
@@ -176,36 +177,49 @@ public class MPCKeygroupCreator extends AbstractCreator
     }
 
 
-    private static Element createProgramElement (final IMultisampleSource multisampleSource, final Document document)
+    /**
+     * Creates a program element.
+     *
+     * @param document The XML document
+     * @param multisampleSource The multi sample source
+     * @return The created element
+     */
+    private static Element createProgramElement (final Document document, final IMultisampleSource multisampleSource)
     {
-        final Element programElement = document.createElement ("Program");
-        programElement.setAttribute ("type", "Keygroup");
-        XMLUtils.addTextElement (document, programElement, "ProgramName", multisampleSource.getName ());
-        final Element programPadsElement = document.createElement ("ProgramPads-" + APP_VERSION);
-        programElement.appendChild (programPadsElement);
+        final Element programElement = document.createElement (MPCKeygroupTag.ROOT_PROGRAM);
+        programElement.setAttribute (MPCKeygroupTag.PROGRAM_TYPE, MPCKeygroupTag.TYPE_KEYGROUP);
+        XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_NAME, multisampleSource.getName ());
+        programElement.appendChild (document.createElement (MPCKeygroupTag.PROGRAM_PADS + APP_VERSION));
 
         // Pitchbend 2 semitones up/down
-        XMLUtils.addTextElement (document, programElement, "KeygroupPitchBendRange", "0.160000");
+        XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, "0.160000");
 
         // Vibrato on Modulation Wheel
-        XMLUtils.addTextElement (document, programElement, "KeygroupWheelToLfo", "1.000000");
+        XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_WHEEL_TO_LFO, "1.000000");
         return programElement;
     }
 
 
-    private static Element createLayerElement (final String sampleName, final Document document, final int l, final ISampleMetadata sampleMetadata)
+    /**
+     * Creates a layer element.
+     *
+     * @param document The XML document
+     * @param layerIndex The index of the layer
+     * @param sampleMetadata The sample metadata
+     * @param sampleName The name of the sample
+     * @return The created layer
+     */
+    private static Element createLayerElement (final Document document, final int layerIndex, final ISampleMetadata sampleMetadata, final String sampleName)
     {
         final Element layerElement = document.createElement ("Layer");
-        layerElement.setAttribute ("number", Integer.toString (l + 1));
+        layerElement.setAttribute ("number", Integer.toString (layerIndex + 1));
 
-        XMLUtils.addTextElement (document, layerElement, "Active", "True");
-        XMLUtils.addTextElement (document, layerElement, "Volume", Double.toString (convertGain (sampleMetadata.getGain ())));
-        XMLUtils.addTextElement (document, layerElement, "Pan", "0.500000");
-        XMLUtils.addTextElement (document, layerElement, "Pitch", DOUBLE_ZERO);
-        XMLUtils.addTextElement (document, layerElement, "TuneCoarse", "0");
-        XMLUtils.addTextElement (document, layerElement, "TuneFine", Double.toString (sampleMetadata.getTune ()));
-        XMLUtils.addTextElement (document, layerElement, "VelStart", Integer.toString (sampleMetadata.getVelocityLow ()));
-        XMLUtils.addTextElement (document, layerElement, "VelEnd", Integer.toString (sampleMetadata.getVelocityHigh ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ACTIVE, MPCKeygroupTag.TRUE);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (sampleMetadata.getGain ())));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, "0.500000");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH, Double.toString (sampleMetadata.getTune ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.INSTRUMENT_VEL_START, Integer.toString (sampleMetadata.getVelocityLow ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.INSTRUMENT_VEL_END, Integer.toString (sampleMetadata.getVelocityHigh ()));
 
         final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
         if (filename.isEmpty ())
@@ -219,41 +233,44 @@ public class MPCKeygroupCreator extends AbstractCreator
             fn = sampleName + "_" + fn;
             sampleMetadata.setCombinedName (fn);
         }
-        if (fn.endsWith (".wav"))
+        if (fn.toLowerCase (Locale.US).endsWith (".wav"))
             fn = fn.substring (0, fn.length () - 4);
 
-        XMLUtils.addTextElement (document, layerElement, "SampleStart", "0");
-        XMLUtils.addTextElement (document, layerElement, "SampleEnd", "0");
-        XMLUtils.addTextElement (document, layerElement, "LoopStart", "0");
-        XMLUtils.addTextElement (document, layerElement, "LoopEnd", "0");
-        XMLUtils.addTextElement (document, layerElement, "LoopCrossfadeLength", "0");
-        XMLUtils.addTextElement (document, layerElement, "LoopTune", "0");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_START, "0");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_END, "0");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_START, "0");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_END, "0");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_CROSSFADE, "0");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_TUNE, "0");
         // The root note is strangely one more then the lower upper keys!
-        XMLUtils.addTextElement (document, layerElement, "RootNote", Integer.toString (sampleMetadata.getKeyRoot () + 1));
-        XMLUtils.addTextElement (document, layerElement, "KeyTrack", "False");
-        XMLUtils.addTextElement (document, layerElement, "SampleName", fn);
-        XMLUtils.addTextElement (document, layerElement, "PitchRandom", DOUBLE_ZERO);
-        XMLUtils.addTextElement (document, layerElement, "VolumeRandom", DOUBLE_ZERO);
-        XMLUtils.addTextElement (document, layerElement, "PanRandom", DOUBLE_ZERO);
-        XMLUtils.addTextElement (document, layerElement, "OffsetRandom", DOUBLE_ZERO);
-        XMLUtils.addTextElement (document, layerElement, "SampleFile", "");
-        XMLUtils.addTextElement (document, layerElement, "SliceIndex", "129");
-        XMLUtils.addTextElement (document, layerElement, "Direction", "0");
-        XMLUtils.addTextElement (document, layerElement, "Offset", "0");
-        XMLUtils.addTextElement (document, layerElement, "SliceStart", Integer.toString (sampleMetadata.getStart ()));
-        XMLUtils.addTextElement (document, layerElement, "SliceEnd", Integer.toString (sampleMetadata.getStop ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ROOT_NOTE, Integer.toString (sampleMetadata.getKeyRoot () + 1));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_KEY_TRACK, MPCKeygroupTag.TRUE);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME, fn);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH_RANDOM, DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME_RANDOM, DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN_RANDOM, DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_OFFSET_RANDOM, DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_FILE, "");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_INDEX, "129");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_DIRECTION, "0");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_OFFSET, "0");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_START, Integer.toString (sampleMetadata.getStart ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleMetadata.getStop ()));
 
         final List<SampleLoop> loops = sampleMetadata.getLoops ();
         if (loops.isEmpty ())
+        {
+            XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, "0");
             return layerElement;
+        }
 
         // Format can store only 1 loop
         final SampleLoop sampleLoop = loops.get (0);
-        XMLUtils.addTextElement (document, layerElement, "SliceLoopStart", Integer.toString (sampleLoop.getStart ()));
-        XMLUtils.addTextElement (document, layerElement, "SliceLoop", sampleMetadata.isReversed () ? "3" : "1");
-        XMLUtils.addTextElement (document, layerElement, "SliceLoopCrossFadeLength", Double.toString (sampleLoop.getCrossfade ()));
-        XMLUtils.addTextElement (document, layerElement, "SliceTailPosition", "0.500000");
-        XMLUtils.addTextElement (document, layerElement, "SliceTailLength", DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START, Integer.toString (sampleLoop.getStart ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, sampleMetadata.isReversed () ? "3" : "1");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, Double.toString (sampleLoop.getCrossfade ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_POSITION, "0.500000");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_LENGTH, DOUBLE_ZERO);
 
         return layerElement;
     }
@@ -304,10 +321,11 @@ public class MPCKeygroupCreator extends AbstractCreator
         final Element instrumentElement = document.createElement ("Instrument");
         instrumentElement.setAttribute ("number", Integer.toString (calcInstrumentNumber (keygroupsMap)));
         instrumentsElement.appendChild (instrumentElement);
-        XMLUtils.addTextElement (document, instrumentElement, "LowNote", Integer.toString (keyLow));
-        XMLUtils.addTextElement (document, instrumentElement, "HighNote", Integer.toString (keyHigh));
-        XMLUtils.addTextElement (document, instrumentElement, "VolumeRelease", "0.63");
-        XMLUtils.addTextElement (document, instrumentElement, "ZonePlay", ZonePlay.from (sampleMetadata.getPlayLogic ()).getID ());
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, Integer.toString (keyLow));
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, sampleMetadata.getKeyTracking () == 0 ? "True" : "False");
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, "0.63");
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (sampleMetadata.getPlayLogic ()).getID ());
         instrumentElement.appendChild (createLfoElement (document));
         final Element layersElement = document.createElement ("Layers");
         instrumentElement.appendChild (layersElement);

@@ -124,10 +124,10 @@ public class XMLUtils
     public static Node getChildByName (final Node parent, final String name)
     {
         NodeList list = null;
-        if (parent instanceof Element)
-            list = ((Element) parent).getElementsByTagName (name);
-        else if (parent instanceof Document)
-            list = ((Document) parent).getElementsByTagName (name);
+        if (parent instanceof final Element parentElement)
+            list = parentElement.getElementsByTagName (name);
+        else if (parent instanceof final Document parentDocument)
+            list = parentDocument.getElementsByTagName (name);
         return list == null || list.getLength () == 0 ? null : list.item (0);
     }
 
@@ -142,7 +142,7 @@ public class XMLUtils
     public static Element getChildElementByName (final Node parent, final String name)
     {
         final Node child = getChildByName (parent, name);
-        return child instanceof Element ? (Element) child : null;
+        return child instanceof final Element childElement ? childElement : null;
     }
 
 
@@ -195,8 +195,8 @@ public class XMLUtils
         for (int i = 0; i < size; i++)
         {
             final Node item = list.item (i);
-            if (item instanceof Element)
-                children.add ((Element) item);
+            if (item instanceof final Element element)
+                children.add (element);
         }
         return children.toArray (new Element [children.size ()]);
     }
@@ -219,8 +219,8 @@ public class XMLUtils
         for (int i = 0; i < size; i++)
         {
             final Node item = list.item (i);
-            if (item instanceof Element)
-                children.add ((Element) item);
+            if (item instanceof final Element element)
+                children.add (element);
         }
         return children.toArray (new Element [children.size ()]);
     }

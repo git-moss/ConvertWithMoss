@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.format.sfz;
+package de.mossgrabers.sampleconverter.format.akai;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
@@ -20,13 +20,13 @@ import java.util.function.Consumer;
 
 
 /**
- * Descriptor for SFZ multisample files detector.
+ * Descriptor for MPC keygroup files detector.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class SfzDetector extends AbstractDetector<SfzDetectorTask>
+public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorTask>
 {
-    private MetadataPane metadataPane = new MetadataPane ("Sfz");
+    private MetadataPane metadataPane = new MetadataPane ("MPC");
 
 
     /**
@@ -34,9 +34,9 @@ public class SfzDetector extends AbstractDetector<SfzDetectorTask>
      *
      * @param notifier The notifier
      */
-    public SfzDetector (final INotifier notifier)
+    public MPCKeygroupDetector (final INotifier notifier)
     {
-        super ("SFZ", notifier);
+        super ("MPC Keygroup", notifier);
     }
 
 
@@ -44,7 +44,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorTask>
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.startDetection (new SfzDetectorTask (this.notifier, consumer, folder, this.metadataPane));
+        this.startDetection (new MPCKeygroupDetectorTask (this.notifier, consumer, folder, this.metadataPane));
     }
 
 

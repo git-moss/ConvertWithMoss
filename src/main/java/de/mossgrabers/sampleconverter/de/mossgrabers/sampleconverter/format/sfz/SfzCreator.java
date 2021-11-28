@@ -14,7 +14,6 @@ import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -84,27 +83,7 @@ public class SfzCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, sampleName + FOLDER_POSTFIX);
         safeCreateDirectory (sampleFolder);
-
-        int outputCount = 0;
-        final List<IVelocityLayer> sampleMetadata = multisampleSource.getSampleMetadata ();
-        for (final IVelocityLayer layer: sampleMetadata)
-        {
-            for (final ISampleMetadata info: layer.getSampleMetadata ())
-            {
-                final Optional<String> filename = info.getUpdatedFilename ();
-                if (filename.isEmpty ())
-                    continue;
-                try (final FileOutputStream fos = new FileOutputStream (new File (sampleFolder, filename.get ())))
-                {
-                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
-                    outputCount++;
-                    if (outputCount % 80 == 0)
-                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-
-                    info.writeSample (fos);
-                }
-            }
-        }
+        this.storeSamples (sampleFolder, multisampleSource);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -140,7 +119,7 @@ public class SfzCreator extends AbstractCreator
         if (name != null && !name.isBlank ())
             sb.append (SfzOpcode.GLOBAL_LABEL).append ('=').append (name).append (LINE_FEED);
 
-        for (final IVelocityLayer layer: multisampleSource.getSampleMetadata ())
+        for (final IVelocityLayer layer: multisampleSource.getLayers ())
         {
             final List<ISampleMetadata> sampleMetadata = layer.getSampleMetadata ();
             if (sampleMetadata.isEmpty ())

@@ -48,6 +48,7 @@ public class TagDetector
         "dry",
         "duo",
         "dynamic",
+        "ebm",
         "edm",
         "effects",
         "electric",
@@ -61,6 +62,7 @@ public class TagDetector
         "host_synced",
         "house",
         "inharmonic",
+        "jazz",
         "layered",
         "linnstrument",
         "major",
@@ -78,7 +80,9 @@ public class TagDetector
         "osc_sync",
         "percussive",
         "phat",
+        "pop",
         "poly",
+        "rock",
         "rich",
         "seq",
         "sequenced",
@@ -171,6 +175,7 @@ public class TagDetector
         CATEGORIES.put ("Drums", new String []
         {
             "Drum",
+            "Kit",
             "Tom",
             "Cymbal",
             "Ride",
@@ -208,7 +213,8 @@ public class TagDetector
         {
             "Hi-Hat",
             "HiHat",
-            "HH"
+            "HH",
+            "Hats"
         });
         CATEGORIES.put ("Keyboards", new String []
         {
@@ -341,6 +347,11 @@ public class TagDetector
             "Klarinette",
             "Musette",
             "Woodwind"
+        });
+        CATEGORIES.put ("Loops", new String []
+        {
+            "Loop",
+            "Lps",
         });
 
         // Create inverse map and order by longest names first, to find the most relevant categories
