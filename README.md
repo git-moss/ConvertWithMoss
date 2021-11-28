@@ -193,7 +193,7 @@ This format has some restrictions:
 
 # Changes
 
-## 4.0 (unreleased)
+## 4.0
 
 * New: Added reading of Korg Wavestate (.korgmultisample) files.
 * New: Added reading of Akai MPC Keygroup files.
