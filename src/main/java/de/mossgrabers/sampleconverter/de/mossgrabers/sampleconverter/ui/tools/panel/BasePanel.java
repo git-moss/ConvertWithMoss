@@ -43,7 +43,7 @@ import java.util.List;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class BasePanel
+public abstract class BasePanel
 {
     private final Pane pane;
 
@@ -53,7 +53,7 @@ public class BasePanel
      *
      * @param pane The pane to use for this panel
      */
-    public BasePanel (final Pane pane)
+    protected BasePanel (final Pane pane)
     {
         this.pane = pane;
     }
@@ -665,8 +665,8 @@ public class BasePanel
             final Tooltip tip = new Tooltip (Functions.getText (tooltip));
             if (label != null)
                 label.setTooltip (tip);
-            if (component instanceof Control)
-                ((Control) component).setTooltip (tip);
+            if (component instanceof final Control control)
+                control.setTooltip (tip);
         }
 
         final Node wrappedComponent = addScrollPane ? new ScrollPane (component) : component;

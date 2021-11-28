@@ -9,10 +9,13 @@ import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.creator.ICreator;
 import de.mossgrabers.sampleconverter.core.detector.IDetector;
 import de.mossgrabers.sampleconverter.format.akai.MPCKeygroupCreator;
+import de.mossgrabers.sampleconverter.format.akai.MPCKeygroupDetector;
 import de.mossgrabers.sampleconverter.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.sampleconverter.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.sampleconverter.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.sampleconverter.format.decentsampler.DecentSamplerDetector;
+import de.mossgrabers.sampleconverter.format.korgmultisample.KorgmultisampleCreator;
+import de.mossgrabers.sampleconverter.format.korgmultisample.KorgmultisampleDetector;
 import de.mossgrabers.sampleconverter.format.sf2.Sf2Detector;
 import de.mossgrabers.sampleconverter.format.sfz.SfzCreator;
 import de.mossgrabers.sampleconverter.format.sfz.SfzDetector;
@@ -54,6 +57,7 @@ import java.util.function.Consumer;
  */
 public class SampleConverterApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {
+    private static final String ENABLE_DARK_MODE                    = "EnableDarkMode";
     private static final String DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
     private static final String DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
     private static final String DESTINATION_PATH                    = "DestinationPath";
@@ -72,6 +76,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
     private File                outputFolder;
     private CheckBox            createFolderStructure;
     private CheckBox            addNewFiles;
+    private CheckBox            enableDarkMode;
 
     private TabPane             sourceTabPane;
     private TabPane             destinationTabPane;
@@ -108,7 +113,9 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
             new BitwigMultisampleDetector (this),
             new SfzDetector (this),
             new Sf2Detector (this),
-            new DecentSamplerDetector (this)
+            new DecentSamplerDetector (this),
+            new MPCKeygroupDetector (this),
+            new KorgmultisampleDetector (this)
         };
 
         this.creators = new ICreator []
@@ -116,7 +123,8 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
             new BitwigMultisampleCreator (this),
             new SfzCreator (this),
             new DecentSamplerCreator (this),
-            new MPCKeygroupCreator (this)
+            new MPCKeygroupCreator (this),
+            new KorgmultisampleCreator (this)
         };
     }
 
@@ -190,11 +198,24 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         this.destinationTabPane.getStyleClass ().add ("paddingLeftBottomRight");
         destinationPane.setCenter (this.destinationTabPane);
 
-        final BoxPanel bottom = new BoxPanel (Orientation.HORIZONTAL);
-        this.createFolderStructure = bottom.createCheckBox ("@IDS_MAIN_CREATE_FOLDERS", "@IDS_MAIN_CREATE_FOLDERS_TOOLTIP");
+        final BoxPanel bottomLeft = new BoxPanel (Orientation.HORIZONTAL);
+        this.createFolderStructure = bottomLeft.createCheckBox ("@IDS_MAIN_CREATE_FOLDERS", "@IDS_MAIN_CREATE_FOLDERS_TOOLTIP");
         this.createFolderStructure.setSelected (true);
-        this.addNewFiles = bottom.createCheckBox ("@IDS_MAIN_ADD_NEW", "@IDS_MAIN_ADD_NEW_TOOLTIP");
-        destinationPane.setBottom (bottom.getPane ());
+        this.addNewFiles = bottomLeft.createCheckBox ("@IDS_MAIN_ADD_NEW", "@IDS_MAIN_ADD_NEW_TOOLTIP");
+
+        final BoxPanel bottomRight = new BoxPanel (Orientation.HORIZONTAL);
+        this.enableDarkMode = bottomRight.createCheckBox ("@IDS_MAIN_ENABLE_DARK_MODE", "@IDS_MAIN_ENABLE_DARK_MODE_TOOLTIP");
+        this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> {
+            final ObservableList<String> stylesheets = this.scene.getStylesheets ();
+            final String stylesheet = this.startPath + "/css/Darkmode.css";
+            this.loggingArea.setDarkmode (isSelected.booleanValue ());
+            if (isSelected.booleanValue ())
+                stylesheets.add (stylesheet);
+            else
+                stylesheets.remove (stylesheet);
+        });
+
+        destinationPane.setBottom (new BorderPane (null, null, bottomRight.getPane (), null, bottomLeft.getPane ()));
 
         final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
         for (final ICreator creator: this.creators)
@@ -253,6 +274,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
 
         this.createFolderStructure.setSelected (this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true));
         this.addNewFiles.setSelected (this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false));
+        this.enableDarkMode.setSelected (this.config.getBoolean (ENABLE_DARK_MODE, false));
 
         for (final IDetector detector: this.detectors)
             detector.loadSettings (this.config);
@@ -277,6 +299,7 @@ public class SampleConverterApp extends AbstractFrame implements INotifier, Cons
         this.config.setProperty (DESTINATION_PATH, this.destinationPathField.getText ());
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure.isSelected ());
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles.isSelected ());
+        this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode.isSelected ());
 
         for (final IDetector detector: this.detectors)
             detector.saveSettings (this.config);

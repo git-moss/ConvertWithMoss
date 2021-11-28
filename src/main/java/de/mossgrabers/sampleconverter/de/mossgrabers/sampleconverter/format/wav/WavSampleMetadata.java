@@ -18,8 +18,11 @@ import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 
 /**
@@ -36,26 +39,76 @@ public class WavSampleMetadata extends DefaultSampleMetadata
      * Constructor.
      *
      * @param file The file where the sample is stored
-     * @throws ParseException Could not parse the file
      * @throws IOException Could not read the file
-     * @throws CompressionNotSupportedException The wave file is compressed, which is not supported
      */
-    public WavSampleMetadata (final File file) throws IOException, ParseException, CompressionNotSupportedException
+    public WavSampleMetadata (final File file) throws IOException
     {
         super (file);
 
-        this.waveFile = new WaveFile (file, false);
+        try
+        {
+            this.waveFile = new WaveFile (file, false);
+        }
+        catch (final IOException | ParseException ex)
+        {
+            throw new IOException (ex);
+        }
+        this.readFromChunks ();
+    }
+
+
+    /**
+     * Constructor for a sample stored in a ZIP file.
+     *
+     * @param zipFile The ZIP file which contains the WAV files
+     * @param filename The name of the samples' file in the ZIP file
+     * @throws IOException Could not read the file
+     */
+    public WavSampleMetadata (final File zipFile, final String filename) throws IOException
+    {
+        super (zipFile, filename);
+
+        try (final ZipFile zf = new ZipFile (this.zipFile))
+        {
+            final ZipEntry entry = zf.getEntry (this.filename);
+            if (entry == null)
+                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", this.filename));
+            try (final InputStream in = zf.getInputStream (entry))
+            {
+                this.waveFile = new WaveFile (in, true);
+            }
+            catch (final ParseException ex)
+            {
+                throw new IOException (ex);
+            }
+        }
+
+        this.readFromChunks ();
+    }
+
+
+    private void readFromChunks () throws IOException
+    {
         final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
-
-        final int numberOfChannels = formatChunk.getNumberOfChannels ();
-        if (numberOfChannels > 2)
-            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), file.getAbsolutePath ()));
-        this.isMonoFile = numberOfChannels == 1;
-
         final DataChunk dataChunk = this.waveFile.getDataChunk ();
 
-        this.start = 0;
-        this.stop = dataChunk.calculateLength (formatChunk);
+        if (formatChunk != null && dataChunk != null)
+        {
+            final int numberOfChannels = formatChunk.getNumberOfChannels ();
+            if (numberOfChannels > 2)
+                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), this.sampleFile.getAbsolutePath ()));
+            this.isMonoFile = numberOfChannels == 1;
+
+            this.start = 0;
+            try
+            {
+                this.stop = dataChunk.calculateLength (formatChunk);
+            }
+            catch (final CompressionNotSupportedException ex)
+            {
+                throw new IOException (ex);
+            }
+        }
 
         final SampleChunk sampleChunk = this.waveFile.getSampleChunk ();
         if (sampleChunk == null)

@@ -378,7 +378,7 @@ public final class Functions
     {
         final String t = getText (message);
         final Alert alert = new Alert (AlertType.CONFIRMATION, replaceStrings == null ? t : replacePercentNWithStrings (t, replaceStrings), ButtonType.YES, ButtonType.NO);
-        alert.setTitle (!(owner instanceof Stage) ? null : ((Stage) owner).getTitle ());
+        alert.setTitle (owner instanceof final Stage stage ? stage.getTitle () : null);
         alert.setHeaderText (null);
         if (owner != null)
             alert.initOwner (owner);
@@ -399,7 +399,7 @@ public final class Functions
     {
         final String t = getText (message);
         final Alert alert = new Alert (AlertType.CONFIRMATION, replaceStrings == null ? t : replacePercentNWithStrings (t, replaceStrings), ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
-        alert.setTitle (!(owner instanceof Stage) ? null : ((Stage) owner).getTitle ());
+        alert.setTitle (owner instanceof final Stage stage ? stage.getTitle () : null);
         alert.setHeaderText (null);
         if (owner != null)
             alert.initOwner (owner);
@@ -463,7 +463,7 @@ public final class Functions
     public static ButtonData choose (final Window owner, final String message, final String title, final String... options)
     {
         final Alert alert = new Alert (AlertType.CONFIRMATION);
-        alert.setTitle (!(owner instanceof Stage) ? null : ((Stage) owner).getTitle ());
+        alert.setTitle (owner instanceof final Stage stage ? stage.getTitle () : null);
         if (owner != null)
             alert.initOwner (owner);
         alert.setHeaderText (getText (title));
@@ -511,8 +511,8 @@ public final class Functions
         if (owner != null)
         {
             dialog.initOwner (owner);
-            if (owner instanceof Stage)
-                dialog.setTitle (((Stage) owner).getTitle ());
+            if (owner instanceof final Stage stage)
+                dialog.setTitle (stage.getTitle ());
         }
         if (title != null)
             dialog.setTitle (getText (title));

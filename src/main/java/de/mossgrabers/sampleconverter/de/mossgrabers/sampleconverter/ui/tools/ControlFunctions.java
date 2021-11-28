@@ -103,15 +103,15 @@ public final class ControlFunctions
      * Returns the selected status of a toggle button (e.g. RadioButton) or a CheckBox (which is
      * strangely not a sub-class of ToggleButton).
      *
-     * @param toggleButton The button to check
+     * @param button The button to check
      * @return The selected status, false if it is not a ToggleButton or CheckBox
      */
-    public static boolean isSelected (final ButtonBase toggleButton)
+    public static boolean isSelected (final ButtonBase button)
     {
-        if (toggleButton instanceof ToggleButton)
-            return ((ToggleButton) toggleButton).isSelected ();
-        else if (toggleButton instanceof CheckBox)
-            return ((CheckBox) toggleButton).isSelected ();
+        if (button instanceof final ToggleButton toggleButton)
+            return toggleButton.isSelected ();
+        else if (button instanceof final CheckBox checkbox)
+            return checkbox.isSelected ();
         return false;
     }
 
@@ -120,15 +120,15 @@ public final class ControlFunctions
      * Selects (checks) a toggle button (e.g. RadioButton) or a CheckBox (which is strangely not a
      * sub-class of ToggleButton).
      *
-     * @param toggleButton The button to de-/selected
+     * @param button The button to de-/selected
      * @param isSelected The selected state
      */
-    public static void setSelected (final ButtonBase toggleButton, final boolean isSelected)
+    public static void setSelected (final ButtonBase button, final boolean isSelected)
     {
-        if (toggleButton instanceof ToggleButton)
-            ((ToggleButton) toggleButton).setSelected (isSelected);
-        else if (toggleButton instanceof CheckBox)
-            ((CheckBox) toggleButton).setSelected (isSelected);
+        if (button instanceof final ToggleButton toggleButton)
+            toggleButton.setSelected (isSelected);
+        else if (button instanceof final CheckBox checkbox)
+            checkbox.setSelected (isSelected);
     }
 
 

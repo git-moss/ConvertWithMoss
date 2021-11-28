@@ -43,6 +43,9 @@ import java.util.zip.ZipFile;
  */
 public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 {
+    private static final String ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+
+
     /**
      * Constructor.
      *
@@ -52,15 +55,15 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
      */
     protected BitwigMultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
     {
-        super (notifier, consumer, sourceFolder, ".multisample");
+        super (notifier, consumer, sourceFolder, null, ".multisample");
     }
 
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File multiSampleFile)
+    protected List<IMultisampleSource> readFile (final File file)
     {
-        try (final ZipFile zipFile = new ZipFile (multiSampleFile))
+        try (final ZipFile zipFile = new ZipFile (file))
         {
             final ZipEntry entry = zipFile.getEntry ("multisample.xml");
             if (entry == null)
@@ -69,7 +72,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 return Collections.emptyList ();
             }
 
-            return this.parseMetadataFile (multiSampleFile, zipFile, entry);
+            return this.parseMetadataFile (file, zipFile, entry);
         }
         catch (final IOException ex)
         {
@@ -100,7 +103,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         }
         catch (final SAXException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", ex);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -119,7 +122,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
         if (!BitwigMultisampleTag.MULTISAMPLE.equals (top.getNodeName ()))
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+            this.notifier.logError (ERR_BAD_METADATA_FILE);
             return Collections.emptyList ();
         }
 
@@ -155,7 +158,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             }
             else
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+                this.notifier.logError (ERR_BAD_METADATA_FILE);
                 return Collections.emptyList ();
             }
         }
@@ -181,7 +184,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             }
             else
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+                this.notifier.logError (ERR_BAD_METADATA_FILE);
                 return Collections.emptyList ();
             }
         }
@@ -265,7 +268,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final String filename = sampleElement.getAttribute ("file");
         if (filename == null || filename.isBlank ())
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+            this.notifier.logError (ERR_BAD_METADATA_FILE);
             return;
         }
 

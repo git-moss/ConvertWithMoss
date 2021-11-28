@@ -13,12 +13,12 @@ import java.io.IOException;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public final class Utils
+public final class FileUtils
 {
     /**
      * Private due to helper class.
      */
-    private Utils ()
+    private FileUtils ()
     {
         // Intentionally empty
     }
@@ -40,5 +40,20 @@ public final class Utils
         {
             return file;
         }
+    }
+
+
+    /**
+     * Gets the name of the file without the ending. E.g. the filename 'aFile.jpeg' will return
+     * 'aFile'.
+     *
+     * @param file The file from which to get the name
+     * @return The name of the file without the ending
+     */
+    public static String getNameWithoutType (final File file)
+    {
+        final String filename = file.getName ();
+        final int pos = filename.lastIndexOf ('.');
+        return pos == -1 ? filename : filename.substring (0, pos);
     }
 }

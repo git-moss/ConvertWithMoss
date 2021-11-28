@@ -13,6 +13,7 @@ import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
 import de.mossgrabers.sampleconverter.exception.ParseException;
+import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.file.sf2.Generator;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2File;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2Instrument;
@@ -47,7 +48,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      */
     public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
     {
-        super (notifier, consumer, sourceFolder, ".sf2");
+        super (notifier, consumer, sourceFolder, null, ".sf2");
     }
 
 
@@ -58,7 +59,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         try
         {
             final Sf2File sf2File = new Sf2File (sourceFile);
-            final String name = getNameWithoutType (sourceFile);
+            final String name = FileUtils.getNameWithoutType (sourceFile);
             final String [] parts = createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
             return this.parseSF2File (sourceFile, sf2File, parts);
         }

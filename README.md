@@ -133,7 +133,7 @@ The SFZ format is a file format to define how a collection of samples are arrang
 
 The SFZ file contains only the description of the multisample. The related samples are normally kept in a separate folder. The converter supports only samples in WAV format encoded as (split) stereo uncompressed and IEEE float 32 bit format.
 
-There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files.
+There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
 
 ### SoundFont 2
 
@@ -151,6 +151,14 @@ The format specification is available here: https://www.decentsamples.com/wp-con
 
 A preset file contains a single preset. A dspreset file contains only the description of the multisample. The related samples are normally kept in a separate folder. Only WAV files are supported.
 A dslibrary file contains several dspreset files incl. the samples compressed in ZIP format.
+
+There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
+
+### Akai MPC Keygroups / Drum
+
+A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
+
+There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
 
 ## Destination formats
 
@@ -185,9 +193,15 @@ This format has some restrictions:
 
 # Changes
 
-## 3.2.1 (unreleased)
+## 4.0 (unreleased)
 
+* New: Added reading of Korg Wavestate (.korgmultisample) files.
+* New: Added reading of Akai MPC Keygroup files.
+* New: Added the WAV creator detector parameters to SFZ, Decent Sampler and MPC Keygroups as well.
+* New: Added a dark mode.
+* Fixed: WAV: Detection of root note from sample names could be wrong when multiple options apply and the last one was wrong.
 * Fixed: SFZ: Ignore illegal characters in SFZ files.
+* Fixed: Bitwig multisample: Key tune parameter was not stored correctly.
 
 ## 3.2
 

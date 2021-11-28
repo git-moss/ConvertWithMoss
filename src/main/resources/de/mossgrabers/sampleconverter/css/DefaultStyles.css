@@ -74,8 +74,3 @@
     -fx-background-color: transparent;
     -fx-padding: 0.0;
 }
-
-.logging {
-    -fx-font-family: monospace;
-    -fx-font-size: 14pt;
-}

@@ -13,6 +13,8 @@ import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
+import de.mossgrabers.sampleconverter.file.FileUtils;
+import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.TagDetector;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
@@ -43,8 +45,11 @@ import java.util.zip.ZipFile;
  */
 public class DecentSamplerDetectorTask extends AbstractDetectorTask
 {
-    private static final String ENDING_DSLIBRARY = ".dslibrary";
-    private static final String ENDING_DSPRESET  = ".dspreset";
+    private static final String ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+
+    private static final String ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
+    private static final String ENDING_DSLIBRARY      = ".dslibrary";
+    private static final String ENDING_DSPRESET       = ".dspreset";
 
 
     /**
@@ -53,10 +58,11 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param notifier The notifier
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
+     * @param metadata Additional metadata configuration parameters
      */
-    protected DecentSamplerDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
+    protected DecentSamplerDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
     {
-        super (notifier, consumer, sourceFolder, ENDING_DSPRESET, ENDING_DSLIBRARY);
+        super (notifier, consumer, sourceFolder, metadata, ENDING_DSPRESET, ENDING_DSLIBRARY);
     }
 
 
@@ -89,32 +95,46 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         try (final ZipFile zipFile = new ZipFile (file))
         {
             for (final ZipEntry entry: Collections.list (zipFile.entries ()))
-            {
-                final String name = entry.getName ();
-                if (name != null && name.endsWith (ENDING_DSPRESET))
-                {
-                    String parent = new File (name).getParent ();
-                    if (parent == null)
-                        parent = "";
-
-                    try (final InputStream in = zipFile.getInputStream (entry))
-                    {
-                        final Document document = XMLUtils.parseDocument (new InputSource (in));
-                        result.addAll (this.parseMetadataFile (file, parent, true, document));
-                    }
-                    catch (final SAXException ex)
-                    {
-                        this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
-                    }
-                }
-            }
+                result.addAll (this.processFile (file, zipFile, entry));
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (ERR_LOAD_FILE, ex);
         }
 
         return result;
+    }
+
+
+    /**
+     * Process one ZIP file entry.
+     *
+     * @param file The ZIP source file
+     * @param zipFile The ZIP file containing the entry
+     * @param entry The ZIP entry to process
+     * @return The parsed multi samples
+     * @throws IOException Could not process the file
+     */
+    private List<IMultisampleSource> processFile (final File file, final ZipFile zipFile, final ZipEntry entry) throws IOException
+    {
+        final String name = entry.getName ();
+        if (name == null || !name.endsWith (ENDING_DSPRESET))
+            return Collections.emptyList ();
+
+        String parent = new File (name).getParent ();
+        if (parent == null)
+            parent = "";
+
+        try (final InputStream in = zipFile.getInputStream (entry))
+        {
+            final Document document = XMLUtils.parseDocument (new InputSource (in));
+            return this.parseMetadataFile (file, parent, true, document);
+        }
+        catch (final SAXException ex)
+        {
+            this.notifier.logError (ERR_LOAD_FILE, ex);
+            return Collections.emptyList ();
+        }
     }
 
 
@@ -133,7 +153,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         }
         catch (final IOException | SAXException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -155,7 +175,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         if (!DecentSamplerTag.DECENTSAMPLER.equals (top.getNodeName ()))
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+            this.notifier.logError (ERR_BAD_METADATA_FILE);
             return Collections.emptyList ();
         }
 
@@ -164,12 +184,14 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (top, basePath, isLibrary ? multiSampleFile : null);
 
-        final String name = getNameWithoutType (multiSampleFile);
-        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
+        final String name = FileUtils.getNameWithoutType (multiSampleFile);
+        final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
         final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, this.subtractPaths (this.sourceFolder, multiSampleFile));
 
         // Use same guessing on the filename...
+        multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
         multisampleSource.setCategory (TagDetector.detectCategory (parts));
         multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
 
@@ -211,7 +233,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             }
             else
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+                this.notifier.logError (ERR_BAD_METADATA_FILE);
                 return Collections.emptyList ();
             }
         }
@@ -239,7 +261,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             final String sampleName = sampleElement.getAttribute (DecentSamplerTag.PATH);
             if (sampleName == null || sampleName.isBlank ())
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE");
+                this.notifier.logError (ERR_BAD_METADATA_FILE);
                 return;
             }
 

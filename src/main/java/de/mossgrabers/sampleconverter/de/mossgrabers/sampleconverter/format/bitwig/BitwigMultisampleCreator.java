@@ -19,18 +19,11 @@ import org.w3c.dom.Element;
 
 import javax.xml.transform.TransformerException;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 
@@ -72,27 +65,8 @@ public class BitwigMultisampleCreator extends AbstractCreator
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
-            zos.putNextEntry (new ZipEntry ("multisample.xml"));
-            final Writer writer = new BufferedWriter (new OutputStreamWriter (zos, StandardCharsets.UTF_8));
-            writer.write (metadata.get ());
-            writer.flush ();
-            zos.closeEntry ();
-
-            // Add all samples
-            int outputCount = 0;
-            final Set<String> alreadyStored = new HashSet<> ();
-            for (final IVelocityLayer layer: multisampleSource.getSampleMetadata ())
-            {
-                for (final ISampleMetadata info: layer.getSampleMetadata ())
-                {
-                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
-                    outputCount++;
-                    if (outputCount % 80 == 0)
-                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-
-                    addFileToZip (alreadyStored, zos, info);
-                }
-            }
+            this.zipMetadataFile (zos, "multisample.xml", metadata.get ());
+            this.zipSamples (zos, null, multisampleSource);
         }
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
@@ -126,7 +100,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         for (final String keyword: multisampleSource.getKeywords ())
             XMLUtils.addTextElement (document, keywordsElement, "keyword", keyword);
 
-        final List<IVelocityLayer> velocityLayers = multisampleSource.getSampleMetadata ();
+        final List<IVelocityLayer> velocityLayers = multisampleSource.getLayers ();
         for (final IVelocityLayer layer: velocityLayers)
         {
             final String name = layer.getName ();
@@ -187,9 +161,6 @@ public class BitwigMultisampleCreator extends AbstractCreator
         final int stop = info.getStop ();
         if (stop >= 0)
             XMLUtils.setDoubleAttribute (sampleElement, "sample-stop", stop, 3);
-        final double tune = info.getTune ();
-        if (tune != 0)
-            XMLUtils.setDoubleAttribute (sampleElement, "tune", tune, 2);
         XMLUtils.setBooleanAttribute (sampleElement, "reverse", info.isReversed ());
         final PlayLogic playLogic = info.getPlayLogic ();
         if (playLogic != PlayLogic.ALWAYS)
@@ -205,6 +176,9 @@ public class BitwigMultisampleCreator extends AbstractCreator
         XMLUtils.setIntegerAttribute (keyElement, "high", check (info.getKeyHigh (), 127));
         XMLUtils.setIntegerAttribute (keyElement, "high-fade", check (info.getNoteCrossfadeHigh (), 0));
         XMLUtils.setDoubleAttribute (keyElement, "track", info.getKeyTracking (), 4);
+        final double tune = info.getTune ();
+        if (tune != 0)
+            XMLUtils.setDoubleAttribute (keyElement, "tune", tune, 2);
 
         /////////////////////////////////////////////////////
         // Key element and attributes

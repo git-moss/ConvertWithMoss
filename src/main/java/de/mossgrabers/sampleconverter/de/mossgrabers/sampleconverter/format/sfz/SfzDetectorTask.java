@@ -15,14 +15,13 @@ import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
-import de.mossgrabers.sampleconverter.file.Utils;
+import de.mossgrabers.sampleconverter.file.FileUtils;
+import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.Pair;
 import de.mossgrabers.sampleconverter.util.TagDetector;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -150,10 +149,11 @@ public class SfzDetectorTask extends AbstractDetectorTask
      * @param notifier The notifier
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
+     * @param metadata Additional metadata configuration parameters
      */
-    public SfzDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
+    public SfzDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
     {
-        super (notifier, consumer, sourceFolder, ".sfz");
+        super (notifier, consumer, sourceFolder, metadata, ".sfz");
     }
 
 
@@ -190,8 +190,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (result.isEmpty ())
             return Collections.emptyList ();
 
-        String name = getNameWithoutType (multiSampleFile);
-        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
+        String name = FileUtils.getNameWithoutType (multiSampleFile);
+        final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
         this.processedOpcodes.add (SfzOpcode.GLOBAL_LABEL);
         final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (multiSampleFile.getParentFile (), result);
@@ -203,6 +204,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, this.subtractPaths (this.sourceFolder, multiSampleFile));
 
         // Use same guessing on the filename...
+        multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
         multisampleSource.setCategory (TagDetector.detectCategory (parts));
         multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
 
@@ -239,7 +241,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     {
                         // The default path might be relative, so make sure it is fully
                         // canonical otherwise samples will not be found
-                        sampleBaseFolder = Utils.makeCanonical (new File (basePath, defaultPath.replace ('\\', '/')));
+                        sampleBaseFolder = FileUtils.makeCanonical (new File (basePath, defaultPath.replace ('\\', '/')));
                         if (!sampleBaseFolder.exists ())
                         {
                             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_FOLDER_DOES_NOT_EXIST", sampleBaseFolder.getAbsolutePath ());
@@ -625,7 +627,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      * Get the attribute value for the given key. The value is search starting from region upwards
      * to group, master and finally global.
      *
-     * 
+     *
      * @param key The key of the value to lookup
      * @return The optional value or empty if not found
      */
@@ -646,21 +648,5 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (value != null)
             this.processedOpcodes.add (key);
         return Optional.ofNullable (value);
-    }
-
-
-    private String loadTextFile (final File file) throws IOException
-    {
-        final Path path = file.toPath ();
-        try
-        {
-            return Files.readString (path);
-        }
-        catch (final IOException ex)
-        {
-            String string = new String (Files.readAllBytes (path));
-            this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
-            return string;
-        }
     }
 }

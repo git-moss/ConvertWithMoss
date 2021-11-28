@@ -10,6 +10,7 @@ import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.file.wav.FormatChunk;
 import de.mossgrabers.sampleconverter.file.wav.WaveFile;
+import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -18,6 +19,11 @@ import javafx.concurrent.Task;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +42,8 @@ import java.util.function.Consumer;
  */
 public abstract class AbstractDetectorTask extends Task<Boolean>
 {
+    private static final String                  BROKEN_WAV            = "IDS_NOTIFY_ERR_BROKEN_WAV";
+
     protected final INotifier                    notifier;
     protected final Consumer<IMultisampleSource> consumer;
     protected final File                         sourceFolder;
@@ -44,6 +52,9 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     private final Map<String, Set<String>>       unsupportedElements   = new HashMap<> ();
     private final Map<String, Set<String>>       unsupportedAttributes = new HashMap<> ();
 
+    protected final IMetadataConfig              metadata;
+
+
     /**
      * Constructor.
      *
@@ -51,13 +62,15 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
      * @param fileEndings The file ending(s) identifying the files
+     * @param metadata Additional metadata configuration parameters
      */
-    protected AbstractDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String... fileEndings)
+    protected AbstractDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final String... fileEndings)
     {
         this.notifier = notifier;
         this.consumer = consumer;
         this.sourceFolder = sourceFolder;
         this.fileEndings = fileEndings;
+        this.metadata = metadata;
     }
 
 
@@ -170,21 +183,6 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
 
     /**
-     * Gets the name of the file without the ending. E.g. the filename 'aFile.jpeg' will return
-     * 'aFile'.
-     *
-     * @param file The file from which to get the name
-     * @return The name of the file without the ending
-     */
-    protected static String getNameWithoutType (final File file)
-    {
-        final String filename = file.getName ();
-        final int pos = filename.lastIndexOf ('.');
-        return pos == -1 ? filename : filename.substring (0, pos);
-    }
-
-
-    /**
      * Get the relative path of the sub-folder.
      *
      * @param sourceFolder The parent folder
@@ -257,7 +255,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             final FormatChunk formatChunk = new WaveFile (wavFile, true).getFormatChunk ();
             if (formatChunk == null)
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", wavFile.getAbsolutePath ());
+                this.notifier.logError (BROKEN_WAV, wavFile.getAbsolutePath ());
                 return false;
             }
 
@@ -270,7 +268,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
         catch (final IOException | ParseException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
+            this.notifier.logError (BROKEN_WAV, ex);
             return false;
         }
 
@@ -288,11 +286,11 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     {
         try
         {
-            sampleMetadata.addMissingInfoFromWaveFile ();
+            sampleMetadata.addMissingInfoFromWaveFile (false, false);
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
+            this.notifier.logError (BROKEN_WAV, ex);
         }
     }
 
@@ -398,5 +396,90 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             this.notifier.logError ("IDS_NOTIFY_ERR_BAD_PATH", ex.getMessage ());
         }
         return sampleFile;
+    }
+
+
+    /**
+     * Loads a text file in UTF-8 encoding. If UTF-8 fails a string is created anyway but with
+     * unspecified behavior.
+     *
+     * @param file The file to load
+     * @return The loaded text
+     * @throws IOException Could not load the file
+     */
+    protected String loadTextFile (final File file) throws IOException
+    {
+        final Path path = file.toPath ();
+        try
+        {
+            return Files.readString (path);
+        }
+        catch (final IOException ex)
+        {
+            final String string = new String (Files.readAllBytes (path));
+            this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
+            return string;
+        }
+    }
+
+
+    /**
+     * Converts a number of bytes to an unsigned integer with least significant bytes first.
+     *
+     * @param data The data to convert
+     * @return The converted integer
+     */
+    protected static int fromBytesLSB (final byte [] data)
+    {
+        int number = 0;
+        for (int i = 0; i < data.length; i++)
+            number |= (data[i] & 0xFF) << 8 * i;
+        return number;
+    }
+
+
+    /**
+     * Converts a 4 byte float value.
+     *
+     * @param data The 4 byte array
+     * @return The float value
+     */
+    protected static float readFloatLittleEndian (final byte [] data)
+    {
+        return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getFloat ();
+    }
+
+
+    /**
+     * Read an LSB 7 bit of a flexible number of bytes.
+     *
+     * @param in The input stream to read from
+     * @return Could not read next byte
+     * @throws IOException
+     */
+    protected static int [] read7bitNumberLSB (final InputStream in) throws IOException
+    {
+        int number = 0;
+        int count = 0;
+
+        byte [] value;
+
+        while ((value = in.readNBytes (1)).length > 0)
+        {
+            final int val = value[0] & 0x7F;
+            final int shift = 7 * count;
+            number = val << shift | number;
+
+            if ((value[0] & 0x80) == 0)
+                break;
+
+            count++;
+        }
+
+        return new int []
+        {
+            number,
+            count + 1
+        };
     }
 }

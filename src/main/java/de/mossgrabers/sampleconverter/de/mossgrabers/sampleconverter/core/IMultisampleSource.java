@@ -32,11 +32,11 @@ public interface IMultisampleSource
 
 
     /**
-     * Get the description of the samples which belong to the multi-sample.
+     * Get the description of the layers which belong to the multi-sample.
      *
      * @return The descriptions
      */
-    List<IVelocityLayer> getSampleMetadata ();
+    List<IVelocityLayer> getLayers ();
 
 
     /**
@@ -77,6 +77,14 @@ public interface IMultisampleSource
      * @return The keywords
      */
     String [] getKeywords ();
+
+
+    /**
+     * Set the name of the multi sample.
+     *
+     * @param name The name
+     */
+    void setName (String name);
 
 
     /**

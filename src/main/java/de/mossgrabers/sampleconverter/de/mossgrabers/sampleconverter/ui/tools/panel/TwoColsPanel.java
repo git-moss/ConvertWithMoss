@@ -76,8 +76,8 @@ public class TwoColsPanel extends BoxPanel
             final Tooltip tip = new Tooltip (Functions.getText (tooltip));
             if (label != null)
                 label.setTooltip (tip);
-            if (component instanceof Control)
-                ((Control) component).setTooltip (tip);
+            if (component instanceof final Control control)
+                control.setTooltip (tip);
         }
 
         this.addRow (button == null ? component : new BorderPane (component, null, button, null, null), l, addScrollPane);

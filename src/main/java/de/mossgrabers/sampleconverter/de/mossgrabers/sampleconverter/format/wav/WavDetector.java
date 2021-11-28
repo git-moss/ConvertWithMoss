@@ -7,6 +7,7 @@ package de.mossgrabers.sampleconverter.format.wav;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetector;
+import de.mossgrabers.sampleconverter.ui.MetadataPane;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
@@ -14,7 +15,6 @@ import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
@@ -38,9 +38,6 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
     private static final String WAV_DETECTION_PATTERN    = "WavDetectionPattern";
     private static final String WAV_IS_ASCENDING         = "WavIsAscending";
     private static final String WAV_MONO_SPLITS_PATTERN  = "WavMonoSPlitPattern";
-    private static final String WAV_PREFER_FOLDER_NAME   = "WavPreferFolderName";
-    private static final String WAV_DEFAULT_CREATOR      = "WavDefaultCreator";
-    private static final String WAV_CREATORS             = "WavCreators";
     private static final String WAV_CROSSFADE_NOTES      = "WavCrossfadeNotes";
     private static final String WAV_CROSSFADE_VELOCITIES = "WavCrossfadeVelocities";
     private static final String WAV_POSTFIX              = "WavPostfix";
@@ -48,12 +45,11 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
     private TextField           detectionPatternField;
     private ToggleGroup         sortAscendingGroup;
     private TextField           monoSplitsField;
-    private CheckBox            preferFolderNameCheckBox;
-    private TextField           defaultCreatorField;
-    private TextField           creatorsField;
     private TextField           crossfadeNotesField;
     private TextField           crossfadeVelocitiesField;
     private TextField           postfixField;
+
+    private MetadataPane        metadataPane             = new MetadataPane ("Wav");
 
 
     /**
@@ -76,9 +72,6 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
         final String [] velocityLayerPatterns = this.detectionPatternField.getText ().split (COMMA_SPLIT);
         final String [] monoSplitPatterns = this.monoSplitsField.getText ().split (COMMA_SPLIT);
 
-        final boolean isPreferFolderName = this.preferFolderNameCheckBox.isSelected ();
-        final String creatorName = this.defaultCreatorField.getText ();
-        final String [] creatorTags = this.creatorsField.getText ().split (COMMA_SPLIT);
         final String [] postfixTexts = this.postfixField.getText ().split (COMMA_SPLIT);
 
         int crossfadeNotes;
@@ -114,7 +107,7 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
             return;
         }
 
-        this.startDetection (new WavMultisampleDetectorTask (this.notifier, consumer, folder, velocityLayerPatterns, isAscending, monoSplitPatterns, postfixTexts, isPreferFolderName, crossfadeNotes, crossfadeVelocities, creatorTags, creatorName));
+        this.startDetection (new WavMultisampleDetectorTask (this.notifier, consumer, folder, velocityLayerPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane));
     }
 
 
@@ -122,12 +115,11 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
     @Override
     public void saveSettings (final BasicConfig config)
     {
+        this.metadataPane.saveSettings (config);
+
         config.setProperty (WAV_DETECTION_PATTERN, this.detectionPatternField.getText ());
         config.setProperty (WAV_IS_ASCENDING, Boolean.toString (this.sortAscendingGroup.getToggles ().get (1).isSelected ()));
         config.setProperty (WAV_MONO_SPLITS_PATTERN, this.monoSplitsField.getText ());
-        config.setProperty (WAV_PREFER_FOLDER_NAME, Boolean.toString (this.preferFolderNameCheckBox.isSelected ()));
-        config.setProperty (WAV_DEFAULT_CREATOR, this.defaultCreatorField.getText ());
-        config.setProperty (WAV_CREATORS, this.creatorsField.getText ());
         config.setProperty (WAV_CROSSFADE_NOTES, this.crossfadeNotesField.getText ());
         config.setProperty (WAV_CROSSFADE_VELOCITIES, this.crossfadeVelocitiesField.getText ());
         config.setProperty (WAV_POSTFIX, this.postfixField.getText ());
@@ -138,12 +130,11 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
     @Override
     public void loadSettings (final BasicConfig config)
     {
+        this.metadataPane.loadSettings (config);
+
         this.detectionPatternField.setText (config.getProperty (WAV_DETECTION_PATTERN, "_ms*_,S_*_"));
         this.sortAscendingGroup.selectToggle (this.sortAscendingGroup.getToggles ().get (config.getBoolean (WAV_IS_ASCENDING, true) ? 1 : 0));
         this.monoSplitsField.setText (config.getProperty (WAV_MONO_SPLITS_PATTERN, "_L"));
-        this.preferFolderNameCheckBox.setSelected (config.getBoolean (WAV_PREFER_FOLDER_NAME, false));
-        this.defaultCreatorField.setText (config.getProperty (WAV_DEFAULT_CREATOR, "moss"));
-        this.creatorsField.setText (config.getProperty (WAV_CREATORS, ""));
         this.crossfadeNotesField.setText (Integer.toString (config.getInteger (WAV_CROSSFADE_NOTES, 0)));
         this.crossfadeVelocitiesField.setText (Integer.toString (config.getInteger (WAV_CROSSFADE_VELOCITIES, 0)));
         this.postfixField.setText (config.getProperty (WAV_POSTFIX, ""));
@@ -185,11 +176,7 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
         ////////////////////////////////////////////////////////////
         // Metadata
 
-        panel.createSeparator ("@IDS_WAV_META");
-
-        this.preferFolderNameCheckBox = panel.createCheckBox ("@IDS_WAV_PREFER_FOLDER");
-        this.defaultCreatorField = panel.createField ("@IDS_WAV_DEFAULT_CREATOR");
-        this.creatorsField = panel.createField ("@IDS_WAV_CREATORS", comma, -1);
+        this.metadataPane.addTo (panel);
 
         ////////////////////////////////////////////////////////////
         // Options

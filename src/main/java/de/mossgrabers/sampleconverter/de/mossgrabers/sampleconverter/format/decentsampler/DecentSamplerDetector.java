@@ -7,6 +7,13 @@ package de.mossgrabers.sampleconverter.format.decentsampler;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetector;
+import de.mossgrabers.sampleconverter.ui.MetadataPane;
+import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
+import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
+
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
 
 import java.io.File;
 import java.util.function.Consumer;
@@ -19,6 +26,9 @@ import java.util.function.Consumer;
  */
 public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetectorTask>
 {
+    private MetadataPane metadataPane = new MetadataPane ("DecentSampler");
+
+
     /**
      * Constructor.
      *
@@ -34,6 +44,36 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.startDetection (new DecentSamplerDetectorTask (this.notifier, consumer, folder));
+        this.startDetection (new DecentSamplerDetectorTask (this.notifier, consumer, folder, this.metadataPane));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void saveSettings (final BasicConfig config)
+    {
+        this.metadataPane.saveSettings (config);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void loadSettings (final BasicConfig config)
+    {
+        this.metadataPane.loadSettings (config);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Node getEditPane ()
+    {
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        this.metadataPane.addTo (panel);
+
+        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
+        scrollPane.fitToWidthProperty ().set (true);
+        scrollPane.fitToHeightProperty ().set (true);
+        return scrollPane;
     }
 }
