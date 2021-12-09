@@ -4,9 +4,9 @@
 
 package de.mossgrabers.sampleconverter.format.wav;
 
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.VelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.MultisampleException;
 import de.mossgrabers.sampleconverter.exception.NoteNotDetectedException;
@@ -573,7 +573,7 @@ public class WavKeyMapping
         // Finally, set the root keys
         for (final Map.Entry<Integer, List<WavSampleMetadata>> e: result.entrySet ())
         {
-            for (WavSampleMetadata sample: e.getValue ())
+            for (final WavSampleMetadata sample: e.getValue ())
                 sample.setKeyRoot (e.getKey ().intValue ());
         }
 

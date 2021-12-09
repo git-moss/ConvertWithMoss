@@ -4,15 +4,15 @@
 
 package de.mossgrabers.sampleconverter.format.korgmultisample;
 
-import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
-import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
+import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
 import de.mossgrabers.sampleconverter.exception.FormatException;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 

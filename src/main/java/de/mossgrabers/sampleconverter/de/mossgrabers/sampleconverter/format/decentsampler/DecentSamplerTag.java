@@ -42,6 +42,8 @@ public class DecentSamplerTag
 
     /** The group tuning tag. */
     public static final String                    GROUP_TUNING    = "groupTuning";
+    /** The group name tag. */
+    public static final String                    GROUP_NAME      = "name";
 
     /** The sample-key tag. */
     public static final String                    PATH            = "path";
@@ -77,6 +79,15 @@ public class DecentSamplerTag
     /** The loop crossfade tag sample attribute. */
     public static final String                    LOOP_CROSSFADE  = "loopCrossfade";
 
+    /** The amplitude envelope attack attribute. */
+    public static final String                    AMP_ENV_ATTACK  = "attack";
+    /** The amplitude envelope decay attribute. */
+    public static final String                    AMP_ENV_DECAY   = "decay";
+    /** The amplitude envelope sustain attribute. */
+    public static final String                    AMP_ENV_SUSTAIN = "sustain";
+    /** The amplitude envelope release attribute. */
+    public static final String                    AMP_ENV_RELEASE = "release";
+
     /** The supported top level tags. */
     public static final Set<String>               TOP_LEVEL_TAGS  = Set.of (GROUPS);
     /** The supported group tags. */
@@ -90,9 +101,9 @@ public class DecentSamplerTag
     static
     {
         ATTRIBUTES.put (DECENTSAMPLER, Collections.emptySet ());
-        ATTRIBUTES.put (GROUPS, Collections.emptySet ());
-        ATTRIBUTES.put (GROUP, Set.of (VOLUME, GROUP_TUNING));
-        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PITCH_KEY_TRACK, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, SEQ_MODE));
+        ATTRIBUTES.put (GROUPS, Set.of (AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
+        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_TUNING, TUNING, VOLUME, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
+        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PITCH_KEY_TRACK, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, SEQ_MODE, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
     }
 
 

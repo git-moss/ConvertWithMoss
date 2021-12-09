@@ -209,9 +209,20 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
-## 4.0.1 (unreleased)
+## 4.1 (unreleased)
 
+* New: Support for amplitude envelope:
+    * SFZ: read/write
+    * SF2: read
+    * Decent Sampler: read/write
+    * MPC Keygroups: read/write
+* New: Decent Sampler: Support 'tuning' as well as 'groupTuning' on group tags.
+* Fixed: SFZ: Loop attributes were not read when loop_type was missing.
+* Fixed: SFZ: Loop attribute alternative names loopstart, loopend were not read.
+* Fixed: SFZ: Loop was not set to off when no loop was present.
+* Fixed: Decent Sampler: group name was wrongly reported as not supported.
 * Fixed: WAV: Check of sample chunks when combining mono to stereo does now only require to have the same pitch.
+* Fixed: Error message for left/right mono samples with different pitch was missing.
 
 ## 4.0
 

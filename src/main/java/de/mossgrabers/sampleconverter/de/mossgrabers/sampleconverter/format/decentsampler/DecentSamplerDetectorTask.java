@@ -4,15 +4,16 @@
 
 package de.mossgrabers.sampleconverter.format.decentsampler;
 
-import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.PlayLogic;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
-import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
+import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.TagDetector;
@@ -32,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -50,6 +52,10 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
     private static final String ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
     private static final String ENDING_DSLIBRARY      = ".dslibrary";
     private static final String ENDING_DSPRESET       = ".dspreset";
+
+    private Element             currentGroupsElement;
+    private Element             currentGroupElement;
+    private Element             currentSampleElement;
 
 
     /**
@@ -172,7 +178,6 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
     private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String basePath, final boolean isLibrary, final Document document)
     {
         final Element top = document.getDocumentElement ();
-
         if (!DecentSamplerTag.DECENTSAMPLER.equals (top.getNodeName ()))
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE);
@@ -181,6 +186,14 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         this.checkAttributes (DecentSamplerTag.DECENTSAMPLER, top.getAttributes (), DecentSamplerTag.getAttributes (DecentSamplerTag.DECENTSAMPLER));
         this.checkChildTags (DecentSamplerTag.DECENTSAMPLER, DecentSamplerTag.TOP_LEVEL_TAGS, XMLUtils.getChildElements (top));
+
+        final Element groupsNode = XMLUtils.getChildElementByName (top, DecentSamplerTag.GROUPS);
+        if (groupsNode == null)
+        {
+            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            return Collections.emptyList ();
+        }
+        this.currentGroupsElement = groupsNode;
 
         final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (top, basePath, isLibrary ? multiSampleFile : null);
 
@@ -218,14 +231,19 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         {
             if (groupNode instanceof final Element groupElement)
             {
+                this.currentGroupElement = groupElement;
+
                 this.checkAttributes (DecentSamplerTag.GROUP, groupElement.getAttributes (), DecentSamplerTag.getAttributes (DecentSamplerTag.GROUP));
 
-                final String k = groupElement.getAttribute ("name");
+                final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
                 final String layerName = k == null || k.isBlank () ? "Velocity Layer " + groupCounter : k;
                 final VelocityLayer velocityLayer = new VelocityLayer (layerName);
 
                 final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
-                final double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.GROUP_TUNING, 0);
+                double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.GROUP_TUNING, 0);
+                // Actually not in the specification but support it anyway
+                if (groupTuningOffset == 0)
+                    groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.TUNING, 0);
 
                 this.parseVelocityLayer (velocityLayer, groupElement, basePath, libraryFile, groupVolumeOffset, groupTuningOffset);
                 layers.add (velocityLayer);
@@ -255,6 +273,8 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
     {
         for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE))
         {
+            this.currentSampleElement = sampleElement;
+
             this.checkAttributes (DecentSamplerTag.SAMPLE, sampleElement.getAttributes (), DecentSamplerTag.getAttributes (DecentSamplerTag.SAMPLE));
             this.checkChildTags (DecentSamplerTag.SAMPLE, DecentSamplerTag.SAMPLE_TAGS, XMLUtils.getChildElements (sampleElement));
 
@@ -311,6 +331,15 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
             this.loadMissingValues (sampleMetadata);
 
+            /////////////////////////////////////////////////////
+            // Volume envelope
+
+            final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+            amplitudeEnvelope.setAttack (this.getDoubleValue (DecentSamplerTag.AMP_ENV_ATTACK, -1));
+            amplitudeEnvelope.setDecay (this.getDoubleValue (DecentSamplerTag.AMP_ENV_DECAY, -1));
+            amplitudeEnvelope.setSustain (this.getDoubleValue (DecentSamplerTag.AMP_ENV_SUSTAIN, -1));
+            amplitudeEnvelope.setRelease (this.getDoubleValue (DecentSamplerTag.AMP_ENV_RELEASE, -1));
+
             velocityLayer.addSampleMetadata (sampleMetadata);
         }
     }
@@ -340,5 +369,49 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         // The value is in the range of [0..1] but it is not specified what 0 and 1 means, lets
         // scale it to [0..6] dB.
         return Double.parseDouble (attribute) * 6.0;
+    }
+
+
+    /**
+     * Get the attribute double value for the given key. The value is searched starting from region
+     * upwards to group, master and finally global.
+     *
+     * @param key The key of the value to lookup
+     * @param defaultValue The value to return if the key is not present or cannot be read
+     * @return The value or 0 if not found or is not a double
+     */
+    private double getDoubleValue (final String key, final double defaultValue)
+    {
+        final Optional<String> value = this.getAttribute (key);
+        if (value.isEmpty ())
+            return defaultValue;
+        try
+        {
+            return Double.parseDouble (value.get ());
+        }
+        catch (final NumberFormatException ex)
+        {
+            return defaultValue;
+        }
+    }
+
+
+    /**
+     * Get the attribute value for the given key. The value is searched starting from sample upwards
+     * to group and finally groups.
+     *
+     * @param key The key of the value to lookup
+     * @return The optional value or empty if not found
+     */
+    private Optional<String> getAttribute (final String key)
+    {
+        String value = this.currentGroupsElement == null ? null : this.currentGroupsElement.getAttribute (key);
+        if (value == null || value.isBlank ())
+        {
+            value = this.currentGroupElement == null ? null : this.currentGroupElement.getAttribute (key);
+            if (value == null || value.isBlank ())
+                value = this.currentSampleElement == null ? null : this.currentSampleElement.getAttribute (key);
+        }
+        return Optional.ofNullable (value);
     }
 }

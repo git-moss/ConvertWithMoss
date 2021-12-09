@@ -4,17 +4,18 @@
 
 package de.mossgrabers.sampleconverter.format.sfz;
 
-import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.LoopType;
-import de.mossgrabers.sampleconverter.core.PlayLogic;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
-import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
+import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.LoopType;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.Pair;
@@ -31,6 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -456,53 +458,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         ////////////////////////////////////////////////////////////
         // Sample Loop
 
-        final Optional<String> loopMode = this.getAttribute (SfzOpcode.LOOP_MODE);
-        if (loopMode.isPresent ())
-        {
-            switch (loopMode.get ())
-            {
-                default:
-                case "no_loop":
-                case "one_shot":
-                    // No looping
-                    break;
-
-                case "loop_continuous":
-                case "loop_sustain":
-                    final SampleLoop loop = new SampleLoop ();
-                    final Optional<String> loopType = this.getAttribute (SfzOpcode.LOOP_TYPE);
-                    if (loopType.isPresent ())
-                    {
-                        final LoopType type = LOOP_TYPE_MAPPER.get (loopType.get ());
-                        if (type != null)
-                            loop.setType (type);
-                    }
-
-                    final int loopStart = this.getIntegerValue (SfzOpcode.LOOP_START);
-                    if (loopStart >= 0)
-                        loop.setStart (loopStart);
-                    final int loopEnd = this.getIntegerValue (SfzOpcode.LOOP_END);
-                    if (loopEnd >= 0)
-                        loop.setEnd (loopEnd);
-
-                    final double crossfadeInSeconds = this.getDoubleValue (SfzOpcode.LOOP_CROSSFADE, 0);
-                    if (crossfadeInSeconds >= 0)
-                    {
-                        // Calculate seconds in percent of the loop length
-                        final int loopLength = loop.getStart () - loop.getEnd ();
-                        if (loopLength > 0)
-                        {
-                            final double loopLengthInSeconds = loopLength / (double) sampleMetadata.getSampleRate ();
-                            final double crossfade = crossfadeInSeconds / loopLengthInSeconds;
-                            if (crossfade > 0 && crossfade <= 1)
-                                loop.setCrossfade (crossfade);
-                        }
-                    }
-
-                    sampleMetadata.addLoop (loop);
-                    break;
-            }
-        }
+        this.parseLoop (sampleMetadata);
 
         ////////////////////////////////////////////////////////////
         // Tune
@@ -518,8 +474,95 @@ public class SfzDetectorTask extends AbstractDetectorTask
         ////////////////////////////////////////////////////////////
         // Volume
 
+        this.parseVolume (sampleMetadata);
+    }
+
+
+    /**
+     * Parse the settings of the loop.
+     *
+     * @param sampleMetadata Where to store the data
+     */
+    private void parseLoop (final ISampleMetadata sampleMetadata)
+    {
+        final Optional<String> loopMode = this.getAttribute (SfzOpcode.LOOP_MODE);
+
+        boolean hasLoop = true;
+        final SampleLoop loop = new SampleLoop ();
+
+        if (loopMode.isPresent ())
+        {
+            switch (loopMode.get ())
+            {
+                default:
+                case "no_loop":
+                case "one_shot":
+                    // No looping
+                    hasLoop = false;
+                    break;
+
+                case "loop_continuous":
+                case "loop_sustain":
+                    final Optional<String> loopType = this.getAttribute (SfzOpcode.LOOP_TYPE);
+                    if (loopType.isPresent ())
+                    {
+                        final LoopType type = LOOP_TYPE_MAPPER.get (loopType.get ());
+                        if (type != null)
+                            loop.setType (type);
+                    }
+                    break;
+            }
+        }
+
+        if (!hasLoop)
+            return;
+
+        final int loopStart = this.getIntegerValue (SfzOpcode.LOOP_START, SfzOpcode.LOOPSTART);
+        if (loopStart >= 0)
+            loop.setStart (loopStart);
+        final int loopEnd = this.getIntegerValue (SfzOpcode.LOOP_END, SfzOpcode.LOOPEND);
+        if (loopEnd >= 0)
+            loop.setEnd (loopEnd);
+
+        final double crossfadeInSeconds = this.getDoubleValue (SfzOpcode.LOOP_CROSSFADE, 0);
+        if (crossfadeInSeconds >= 0)
+        {
+            // Calculate seconds in percent of the loop length
+            final int loopLength = loop.getStart () - loop.getEnd ();
+            if (loopLength > 0)
+            {
+                final double loopLengthInSeconds = loopLength / (double) sampleMetadata.getSampleRate ();
+                final double crossfade = crossfadeInSeconds / loopLengthInSeconds;
+                if (crossfade > 0 && crossfade <= 1)
+                    loop.setCrossfade (crossfade);
+            }
+        }
+
+        sampleMetadata.addLoop (loop);
+    }
+
+
+    /**
+     * Parse the parameters of the volume and amplitude envelope.
+     *
+     * @param sampleMetadata Where to store the data
+     */
+    private void parseVolume (final ISampleMetadata sampleMetadata)
+    {
         final double volume = this.getDoubleValue (SfzOpcode.VOLUME, 0);
         sampleMetadata.setGain (Math.min (12, Math.max (-12, volume)));
+
+        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+        amplitudeEnvelope.setDelay (this.getDoubleValue (SfzOpcode.AMPEG_DELAY, SfzOpcode.AMP_DELAY));
+        amplitudeEnvelope.setAttack (this.getDoubleValue (SfzOpcode.AMPEG_ATTACK, SfzOpcode.AMP_ATTACK));
+        amplitudeEnvelope.setHold (this.getDoubleValue (SfzOpcode.AMPEG_HOLD, SfzOpcode.AMP_HOLD));
+        amplitudeEnvelope.setDecay (this.getDoubleValue (SfzOpcode.AMPEG_DECAY, SfzOpcode.AMP_DECAY));
+        amplitudeEnvelope.setRelease (this.getDoubleValue (SfzOpcode.AMPEG_RELEASE, SfzOpcode.AMP_RELEASE));
+
+        final double startValue = this.getDoubleValue (SfzOpcode.AMPEG_START, SfzOpcode.AMP_START);
+        final double sustainValue = this.getDoubleValue (SfzOpcode.AMPEG_SUSTAIN, SfzOpcode.AMP_SUSTAIN);
+        amplitudeEnvelope.setStart (startValue < 0 ? -1 : startValue / 100.0);
+        amplitudeEnvelope.setSustain (sustainValue < 0 ? -1 : sustainValue / 100.0);
     }
 
 
@@ -530,7 +573,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      */
     private Set<String> diffOpcodes ()
     {
-        final Set<String> unsupported = new HashSet<> ();
+        final Set<String> unsupported = new TreeSet<> ();
         this.allOpcodes.forEach (attribute -> {
             if (!this.processedOpcodes.contains (attribute))
                 unsupported.add (attribute);
@@ -577,6 +620,21 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
 
     /**
+     * Get the value of the first or second key, whichever is present. If none is present -1 is
+     * returned.
+     *
+     * @param key1 The first key to check
+     * @param key2 The second key to check if the first is not present
+     * @return The value
+     */
+    private int getIntegerValue (final String key1, final String key2)
+    {
+        final int value = this.getIntegerValue (key1);
+        return value < 0 ? this.getIntegerValue (key2) : value;
+    }
+
+
+    /**
      * Get the attribute integer value for the given key. The value is searched starting from region
      * upwards to group, master and finally global.
      *
@@ -596,6 +654,21 @@ public class SfzDetectorTask extends AbstractDetectorTask
         {
             return -1;
         }
+    }
+
+
+    /**
+     * Get the value of the first or second key, whichever is present. If none is present -1 is
+     * returned.
+     *
+     * @param key1 The first key to check
+     * @param key2 The second key to check if the first is not present
+     * @return The value
+     */
+    private double getDoubleValue (final String key1, final String key2)
+    {
+        final double value = this.getDoubleValue (key1, -1);
+        return value < 0 ? this.getDoubleValue (key2, -1) : value;
     }
 
 
@@ -624,9 +697,8 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Get the attribute value for the given key. The value is search starting from region upwards
-     * to group, master and finally global.
-     *
+     * Get the attribute value for the given key. The value is searched starting from the region
+     * upwards to group, master and finally global.
      *
      * @param key The key of the value to lookup
      * @return The optional value or empty if not found

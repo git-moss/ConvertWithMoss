@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.core;
+package de.mossgrabers.sampleconverter.core.model;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +16,7 @@ import java.util.Optional;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public interface ISampleMetadata
+public interface ISampleMetadata extends IEnvelopeAccess
 {
     /**
      * Get the file where the sample is stored.

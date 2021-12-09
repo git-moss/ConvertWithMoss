@@ -7,8 +7,8 @@ package de.mossgrabers.sampleconverter.core.creator;
 import de.mossgrabers.sampleconverter.core.AbstractCoreTask;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -236,5 +238,30 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 }
             }
         }
+    }
+
+
+    protected static List<IVelocityLayer> getNonEmptyLayers (final List<IVelocityLayer> layers)
+    {
+        final List<IVelocityLayer> cleanedLayers = new ArrayList<> ();
+        for (final IVelocityLayer layer: layers)
+        {
+            if (!layer.getSampleMetadata ().isEmpty ())
+                cleanedLayers.add (layer);
+        }
+        return cleanedLayers;
+    }
+
+
+    // Normalize to [0..1]
+    protected static double normalizeValue (final double value, final double minimum, final double maximum)
+    {
+        return clamp (value, minimum, maximum) / maximum;
+    }
+
+
+    protected static double clamp (double value, double minimum, double maximum)
+    {
+        return Math.max (minimum, Math.min (value, maximum));
     }
 }

@@ -6,11 +6,12 @@ package de.mossgrabers.sampleconverter.format.akai;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.PlayLogic;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
+import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -324,7 +325,14 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, Integer.toString (keyLow));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, sampleMetadata.getKeyTracking () == 0 ? "True" : "False");
-        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, "0.63");
+
+        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttack (), 0, 30, 0);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHold (), 0, 30, 0);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), 0, 30, 0);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1, 1);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), 0, 30, 0.63);
+
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (sampleMetadata.getPlayLogic ()).getID ());
         instrumentElement.appendChild (createLfoElement (document));
         final Element layersElement = document.createElement ("Layers");
@@ -361,5 +369,12 @@ public class MPCKeygroupCreator extends AbstractCreator
         final double v = 12 + (volumeDB > 6 ? 6 : volumeDB);
         final double result = VALUE_RANGE * v / 18.0;
         return MINUS_12_DB + result;
+    }
+
+
+    private static void setEnvelopeAttribute (final Document document, final Element element, final String attribute, final double value, final double minimum, final double maximum, final double defaultValue)
+    {
+        final double v = value < 0 ? defaultValue : normalizeValue (value, minimum, maximum);
+        XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.4f", Double.valueOf (v)));
     }
 }

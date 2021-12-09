@@ -4,9 +4,9 @@
 
 package de.mossgrabers.sampleconverter.format.wav;
 
-import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
-import de.mossgrabers.sampleconverter.core.LoopType;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.LoopType;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
 import de.mossgrabers.sampleconverter.exception.ParseException;

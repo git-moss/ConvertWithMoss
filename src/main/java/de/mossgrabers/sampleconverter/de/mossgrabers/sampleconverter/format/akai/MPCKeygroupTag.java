@@ -59,6 +59,15 @@ public class MPCKeygroupTag
     public static final String INSTRUMENT_ONE_SHOT         = "OneShot";
     /** The layers element of the instrument element. */
     public static final String INSTRUMENT_LAYERS           = "Layers";
+
+    /** The volume attack element of the instrument element. */
+    public static final String INSTRUMENT_VOLUME_ATTACK    = "VolumeAttack";
+    /** The volume hold element of the instrument element. */
+    public static final String INSTRUMENT_VOLUME_HOLD      = "VolumeHold";
+    /** The volume decay element of the instrument element. */
+    public static final String INSTRUMENT_VOLUME_DECAY     = "VolumeDecay";
+    /** The volume sustain element of the instrument element. */
+    public static final String INSTRUMENT_VOLUME_SUSTAIN   = "VolumeSustain";
     /** The volume release element of the instrument element. */
     public static final String INSTRUMENT_VOLUME_RELEASE   = "VolumeRelease";
 

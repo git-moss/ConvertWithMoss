@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.core;
+package de.mossgrabers.sampleconverter.core.model;
 
 /**
  * Interface to the loop of a sample.

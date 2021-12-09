@@ -4,16 +4,17 @@
 
 package de.mossgrabers.sampleconverter.format.akai;
 
-import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.PlayLogic;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
-import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
+import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.TagDetector;
@@ -231,6 +232,12 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             final String oneShotStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_ONE_SHOT);
             final boolean isOneShot = oneShotStr == null || MPCKeygroupTag.TRUE.equalsIgnoreCase (oneShotStr);
 
+            final double attack = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, 0, 30, 0);
+            final double hold = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, 0, 30, 0);
+            final double decay = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, 0, 30, 0);
+            final double sustain = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, 0, 1, 1);
+            final double release = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, 0, 30, 0.63);
+
             final Element layersElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LAYERS);
             if (layersElement != null)
             {
@@ -240,8 +247,14 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                     final DefaultSampleMetadata sampleMetadata = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote);
                     if (sampleMetadata == null)
                         continue;
-
                     samples.add (sampleMetadata);
+
+                    final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+                    amplitudeEnvelope.setAttack (attack);
+                    amplitudeEnvelope.setHold (hold);
+                    amplitudeEnvelope.setDecay (decay);
+                    amplitudeEnvelope.setSustain (sustain);
+                    amplitudeEnvelope.setRelease (release);
 
                     // No loop if it is a one-shot
                     if (!isOneShot)
@@ -353,7 +366,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         {
             try
             {
-                sampleMetadata.addMissingInfoFromWaveFile (!isDrum, !isOneShot);
+                sampleMetadata.addMissingInfoFromWaveFile (!isDrum, !isDrum && !isOneShot);
             }
             catch (final FileNotFoundException ex)
             {
@@ -491,5 +504,15 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
     {
         final double result = volume - MINUS_12_DB;
         return result * 18.0 / VALUE_RANGE - 12;
+    }
+
+
+    private static double getEnvelopeAttribute (final Element element, final String attribute, final double minimum, final double maximum, final double defaultValue)
+    {
+        final String content = XMLUtils.getChildElementContent (element, attribute);
+        if (content.isBlank ())
+            return defaultValue;
+        final double value = Double.parseDouble (content);
+        return value < 0 ? defaultValue : denormalizeValue (value, minimum, maximum);
     }
 }

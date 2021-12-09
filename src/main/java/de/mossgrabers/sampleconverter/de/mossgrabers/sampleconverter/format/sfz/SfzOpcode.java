@@ -107,6 +107,35 @@ public class SfzOpcode
     /** SFZ v2. Loop cross fade. */
     public static final String LOOP_CROSSFADE   = "loop_crossfade";
 
+    /** SFZ v1. The EG delay time. */
+    public static final String AMPEG_DELAY      = "ampeg_delay";
+    /** SFZ v1. The EG envelope start level. */
+    public static final String AMPEG_START      = "ampeg_start";
+    /** SFZ v1. The EG attack time. */
+    public static final String AMPEG_ATTACK     = "ampeg_attack";
+    /** SFZ v1. The EG hold time. */
+    public static final String AMPEG_HOLD       = "ampeg_hold";
+    /** SFZ v1. The EG decay time. */
+    public static final String AMPEG_DECAY      = "ampeg_decay";
+    /** SFZ v1. The EG envelope sustain level. */
+    public static final String AMPEG_SUSTAIN    = "ampeg_sustain";
+    /** SFZ v1. The EG release time. */
+    public static final String AMPEG_RELEASE    = "ampeg_release";
+    /** Cakewalk alias. The EG delay time. */
+    public static final String AMP_DELAY        = "amp_delay";
+    /** Cakewalk alias. The EG envelope start level. */
+    public static final String AMP_START        = "amp_start";
+    /** Cakewalk alias. The EG attack time. */
+    public static final String AMP_ATTACK       = "amp_attack";
+    /** Cakewalk alias. The EG hold time. */
+    public static final String AMP_HOLD         = "amp_hold";
+    /** Cakewalk alias. The EG decay time. */
+    public static final String AMP_DECAY        = "amp_decay";
+    /** Cakewalk alias. The EG envelope sustain level. */
+    public static final String AMP_SUSTAIN      = "amp_sustain";
+    /** Cakewalk alias. The EG release time. */
+    public static final String AMP_RELEASE      = "amp_release";
+
 
     /**
      * Private constructor for utility class.

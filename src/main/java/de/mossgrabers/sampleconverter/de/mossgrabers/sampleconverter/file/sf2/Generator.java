@@ -16,6 +16,20 @@ public class Generator
 {
     /** The ID of the panorama generator. */
     public static final int        PANORAMA            = 17;
+
+    /** The ID of the volume envelope delay generator. */
+    public static final int        VOL_ENV_DELAY       = 33;
+    /** The ID of the volume envelope attack generator. */
+    public static final int        VOL_ENV_ATTACK      = 34;
+    /** The ID of the volume envelope hold generator. */
+    public static final int        VOL_ENV_HOLD        = 35;
+    /** The ID of the volume envelope decay generator. */
+    public static final int        VOL_ENV_DECAY       = 36;
+    /** The ID of the volume envelope sustain generator. */
+    public static final int        VOL_ENV_SUSTAIN     = 37;
+    /** The ID of the volume envelope release generator. */
+    public static final int        VOL_ENV_RELEASE     = 38;
+
     /** The ID of the instrument generator. */
     public static final int        INSTRUMENT          = 41;
     /** The ID of the key range generator. */

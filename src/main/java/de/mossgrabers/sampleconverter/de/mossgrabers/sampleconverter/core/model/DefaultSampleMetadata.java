@@ -2,7 +2,7 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.core;
+package de.mossgrabers.sampleconverter.core.model;
 
 import de.mossgrabers.sampleconverter.format.wav.WavSampleMetadata;
 
@@ -24,7 +24,7 @@ import java.util.zip.ZipFile;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class DefaultSampleMetadata implements ISampleMetadata
+public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMetadata
 {
     protected final File       sampleFile;
     protected final File       zipFile;

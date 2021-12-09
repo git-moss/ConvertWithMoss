@@ -5,7 +5,7 @@
 package de.mossgrabers.sampleconverter.core.detector;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
 
 import java.io.File;
 import java.util.ArrayList;
