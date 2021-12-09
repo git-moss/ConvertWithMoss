@@ -6,12 +6,12 @@ package de.mossgrabers.sampleconverter.format.bitwig;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.LoopType;
-import de.mossgrabers.sampleconverter.core.PlayLogic;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.LoopType;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;

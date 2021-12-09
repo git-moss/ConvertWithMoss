@@ -6,12 +6,13 @@ package de.mossgrabers.sampleconverter.format.sfz;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.LoopType;
-import de.mossgrabers.sampleconverter.core.PlayLogic;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
+import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.LoopType;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -232,15 +233,15 @@ public class SfzCreator extends AbstractCreator
         if (keyTracking != 100)
             sb.append (SfzOpcode.PITCH_KEYTRACK).append ('=').append (keyTracking).append (LINE_FEED);
 
-        final int volume = (int) Math.round (info.getGain ());
-        if (volume != 0)
-            sb.append (SfzOpcode.VOLUME).append ('=').append (volume).append (LINE_FEED);
+        createVolume (sb, info);
 
         ////////////////////////////////////////////////////////////
         // Sample Loop
 
         final List<SampleLoop> loops = info.getLoops ();
-        if (!loops.isEmpty ())
+        if (loops.isEmpty ())
+            sb.append (SfzOpcode.LOOP_MODE).append ("=no_loop ");
+        else
         {
             final SampleLoop sampleLoop = loops.get (0);
             // SFZ currently only supports forward looping
@@ -267,5 +268,45 @@ public class SfzCreator extends AbstractCreator
 
             sb.append (LINE_FEED);
         }
+    }
+
+
+    /**
+     * Create the volume and amplitude envelope parameters.
+     *
+     * @param sb Where to add the created text
+     * @param sampleMetadata The data source
+     */
+    private static void createVolume (final StringBuilder sb, final ISampleMetadata sampleMetadata)
+    {
+        final int volume = (int) Math.round (sampleMetadata.getGain ());
+        if (volume != 0)
+            sb.append (SfzOpcode.VOLUME).append ('=').append (volume).append (LINE_FEED);
+
+        final StringBuilder envelopeStr = new StringBuilder ();
+
+        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DELAY, amplitudeEnvelope.getDelay ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK, amplitudeEnvelope.getAttack ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_HOLD, amplitudeEnvelope.getHold ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY, amplitudeEnvelope.getDecay ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE, amplitudeEnvelope.getRelease ());
+
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_START, amplitudeEnvelope.getStart () * 100.0);
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_SUSTAIN, amplitudeEnvelope.getSustain () * 100.0);
+
+        if (envelopeStr.length () > 0)
+            sb.append (envelopeStr).append (LINE_FEED);
+    }
+
+
+    private static void addEnvelopeAttribute (final StringBuilder sb, final String opcode, final double value)
+    {
+        if (value < 0)
+            return;
+        if (sb.length () > 0)
+            sb.append (' ');
+        sb.append (opcode).append ('=').append (clamp (value, 0, 100));
     }
 }

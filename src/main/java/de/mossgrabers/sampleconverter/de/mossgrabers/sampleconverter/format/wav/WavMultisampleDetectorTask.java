@@ -6,9 +6,9 @@ package de.mossgrabers.sampleconverter.format.wav;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.MultisampleException;
 import de.mossgrabers.sampleconverter.ui.IMetadataConfig;

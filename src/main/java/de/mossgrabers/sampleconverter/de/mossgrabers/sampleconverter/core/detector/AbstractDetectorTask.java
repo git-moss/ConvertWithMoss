@@ -4,9 +4,9 @@
 
 package de.mossgrabers.sampleconverter.core.detector;
 
-import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
+import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.file.wav.FormatChunk;
 import de.mossgrabers.sampleconverter.file.wav.WaveFile;
@@ -420,6 +420,13 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
             return string;
         }
+    }
+
+
+    protected static double denormalizeValue (final double value, final double minimum, final double maximum)
+    {
+        final double v = Math.min (Math.max (value, 0), 1);
+        return minimum + v * (maximum - minimum);
     }
 
 

@@ -6,12 +6,13 @@ package de.mossgrabers.sampleconverter.format.sf2;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
-import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
+import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
 import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.file.sf2.Generator;
@@ -306,7 +307,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
         if (left.getOriginalPitch () != right.getOriginalPitch () || left.getPitchCorrection () != right.getPitchCorrection ())
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_PITCH", left.getName (), right.getName ());
+            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_PITCH", left.getName (), right.getName ());
             return false;
         }
 
@@ -380,7 +381,52 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             sampleMetadata.addLoop (sampleLoop);
         }
 
+        // Volume envelope
+        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+
+        final Integer delay = generators.getSignedValue (Generator.VOL_ENV_DELAY);
+        final Integer attack = generators.getSignedValue (Generator.VOL_ENV_ATTACK);
+        final Integer hold = generators.getSignedValue (Generator.VOL_ENV_HOLD);
+        final Integer decay = generators.getSignedValue (Generator.VOL_ENV_DECAY);
+        final Integer release = generators.getSignedValue (Generator.VOL_ENV_RELEASE);
+
+        amplitudeEnvelope.setDelay (convertEnvelopeTime (delay));
+        amplitudeEnvelope.setAttack (convertEnvelopeTime (attack));
+        amplitudeEnvelope.setHold (convertEnvelopeTime (hold));
+        amplitudeEnvelope.setDecay (convertEnvelopeTime (decay));
+        amplitudeEnvelope.setRelease (convertEnvelopeTime (release));
+
+        final Integer sustain = generators.getSignedValue (Generator.VOL_ENV_SUSTAIN);
+        amplitudeEnvelope.setSustain (convertEnvelopeVolume (sustain));
+
         return sampleMetadata;
+    }
+
+
+    private static double convertEnvelopeTime (final Integer value)
+    {
+        if (value == null)
+            return -1;
+
+        final double v = Math.pow (2, value.doubleValue () / 1200.0);
+        // Ignore times less than 1 millisecond
+        return v < 0.001 ? -1 : v;
+    }
+
+
+    private static double convertEnvelopeVolume (final Integer value)
+    {
+        if (value == null)
+            return -1;
+
+        // Attenuation is in centibel (dB * 10), so 0 is maximum volume, about 1000 is off
+        int v = Math.min (1000, value.intValue ());
+        if (v <= 0)
+            return -1;
+
+        // This is likely not correct but since there is also no documentation what the percentage
+        // volume values mean in dB it is the best we can do...
+        return Math.max (0, Math.min (1.0, 1.0 - v / 1000.0));
     }
 
 

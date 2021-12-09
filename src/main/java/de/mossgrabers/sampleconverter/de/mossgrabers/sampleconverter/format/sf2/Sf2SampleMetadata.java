@@ -4,7 +4,7 @@
 
 package de.mossgrabers.sampleconverter.format.sf2;
 
-import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.sampleconverter.file.wav.DataChunk;
 import de.mossgrabers.sampleconverter.file.wav.WaveFile;

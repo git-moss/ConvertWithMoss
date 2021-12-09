@@ -6,11 +6,12 @@ package de.mossgrabers.sampleconverter.format.decentsampler;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.PlayLogic;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
+import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
@@ -215,13 +216,21 @@ public class DecentSamplerCreator extends AbstractCreator
 
         final Element multisampleElement = document.createElement (DecentSamplerTag.DECENTSAMPLER);
         document.appendChild (multisampleElement);
-        this.createUI (document, multisampleElement);
 
         // No metadata at all
 
-        // Add all groups with samples
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
-        final List<IVelocityLayer> velocityLayers = multisampleSource.getLayers ();
+        final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers ());
+
+        IEnvelope amplitudeEnvelope = null;
+        if (!velocityLayers.isEmpty ())
+        {
+            final ISampleMetadata sampleMetadata = velocityLayers.get (0).getSampleMetadata ().get (0);
+            amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+            addVolumeEnvelope (amplitudeEnvelope, groupsElement);
+        }
+        this.createUI (document, multisampleElement, amplitudeEnvelope);
+
         for (final IVelocityLayer layer: velocityLayers)
         {
             final Element groupElement = XMLUtils.addElement (document, groupsElement, DecentSamplerTag.GROUP);
@@ -315,21 +324,23 @@ public class DecentSamplerCreator extends AbstractCreator
         // Loops
 
         final List<SampleLoop> loops = info.getLoops ();
-        if (loops.isEmpty ())
-            return;
+        if (!loops.isEmpty ())
+        {
 
-        final SampleLoop sampleLoop = loops.get (0);
-        sampleElement.setAttribute (DecentSamplerTag.LOOP_ENABLED, "true");
-        XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, check (sampleLoop.getStart (), 0), 3);
-        XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, check (sampleLoop.getEnd (), stop), 3);
+            final SampleLoop sampleLoop = loops.get (0);
+            sampleElement.setAttribute (DecentSamplerTag.LOOP_ENABLED, "true");
+            XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, check (sampleLoop.getStart (), 0), 3);
+            XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, check (sampleLoop.getEnd (), stop), 3);
 
-        // Calculate the crossfade in frames/samples from a percentage of the loop length
-        final double crossfade = sampleLoop.getCrossfade ();
-        if (crossfade <= 0)
-            return;
-        final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
-        if (loopLength > 0)
-            XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, (int) Math.round (loopLength * crossfade));
+            // Calculate the crossfade in frames/samples from a percentage of the loop length
+            final double crossfade = sampleLoop.getCrossfade ();
+            if (crossfade > 0)
+            {
+                final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
+                if (loopLength > 0)
+                    XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, (int) Math.round (loopLength * crossfade));
+            }
+        }
     }
 
 
@@ -389,8 +400,9 @@ public class DecentSamplerCreator extends AbstractCreator
      *
      * @param document The XML document
      * @param root The root XML element
+     * @param amplitudeEnvelope The amplitude envelope
      */
-    private void createUI (final Document document, final Element root)
+    private void createUI (final Document document, final Element root, final IEnvelope amplitudeEnvelope)
     {
         final Element uiElement = XMLUtils.addElement (document, root, DecentSamplerTag.UI);
         final Element tabElement = XMLUtils.addElement (document, uiElement, DecentSamplerTag.TAB);
@@ -401,29 +413,44 @@ public class DecentSamplerCreator extends AbstractCreator
         if (this.addFilterBox.isSelected ())
         {
             knobElement = createKnob (document, tabElement, 0, 0, "Filter Cutoff", 22000, 22000);
-            createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_FREQUENCY", 0, 3000, 0);
-            knobElement = createKnob (document, tabElement, 100, 0, "Filter Resonance", 1, 0.5);
-            createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_RESONANCE", 0.11, 2, 0);
+            createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_FREQUENCY");
+            knobElement = createKnob (document, tabElement, 100, 0, "Filter Resonance", 2, 0.01);
+            createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_RESONANCE");
         }
 
         if (this.addReverbBox.isSelected ())
         {
             knobElement = createKnob (document, tabElement, 200, 0, "Reverb Wet Level", 1000, 0);
-            createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_WET_LEVEL", 0, 1, 1);
+            Element bindingElement = createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_WET_LEVEL");
+            bindingElement.setAttribute ("position", "1");
+            bindingElement.setAttribute ("translation", "linear");
+            bindingElement.setAttribute ("translationOutputMax", "1");
+            bindingElement.setAttribute ("translationOutputMin", "0.0");
+
             knobElement = createKnob (document, tabElement, 300, 0, "Reverb Room Size", 1000, 0);
-            createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_ROOM_SIZE", 0, 1, 1);
+            bindingElement = createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_ROOM_SIZE");
+            bindingElement.setAttribute ("position", "1");
+            bindingElement.setAttribute ("translation", "linear");
+            bindingElement.setAttribute ("translationOutputMax", "1");
+            bindingElement.setAttribute ("translationOutputMin", "0.0");
         }
 
         if (this.addEnvelopeBox.isSelected ())
         {
-            knobElement = createKnob (document, tabElement, 0, 100, "Attack", 2000, 0);
-            createBinding (document, knobElement, MOD_AMP, "ENV_ATTACK", 0, 2, 0);
-            knobElement = createKnob (document, tabElement, 100, 100, "Decay", 2000, 0);
-            createBinding (document, knobElement, MOD_AMP, "ENV_DECAY", 0, 2, 0);
-            knobElement = createKnob (document, tabElement, 200, 100, "Sustain", 2000, 2000);
-            createBinding (document, knobElement, MOD_AMP, "ENV_SUSTAIN", 0, 2, 0);
-            knobElement = createKnob (document, tabElement, 300, 100, "Release", 2000, 400);
-            createBinding (document, knobElement, MOD_AMP, "ENV_RELEASE", 0, 2, 0);
+            final double attackValue = getEnvelopeAttribute (amplitudeEnvelope.getAttack (), 0, 10, 0);
+            final double decayValue = getEnvelopeAttribute (amplitudeEnvelope.getDecay (), 0, 25, 0);
+            final double sustainValue = getEnvelopeAttribute (amplitudeEnvelope.getSustain (), 0, 1, 1);
+            final double releaseValue = getEnvelopeAttribute (amplitudeEnvelope.getRelease (), 0, 25, 0.01);
+
+            final Element attackKnobElement = createKnob (document, tabElement, 0, 100, "Attack", 1, attackValue);
+            final Element decayKnobElement = createKnob (document, tabElement, 100, 100, "Decay", 1, decayValue);
+            final Element sustainKnobElement = createKnob (document, tabElement, 200, 100, "Sustain", 1, sustainValue);
+            final Element releaseKnobElement = createKnob (document, tabElement, 300, 100, "Release", 1, releaseValue);
+
+            createBinding (document, attackKnobElement, MOD_AMP, "ENV_ATTACK");
+            createBinding (document, decayKnobElement, MOD_AMP, "ENV_DECAY");
+            createBinding (document, sustainKnobElement, MOD_AMP, "ENV_SUSTAIN");
+            createBinding (document, releaseKnobElement, MOD_AMP, "ENV_RELEASE");
         }
     }
 
@@ -443,15 +470,40 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private static void createBinding (final Document document, final Element knobElement, final String type, final String parameter, final double translationOutputMin, final int translationOutputMax, final int position)
+    private static final Element createBinding (final Document document, final Element knobElement, final String type, final String parameter)
     {
         final Element bindingElement = XMLUtils.addElement (document, knobElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", type);
         bindingElement.setAttribute ("level", "instrument");
-        bindingElement.setAttribute ("position", Integer.toString (position));
         bindingElement.setAttribute ("parameter", parameter);
-        bindingElement.setAttribute ("translation", "linear");
-        bindingElement.setAttribute ("translationOutputMin", Double.toString (translationOutputMin));
-        bindingElement.setAttribute ("translationOutputMax", Integer.toString (translationOutputMax));
+        return bindingElement;
+    }
+
+
+    /**
+     * Add the amplitude envelope parameters to the given element.
+     *
+     * @param amplitudeEnvelope The amplitude envelope
+     * @param element Where to add the parameters
+     */
+    private static void addVolumeEnvelope (final IEnvelope amplitudeEnvelope, final Element element)
+    {
+        setEnvelopeAttribute (element, DecentSamplerTag.AMP_ENV_ATTACK, amplitudeEnvelope.getAttack (), 0, 10);
+        setEnvelopeAttribute (element, DecentSamplerTag.AMP_ENV_DECAY, amplitudeEnvelope.getDecay (), 0, 25);
+        setEnvelopeAttribute (element, DecentSamplerTag.AMP_ENV_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1);
+        setEnvelopeAttribute (element, DecentSamplerTag.AMP_ENV_RELEASE, amplitudeEnvelope.getRelease (), 0, 25);
+    }
+
+
+    private static double getEnvelopeAttribute (final double value, final double minimum, final double maximum, final double defaultValue)
+    {
+        return value < 0 ? defaultValue : normalizeValue (value, minimum, maximum);
+    }
+
+
+    private static void setEnvelopeAttribute (final Element element, final String attribute, final double value, final double minimum, final double maximum)
+    {
+        if (value >= 0)
+            XMLUtils.setDoubleAttribute (element, attribute, normalizeValue (value, minimum, maximum), 3);
     }
 }

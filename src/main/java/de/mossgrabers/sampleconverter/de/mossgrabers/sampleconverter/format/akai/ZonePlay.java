@@ -4,7 +4,7 @@
 
 package de.mossgrabers.sampleconverter.format.akai;
 
-import de.mossgrabers.sampleconverter.core.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
 
 
 /**

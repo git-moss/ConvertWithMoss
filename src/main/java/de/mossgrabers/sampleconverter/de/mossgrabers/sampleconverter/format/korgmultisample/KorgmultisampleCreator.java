@@ -6,10 +6,10 @@ package de.mossgrabers.sampleconverter.format.korgmultisample;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.ISampleMetadata;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,7 +57,6 @@ public class KorgmultisampleCreator extends AbstractCreator
 
         // Korg multisample format supports only 1 multi sample layer. Therefore create 1 output
         // file for each layer
-        int count = 1;
         final List<IVelocityLayer> layers = getNonEmptyLayers (multisampleSource.getLayers ());
         final int size = layers.size ();
         for (int i = 0; i < size; i++)
@@ -66,8 +64,6 @@ public class KorgmultisampleCreator extends AbstractCreator
             final IVelocityLayer layer = layers.get (i);
             final ISampleMetadata sampleMetadata = layer.getSampleMetadata ().get (0);
             final String layerName = size > 1 ? String.format ("%s %03d-%03d", sampleName, Integer.valueOf (sampleMetadata.getVelocityLow ()), Integer.valueOf (sampleMetadata.getVelocityHigh ())) : sampleName;
-            count++;
-
             final File multiFile = new File (subFolder, layerName + ".korgmultisample");
             if (multiFile.exists ())
             {
@@ -391,17 +387,5 @@ public class KorgmultisampleCreator extends AbstractCreator
 
             out.write (val);
         }
-    }
-
-
-    private static List<IVelocityLayer> getNonEmptyLayers (final List<IVelocityLayer> layers)
-    {
-        final List<IVelocityLayer> cleanedLayers = new ArrayList<> ();
-        for (final IVelocityLayer layer: layers)
-        {
-            if (!layer.getSampleMetadata ().isEmpty ())
-                cleanedLayers.add (layer);
-        }
-        return cleanedLayers;
     }
 }

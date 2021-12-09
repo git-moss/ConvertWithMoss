@@ -4,6 +4,8 @@
 
 package de.mossgrabers.sampleconverter.core;
 
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+
 import java.io.File;
 import java.util.List;
 

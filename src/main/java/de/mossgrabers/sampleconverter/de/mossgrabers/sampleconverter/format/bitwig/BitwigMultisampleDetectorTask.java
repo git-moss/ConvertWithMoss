@@ -4,16 +4,16 @@
 
 package de.mossgrabers.sampleconverter.format.bitwig;
 
-import de.mossgrabers.sampleconverter.core.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
-import de.mossgrabers.sampleconverter.core.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.LoopType;
-import de.mossgrabers.sampleconverter.core.PlayLogic;
-import de.mossgrabers.sampleconverter.core.SampleLoop;
-import de.mossgrabers.sampleconverter.core.VelocityLayer;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
+import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.LoopType;
+import de.mossgrabers.sampleconverter.core.model.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;

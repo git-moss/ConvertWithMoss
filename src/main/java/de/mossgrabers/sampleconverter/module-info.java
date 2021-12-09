@@ -19,6 +19,7 @@ module de.mossgrabers.sampleconverter
     exports de.mossgrabers.sampleconverter.ui.tools.control;
     exports de.mossgrabers.sampleconverter.ui.tools.panel;
     exports de.mossgrabers.sampleconverter.core;
+    exports de.mossgrabers.sampleconverter.core.model;
     exports de.mossgrabers.sampleconverter.util;
     exports de.mossgrabers.sampleconverter.format.bitwig;
     exports de.mossgrabers.sampleconverter.format.sfz;
