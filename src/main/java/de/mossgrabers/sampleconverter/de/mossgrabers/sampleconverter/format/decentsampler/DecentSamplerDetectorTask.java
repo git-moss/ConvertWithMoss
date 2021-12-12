@@ -187,15 +187,17 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         this.checkAttributes (DecentSamplerTag.DECENTSAMPLER, top.getAttributes (), DecentSamplerTag.getAttributes (DecentSamplerTag.DECENTSAMPLER));
         this.checkChildTags (DecentSamplerTag.DECENTSAMPLER, DecentSamplerTag.TOP_LEVEL_TAGS, XMLUtils.getChildElements (top));
 
-        final Element groupsNode = XMLUtils.getChildElementByName (top, DecentSamplerTag.GROUPS);
-        if (groupsNode == null)
+        final Element groupsElement = XMLUtils.getChildElementByName (top, DecentSamplerTag.GROUPS);
+        if (groupsElement == null)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE);
             return Collections.emptyList ();
         }
-        this.currentGroupsElement = groupsNode;
+        this.currentGroupsElement = groupsElement;
 
-        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (top, basePath, isLibrary ? multiSampleFile : null);
+        final double globalTuningOffset = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.GLOBAL_TUNING, 0);
+
+        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (top, basePath, isLibrary ? multiSampleFile : null, globalTuningOffset);
 
         final String name = FileUtils.getNameWithoutType (multiSampleFile);
         final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
@@ -220,9 +222,10 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param top The top XML element
      * @param basePath The base path of the samples
      * @param libraryFile If it is a library otherwise null
+     * @param globalTuningOffset The global tuning offset
      * @return All parsed layers
      */
-    private List<IVelocityLayer> parseVelocityLayers (final Element top, final String basePath, final File libraryFile)
+    private List<IVelocityLayer> parseVelocityLayers (final Element top, final String basePath, final File libraryFile, final double globalTuningOffset)
     {
         final Node [] groupNodes = XMLUtils.getChildrenByName (top, DecentSamplerTag.GROUP);
         final List<IVelocityLayer> layers = new ArrayList<> (groupNodes.length);
@@ -245,7 +248,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 if (groupTuningOffset == 0)
                     groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.TUNING, 0);
 
-                this.parseVelocityLayer (velocityLayer, groupElement, basePath, libraryFile, groupVolumeOffset, groupTuningOffset);
+                this.parseVelocityLayer (velocityLayer, groupElement, basePath, libraryFile, groupVolumeOffset, globalTuningOffset + groupTuningOffset);
                 layers.add (velocityLayer);
                 groupCounter++;
             }
@@ -267,9 +270,9 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param basePath The base path of the samples
      * @param libraryFile If it is a library otherwise null
      * @param groupVolumeOffset The volume offset
-     * @param groupTuningOffset The tuning offset
+     * @param tuningOffset The tuning offset
      */
-    private void parseVelocityLayer (final VelocityLayer velocityLayer, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double groupTuningOffset)
+    private void parseVelocityLayer (final VelocityLayer velocityLayer, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset)
     {
         for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE))
         {
@@ -299,7 +302,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             sampleMetadata.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
             sampleMetadata.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
             sampleMetadata.setGain (groupVolumeOffset + parseVolume (sampleElement, DecentSamplerTag.VOLUME));
-            sampleMetadata.setTune ((XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0) + groupTuningOffset) * 100.0);
+            sampleMetadata.setTune ((tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0)) * 100.0);
 
             final String zoneLogic = sampleElement.getAttribute (DecentSamplerTag.SEQ_MODE);
             sampleMetadata.setPlayLogic (zoneLogic != null && "round_robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);

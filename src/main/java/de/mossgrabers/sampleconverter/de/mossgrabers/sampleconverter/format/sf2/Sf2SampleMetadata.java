@@ -39,6 +39,7 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
         this.sample = sample;
         this.rightSample = sample;
         this.panorama = panorama;
+        this.sampleRate = (int) sample.getSampleRate ();
     }
 
 

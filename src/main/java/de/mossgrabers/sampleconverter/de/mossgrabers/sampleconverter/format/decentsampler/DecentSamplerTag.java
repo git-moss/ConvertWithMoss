@@ -35,12 +35,14 @@ public class DecentSamplerTag
 
     /** The groups tag. */
     public static final String                    GROUPS          = "groups";
+    /** The groups tag. */
+    public static final String                    GLOBAL_TUNING   = "globalTuning";
     /** The group tag. */
     public static final String                    GROUP           = "group";
     /** The sample tag. */
     public static final String                    SAMPLE          = "sample";
 
-    /** The group tuning tag. */
+    /** The global tuning attribute. */
     public static final String                    GROUP_TUNING    = "groupTuning";
     /** The group name tag. */
     public static final String                    GROUP_NAME      = "name";
@@ -101,7 +103,7 @@ public class DecentSamplerTag
     static
     {
         ATTRIBUTES.put (DECENTSAMPLER, Collections.emptySet ());
-        ATTRIBUTES.put (GROUPS, Set.of (AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
+        ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
         ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_TUNING, TUNING, VOLUME, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
         ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PITCH_KEY_TRACK, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, SEQ_MODE, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
     }

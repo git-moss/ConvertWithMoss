@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 
@@ -128,6 +129,8 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
                 layers.add (layer);
             }
+
+            this.printUnsupportedGenerators (generators.diffGenerators ());
 
             source.setVelocityLayers (this.combineToStereo (layers));
 
@@ -348,11 +351,13 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
         // Set the pitch
         final int overridingRootKey = generators.getUnsignedValue (Generator.OVERRIDING_ROOT_KEY).intValue ();
-        int pitch = overridingRootKey < 0 ? sample.getOriginalPitch () : overridingRootKey;
+        final int originalPitch = sample.getOriginalPitch ();
+        int pitch = overridingRootKey < 0 ? originalPitch : overridingRootKey;
         pitch += generators.getSignedValue (Generator.COARSE_TUNE).intValue ();
         sampleMetadata.setKeyRoot (pitch);
         final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
-        final double tune = Math.min (1, Math.max (-1, (sample.getPitchCorrection () + (double) fineTune) / 100));
+        final int pitchCorrection = sample.getPitchCorrection ();
+        final double tune = Math.min (1, Math.max (-1, (pitchCorrection + (double) fineTune) / 100));
         sampleMetadata.setTune (tune);
         final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
         sampleMetadata.setKeyTracking (Math.min (100, Math.max (0, scaleTuning)) / 100.0);
@@ -381,21 +386,24 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             sampleMetadata.addLoop (sampleLoop);
         }
 
+        // Gain
+
+        final int initialAttenuation = generators.getSignedValue (Generator.INITIAL_ATTENUATION).intValue ();
+        if (initialAttenuation > 0)
+            sampleMetadata.setGain (-initialAttenuation / 10.0);
+
         // Volume envelope
         final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
-
         final Integer delay = generators.getSignedValue (Generator.VOL_ENV_DELAY);
         final Integer attack = generators.getSignedValue (Generator.VOL_ENV_ATTACK);
         final Integer hold = generators.getSignedValue (Generator.VOL_ENV_HOLD);
         final Integer decay = generators.getSignedValue (Generator.VOL_ENV_DECAY);
         final Integer release = generators.getSignedValue (Generator.VOL_ENV_RELEASE);
-
         amplitudeEnvelope.setDelay (convertEnvelopeTime (delay));
         amplitudeEnvelope.setAttack (convertEnvelopeTime (attack));
         amplitudeEnvelope.setHold (convertEnvelopeTime (hold));
         amplitudeEnvelope.setDecay (convertEnvelopeTime (decay));
         amplitudeEnvelope.setRelease (convertEnvelopeTime (release));
-
         final Integer sustain = generators.getSignedValue (Generator.VOL_ENV_SUSTAIN);
         amplitudeEnvelope.setSustain (convertEnvelopeVolume (sustain));
 
@@ -419,7 +427,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         if (value == null)
             return -1;
 
-        // Attenuation is in centibel (dB * 10), so 0 is maximum volume, about 1000 is off
+        // Attenuation is in centibel (dB / 10), so 0 is maximum volume, about 1000 is off
         int v = Math.min (1000, value.intValue ());
         if (v <= 0)
             return -1;
@@ -453,5 +461,25 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         if (creationTool != null)
             sb.append ("Creation Tool: ").append (creationTool).append ('\n');
         return sb.toString ();
+    }
+
+
+    /**
+     * Formats and reports all unsupported generators.
+     *
+     * @param unsupportedGenerators The unsupported generators
+     */
+    private void printUnsupportedGenerators (final Set<String> unsupportedGenerators)
+    {
+        final StringBuilder sb = new StringBuilder ();
+
+        unsupportedGenerators.forEach (attribute -> {
+            if (!sb.isEmpty ())
+                sb.append (", ");
+            sb.append (attribute);
+        });
+
+        if (!sb.isEmpty ())
+            this.notifier.logError ("IDS_NOTIFY_UNSUPPORTED_GENERATORS", sb.toString ());
     }
 }
