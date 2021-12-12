@@ -8,7 +8,10 @@ import de.mossgrabers.sampleconverter.file.sf2.Generator;
 import de.mossgrabers.sampleconverter.util.Pair;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 
 /**
@@ -25,6 +28,18 @@ public class GeneratorHierarchy
     private final Map<Integer, Integer>         instrumentZoneGlobal = new HashMap<> ();
     private final Map<Integer, Integer>         presetZone           = new HashMap<> ();
     private final Map<Integer, Integer>         presetZoneGlobal     = new HashMap<> ();
+    private final Set<Integer>                  processedGenerators  = new HashSet<> ();
+    private final Set<Integer>                  allGenerators        = new HashSet<> ();
+
+
+    /**
+     * Constructor.
+     */
+    public GeneratorHierarchy ()
+    {
+        this.processedGenerators.add (Integer.valueOf (Generator.INSTRUMENT));
+        this.processedGenerators.add (Integer.valueOf (Generator.SAMPLE_ID));
+    }
 
 
     /**
@@ -34,6 +49,7 @@ public class GeneratorHierarchy
      */
     public void setInstrumentZoneGenerators (final Map<Integer, Integer> instrumentZone)
     {
+        this.allGenerators.addAll (instrumentZone.keySet ());
         this.instrumentZone.clear ();
         this.instrumentZone.putAll (instrumentZone);
     }
@@ -46,6 +62,7 @@ public class GeneratorHierarchy
      */
     public void setInstrumentZoneGlobalGenerators (final Map<Integer, Integer> instrumentZoneGlobal)
     {
+        this.allGenerators.addAll (instrumentZoneGlobal.keySet ());
         this.instrumentZoneGlobal.clear ();
         this.instrumentZoneGlobal.putAll (instrumentZoneGlobal);
     }
@@ -58,6 +75,7 @@ public class GeneratorHierarchy
      */
     public void setPresetZoneGenerators (final Map<Integer, Integer> presetZone)
     {
+        this.allGenerators.addAll (presetZone.keySet ());
         this.presetZone.clear ();
         this.presetZone.putAll (presetZone);
     }
@@ -70,6 +88,7 @@ public class GeneratorHierarchy
      */
     public void setPresetZoneGlobalGenerators (final Map<Integer, Integer> presetZoneGlobal)
     {
+        this.allGenerators.addAll (presetZoneGlobal.keySet ());
         this.presetZoneGlobal.clear ();
         this.presetZoneGlobal.putAll (presetZoneGlobal);
     }
@@ -84,7 +103,7 @@ public class GeneratorHierarchy
      */
     public Integer getUnsignedValue (final int generator)
     {
-        final Integer key = Integer.valueOf (generator);
+        final Integer key = this.getKey (generator);
 
         Integer value = this.instrumentZone.get (key);
         if (value == null)
@@ -116,7 +135,7 @@ public class GeneratorHierarchy
      */
     public Integer getSignedValue (final int generator)
     {
-        final Integer key = Integer.valueOf (generator);
+        final Integer key = this.getKey (generator);
 
         Integer value = this.instrumentZone.get (key);
         if (value == null)
@@ -152,7 +171,7 @@ public class GeneratorHierarchy
         if (generator != Generator.KEY_RANGE && generator != Generator.VELOCITY_RANGE)
             throw new IllegalArgumentException ();
 
-        final Integer key = Integer.valueOf (generator);
+        final Integer key = this.getKey (generator);
 
         // Get ranges on preset and hierarchy level
         Integer presetRangeValue = this.presetZone.get (key);
@@ -168,6 +187,23 @@ public class GeneratorHierarchy
         final Integer low = Integer.valueOf (Math.max (presetRange.getKey ().intValue (), instrumentRange.getKey ().intValue ()));
         final Integer high = Integer.valueOf (Math.min (presetRange.getValue ().intValue (), instrumentRange.getValue ().intValue ()));
         return new Pair<> (low, high);
+    }
+
+
+    /**
+     * Calculate the difference between the supported and present generators.
+     *
+     * @return The names of the unsupported generators which are present in the SF2 file
+     */
+    public Set<String> diffGenerators ()
+    {
+        final Set<String> unsupported = new TreeSet<> ();
+        for (final Integer generator: this.allGenerators)
+        {
+            if (!this.processedGenerators.contains (generator))
+                unsupported.add (Generator.GENERATORS[generator.intValue ()]);
+        }
+        return unsupported;
     }
 
 
@@ -195,5 +231,13 @@ public class GeneratorHierarchy
             return -i;
         }
         return v & 0x7FFF;
+    }
+
+
+    private Integer getKey (final int generator)
+    {
+        final Integer key = Integer.valueOf (generator);
+        this.processedGenerators.add (key);
+        return key;
     }
 }

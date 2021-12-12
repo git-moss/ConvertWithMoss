@@ -72,7 +72,8 @@ public class SfzCreator extends AbstractCreator
             return;
         }
 
-        final String metadata = createMetadata (multisampleSource);
+        final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
+        final String metadata = createMetadata (safeSampleFolderName, multisampleSource);
 
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
@@ -82,7 +83,7 @@ public class SfzCreator extends AbstractCreator
         }
 
         // Store all samples
-        final File sampleFolder = new File (destinationFolder, sampleName + FOLDER_POSTFIX);
+        final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
         this.storeSamples (sampleFolder, multisampleSource);
 
@@ -92,11 +93,12 @@ public class SfzCreator extends AbstractCreator
 
     /**
      * Create the text of the description file.
-     *
+     * 
+     * @param safeSampleFolderName The safe sample folder name (removed illegal characters)
      * @param multisampleSource The multi-sample
      * @return The XML structure
      */
-    private static String createMetadata (final IMultisampleSource multisampleSource)
+    private static String createMetadata (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
     {
         final StringBuilder sb = new StringBuilder (SFZ_HEADER);
 
@@ -144,7 +146,7 @@ public class SfzCreator extends AbstractCreator
             sequence = 1;
             for (final ISampleMetadata info: sampleMetadata)
             {
-                createSample (name, sb, info, sequence);
+                createSample (safeSampleFolderName, sb, info, sequence);
                 if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                     sequence++;
             }
@@ -157,17 +159,17 @@ public class SfzCreator extends AbstractCreator
     /**
      * Creates the metadata for one sample.
      *
-     * @param name The name of the multi-sample
+     * @param safeSampleFolderName The safe sample folder name
      * @param sb Where to add the XML code
      * @param info Where to get the sample info from
      * @param sequenceNumber The number in the sequence for round-robin playback
      */
-    private static void createSample (final String name, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
+    private static void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
     {
         sb.append ("\n<").append (SfzHeader.REGION).append (">\n");
         final Optional<String> filename = info.getUpdatedFilename ();
         if (filename.isPresent ())
-            sb.append (SfzOpcode.SAMPLE).append ('=').append (name).append (FOLDER_POSTFIX).append ('\\').append (filename.get ()).append (LINE_FEED);
+            sb.append (SfzOpcode.SAMPLE).append ('=').append (safeSampleFolderName).append ('\\').append (filename.get ()).append (LINE_FEED);
 
         if (info.isReversed ())
             sb.append (SfzOpcode.DIRECTION).append ("=reverse").append (LINE_FEED);
@@ -279,7 +281,7 @@ public class SfzCreator extends AbstractCreator
      */
     private static void createVolume (final StringBuilder sb, final ISampleMetadata sampleMetadata)
     {
-        final int volume = (int) Math.round (sampleMetadata.getGain ());
+        final double volume = sampleMetadata.getGain ();
         if (volume != 0)
             sb.append (SfzOpcode.VOLUME).append ('=').append (volume).append (LINE_FEED);
 

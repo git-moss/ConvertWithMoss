@@ -256,11 +256,11 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_DIRECTION, "0");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_OFFSET, "0");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_START, Integer.toString (sampleMetadata.getStart ()));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleMetadata.getStop ()));
 
         final List<SampleLoop> loops = sampleMetadata.getLoops ();
         if (loops.isEmpty ())
         {
+            XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleMetadata.getStop ()));
             XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, "0");
             return layerElement;
         }
@@ -268,6 +268,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         // Format can store only 1 loop
         final SampleLoop sampleLoop = loops.get (0);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START, Integer.toString (sampleLoop.getStart ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleLoop.getEnd ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, sampleMetadata.isReversed () ? "3" : "1");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, Double.toString (sampleLoop.getCrossfade ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_POSITION, "0.500000");
