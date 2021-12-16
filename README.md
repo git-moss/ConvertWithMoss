@@ -209,7 +209,7 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
-## 4.5 (unreleased)
+## 4.5
 
 * New: Support for amplitude envelope: Decent Sampler, MPC Keygroups, SFZ: read/write; SF2: read
 * New: Decent Sampler: Support 'tuning' and 'groupTuning' on group tags as well as 'globalTuning' on the groups tag.
