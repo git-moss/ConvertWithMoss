@@ -14,46 +14,70 @@ import java.util.Set;
  */
 public class Generator
 {
+    /** The ID of the modulation envelope to pitch generator. */
+    public static final int       MOD_ENV_TO_PITCH         = 7;
+
+    /** The ID of the initial filter cutoff generator. */
+    public static final int       INITIAL_FILTER_CUTOFF    = 8;
+    /** The ID of the initial filter resonance generator. */
+    public static final int       INITIAL_FILTER_RESONANCE = 9;
+
+    /** The ID of the modulation envelope to filter cutoff generator. */
+    public static final int       MOD_ENV_TO_FILTER_CUTOFF = 11;
+
     /** The ID of the panorama generator. */
-    public static final int       PANORAMA            = 17;
+    public static final int       PANORAMA                 = 17;
+
+    /** The ID of the modulation envelope delay generator. */
+    public static final int       MOD_ENV_DELAY            = 25;
+    /** The ID of the modulation envelope attack generator. */
+    public static final int       MOD_ENV_ATTACK           = 26;
+    /** The ID of the modulation envelope hold generator. */
+    public static final int       MOD_ENV_HOLD             = 27;
+    /** The ID of the modulation envelope decay generator. */
+    public static final int       MOD_ENV_DECAY            = 28;
+    /** The ID of the modulation envelope sustain generator. */
+    public static final int       MOD_ENV_SUSTAIN          = 29;
+    /** The ID of the modulation envelope release generator. */
+    public static final int       MOD_ENV_RELEASE          = 30;
 
     /** The ID of the volume envelope delay generator. */
-    public static final int       VOL_ENV_DELAY       = 33;
+    public static final int       VOL_ENV_DELAY            = 33;
     /** The ID of the volume envelope attack generator. */
-    public static final int       VOL_ENV_ATTACK      = 34;
+    public static final int       VOL_ENV_ATTACK           = 34;
     /** The ID of the volume envelope hold generator. */
-    public static final int       VOL_ENV_HOLD        = 35;
+    public static final int       VOL_ENV_HOLD             = 35;
     /** The ID of the volume envelope decay generator. */
-    public static final int       VOL_ENV_DECAY       = 36;
+    public static final int       VOL_ENV_DECAY            = 36;
     /** The ID of the volume envelope sustain generator. */
-    public static final int       VOL_ENV_SUSTAIN     = 37;
+    public static final int       VOL_ENV_SUSTAIN          = 37;
     /** The ID of the volume envelope release generator. */
-    public static final int       VOL_ENV_RELEASE     = 38;
+    public static final int       VOL_ENV_RELEASE          = 38;
 
     /** The ID of the instrument generator. */
-    public static final int       INSTRUMENT          = 41;
+    public static final int       INSTRUMENT               = 41;
     /** The ID of the key range generator. */
-    public static final int       KEY_RANGE           = 43;
+    public static final int       KEY_RANGE                = 43;
     /** The ID of the velocity range generator. */
-    public static final int       VELOCITY_RANGE      = 44;
+    public static final int       VELOCITY_RANGE           = 44;
     /** The ID of the initial gain attenuation generator. */
-    public static final int       INITIAL_ATTENUATION = 48;
+    public static final int       INITIAL_ATTENUATION      = 48;
     /** The ID of the coarse tune generator. */
-    public static final int       COARSE_TUNE         = 51;
+    public static final int       COARSE_TUNE              = 51;
     /** The ID of the fine tune generator. */
-    public static final int       FINE_TUNE           = 52;
+    public static final int       FINE_TUNE                = 52;
     /** The ID of the sample ID generator. */
-    public static final int       SAMPLE_ID           = 53;
+    public static final int       SAMPLE_ID                = 53;
     /** The ID of the sample modes generator. */
-    public static final int       SAMPLE_MODES        = 54;
+    public static final int       SAMPLE_MODES             = 54;
     /** The ID of the scale tuning generator. */
-    public static final int       SCALE_TUNE          = 56;
+    public static final int       SCALE_TUNE               = 56;
     /** The ID of the overriding root key generator. */
-    public static final int       OVERRIDING_ROOT_KEY = 58;
+    public static final int       OVERRIDING_ROOT_KEY      = 58;
 
     /** The generator names. */
-    public static final String [] GENERATORS          = new String [61];
-    private static final int []   DEFAULT_VALUES      = new int [61];
+    public static final String [] GENERATORS               = new String [61];
+    private static final int []   DEFAULT_VALUES           = new int [61];
     static
     {
         GENERATORS[0] = "startAddrsOffset";

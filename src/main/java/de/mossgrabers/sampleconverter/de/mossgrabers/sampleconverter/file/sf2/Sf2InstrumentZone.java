@@ -23,10 +23,11 @@ public class Sf2InstrumentZone extends AbstractZone
      * @param firstGenerator Index to the first generator of the zone in the IGEN list
      * @param numberOfGenerators The number of generators in this zone
      * @param firstModulator Index to the first modulator of the zone in the IMOD list
+     * @param numberOfModulators The number of modulators of this zone
      */
-    public Sf2InstrumentZone (final int firstGenerator, final int numberOfGenerators, final int firstModulator)
+    public Sf2InstrumentZone (final int firstGenerator, final int numberOfGenerators, final int firstModulator, final int numberOfModulators)
     {
-        super (firstGenerator, numberOfGenerators, firstModulator);
+        super (firstGenerator, numberOfGenerators, firstModulator, numberOfModulators);
     }
 
 

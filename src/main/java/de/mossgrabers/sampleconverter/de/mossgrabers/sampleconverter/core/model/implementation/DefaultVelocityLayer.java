@@ -2,7 +2,10 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.core.model;
+package de.mossgrabers.sampleconverter.core.model.implementation;
+
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +16,7 @@ import java.util.List;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class VelocityLayer implements IVelocityLayer
+public class DefaultVelocityLayer implements IVelocityLayer
 {
     private List<ISampleMetadata> samples = new ArrayList<> ();
     private String                name;
@@ -22,7 +25,7 @@ public class VelocityLayer implements IVelocityLayer
     /**
      * Constructor.
      */
-    public VelocityLayer ()
+    public DefaultVelocityLayer ()
     {
         // Intentionally empty
     }
@@ -33,7 +36,7 @@ public class VelocityLayer implements IVelocityLayer
      *
      * @param name The layers' name
      */
-    public VelocityLayer (final String name)
+    public DefaultVelocityLayer (final String name)
     {
         this.name = name;
     }
@@ -44,7 +47,7 @@ public class VelocityLayer implements IVelocityLayer
      *
      * @param samples The layers' samples
      */
-    public VelocityLayer (final List<ISampleMetadata> samples)
+    public DefaultVelocityLayer (final List<ISampleMetadata> samples)
     {
         this.samples = samples;
     }

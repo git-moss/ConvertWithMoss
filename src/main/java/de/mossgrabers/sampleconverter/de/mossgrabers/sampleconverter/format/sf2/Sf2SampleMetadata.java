@@ -4,7 +4,7 @@
 
 package de.mossgrabers.sampleconverter.format.sf2;
 
-import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.sampleconverter.file.wav.DataChunk;
 import de.mossgrabers.sampleconverter.file.wav.WaveFile;
@@ -34,7 +34,7 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
      */
     public Sf2SampleMetadata (final Sf2SampleDescriptor sample, final Integer panorama)
     {
-        super (sample.getName ());
+        super (sample.getName (), null, null, null);
 
         this.sample = sample;
         this.rightSample = sample;

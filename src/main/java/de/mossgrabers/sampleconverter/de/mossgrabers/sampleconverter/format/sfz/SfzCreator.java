@@ -8,11 +8,13 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
 import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.IFilter;
+import de.mossgrabers.sampleconverter.core.model.ISampleLoop;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.LoopType;
-import de.mossgrabers.sampleconverter.core.model.PlayLogic;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.enumeration.FilterType;
+import de.mossgrabers.sampleconverter.core.model.enumeration.LoopType;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -32,20 +34,27 @@ import java.util.Optional;
  */
 public class SfzCreator extends AbstractCreator
 {
-    private static final char                  LINE_FEED        = '\n';
-    private static final String                FOLDER_POSTFIX   = " Samples";
-    private static final String                SFZ_HEADER       = """
+    private static final char                    LINE_FEED       = '\n';
+    private static final String                  FOLDER_POSTFIX  = " Samples";
+    private static final String                  SFZ_HEADER      = """
             /////////////////////////////////////////////////////////////////////////////
             ////
             """;
-    private static final String                COMMENT_PREFIX   = "//// ";
+    private static final String                  COMMENT_PREFIX  = "//// ";
 
-    private static final Map<LoopType, String> LOOP_TYPE_MAPPER = new EnumMap<> (LoopType.class);
+    private static final Map<FilterType, String> FILTER_TYPE_MAP = new EnumMap<> (FilterType.class);
+    private static final Map<LoopType, String>   LOOP_TYPE_MAP   = new EnumMap<> (LoopType.class);
+
     static
     {
-        LOOP_TYPE_MAPPER.put (LoopType.FORWARD, "forward");
-        LOOP_TYPE_MAPPER.put (LoopType.BACKWARDS, "backward");
-        LOOP_TYPE_MAPPER.put (LoopType.ALTERNATING, "alternate");
+        FILTER_TYPE_MAP.put (FilterType.LOW_PASS, "lpf");
+        FILTER_TYPE_MAP.put (FilterType.HIGH_PASS, "hpf");
+        FILTER_TYPE_MAP.put (FilterType.BAND_PASS, "bpf");
+        FILTER_TYPE_MAP.put (FilterType.BAND_REJECTION, "brf");
+
+        LOOP_TYPE_MAP.put (LoopType.FORWARD, "forward");
+        LOOP_TYPE_MAP.put (LoopType.BACKWARDS, "backward");
+        LOOP_TYPE_MAP.put (LoopType.ALTERNATING, "alternate");
     }
 
 
@@ -98,7 +107,7 @@ public class SfzCreator extends AbstractCreator
      * @param multisampleSource The multi-sample
      * @return The XML structure
      */
-    private static String createMetadata (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
+    private String createMetadata (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
     {
         final StringBuilder sb = new StringBuilder (SFZ_HEADER);
 
@@ -120,7 +129,7 @@ public class SfzCreator extends AbstractCreator
 
         sb.append ('<').append (SfzHeader.GLOBAL).append (">").append (LINE_FEED);
         if (name != null && !name.isBlank ())
-            sb.append (SfzOpcode.GLOBAL_LABEL).append ('=').append (name).append (LINE_FEED);
+            addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
 
         for (final IVelocityLayer layer: multisampleSource.getLayers ())
         {
@@ -139,9 +148,9 @@ public class SfzCreator extends AbstractCreator
             sb.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
             final String layerName = layer.getName ();
             if (layerName != null && !layerName.isBlank ())
-                sb.append (SfzOpcode.GROUP_LABEL).append ('=').append (layerName).append (LINE_FEED);
+                addAttribute (sb, SfzOpcode.GROUP_LABEL, layerName, true);
             if (sequence > 0)
-                sb.append (SfzOpcode.SEQ_LENGTH).append ('=').append (sequence).append (LINE_FEED);
+                addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, sequence, true);
 
             sequence = 1;
             for (final ISampleMetadata info: sampleMetadata)
@@ -164,17 +173,17 @@ public class SfzCreator extends AbstractCreator
      * @param info Where to get the sample info from
      * @param sequenceNumber The number in the sequence for round-robin playback
      */
-    private static void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
+    private void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
     {
         sb.append ("\n<").append (SfzHeader.REGION).append (">\n");
         final Optional<String> filename = info.getUpdatedFilename ();
         if (filename.isPresent ())
-            sb.append (SfzOpcode.SAMPLE).append ('=').append (safeSampleFolderName).append ('\\').append (filename.get ()).append (LINE_FEED);
+            addAttribute (sb, SfzOpcode.SAMPLE, formatFileName (safeSampleFolderName, filename.get ()), true);
 
         if (info.isReversed ())
-            sb.append (SfzOpcode.DIRECTION).append ("=reverse").append (LINE_FEED);
+            addAttribute (sb, SfzOpcode.DIRECTION, "reverse", true);
         if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
-            sb.append (SfzOpcode.SEQ_POSITION).append ('=').append (sequenceNumber).append (LINE_FEED);
+            addIntegerAttribute (sb, SfzOpcode.SEQ_POSITION, sequenceNumber, true);
 
         ////////////////////////////////////////////////////////////
         // Key range
@@ -185,20 +194,27 @@ public class SfzCreator extends AbstractCreator
         if (keyRoot == keyLow && keyLow == keyHigh)
         {
             // Pitch and range are the same, use single key attribute
-            sb.append (SfzOpcode.KEY).append ('=').append (keyRoot).append (LINE_FEED);
+            addIntegerAttribute (sb, SfzOpcode.KEY, keyRoot, true);
         }
         else
         {
-            sb.append (SfzOpcode.PITCH_KEY_CENTER).append ('=').append (keyRoot).append (LINE_FEED);
-            sb.append (SfzOpcode.LO_KEY).append ('=').append (check (keyLow, 0)).append (' ').append (SfzOpcode.HI_KEY).append ('=').append (check (keyHigh, 127)).append (LINE_FEED);
+            addIntegerAttribute (sb, SfzOpcode.PITCH_KEY_CENTER, keyRoot, true);
+            addIntegerAttribute (sb, SfzOpcode.LO_KEY, check (keyLow, 0), false);
+            addIntegerAttribute (sb, SfzOpcode.HI_KEY, check (keyHigh, 127), true);
         }
 
         final int crossfadeLow = info.getNoteCrossfadeLow ();
         if (crossfadeLow > 0)
-            sb.append (SfzOpcode.XF_IN_LO_KEY).append ('=').append (Math.max (0, keyLow - crossfadeLow)).append (' ').append (SfzOpcode.XF_IN_HI_KEY).append ('=').append (keyLow).append (LINE_FEED);
+        {
+            addIntegerAttribute (sb, SfzOpcode.XF_IN_LO_KEY, Math.max (0, keyLow - crossfadeLow), false);
+            addIntegerAttribute (sb, SfzOpcode.XF_IN_HI_KEY, keyLow, true);
+        }
         final int crossfadeHigh = info.getNoteCrossfadeHigh ();
         if (crossfadeHigh > 0)
-            sb.append (SfzOpcode.XF_OUT_LO_KEY).append ('=').append (keyHigh).append (' ').append (SfzOpcode.XF_OUT_HI_KEY).append ('=').append (Math.min (127, keyHigh + crossfadeHigh)).append (LINE_FEED);
+        {
+            addIntegerAttribute (sb, SfzOpcode.XF_OUT_LO_KEY, keyHigh, false);
+            addIntegerAttribute (sb, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
+        }
 
         ////////////////////////////////////////////////////////////
         // Velocity
@@ -206,70 +222,129 @@ public class SfzCreator extends AbstractCreator
         final int velocityLow = info.getVelocityLow ();
         final int velocityHigh = info.getVelocityHigh ();
         if (velocityLow > 1)
-            sb.append (SfzOpcode.LO_VEL).append ('=').append (velocityLow).append (velocityHigh == 127 ? LINE_FEED : ' ');
+            addIntegerAttribute (sb, SfzOpcode.LO_VEL, velocityLow, velocityHigh == 127);
         if (velocityHigh > 0 && velocityHigh < 127)
-            sb.append (SfzOpcode.HI_VEL).append ('=').append (velocityHigh).append (LINE_FEED);
+            addIntegerAttribute (sb, SfzOpcode.HI_VEL, velocityHigh, true);
 
         final int crossfadeVelocityLow = info.getVelocityCrossfadeLow ();
         if (crossfadeVelocityLow > 0)
-            sb.append (SfzOpcode.XF_IN_LO_VEL).append ('=').append (Math.max (0, velocityLow - crossfadeVelocityLow)).append (" ").append (SfzOpcode.XF_IN_HI_VEL).append ('=').append (velocityLow).append (LINE_FEED);
+        {
+            addIntegerAttribute (sb, SfzOpcode.XF_IN_LO_VEL, Math.max (0, velocityLow - crossfadeVelocityLow), false);
+            addIntegerAttribute (sb, SfzOpcode.XF_IN_HI_VEL, velocityLow, true);
+        }
+
         final int crossfadeVelocityHigh = info.getVelocityCrossfadeHigh ();
         if (crossfadeVelocityHigh > 0)
-            sb.append (SfzOpcode.XF_OUT_LO_VEL).append ('=').append (velocityHigh).append (" ").append (SfzOpcode.XF_OUT_HI_VEL).append ('=').append (Math.min (127, velocityHigh + crossfadeVelocityHigh)).append (LINE_FEED);
+        {
+            addIntegerAttribute (sb, SfzOpcode.XF_OUT_LO_VEL, velocityHigh, false);
+            addIntegerAttribute (sb, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
+        }
 
         ////////////////////////////////////////////////////////////
         // Start, end, tune, volume
 
         final int start = info.getStart ();
         if (start >= 0)
-            sb.append (SfzOpcode.OFFSET).append ('=').append (start).append (' ');
+
+            addIntegerAttribute (sb, SfzOpcode.OFFSET, start, false);
         final int end = info.getStop ();
         if (end >= 0)
-            sb.append (SfzOpcode.END).append ('=').append (end).append (LINE_FEED);
+            addIntegerAttribute (sb, SfzOpcode.END, end, true);
 
         final double tune = info.getTune ();
         if (tune != 0)
-            sb.append (SfzOpcode.TUNE).append ('=').append (Math.round (tune * 100)).append (LINE_FEED);
+            addIntegerAttribute (sb, SfzOpcode.TUNE, (int) Math.round (tune * 100), true);
 
         final int keyTracking = (int) Math.round (info.getKeyTracking () * 100.0);
         if (keyTracking != 100)
-            sb.append (SfzOpcode.PITCH_KEYTRACK).append ('=').append (keyTracking).append (LINE_FEED);
+            addIntegerAttribute (sb, SfzOpcode.PITCH_KEYTRACK, keyTracking, true);
 
         createVolume (sb, info);
 
         ////////////////////////////////////////////////////////////
+        // Pitch Bend / Envelope
+
+        final int bendUp = info.getBendUp ();
+        if (bendUp != 0)
+            addIntegerAttribute (sb, SfzOpcode.BEND_UP, bendUp, true);
+        final int bendDown = info.getBendDown ();
+        if (bendDown != 0)
+            addIntegerAttribute (sb, SfzOpcode.BEND_DOWN, bendDown, true);
+
+        final StringBuilder envelopeStr = new StringBuilder ();
+
+        final int envelopeDepth = info.getPitchEnvelopeDepth ();
+        if (envelopeDepth > 0)
+        {
+            sb.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append (info.getPitchEnvelopeDepth ()).append (LINE_FEED);
+
+            final IEnvelope pitchEnvelope = info.getPitchEnvelope ();
+
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DELAY, pitchEnvelope.getDelay ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK, pitchEnvelope.getAttack ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_HOLD, pitchEnvelope.getHold ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY, pitchEnvelope.getDecay ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE, pitchEnvelope.getRelease ());
+
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_START, pitchEnvelope.getStart () * 100.0);
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_SUSTAIN, pitchEnvelope.getSustain () * 100.0);
+
+            if (envelopeStr.length () > 0)
+                sb.append (envelopeStr).append (LINE_FEED);
+        }
+
+        ////////////////////////////////////////////////////////////
         // Sample Loop
 
-        final List<SampleLoop> loops = info.getLoops ();
+        createLoops (sb, info);
+
+        ////////////////////////////////////////////////////////////
+        // Filter
+
+        createFilter (sb, info);
+    }
+
+
+    /**
+     * Create the loop info.
+     *
+     * @param sb Where to add the XML code
+     * @param info Where to get the sample info from
+     */
+    private static void createLoops (final StringBuilder sb, final ISampleMetadata info)
+    {
+        final List<ISampleLoop> loops = info.getLoops ();
         if (loops.isEmpty ())
-            sb.append (SfzOpcode.LOOP_MODE).append ("=no_loop ");
-        else
         {
-            final SampleLoop sampleLoop = loops.get (0);
-            // SFZ currently only supports forward looping
-            sb.append (SfzOpcode.LOOP_MODE).append ("=loop_continuous ");
-            final String type = LOOP_TYPE_MAPPER.get (sampleLoop.getType ());
-            // No need to write the default value
-            if (!"forward".equals (type))
-                sb.append (SfzOpcode.LOOP_TYPE).append ('=').append (type).append (' ');
-            sb.append (SfzOpcode.LOOP_START).append ('=').append (sampleLoop.getStart ()).append (' ').append (SfzOpcode.LOOP_END).append ('=').append (sampleLoop.getEnd ());
-
-            // Calculate the crossfade in seconds from a percentage of the loop length
-            final double crossfade = sampleLoop.getCrossfade ();
-            if (crossfade > 0)
-            {
-                final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
-                if (loopLength > 0)
-                {
-                    final double loopLengthInSeconds = loopLength / (double) info.getSampleRate ();
-
-                    final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
-                    sb.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
-                }
-            }
-
-            sb.append (LINE_FEED);
+            addAttribute (sb, SfzOpcode.LOOP_MODE, "no_loop", false);
+            return;
         }
+
+        final ISampleLoop sampleLoop = loops.get (0);
+        // SFZ currently only supports forward looping
+        addAttribute (sb, SfzOpcode.LOOP_MODE, "loop_continuous", false);
+        final String type = LOOP_TYPE_MAP.get (sampleLoop.getType ());
+        // No need to write the default value
+        if (!"forward".equals (type))
+            addAttribute (sb, SfzOpcode.LOOP_TYPE, type, false);
+        addIntegerAttribute (sb, SfzOpcode.LOOP_START, sampleLoop.getStart (), false);
+        sb.append (SfzOpcode.LOOP_END).append ('=').append (sampleLoop.getEnd ());
+
+        // Calculate the crossfade in seconds from a percentage of the loop length
+        final double crossfade = sampleLoop.getCrossfade ();
+        if (crossfade > 0)
+        {
+            final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
+            if (loopLength > 0)
+            {
+                final double loopLengthInSeconds = loopLength / (double) info.getSampleRate ();
+
+                final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
+                sb.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
+            }
+        }
+
+        sb.append (LINE_FEED);
     }
 
 
@@ -283,7 +358,7 @@ public class SfzCreator extends AbstractCreator
     {
         final double volume = sampleMetadata.getGain ();
         if (volume != 0)
-            sb.append (SfzOpcode.VOLUME).append ('=').append (volume).append (LINE_FEED);
+            addAttribute (sb, SfzOpcode.VOLUME, formatDouble (volume, 2), true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
@@ -300,6 +375,60 @@ public class SfzCreator extends AbstractCreator
 
         if (envelopeStr.length () > 0)
             sb.append (envelopeStr).append (LINE_FEED);
+    }
+
+
+    /**
+     * Create the filter info.
+     *
+     * @param sb Where to add the XML code
+     * @param info Where to get the sample info from
+     */
+    private static void createFilter (final StringBuilder sb, final ISampleMetadata info)
+    {
+        final Optional<IFilter> optFilter = info.getFilter ();
+        if (optFilter.isEmpty ())
+            return;
+
+        final IFilter filter = optFilter.get ();
+        final String type = FILTER_TYPE_MAP.get (filter.getType ());
+        addAttribute (sb, SfzOpcode.FILTER_TYPE, type + "_" + (int) clamp (filter.getPoles (), 1, 4) + "p", false);
+        addAttribute (sb, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
+        addAttribute (sb, SfzOpcode.RESONANCE, formatDouble (Math.min (40, filter.getResonance ()), 2), true);
+
+        final StringBuilder envelopeStr = new StringBuilder ();
+
+        final int envelopeDepth = filter.getEnvelopeDepth ();
+        if (envelopeDepth > 0)
+        {
+            sb.append (SfzOpcode.FILEG_DEPTH).append ('=').append (filter.getEnvelopeDepth ()).append (LINE_FEED);
+
+            final IEnvelope filterEnvelope = filter.getEnvelope ();
+
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DELAY, filterEnvelope.getDelay ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK, filterEnvelope.getAttack ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_HOLD, filterEnvelope.getHold ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY, filterEnvelope.getDecay ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE, filterEnvelope.getRelease ());
+
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_START, filterEnvelope.getStart () * 100.0);
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_SUSTAIN, filterEnvelope.getSustain () * 100.0);
+
+            if (envelopeStr.length () > 0)
+                sb.append (envelopeStr).append (LINE_FEED);
+        }
+    }
+
+
+    private static void addAttribute (final StringBuilder sb, final String opcode, final String value, final boolean addLineFeed)
+    {
+        sb.append (opcode).append ('=').append (value).append (addLineFeed ? LINE_FEED : ' ');
+    }
+
+
+    private static void addIntegerAttribute (final StringBuilder sb, final String opcode, final int value, final boolean addLineFeed)
+    {
+        addAttribute (sb, opcode, Integer.toString (value), addLineFeed);
     }
 
 

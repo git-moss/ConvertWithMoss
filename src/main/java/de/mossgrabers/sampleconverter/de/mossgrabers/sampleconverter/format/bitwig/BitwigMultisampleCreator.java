@@ -7,11 +7,11 @@ package de.mossgrabers.sampleconverter.format.bitwig;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
+import de.mossgrabers.sampleconverter.core.model.ISampleLoop;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.LoopType;
-import de.mossgrabers.sampleconverter.core.model.PlayLogic;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.enumeration.LoopType;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -192,10 +192,10 @@ public class BitwigMultisampleCreator extends AbstractCreator
         /////////////////////////////////////////////////////
         // Loops
 
-        final List<SampleLoop> loops = info.getLoops ();
+        final List<ISampleLoop> loops = info.getLoops ();
         if (!loops.isEmpty ())
         {
-            final SampleLoop sampleLoop = loops.get (0);
+            final ISampleLoop sampleLoop = loops.get (0);
             final String type = sampleLoop.getType () == LoopType.ALTERNATING ? "ping-pong" : "loop";
 
             final Element loopElement = XMLUtils.addElement (document, sampleElement, "loop");

@@ -4,9 +4,9 @@
 
 package de.mossgrabers.sampleconverter.format.wav;
 
-import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
-import de.mossgrabers.sampleconverter.core.model.LoopType;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.enumeration.LoopType;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.CompressionNotSupportedException;
 import de.mossgrabers.sampleconverter.exception.ParseException;
@@ -17,6 +17,7 @@ import de.mossgrabers.sampleconverter.file.wav.WaveFile;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -61,18 +62,19 @@ public class WavSampleMetadata extends DefaultSampleMetadata
      * Constructor for a sample stored in a ZIP file.
      *
      * @param zipFile The ZIP file which contains the WAV files
-     * @param filename The name of the samples' file in the ZIP file
+     * @param zipEntry The relative path in the ZIP where the file is stored
      * @throws IOException Could not read the file
      */
-    public WavSampleMetadata (final File zipFile, final String filename) throws IOException
+    public WavSampleMetadata (final File zipFile, final File zipEntry) throws IOException
     {
-        super (zipFile, filename);
+        super (zipFile, zipEntry);
 
         try (final ZipFile zf = new ZipFile (this.zipFile))
         {
-            final ZipEntry entry = zf.getEntry (this.filename);
+            final String path = this.zipEntry.getPath ().replace ('\\', '/');
+            final ZipEntry entry = zf.getEntry (path);
             if (entry == null)
-                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", this.filename));
+                throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
             try (final InputStream in = zf.getInputStream (entry))
             {
                 this.waveFile = new WaveFile (in, true);
@@ -121,7 +123,7 @@ public class WavSampleMetadata extends DefaultSampleMetadata
         this.tune = Math.max (0, Math.min (1, midiPitchFraction * 0.5 / 0x80000000));
 
         sampleChunk.getLoops ().forEach (sampleLoop -> {
-            final SampleLoop loop = new SampleLoop ();
+            final DefaultSampleLoop loop = new DefaultSampleLoop ();
             switch (sampleLoop.getType ())
             {
                 default:

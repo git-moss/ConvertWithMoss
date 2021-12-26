@@ -6,7 +6,7 @@ package de.mossgrabers.sampleconverter.format.wav;
 
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.sampleconverter.exception.CombinationNotPossibleException;
 import de.mossgrabers.sampleconverter.exception.MultisampleException;
 import de.mossgrabers.sampleconverter.exception.NoteNotDetectedException;
@@ -245,7 +245,7 @@ public class WavKeyMapping
         // Reorder descending
         layers.forEach (layer -> {
 
-            final IVelocityLayer velocityLayer = new VelocityLayer (new ArrayList<> (layer));
+            final IVelocityLayer velocityLayer = new DefaultVelocityLayer (new ArrayList<> (layer));
             if (isAscending)
                 reorderedSampleMetadata.add (velocityLayer);
             else

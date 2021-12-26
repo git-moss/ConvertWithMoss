@@ -8,11 +8,11 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
-import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
-import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultVelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.sampleconverter.exception.FormatException;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 
@@ -108,7 +108,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         final MultisampleSource multisampleSource = new MultisampleSource (file, parts, name, this.subtractPaths (this.sourceFolder, file));
         final List<IVelocityLayer> velocityLayers = new ArrayList<> ();
         // There is only one layer (no velocity zones)
-        final VelocityLayer velocityLayer = new VelocityLayer ("Layer");
+        final DefaultVelocityLayer velocityLayer = new DefaultVelocityLayer ("Layer");
         velocityLayers.add (velocityLayer);
 
         int id;
@@ -291,7 +291,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
         if (!oneShot)
         {
-            final SampleLoop loop = new SampleLoop ();
+            final DefaultSampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
             loop.setEnd (sample.getStop ());
             sample.addLoop (loop);

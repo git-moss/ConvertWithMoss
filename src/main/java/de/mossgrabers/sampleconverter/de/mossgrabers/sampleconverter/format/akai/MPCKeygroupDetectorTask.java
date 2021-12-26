@@ -8,13 +8,14 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
-import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.IFilter;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.PlayLogic;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
-import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.TagDetector;
@@ -165,8 +166,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (instrumentsElement == null)
             return Collections.emptyList ();
 
-        final String numKeygroupsStr = XMLUtils.getChildElementContent (programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS);
-        final int numKeygroups = numKeygroupsStr == null || numKeygroupsStr.isBlank () ? 128 : Integer.parseInt (numKeygroupsStr);
+        final int numKeygroups = XMLUtils.getChildElementIntegerContent (programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, 128);
 
         final Element [] instrumentElements = XMLUtils.getChildElementsByName (instrumentsElement, MPCKeygroupTag.INSTRUMENTS_INSTRUMENT);
         final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (file.getParentFile (), numKeygroups, instrumentElements, isDrum);
@@ -175,6 +175,21 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             this.applyPadNoteMap (programElement, velocityLayers);
 
         multisampleSource.setVelocityLayers (velocityLayers);
+
+        final double pitchBendRange = XMLUtils.getChildElementDoubleContent (programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, 0);
+        if (pitchBendRange != 0)
+        {
+            final int pitchBend = (int) Math.round (pitchBendRange * 1200.0);
+            for (final IVelocityLayer layer: velocityLayers)
+            {
+                for (final ISampleMetadata sample: layer.getSampleMetadata ())
+                {
+                    sample.setBendUp (pitchBend);
+                    sample.setBendDown (-pitchBend);
+                }
+            }
+        }
+
         return Collections.singletonList (multisampleSource);
     }
 
@@ -203,16 +218,12 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             int keyHigh = instrumentNumber;
             if (!isDrum)
             {
-                final String lowNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE);
-                final String highNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE);
-                keyLow = lowNoteStr == null ? 0 : Integer.parseInt (lowNoteStr);
-                keyHigh = highNoteStr == null ? 0 : Integer.parseInt (highNoteStr);
+                keyLow = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, 0);
+                keyHigh = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, 0);
             }
 
-            final String velStartStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VEL_START);
-            final String velEndStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VEL_END);
-            final int velStart = velStartStr == null ? 0 : Integer.parseInt (velStartStr);
-            final int velEnd = velEndStr == null ? 0 : Integer.parseInt (velEndStr);
+            final int velStart = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VEL_START, 0);
+            final int velEnd = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VEL_END, 0);
 
             PlayLogic zonePlay;
             try
@@ -232,11 +243,19 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             final String oneShotStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_ONE_SHOT);
             final boolean isOneShot = oneShotStr == null || MPCKeygroupTag.TRUE.equalsIgnoreCase (oneShotStr);
 
-            final double attack = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, 0, 30, 0);
-            final double hold = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, 0, 30, 0);
-            final double decay = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, 0, 30, 0);
-            final double sustain = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, 0, 1, 1);
-            final double release = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, 0, 30, 0.63);
+            final IFilter filter = parseFilter (instrumentElement);
+
+            final double volumeAttack = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, 0, 30, 0);
+            final double volumeHold = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, 0, 30, 0);
+            final double volumeDecay = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, 0, 30, 0);
+            final double volumeSustain = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, 0, 1, 1);
+            final double volumeRelease = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, 0, 30, 0.63);
+
+            final double pitchAttack = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, 0, 30, 0);
+            final double pitchHold = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, 0, 30, 0);
+            final double pitchDecay = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, 0, 30, 0);
+            final double pitchSustain = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, 0, 1, 1);
+            final double pitchRelease = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, 0, 30, 0.63);
 
             final Element layersElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LAYERS);
             if (layersElement != null)
@@ -250,15 +269,31 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                     samples.add (sampleMetadata);
 
                     final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
-                    amplitudeEnvelope.setAttack (attack);
-                    amplitudeEnvelope.setHold (hold);
-                    amplitudeEnvelope.setDecay (decay);
-                    amplitudeEnvelope.setSustain (sustain);
-                    amplitudeEnvelope.setRelease (release);
+                    amplitudeEnvelope.setAttack (volumeAttack);
+                    amplitudeEnvelope.setHold (volumeHold);
+                    amplitudeEnvelope.setDecay (volumeDecay);
+                    amplitudeEnvelope.setSustain (volumeSustain);
+                    amplitudeEnvelope.setRelease (volumeRelease);
+
+                    final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
+                    if (pitchEnvAmount != 0.5)
+                    {
+                        final int cents = (int) Math.min (3600, Math.max (-3600, Math.round ((pitchEnvAmount - 0.5) * 2.0 * 3600.0)));
+                        sampleMetadata.setPitchEnvelopeDepth (cents);
+
+                        final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
+                        pitchEnvelope.setAttack (pitchAttack);
+                        pitchEnvelope.setHold (pitchHold);
+                        pitchEnvelope.setDecay (pitchDecay);
+                        pitchEnvelope.setSustain (pitchSustain);
+                        pitchEnvelope.setRelease (pitchRelease);
+                    }
 
                     // No loop if it is a one-shot
                     if (!isOneShot)
                         parseLoop (layerElement, sampleMetadata);
+
+                    sampleMetadata.setFilter (filter);
 
                     this.readMissingData (isDrum, isOneShot, sampleMetadata);
                 }
@@ -270,9 +305,42 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
 
     /**
+     * Parse the filter settings from the instrument element.
+     *
+     * @param instrumentElement The instrument element
+     * @return The filter or null
+     */
+    private static IFilter parseFilter (final Element instrumentElement)
+    {
+        final int filterID = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_TYPE, -1);
+        if (filterID <= 0)
+            return null;
+        final double cutoff = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, 1);
+        final double resonance = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RESONANCE, 0);
+        final MPCFilter filter = new MPCFilter (filterID, cutoff, resonance);
+        if (filter.getType () == null)
+            return null;
+
+        final double filterAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, 0);
+        if (filterAmount > 0)
+        {
+            filter.setEnvelopeDepth ((int) Math.round (filterAmount * IFilter.MAX_ENVELOPE_DEPTH));
+
+            final IEnvelope filterEnvelope = filter.getEnvelope ();
+            filterEnvelope.setAttack (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, 0, 30, 0));
+            filterEnvelope.setHold (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, 0, 30, 0));
+            filterEnvelope.setDecay (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, 0, 30, 0));
+            filterEnvelope.setSustain (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, 0, 1, 1));
+            filterEnvelope.setRelease (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, 0, 30, 0.63));
+        }
+        return filter;
+    }
+
+
+    /**
      * Parse the loop settings from the layer element.
      *
-     * @param layerElement THe layer element
+     * @param layerElement The layer element
      * @param basePath The path where the XPM file is located, this is the base path for samples
      * @param keyLow The lower key of the sample
      * @param keyHigh The upper key of the sample
@@ -322,13 +390,8 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             sampleMetadata.setTune (Double.parseDouble (pitchStr));
         else
         {
-            final String tuneCoarseStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_COARSE_TUNE);
-            double pitch = 0;
-            if (tuneCoarseStr != null && !tuneCoarseStr.isBlank ())
-                pitch = Double.parseDouble (tuneCoarseStr);
-            final String tuneFineStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_FINE_TUNE);
-            if (tuneFineStr != null && !tuneFineStr.isBlank ())
-                pitch += Double.parseDouble (tuneFineStr);
+            double pitch = XMLUtils.getChildElementDoubleContent (layerElement, MPCKeygroupTag.LAYER_COARSE_TUNE, 0);
+            pitch += XMLUtils.getChildElementDoubleContent (layerElement, MPCKeygroupTag.LAYER_FINE_TUNE, 0);
             sampleMetadata.setTune (pitch);
         }
 
@@ -389,11 +452,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
     private static void parseLoop (final Element layerElement, final DefaultSampleMetadata sampleMetadata)
     {
         // There might be no loop, forward or reverse
-        final String sliceLoopStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP);
-        if (sliceLoopStr == null)
-            return;
-
-        final int sliceLoop = Integer.parseInt (sliceLoopStr);
+        final int sliceLoop = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, -1);
         if (sliceLoop <= 0)
             return;
 
@@ -401,15 +460,12 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (sliceLoop == 3)
             sampleMetadata.setReversed (true);
 
-        final SampleLoop sampleLoop = new SampleLoop ();
-        final String sliceLoopStartStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START);
-        if (sliceLoopStartStr != null && !sliceLoopStartStr.isBlank ())
-            sampleLoop.setStart (Integer.parseInt (sliceLoopStartStr));
+        final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
+        final int sliceLoopStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START, -1);
+        if (sliceLoopStart >= 0)
+            sampleLoop.setStart (sliceLoopStart);
         sampleLoop.setEnd (sampleMetadata.getStop ());
-
-        final String sliceLoopCrossFadeLengthStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE);
-        if (sliceLoopCrossFadeLengthStr != null && !sliceLoopCrossFadeLengthStr.isBlank ())
-            sampleLoop.setCrossfade (Double.parseDouble (sliceLoopCrossFadeLengthStr));
+        sampleLoop.setCrossfade (XMLUtils.getChildElementDoubleContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, 0));
 
         sampleMetadata.getLoops ().add (sampleLoop);
     }
@@ -430,7 +486,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         for (final DefaultSampleMetadata sampleMetadata: samples)
         {
             final String id = sampleMetadata.getVelocityLow () + "-" + sampleMetadata.getVelocityHigh ();
-            final IVelocityLayer velocityLayer = layerMap.computeIfAbsent (id, key -> new VelocityLayer ());
+            final IVelocityLayer velocityLayer = layerMap.computeIfAbsent (id, key -> new DefaultVelocityLayer ());
 
             if (velocityLayer.getName () == null)
             {
@@ -467,9 +523,9 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                 return;
             }
 
-            final String noteStr = XMLUtils.getChildElementContent (padNoteElement, MPCKeygroupTag.PAD_NOTE_NOTE);
-            if (noteStr != null && !noteStr.isBlank ())
-                padNoteMap.put (Integer.valueOf (padNumber), Integer.valueOf (noteStr));
+            final int note = XMLUtils.getChildElementIntegerContent (padNoteElement, MPCKeygroupTag.PAD_NOTE_NOTE, -1);
+            if (note >= 0)
+                padNoteMap.put (Integer.valueOf (padNumber), Integer.valueOf (note));
         }
 
         for (final IVelocityLayer layer: velocityLayers)
@@ -509,10 +565,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
     private static double getEnvelopeAttribute (final Element element, final String attribute, final double minimum, final double maximum, final double defaultValue)
     {
-        final String content = XMLUtils.getChildElementContent (element, attribute);
-        if (content.isBlank ())
-            return defaultValue;
-        final double value = Double.parseDouble (content);
+        final double value = XMLUtils.getChildElementDoubleContent (element, attribute, defaultValue);
         return value < 0 ? defaultValue : denormalizeValue (value, minimum, maximum);
     }
 }

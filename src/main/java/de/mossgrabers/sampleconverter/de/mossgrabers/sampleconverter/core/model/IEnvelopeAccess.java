@@ -17,4 +17,28 @@ public interface IEnvelopeAccess
      * @return The envelope
      */
     IEnvelope getAmplitudeEnvelope ();
+
+
+    /**
+     * Get the pitch envelope.
+     *
+     * @return The envelope
+     */
+    IEnvelope getPitchEnvelope ();
+
+
+    /**
+     * Set the modulation depth of the pitch envelope.
+     *
+     * @param depth The depth in the range of [-12000..12000] cents
+     */
+    void setPitchEnvelopeDepth (int depth);
+
+
+    /**
+     * Get the modulation depth of the pitch envelope.
+     *
+     * @return The depth in the range of [-12000..12000] cents
+     */
+    int getPitchEnvelopeDepth ();
 }

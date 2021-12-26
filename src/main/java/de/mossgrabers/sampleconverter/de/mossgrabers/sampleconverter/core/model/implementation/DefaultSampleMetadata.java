@@ -2,9 +2,14 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.core.model;
+package de.mossgrabers.sampleconverter.core.model.implementation;
 
+import de.mossgrabers.sampleconverter.core.model.IFilter;
+import de.mossgrabers.sampleconverter.core.model.ISampleLoop;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
 import de.mossgrabers.sampleconverter.format.wav.WavSampleMetadata;
+import de.mossgrabers.sampleconverter.ui.tools.Functions;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,47 +29,51 @@ import java.util.zip.ZipFile;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMetadata
+public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMetadata
 {
-    protected final File       sampleFile;
-    protected final File       zipFile;
+    protected final String      filename;
+    protected final File        sampleFile;
+    protected final File        zipFile;
+    protected final File        zipEntry;
 
-    protected final String     filename;
-    protected boolean          isMonoFile              = false;
-    protected int              sampleRate              = 44100;
+    protected boolean           isMonoFile              = false;
+    protected int               sampleRate              = 44100;
 
-    protected Optional<String> combinedFilename        = Optional.empty ();
-    protected Optional<String> filenameWithoutLayer    = Optional.empty ();
+    protected Optional<String>  combinedFilename        = Optional.empty ();
+    protected Optional<String>  filenameWithoutLayer    = Optional.empty ();
 
-    protected PlayLogic        playLogic               = PlayLogic.ALWAYS;
-    protected int              start                   = -1;
-    protected int              stop                    = -1;
-    protected int              keyRoot                 = -1;
-    protected int              keyLow                  = 0;
-    protected int              keyHigh                 = 127;
-    protected int              crossfadeNotesLow       = 0;
-    protected int              crossfadeNotesHigh      = 0;
-    protected int              velocityLow             = 1;
-    protected int              velocityHigh            = 127;
-    protected int              crossfadeVelocitiesLow  = 0;
-    protected int              crossfadeVelocitiesHigh = 0;
+    protected PlayLogic         playLogic               = PlayLogic.ALWAYS;
+    protected int               start                   = -1;
+    protected int               stop                    = -1;
+    protected int               keyRoot                 = -1;
+    protected int               keyLow                  = 0;
+    protected int               keyHigh                 = 127;
+    protected int               crossfadeNotesLow       = 0;
+    protected int               crossfadeNotesHigh      = 0;
+    protected int               velocityLow             = 1;
+    protected int               velocityHigh            = 127;
+    protected int               crossfadeVelocitiesLow  = 0;
+    protected int               crossfadeVelocitiesHigh = 0;
 
-    protected double           gain                    = 0;
-    protected double           tune                    = 0;
-    protected double           keyTracking             = 1.0;
-    protected boolean          isReversed              = false;
+    protected double            gain                    = 0;
+    protected double            tune                    = 0;
+    protected double            keyTracking             = 1.0;
+    protected int               bendUp                  = 0;
+    protected int               bendDown                = 0;
+    protected boolean           isReversed              = false;
+    protected IFilter           filter                  = null;
 
-    protected List<SampleLoop> loops                   = new ArrayList<> (1);
+    protected List<ISampleLoop> loops                   = new ArrayList<> (1);
 
 
     /**
-     * Constructor.
+     * Constructor for a sample stored in the file system.
      *
      * @param sampleFile The file where the sample is stored
      */
     public DefaultSampleMetadata (final File sampleFile)
     {
-        this (sampleFile.getName (), sampleFile, null);
+        this (sampleFile.getName (), sampleFile, null, null);
     }
 
 
@@ -72,37 +81,28 @@ public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMeta
      * Constructor for a sample stored in a ZIP file.
      *
      * @param zipFile The ZIP file which contains the WAV files
-     * @param filename The name of the samples' file in the ZIP file
+     * @param zipEntry The relative path in the ZIP where the file is stored
      */
-    public DefaultSampleMetadata (final File zipFile, final String filename)
+    public DefaultSampleMetadata (final File zipFile, final File zipEntry)
     {
-        this (filename, null, zipFile);
+        this (zipEntry.getName (), null, zipFile, zipEntry);
     }
 
 
     /**
      * Constructor.
      *
-     * @param filename The name of the file where the sample is stored
-     */
-    public DefaultSampleMetadata (final String filename)
-    {
-        this (filename, null, null);
-    }
-
-
-    /**
-     * Constructor.
-     *
-     * @param filename The name of the file where the sample is stored
+     * @param filename The name of the file where the sample is stored (must not contain any paths!)
      * @param sampleFile The file where the sample is stored
      * @param zipFile The ZIP file which contains the WAV files
+     * @param zipEntry The relative path in the ZIP where the file is stored
      */
-    private DefaultSampleMetadata (final String filename, final File sampleFile, final File zipFile)
+    protected DefaultSampleMetadata (final String filename, final File sampleFile, final File zipFile, final File zipEntry)
     {
         this.filename = filename;
         this.sampleFile = sampleFile;
         this.zipFile = zipFile;
+        this.zipEntry = zipEntry;
     }
 
 
@@ -180,7 +180,7 @@ public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMeta
 
     /** {@inheritDoc} */
     @Override
-    public void addLoop (final SampleLoop loop)
+    public void addLoop (final ISampleLoop loop)
     {
         this.loops.add (loop);
     }
@@ -188,7 +188,7 @@ public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMeta
 
     /** {@inheritDoc} */
     @Override
-    public List<SampleLoop> getLoops ()
+    public List<ISampleLoop> getLoops ()
     {
         return this.loops;
     }
@@ -388,6 +388,38 @@ public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMeta
 
     /** {@inheritDoc} */
     @Override
+    public int getBendUp ()
+    {
+        return this.bendUp;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setBendUp (int cents)
+    {
+        this.bendUp = cents;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getBendDown ()
+    {
+        return this.bendDown;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setBendDown (int cents)
+    {
+        this.bendDown = cents;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public boolean isReversed ()
     {
         return this.isReversed;
@@ -399,6 +431,22 @@ public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMeta
     public void setReversed (final boolean isReversed)
     {
         this.isReversed = isReversed;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<IFilter> getFilter ()
+    {
+        return Optional.ofNullable (this.filter);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setFilter (final IFilter filter)
+    {
+        this.filter = filter;
     }
 
 
@@ -468,9 +516,10 @@ public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMeta
 
         try (final ZipFile zf = new ZipFile (this.zipFile))
         {
-            final ZipEntry entry = zf.getEntry (this.filename);
+            final String path = this.zipEntry.getPath ().replace ('\\', '/');
+            final ZipEntry entry = zf.getEntry (path);
             if (entry == null)
-                throw new FileNotFoundException (String.format ("The sample '%s' was not found in the ZIP file.", this.filename));
+                throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
 
             try (final InputStream in = zf.getInputStream (entry))
             {
@@ -494,7 +543,7 @@ public class DefaultSampleMetadata extends EnvelopeAccess implements ISampleMeta
         if (this.sampleFile != null)
             wavSampleMetadata = new WavSampleMetadata (this.sampleFile);
         else
-            wavSampleMetadata = new WavSampleMetadata (this.zipFile, this.filename);
+            wavSampleMetadata = new WavSampleMetadata (this.zipFile, this.zipEntry);
 
         if (this.start < 0)
             this.start = 0;

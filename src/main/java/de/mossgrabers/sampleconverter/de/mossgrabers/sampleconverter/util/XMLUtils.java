@@ -162,6 +162,58 @@ public class XMLUtils
 
 
     /**
+     * Returns the text content interpreted as an integer of a sub-element of a node with the name
+     * 'name' or null if not found.
+     *
+     * @param parent The parent node of the sub-element to lookup
+     * @param name The tag-name of the sub-element
+     * @param defaultValue The default value to return if the element is not present or does not
+     *            contain a valid integer
+     * @return The sub-elements' integer content or null
+     */
+    public static int getChildElementIntegerContent (final Node parent, final String name, final int defaultValue)
+    {
+        final String content = getChildElementContent (parent, name);
+        if (content.isBlank ())
+            return defaultValue;
+        try
+        {
+            return Integer.parseInt (content);
+        }
+        catch (final NumberFormatException ex)
+        {
+            return defaultValue;
+        }
+    }
+
+
+    /**
+     * Returns the text content interpreted as an integer of a sub-element of a node with the name
+     * 'name' or null if not found.
+     *
+     * @param parent The parent node of the sub-element to lookup
+     * @param name The tag-name of the sub-element
+     * @param defaultValue The default value to return if the element is not present or does not
+     *            contain a valid double
+     * @return The sub-elements' integer content or null
+     */
+    public static double getChildElementDoubleContent (final Node parent, final String name, final double defaultValue)
+    {
+        final String content = getChildElementContent (parent, name);
+        if (content.isBlank ())
+            return defaultValue;
+        try
+        {
+            return Double.parseDouble (content);
+        }
+        catch (final NumberFormatException ex)
+        {
+            return defaultValue;
+        }
+    }
+
+
+    /**
      * Returns the sub-nodes of a node with the name 'name'.
      *
      * @param parent The parent node of the sub-node to lookup

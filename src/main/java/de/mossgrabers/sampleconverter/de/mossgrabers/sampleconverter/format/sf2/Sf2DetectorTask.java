@@ -9,16 +9,20 @@ import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
 import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.IFilter;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
-import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.enumeration.FilterType;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultFilter;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.sampleconverter.exception.ParseException;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.file.sf2.Generator;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2File;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2Instrument;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2InstrumentZone;
+import de.mossgrabers.sampleconverter.file.sf2.Sf2Modulator;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2Preset;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2PresetZone;
 import de.mossgrabers.sampleconverter.file.sf2.Sf2SampleDescriptor;
@@ -30,6 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -113,7 +118,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 generators.setPresetZoneGenerators (zone.getGenerators ());
 
                 final Sf2Instrument instrument = zone.getInstrument ();
-                final VelocityLayer layer = new VelocityLayer (instrument.getName ());
+                final DefaultVelocityLayer layer = new DefaultVelocityLayer (instrument.getName ());
 
                 for (int instrumentZoneIndex = 0; instrumentZoneIndex < instrument.getZoneCount (); instrumentZoneIndex++)
                 {
@@ -124,7 +129,9 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         continue;
                     }
                     generators.setInstrumentZoneGenerators (instrZone.getGenerators ());
-                    layer.addSampleMetadata (createSampleMetadata (instrZone.getSample (), generators));
+                    final Sf2SampleMetadata sampleMetadata = createSampleMetadata (instrZone.getSample (), generators);
+                    parseModulators (sampleMetadata, zone, instrZone);
+                    layer.addSampleMetadata (sampleMetadata);
                 }
 
                 layers.add (layer);
@@ -138,6 +145,24 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         }
 
         return multisamples;
+    }
+
+
+    private static void parseModulators (final Sf2SampleMetadata sampleMetadata, final Sf2PresetZone zone, final Sf2InstrumentZone instrZone)
+    {
+        Optional<Sf2Modulator> modulator = instrZone.getModulator (Sf2Modulator.MODULATOR_PITCH_BEND);
+        if (modulator.isEmpty ())
+            modulator = zone.getModulator (Sf2Modulator.MODULATOR_PITCH_BEND);
+        if (!modulator.isEmpty ())
+        {
+            final Sf2Modulator sf2Modulator = modulator.get ();
+            if (sf2Modulator.getDestinationGenerator () == Generator.FINE_TUNE)
+            {
+                final int amount = sf2Modulator.getModulationAmount ();
+                sampleMetadata.setBendUp (amount);
+                sampleMetadata.setBendDown (-amount);
+            }
+        }
     }
 
 
@@ -380,32 +405,75 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         // Set loop, if any
         if ((generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue () & 1) > 0)
         {
-            final SampleLoop sampleLoop = new SampleLoop ();
+            final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
             sampleLoop.setStart ((int) (sample.getStartloop () - sampleStart));
             sampleLoop.setEnd ((int) (sample.getEndloop () - sampleStart));
             sampleMetadata.addLoop (sampleLoop);
         }
 
         // Gain
-
         final int initialAttenuation = generators.getSignedValue (Generator.INITIAL_ATTENUATION).intValue ();
         if (initialAttenuation > 0)
             sampleMetadata.setGain (-initialAttenuation / 10.0);
 
         // Volume envelope
         final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
-        final Integer delay = generators.getSignedValue (Generator.VOL_ENV_DELAY);
-        final Integer attack = generators.getSignedValue (Generator.VOL_ENV_ATTACK);
-        final Integer hold = generators.getSignedValue (Generator.VOL_ENV_HOLD);
-        final Integer decay = generators.getSignedValue (Generator.VOL_ENV_DECAY);
-        final Integer release = generators.getSignedValue (Generator.VOL_ENV_RELEASE);
-        amplitudeEnvelope.setDelay (convertEnvelopeTime (delay));
-        amplitudeEnvelope.setAttack (convertEnvelopeTime (attack));
-        amplitudeEnvelope.setHold (convertEnvelopeTime (hold));
-        amplitudeEnvelope.setDecay (convertEnvelopeTime (decay));
-        amplitudeEnvelope.setRelease (convertEnvelopeTime (release));
-        final Integer sustain = generators.getSignedValue (Generator.VOL_ENV_SUSTAIN);
-        amplitudeEnvelope.setSustain (convertEnvelopeVolume (sustain));
+        amplitudeEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DELAY)));
+        amplitudeEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_ATTACK)));
+        amplitudeEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_HOLD)));
+        amplitudeEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DECAY)));
+        amplitudeEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_RELEASE)));
+        amplitudeEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.VOL_ENV_SUSTAIN)));
+
+        // Filter settings
+        final Integer initialCutoffValue = generators.getSignedValue (Generator.INITIAL_FILTER_CUTOFF);
+        if (initialCutoffValue != null)
+        {
+            final int initialCutoff = initialCutoffValue.intValue ();
+            if (initialCutoff >= 1500 && initialCutoff < 13500)
+            {
+                // Convert cents to Hertz: f2 is the minimum supported frequency, cents is always a
+                // relation of two frequencies, 1200 cents are one octave:
+                // cents = 1200 * log2 (f1 / f2), f2 = 8.176 => f1 = f2 * 2^(cents / 1200)
+                final double frequency = 8.176 * Math.pow (2, initialCutoff / 1200.0);
+
+                double resonance = 0;
+                final Integer initialResonanceValue = generators.getSignedValue (Generator.INITIAL_FILTER_RESONANCE);
+                if (initialResonanceValue != null)
+                {
+                    final int initialResonance = initialResonanceValue.intValue ();
+                    if (initialResonance > 0 && initialResonance < 960)
+                        resonance = initialResonance / 100.0;
+                }
+
+                final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance);
+                filter.setEnvelopeDepth (generators.getSignedValue (Generator.MOD_ENV_TO_FILTER_CUTOFF).intValue ());
+                if (filter.getEnvelopeDepth () != 0)
+                {
+                    final IEnvelope filterEnvelope = filter.getEnvelope ();
+                    filterEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
+                    filterEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
+                    filterEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
+                    filterEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
+                    filterEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
+                    filterEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                }
+
+                sampleMetadata.setFilter (filter);
+
+                sampleMetadata.setPitchEnvelopeDepth (generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ());
+                if (sampleMetadata.getPitchEnvelopeDepth () != 0)
+                {
+                    final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
+                    pitchEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
+                    pitchEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
+                    pitchEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
+                    pitchEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
+                    pitchEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
+                    pitchEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                }
+            }
+        }
 
         return sampleMetadata;
     }

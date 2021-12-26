@@ -5,12 +5,15 @@
 package de.mossgrabers.sampleconverter.core.detector;
 
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
+import de.mossgrabers.sampleconverter.core.model.IFilter;
+import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -24,11 +27,11 @@ public class MultisampleSource implements IMultisampleSource
     private final String []      subPath;
     private String               name;
     private final String         mappingName;
-    private String               description    = "";
-    private String               creator        = "";
-    private String               category       = "";
-    private String []            keywords       = new String [0];
-    private List<IVelocityLayer> sampleMetadata = Collections.emptyList ();
+    private String               description = "";
+    private String               creator     = "";
+    private String               category    = "";
+    private String []            keywords    = new String [0];
+    private List<IVelocityLayer> layers      = Collections.emptyList ();
 
 
     /**
@@ -68,7 +71,7 @@ public class MultisampleSource implements IMultisampleSource
     @Override
     public List<IVelocityLayer> getLayers ()
     {
-        return this.sampleMetadata;
+        return this.layers;
     }
 
 
@@ -155,9 +158,9 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public void setVelocityLayers (final List<IVelocityLayer> sampleMetadata)
+    public void setVelocityLayers (final List<IVelocityLayer> layers)
     {
-        this.sampleMetadata = new ArrayList<> (sampleMetadata);
+        this.layers = new ArrayList<> (layers);
     }
 
 
@@ -166,5 +169,41 @@ public class MultisampleSource implements IMultisampleSource
     public String getMappingName ()
     {
         return this.mappingName;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<IFilter> getGlobalFilter ()
+    {
+        IFilter globalFilter = null;
+        for (final IVelocityLayer layer: this.layers)
+        {
+            for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
+            {
+                final Optional<IFilter> optFilter = sampleMetadata.getFilter ();
+                if (optFilter.isEmpty ())
+                    return Optional.empty ();
+
+                IFilter filter = optFilter.get ();
+                if (globalFilter == null)
+                    globalFilter = filter;
+                else if (!globalFilter.equals (filter))
+                    return Optional.empty ();
+            }
+        }
+        return Optional.ofNullable (globalFilter);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setGlobalFilter (final IFilter filter)
+    {
+        for (final IVelocityLayer layer: this.layers)
+        {
+            for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
+                sampleMetadata.setFilter (filter);
+        }
     }
 }

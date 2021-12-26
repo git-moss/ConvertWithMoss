@@ -8,10 +8,11 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
 import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.IFilter;
+import de.mossgrabers.sampleconverter.core.model.ISampleLoop;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.PlayLogic;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -149,7 +150,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         {
             for (final ISampleMetadata sampleMetadata: velocityLayer.getSampleMetadata ())
             {
-                final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement);
+                final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, multisampleSource.getGlobalFilter ());
                 if (keygroupOpt.isEmpty ())
                 {
                     this.notifier.logError ("IDS_MPC_MORE_THAN_4_LAYERS", Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
@@ -193,7 +194,13 @@ public class MPCKeygroupCreator extends AbstractCreator
         programElement.appendChild (document.createElement (MPCKeygroupTag.PROGRAM_PADS + APP_VERSION));
 
         // Pitchbend 2 semitones up/down
-        XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, "0.160000");
+        final List<IVelocityLayer> layers = getNonEmptyLayers (multisampleSource.getLayers ());
+        if (!layers.isEmpty ())
+        {
+            final int bendUp = Math.abs (layers.get (0).getSampleMetadata ().get (0).getBendUp ());
+            final double bendUpValue = bendUp == 0 ? 0.16 : bendUp / 1200.0;
+            XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, formatDouble (bendUpValue, 3));
+        }
 
         // Vibrato on Modulation Wheel
         XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_WHEEL_TO_LFO, "1.000000");
@@ -257,7 +264,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_OFFSET, "0");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_START, Integer.toString (sampleMetadata.getStart ()));
 
-        final List<SampleLoop> loops = sampleMetadata.getLoops ();
+        final List<ISampleLoop> loops = sampleMetadata.getLoops ();
         if (loops.isEmpty ())
         {
             XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleMetadata.getStop ()));
@@ -266,7 +273,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         }
 
         // Format can store only 1 loop
-        final SampleLoop sampleLoop = loops.get (0);
+        final ISampleLoop sampleLoop = loops.get (0);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START, Integer.toString (sampleLoop.getStart ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleLoop.getEnd ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, sampleMetadata.isReversed () ? "3" : "1");
@@ -290,7 +297,7 @@ public class MPCKeygroupCreator extends AbstractCreator
     }
 
 
-    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleMetadata sampleMetadata, final Document document, final Element instrumentsElement)
+    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleMetadata sampleMetadata, final Document document, final Element instrumentsElement, final Optional<IFilter> optFilter)
     {
         final int keyLow = sampleMetadata.getKeyLow ();
         final int keyHigh = sampleMetadata.getKeyHigh ();
@@ -323,6 +330,29 @@ public class MPCKeygroupCreator extends AbstractCreator
         final Element instrumentElement = document.createElement ("Instrument");
         instrumentElement.setAttribute ("number", Integer.toString (calcInstrumentNumber (keygroupsMap)));
         instrumentsElement.appendChild (instrumentElement);
+
+        if (optFilter.isPresent ())
+        {
+            final IFilter filter = optFilter.get ();
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_TYPE, Integer.toString (MPCFilter.getFilterIndex (filter)));
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, formatDouble (normalizeFrequency (filter.getCutoff ()), 2));
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RESONANCE, formatDouble (Math.min (40, filter.getResonance ()) / 40.0, 2));
+
+            final int envelopeDepth = filter.getEnvelopeDepth ();
+            // Only positive modulation values are supported with MPC
+            if (envelopeDepth > 0)
+            {
+                XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, formatDouble (envelopeDepth / (double) IFilter.MAX_ENVELOPE_DEPTH, 2));
+
+                final IEnvelope filterEnvelope = filter.getEnvelope ();
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttack (), 0, 30, 0);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, filterEnvelope.getHold (), 0, 30, 0);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, filterEnvelope.getDecay (), 0, 30, 0);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, filterEnvelope.getSustain (), 0, 1, 1);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, filterEnvelope.getRelease (), 0, 30, 0.63);
+            }
+        }
+
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, Integer.toString (keyLow));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, sampleMetadata.getKeyTracking () == 0 ? "True" : "False");
@@ -333,6 +363,21 @@ public class MPCKeygroupCreator extends AbstractCreator
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), 0, 30, 0);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1, 1);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), 0, 30, 0.63);
+
+        final int pitchDepth = sampleMetadata.getPitchEnvelopeDepth ();
+        // Only positive modulation values are supported with MPC
+        if (pitchDepth > 0)
+        {
+            final double mpcPitchDepth = clamp (pitchDepth, -3600, 3600) / 3600.0 / 2.0 + 0.5;
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, formatDouble (mpcPitchDepth, 2));
+
+            final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, pitchEnvelope.getAttack (), 0, 30, 0);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, pitchEnvelope.getHold (), 0, 30, 0);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, pitchEnvelope.getDecay (), 0, 30, 0);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, pitchEnvelope.getSustain (), 0, 1, 1);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, pitchEnvelope.getRelease (), 0, 30, 0.63);
+        }
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (sampleMetadata.getPlayLogic ()).getID ());
         instrumentElement.appendChild (createLfoElement (document));
@@ -346,6 +391,19 @@ public class MPCKeygroupCreator extends AbstractCreator
             keygroup = new Keygroup (instrumentElement, layersElement);
         keygroups.add (keygroup);
         return Optional.of (keygroup);
+    }
+
+
+    private static double normalizeFrequency (final double cutoff)
+    {
+        final double val = log2 (cutoff) / log2 (IFilter.MAX_FREQUENCY);
+        return Math.min (1, Math.max (0, val));
+    }
+
+
+    private static double log2 (final double value)
+    {
+        return Math.log (value) / Math.log (2);
     }
 
 
