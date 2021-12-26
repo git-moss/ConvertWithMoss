@@ -4,6 +4,8 @@
 
 package de.mossgrabers.sampleconverter.core.model;
 
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -103,7 +105,7 @@ public interface ISampleMetadata extends IEnvelopeAccess
      *
      * @param loop The loop to add
      */
-    void addLoop (SampleLoop loop);
+    void addLoop (ISampleLoop loop);
 
 
     /**
@@ -111,7 +113,7 @@ public interface ISampleMetadata extends IEnvelopeAccess
      *
      * @return The loops, if any
      */
-    List<SampleLoop> getLoops ();
+    List<ISampleLoop> getLoops ();
 
 
     /**
@@ -374,4 +376,52 @@ public interface ISampleMetadata extends IEnvelopeAccess
      * @throws IOException Could not write the data
      */
     void writeSample (OutputStream outputStream) throws IOException;
+
+
+    /**
+     * Get pitch bend up value.
+     *
+     * @return The cents to bend down (if negative) or up in cents (-9600 to 9600)
+     */
+    int getBendUp ();
+
+
+    /**
+     * Set pitch bend up value.
+     *
+     * @param cents The cents to bend down (if negative) or up in cents (-9600 to 9600)
+     */
+    void setBendUp (int cents);
+
+
+    /**
+     * Get pitch bend down value.
+     *
+     * @return The cents to bend down (if negative) or up in cents (-9600 to 9600)
+     */
+    int getBendDown ();
+
+
+    /**
+     * Set pitch bend down value.
+     *
+     * @param cents The cents to bend down (if negative) or up in cents (-9600 to 9600)
+     */
+    void setBendDown (int cents);
+
+
+    /**
+     * Get a filter.
+     *
+     * @return The filter
+     */
+    Optional<IFilter> getFilter ();
+
+
+    /**
+     * Set a filter.
+     *
+     * @param filter The filter to set
+     */
+    void setFilter (IFilter filter);
 }

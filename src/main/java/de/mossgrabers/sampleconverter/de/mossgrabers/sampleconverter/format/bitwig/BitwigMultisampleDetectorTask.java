@@ -8,12 +8,12 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
-import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.LoopType;
-import de.mossgrabers.sampleconverter.core.model.PlayLogic;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
-import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.enumeration.LoopType;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -153,7 +153,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
                 final String k = groupElement.getAttribute ("name");
                 final String layerName = k.isBlank () ? "Velocity Layer " + (groupCounter + 1) : k;
-                indexedVelocityLayers.put (Integer.valueOf (groupCounter), new VelocityLayer (layerName));
+                indexedVelocityLayers.put (Integer.valueOf (groupCounter), new DefaultVelocityLayer (layerName));
                 groupCounter++;
             }
             else
@@ -163,7 +163,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             }
         }
         // Additional layer for potentially un-grouped samples
-        indexedVelocityLayers.put (Integer.valueOf (-1), new VelocityLayer ());
+        indexedVelocityLayers.put (Integer.valueOf (-1), new DefaultVelocityLayer ());
 
         // Parse (deprecated) layer tag
         final Node [] layerNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.LAYER);
@@ -175,7 +175,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
                 final String k = layerElement.getAttribute ("name");
                 final String layerName = k == null || k.isBlank () ? "Velocity Layer " + (groupCounter + 1) : k;
-                indexedVelocityLayers.put (Integer.valueOf (groupCounter), new VelocityLayer (layerName));
+                indexedVelocityLayers.put (Integer.valueOf (groupCounter), new DefaultVelocityLayer (layerName));
                 groupCounter++;
 
                 // Parse all samples of the layer
@@ -263,7 +263,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         this.checkChildTags (BitwigMultisampleTag.SAMPLE, BitwigMultisampleTag.SAMPLE_TAGS, XMLUtils.getChildElements (sampleElement));
 
         final int groupIndex = XMLUtils.getIntegerAttribute (sampleElement, BitwigMultisampleTag.GROUP, -1);
-        final IVelocityLayer velocityLayer = indexedVelocityLayers.computeIfAbsent (Integer.valueOf (groupIndex), groupIdx -> new VelocityLayer ("Velocity layer " + (groupIdx.intValue () + 1)));
+        final IVelocityLayer velocityLayer = indexedVelocityLayers.computeIfAbsent (Integer.valueOf (groupIndex), groupIdx -> new DefaultVelocityLayer ("Velocity layer " + (groupIdx.intValue () + 1)));
 
         final String filename = sampleElement.getAttribute ("file");
         if (filename == null || filename.isBlank ())
@@ -272,7 +272,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             return;
         }
 
-        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (zipFile, filename);
+        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (zipFile, new File (filename));
 
         sampleMetadata.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-start", -1)));
         sampleMetadata.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-stop", -1)));
@@ -326,7 +326,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             final String attribute = loopElement.getAttribute ("mode");
             if (attribute != null)
             {
-                final SampleLoop loop = new SampleLoop ();
+                final DefaultSampleLoop loop = new DefaultSampleLoop ();
                 switch (attribute)
                 {
                     default:

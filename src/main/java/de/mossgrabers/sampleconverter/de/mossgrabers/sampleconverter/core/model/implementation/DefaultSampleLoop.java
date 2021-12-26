@@ -2,14 +2,17 @@
 // (c) 2019-2021
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.sampleconverter.core.model;
+package de.mossgrabers.sampleconverter.core.model.implementation;
+
+import de.mossgrabers.sampleconverter.core.model.ISampleLoop;
+import de.mossgrabers.sampleconverter.core.model.enumeration.LoopType;
 
 /**
  * The loop of a sample.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class SampleLoop implements ISampleLoop
+public class DefaultSampleLoop implements ISampleLoop
 {
     private LoopType loopType  = LoopType.FORWARD;
     private int      loopStart = -1;

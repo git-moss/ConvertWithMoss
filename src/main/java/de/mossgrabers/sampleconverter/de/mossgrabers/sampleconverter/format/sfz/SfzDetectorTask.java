@@ -8,14 +8,18 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
-import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.IFilter;
+import de.mossgrabers.sampleconverter.core.model.ISampleLoop;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.LoopType;
-import de.mossgrabers.sampleconverter.core.model.PlayLogic;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
-import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.enumeration.FilterType;
+import de.mossgrabers.sampleconverter.core.model.enumeration.LoopType;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultFilter;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.Pair;
@@ -45,15 +49,21 @@ import java.util.regex.Pattern;
  */
 public class SfzDetectorTask extends AbstractDetectorTask
 {
-    private static final Pattern               HEADER_PATTERN    = Pattern.compile ("<([a-z]+)>([^<]*)", Pattern.DOTALL);
-    private static final Pattern               ATTRIBUTE_PATTERN = Pattern.compile ("(\\b\\w+)=(.*?(?=\\s\\w+=|//|$))", Pattern.DOTALL);
+    private static final Pattern                 HEADER_PATTERN    = Pattern.compile ("<([a-z]+)>([^<]*)", Pattern.DOTALL);
+    private static final Pattern                 ATTRIBUTE_PATTERN = Pattern.compile ("(\\b\\w+)=(.*?(?=\\s\\w+=|//|$))", Pattern.DOTALL);
+    private static final Map<String, FilterType> FILTER_TYPE_MAP   = new HashMap<> ();
+    private static final Map<String, LoopType>   LOOP_TYPE_MAP     = new HashMap<> (3);
 
-    private static final Map<String, LoopType> LOOP_TYPE_MAPPER  = new HashMap<> (3);
     static
     {
-        LOOP_TYPE_MAPPER.put ("forward", LoopType.FORWARD);
-        LOOP_TYPE_MAPPER.put ("backward", LoopType.BACKWARDS);
-        LOOP_TYPE_MAPPER.put ("alternate", LoopType.ALTERNATING);
+        FILTER_TYPE_MAP.put ("lpf", FilterType.LOW_PASS);
+        FILTER_TYPE_MAP.put ("hpf", FilterType.HIGH_PASS);
+        FILTER_TYPE_MAP.put ("bpf", FilterType.BAND_PASS);
+        FILTER_TYPE_MAP.put ("brf", FilterType.BAND_REJECTION);
+
+        LOOP_TYPE_MAP.put ("forward", LoopType.FORWARD);
+        LOOP_TYPE_MAP.put ("backward", LoopType.BACKWARDS);
+        LOOP_TYPE_MAP.put ("alternate", LoopType.ALTERNATING);
     }
 
     /** The names of notes. */
@@ -196,7 +206,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
-        this.processedOpcodes.add (SfzOpcode.GLOBAL_LABEL);
         final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (multiSampleFile.getParentFile (), result);
 
         final Optional<String> globalName = this.getAttribute (SfzOpcode.GLOBAL_LABEL);
@@ -228,7 +237,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         File sampleBaseFolder = basePath;
 
         final List<IVelocityLayer> velocityLayers = new ArrayList<> ();
-        IVelocityLayer layer = new VelocityLayer ();
+        IVelocityLayer layer = new DefaultVelocityLayer ();
         for (final Pair<String, Map<String, String>> pair: headers)
         {
             final Map<String, String> attributes = pair.getValue ();
@@ -263,7 +272,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                 case SfzHeader.GROUP:
                     if (!layer.getSampleMetadata ().isEmpty ())
                         velocityLayers.add (layer);
-                    layer = new VelocityLayer ();
+                    layer = new DefaultVelocityLayer ();
 
                     this.groupAttributes = attributes;
 
@@ -471,10 +480,85 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final double pitchKeytrack = this.getDoubleValue (SfzOpcode.PITCH_KEYTRACK, 100);
         sampleMetadata.setKeyTracking (Math.min (100, Math.max (0, pitchKeytrack)) / 100.0);
 
+        sampleMetadata.setBendUp (this.getIntegerValue (SfzOpcode.BEND_UP, 0));
+        sampleMetadata.setBendDown (this.getIntegerValue (SfzOpcode.BEND_DOWN, 0));
+
+        int envelopeDepth = this.getIntegerValue (SfzOpcode.PITCHEG_DEPTH, 0);
+        if (envelopeDepth == 0)
+            envelopeDepth = this.getIntegerValue (SfzOpcode.PITCH_DEPTH, 0);
+        sampleMetadata.setPitchEnvelopeDepth (envelopeDepth);
+
+        final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
+        pitchEnvelope.setDelay (this.getDoubleValue (SfzOpcode.PITCHEG_DELAY, SfzOpcode.PITCH_DELAY));
+        pitchEnvelope.setAttack (this.getDoubleValue (SfzOpcode.PITCHEG_ATTACK, SfzOpcode.PITCH_ATTACK));
+        pitchEnvelope.setHold (this.getDoubleValue (SfzOpcode.PITCHEG_HOLD, SfzOpcode.PITCH_HOLD));
+        pitchEnvelope.setDecay (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY, SfzOpcode.PITCH_DECAY));
+        pitchEnvelope.setRelease (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE, SfzOpcode.PITCH_RELEASE));
+        final double startValue = this.getDoubleValue (SfzOpcode.PITCHEG_START, SfzOpcode.PITCH_START);
+        final double sustainValue = this.getDoubleValue (SfzOpcode.PITCHEG_SUSTAIN, SfzOpcode.PITCH_SUSTAIN);
+        pitchEnvelope.setStart (startValue < 0 ? -1 : startValue / 100.0);
+        pitchEnvelope.setSustain (sustainValue < 0 ? -1 : sustainValue / 100.0);
+
         ////////////////////////////////////////////////////////////
         // Volume
 
         this.parseVolume (sampleMetadata);
+
+        ////////////////////////////////////////////////////////////
+        // Filter
+
+        this.parseFilter (sampleMetadata);
+    }
+
+
+    private void parseFilter (ISampleMetadata sampleMetadata)
+    {
+        double cutoff = this.getDoubleValue (SfzOpcode.CUTOFF, -1);
+        if (cutoff < 0)
+            cutoff = IFilter.MAX_FREQUENCY;
+
+        final Optional<String> attribute = this.getAttribute (SfzOpcode.FILTER_TYPE);
+        final String filterTypeStr = attribute.isEmpty () ? "lpf_2p" : attribute.get ();
+        if (filterTypeStr.length () < 6)
+            return;
+        FilterType filterType = FILTER_TYPE_MAP.get (filterTypeStr.substring (0, 3));
+        // Unsupported filter type?
+        if (filterType == null)
+            filterType = FilterType.LOW_PASS;
+        int poles;
+        try
+        {
+            poles = Integer.parseInt (filterTypeStr.substring (4, 5));
+            if (poles <= 0)
+                poles = 2;
+        }
+        catch (final NumberFormatException ex)
+        {
+            poles = 2;
+        }
+
+        final double resonance = this.getDoubleValue (SfzOpcode.RESONANCE, 0);
+        int envelopeDepth = this.getIntegerValue (SfzOpcode.FILEG_DEPTH, 0);
+        if (envelopeDepth == 0)
+            envelopeDepth = this.getIntegerValue (SfzOpcode.FIL_DEPTH, 0);
+
+        final IFilter filter = new DefaultFilter (filterType, poles, cutoff, resonance);
+        sampleMetadata.setFilter (filter);
+
+        filter.setEnvelopeDepth (envelopeDepth);
+
+        // Filter envelope
+        final IEnvelope filterEnvelope = filter.getEnvelope ();
+        filterEnvelope.setDelay (this.getDoubleValue (SfzOpcode.FILEG_DELAY, SfzOpcode.FIL_DELAY));
+        filterEnvelope.setAttack (this.getDoubleValue (SfzOpcode.FILEG_ATTACK, SfzOpcode.FIL_ATTACK));
+        filterEnvelope.setHold (this.getDoubleValue (SfzOpcode.FILEG_HOLD, SfzOpcode.FIL_HOLD));
+        filterEnvelope.setDecay (this.getDoubleValue (SfzOpcode.FILEG_DECAY, SfzOpcode.FIL_DECAY));
+        filterEnvelope.setRelease (this.getDoubleValue (SfzOpcode.FILEG_RELEASE, SfzOpcode.FIL_RELEASE));
+
+        final double startValue = this.getDoubleValue (SfzOpcode.FILEG_START, SfzOpcode.FIL_START);
+        final double sustainValue = this.getDoubleValue (SfzOpcode.FILEG_SUSTAIN, SfzOpcode.FIL_SUSTAIN);
+        filterEnvelope.setStart (startValue < 0 ? -1 : startValue / 100.0);
+        filterEnvelope.setSustain (sustainValue < 0 ? -1 : sustainValue / 100.0);
     }
 
 
@@ -485,7 +569,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      */
     private void parseLoop (final ISampleMetadata sampleMetadata)
     {
-        final SampleLoop loop = new SampleLoop ();
+        final DefaultSampleLoop loop = new DefaultSampleLoop ();
 
         final Optional<String> loopMode = this.getAttribute (SfzOpcode.LOOP_MODE);
         if (loopMode.isPresent ())
@@ -503,7 +587,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     final Optional<String> loopType = this.getAttribute (SfzOpcode.LOOP_TYPE);
                     if (loopType.isPresent ())
                     {
-                        final LoopType type = LOOP_TYPE_MAPPER.get (loopType.get ());
+                        final LoopType type = LOOP_TYPE_MAP.get (loopType.get ());
                         if (type != null)
                             loop.setType (type);
                     }
@@ -569,9 +653,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
             // Read loop and root key if necessary. If loop was not explicitly
             // deactivated, there is a loop present, which might need to read the
             // parameters from the WAV file
-            List<SampleLoop> loops = sampleMetadata.getLoops ();
+            List<ISampleLoop> loops = sampleMetadata.getLoops ();
             boolean readLoops = false;
-            SampleLoop oldLoop = null;
+            ISampleLoop oldLoop = null;
             if (!loops.isEmpty ())
             {
                 oldLoop = loops.get (0);
@@ -587,7 +671,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                 // The null check is not necessary but otherwise we get an Eclipse warning
                 if (oldLoop != null && !loops.isEmpty ())
                 {
-                    final SampleLoop newLoop = loops.get (0);
+                    final ISampleLoop newLoop = loops.get (0);
 
                     final int oldStart = oldLoop.getStart ();
                     if (oldStart >= 0)
@@ -621,6 +705,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
             if (!this.processedOpcodes.contains (attribute))
                 unsupported.add (attribute);
         });
+        this.allOpcodes.clear ();
         return unsupported;
     }
 
@@ -689,16 +774,30 @@ public class SfzDetectorTask extends AbstractDetectorTask
      */
     private int getIntegerValue (final String key)
     {
+        return getIntegerValue (key, -1);
+    }
+
+
+    /**
+     * Get the attribute integer value for the given key. The value is searched starting from region
+     * upwards to group, master and finally global.
+     *
+     * @param key The key of the value to lookup
+     * @param defaultValue The value to return if the key is not present or cannot be read
+     * @return The value or -1 if not found or is not an integer
+     */
+    private int getIntegerValue (final String key, final int defaultValue)
+    {
         final Optional<String> value = this.getAttribute (key);
         if (value.isEmpty ())
-            return -1;
+            return defaultValue;
         try
         {
             return Integer.parseInt (value.get ());
         }
         catch (final NumberFormatException ex)
         {
-            return -1;
+            return defaultValue;
         }
     }
 

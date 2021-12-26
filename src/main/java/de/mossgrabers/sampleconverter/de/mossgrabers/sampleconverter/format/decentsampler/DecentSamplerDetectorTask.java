@@ -8,12 +8,15 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.detector.AbstractDetectorTask;
 import de.mossgrabers.sampleconverter.core.detector.MultisampleSource;
-import de.mossgrabers.sampleconverter.core.model.DefaultSampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.IFilter;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.PlayLogic;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
-import de.mossgrabers.sampleconverter.core.model.VelocityLayer;
+import de.mossgrabers.sampleconverter.core.model.enumeration.FilterType;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultFilter;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.sampleconverter.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.sampleconverter.file.FileUtils;
 import de.mossgrabers.sampleconverter.ui.IMetadataConfig;
 import de.mossgrabers.sampleconverter.util.TagDetector;
@@ -212,7 +215,35 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         multisampleSource.setVelocityLayers (velocityLayers);
 
+        parseEffects (top, multisampleSource);
+
         return Collections.singletonList (multisampleSource);
+    }
+
+
+    /**
+     * Parse the effects on the top level.
+     *
+     * @param top The top element
+     * @param multisampleSource The multisample to fill
+     */
+    private static void parseEffects (final Element top, final MultisampleSource multisampleSource)
+    {
+        final Element effectsElement = XMLUtils.getChildElementByName (top, DecentSamplerTag.EFFECTS);
+        if (effectsElement == null)
+            return;
+
+        for (final Element effectElement: XMLUtils.getChildElementsByName (top, DecentSamplerTag.EFFECTS_EFFECT))
+        {
+            final String effectType = effectElement.getAttribute ("type");
+            if ("lowpass_4pl".equals (effectType))
+            {
+                final double frequency = XMLUtils.getDoubleAttribute (effectElement, "frequency", IFilter.MAX_FREQUENCY);
+                final double resonance = XMLUtils.getDoubleAttribute (effectElement, "resonance", 0);
+                multisampleSource.setGlobalFilter (new DefaultFilter (FilterType.LOW_PASS, 4, frequency, resonance));
+                return;
+            }
+        }
     }
 
 
@@ -240,7 +271,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
                 final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
                 final String layerName = k == null || k.isBlank () ? "Velocity Layer " + groupCounter : k;
-                final VelocityLayer velocityLayer = new VelocityLayer (layerName);
+                final DefaultVelocityLayer velocityLayer = new DefaultVelocityLayer (layerName);
 
                 final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
                 double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.GROUP_TUNING, 0);
@@ -272,7 +303,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param groupVolumeOffset The volume offset
      * @param tuningOffset The tuning offset
      */
-    private void parseVelocityLayer (final VelocityLayer velocityLayer, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset)
+    private void parseVelocityLayer (final DefaultVelocityLayer velocityLayer, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset)
     {
         for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE))
         {
@@ -289,22 +320,22 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             }
 
             final DefaultSampleMetadata sampleMetadata;
+            final File sampleFile = new File (basePath, sampleName);
             if (libraryFile == null)
             {
-                final File sampleFile = new File (basePath, sampleName);
                 if (!this.checkSampleFile (sampleFile))
                     return;
                 sampleMetadata = new DefaultSampleMetadata (sampleFile);
             }
             else
-                sampleMetadata = new DefaultSampleMetadata (libraryFile, new File (basePath, sampleName).getPath ().replace ('\\', '/'));
+                sampleMetadata = new DefaultSampleMetadata (libraryFile, sampleFile);
 
             sampleMetadata.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
             sampleMetadata.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
             sampleMetadata.setGain (groupVolumeOffset + parseVolume (sampleElement, DecentSamplerTag.VOLUME));
-            sampleMetadata.setTune ((tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0)) * 100.0);
+            sampleMetadata.setTune ((tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0)));
 
-            final String zoneLogic = sampleElement.getAttribute (DecentSamplerTag.SEQ_MODE);
+            final String zoneLogic = this.currentGroupsElement.getAttribute (DecentSamplerTag.SEQ_MODE);
             sampleMetadata.setPlayLogic (zoneLogic != null && "round_robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
 
             sampleMetadata.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, 1));
@@ -323,7 +354,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
             if (loopStart >= 0 || loopEnd > 0 || loopCrossfade > 0)
             {
-                final SampleLoop loop = new SampleLoop ();
+                final DefaultSampleLoop loop = new DefaultSampleLoop ();
                 loop.setStart (loopStart);
                 loop.setEnd (loopEnd);
                 final int loopLength = loopEnd - loopStart;

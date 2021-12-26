@@ -7,9 +7,9 @@ package de.mossgrabers.sampleconverter.format.korgmultisample;
 import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
+import de.mossgrabers.sampleconverter.core.model.ISampleLoop;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -187,7 +187,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             write7bitNumberLSB (sampleOutput, start);
         }
 
-        final List<SampleLoop> loops = sample.getLoops ();
+        final List<ISampleLoop> loops = sample.getLoops ();
         if (!loops.isEmpty ())
         {
             final int loopStart = loops.get (0).getStart ();

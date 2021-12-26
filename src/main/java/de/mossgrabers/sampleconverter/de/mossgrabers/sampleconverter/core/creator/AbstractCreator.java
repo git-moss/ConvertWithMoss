@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -79,6 +80,19 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     protected static String createSafeFilename (final String filename)
     {
         return filename.replaceAll ("[\\\\/:*?\"<>|&\\.]", "_");
+    }
+
+
+    /**
+     * Format the path and filename replacing all slashes with forward slashes.
+     *
+     * @param path A path
+     * @param filename A filename
+     * @return The formatted path
+     */
+    protected String formatFileName (final String path, final String filename)
+    {
+        return new StringBuilder ().append (path).append ('/').append (filename).toString ().replace ('\\', '/');
     }
 
 
@@ -263,5 +277,19 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     protected static double clamp (double value, double minimum, double maximum)
     {
         return Math.max (minimum, Math.min (value, maximum));
+    }
+
+
+    /**
+     * Format a double attribute with a dot as the fraction separator.
+     *
+     * @param value The value to format
+     * @param fractions The number of fractions to format
+     * @return The formatted value
+     */
+    public static String formatDouble (final double value, final int fractions)
+    {
+        final String formatPattern = "%." + fractions + "f";
+        return String.format (Locale.US, formatPattern, Double.valueOf (value));
     }
 }

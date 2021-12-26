@@ -4,6 +4,8 @@
 
 package de.mossgrabers.sampleconverter.core.model;
 
+import de.mossgrabers.sampleconverter.core.model.enumeration.LoopType;
+
 /**
  * Interface to the loop of a sample.
  *

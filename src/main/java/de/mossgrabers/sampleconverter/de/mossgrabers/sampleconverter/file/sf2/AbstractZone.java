@@ -4,8 +4,11 @@
 
 package de.mossgrabers.sampleconverter.file.sf2;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -21,12 +24,14 @@ public abstract class AbstractZone
 
     /** Index to the first modulator of the zone in the PMOD list. */
     protected final int             firstModulator;
+    protected final int             numberOfModulators;
 
     /** If true, this is a global zone which applies to the whole preset. */
     protected boolean               isGlobal   = false;
 
     /** The generators assigned to the zone. */
     protected Map<Integer, Integer> generators = new HashMap<> ();
+    protected List<Sf2Modulator>    modulators = new ArrayList<> ();
 
 
     /**
@@ -35,12 +40,14 @@ public abstract class AbstractZone
      * @param firstGenerator Index to the first generator of the zone in the PGEN list
      * @param numberOfGenerators The number of generators in this zone
      * @param firstModulator Index to the first modulator of the zone in the PMOD list
+     * @param numberOfModulators The number of modulators of this zone
      */
-    protected AbstractZone (final int firstGenerator, final int numberOfGenerators, final int firstModulator)
+    protected AbstractZone (final int firstGenerator, final int numberOfGenerators, final int firstModulator, final int numberOfModulators)
     {
         this.firstGenerator = firstGenerator;
         this.numberOfGenerators = numberOfGenerators;
         this.firstModulator = firstModulator;
+        this.numberOfModulators = numberOfModulators;
     }
 
 
@@ -100,6 +107,17 @@ public abstract class AbstractZone
 
 
     /**
+     * Get the number of modulators in this zone.
+     *
+     * @return The number of modulators in this zone
+     */
+    public int getNumberOfModulators ()
+    {
+        return this.numberOfModulators;
+    }
+
+
+    /**
      * Get all generators of the zone.
      *
      * @return The generators
@@ -143,5 +161,40 @@ public abstract class AbstractZone
     public boolean hasGenerator (final int generatorID)
     {
         return this.generators.keySet ().contains (Integer.valueOf (generatorID));
+    }
+
+
+    /**
+     * Add a modulator to the zone.
+     *
+     * @param sourceModulator The ID of the source modulator
+     * @param destinationGenerator The destination of the modulator
+     * @param modAmount A signed value indicating the degree to which the source modulates the
+     *            destination
+     * @param amountSourceOperand Indicates the degree to which the source modulates the destination
+     *            is to be controlled by the specified modulation source
+     * @param transformOperand Indicates that a transform of the specified type will be applied to
+     *            the modulation source before application to the modulator
+     */
+    public void addModulator (final int sourceModulator, final int destinationGenerator, final int modAmount, final int amountSourceOperand, final int transformOperand)
+    {
+        this.modulators.add (new Sf2Modulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand));
+    }
+
+
+    /**
+     * Get a specific modulator if present.
+     *
+     * @param modulatorID The ID of the modulator to get
+     * @return The optional result
+     */
+    public Optional<Sf2Modulator> getModulator (final Integer modulatorID)
+    {
+        for (final Sf2Modulator modulator: this.modulators)
+        {
+            if (modulator.getControllerSource () == modulatorID.intValue ())
+                return Optional.of (modulator);
+        }
+        return Optional.empty ();
     }
 }

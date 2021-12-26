@@ -23,12 +23,13 @@ public class Sf2PresetZone extends AbstractZone
      * Constructor.
      *
      * @param firstGenerator Index to the first generator of the zone in the PGEN list
-     * @param numberOfGenerators The number of generators in this zone
+     * @param numberOfGenerators The number of generators of this zone
      * @param firstModulator Index to the first modulator of the zone in the PMOD list
+     * @param numberOfModulators The number of modulators of this zone
      */
-    public Sf2PresetZone (final int firstGenerator, final int numberOfGenerators, final int firstModulator)
+    public Sf2PresetZone (final int firstGenerator, final int numberOfGenerators, final int firstModulator, final int numberOfModulators)
     {
-        super (firstGenerator, numberOfGenerators, firstModulator);
+        super (firstGenerator, numberOfGenerators, firstModulator, numberOfModulators);
     }
 
 

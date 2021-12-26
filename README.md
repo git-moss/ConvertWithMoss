@@ -209,6 +209,17 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
+## 4.6
+
+* New: SF2, SFZ, MPC: Support for Pitch bend range settings.
+* New: SF2, SFZ, Decent Sampler, MPC: Support for filter settings (incl. filter envelope).
+* New: SF2, SFZ, MPC: Support for Pitch envelope settings.
+* Fixed: SFZ: Logging of unsupported opcodes did add up.
+* Fixed: SFZ: Sample paths in metadata now always use forward slash.
+* Fixed: Decent Sampler: Sample files from dslibrary could not be written.
+* Fixed: Decent Sampler: Tuning was not read correctly (off by factor 100).
+* Fixed: Decent Sampler: Round-robin was not read and not written correctly.
+
 ## 4.5
 
 * New: Support for amplitude envelope: Decent Sampler, MPC Keygroups, SFZ: read/write; SF2: read

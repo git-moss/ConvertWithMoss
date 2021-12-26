@@ -20,6 +20,13 @@ public class DecentSamplerTag
     /** The root tag. */
     public static final String                    DECENTSAMPLER   = "DecentSampler";
 
+    /** The effects tag. */
+    public static final String                    EFFECTS         = "effects";
+    /** The modulation effects tag. */
+    public static final String                    MOD_EFFECT      = "effect";
+    /** The effects tag. */
+    public static final String                    EFFECTS_EFFECT  = "effect";
+
     /** The user interface tag. */
     public static final String                    UI              = "ui";
     /** The tabulator tag. */
@@ -41,6 +48,8 @@ public class DecentSamplerTag
     public static final String                    GROUP           = "group";
     /** The sample tag. */
     public static final String                    SAMPLE          = "sample";
+    /** The sequence mode tag. */
+    public static final String                    SEQ_MODE        = "seqMode";
 
     /** The global tuning attribute. */
     public static final String                    GROUP_TUNING    = "groupTuning";
@@ -57,8 +66,8 @@ public class DecentSamplerTag
     public static final String                    END             = "end";
     /** The tuning tag sample attribute. */
     public static final String                    TUNING          = "tuning";
-    /** The sequence mode tag sample attribute. */
-    public static final String                    SEQ_MODE        = "seqMode";
+    /** The sequence position tag sample attribute. */
+    public static final String                    SEQ_POSITION    = "seqPosition";
     /** The root note tag sample attribute. */
     public static final String                    ROOT_NOTE       = "rootNote";
     /** The pitch key tracking tag sample attribute. */
@@ -91,7 +100,7 @@ public class DecentSamplerTag
     public static final String                    AMP_ENV_RELEASE = "release";
 
     /** The supported top level tags. */
-    public static final Set<String>               TOP_LEVEL_TAGS  = Set.of (GROUPS);
+    public static final Set<String>               TOP_LEVEL_TAGS  = Set.of (EFFECTS, UI, GROUPS);
     /** The supported group tags. */
     public static final Set<String>               GROUP_TAGS      = Set.of (SAMPLE);
     /** The supported sample tags. */
@@ -103,9 +112,9 @@ public class DecentSamplerTag
     static
     {
         ATTRIBUTES.put (DECENTSAMPLER, Collections.emptySet ());
-        ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
-        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_TUNING, TUNING, VOLUME, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
-        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PITCH_KEY_TRACK, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, SEQ_MODE, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
+        ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, SEQ_MODE, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
+        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
+        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PITCH_KEY_TRACK, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
     }
 
 

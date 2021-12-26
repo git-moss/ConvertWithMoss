@@ -8,10 +8,12 @@ import de.mossgrabers.sampleconverter.core.IMultisampleSource;
 import de.mossgrabers.sampleconverter.core.INotifier;
 import de.mossgrabers.sampleconverter.core.creator.AbstractCreator;
 import de.mossgrabers.sampleconverter.core.model.IEnvelope;
+import de.mossgrabers.sampleconverter.core.model.IFilter;
+import de.mossgrabers.sampleconverter.core.model.ISampleLoop;
 import de.mossgrabers.sampleconverter.core.model.ISampleMetadata;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
-import de.mossgrabers.sampleconverter.core.model.PlayLogic;
-import de.mossgrabers.sampleconverter.core.model.SampleLoop;
+import de.mossgrabers.sampleconverter.core.model.enumeration.FilterType;
+import de.mossgrabers.sampleconverter.core.model.enumeration.PlayLogic;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
 import de.mossgrabers.sampleconverter.util.XMLUtils;
@@ -47,8 +49,6 @@ import java.util.zip.ZipOutputStream;
 public class DecentSamplerCreator extends AbstractCreator
 {
     private static final String MOD_AMP                   = "amp";
-    private static final String MOD_EFFECT                = "effect";
-    private static final String EFFECTS_EFFECT            = "effect";
     private static final String FOLDER_POSTFIX            = "Samples";
     private boolean             isOutputFormatLibrary;
 
@@ -63,6 +63,8 @@ public class DecentSamplerCreator extends AbstractCreator
     private CheckBox            addFilterBox;
     private CheckBox            addReverbBox;
     private CheckBox            makeMonophonicBox;
+
+    private int                 seqPosition               = 1;
 
 
     /**
@@ -222,18 +224,33 @@ public class DecentSamplerCreator extends AbstractCreator
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
         final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers ());
 
+        boolean hasRoundRobin = false;
+
         IEnvelope amplitudeEnvelope = null;
         if (!velocityLayers.isEmpty ())
         {
             final ISampleMetadata sampleMetadata = velocityLayers.get (0).getSampleMetadata ().get (0);
             amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
             addVolumeEnvelope (amplitudeEnvelope, groupsElement);
+
+            final PlayLogic playLogic = sampleMetadata.getPlayLogic ();
+            hasRoundRobin = playLogic != PlayLogic.ALWAYS;
+            if (hasRoundRobin)
+                groupsElement.setAttribute (DecentSamplerTag.SEQ_MODE, "round_robin");
         }
         this.createUI (document, multisampleElement, amplitudeEnvelope);
+
+        // Add all layers
 
         for (final IVelocityLayer layer: velocityLayers)
         {
             final Element groupElement = XMLUtils.addElement (document, groupsElement, DecentSamplerTag.GROUP);
+
+            if (hasRoundRobin)
+            {
+                groupElement.setAttribute (DecentSamplerTag.SEQ_POSITION, Integer.toString (this.seqPosition));
+                this.seqPosition++;
+            }
 
             final String name = layer.getName ();
             if (name != null && !name.isBlank ())
@@ -244,7 +261,7 @@ public class DecentSamplerCreator extends AbstractCreator
         }
 
         this.makeMonophonic (document, multisampleElement, groupsElement);
-        this.createEffects (document, multisampleElement);
+        this.createEffects (document, multisampleElement, multisampleSource);
 
         try
         {
@@ -278,7 +295,7 @@ public class DecentSamplerCreator extends AbstractCreator
      * @param groupElement The element where to add the sample information
      * @param info Where to get the sample info from
      */
-    private static void createSample (final Document document, final String folderName, final Element groupElement, final ISampleMetadata info)
+    private void createSample (final Document document, final String folderName, final Element groupElement, final ISampleMetadata info)
     {
         /////////////////////////////////////////////////////
         // Sample element and attributes
@@ -286,7 +303,7 @@ public class DecentSamplerCreator extends AbstractCreator
         final Element sampleElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.SAMPLE);
         final Optional<String> filename = info.getUpdatedFilename ();
         if (filename.isPresent ())
-            sampleElement.setAttribute (DecentSamplerTag.PATH, new StringBuilder ().append (folderName).append ('/').append (filename.get ()).toString ());
+            sampleElement.setAttribute (DecentSamplerTag.PATH, formatFileName (folderName, filename.get ()));
 
         final double gain = info.getGain ();
         if (gain != 0)
@@ -301,10 +318,6 @@ public class DecentSamplerCreator extends AbstractCreator
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, tune, 2);
 
         // No info.isReversed ()
-
-        final PlayLogic playLogic = info.getPlayLogic ();
-        if (playLogic != PlayLogic.ALWAYS)
-            sampleElement.setAttribute (DecentSamplerTag.SEQ_MODE, "round_robin");
 
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
@@ -323,11 +336,11 @@ public class DecentSamplerCreator extends AbstractCreator
         /////////////////////////////////////////////////////
         // Loops
 
-        final List<SampleLoop> loops = info.getLoops ();
+        final List<ISampleLoop> loops = info.getLoops ();
         if (!loops.isEmpty ())
         {
 
-            final SampleLoop sampleLoop = loops.get (0);
+            final ISampleLoop sampleLoop = loops.get (0);
             sampleElement.setAttribute (DecentSamplerTag.LOOP_ENABLED, "true");
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, check (sampleLoop.getStart (), 0), 3);
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, check (sampleLoop.getEnd (), stop), 3);
@@ -371,25 +384,46 @@ public class DecentSamplerCreator extends AbstractCreator
      *
      * @param document The XML document
      * @param rootElement Where to add the effect elements
+     * @param multisampleSource The multi-sample
      */
-    private void createEffects (final Document document, final Element rootElement)
+    private void createEffects (final Document document, final Element rootElement, final IMultisampleSource multisampleSource)
     {
-        if (this.addFilterBox.isSelected () || this.addReverbBox.isSelected ())
-        {
-            final Element effectsElement = XMLUtils.addElement (document, rootElement, "effects");
+        final Optional<IFilter> optFilter = multisampleSource.getGlobalFilter ();
 
-            if (this.addFilterBox.isSelected ())
+        final boolean lowPassFilterIsPresent = optFilter.isPresent () && optFilter.get ().getType () == FilterType.LOW_PASS;
+        final boolean hasFilter = this.addFilterBox.isSelected () || lowPassFilterIsPresent;
+        final boolean hasReverb = this.addReverbBox.isSelected ();
+
+        if (hasFilter || hasReverb)
+        {
+            final Element effectsElement = XMLUtils.addElement (document, rootElement, DecentSamplerTag.EFFECTS);
+
+            if (hasFilter)
             {
-                final Element effectElement = XMLUtils.addElement (document, effectsElement, EFFECTS_EFFECT);
-                effectElement.setAttribute ("type", "lowpass_4pl");
-                effectElement.setAttribute ("resonance", "0.5");
-                effectElement.setAttribute ("frequency", "22000");
+                final Element filterElement = XMLUtils.addElement (document, effectsElement, DecentSamplerTag.EFFECTS_EFFECT);
+                filterElement.setAttribute ("type", "lowpass_4pl");
+                if (lowPassFilterIsPresent)
+                {
+                    // Note: this might not be a 4 pole low-pass but better than no filter...
+                    final IFilter filter = optFilter.get ();
+                    // Note: Resonance is in the range [0..1] but it is not documented what value 1
+                    // represents. Therefore, we assume 40dB maximum and a linear range (could also
+                    // be logarithmic).
+                    final double resonance = Math.min (40, filter.getResonance ());
+                    filterElement.setAttribute ("resonance", formatDouble (resonance / 40.0, 3));
+                    filterElement.setAttribute ("frequency", formatDouble (filter.getCutoff (), 2));
+                }
+                else
+                {
+                    filterElement.setAttribute ("resonance", "0.5");
+                    filterElement.setAttribute ("frequency", "22000");
+                }
             }
 
-            if (this.addReverbBox.isSelected ())
+            if (hasReverb)
             {
-                final Element effectElement = XMLUtils.addElement (document, effectsElement, EFFECTS_EFFECT);
-                effectElement.setAttribute ("type", "reverb");
+                final Element reverbElement = XMLUtils.addElement (document, effectsElement, DecentSamplerTag.EFFECTS_EFFECT);
+                reverbElement.setAttribute ("type", "reverb");
             }
         }
     }
@@ -413,22 +447,22 @@ public class DecentSamplerCreator extends AbstractCreator
         if (this.addFilterBox.isSelected ())
         {
             knobElement = createKnob (document, tabElement, 0, 0, "Filter Cutoff", 22000, 22000);
-            createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_FREQUENCY");
+            createBinding (document, knobElement, DecentSamplerTag.MOD_EFFECT, "FX_FILTER_FREQUENCY");
             knobElement = createKnob (document, tabElement, 100, 0, "Filter Resonance", 2, 0.01);
-            createBinding (document, knobElement, MOD_EFFECT, "FX_FILTER_RESONANCE");
+            createBinding (document, knobElement, DecentSamplerTag.MOD_EFFECT, "FX_FILTER_RESONANCE");
         }
 
         if (this.addReverbBox.isSelected ())
         {
             knobElement = createKnob (document, tabElement, 200, 0, "Reverb Wet Level", 1000, 0);
-            Element bindingElement = createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_WET_LEVEL");
+            Element bindingElement = createBinding (document, knobElement, DecentSamplerTag.MOD_EFFECT, "FX_REVERB_WET_LEVEL");
             bindingElement.setAttribute ("position", "1");
             bindingElement.setAttribute ("translation", "linear");
             bindingElement.setAttribute ("translationOutputMax", "1");
             bindingElement.setAttribute ("translationOutputMin", "0.0");
 
             knobElement = createKnob (document, tabElement, 300, 0, "Reverb Room Size", 1000, 0);
-            bindingElement = createBinding (document, knobElement, MOD_EFFECT, "FX_REVERB_ROOM_SIZE");
+            bindingElement = createBinding (document, knobElement, DecentSamplerTag.MOD_EFFECT, "FX_REVERB_ROOM_SIZE");
             bindingElement.setAttribute ("position", "1");
             bindingElement.setAttribute ("translation", "linear");
             bindingElement.setAttribute ("translationOutputMax", "1");

@@ -4,10 +4,12 @@
 
 package de.mossgrabers.sampleconverter.core;
 
+import de.mossgrabers.sampleconverter.core.model.IFilter;
 import de.mossgrabers.sampleconverter.core.model.IVelocityLayer;
 
 import java.io.File;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -135,4 +137,21 @@ public interface IMultisampleSource
      * @return The name, usually the source file
      */
     String getMappingName ();
+
+
+    /**
+     * Checks all samples in all layers for filter settings. Only if all samples contain the same
+     * filter settings a result is returned.
+     *
+     * @return The filter if a global filter setting is found
+     */
+    Optional<IFilter> getGlobalFilter ();
+
+
+    /**
+     * Sets a filter on all samples in all layers.
+     *
+     * @param filter The filter to set
+     */
+    void setGlobalFilter (IFilter filter);
 }

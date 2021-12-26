@@ -36,12 +36,16 @@ public class Sf2File
 
     /** The length of the PBAG structure. */
     private static final int          LENGTH_PBAG          = 4;
+    /** The length of the PMOD structure. */
+    private static final int          LENGTH_PMOD          = 10;
     /** The length of the PGEN structure. */
     private static final int          LENGTH_PGEN          = 4;
     /** The length of the INST structure. */
     private static final int          LENGTH_INST          = 22;
     /** The length of the IBAG structure. */
     private static final int          LENGTH_IBAG          = 4;
+    /** The length of the IMOD structure. */
+    private static final int          LENGTH_IMOD          = 10;
     /** The length of the IGEN structure. */
     private static final int          LENGTH_IGEN          = 4;
     /** The length of the SHDR structure. */
@@ -395,7 +399,7 @@ public class Sf2File
                     this.parsePresetGenerators (chunk);
                     break;
                 case SF_PMOD_ID:
-                    // Modulators are currently not supported
+                    this.parsePresetModulators (chunk);
                     break;
                 case SF_INST_ID:
                     this.parseInstruments (chunk);
@@ -404,7 +408,7 @@ public class Sf2File
                     this.parseInstrumentZones (chunk);
                     break;
                 case SF_IMOD_ID:
-                    // Modulators are currently not supported
+                    this.parseInstrumentModulators (chunk);
                     break;
                 case SF_IGEN_ID:
                     this.parseInstrumentGenerators (chunk);
@@ -448,14 +452,63 @@ public class Sf2File
                     {
                         final int offset = (firstZoneIndex + zoneCounter) * LENGTH_PBAG;
                         final int generatorIndex = chunk.twoBytesAsInt (offset);
-                        final int nextGeneratorIndex = chunk.twoBytesAsInt ((firstZoneIndex + zoneCounter + 1) * LENGTH_PBAG);
-                        preset.addZone (new Sf2PresetZone (generatorIndex, nextGeneratorIndex - generatorIndex, chunk.twoBytesAsInt (offset + 2)));
+                        final int modulatorIndex = chunk.twoBytesAsInt (offset + 2);
+                        final int nextGeneratorIndex = chunk.twoBytesAsInt (offset + LENGTH_PBAG);
+                        final int nextModulatorIndex = chunk.twoBytesAsInt (offset + LENGTH_PBAG + 2);
+                        preset.addZone (new Sf2PresetZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
                     }
                 }
             }
             catch (final RuntimeException ex)
             {
                 throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_ZONE"), ex);
+            }
+        }
+
+
+        /**
+         * Parse the preset modulators chunk (PMOD) and assign the parsed modulators to their
+         * preset.
+         *
+         * @param chunk The chunk to parse
+         * @throws ParseException Error if the chunk is unsound
+         */
+        private void parsePresetModulators (final RIFFChunk chunk) throws ParseException
+        {
+            // Check for sound PMOD structure
+            final long size = chunk.getSize ();
+            if (size % LENGTH_PMOD > 0)
+                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_MODULATORS"));
+
+            for (int i = 0; i < Sf2File.this.presets.size () - 1; i++)
+            {
+                final Sf2Preset preset = Sf2File.this.presets.get (i);
+                for (int zoneIndex = 0; zoneIndex < preset.getZoneCount (); zoneIndex++)
+                    this.parsePresetZoneModulators (chunk, preset.getZone (zoneIndex));
+            }
+        }
+
+
+        /**
+         * Parse all modulators of a preset zone.
+         *
+         * @param chunk The chunk to parse
+         * @param zone The zone
+         */
+        private void parsePresetZoneModulators (final RIFFChunk chunk, final Sf2PresetZone zone)
+        {
+            final int firstModulator = zone.getFirstModulator ();
+            final int numberOfModulators = zone.getNumberOfModulators ();
+
+            for (int index = 0; index < numberOfModulators; index++)
+            {
+                final int offset = (firstModulator + index) * LENGTH_PMOD;
+                final int sourceModulator = chunk.twoBytesAsInt (offset);
+                final int destinationGenerator = chunk.twoBytesAsInt (offset + 2);
+                final int modAmount = chunk.twoBytesAsInt (offset + 4);
+                final int amountSourceOperand = chunk.twoBytesAsInt (offset + 6);
+                final int transformOperand = chunk.twoBytesAsInt (offset + 8);
+                zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
             }
         }
 
@@ -494,10 +547,11 @@ public class Sf2File
             final int firstGenerator = zone.getFirstGenerator ();
             final int numberOfGenerators = zone.getNumberOfGenerators ();
 
-            for (int index = firstGenerator; index < firstGenerator + numberOfGenerators; index++)
+            for (int index = 0; index < numberOfGenerators; index++)
             {
-                final int generator = chunk.twoBytesAsInt (LENGTH_PGEN * index);
-                final int value = chunk.twoBytesAsInt (LENGTH_PGEN * index + 2);
+                final int offset = (firstGenerator + index) * LENGTH_PGEN;
+                final int generator = chunk.twoBytesAsInt (offset);
+                final int value = chunk.twoBytesAsInt (offset + 2);
                 zone.addGenerator (generator, value);
             }
 
@@ -570,14 +624,63 @@ public class Sf2File
                     {
                         final int offset = (firstZoneIndex + zoneCounter) * LENGTH_IBAG;
                         final int generatorIndex = chunk.twoBytesAsInt (offset);
-                        final int nextGeneratorIndex = chunk.twoBytesAsInt ((firstZoneIndex + zoneCounter + 1) * LENGTH_IBAG);
-                        instrument.addZone (new Sf2InstrumentZone (generatorIndex, nextGeneratorIndex - generatorIndex, chunk.twoBytesAsInt (offset + 2)));
+                        final int modulatorIndex = chunk.twoBytesAsInt (offset + 2);
+                        final int nextGeneratorIndex = chunk.twoBytesAsInt (offset + LENGTH_IBAG);
+                        final int nextModulatorIndex = chunk.twoBytesAsInt (offset + LENGTH_IBAG + 2);
+                        instrument.addZone (new Sf2InstrumentZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
                     }
                 }
             }
             catch (final RuntimeException ex)
             {
                 throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_ZONE"), ex);
+            }
+        }
+
+
+        /**
+         * Parse the instrument modulators chunk (IMOD) and assign the parsed modulators to their
+         * instrument.
+         *
+         * @param chunk The chunk to parse
+         * @throws ParseException Error if the chunk is unsound
+         */
+        private void parseInstrumentModulators (final RIFFChunk chunk) throws ParseException
+        {
+            // Check for sound PMOD structure
+            final long size = chunk.getSize ();
+            if (size % LENGTH_IMOD > 0)
+                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_MODULATORS"));
+
+            for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
+            {
+                final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
+                for (int zoneIndex = 0; zoneIndex < instrument.getZoneCount (); zoneIndex++)
+                    this.parseInstrumentZoneModulators (chunk, instrument.getZone (zoneIndex));
+            }
+        }
+
+
+        /**
+         * Parse all modulators of a instrument zone.
+         *
+         * @param chunk The chunk to parse
+         * @param zone The zone
+         */
+        private void parseInstrumentZoneModulators (final RIFFChunk chunk, final Sf2InstrumentZone zone)
+        {
+            final int firstModulator = zone.getFirstModulator ();
+            final int numberOfModulators = zone.getNumberOfModulators ();
+
+            for (int index = 0; index < numberOfModulators; index++)
+            {
+                final int offset = (firstModulator + index) * LENGTH_IMOD;
+                final int sourceModulator = chunk.twoBytesAsInt (offset);
+                final int destinationGenerator = chunk.twoBytesAsInt (offset + 2);
+                final int modAmount = chunk.twoBytesAsInt (offset + 4);
+                final int amountSourceOperand = chunk.twoBytesAsInt (offset + 6);
+                final int transformOperand = chunk.twoBytesAsInt (offset + 8);
+                zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
             }
         }
 
@@ -616,10 +719,11 @@ public class Sf2File
             final int firstGenerator = zone.getFirstGenerator ();
             final int numberOfGenerators = zone.getNumberOfGenerators ();
 
-            for (int index = firstGenerator; index < firstGenerator + numberOfGenerators; index++)
+            for (int index = 0; index < numberOfGenerators; index++)
             {
-                final int generator = chunk.twoBytesAsInt (LENGTH_IGEN * index);
-                final int value = chunk.twoBytesAsInt (LENGTH_IGEN * index + 2);
+                final int offset = (firstGenerator + index) * LENGTH_IGEN;
+                final int generator = chunk.twoBytesAsInt (offset);
+                final int value = chunk.twoBytesAsInt (offset + 2);
                 zone.addGenerator (generator, value);
             }
 

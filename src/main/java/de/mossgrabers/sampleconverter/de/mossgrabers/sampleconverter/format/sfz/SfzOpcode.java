@@ -89,6 +89,12 @@ public class SfzOpcode
     public static final String PITCH            = "pitch";
     /** SFZ v1. Defines how much the pitch changes with every note. */
     public static final String PITCH_KEYTRACK   = "pitch_keytrack";
+
+    /** SFZ v1. The pitch bend up in cents (-9600 to 9600). */
+    public static final String BEND_UP          = "bend_up";
+    /** SFZ v1. The pitch bend down in cents (-9600 to 9600). */
+    public static final String BEND_DOWN        = "bend_down";
+
     /** SFZ v1. The volume for the region, in decibels. */
     public static final String VOLUME           = "volume";
 
@@ -135,6 +141,87 @@ public class SfzOpcode
     public static final String AMP_SUSTAIN      = "amp_sustain";
     /** Cakewalk alias. The EG release time. */
     public static final String AMP_RELEASE      = "amp_release";
+
+    ////////////////////////////////////////////////////////////////
+    // Filter opcodes
+
+    /** SFZ v1. The cutoff frequency (Hz) of the 1st filter specified in Hertz. */
+    public static final String CUTOFF           = "cutoff";
+    /** SFZ v1. The filter cutoff resonance value, in decibels. */
+    public static final String RESONANCE        = "resonance";
+    /** SFZ v1. The type of filter. */
+    public static final String FILTER_TYPE      = "fil_type";
+
+    /** SFZ v1. The filter EG depth. */
+    public static final String FILEG_DEPTH      = "fileg_depth";
+    /** Cakewalk alias. The filter EG depth. */
+    public static final String FIL_DEPTH        = "fil_depth";
+
+    /** SFZ v1. The EG delay time. */
+    public static final String FILEG_DELAY      = "fileg_delay";
+    /** SFZ v1. The EG envelope start level. */
+    public static final String FILEG_START      = "fileg_start";
+    /** SFZ v1. The EG attack time. */
+    public static final String FILEG_ATTACK     = "fileg_attack";
+    /** SFZ v1. The EG hold time. */
+    public static final String FILEG_HOLD       = "fileg_hold";
+    /** SFZ v1. The EG decay time. */
+    public static final String FILEG_DECAY      = "fileg_decay";
+    /** SFZ v1. The EG envelope sustain level. */
+    public static final String FILEG_SUSTAIN    = "fileg_sustain";
+    /** SFZ v1. The EG release time. */
+    public static final String FILEG_RELEASE    = "fileg_release";
+    /** Cakewalk alias. The EG delay time. */
+    public static final String FIL_DELAY        = "fil_delay";
+    /** Cakewalk alias. The EG envelope start level. */
+    public static final String FIL_START        = "fil_start";
+    /** Cakewalk alias. The EG attack time. */
+    public static final String FIL_ATTACK       = "fil_attack";
+    /** Cakewalk alias. The EG hold time. */
+    public static final String FIL_HOLD         = "fil_hold";
+    /** Cakewalk alias. The EG decay time. */
+    public static final String FIL_DECAY        = "fil_decay";
+    /** Cakewalk alias. The EG envelope sustain level. */
+    public static final String FIL_SUSTAIN      = "fil_sustain";
+    /** Cakewalk alias. The EG release time. */
+    public static final String FIL_RELEASE      = "fil_release";
+
+    ////////////////////////////////////////////////////////////////
+    // Pitch opcodes
+
+    /** SFZ v1. The filter pitch EG depth. */
+    public static final String PITCHEG_DEPTH    = "pitcheg_depth";
+    /** Cakewalk alias. The filter pitch EG depth. */
+    public static final String PITCH_DEPTH      = "pitch_depth";
+
+    /** SFZ v1. The pitch EG delay time. */
+    public static final String PITCHEG_DELAY    = "pitcheg_delay";
+    /** SFZ v1. The pitch EG envelope start level. */
+    public static final String PITCHEG_START    = "pitcheg_start";
+    /** SFZ v1. The pitch EG attack time. */
+    public static final String PITCHEG_ATTACK   = "pitcheg_attack";
+    /** SFZ v1. The pitch EG hold time. */
+    public static final String PITCHEG_HOLD     = "pitcheg_hold";
+    /** SFZ v1. The pitch EG decay time. */
+    public static final String PITCHEG_DECAY    = "pitcheg_decay";
+    /** SFZ v1. The pitch EG envelope sustain level. */
+    public static final String PITCHEG_SUSTAIN  = "pitcheg_sustain";
+    /** SFZ v1. The pitch EG release time. */
+    public static final String PITCHEG_RELEASE  = "pitcheg_release";
+    /** Cakewalk alias. The pitch EG delay time. */
+    public static final String PITCH_DELAY      = "pitch_delay";
+    /** Cakewalk alias. The pitch EG envelope start level. */
+    public static final String PITCH_START      = "pitch_start";
+    /** Cakewalk alias. The pitch EG attack time. */
+    public static final String PITCH_ATTACK     = "pitch_attack";
+    /** Cakewalk alias. The pitch EG hold time. */
+    public static final String PITCH_HOLD       = "pitch_hold";
+    /** Cakewalk alias. The pitch EG decay time. */
+    public static final String PITCH_DECAY      = "pitch_decay";
+    /** Cakewalk alias. The pitch EG envelope sustain level. */
+    public static final String PITCH_SUSTAIN    = "pitch_sustain";
+    /** Cakewalk alias. The pitch EG release time. */
+    public static final String PITCH_RELEASE    = "pitch_release";
 
 
     /**
