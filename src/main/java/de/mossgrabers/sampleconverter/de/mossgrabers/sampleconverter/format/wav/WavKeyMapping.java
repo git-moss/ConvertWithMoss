@@ -206,7 +206,7 @@ public class WavKeyMapping
      * @param crossfadeNotes The number of notes to crossfade ranges
      * @param layerPatterns The layer patterns
      * @param leftChannelPatterns The left channel detection patterns
-     * @return The create layers
+     * @return The created layers
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */

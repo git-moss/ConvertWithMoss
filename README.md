@@ -209,6 +209,11 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
+## 4.7 (unreleased)
+
+* New: WAV: Layer detection pattern fields are now checked to contain a '*'.
+* Fixed: WAV: Having the layer detection pattern field empty led to undetectable MIDI notes.
+
 ## 4.6
 
 * New: SF2, SFZ, MPC: Support for Pitch bend range settings.

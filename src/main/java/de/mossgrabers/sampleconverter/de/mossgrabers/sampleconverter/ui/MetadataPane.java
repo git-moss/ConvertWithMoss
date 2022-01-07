@@ -6,6 +6,7 @@ package de.mossgrabers.sampleconverter.ui;
 
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
+import de.mossgrabers.sampleconverter.util.StringUtils;
 
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
@@ -21,8 +22,6 @@ public class MetadataPane implements IMetadataConfig
     private static final String PREFER_FOLDER_NAME = "PreferFolderName";
     private static final String DEFAULT_CREATOR    = "DefaultCreator";
     private static final String CREATORS           = "Creators";
-
-    private static final String COMMA_SPLIT        = ",";
 
     private final String        prefix;
 
@@ -103,6 +102,6 @@ public class MetadataPane implements IMetadataConfig
     @Override
     public String [] getCreatorTags ()
     {
-        return this.creatorsField.getText ().split (COMMA_SPLIT);
+        return StringUtils.splitByComma (this.creatorsField.getText ());
     }
 }
