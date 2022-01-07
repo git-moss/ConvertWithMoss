@@ -4,6 +4,8 @@
 
 package de.mossgrabers.sampleconverter.ui.tools.control;
 
+import de.mossgrabers.sampleconverter.util.StringUtils;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
@@ -116,7 +118,7 @@ public class LoggerBox
             {
                 final Document doc = this.engine.getDocument ();
                 final Element el = doc.getElementById ("content");
-                final String [] lines = text.split ("\n");
+                final String [] lines = StringUtils.split (text, "\n");
                 for (int i = 0; i < lines.length; i++)
                 {
                     final Text lineText = doc.createTextNode (lines[i]);

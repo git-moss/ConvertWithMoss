@@ -11,6 +11,7 @@ import de.mossgrabers.sampleconverter.ui.MetadataPane;
 import de.mossgrabers.sampleconverter.ui.tools.BasicConfig;
 import de.mossgrabers.sampleconverter.ui.tools.Functions;
 import de.mossgrabers.sampleconverter.ui.tools.panel.BoxPanel;
+import de.mossgrabers.sampleconverter.util.StringUtils;
 
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -33,8 +34,6 @@ import java.util.function.Consumer;
  */
 public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
 {
-    private static final String COMMA_SPLIT              = ",";
-
     private static final String WAV_DETECTION_PATTERN    = "WavDetectionPattern";
     private static final String WAV_IS_ASCENDING         = "WavIsAscending";
     private static final String WAV_MONO_SPLITS_PATTERN  = "WavMonoSPlitPattern";
@@ -69,10 +68,20 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
     {
         final boolean isAscending = this.sortAscendingGroup.getToggles ().get (1).isSelected ();
 
-        final String [] velocityLayerPatterns = this.detectionPatternField.getText ().split (COMMA_SPLIT);
-        final String [] monoSplitPatterns = this.monoSplitsField.getText ().split (COMMA_SPLIT);
+        final String [] velocityLayerPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
+        for (final String velocityLayerPattern: velocityLayerPatterns)
+        {
+            if (!velocityLayerPattern.contains ("*"))
+            {
+                Functions.message ("@IDS_NOTIFY_ERR_SPLIT_REGEX", velocityLayerPattern);
+                this.notifier.updateButtonStates (true);
+                this.detectionPatternField.selectAll ();
+                return;
+            }
+        }
 
-        final String [] postfixTexts = this.postfixField.getText ().split (COMMA_SPLIT);
+        final String [] monoSplitPatterns = StringUtils.splitByComma (this.monoSplitsField.getText ());
+        final String [] postfixTexts = StringUtils.splitByComma (this.postfixField.getText ());
 
         int crossfadeNotes;
         try
