@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -520,30 +521,24 @@ public class WavKeyMapping
         if (samples.isEmpty ())
             return new TreeMap<> ();
 
-        // Collect all potential key maps which match the first samples' name
-        Set<Integer> potentialKeyMaps = new HashSet<> ();
-        String filename = samples.get (0).getFilenameWithoutLayer ();
+        // Collect all potential key maps which match all sample names
+        final Set<Integer> potentialKeyMaps = new TreeSet<> ();
+        String filename = "";
         for (int keyMapIndex = 0; keyMapIndex < KEY_MAP.size (); keyMapIndex++)
         {
             final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex);
-            final int midiNote = this.lookupMidiNote (keyMap, filename);
-            if (midiNote > -1)
-                potentialKeyMaps.add (Integer.valueOf (keyMapIndex));
-        }
-
-        // Check the names of all other samples for the previously found key maps
-        for (int sampleIndex = 1; sampleIndex < samples.size (); sampleIndex++)
-        {
-            filename = samples.get (sampleIndex).getFilenameWithoutLayer ();
-            final Set<Integer> newPotentialKeyMaps = new HashSet<> ();
-            for (final Integer keyMapIndex: potentialKeyMaps)
+            int midiNote = -1;
+            for (int sampleIndex = 0; sampleIndex < samples.size (); sampleIndex++)
             {
-                final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex.intValue ());
-                final int midiNote = this.lookupMidiNote (keyMap, filename);
-                if (midiNote > -1)
-                    newPotentialKeyMaps.add (keyMapIndex);
+                filename = samples.get (sampleIndex).getFilenameWithoutLayer ();
+                midiNote = this.lookupMidiNote (keyMap, filename);
+                if (midiNote < 0)
+                    break;
             }
-            potentialKeyMaps = newPotentialKeyMaps;
+
+            // Did all sample names match?
+            if (midiNote >= 0)
+                potentialKeyMaps.add (Integer.valueOf (keyMapIndex));
         }
 
         if (potentialKeyMaps.isEmpty ())

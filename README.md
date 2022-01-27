@@ -209,10 +209,11 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
-## 4.7 (unreleased)
+## 4.7
 
 * New: WAV: Layer detection pattern fields are now checked to contain a '*'.
 * Fixed: WAV: Having the layer detection pattern field empty led to undetectable MIDI notes.
+* Fixed: WAV: The order of potential note names in file names could have been wrong and therefore a detection could fail.
 
 ## 4.6
 
