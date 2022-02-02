@@ -209,6 +209,10 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
+## 4.7.1 (unreleased)
+
+* Fixed: Akai XPM: Velocity range was not read correctly.
+
 ## 4.7
 
 * New: WAV: Layer detection pattern fields are now checked to contain a '*'.
