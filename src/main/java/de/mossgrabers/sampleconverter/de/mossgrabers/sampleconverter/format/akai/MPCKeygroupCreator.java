@@ -226,8 +226,8 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (sampleMetadata.getGain ())));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, "0.500000");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH, Double.toString (sampleMetadata.getTune ()));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.INSTRUMENT_VEL_START, Integer.toString (sampleMetadata.getVelocityLow ()));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.INSTRUMENT_VEL_END, Integer.toString (sampleMetadata.getVelocityHigh ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (sampleMetadata.getVelocityLow ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_END, Integer.toString (sampleMetadata.getVelocityHigh ()));
 
         final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
         if (filename.isEmpty ())

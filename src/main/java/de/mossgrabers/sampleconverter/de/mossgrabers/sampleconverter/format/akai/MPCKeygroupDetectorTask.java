@@ -222,9 +222,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                 keyHigh = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, 0);
             }
 
-            final int velStart = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VEL_START, 0);
-            final int velEnd = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VEL_END, 0);
-
             PlayLogic zonePlay;
             try
             {
@@ -263,6 +260,9 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                 final Element [] layerElements = XMLUtils.getChildElementsByName (layersElement, MPCKeygroupTag.LAYERS_LAYER);
                 for (final Element layerElement: layerElements)
                 {
+                    final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
+                    final int velEnd = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_END, 0);
+
                     final DefaultSampleMetadata sampleMetadata = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote);
                     if (sampleMetadata == null)
                         continue;

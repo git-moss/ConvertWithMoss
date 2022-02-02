@@ -47,10 +47,6 @@ public class MPCKeygroupTag
     public static final String INSTRUMENT_LOW_NOTE          = "LowNote";
     /** The high note element of the instrument element. */
     public static final String INSTRUMENT_HIGH_NOTE         = "HighNote";
-    /** The velocity start element of the instrument element. */
-    public static final String INSTRUMENT_VEL_START         = "VelStart";
-    /** The velocity end element of the instrument element. */
-    public static final String INSTRUMENT_VEL_END           = "VelEnd";
     /** The ignore base note element of the instrument element. */
     public static final String INSTRUMENT_IGNORE_BASE_NOTE  = "IgnoreBaseNote";
     /** The zone play element of the instrument element. */
@@ -127,6 +123,10 @@ public class MPCKeygroupTag
     public static final String LAYER_ROOT_NOTE              = "RootNote";
     /** The key track element of the layer element. */
     public static final String LAYER_KEY_TRACK              = "KeyTrack";
+    /** The velocity start element of the instrument element. */
+    public static final String LAYER_VEL_START              = "VelStart";
+    /** The velocity end element of the instrument element. */
+    public static final String LAYER_VEL_END                = "VelEnd";
     /** The sample start element of the layer element. */
     public static final String LAYER_SAMPLE_START           = "SampleStart";
     /** The sample end element of the layer element. */
