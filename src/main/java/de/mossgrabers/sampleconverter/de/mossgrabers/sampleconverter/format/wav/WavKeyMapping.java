@@ -144,9 +144,8 @@ public class WavKeyMapping
      */
     public WavKeyMapping (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
-        this.name = this.calculateCommonName (this.findShortestFilename ());
-
         this.orderedSampleMetadata = this.createLayers (sampleInfos, isAscending, crossfadeNotes, layerPatterns, leftChannelPatterns);
+        this.name = this.calculateCommonName (this.findShortestFilename ());
 
         // Calculate velocity crossfades
         final int range = 127 / this.orderedSampleMetadata.size ();

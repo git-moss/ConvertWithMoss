@@ -209,8 +209,9 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
-## 4.7.1 (unreleased)
+## 4.7.1
 
+* Fixed: Name detection was broken (if 'Prefer folder name' was off).
 * Fixed: Akai XPM: Velocity range was not read correctly.
 
 ## 4.7
