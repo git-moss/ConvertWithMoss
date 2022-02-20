@@ -4,7 +4,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.mossgrabers</groupId>
-	<artifactId>sampleconverter</artifactId>
+	<artifactId>convertwithmoss</artifactId>
 	<packaging>jar</packaging>
 	<name>ConvertWithMoss</name>
 	<organization>
@@ -15,10 +15,14 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<main.class>de.mossgrabers.sampleconverter.ui.SampleConverterApp</main.class>
+		<main.class>de.mossgrabers.convertwithmoss.ui.ConvertWithMossApp</main.class>
 	</properties>
 
 	<repositories>
+		<repository>
+			<id>maven-local-repository</id>
+			<url>file:///${project.basedir}/maven-local-repository</url>
+		</repository>
 		<repository>
 			<id>MavenCentral</id>
 			<name>Maven Central Repository</name>
@@ -30,12 +34,17 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>17.0.1</version>
+			<version>17.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-web</artifactId>
-			<version>17.0.1</version>
+			<version>17.0.2</version>
+		</dependency>
+		<dependency>
+			<artifactId>uitools</artifactId>
+			<groupId>de.mossgrabers</groupId>
+			<version>1.0</version>
 		</dependency>
 	</dependencies>
 
@@ -140,11 +149,11 @@
 				<configuration>
 					<input>target/lib</input>
 					<destination>target/release</destination>
-					<mainJar>sampleconverter-${project.version}.jar</mainJar>
+					<mainJar>convertwithmoss-${project.version}.jar</mainJar>
 					<mainClass>${main.class}</mainClass>
 					<name>${project.name}</name>
 					<appVersion>${project.version}</appVersion>
-					<copyright>(c) 2021 by ${project.organization.name}</copyright>
+					<copyright>(c) 2021-2022 by ${project.organization.name}</copyright>
 					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
 					<licenseFile>LICENSE</licenseFile>
@@ -154,14 +163,14 @@
 						<id>mac</id>
 						<configuration>
 							<type>DMG</type>
-							<icon>icons/SampleConverter.icns</icon>
+							<icon>icons/convertwithmoss.icns</icon>
 						</configuration>
 					</execution>
 					<execution>
 						<id>win</id>
 						<configuration>
 							<type>MSI</type>
-							<icon>icons/SampleConverter.ico</icon>
+							<icon>icons/convertwithmoss.ico</icon>
 							<winMenu>true</winMenu>
 							<winPerUserInstall>false</winPerUserInstall>
 							<winDirChooser>true</winDirChooser>
@@ -172,7 +181,7 @@
 						<id>linux</id>
 						<configuration>
 							<type>DEB</type>
-							<icon>src/main/resources/de/mossgrabers/sampleconverter/images/AppIcon.png</icon>
+							<icon>src/main/resources/de/mossgrabers/convertwithmoss/images/AppIcon.png</icon>
 						</configuration>
 					</execution>
 				</executions>
