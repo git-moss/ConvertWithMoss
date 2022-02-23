@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 
 /**
@@ -55,5 +56,19 @@ public final class FileUtils
         final String filename = file.getName ();
         final int pos = filename.lastIndexOf ('.');
         return pos == -1 ? filename : filename.substring (0, pos);
+    }
+
+    /**
+     * Gets the extension of the file without the name. E.g. the filename 'aFile.jpeg' will return
+     * 'jpeg'.
+     *
+     * @param file The file from which to get the extension
+     * @return The extension of the file
+     */
+    public static Optional<String> getExtension(final File file) {
+        final String filename = file.getName ();
+        return Optional.ofNullable(filename)
+          .filter(f -> f.contains("."))
+          .map(f -> f.substring(filename.lastIndexOf(".") + 1));
     }
 }

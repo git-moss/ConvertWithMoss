@@ -21,14 +21,30 @@ import java.io.IOException;
  */
 public final class AudioFileUtils
 {
-    /**
-     * Private due to helper class.
-     */
-    private AudioFileUtils ()
+    private enum AudioFileType
     {
-        // Intentionally empty
+        UNSUPPORTED,
+        WAV_PCM,
+        FLAC
     }
 
+    /**
+     * 
+     */
+    public static AudioFileType getEncoding(final File audioFile) throws Exception
+    {
+        final var extension = FileUtils.getExtension(audioFile).get().toLowerCase();
+        
+        switch (extension)
+        {
+            case "wav":
+                return AudioFileType.WAV_PCM;
+            case "flac":
+               return AudioFileType.FLAC;
+            default:
+                return AudioFileType.UNSUPPORTED;
+        }
+    }
 
     /**
      * Get the number of samples of an audio file.

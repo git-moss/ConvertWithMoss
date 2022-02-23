@@ -12,6 +12,7 @@ module de.mossgrabers.convertwithmoss
     requires transitive javafx.web;
     requires transitive java.xml;
     requires transitive de.mossgrabers.uitools;
+    requires jflac.codec;
 
 
     exports de.mossgrabers.convertwithmoss.ui;

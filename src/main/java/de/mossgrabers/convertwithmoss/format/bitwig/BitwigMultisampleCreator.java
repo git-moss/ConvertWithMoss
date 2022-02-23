@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.zip.ZipOutputStream;
+import java.util.HashSet;
 
 
 /**
@@ -35,6 +36,9 @@ import java.util.zip.ZipOutputStream;
  */
 public class BitwigMultisampleCreator extends AbstractCreator
 {
+
+    
+
     /**
      * Constructor.
      *
@@ -66,7 +70,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
             this.zipMetadataFile (zos, "multisample.xml", metadata.get ());
-            this.zipSamples (zos, null, multisampleSource);
+            zipSamples (zos, null, multisampleSource);
         }
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
@@ -206,6 +210,33 @@ public class BitwigMultisampleCreator extends AbstractCreator
             final double crossfade = sampleLoop.getCrossfade ();
             if (crossfade > 0)
                 XMLUtils.setDoubleAttribute (loopElement, "fade", crossfade, 2);
+        }
+    }
+
+    /**
+     * Add all samples from all layers in the given ZIP output stream.
+     *
+     * @param zos The ZIP output stream to which to add the samples
+     * @param relativeFolderName The relative folder under which to store the file in the ZIP
+     * @param multisampleSource The multisample
+     * @throws IOException Could not store the samples
+     */
+    protected void zipSamples (final ZipOutputStream zos, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
+    {
+        int outputCount = 0;
+        final Set<String> alreadyStored = new HashSet<> ();
+        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        {
+            for (final ISampleMetadata info: layer.getSampleMetadata ())
+            {
+                if (info.getUpdatedFilename())
+                this.notifier.log ("IDS_NOTIFY_PROGRESS");
+                outputCount++;
+                if (outputCount % 80 == 0)
+                    this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+
+                addFileToZip (alreadyStored, zos, info, relativeFolderName);
+            }
         }
     }
 }
