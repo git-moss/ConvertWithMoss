@@ -16,6 +16,7 @@ import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.renoiseinstrument.RenoiseInstrumentDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
@@ -115,7 +116,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new Sf2Detector (this),
             new DecentSamplerDetector (this),
             new MPCKeygroupDetector (this),
-            new KorgmultisampleDetector (this)
+            new KorgmultisampleDetector (this),
+            new RenoiseInstrumentDetector(this)
         };
 
         this.creators = new ICreator []
