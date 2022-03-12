@@ -10,6 +10,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityL
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;
+import de.mossgrabers.tools.ui.Functions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -283,20 +284,20 @@ public class WavKeyMapping
             if (noOfAssignedSamples == -1)
             {
                 if (size > 2)
-                    throw new MultisampleException ("Attempt to combine Mono splits into Stereo files but there are more than two files per note.", entry);
+                    throw new MultisampleException (Functions.getMessage ("IDS_WAV_MORE_THAN_2_FILES"), entry);
                 if (size == 2)
                 {
                     for (final ISampleMetadata sm: samples)
                     {
                         if (!sm.isMono ())
-                            throw new MultisampleException ("Files to combine must be Mono.", entry);
+                            throw new MultisampleException (Functions.getMessage ("IDS_WAV_FILES_MUST_BE_MONO"), entry);
                     }
 
                 }
                 noOfAssignedSamples = size;
             }
             else if (noOfAssignedSamples != size)
-                throw new MultisampleException ("Attempt to combine Mono splits into Stereo files but not all notes have the same number of files.", entry);
+                throw new MultisampleException (Functions.getMessage ("IDS_WAV_DIFFERENT_NUMBER_OF_FILES"), entry);
         }
 
         if (noOfAssignedSamples == 1)
@@ -362,7 +363,7 @@ public class WavKeyMapping
                 return combineLeftRight (second, first, pattern);
         }
 
-        throw new CombinationNotPossibleException ("Could not detect left channel.");
+        throw new CombinationNotPossibleException (Functions.getMessage ("IDS_WAV_NO_LEFT_CHANNEL"));
     }
 
 
@@ -412,7 +413,7 @@ public class WavKeyMapping
             final String filename = si.getFilename ();
             final Matcher matcher = pattern.matcher (filename);
             if (!matcher.matches ())
-                throw new MultisampleException ("Could not detected velocity layer information in: " + filename);
+                throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_VEL_LAYER_DETECTED", filename));
             try
             {
                 final String number = matcher.group ("value");
@@ -424,7 +425,7 @@ public class WavKeyMapping
             }
             catch (final NumberFormatException ex)
             {
-                throw new MultisampleException ("Could not detected velocity layer information in: " + filename);
+                throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_VEL_LAYER_DETECTED", filename));
             }
         }
 
@@ -464,7 +465,7 @@ public class WavKeyMapping
                 query = "(?<prefix>.*)" + Pattern.quote (parts[0]) + "(?<value>\\d+)" + Pattern.quote (parts[1]) + "(?<postfix>.*)";
             }
             else
-                throw new MultisampleException ("Could not parse layer pattern: " + layerPattern);
+                throw new MultisampleException (Functions.getMessage ("IDS_WAV_ERR_IN_LAYER_PATTERN", layerPattern));
 
             final Pattern p = Pattern.compile (query);
             if (p.matcher (filename).matches ())
@@ -500,7 +501,7 @@ public class WavKeyMapping
         // All samples are mapped to the same note, seems the metadata does not contain meaningful
         // information...
         if (orderedNotes.size () == 1 && samples.size () > 1)
-            throw new NoteNotDetectedException ("All files have the same midi note");
+            throw new NoteNotDetectedException (Functions.getMessage ("IDS_WAV_ONLY_ONE_NOTE"));
 
         return orderedNotes;
     }
@@ -599,10 +600,9 @@ public class WavKeyMapping
             }
             catch (final NoteNotDetectedException ex2)
             {
-                throw new MultisampleException ("Could not detect MIDI note in file name: " + ex2.getMessage ());
+                throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_MIDI_NOTE_DETECTED", ex2.getMessage ()));
             }
         }
-
     }
 
 

@@ -17,7 +17,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.FileUtils;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2File;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Instrument;
@@ -27,6 +26,7 @@ import de.mossgrabers.convertwithmoss.file.sf2.Sf2Preset;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2PresetZone;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 
 import java.io.File;
@@ -204,7 +204,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
                     default:
                     case Sf2SampleDescriptor.MONO:
-                        final int panorama = sf2SampleMetadata.getPanorama ();
+                        final double panorama = sf2SampleMetadata.getPanorama ();
                         if (panorama == 0)
                             resultSamples.add (sampleMetadata);
                         else if (panorama < 0)
@@ -372,7 +372,11 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      */
     private static Sf2SampleMetadata createSampleMetadata (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
     {
-        final Sf2SampleMetadata sampleMetadata = new Sf2SampleMetadata (sample, generators.getSignedValue (Generator.PANORAMA));
+        final Sf2SampleMetadata sampleMetadata = new Sf2SampleMetadata (sample);
+
+        final Integer panorama = generators.getSignedValue (Generator.PANORAMA);
+        if (panorama != null)
+            sampleMetadata.setPanorama (panorama.intValue () / 500.0);
 
         // Set the pitch
         final int overridingRootKey = generators.getUnsignedValue (Generator.OVERRIDING_ROOT_KEY).intValue ();

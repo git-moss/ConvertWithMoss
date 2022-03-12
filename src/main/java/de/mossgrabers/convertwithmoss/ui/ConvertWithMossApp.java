@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -26,6 +27,7 @@ import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.LoggerBox;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
+import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import de.mossgrabers.tools.ui.panel.ButtonPanel;
 
@@ -33,11 +35,13 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -115,7 +119,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new Sf2Detector (this),
             new DecentSamplerDetector (this),
             new MPCKeygroupDetector (this),
-            new KorgmultisampleDetector (this)
+            new KorgmultisampleDetector (this),
+            new KMPDetector (this)
         };
 
         this.creators = new ICreator []
@@ -137,8 +142,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         // The main button panel
         final ButtonPanel buttonPanel = new ButtonPanel (Orientation.VERTICAL);
-        buttonPanel.createButton ("@IDS_MAIN_CONVERT").setOnAction (event -> this.execute (false));
-        buttonPanel.createButton ("@IDS_MAIN_ANALYSE").setOnAction (event -> this.execute (true));
+
+        final Button convertButton = setupButton (buttonPanel, "Convert", "@IDS_MAIN_CONVERT");
+        convertButton.setOnAction (event -> this.execute (false));
+        final Button analyseButton = setupButton (buttonPanel, "Analyse", "@IDS_MAIN_ANALYSE");
+        analyseButton.setOnAction (event -> this.execute (true));
 
         // Source pane
         final BorderPane sourcePane = new BorderPane ();
@@ -149,7 +157,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final Button sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         sourceFolderSelectButton.setOnAction (event -> {
 
-            final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, Functions.getText ("@IDS_MAIN_SELECT_SOURCE_HEADER"));
+            final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_SOURCE_HEADER");
             if (file.isPresent ())
                 this.sourcePathField.setText (file.get ().getAbsolutePath ());
 
@@ -182,7 +190,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final Button destinationFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION"));
         destinationFolderSelectButton.setOnAction (event -> {
 
-            final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, Functions.getText ("@IDS_MAIN_SELECT_DESTINATION_HEADER"));
+            final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_DESTINATION_HEADER");
             if (file.isPresent ())
                 this.destinationPathField.setText (file.get ().getAbsolutePath ());
 
@@ -241,9 +249,10 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         // The execution button panel
         final ButtonPanel exButtonPanel = new ButtonPanel (Orientation.VERTICAL);
-        this.cancelButton = exButtonPanel.createButton ("@IDS_EXEC_CANCEL");
+
+        this.cancelButton = setupButton (exButtonPanel, "Cancel", "@IDS_EXEC_CANCEL");
         this.cancelButton.setOnAction (event -> this.cancelExecution ());
-        this.closeButton = exButtonPanel.createButton ("@IDS_EXEC_CLOSE");
+        this.closeButton = setupButton (exButtonPanel, "Close", "@IDS_EXEC_CLOSE");
         this.closeButton.setOnAction (event -> this.closeExecution ());
 
         this.executePane.setCenter (this.loggingArea.getWebView ());
@@ -378,7 +387,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.sourceFolder = new File (this.sourcePathField.getText ());
         if (!this.sourceFolder.exists () || !this.sourceFolder.isDirectory ())
         {
-            Functions.message ("The source folder does not exist: %1", this.sourceFolder.getAbsolutePath ());
+            Functions.message ("@IDS_NOTIFY_FOLDER_DOES_NOT_EXIST", this.sourceFolder.getAbsolutePath ());
+            this.sourcePathField.requestFocus ();
             return false;
         }
 
@@ -389,12 +399,14 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.outputFolder = new File (this.destinationPathField.getText ());
         if (!this.outputFolder.exists () && !this.outputFolder.mkdirs ())
         {
-            Functions.message ("Could not create output folder: %1", this.outputFolder.getAbsolutePath ());
+            Functions.message ("@IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", this.outputFolder.getAbsolutePath ());
+            this.destinationPathField.requestFocus ();
             return false;
         }
         if (!this.outputFolder.isDirectory ())
         {
-            Functions.message ("The selected output folder is not a folder: %1", this.outputFolder.getAbsolutePath ());
+            Functions.message ("@IDS_NOTIFY_FOLDER_DESTINATION_NOT_A_FOLDER", this.outputFolder.getAbsolutePath ());
+            this.destinationPathField.requestFocus ();
             return false;
         }
 
@@ -404,7 +416,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             final String [] content = this.outputFolder.list ();
             if (content == null || content.length > 0)
             {
-                Functions.message ("The output folder is not empty. Please select an empty folder.");
+                Functions.message ("@IDS_NOTIFY_FOLDER_MUST_BE_EMPTY");
+                this.destinationPathField.requestFocus ();
                 return false;
             }
         }
@@ -471,6 +484,14 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    public void logText (String text)
+    {
+        this.loggingArea.notify (text);
+    }
+
+
     /**
      * Creates the file object for the output folder.
      *
@@ -490,7 +511,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         {
             result = new File (result, parts[i]);
             if (!result.exists () && !result.mkdirs ())
-                throw new IOException ("Could not create folder: " + result.getAbsolutePath ());
+                throw new IOException (Functions.getMessage ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", result.getAbsolutePath ()));
         }
         return result;
     }
@@ -504,5 +525,15 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             this.cancelButton.setDisable (canClose);
             this.closeButton.setDisable (!canClose);
         });
+    }
+
+
+    private static Button setupButton (final BasePanel panel, final String iconName, final String labelName)
+    {
+        final Image icon = Functions.iconFor ("de/mossgrabers/convertwithmoss/images/" + iconName + ".png");
+        final Button button = panel.createButton (icon, labelName);
+        button.alignmentProperty ().set (Pos.CENTER_LEFT);
+        button.graphicTextGapProperty ().set (12);
+        return button;
     }
 }

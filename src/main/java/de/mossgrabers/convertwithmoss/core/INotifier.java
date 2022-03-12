@@ -47,6 +47,14 @@ public interface INotifier
 
 
     /**
+     * Log the text to the notifier. Only use for development or debugging.
+     *
+     * @param text The text to log
+     */
+    void logText (String text);
+
+
+    /**
      * Update the button execution states.
      *
      * @param canClose Execution can be closed
