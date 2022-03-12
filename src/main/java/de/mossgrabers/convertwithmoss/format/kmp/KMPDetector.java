@@ -2,7 +2,7 @@
 // (c) 2019-2022
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai;
+package de.mossgrabers.convertwithmoss.format.kmp;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -13,20 +13,20 @@ import java.util.function.Consumer;
 
 
 /**
- * Descriptor for MPC keygroup files detector.
+ * Descriptor for Korg Multisample (KMP) files detector.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class MPCKeygroupDetector extends AbstractDetectorWithMetadataPane<MPCKeygroupDetectorTask>
+public class KMPDetector extends AbstractDetectorWithMetadataPane<KMPDetectorTask>
 {
     /**
      * Constructor.
      *
      * @param notifier The notifier
      */
-    public MPCKeygroupDetector (final INotifier notifier)
+    public KMPDetector (final INotifier notifier)
     {
-        super ("MPC Keygroup", notifier, "MPC");
+        super ("KMP (KORG Multisample Parameter)", notifier, "KMP");
     }
 
 
@@ -34,6 +34,6 @@ public class MPCKeygroupDetector extends AbstractDetectorWithMetadataPane<MPCKey
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.startDetection (new MPCKeygroupDetectorTask (this.notifier, consumer, folder, this.metadataPane));
+        this.startDetection (new KMPDetectorTask (this.notifier, consumer, folder, this.metadataPane));
     }
 }

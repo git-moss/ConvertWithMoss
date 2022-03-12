@@ -277,6 +277,22 @@ public interface ISampleMetadata extends IEnvelopeAccess
 
 
     /**
+     * Get the panorama.
+     * 
+     * @return The panorama in the range of [-1..1], -1 is full left, 0 centered and 1 full right
+     */
+    double getPanorama ();
+
+
+    /**
+     * Set the panorama in the range of [-1..1], -1 is full left, 0 centered and 1 full right.
+     * 
+     * @param panorama The panorama
+     */
+    void setPanorama (double panorama);
+
+
+    /**
      * Get the key tracking of the sample.
      *
      * @return The tuning in the range of [-1 .. 1] representing [-100 .. 100] cent

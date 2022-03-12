@@ -14,7 +14,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
-import de.mossgrabers.convertwithmoss.file.FileUtils;
+import de.mossgrabers.tools.FileUtils;
 
 import java.io.BufferedInputStream;
 import java.io.File;

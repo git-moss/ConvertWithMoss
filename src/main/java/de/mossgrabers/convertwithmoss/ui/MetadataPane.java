@@ -33,7 +33,7 @@ public class MetadataPane implements IMetadataConfig
     /**
      * Constructor.
      *
-     * @param prefix The prefix to used for the properties tags.
+     * @param prefix The prefix to use for the properties tags
      */
     public MetadataPane (final String prefix)
     {

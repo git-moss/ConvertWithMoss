@@ -209,6 +209,10 @@ Since the format supports only one layer of a multisample, multiple files are cr
 
 # Changes
 
+## 4.7.2 (unreleased)
+
+* New: Added icons to the buttons.
+
 ## 4.7.1
 
 * Fixed: Name detection was broken (if 'Prefer folder name' was off).

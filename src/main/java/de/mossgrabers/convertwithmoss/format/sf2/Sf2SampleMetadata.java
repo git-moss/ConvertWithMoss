@@ -23,22 +23,19 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
 {
     private final Sf2SampleDescriptor sample;
     private Sf2SampleDescriptor       rightSample;
-    private final Integer             panorama;
 
 
     /**
      * Constructor.
      *
      * @param sample The name of the file where the sample is stored
-     * @param panorama The panorama setting of the sample
      */
-    public Sf2SampleMetadata (final Sf2SampleDescriptor sample, final Integer panorama)
+    public Sf2SampleMetadata (final Sf2SampleDescriptor sample)
     {
         super (sample.getName (), null, null, null);
 
         this.sample = sample;
         this.rightSample = sample;
-        this.panorama = panorama;
         this.sampleRate = (int) sample.getSampleRate ();
     }
 
@@ -146,15 +143,6 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
     public Sf2SampleDescriptor getSample ()
     {
         return this.sample;
-    }
-
-
-    /**
-     * @return the panorama
-     */
-    public int getPanorama ()
-    {
-        return this.panorama.intValue ();
     }
 
 

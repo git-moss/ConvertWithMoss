@@ -64,7 +64,7 @@ public class Sf2File
     private String                    creationTool;
 
     /**
-     * The smpl sub-chunk, if present, contains one or more “samples” of digital audio information
+     * The smpl sub-chunk, if present, contains one or more "samples" of digital audio information
      * in the form of linearly coded sixteen bit, signed, little endian (least significant byte
      * first) words. Each sample is followed by a minimum of forty-six zero valued sample data
      * points. These zero valued data points are necessary to guarantee that any reasonable upward

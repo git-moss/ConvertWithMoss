@@ -6,14 +6,7 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.ui.MetadataPane;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.ScrollPane;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadataPane;
 
 import java.io.File;
 import java.util.function.Consumer;
@@ -24,11 +17,8 @@ import java.util.function.Consumer;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class SfzDetector extends AbstractDetector<SfzDetectorTask>
+public class SfzDetector extends AbstractDetectorWithMetadataPane<SfzDetectorTask>
 {
-    private MetadataPane metadataPane = new MetadataPane ("Sfz");
-
-
     /**
      * Constructor.
      *
@@ -36,7 +26,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorTask>
      */
     public SfzDetector (final INotifier notifier)
     {
-        super ("SFZ", notifier);
+        super ("SFZ", notifier, "Sfz");
     }
 
 
@@ -45,35 +35,5 @@ public class SfzDetector extends AbstractDetector<SfzDetectorTask>
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
         this.startDetection (new SfzDetectorTask (this.notifier, consumer, folder, this.metadataPane));
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        this.metadataPane.saveSettings (config);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.metadataPane.loadSettings (config);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.metadataPane.addTo (panel);
-
-        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
-        scrollPane.fitToWidthProperty ().set (true);
-        scrollPane.fitToHeightProperty ().set (true);
-        return scrollPane;
     }
 }

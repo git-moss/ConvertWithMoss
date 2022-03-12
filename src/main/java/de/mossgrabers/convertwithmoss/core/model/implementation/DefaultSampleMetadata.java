@@ -31,8 +31,8 @@ import java.util.zip.ZipFile;
  */
 public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMetadata
 {
-    protected final String      filename;
-    protected final File        sampleFile;
+    protected String            filename;
+    protected File              sampleFile;
     protected final File        zipFile;
     protected final File        zipEntry;
 
@@ -56,6 +56,7 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
     protected int               crossfadeVelocitiesHigh = 0;
 
     protected double            gain                    = 0;
+    protected double            panorama                = 0;
     protected double            tune                    = 0;
     protected double            keyTracking             = 1.0;
     protected int               bendUp                  = 0;
@@ -90,6 +91,15 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
 
 
     /**
+     * Constructor for a sample stored in the file system.
+     */
+    protected DefaultSampleMetadata ()
+    {
+        this (null, null, null, null);
+    }
+
+
+    /**
      * Constructor.
      *
      * @param filename The name of the file where the sample is stored (must not contain any paths!)
@@ -111,6 +121,17 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
     public File getFile ()
     {
         return this.sampleFile;
+    }
+
+
+    /**
+     * Set the filename.
+     *
+     * @param filename The filename
+     */
+    public void setFilename (final String filename)
+    {
+        this.filename = filename;
     }
 
 
@@ -351,6 +372,22 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
     public double getGain ()
     {
         return this.gain;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPanorama (final double panorama)
+    {
+        this.panorama = panorama;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getPanorama ()
+    {
+        return this.panorama;
     }
 
 
