@@ -75,19 +75,22 @@ public class WaveFile
 
     /**
      * Constructor. Reads a WAV file from a stream.
+     */
+    public WaveFile ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
+     * Reads a WAV file from a stream.
      *
      * @param inputStream The input stream which provides the WAV file
      * @param ignoreChunkErrors Ignores unknown or missing chunk errors if true
      * @throws IOException Could not read the file
      * @throws ParseException Error parsing the chunks
      */
-    public WaveFile (final InputStream inputStream, final boolean ignoreChunkErrors) throws IOException, ParseException
-    {
-        this.read (inputStream, ignoreChunkErrors);
-    }
-
-
-    private void read (final InputStream inputStream, final boolean ignoreChunkErrors) throws IOException, ParseException
+    public void read (final InputStream inputStream, final boolean ignoreChunkErrors) throws IOException, ParseException
     {
         new RIFFParser ().parse (inputStream, new Visitor (), ignoreChunkErrors);
 

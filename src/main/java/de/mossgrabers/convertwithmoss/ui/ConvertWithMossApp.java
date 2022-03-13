@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
@@ -129,7 +130,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new SfzCreator (this),
             new DecentSamplerCreator (this),
             new MPCKeygroupCreator (this),
-            new KorgmultisampleCreator (this)
+            new KorgmultisampleCreator (this),
+            new KMPCreator (this)
         };
     }
 
@@ -486,7 +488,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
     /** {@inheritDoc} */
     @Override
-    public void logText (String text)
+    public void logText (final String text)
     {
         this.loggingArea.notify (text);
     }

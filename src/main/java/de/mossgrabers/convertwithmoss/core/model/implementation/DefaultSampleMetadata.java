@@ -36,8 +36,8 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
     protected final File        zipFile;
     protected final File        zipEntry;
 
-    protected boolean           isMonoFile              = false;
     protected int               sampleRate              = 44100;
+    protected boolean           isMonoFile              = false;
 
     protected Optional<String>  combinedFilename        = Optional.empty ();
     protected Optional<String>  filenameWithoutLayer    = Optional.empty ();

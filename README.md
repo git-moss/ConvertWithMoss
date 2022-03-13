@@ -74,6 +74,7 @@ The following multisample formats are supported as the source format:
 5. DecentSampler (*.dspreset, *.dslibrary)
 6. Akai MPC Keygroups (*.xpm)
 8. Korg wavestate/modwave (*.korgmultisample)
+9. Korg KMP/KSF (*.KMP)
 
 The following multisample formats are supported as the destination format:
 
@@ -82,6 +83,7 @@ The following multisample formats are supported as the destination format:
 3. DecentSampler (*.dspreset, *.dslibrary)
 4. Akai MPC Keygroups (*.xpm)
 5. Korg wavestate/modwave (*.korgmultisample)
+6. Korg KMP/KSF (*.KMP)
 
 ## Source formats
 
@@ -164,11 +166,26 @@ Both keygroup and drum types are supported.
 
 There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
 
-### Korg wavestate/modwave (*.korgmultisample)
+### Korg wavestate/modwave
 
-The korgmultisample format is currently used by the Korg wavestate and modwave keyboards. Files in that format can be opened with the Korg Sample Builder software and transferred to the keyboard.
+The korgmultisample format is currently used by the Korg wavestate and modwave keyboards. Files in that format (*.korgmultisample) can be opened with the Korg Sample Builder software and transferred to the keyboard.
 
 Since the format is pretty simple all data stored in the file is available for the conversion.
+
+### Korg KMP/KSF
+
+The KMP/KSF format (*.KMP) was first introduced in the Korg Trinity workstation (1995) and since then supported in many Korg workstations and entertainment keyboards up to the latest Korg Nautilus (2020). The following keyboards are known to support the format:
+
+* Trinity
+* Triton
+* OASYS
+* M3
+* Kronos
+* KROSS (only for pads)
+* PA1X/PA800/PA2X/PA3X/PA4X
+* Nautilus
+
+The format is documented in detail in the appendix of the respective parameter guides. The KMP format contains only 1 layer of a multisample, which means there are only key splits but no velocity layers. The file references several KSF files which contain the sample data for each key region.
 
 ## Destination formats
 
@@ -207,10 +224,15 @@ The korgmultisample format is currently used by the Korg wavestate and modwave k
 
 Since the format supports only one layer of a multisample, multiple files are created for each layer available in the source. If there is more than one layer in the source the name of the created file has the velocity range of the layer added. Using that information a multisample with up to 4 layers can be created as Performance in the device.
 
+### Korg KMP/KSF
+
+Since the KMP format can only contain 1 layer of a multisample, sources with multiple velocity layers are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
+
 # Changes
 
-## 4.7.2 (unreleased)
+## 5.0
 
+* New: Added reading/writing of Korg KMP/KSF files.
 * New: Added icons to the buttons.
 
 ## 4.7.1

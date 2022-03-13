@@ -5,15 +5,22 @@
 package de.mossgrabers.convertwithmoss.format.kmp;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,13 +64,35 @@ public class KMPFile
     private String              nameLong;
 
     private List<KSFFile>       ksfFiles        = new ArrayList<> ();
+    private IVelocityLayer      layer;
 
 
     /**
      * Constructor.
-     * 
-     * @param notifier
      *
+     * @param notifier For logging errors
+     * @param dosFilename Classic 8.3 file name
+     * @param layerName The name of the layer
+     * @param layer The layer
+     */
+    public KMPFile (final INotifier notifier, final String dosFilename, final String layerName, final IVelocityLayer layer)
+    {
+        this.notifier = notifier;
+        this.sampleFolder1 = null;
+        this.sampleFolder2 = null;
+
+        this.layer = layer;
+        this.numSamples = this.layer.getSampleMetadata ().size ();
+
+        this.name = dosFilename;
+        this.nameLong = layerName;
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param notifier For logging errors
      * @param kmpFile The KMP file
      * @throws IOException Could not read the file
      * @throws ParseException Error parsing the chunks
@@ -83,7 +112,29 @@ public class KMPFile
 
 
     /**
-     * Read and parse a SF2 file.
+     * Get the name.
+     *
+     * @return The name
+     */
+    public String getName ()
+    {
+        return this.nameLong == null ? this.name : this.nameLong;
+    }
+
+
+    /**
+     * Get the sample files.
+     *
+     * @return The KSF files
+     */
+    public List<KSFFile> getKsfFiles ()
+    {
+        return this.ksfFiles;
+    }
+
+
+    /**
+     * Read and parse a KMP file.
      *
      * @param inputStream Where to read the file from
      * @throws IOException Could not read the file
@@ -167,17 +218,6 @@ public class KMPFile
     }
 
 
-    /**
-     * Get the name.
-     *
-     * @return The name
-     */
-    public String getName ()
-    {
-        return this.nameLong == null ? this.name : this.nameLong;
-    }
-
-
     private void readMultisampleChunk (final DataInputStream in) throws IOException
     {
         this.name = new String (in.readNBytes (16)).trim ();
@@ -199,9 +239,7 @@ public class KMPFile
             final KSFFile ksfFile = this.ksfFiles.get (i);
             final int originalKey = in.read ();
 
-            // What to do with this? Example files are all 0
-            // originalKey & 0x80
-
+            ksfFile.setKeyTracking ((originalKey & 0x80) > 0 ? 1 : 0);
             ksfFile.setKeyRoot (originalKey & 0x7F);
             ksfFile.setKeyLow (lowerKey);
             ksfFile.setKeyHigh (in.read ());
@@ -223,8 +261,8 @@ public class KMPFile
             {
                 try
                 {
-                    final Integer internalIndex = Integer.valueOf (sampleFilename.substring (SAMPLE_INTERNAL.length ()));
-                    this.notifier.logError ("IDS_KMP_ERR_INTERNAL_SAMPLE", internalIndex.toString ());
+                    final int internalIndex = Integer.parseInt (sampleFilename.substring (SAMPLE_INTERNAL.length ()));
+                    this.notifier.logError ("IDS_KMP_ERR_INTERNAL_SAMPLE", Integer.toString (internalIndex));
                 }
                 catch (final NumberFormatException ex)
                 {
@@ -241,12 +279,8 @@ public class KMPFile
     {
         for (int i = 0; i < this.ksfFiles.size (); i++)
         {
-            final KSFFile ksfFile = this.ksfFiles.get (i);
-
-            final int transpose = in.readByte ();
-            if (transpose != 0)
-                ksfFile.setTune (transpose);
-
+            // Transpose
+            in.readByte ();
             // Ignore Resonance, Attack and Decay
             in.readByte ();
             in.readByte ();
@@ -263,12 +297,150 @@ public class KMPFile
 
 
     /**
-     * Get the sample files.
-     * 
-     * @return The KSF files
+     * Write a KMP file.
+     *
+     * @param folder The folder of the KMP file
+     * @param outputStream Where to write the file to
+     * @throws IOException Could not read the file
      */
-    public List<KSFFile> getKsfFiles ()
+    public void write (final File folder, final OutputStream outputStream) throws IOException
     {
-        return this.ksfFiles;
+        final DataOutputStream out = new DataOutputStream (outputStream);
+
+        this.writeMultisampleChunk (out);
+        writeNumberChunk (out);
+        this.writeParameterChunk1 (out);
+        this.writeParameterChunk2 (out);
+        this.writeNameChunk (out);
+        this.writeParameterChunk3 (out);
+
+        this.writeKSFFiles (folder);
+
+    }
+
+
+    private void writeMultisampleChunk (final DataOutputStream out) throws IOException
+    {
+        out.write (KMP_MSP_ID.getBytes ());
+        out.writeInt (KMP_MSP_SIZE);
+
+        out.write (StringUtils.rightPadSpaces (StringUtils.fixASCII (this.nameLong), 16).getBytes ());
+        out.write (this.numSamples);
+
+        // useSecondStart (1 = not use) not sure what that is about
+        out.write (1);
+    }
+
+
+    private void writeNameChunk (final DataOutputStream out) throws IOException
+    {
+        out.write (KMP_NAME_ID.getBytes ());
+        out.writeInt (KMP_NAME_SIZE);
+        out.write (StringUtils.rightPadSpaces (StringUtils.fixASCII (this.nameLong), 24).getBytes ());
+    }
+
+
+    private static void writeNumberChunk (final DataOutputStream out) throws IOException
+    {
+        out.write (KMP_NUMBER_ID.getBytes ());
+        out.writeInt (KMP_NUMBER_SIZE);
+
+        // The sample number in the bank
+        out.writeInt (0);
+    }
+
+
+    private void writeParameterChunk1 (final DataOutputStream out) throws IOException
+    {
+        out.write (KMP_REL1_ID.getBytes ());
+        out.writeInt (this.numSamples * KMP_REL1_SIZE);
+
+        final List<ISampleMetadata> sampleMetadata = this.layer.getSampleMetadata ();
+        for (int i = 0; i < sampleMetadata.size (); i++)
+        {
+            final ISampleMetadata sample = sampleMetadata.get (i);
+
+            int originalKey = sample.getKeyRoot ();
+            if (sample.getKeyTracking () == 0)
+                originalKey |= 0x80;
+            out.write (originalKey);
+
+            out.write (sample.getKeyHigh ());
+            out.writeByte ((byte) Math.round (sample.getTune () * 100.0));
+            out.writeByte ((byte) Math.round (sample.getGain () * 100.0 / 12.0));
+
+            // Panorama - unused in KMP itself, 64 is center
+            out.write (64);
+
+            // Filter Cutoff - unused in KMP itself
+            out.writeByte (0);
+
+            out.write (String.format ("MS%06d.KSF", Integer.valueOf (i)).getBytes ());
+        }
+    }
+
+
+    private void writeParameterChunk2 (final DataOutputStream out) throws IOException
+    {
+        out.write (KMP_REL2_ID.getBytes ());
+        out.writeInt (this.numSamples * KMP_REL2_SIZE);
+
+        for (int i = 0; i < this.numSamples; i++)
+        {
+            // Transposing
+            out.writeByte (0);
+            // Resonance
+            out.writeByte (0);
+            // Attack
+            out.writeByte (0);
+            // Decay
+            out.writeByte (0);
+        }
+    }
+
+
+    private void writeParameterChunk3 (final DataOutputStream out) throws IOException
+    {
+        out.write (KMP_REL3_ID.getBytes ());
+        out.writeInt (this.numSamples * KMP_REL3_SIZE);
+
+        for (int i = 0; i < this.numSamples; i++)
+        {
+            // Drive
+            out.writeByte (0);
+            // Boost
+            out.writeByte (0);
+            // Low EQ Level
+            out.writeByte (0);
+            // Mid EQ Level
+            out.writeByte (0);
+            // High EQ Level
+            out.writeByte (0);
+            // Unused
+            out.writeByte (0);
+        }
+    }
+
+
+    private void writeKSFFiles (final File folder) throws IOException
+    {
+        final List<ISampleMetadata> sampleMetadata = this.layer.getSampleMetadata ();
+        for (int i = 0; i < sampleMetadata.size (); i++)
+        {
+            final ISampleMetadata sample = sampleMetadata.get (i);
+            final String filename = String.format ("MS%06d.KSF", Integer.valueOf (i));
+            try (final OutputStream out = new FileOutputStream (new File (folder, filename)))
+            {
+                KSFFile.write (sample, i, out);
+
+                this.notifier.log ("IDS_NOTIFY_PROGRESS");
+                if (i % 80 == 0)
+                    this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+            }
+            catch (final ParseException | CompressionNotSupportedException ex)
+            {
+                throw new IOException (ex);
+            }
+        }
     }
 }

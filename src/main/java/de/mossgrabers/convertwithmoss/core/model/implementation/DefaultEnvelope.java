@@ -166,20 +166,12 @@ public class DefaultEnvelope implements IEnvelope
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final DefaultEnvelope other = (DefaultEnvelope) obj;
-        if (Double.doubleToLongBits (this.attack) != Double.doubleToLongBits (other.attack))
+        if (Double.doubleToLongBits (this.attack) != Double.doubleToLongBits (other.attack) || Double.doubleToLongBits (this.decay) != Double.doubleToLongBits (other.decay) || Double.doubleToLongBits (this.delay) != Double.doubleToLongBits (other.delay) || Double.doubleToLongBits (this.hold) != Double.doubleToLongBits (other.hold))
             return false;
-        if (Double.doubleToLongBits (this.decay) != Double.doubleToLongBits (other.decay))
-            return false;
-        if (Double.doubleToLongBits (this.delay) != Double.doubleToLongBits (other.delay))
-            return false;
-        if (Double.doubleToLongBits (this.hold) != Double.doubleToLongBits (other.hold))
-            return false;
-        if (Double.doubleToLongBits (this.release) != Double.doubleToLongBits (other.release))
-            return false;
-        if (Double.doubleToLongBits (this.start) != Double.doubleToLongBits (other.start))
+        if (Double.doubleToLongBits (this.release) != Double.doubleToLongBits (other.release) || Double.doubleToLongBits (this.start) != Double.doubleToLongBits (other.start))
             return false;
         return Double.doubleToLongBits (this.sustain) == Double.doubleToLongBits (other.sustain);
     }

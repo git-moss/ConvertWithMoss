@@ -4,17 +4,28 @@
 
 package de.mossgrabers.convertwithmoss.format.kmp;
 
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -47,7 +58,6 @@ public class KSFFile extends DefaultSampleMetadata
 
     private int                 sampleNumber;
 
-    private int                 frequency;
     private int                 channels;
     private int                 sampleResolution;
     private int                 numberOfSamples;
@@ -64,7 +74,7 @@ public class KSFFile extends DefaultSampleMetadata
 
 
     /**
-     * Read and parse a SF2 file.
+     * Read and parse a KSF file.
      *
      * @param inputStream Where to read the file from
      * @throws IOException Could not read the file
@@ -105,7 +115,7 @@ public class KSFFile extends DefaultSampleMetadata
 
                     final int sampleDataLength = dataSize - KSF_SAMPLE_DATA_SIZE;
 
-                    this.frequency = in.readInt ();
+                    this.sampleRate = in.readInt ();
 
                     // Attributes byte combines several settings
                     final int attributes = in.read ();
@@ -173,10 +183,126 @@ public class KSFFile extends DefaultSampleMetadata
     }
 
 
+    /**
+     * Write a KSF file.
+     *
+     * @param sample The sample to store in a KSF file
+     * @param sampleIndex The index of the sample
+     * @param outputStream Where to write the file to
+     * @throws IOException Could not write the file
+     * @throws ParseException If source wave files are broken
+     * @throws CompressionNotSupportedException If source wave files are compressed
+     */
+    public static void write (final ISampleMetadata sample, final int sampleIndex, final OutputStream outputStream) throws IOException, ParseException, CompressionNotSupportedException
+    {
+        final DataOutputStream out = new DataOutputStream (outputStream);
+
+        out.write (KSF_SAMPLE_PARAM_ID.getBytes ());
+        out.writeInt (KSF_SAMPLE_PARAM_SIZE);
+
+        final Optional<String> filename = sample.getUpdatedFilename ();
+        if (filename.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_FILENAME", "null"));
+        final String name = FileUtils.getNameWithoutType (new File (filename.get ()));
+        out.write (pad (name, 16).getBytes ());
+
+        out.writeInt (sample.getStart ());
+
+        final List<ISampleLoop> loops = sample.getLoops ();
+        if (loops.isEmpty ())
+        {
+            out.writeInt (sample.getStart ());
+            out.writeInt (0);
+            out.writeInt (sample.getStop ());
+        }
+        else
+        {
+            final ISampleLoop loop = loops.get (0);
+            out.writeInt (loop.getStart ());
+            out.writeInt (loop.getStart ());
+            out.writeInt (loop.getEnd ());
+        }
+
+        //////////////////////////////////////
+        // KSF_SAMPLE_NUMBER_ID
+
+        out.write (KSF_SAMPLE_NUMBER_ID.getBytes ());
+        out.writeInt (KSF_SAMPLE_NUMBER_SIZE);
+        out.writeInt (sampleIndex);
+
+        //////////////////////////////////////
+        // KSF_SAMPLE_DATA_ID
+
+        out.write (KSF_SAMPLE_DATA_ID.getBytes ());
+
+        final ByteArrayOutputStream dataOut = new ByteArrayOutputStream ();
+        sample.writeSample (dataOut);
+        final ByteArrayInputStream dataIn = new ByteArrayInputStream (dataOut.toByteArray ());
+        final WaveFile waveFile = new WaveFile ();
+        waveFile.read (dataIn, true);
+
+        final FormatChunk formatChunk = waveFile.getFormatChunk ();
+        final DataChunk dataChunk = waveFile.getDataChunk ();
+        final byte [] data = dataChunk.getData ();
+        final int numSamples = dataChunk.calculateLength (formatChunk);
+        out.writeInt (KSF_SAMPLE_DATA_SIZE + data.length);
+
+        out.writeInt (formatChunk.getSampleRate ());
+
+        // Attributes byte combines several settings
+        int attributes = 0;
+        // Not used: attributes & 0x20 = 1: Not Use 2nd Start 0: Use It
+        attributes |= 0x20;
+        if (sample.isReversed ())
+            attributes |= 0x40;
+        if (loops.isEmpty ())
+            attributes |= 0x80;
+        out.write (attributes);
+
+        // loopTune (–99…+99 cents) not supported
+        out.writeByte (0);
+
+        out.write (formatChunk.getNumberOfChannels ());
+        // 8/16
+        final int bits = formatChunk.getSignicantBitsPerSample ();
+        if (bits != 8 && bits != 16)
+            throw new IOException (Functions.getMessage ("IDS_KMP_BIT_SIZE_NOT_SUPPORTED", Integer.toString (bits)));
+        out.write (bits);
+
+        out.writeInt (numSamples);
+
+        if (bits == 8)
+            out.write (data);
+        else
+        {
+            // Flip bytes
+            for (int i = 0; i < data.length; i += 2)
+            {
+                out.write (data[i + 1]);
+                out.write (data[i]);
+            }
+        }
+
+        //////////////////////////////////////
+        // KSF_SAMPLE_NAME_ID
+
+        out.write (KSF_SAMPLE_NAME_ID.getBytes ());
+        out.writeInt (KSF_SAMPLE_NAME_SIZE);
+
+        out.write (pad (name, 24).getBytes ());
+    }
+
+
     private static void assertSize (final String chunk, final int dataSize, final int expectedSize) throws ParseException
     {
         if (dataSize != expectedSize)
             throw new ParseException (Functions.getMessage ("IDS_KMP_WRONG_CHUNK_LENGTH", chunk, Integer.toString (dataSize), Integer.toString (expectedSize)));
+    }
+
+
+    private static String pad (final String text, final int length)
+    {
+        return (text + "                        ").substring (0, length);
     }
 
 
@@ -190,7 +316,7 @@ public class KSFFile extends DefaultSampleMetadata
         final StringBuilder sb = new StringBuilder ();
         sb.append (" - Sample ").append (this.sampleNumber).append (":\n");
         sb.append (" - Samplename: ").append (this.getUpdatedFilename ()).append ("\n");
-        sb.append (" - Frequency: ").append (this.frequency).append ("\n");
+        sb.append (" - Frequency: ").append (this.sampleRate).append ("\n");
         sb.append (" - Channels: ").append (this.channels).append ("\n");
         sb.append (" - Resolution: ").append (this.sampleResolution).append (" Bit\n");
         sb.append (" - Samples: ").append (this.numberOfSamples).append ("\n");

@@ -51,7 +51,7 @@ public class KorgmultisampleCreator extends AbstractCreator
         final File subFolder = new File (destinationFolder, sampleName);
         if (!subFolder.exists () && !subFolder.mkdirs ())
         {
-            this.notifier.logError ("IDS_WS_NO_OUTPUT_FOLDER", subFolder.getAbsolutePath ());
+            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
             return;
         }
 
@@ -87,7 +87,7 @@ public class KorgmultisampleCreator extends AbstractCreator
      * @param multisampleSource The multi sample to store in the library
      * @param multiFile The file of the korgmultisample
      * @param layerName The name to use for the layer
-     * @param layer The layer ti store
+     * @param layer The layer to store
      * @throws IOException Could not store the file
      */
     private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final String layerName, final IVelocityLayer layer) throws IOException
