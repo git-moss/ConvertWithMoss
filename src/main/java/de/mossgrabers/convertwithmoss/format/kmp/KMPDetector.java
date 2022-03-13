@@ -26,7 +26,7 @@ public class KMPDetector extends AbstractDetectorWithMetadataPane<KMPDetectorTas
      */
     public KMPDetector (final INotifier notifier)
     {
-        super ("KMP (KORG Multisample Parameter)", notifier, "KMP");
+        super ("KMP/KSF", notifier, "KMP");
     }
 
 

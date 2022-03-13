@@ -278,7 +278,7 @@ public interface ISampleMetadata extends IEnvelopeAccess
 
     /**
      * Get the panorama.
-     * 
+     *
      * @return The panorama in the range of [-1..1], -1 is full left, 0 centered and 1 full right
      */
     double getPanorama ();
@@ -286,7 +286,7 @@ public interface ISampleMetadata extends IEnvelopeAccess
 
     /**
      * Set the panorama in the range of [-1..1], -1 is full left, 0 centered and 1 full right.
-     * 
+     *
      * @param panorama The panorama
      */
     void setPanorama (double panorama);

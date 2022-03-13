@@ -77,7 +77,8 @@ public class WavSampleMetadata extends DefaultSampleMetadata
                 throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
             try (final InputStream in = zf.getInputStream (entry))
             {
-                this.waveFile = new WaveFile (in, true);
+                this.waveFile = new WaveFile ();
+                this.waveFile.read (in, true);
             }
             catch (final ParseException ex)
             {

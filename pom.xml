@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.mossgrabers</groupId>
 	<artifactId>convertwithmoss</artifactId>
-	<version>4.7.1</version>
+	<version>5.0</version>
 	<packaging>jar</packaging>
 	<name>ConvertWithMoss</name>
 	<organization>
@@ -44,7 +44,7 @@
 		<dependency>
 			<artifactId>uitools</artifactId>
 			<groupId>de.mossgrabers</groupId>
-			<version>1.0</version>
+			<version>1.1</version>
 		</dependency>
 	</dependencies>
 

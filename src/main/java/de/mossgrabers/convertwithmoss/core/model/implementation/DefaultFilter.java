@@ -122,7 +122,7 @@ public class DefaultFilter implements IFilter
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final DefaultFilter other = (DefaultFilter) obj;
         if (Double.doubleToLongBits (this.cutoff) != Double.doubleToLongBits (other.cutoff))
@@ -134,11 +134,7 @@ public class DefaultFilter implements IFilter
         }
         else if (!this.envelope.equals (other.envelope))
             return false;
-        if (this.envelopeDepth != other.envelopeDepth)
-            return false;
-        if (this.poles != other.poles)
-            return false;
-        if (Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance))
+        if (this.envelopeDepth != other.envelopeDepth || this.poles != other.poles || Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance))
             return false;
         return this.type == other.type;
     }
