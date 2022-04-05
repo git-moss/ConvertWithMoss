@@ -20,7 +20,7 @@ Run the matching installer for your operating system. After that you can start t
 
 **IMPORTANT: Macos Mojave**: Mojave prevents now software to run which is not authorized by Apple. But instead of telling you so, you get an error that the files are corrupted (so, your OS is lying to you now...).
 
-To fix it open a console and enter the application folder:
+To fix it open the Terminal app and enter the application folder:
 
     cd /Applications/ConvertWithMoss.app
 
@@ -73,8 +73,8 @@ The following multisample formats are supported as the source format:
 4. SoundFont 2 (*.sf2)
 5. DecentSampler (*.dspreset, *.dslibrary)
 6. Akai MPC Keygroups (*.xpm)
-8. Korg wavestate/modwave (*.korgmultisample)
-9. Korg KMP/KSF (*.KMP)
+7. Korg wavestate/modwave (*.korgmultisample)
+8. Korg KMP/KSF (*.KMP)
 
 The following multisample formats are supported as the destination format:
 
