@@ -1,5 +1,5 @@
 /**
- * The SampleConverter module.
+ * The ConvertWithMoss module.
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */

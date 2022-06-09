@@ -361,7 +361,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (sampleName.isBlank ())
             return null;
 
-        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (new File (basePath, sampleName + ".WAV"));
+        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (sampleName + ".wav", new File (basePath, sampleName + ".WAV"));
 
         sampleMetadata.setKeyLow (keyLow);
         sampleMetadata.setKeyHigh (keyHigh);
