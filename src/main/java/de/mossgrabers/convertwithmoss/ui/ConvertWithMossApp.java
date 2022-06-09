@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDete
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
+import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.wav.WavDetector;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.DefaultApplication;
@@ -126,6 +127,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.creators = new ICreator []
         {
+            new WavCreator (this),
             new BitwigMultisampleCreator (this),
             new SfzCreator (this),
             new DecentSamplerCreator (this),

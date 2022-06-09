@@ -78,12 +78,13 @@ The following multisample formats are supported as the source format:
 
 The following multisample formats are supported as the destination format:
 
-1. Bitwig Studio multisample (*.multisample)
-2. SFZ (*.sfz)
-3. DecentSampler (*.dspreset, *.dslibrary)
-4. Akai MPC Keygroups (*.xpm)
-5. Korg wavestate/modwave (*.korgmultisample)
-6. Korg KMP/KSF (*.KMP)
+1. WAV files (*.wav)
+2. Bitwig Studio multisample (*.multisample)
+3. SFZ (*.sfz)
+4. DecentSampler (*.dspreset, *.dslibrary)
+5. Akai MPC Keygroups (*.xpm)
+6. Korg wavestate/modwave (*.korgmultisample)
+7. Korg KMP/KSF (*.KMP)
 
 ## Source formats
 
@@ -191,6 +192,10 @@ The format is documented in detail in the appendix of the respective parameter g
 
 The following multisample formats can be the destination of a conversion.
 
+### Plain WAV files
+
+Only stores the WAV files from the source format in a sub-folder. Use e.g. to extract the audio files from a SF2 file.
+
 ### Bitwig Studio multisample
 
 This format can be loaded in the Bitwig Sampler device. It supports multiple layers, key and velocity crossfades as well as several metadata information: creator, sound category and keywords.
@@ -229,6 +234,13 @@ Since the format supports only one layer of a multisample, multiple files are cr
 Since the KMP format can only contain 1 layer of a multisample, sources with multiple velocity layers are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
 
 # Changes
+
+## 5.1
+
+* New: WAV files are added as destination format e.g. in case you only want to extract WAV files from SF2 files.
+* New: Store WAV ending in lower-case when converted from MPC Keygroups.
+* Fixed: (Bitwig) Multisample files must not be compressed for faster access. Bitwig can also handle compressed files but other hosts supporting the format might fail. If you created Multisample files with this converter, simply run a new conversion on them with Multisample as source and destination to fix the issue.
+* Fixed: Created (Bitwig) Multisample metadata file contained wrong group indices (off by 1).
 
 ## 5.0
 

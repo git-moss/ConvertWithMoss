@@ -79,6 +79,18 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
 
 
     /**
+     * Constructor for a sample stored in the file system.
+     *
+     * @param filename The name of the file where the sample is stored (must not contain any paths!)
+     * @param sampleFile The file where the sample is stored
+     */
+    public DefaultSampleMetadata (final String filename, final File sampleFile)
+    {
+        this (filename, sampleFile, null, null);
+    }
+
+
+    /**
      * Constructor for a sample stored in a ZIP file.
      *
      * @param zipFile The ZIP file which contains the WAV files

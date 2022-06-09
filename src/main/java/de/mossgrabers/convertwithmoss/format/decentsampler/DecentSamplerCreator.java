@@ -177,7 +177,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeFolderName);
         safeCreateDirectory (sampleFolder);
-        this.storeSamples (sampleFolder, multisampleSource);
+        this.writeSamples (sampleFolder, multisampleSource);
     }
 
 
@@ -195,8 +195,8 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
-            this.zipMetadataFile (zos, sampleName + ".dspreset", metadata);
-            this.zipSamples (zos, relativeFolderName, multisampleSource);
+            this.zipTextFile (zos, sampleName + ".dspreset", metadata);
+            this.zipSampleFiles (zos, relativeFolderName, multisampleSource);
         }
     }
 

@@ -75,7 +75,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             storeMultisample (multisampleSource, multiFile, layerName, layer);
         }
 
-        this.storeSamples (subFolder, multisampleSource);
+        this.writeSamples (subFolder, multisampleSource);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }

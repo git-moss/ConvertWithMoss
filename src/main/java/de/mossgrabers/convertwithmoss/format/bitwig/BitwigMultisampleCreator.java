@@ -65,8 +65,9 @@ public class BitwigMultisampleCreator extends AbstractCreator
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
-            this.zipMetadataFile (zos, "multisample.xml", metadata.get ());
-            this.zipSamples (zos, null, multisampleSource);
+            zos.setMethod (ZipOutputStream.STORED);
+            this.storeTextFile (zos, "multisample.xml", metadata.get ());
+            this.storeSampleFiles (zos, null, multisampleSource);
         }
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
@@ -100,7 +101,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         for (final String keyword: multisampleSource.getKeywords ())
             XMLUtils.addTextElement (document, keywordsElement, "keyword", keyword);
 
-        final List<IVelocityLayer> velocityLayers = multisampleSource.getLayers ();
+        final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers ());
         for (final IVelocityLayer layer: velocityLayers)
         {
             final String name = layer.getName ();

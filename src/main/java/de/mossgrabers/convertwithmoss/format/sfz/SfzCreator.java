@@ -94,7 +94,7 @@ public class SfzCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
-        this.storeSamples (sampleFolder, multisampleSource);
+        this.writeSamples (sampleFolder, multisampleSource);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
