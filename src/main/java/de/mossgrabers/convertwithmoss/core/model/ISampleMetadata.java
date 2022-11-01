@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.core.model;
 
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 import java.io.File;
 import java.io.IOException;
@@ -114,6 +115,22 @@ public interface ISampleMetadata extends IEnvelopeAccess
      * @return The loops, if any
      */
     List<ISampleLoop> getLoops ();
+
+
+    /**
+     * Get the event that triggers the playback of the sample.
+     *
+     * @return The trigger type
+     */
+    TriggerType getTrigger ();
+
+
+    /**
+     * Set the event that triggers the playback of the sample.
+     * 
+     * @param trigger The trigger type
+     */
+    void setTrigger (TriggerType trigger);
 
 
     /**

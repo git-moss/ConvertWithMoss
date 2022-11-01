@@ -15,6 +15,7 @@ import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -152,6 +154,10 @@ public class SfzCreator extends AbstractCreator
             if (sequence > 0)
                 addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, sequence, true);
 
+            final TriggerType trigger = layer.getTrigger ();
+            if (trigger != null && trigger != TriggerType.ATTACK)
+                addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
+
             sequence = 1;
             for (final ISampleMetadata info: sampleMetadata)
             {
@@ -179,6 +185,11 @@ public class SfzCreator extends AbstractCreator
         final Optional<String> filename = info.getUpdatedFilename ();
         if (filename.isPresent ())
             addAttribute (sb, SfzOpcode.SAMPLE, this.formatFileName (safeSampleFolderName, filename.get ()), true);
+
+        // Default is 'attack' and does not need to be added
+        final TriggerType trigger = info.getTrigger ();
+        if (trigger != TriggerType.ATTACK)
+            addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
 
         if (info.isReversed ())
             addAttribute (sb, SfzOpcode.DIRECTION, "reverse", true);

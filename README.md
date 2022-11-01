@@ -235,6 +235,10 @@ Since the KMP format can only contain 1 layer of a multisample, sources with mul
 
 # Changes
 
+## 5.2
+
+* New: Added support for trigger type (attack, release, first, legato) for SFZ, Decent Sampler, MPC Keygroups (only attack, release on instrument).
+
 ## 5.1
 
 * New: WAV files are added as destination format e.g. in case you only want to extract WAV files from SF2 files.

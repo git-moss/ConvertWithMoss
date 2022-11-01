@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.core.model.implementation;
 
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +19,9 @@ import java.util.List;
  */
 public class DefaultVelocityLayer implements IVelocityLayer
 {
-    private List<ISampleMetadata> samples = new ArrayList<> ();
+    private List<ISampleMetadata> samples     = new ArrayList<> ();
     private String                name;
+    protected TriggerType         triggerType = TriggerType.ATTACK;
 
 
     /**
@@ -90,5 +92,21 @@ public class DefaultVelocityLayer implements IVelocityLayer
     public void addSampleMetadata (final ISampleMetadata sample)
     {
         this.samples.add (sample);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public TriggerType getTrigger ()
+    {
+        return this.triggerType;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTrigger (final TriggerType trigger)
+    {
+        this.triggerType = trigger;
     }
 }

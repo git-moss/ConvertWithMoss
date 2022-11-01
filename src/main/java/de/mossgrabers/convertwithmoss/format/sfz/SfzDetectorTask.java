@@ -16,6 +16,7 @@ import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
@@ -280,6 +281,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     if (groupLabel.isPresent ())
                         layer.setName (groupLabel.get ());
 
+                    final TriggerType triggerType = this.getTriggerType (this.getAttribute (SfzOpcode.TRIGGER));
+                    if (triggerType != TriggerType.ATTACK)
+                        layer.setTrigger (triggerType);
+
                     // We do not need the value but mark it as processed
                     this.getIntegerValue (SfzOpcode.SEQ_LENGTH);
 
@@ -372,13 +377,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
      */
     private void parseRegion (final ISampleMetadata sampleMetadata)
     {
-        final Optional<String> optTrigger = this.getAttribute (SfzOpcode.TRIGGER);
-        if (optTrigger.isPresent ())
-        {
-            final String trigger = optTrigger.get ();
-            if (!"attack".equals (trigger))
-                this.notifier.logError ("IDS_NOTIFY_SFZ_UNSUPPORTED_TRIGGER", trigger);
-        }
+        final TriggerType triggerType = this.getTriggerType (this.getAttribute (SfzOpcode.TRIGGER));
+        if (triggerType != TriggerType.ATTACK)
+            sampleMetadata.setTrigger (triggerType);
 
         final Optional<String> direction = this.getAttribute (SfzOpcode.DIRECTION);
         if (direction.isPresent ())
@@ -577,13 +578,11 @@ public class SfzDetectorTask extends AbstractDetectorTask
             switch (loopMode.get ())
             {
                 default:
-                case "no_loop":
-                case "one_shot":
+                case "no_loop", "one_shot":
                     // No looping
                     return;
 
-                case "loop_continuous":
-                case "loop_sustain":
+                case "loop_continuous", "loop_sustain":
                     final Optional<String> loopType = this.getAttribute (SfzOpcode.LOOP_TYPE);
                     if (loopType.isPresent ())
                     {
@@ -689,6 +688,34 @@ public class SfzDetectorTask extends AbstractDetectorTask
         catch (final IOException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
+        }
+    }
+
+
+    private TriggerType getTriggerType (final Optional<String> optTrigger)
+    {
+        if (!optTrigger.isPresent ())
+            return TriggerType.ATTACK;
+
+        final String trigger = optTrigger.get ();
+        switch (trigger)
+        {
+            case "release":
+                return TriggerType.RELEASE;
+
+            case "release_key":
+                this.notifier.logError ("IDS_NOTIFY_SFZ_PARTIALLY_UNSUPPORTED_TRIGGER", trigger);
+                return TriggerType.RELEASE;
+
+            case "first":
+                return TriggerType.FIRST;
+
+            case "legato":
+                return TriggerType.LEGATO;
+
+            default:
+            case "attack":
+                return TriggerType.ATTACK;
         }
     }
 

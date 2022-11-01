@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.core.model;
 
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+
 import java.util.List;
 
 
@@ -28,6 +30,22 @@ public interface IVelocityLayer
      * @param name The name
      */
     void setName (String name);
+
+
+    /**
+     * Get the event that triggers the playback of the sample.
+     *
+     * @return The trigger type
+     */
+    TriggerType getTrigger ();
+
+
+    /**
+     * Set the event that triggers the playback of the sample.
+     * 
+     * @param trigger The trigger type
+     */
+    void setTrigger (TriggerType trigger);
 
 
     /**

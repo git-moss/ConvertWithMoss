@@ -51,6 +51,8 @@ public class MPCKeygroupTag
     public static final String INSTRUMENT_IGNORE_BASE_NOTE  = "IgnoreBaseNote";
     /** The zone play element of the instrument element. */
     public static final String INSTRUMENT_ZONE_PLAY         = "ZonePlay";
+    /** The trigger mode element of the instrument element. */
+    public static final String INSTRUMENT_TRIGGER_MODE      = "TriggerMode";
     /** The one-shot element of the instrument element. */
     public static final String INSTRUMENT_ONE_SHOT          = "OneShot";
     /** The layers element of the instrument element. */
