@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -43,6 +44,7 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
     protected Optional<String>  filenameWithoutLayer    = Optional.empty ();
 
     protected PlayLogic         playLogic               = PlayLogic.ALWAYS;
+    protected TriggerType       triggerType             = TriggerType.ATTACK;
     protected int               start                   = -1;
     protected int               stop                    = -1;
     protected int               keyRoot                 = -1;
@@ -224,6 +226,22 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
     public List<ISampleLoop> getLoops ()
     {
         return this.loops;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public TriggerType getTrigger ()
+    {
+        return this.triggerType;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTrigger (final TriggerType trigger)
+    {
+        this.triggerType = trigger;
     }
 
 

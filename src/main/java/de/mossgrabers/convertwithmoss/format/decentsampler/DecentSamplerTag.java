@@ -72,6 +72,8 @@ public class DecentSamplerTag
     public static final String                    ROOT_NOTE       = "rootNote";
     /** The pitch key tracking tag sample attribute. */
     public static final String                    PITCH_KEY_TRACK = "pitchKeyTrack";
+    /** The trigger group / sample attribute. */
+    public static final String                    TRIGGER         = "trigger";
     /** The low note tag sample attribute. */
     public static final String                    LO_NOTE         = "loNote";
     /** The high note tag sample attribute. */
@@ -113,8 +115,8 @@ public class DecentSamplerTag
     {
         ATTRIBUTES.put (DECENTSAMPLER, Collections.emptySet ());
         ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, SEQ_MODE, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
-        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
-        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PITCH_KEY_TRACK, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
+        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE, TRIGGER));
+        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
     }
 
 

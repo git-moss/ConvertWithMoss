@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -35,6 +36,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.zip.ZipOutputStream;
 
@@ -222,7 +224,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // No metadata at all
 
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
-        final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers ());
+        final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers (), false);
 
         boolean hasRoundRobin = false;
 
@@ -255,6 +257,10 @@ public class DecentSamplerCreator extends AbstractCreator
             final String name = layer.getName ();
             if (name != null && !name.isBlank ())
                 groupElement.setAttribute ("name", name);
+
+            final TriggerType triggerType = layer.getTrigger ();
+            if (triggerType != TriggerType.ATTACK)
+                groupElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
             for (final ISampleMetadata sample: layer.getSampleMetadata ())
                 this.createSample (document, folderName, groupElement, sample);
@@ -316,6 +322,10 @@ public class DecentSamplerCreator extends AbstractCreator
         final double tune = info.getTune () / 100;
         if (tune != 0)
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, tune, 2);
+
+        final TriggerType triggerType = info.getTrigger ();
+        if (triggerType != TriggerType.ATTACK)
+            sampleElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
         // No info.isReversed ()
 

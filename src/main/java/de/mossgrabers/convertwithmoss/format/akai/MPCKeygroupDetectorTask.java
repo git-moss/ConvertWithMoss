@@ -13,6 +13,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
@@ -234,11 +235,31 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                 this.notifier.logError ("IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY");
             }
 
+            boolean isOneShot = false;
+            final int triggerMode = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, -1);
+            TriggerType triggerType = TriggerType.ATTACK;
+            switch (triggerMode)
+            {
+                // One-Shot
+                case 0:
+                    isOneShot = true;
+                    break;
+                case 1:
+                    triggerType = TriggerType.RELEASE;
+                    break;
+                default:
+                case 2:
+                    // Attack
+                    break;
+            }
+            if (triggerMode < 0)
+            {
+                final String oneShotStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_ONE_SHOT);
+                isOneShot = oneShotStr == null || MPCKeygroupTag.TRUE.equalsIgnoreCase (oneShotStr);
+            }
+
             final String ignoreBaseNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE);
             final boolean ignoreBaseNote = ignoreBaseNoteStr != null && MPCKeygroupTag.TRUE.equals (ignoreBaseNoteStr);
-
-            final String oneShotStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_ONE_SHOT);
-            final boolean isOneShot = oneShotStr == null || MPCKeygroupTag.TRUE.equalsIgnoreCase (oneShotStr);
 
             final IFilter filter = parseFilter (instrumentElement);
 
@@ -263,7 +284,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                     final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
                     final int velEnd = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_END, 0);
 
-                    final DefaultSampleMetadata sampleMetadata = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote);
+                    final DefaultSampleMetadata sampleMetadata = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
                     if (sampleMetadata == null)
                         continue;
                     samples.add (sampleMetadata);
@@ -348,9 +369,10 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      * @param velEnd The upper velocity of the sample
      * @param zonePlay The zone play
      * @param ignoreBaseNote The ignore base note setting
+     * @param triggerType The trigger type
      * @return The sample metadata or null
      */
-    private DefaultSampleMetadata parseSampleData (final Element layerElement, final File basePath, final int keyLow, final int keyHigh, final int velStart, final int velEnd, final PlayLogic zonePlay, final boolean ignoreBaseNote)
+    private DefaultSampleMetadata parseSampleData (final Element layerElement, final File basePath, final int keyLow, final int keyHigh, final int velStart, final int velEnd, final PlayLogic zonePlay, final boolean ignoreBaseNote, final TriggerType triggerType)
     {
         final Element sampleNameElement = XMLUtils.getChildElementByName (layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME);
         if (sampleNameElement == null)
@@ -373,6 +395,8 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         {
             this.notifier.logError ("IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY");
         }
+        if (triggerType != TriggerType.ATTACK)
+            sampleMetadata.setTrigger (triggerType);
 
         sampleMetadata.setVelocityLow (velStart);
         sampleMetadata.setVelocityHigh (velEnd);

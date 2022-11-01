@@ -13,6 +13,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -148,9 +149,11 @@ public class MPCKeygroupCreator extends AbstractCreator
         // Need to stack the parts of velocity layers in key ranges
         for (final IVelocityLayer velocityLayer: multisampleSource.getLayers ())
         {
+            final TriggerType trigger = velocityLayer.getTrigger ();
+
             for (final ISampleMetadata sampleMetadata: velocityLayer.getSampleMetadata ())
             {
-                final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, multisampleSource.getGlobalFilter ());
+                final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger, multisampleSource.getGlobalFilter ());
                 if (keygroupOpt.isEmpty ())
                 {
                     this.notifier.logError ("IDS_MPC_MORE_THAN_4_LAYERS", Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
@@ -194,7 +197,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         programElement.appendChild (document.createElement (MPCKeygroupTag.PROGRAM_PADS + APP_VERSION));
 
         // Pitchbend 2 semitones up/down
-        final List<IVelocityLayer> layers = getNonEmptyLayers (multisampleSource.getLayers ());
+        final List<IVelocityLayer> layers = getNonEmptyLayers (multisampleSource.getLayers (), false);
         if (!layers.isEmpty ())
         {
             final int bendUp = Math.abs (layers.get (0).getSampleMetadata ().get (0).getBendUp ());
@@ -297,7 +300,7 @@ public class MPCKeygroupCreator extends AbstractCreator
     }
 
 
-    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleMetadata sampleMetadata, final Document document, final Element instrumentsElement, final Optional<IFilter> optFilter)
+    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleMetadata sampleMetadata, final Document document, final Element instrumentsElement, final TriggerType trigger, final Optional<IFilter> optFilter)
     {
         final int keyLow = sampleMetadata.getKeyLow ();
         final int keyHigh = sampleMetadata.getKeyHigh ();
@@ -380,15 +383,21 @@ public class MPCKeygroupCreator extends AbstractCreator
         }
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (sampleMetadata.getPlayLogic ()).getID ());
+
+        int triggerMode = sampleMetadata.getLoops ().isEmpty () ? 0 : 2;
+        if (trigger == TriggerType.RELEASE)
+            triggerMode = 1;
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode));
+
         instrumentElement.appendChild (createLfoElement (document));
         final Element layersElement = document.createElement ("Layers");
         instrumentElement.appendChild (layersElement);
 
         final Keygroup keygroup;
         if (isSequence)
-            keygroup = new Keygroup (instrumentElement, layersElement, sampleMetadata.getVelocityLow (), sampleMetadata.getVelocityHigh ());
+            keygroup = new Keygroup (layersElement, sampleMetadata.getVelocityLow (), sampleMetadata.getVelocityHigh ());
         else
-            keygroup = new Keygroup (instrumentElement, layersElement);
+            keygroup = new Keygroup (layersElement);
         keygroups.add (keygroup);
         return Optional.of (keygroup);
     }

@@ -18,7 +18,6 @@ import java.util.List;
 public class Keygroup
 {
     private final boolean       isSequence;
-    private final Element       instrumentElement;
     private final Element       layersElement;
     private final List<Element> layerElements = new ArrayList<> ();
     private final int           velocityLow;
@@ -28,32 +27,29 @@ public class Keygroup
     /**
      * Constructor for a velocity keygroup.
      *
-     * @param instrumentElement The instrument element
      * @param layersElement The layers element
      */
-    public Keygroup (final Element instrumentElement, final Element layersElement)
+    public Keygroup (final Element layersElement)
     {
-        this (instrumentElement, layersElement, -1, -1, false);
+        this (layersElement, -1, -1, false);
     }
 
 
     /**
      * Constructor for a sequence keygroup.
      *
-     * @param instrumentElement The instrument element
      * @param layersElement The layers element
      * @param velocityLow The bottom velocity
      * @param velocityHigh The upper velocity
      */
-    public Keygroup (final Element instrumentElement, final Element layersElement, final int velocityLow, final int velocityHigh)
+    public Keygroup (final Element layersElement, final int velocityLow, final int velocityHigh)
     {
-        this (instrumentElement, layersElement, velocityLow, velocityHigh, true);
+        this (layersElement, velocityLow, velocityHigh, true);
     }
 
 
-    private Keygroup (final Element instrumentElement, final Element layersElement, final int velocityLow, final int velocityHigh, final boolean isSequence)
+    private Keygroup (final Element layersElement, final int velocityLow, final int velocityHigh, final boolean isSequence)
     {
-        this.instrumentElement = instrumentElement;
         this.layersElement = layersElement;
         this.velocityLow = velocityLow;
         this.velocityHigh = velocityHigh;
@@ -69,17 +65,6 @@ public class Keygroup
     public boolean isSequence ()
     {
         return this.isSequence;
-    }
-
-
-    /**
-     * Get the instrument element.
-     *
-     * @return The instrument element
-     */
-    public Element getInstrumentElement ()
-    {
-        return this.instrumentElement;
     }
 
 

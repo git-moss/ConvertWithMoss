@@ -9,6 +9,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -400,14 +401,31 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Removes all layers which do not contain any samples.
      *
      * @param layers The layers to check
+     * @param filterReleaseTriggers Removes all layers which do only contain release triggers
      * @return The layer without empty ones
      */
-    protected static List<IVelocityLayer> getNonEmptyLayers (final List<IVelocityLayer> layers)
+    protected static List<IVelocityLayer> getNonEmptyLayers (final List<IVelocityLayer> layers, final boolean filterReleaseTriggers)
     {
         final List<IVelocityLayer> cleanedLayers = new ArrayList<> ();
         for (final IVelocityLayer layer: layers)
         {
-            if (!layer.getSampleMetadata ().isEmpty ())
+            final List<ISampleMetadata> sampleMetadata = layer.getSampleMetadata ();
+            if (sampleMetadata.isEmpty ())
+                continue;
+
+            if (filterReleaseTriggers)
+            {
+                // There needs to be at least one sample with a normal attack trigger
+                for (final ISampleMetadata sample: sampleMetadata)
+                {
+                    if (sample.getTrigger () != TriggerType.RELEASE)
+                    {
+                        cleanedLayers.add (layer);
+                        break;
+                    }
+                }
+            }
+            else
                 cleanedLayers.add (layer);
         }
         return cleanedLayers;

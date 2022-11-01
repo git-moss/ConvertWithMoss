@@ -12,6 +12,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -101,7 +102,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         for (final String keyword: multisampleSource.getKeywords ())
             XMLUtils.addTextElement (document, keywordsElement, "keyword", keyword);
 
-        final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers ());
+        final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers (), true);
         for (final IVelocityLayer layer: velocityLayers)
         {
             final String name = layer.getName ();
@@ -120,7 +121,10 @@ public class BitwigMultisampleCreator extends AbstractCreator
             final int idx = name == null || name.isBlank () ? -1 : index;
 
             for (final ISampleMetadata sample: layer.getSampleMetadata ())
-                createSample (document, multisampleElement, idx, sample);
+            {
+                if (sample.getTrigger () != TriggerType.RELEASE)
+                    createSample (document, multisampleElement, idx, sample);
+            }
 
             index++;
         }

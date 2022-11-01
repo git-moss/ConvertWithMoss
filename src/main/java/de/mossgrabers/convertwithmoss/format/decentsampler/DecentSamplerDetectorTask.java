@@ -13,6 +13,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
@@ -36,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
@@ -279,7 +281,9 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 if (groupTuningOffset == 0)
                     groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.TUNING, 0);
 
-                this.parseVelocityLayer (velocityLayer, groupElement, basePath, libraryFile, groupVolumeOffset, globalTuningOffset + groupTuningOffset);
+                final String triggerAttribute = groupElement.getAttribute (DecentSamplerTag.TRIGGER);
+
+                this.parseVelocityLayer (velocityLayer, groupElement, basePath, libraryFile, groupVolumeOffset, globalTuningOffset + groupTuningOffset, triggerAttribute);
                 layers.add (velocityLayer);
                 groupCounter++;
             }
@@ -302,8 +306,9 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param libraryFile If it is a library otherwise null
      * @param groupVolumeOffset The volume offset
      * @param tuningOffset The tuning offset
+     * @param trigger The trigger value
      */
-    private void parseVelocityLayer (final DefaultVelocityLayer velocityLayer, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset)
+    private void parseVelocityLayer (final DefaultVelocityLayer velocityLayer, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset, final String trigger)
     {
         for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE))
         {
@@ -329,6 +334,21 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             }
             else
                 sampleMetadata = new DefaultSampleMetadata (libraryFile, sampleFile);
+
+            String triggerAttribute = sampleElement.getAttribute (DecentSamplerTag.TRIGGER);
+            if (triggerAttribute == null)
+                triggerAttribute = trigger;
+            if (triggerAttribute != null)
+            {
+                try
+                {
+                    sampleMetadata.setTrigger (TriggerType.valueOf (triggerAttribute.toUpperCase (Locale.ENGLISH)));
+                }
+                catch (final IllegalArgumentException ex)
+                {
+                    this.notifier.logError ("IDS_DS_UNKNOWN_TRIGGER", triggerAttribute);
+                }
+            }
 
             sampleMetadata.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
             sampleMetadata.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
