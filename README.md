@@ -18,7 +18,7 @@ Converts multisamples in a specific source format to a different destination for
 
 Run the matching installer for your operating system. After that you can start the application ConvertWithMoss.
 
-**IMPORTANT: Macos Mojave**: Mojave prevents now software to run which is not authorized by Apple. But instead of telling you so, you get an error that the files are corrupted (so, your OS is lying to you now...).
+**IMPORTANT: Macos Mojave and later**: Mojave prevents now software to run which is not authorized by Apple. But instead of telling you so, you get an error that the files are corrupted (so, your OS is lying to you now...).
 
 To fix it open the Terminal app and enter the application folder:
 
@@ -41,6 +41,16 @@ Open the application (should work now). Close it and enable Gatekeeper again to 
     sudo spctl --master-enable
 
 The application should now run also with Gatekeeper enabled.
+
+**Macos 13**
+
+It got worse on Macos 13 and you need to take another step:
+
+* after you did the xattr thing run it again and click away the error.
+* now open the system settings and go to *Privacy & Security Settings*.
+* at the very end there should now be a message saying something like 'publisher of ConvertWithMoss could not identified'.
+* Click on the allow anyway button
+* when you start ConvertWithMoss again you need to click away another 1000 dialogs but then it works.
 
 Finally, have fun.
 
@@ -234,6 +244,11 @@ Since the format supports only one layer of a multisample, multiple files are cr
 Since the KMP format can only contain 1 layer of a multisample, sources with multiple velocity layers are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
 
 # Changes
+
+## 5.2.1
+
+* Fixed: Bitwig Multisample files with old layer formatting had duplicated layers as output.
+* Fixed: Missing trigger types in Decenter Sampler files did show an unecessary error.
 
 ## 5.2
 

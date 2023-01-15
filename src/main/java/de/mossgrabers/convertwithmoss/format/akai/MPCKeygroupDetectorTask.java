@@ -169,7 +169,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         final int numKeygroups = XMLUtils.getChildElementIntegerContent (programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, 128);
 
-        final Element [] instrumentElements = XMLUtils.getChildElementsByName (instrumentsElement, MPCKeygroupTag.INSTRUMENTS_INSTRUMENT);
+        final Element [] instrumentElements = XMLUtils.getChildElementsByName (instrumentsElement, MPCKeygroupTag.INSTRUMENTS_INSTRUMENT, false);
         final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (file.getParentFile (), numKeygroups, instrumentElements, isDrum);
 
         if (isDrum)
@@ -278,7 +278,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             final Element layersElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LAYERS);
             if (layersElement != null)
             {
-                final Element [] layerElements = XMLUtils.getChildElementsByName (layersElement, MPCKeygroupTag.LAYERS_LAYER);
+                final Element [] layerElements = XMLUtils.getChildElementsByName (layersElement, MPCKeygroupTag.LAYERS_LAYER, false);
                 for (final Element layerElement: layerElements)
                 {
                     final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
@@ -538,7 +538,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             return;
 
         final Map<Integer, Integer> padNoteMap = new HashMap<> (128);
-        for (final Element padNoteElement: XMLUtils.getChildElementsByName (padNoteMapElement, MPCKeygroupTag.PAD_NOTE_MAP_PAD_NOTE))
+        for (final Element padNoteElement: XMLUtils.getChildElementsByName (padNoteMapElement, MPCKeygroupTag.PAD_NOTE_MAP_PAD_NOTE, false))
         {
             final int padNumber = XMLUtils.getIntegerAttribute (padNoteElement, MPCKeygroupTag.PAD_NOTE_NUMBER, 0);
             if (padNumber < 1 || padNumber > 128)

@@ -235,7 +235,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         if (effectsElement == null)
             return;
 
-        for (final Element effectElement: XMLUtils.getChildElementsByName (top, DecentSamplerTag.EFFECTS_EFFECT))
+        for (final Element effectElement: XMLUtils.getChildElementsByName (top, DecentSamplerTag.EFFECTS_EFFECT, false))
         {
             final String effectType = effectElement.getAttribute ("type");
             if ("lowpass_4pl".equals (effectType))
@@ -260,7 +260,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      */
     private List<IVelocityLayer> parseVelocityLayers (final Element top, final String basePath, final File libraryFile, final double globalTuningOffset)
     {
-        final Node [] groupNodes = XMLUtils.getChildrenByName (top, DecentSamplerTag.GROUP);
+        final Node [] groupNodes = XMLUtils.getChildrenByName (top, DecentSamplerTag.GROUP, false);
         final List<IVelocityLayer> layers = new ArrayList<> (groupNodes.length);
         int groupCounter = 1;
         for (final Node groupNode: groupNodes)
@@ -310,7 +310,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      */
     private void parseVelocityLayer (final DefaultVelocityLayer velocityLayer, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset, final String trigger)
     {
-        for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE))
+        for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE, false))
         {
             this.currentSampleElement = sampleElement;
 
@@ -336,9 +336,9 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 sampleMetadata = new DefaultSampleMetadata (libraryFile, sampleFile);
 
             String triggerAttribute = sampleElement.getAttribute (DecentSamplerTag.TRIGGER);
-            if (triggerAttribute == null)
+            if (triggerAttribute == null || triggerAttribute.isBlank ())
                 triggerAttribute = trigger;
-            if (triggerAttribute != null)
+            if (triggerAttribute != null && !triggerAttribute.isBlank ())
             {
                 try
                 {
