@@ -18,6 +18,7 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.nki.NkiDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
@@ -48,6 +49,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
@@ -78,9 +80,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private BorderPane          executePane;
     private TextField           sourcePathField;
     private TextField           destinationPathField;
+    private TextField           renamingCSVFileField;
     private File                sourceFolder;
     private File                outputFolder;
     private CheckBox            createFolderStructure;
+    private CheckBox            renameSource;
     private CheckBox            addNewFiles;
     private CheckBox            enableDarkMode;
 
@@ -120,6 +124,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new SfzDetector (this),
             new Sf2Detector (this),
             new DecentSamplerDetector (this),
+            new NkiDetector (this),
             new MPCKeygroupDetector (this),
             new KorgmultisampleDetector (this),
             new KMPDetector (this)
@@ -184,7 +189,38 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             tab.setClosable (false);
             tabs.add (tab);
         }
+        
+        
 
+        final BoxPanel srcRenamingCheckboxPanel = new BoxPanel (Orientation.HORIZONTAL);
+        this.renameSource = srcRenamingCheckboxPanel.createCheckBox ("@IDS_MAIN_RENAMING", "@IDS_MAIN_RENAMING_TOOLTIP");
+        this.renameSource.setSelected (false);
+
+        this.renamingCSVFileField = new TextField ();
+        this.renamingCSVFileField.setDisable(true);
+        final BorderPane sourceFolderRenamingPathPanel = new BorderPane (this.renamingCSVFileField);
+        final Button renamingFileSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE"));
+        final BoxPanel srcRenamingPanel = new BoxPanel(Orientation.HORIZONTAL);
+        srcRenamingPanel.addComponent(renamingFileSelectButton);
+        renamingFileSelectButton.setDisable(true);
+       
+        renamingFileSelectButton.setOnAction (event -> {        	
+            final Optional<File> file = Functions.getFileFromUser (this.getStage ().getOwner(), true, Functions.getText("@IDS_MAIN_SELECT_RENAMING_FILE_HEADER"), this.config, new FileChooser.ExtensionFilter(Functions.getText("@IDS_MAIN_SELECT_RENAMING_FILE_DESCRIPTION"), Functions.getText("@IDS_MAIN_SELECT_RENAMING_FILE_FILTER")));
+            if (file.isPresent ())
+                this.renamingCSVFileField.setText (file.get ().getAbsolutePath ());
+
+        });
+
+        renameSource.setOnAction(event -> {
+        	this.renamingCSVFileField.setDisable(!renameSource.isSelected());
+        	renamingFileSelectButton.setDisable(!renameSource.isSelected());
+        });
+
+        
+        //sourceFolderRenamingPathPanel.setRight (renamingFileSelectButton);
+        
+        sourcePane.setBottom (new BorderPane (sourceFolderRenamingPathPanel, null, srcRenamingPanel.getPane(), null, srcRenamingCheckboxPanel.getPane ()));
+        
         // Destination pane
         final BorderPane destinationPane = new BorderPane ();
 
