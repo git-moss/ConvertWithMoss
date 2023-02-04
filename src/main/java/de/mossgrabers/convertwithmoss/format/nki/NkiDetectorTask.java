@@ -1,6 +1,5 @@
 package de.mossgrabers.convertwithmoss.format.nki;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,10 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +26,6 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
-import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -39,10 +35,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupTag;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
 
 public class NkiDetectorTask extends AbstractDetectorTask {
@@ -251,7 +244,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
             return Collections.emptyList ();
         }
 
-        final Element[] programElements = XMLUtils.getChildElementsByName (programsElement, K2Tag.PROGRAM);
+        final Element[] programElements = XMLUtils.getChildElementsByName (programsElement, K2Tag.PROGRAM, false);
         if (programElements == null)
         {
             this.notifier.logError (BAD_METADATA_FILE);
@@ -325,7 +318,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
 		if( (groupElements == null)
 		 || (zoneElements  == null) ) {
             this.notifier.logError (BAD_METADATA_FILE);
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
 		}
 
 		LinkedList<IVelocityLayer> velocityLayers = new LinkedList<>();
@@ -400,7 +393,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
 		if(modulatorsElement == null)
 			return pitchBend;
 
-		Element[] modulators = XMLUtils.getChildElementsByName(modulatorsElement, K2Tag.EXT_MODULATOR_ELEMENT);
+		Element[] modulators = XMLUtils.getChildElementsByName(modulatorsElement, K2Tag.EXT_MODULATOR_ELEMENT, false);
 		if(modulators == null)
 			return pitchBend;		
 
@@ -440,7 +433,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
 		if(targetsElement == null)
 			return pitchBend;
 		
-		Element[] targetElements = XMLUtils.getChildElementsByName(targetsElement, K2Tag.TARGET_ELEMENT);
+		Element[] targetElements = XMLUtils.getChildElementsByName(targetsElement, K2Tag.TARGET_ELEMENT, false);
 		
 		if(targetElements == null)
 			return pitchBend;
@@ -486,7 +479,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
 		if(modulatorsElement == null)
 			return env;
 		
-		Element[] modulators = XMLUtils.getChildElementsByName(modulatorsElement, K2Tag.INT_MODULATOR_ELEMENT);
+		Element[] modulators = XMLUtils.getChildElementsByName(modulatorsElement, K2Tag.INT_MODULATOR_ELEMENT, false);
 		if(modulators == null)
 			return env;
 		
@@ -582,7 +575,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
 	private Element findElementWithParameters(Element   parentElement, 
 			                                  String    elementNameToBeFound,
 			                                  String... nameValuePairs) {
-		Element[] elementsOfInterest = XMLUtils.getChildElementsByName(parentElement, elementNameToBeFound);
+		Element[] elementsOfInterest = XMLUtils.getChildElementsByName(parentElement, elementNameToBeFound, false);
 
 		if(elementsOfInterest == null)
 			return null;
@@ -635,6 +628,8 @@ public class NkiDetectorTask extends AbstractDetectorTask {
 	 */
 	private class ValueNotAvailableException extends Exception {
 		
+		private static final long serialVersionUID = 7547848923691939612L;
+
 		/**
 		 * Standard constructor.
 		 */
@@ -706,7 +701,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
 		
 		if( (groupElement == null)
 		 || (groupZones   == null))
-			return Collections.EMPTY_LIST;
+			return Collections.emptyList();
 		
 		LinkedList<ISampleMetadata> sampleMetadataList = new LinkedList<>();
 		
@@ -820,13 +815,13 @@ public class NkiDetectorTask extends AbstractDetectorTask {
 	    if(loopsElement == null)
 	    	return;
 	    
-	    Element[] loopElements = XMLUtils.getChildElementsByName(loopsElement, K2Tag.LOOP_ELEMENT);
+	    Element[] loopElements = XMLUtils.getChildElementsByName(loopsElement, K2Tag.LOOP_ELEMENT, false);
 	    
 	    if(loopElements == null)
 	    	return;
 	    
 	    for(Element loopElement : loopElements) {
-	    	Map<String, String> loopParams = readValueMap(loopsElement);
+	    	Map<String, String> loopParams = readValueMap(loopElement);
 	    	
 	    	int loopStart;
 	    	int loopLength;
@@ -1087,7 +1082,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
         if(zoneElement == null)
         	return null;
         
-        return XMLUtils.getChildElementsByName(zoneElement, K2Tag.ZONE);
+        return XMLUtils.getChildElementsByName(zoneElement, K2Tag.ZONE, false);
 	}
 
 	/**
@@ -1102,7 +1097,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
         if(groupsElement == null)
         	return null;
         
-        return XMLUtils.getChildElementsByName(groupsElement, K2Tag.GROUP);
+        return XMLUtils.getChildElementsByName(groupsElement, K2Tag.GROUP, false);
 	}
 
 	/**
@@ -1130,7 +1125,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
         if(element == null)
         	return result;
 
-        Element[] valueElements = XMLUtils.getChildElementsByName(element, K2Tag.VALUE);
+        Element[] valueElements = XMLUtils.getChildElementsByName(element, K2Tag.VALUE, false);
         
         if(valueElements == null)
         	return result;
