@@ -143,7 +143,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
         // Parse all groups
         final Map<Integer, IVelocityLayer> indexedVelocityLayers = new TreeMap<> ();
-        final Node [] groupNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.GROUP);
+        final Node [] groupNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.GROUP, false);
         int groupCounter = 0;
         for (final Node groupNode: groupNodes)
         {
@@ -166,7 +166,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         indexedVelocityLayers.put (Integer.valueOf (-1), new DefaultVelocityLayer ());
 
         // Parse (deprecated) layer tag
-        final Node [] layerNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.LAYER);
+        final Node [] layerNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.LAYER, false);
         for (final Node layerNode: layerNodes)
         {
             if (layerNode instanceof final Element layerElement)
@@ -179,7 +179,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 groupCounter++;
 
                 // Parse all samples of the layer
-                for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, BitwigMultisampleTag.SAMPLE))
+                for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, BitwigMultisampleTag.SAMPLE, false))
                     this.parseSample (multiSampleFile, indexedVelocityLayers, sampleElement);
             }
             else
@@ -190,7 +190,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         }
 
         // Parse all top level samples
-        for (final Element sampleElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.SAMPLE))
+        for (final Element sampleElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.SAMPLE, false))
             this.parseSample (multiSampleFile, indexedVelocityLayers, sampleElement);
 
         multisampleSource.setVelocityLayers (new ArrayList<> (indexedVelocityLayers.values ()));
@@ -237,7 +237,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         {
             this.checkAttributes (BitwigMultisampleTag.KEYWORDS, keywordsElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.KEYWORDS));
 
-            for (final Element keywordElement: XMLUtils.getChildElementsByName (keywordsElement, BitwigMultisampleTag.KEYWORD))
+            for (final Element keywordElement: XMLUtils.getChildElementsByName (keywordsElement, BitwigMultisampleTag.KEYWORD, false))
             {
                 this.checkAttributes (BitwigMultisampleTag.KEYWORD, keywordElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.KEYWORD));
 
