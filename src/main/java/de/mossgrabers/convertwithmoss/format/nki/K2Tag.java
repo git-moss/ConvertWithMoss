@@ -4,6 +4,9 @@ public class K2Tag extends AbstractTagsAndAttributes {
     //////////////////////////////////////////////////////
     // Elements
 
+	/** The bank element. */
+	public static final String BANK_ELEMENT              = "K2_Bank";
+	
     /** The root element. */
     public static final String ROOT_CONTAINER            = "K2_Container";	
     	

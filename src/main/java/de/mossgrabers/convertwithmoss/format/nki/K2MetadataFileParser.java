@@ -1,6 +1,7 @@
 package de.mossgrabers.convertwithmoss.format.nki;
 
 import java.io.File;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,16 +26,38 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser {
 	
 	@Override
 	protected Element[] findProgramElements(Element top) {
-    	Element programsElement = XMLUtils.getChildElementByName (top, K2Tag.PROGRAMS);
-    	
-        if (programsElement == null)
-        {
+		Element[] rootContainers = null;
+		
+		if(tags.rootContainer().equals(top.getNodeName())) {
+			rootContainers = new Element[1];
+			rootContainers[0] = top;	
+		}
+		else {
+			// top is a K2_Bank
+			rootContainers = XMLUtils.getChildElementsByName(top, tags.rootContainer(), true);
+		}
+			
+		if(rootContainers == null) {
             this.notifier.logError (BAD_METADATA_FILE);
-            return null;
-        }
+            return null;			
+		}
 
-        Element[] programElements = XMLUtils.getChildElementsByName (programsElement, tags.program(), false);
-        return programElements;
+		LinkedList<Element> programElements = new LinkedList<>();
+		for(Element rootContainer : rootContainers) {
+			Element programsElement = XMLUtils.getChildElementByName (rootContainer, K2Tag.PROGRAMS);
+    	
+			if (programsElement == null)
+			{
+				this.notifier.logError (BAD_METADATA_FILE);
+				return null;
+			}
+			
+			Element[] programElementsArray = XMLUtils.getChildElementsByName (programsElement, tags.program(), false);
+			for(Element programElement : programElementsArray) 
+				programElements.add(programElement);
+		}
+		
+		return programElements.toArray(new Element[programElements.size()]);
 	}
 
 
@@ -172,7 +195,8 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser {
 
 	@Override
 	protected boolean isValidTopLevelElement(Element top) {
-		return tags.rootContainer().equals(top.getNodeName());
+		return (   tags.rootContainer().equals(top.getNodeName()) 
+				|| K2Tag.BANK_ELEMENT.equals(top.getNodeName()));
 	}
 
 
