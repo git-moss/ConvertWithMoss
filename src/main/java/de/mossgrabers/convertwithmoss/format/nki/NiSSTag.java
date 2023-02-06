@@ -3,11 +3,7 @@ package de.mossgrabers.convertwithmoss.format.nki;
 public class NiSSTag extends AbstractTagsAndAttributes {
 
      /** The optional root element. */
-    public static final String ROOT_CONTAINER                      = "NiSS_Program";		
-
-	
-    /** The root element. */
-    public static final String ROOT                      = "NiSS_Program";		
+    public static final String ROOT_CONTAINER            = "NiSS_Bank";			
 	
     /** The program element. */
     public static final String PROGRAM                   = "NiSS_Program";

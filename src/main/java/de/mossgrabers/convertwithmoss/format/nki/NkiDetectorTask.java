@@ -36,7 +36,7 @@ public class NkiDetectorTask extends AbstractDetectorTask {
      * @param metadata Additional metadata configuration parameters
      */	
 	public NkiDetectorTask(final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata) {
-        super (notifier, consumer, sourceFolder, metadata, ".nki");
+        super (notifier, consumer, sourceFolder, metadata, ".nki", ".nkm");
 	}
 
 	

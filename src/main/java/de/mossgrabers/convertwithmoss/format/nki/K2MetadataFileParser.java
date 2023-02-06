@@ -176,5 +176,11 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser {
 	}
 
 
+	@Override
+	protected double normalizePanning(double panningValue) {
+		return panningValue; // doesn't need to be normalizes for K2 format
+	}
+
+
 
 }

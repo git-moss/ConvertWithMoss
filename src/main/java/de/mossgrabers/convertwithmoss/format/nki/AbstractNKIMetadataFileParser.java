@@ -406,7 +406,8 @@ public abstract class AbstractNKIMetadataFileParser extends AbstractDetectorTask
 				double zonePan  = getDouble(zoneParameters,     tags.zonePanParam());
 				double groupPan = getDouble(groupParameters,    tags.groupPanParam());
 				double progPan  = getDouble(programParameters,  tags.progPanParam());
-				double totalPan = zonePan + groupPan + progPan;
+				
+				double totalPan = normalizePanning(zonePan) + normalizePanning(groupPan) + normalizePanning(progPan);
 				if(totalPan < -1.0d)
 					totalPan = -1.0d;
 				else if(totalPan > 1.0d)
@@ -447,6 +448,13 @@ public abstract class AbstractNKIMetadataFileParser extends AbstractDetectorTask
 		return sampleMetadataList;
 	}	
 	
+	/**
+	 * Normalizes a panning value to a range from -1 to 1 where 0 is center and -1 is left
+	 * @param panningValue
+	 * @return the normalizes panning value
+	 */
+	protected abstract double normalizePanning(double panningValue);
+
 	/**
 	 * Reads the loop information from a zone element and writes it to a ISampleMetadata object.
 	 * 

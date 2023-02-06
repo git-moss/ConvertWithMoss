@@ -79,6 +79,11 @@ public class NiSSMetaDataFileParser extends AbstractNKIMetadataFileParser {
 				|| tags.program().equals(top.getNodeName()));
 	}
 
+	@Override
+	protected double normalizePanning(double panningValue) {
+		return ((panningValue - 0.5d) / 0.5d);
+	}
+
 	
 	
 }
