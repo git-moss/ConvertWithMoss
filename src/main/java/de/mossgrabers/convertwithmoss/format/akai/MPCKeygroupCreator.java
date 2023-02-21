@@ -43,15 +43,24 @@ import java.util.Optional;
  */
 public class MPCKeygroupCreator extends AbstractCreator
 {
+	private enum SamplePlay {ONE_SHOT, NOTE_OFF, NOTE_ON};
+	
     private static final String DOUBLE_ZERO  = "0.000000";
     private static final String FILE_VERSION = "2.1";
-    private static final String APP_VERSION  = "v2.10";
+    private static final String APP_VERSION  = "v2.11.6.6";
 
     private static final double MINUS_12_DB  = 0.353000;
     private static final double PLUS_6_DB    = 1.0;
     private static final double VALUE_RANGE  = PLUS_6_DB - MINUS_12_DB;
-
-
+    
+    private static final double MIN_ENV_TIME_S = 0.001;   // 0.00147392290249433d; 
+    private static final double MAX_ENV_TIME_S = 30.0d;
+    private static final double DEFAULT_RELEASE_TIME = 0.0d;
+    private static final double DEFAULT_DECAY_TIME = 0.0022861319686154d;
+    private static final double DEFAULT_ATTACK_TIME = 0.0d;
+    private static final double DEFAULT_HOLD_TIME = 0.0d;
+; 
+        
     /**
      * Constructor.
      *
@@ -227,7 +236,12 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ACTIVE, MPCKeygroupTag.TRUE);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (sampleMetadata.getGain ())));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, "0.500000");
+        
+        double pan = sampleMetadata.getPanorama();
+        pan = clamp(pan, -1.0d, 1.0d);
+        pan += 1.0d;
+        pan /= 2.0;
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, String.format (Locale.US, "%.6f", Double.valueOf (pan)));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH, Double.toString (sampleMetadata.getTune ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (sampleMetadata.getVelocityLow ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_END, Integer.toString (sampleMetadata.getVelocityHigh ()));
@@ -348,11 +362,11 @@ public class MPCKeygroupCreator extends AbstractCreator
                 XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, formatDouble (envelopeDepth / (double) IFilter.MAX_ENVELOPE_DEPTH, 2));
 
                 final IEnvelope filterEnvelope = filter.getEnvelope ();
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttack (), 0, 30, 0);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, filterEnvelope.getHold (), 0, 30, 0);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, filterEnvelope.getDecay (), 0, 30, 0);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, filterEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, filterEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
                 setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, filterEnvelope.getSustain (), 0, 1, 1);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, filterEnvelope.getRelease (), 0, 30, 0.63);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, filterEnvelope.getRelease (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_RELEASE_TIME, true);
             }
         }
 
@@ -361,11 +375,11 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, sampleMetadata.getKeyTracking () == 0 ? "True" : "False");
 
         final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttack (), 0, 30, 0);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHold (), 0, 30, 0);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), 0, 30, 0);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1, 1);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), 0, 30, 0.63);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_RELEASE_TIME, true);
 
         final int pitchDepth = sampleMetadata.getPitchEnvelopeDepth ();
         // Only positive modulation values are supported with MPC
@@ -375,19 +389,25 @@ public class MPCKeygroupCreator extends AbstractCreator
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, formatDouble (mpcPitchDepth, 2));
 
             final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, pitchEnvelope.getAttack (), 0, 30, 0);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, pitchEnvelope.getHold (), 0, 30, 0);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, pitchEnvelope.getDecay (), 0, 30, 0);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, pitchEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, pitchEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, pitchEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
             setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, pitchEnvelope.getSustain (), 0, 1, 1);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, pitchEnvelope.getRelease (), 0, 30, 0.63);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, pitchEnvelope.getRelease (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_RELEASE_TIME);
         }
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (sampleMetadata.getPlayLogic ()).getID ());
 
-        int triggerMode = sampleMetadata.getLoops ().isEmpty () ? 0 : 2;
+        SamplePlay triggerMode = SamplePlay.NOTE_ON;
+        
         if (trigger == TriggerType.RELEASE)
-            triggerMode = 1;
-        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode));
+            triggerMode = SamplePlay.NOTE_OFF;
+        else if(sampleMetadata.getAmplitudeEnvelope().getSustain() <= 0) {
+        	if(sampleMetadata.getKeyLow() == sampleMetadata.getKeyHigh()) 
+        		triggerMode = SamplePlay.ONE_SHOT; 
+        }
+        
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode.ordinal()));
 
         instrumentElement.appendChild (createLfoElement (document));
         final Element layersElement = document.createElement ("Layers");
@@ -440,9 +460,38 @@ public class MPCKeygroupCreator extends AbstractCreator
     }
 
 
-    private static void setEnvelopeAttribute (final Document document, final Element element, final String attribute, final double value, final double minimum, final double maximum, final double defaultValue)
+    /**
+     * Computes a normalized logarigmic value between 0 and 1 from a value and a given range.
+     * 
+     * The envelope time function of the MPC is approached by an exponential function
+     * duration = a * e^(b*control_value) where the control value corresponds to the
+     * value needed by the MPC to produce the duration
+     * 
+     * @param value the value (e.g. duration)
+     * @param minimum the minimum value (must be greater than zero)
+     * @param maximum the maximum value
+     * @return the normalized logarithmic value
+     */
+    private static double normalizedLogarithmicEnvTimeValue(double value, double minimum, double maximum) {
+    	value = clamp(value, minimum, maximum);
+    	
+        final double a = minimum;
+        final double b = Math.log(maximum / minimum);
+        
+        return Math.log(value/a)/b; 
+    }
+    
+    
+    private static void setEnvelopeAttribute (final Document document, final Element element, final String attribute, final double value, final double minimum, final double maximum, final double defaultValue, boolean logarithmic)
     {
-        final double v = value < 0 ? defaultValue : normalizeValue (value, minimum, maximum);
-        XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.4f", Double.valueOf (v)));
+        final double v = value < 0 ? defaultValue : value;
+        final double normalizedValue = logarithmic 
+        		? normalizedLogarithmicEnvTimeValue(v, minimum, maximum) 
+        		: normalizeValue (v, minimum, maximum);
+        XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.6f", Double.valueOf (normalizedValue)));
+    }
+    
+    private static void setEnvelopeAttribute (final Document document, final Element element, final String attribute, final double value, final double minimum, final double maximum, final double defaultValue) {
+    	setEnvelopeAttribute (document, element, attribute, value, minimum, maximum, defaultValue, false);
     }
 }
