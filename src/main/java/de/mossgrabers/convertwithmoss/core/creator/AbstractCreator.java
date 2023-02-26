@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2022
+// (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.creator;
@@ -216,7 +216,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected void storeTextFile (final ZipOutputStream zos, final String fileName, final String content) throws IOException
     {
-        storeDataFile (zos, fileName, content.getBytes (StandardCharsets.UTF_8));
+        this.storeDataFile (zos, fileName, content.getBytes (StandardCharsets.UTF_8));
     }
 
 

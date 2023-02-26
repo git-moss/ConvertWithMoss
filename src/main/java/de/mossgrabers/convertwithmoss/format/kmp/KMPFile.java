@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2022
+// (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.kmp;
@@ -198,10 +198,8 @@ public class KMPFile
 
     private void readKSFFiles () throws IOException, ParseException
     {
-        for (int i = 0; i < this.ksfFiles.size (); i++)
+        for (final KSFFile ksf: this.ksfFiles)
         {
-            final KSFFile ksf = this.ksfFiles.get (i);
-
             File ksfFile = new File (this.sampleFolder1, ksf.getFilename ());
             if (!ksfFile.exists ())
             {
@@ -234,9 +232,8 @@ public class KMPFile
     private void readParameterChunk1 (final DataInputStream in) throws IOException
     {
         int lowerKey = 0;
-        for (int i = 0; i < this.ksfFiles.size (); i++)
+        for (final KSFFile ksfFile: this.ksfFiles)
         {
-            final KSFFile ksfFile = this.ksfFiles.get (i);
             final int originalKey = in.read ();
 
             ksfFile.setKeyTracking ((originalKey & 0x80) > 0 ? 1 : 0);

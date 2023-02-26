@@ -1,3 +1,7 @@
+.paddingRenameBar {
+    -fx-padding: 7.0 15.0 15.0 15.0;
+}
+
 .hbox, .vbox {
 	-fx-padding: 15.0;
 	-fx-spacing: 10.0;

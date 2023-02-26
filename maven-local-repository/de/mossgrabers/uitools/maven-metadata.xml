@@ -3,12 +3,10 @@
   <groupId>de.mossgrabers</groupId>
   <artifactId>uitools</artifactId>
   <versioning>
-    <release>1.2</release>
+    <release>1.3</release>
     <versions>
-      <version>1.0</version>
-      <version>1.1</version>
-      <version>1.2</version>
+      <version>1.3</version>
     </versions>
-    <lastUpdated>20230115162341</lastUpdated>
+    <lastUpdated>20230221185442</lastUpdated>
   </versioning>
 </metadata>

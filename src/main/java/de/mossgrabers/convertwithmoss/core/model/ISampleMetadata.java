@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2022
+// (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.model;
@@ -127,7 +127,7 @@ public interface ISampleMetadata extends IEnvelopeAccess
 
     /**
      * Set the event that triggers the playback of the sample.
-     * 
+     *
      * @param trigger The trigger type
      */
     void setTrigger (TriggerType trigger);
