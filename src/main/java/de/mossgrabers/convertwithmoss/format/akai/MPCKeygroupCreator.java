@@ -468,25 +468,21 @@ public class MPCKeygroupCreator extends AbstractCreator
 
 
     /**
-     * Computes a normalized logarigmic value between 0 and 1 from a value and a given range.
+     * Computes a normalized logarithmic value between 0 and 1 from a value and a given range.
      *
-     * The envelope time function of the MPC is approached by an exponential function duration = a *
-     * e^(b*control_value) where the control value corresponds to the value needed by the MPC to
-     * produce the duration
+     * The envelope time function of the MPC is approached by an exponential function <pre>
+     * duration = a * e^(b*control_value)
+     * </pre> where the control value corresponds to the value needed by the MPC to produce the
+     * duration.
      *
-     * @param value the value (e.g. duration)
-     * @param minimum the minimum value (must be greater than zero)
-     * @param maximum the maximum value
+     * @param value The value (e.g. duration)
+     * @param minimum The minimum value (must be greater than zero)
+     * @param maximum The maximum value
      * @return the normalized logarithmic value
      */
-    private static double normalizedLogarithmicEnvTimeValue (double value, final double minimum, final double maximum)
+    private static double normalizedLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
     {
-        value = clamp (value, minimum, maximum);
-
-        final double a = minimum;
-        final double b = Math.log (maximum / minimum);
-
-        return Math.log (value / a) / b;
+        return Math.log (clamp (value, minimum, maximum) / minimum) / Math.log (maximum / minimum);
     }
 
 

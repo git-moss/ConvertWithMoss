@@ -1,39 +1,59 @@
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019-2023
+// Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
+
 package de.mossgrabers.convertwithmoss.format.nki;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.ui.Functions;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.zip.InflaterInputStream;
 
 
+/**
+ * Detector for Native Instruments Kontakt Instrument (NKI) files. Currently, only the format of the
+ * versions before Kontakt 4.2.2 are supported.
+ *
+ * @author J&uuml;rgen Mo&szlig;graber
+ * @author Philip Stolz
+ */
 public class NkiDetectorTask extends AbstractDetectorTask
 {
+    private static final int     K2_OFFSET              = 0xAA;
+    private static final int     NISS_OFFSET            = 0x24;
 
-    private static final int K2_OFFSET   = 0xAA;
-    private static final int NISS_OFFSET = 0x24;
-
-
-    enum NIFormat
+    private static final long [] KNOWN_OFFSETS          =
     {
-        K2,
-        NISS
-    }
+        NISS_OFFSET,
+        K2_OFFSET
+    };
 
-
-    /** stores the currently processed file */
-    private File file;
+    private static final byte    FIRST_SIGNATURE_BYTE   = 0x78;
+    private static final byte [] SECOND_SIGNATURE_BYTES =
+    {
+        0x01,
+        0x5E,
+        (byte) 0x9C,
+        (byte) 0xDA,
+        0x20,
+        0x7D,
+        (byte) 0xBB,
+        (byte) 0xF9
+    };
 
 
     /**
@@ -50,6 +70,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
     }
 
 
+    /** {@inheritDoc} */
     @Override
     protected List<IMultisampleSource> readFile (final File sourceFile)
     {
@@ -57,91 +78,60 @@ public class NkiDetectorTask extends AbstractDetectorTask
             return Collections.emptyList ();
 
         final long offset = this.determineCompressedDataOffset (sourceFile);
+        if (offset <= 0)
+            return Collections.emptyList ();
 
         try
         {
-            final String content = this.loadCompressedTextFile (sourceFile, offset);
-
-            AbstractNKIMetadataFileParser metadataFileParser = null;
+            final String content = loadCompressedTextFile (sourceFile, offset);
 
             if (offset == K2_OFFSET)
-                metadataFileParser = new K2MetadataFileParser (this.notifier, this.metadata, this.sourceFolder, this.file);
-            else if (offset == NISS_OFFSET)
-                metadataFileParser = new NiSSMetaDataFileParser (this.notifier, this.metadata, this.sourceFolder, this.file);
-            else
-                return Collections.emptyList ();
-
-            if (this.waitForDelivery ())
-                return Collections.emptyList ();
-
-            return metadataFileParser.parseMetadataFile (sourceFile, content);
+                return new K2MetadataFileParser (this.notifier, this.metadata, this.sourceFolder, sourceFile).parseMetadataFile (sourceFile, content);
+            // NISS_OFFSET
+            return new NiSSMetaDataFileParser (this.notifier, this.metadata, this.sourceFolder, sourceFile).parseMetadataFile (sourceFile, content);
+        }
+        catch (final UnsupportedEncodingException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
         }
         catch (final IOException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
-            return Collections.emptyList ();
         }
+        return Collections.emptyList ();
     }
 
 
     /**
-     * Determines the offset of the compressed xml in the source file.
+     * Determines the offset of the compressed XML in the source file.
      *
-     * @param sourceFile the source file
-     * @return the offset, if zlib signature was found, -1 else
+     * @param sourceFile The source file
+     * @return The offset, if ZLIB signature was found, -1 else
      */
     private long determineCompressedDataOffset (final File sourceFile)
     {
-        final long knownOffsets[] =
+        final byte [] buffer = new byte [2];
+
+        try (final InputStream in = new BufferedInputStream (new FileInputStream (sourceFile)))
         {
-            NISS_OFFSET,
-            K2_OFFSET
-        };
-
-        final byte buffer[] = new byte [2];
-        for (final long offset: knownOffsets)
-        {
-            FileInputStream in = null;
-
-            try
+            for (final long offset: KNOWN_OFFSETS)
             {
-                in = new FileInputStream (sourceFile);
-            }
-            catch (final FileNotFoundException e2)
-            {
-                return -1;
-            }
+                in.mark ((int) sourceFile.length ());
 
-            try
-            {
-                in.skip (offset);
-                final int numBytesRead = in.read (buffer);
-
-                if (numBytesRead != 2)
+                final long skippedBytes = in.skip (offset);
+                if (skippedBytes == offset)
                 {
-                    in.close ();
-                    continue;
+                    final int numBytesRead = in.read (buffer);
+                    if (numBytesRead == 2 && isZlibSignature (buffer))
+                        return offset;
                 }
 
-                if (this.isZlibSignature (buffer))
-                {
-                    in.close ();
-                    return offset;
-                }
+                in.reset ();
             }
-            catch (final IOException e)
-            {
-                // intentionally left empty
-            }
-
-            try
-            {
-                in.close ();
-            }
-            catch (final IOException e)
-            {
-                // intentionally left empty
-            }
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NKI_UNSUPPORTED_FILE_FORMAT", ex);
         }
 
         return -1;
@@ -149,77 +139,49 @@ public class NkiDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Test whether a byte array starts with a zlib signature.
+     * Test whether a byte array starts with a ZLIB signature.
      *
-     * @param byteArr the byte array
-     * @return true if byte array starts with a zlib signature, false else
+     * @param buffer The byte array of size 2, never null
+     * @return true If byte array starts with a ZLIB signature, otherwise false
      */
-    private boolean isZlibSignature (final byte [] byteArr)
+    private static boolean isZlibSignature (final byte [] buffer)
     {
-        final byte firstSignatureByte = 0x78;
-        final byte secondSignatureBytes[] =
-        {
-            0x01,
-            0x5E,
-            (byte) 0x9C,
-            (byte) 0xDA,
-            0x20,
-            0x7D,
-            (byte) 0xBB,
-            (byte) 0xF9
-        };
-
-        if (byteArr == null || byteArr.length < 2 || firstSignatureByte != byteArr[0])
+        if (buffer[0] != FIRST_SIGNATURE_BYTE)
             return false;
 
-        for (final byte expected: secondSignatureBytes)
+        for (final byte expected: SECOND_SIGNATURE_BYTES)
         {
-            if (expected == byteArr[1])
+            if (buffer[1] == expected)
                 return true;
         }
-
         return false;
     }
 
 
     /**
-     * Loads a zip-compressed file in UTF-8 encoding. If UTF-8 fails a string is created anyway but
-     * with unspecified behavior.s
+     * Loads a ZIP-compressed file in UTF-8 encoding.
      *
      * @param file The file to load
-     * @param offset the offset where the zip-compressed part begins
-     * @return The loaded text
+     * @param offset The offset where the ZIP-compressed part begins
+     * @return The uncompressed text
      * @throws IOException Could not load the file
      */
-    private String loadCompressedTextFile (final File file, final long offset) throws IOException
+    private static String loadCompressedTextFile (final File file, final long offset) throws IOException
     {
-        this.file = file;
-        InputStream inputStream = null;
-        String result = "";
-        final FileInputStream fileInputStream = new FileInputStream (file);
-        fileInputStream.skip (offset);
-        inputStream = new InflaterInputStream (fileInputStream);
-
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ();
-        final byte [] buffer = new byte [1024];
-        for (int length; (length = inputStream.read (buffer)) != -1;)
+        try (final InputStream fileInputStream = new FileInputStream (file))
         {
-            outputStream.write (buffer, 0, length);
-        }
+            final long skippedBytes = fileInputStream.skip (offset);
+            if (skippedBytes != offset)
+                throw new IOException (Functions.getMessage ("IDS_NKI_UNCOMPRESS_ERROR"));
 
-        try
-        {
-            result = outputStream.toString ("UTF-8");
+            try (final InputStream inputStream = new InflaterInputStream (fileInputStream); final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ())
+            {
+                final byte [] buffer = new byte [1024];
+                int length;
+                while ((length = inputStream.read (buffer)) > 0)
+                    outputStream.write (buffer, 0, length);
+                return outputStream.toString (StandardCharsets.UTF_8);
+            }
         }
-        catch (final UnsupportedEncodingException ex)
-        {
-            result = new String (outputStream.toString ());
-            this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
-        }
-
-        inputStream.close ();
-
-        return result;
     }
-
 }

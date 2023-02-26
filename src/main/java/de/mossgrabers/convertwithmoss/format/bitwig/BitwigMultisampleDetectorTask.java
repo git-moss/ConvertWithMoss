@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -136,9 +137,9 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             return Collections.emptyList ();
         }
 
-        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
+        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
 
-        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, this.subtractPaths (this.sourceFolder, multiSampleFile));
+        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
         this.parseMetadata (top, multisampleSource);
 
         // Parse all groups

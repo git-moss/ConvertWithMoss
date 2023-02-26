@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 
 import java.io.BufferedInputStream;
@@ -104,8 +105,8 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
         final String name = readAscii (in);
 
-        final String [] parts = createPathParts (file.getParentFile (), this.sourceFolder, name);
-        final MultisampleSource multisampleSource = new MultisampleSource (file, parts, name, this.subtractPaths (this.sourceFolder, file));
+        final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
+        final MultisampleSource multisampleSource = new MultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
         final List<IVelocityLayer> velocityLayers = new ArrayList<> ();
         // There is only one layer (no velocity zones)
         final DefaultVelocityLayer velocityLayer = new DefaultVelocityLayer ("Layer");

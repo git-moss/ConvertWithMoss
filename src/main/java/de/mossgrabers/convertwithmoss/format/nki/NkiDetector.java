@@ -1,3 +1,7 @@
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019-2023
+// Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
+
 package de.mossgrabers.convertwithmoss.format.nki;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -8,9 +12,13 @@ import java.io.File;
 import java.util.function.Consumer;
 
 
+/**
+ * Descriptor for Native Instruments Kontakt Instrument (NKI/NKM) files detector.
+ *
+ * @author J&uuml;rgen Mo&szlig;graber
+ */
 public class NkiDetector extends AbstractDetectorWithMetadataPane<NkiDetectorTask>
 {
-
     /**
      * Constructor.
      *
@@ -18,14 +26,14 @@ public class NkiDetector extends AbstractDetectorWithMetadataPane<NkiDetectorTas
      */
     public NkiDetector (final INotifier notifier)
     {
-        super ("NKI", notifier, "Nki");
+        super ("Kontakt NKI/NKM", notifier, "Nki");
     }
 
 
+    /** {@inheritDoc} */
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
         this.startDetection (new NkiDetectorTask (this.notifier, consumer, folder, this.metadataPane));
     }
-
 }

@@ -7,9 +7,6 @@ package de.mossgrabers.convertwithmoss.core.detector;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 import org.w3c.dom.Element;
@@ -24,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,8 +38,6 @@ import java.util.function.Consumer;
  */
 public abstract class AbstractDetectorTask extends Task<Boolean>
 {
-    private static final String                  BROKEN_WAV            = "IDS_NOTIFY_ERR_BROKEN_WAV";
-
     protected final INotifier                    notifier;
     protected final Consumer<IMultisampleSource> consumer;
     protected final File                         sourceFolder;
@@ -155,55 +149,6 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
 
     /**
-     * Split the parts of the path offset between the selected source folder and the currently
-     * processed sub-folder.
-     *
-     * @param msSourceFolder The currently processed sub-folder
-     * @param sourceFolder The source folder
-     * @param name The name of the multisample
-     * @return The array with all parts and the name in reverse order
-     */
-    protected static String [] createPathParts (final File msSourceFolder, final File sourceFolder, final String name)
-    {
-        File f = msSourceFolder;
-        final List<String> pathNames = new ArrayList<> ();
-        while (!f.equals (sourceFolder))
-        {
-            pathNames.add (f.getName ());
-            f = f.getParentFile ();
-        }
-        pathNames.add (sourceFolder.getName ());
-
-        final String [] result = new String [pathNames.size () + 1];
-        result[0] = name;
-        for (int i = 0; i < pathNames.size (); i++)
-            result[i + 1] = pathNames.get (i);
-        return result;
-    }
-
-
-    /**
-     * Get the relative path of the sub-folder.
-     *
-     * @param sourceFolder The parent folder
-     * @param folder The sub-folder
-     * @return The relative path starting from the parent folder
-     */
-    protected String subtractPaths (final File sourceFolder, final File folder)
-    {
-        final String analysePath = folder.getAbsolutePath ();
-        final String sourcePath = sourceFolder.getAbsolutePath ();
-        if (analysePath.startsWith (sourcePath))
-        {
-            final String n = analysePath.substring (sourcePath.length ());
-            return n.isEmpty () ? analysePath : n;
-        }
-
-        return analysePath;
-    }
-
-
-    /**
      * Get all files with specific endings. Recursively, calls detect method on sub-folders.
      *
      * @param folder The folder to start searching
@@ -237,46 +182,6 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
 
     /**
-     * Test the sample file for compatibility.
-     *
-     * @param wavFile The sample file to check
-     * @return True if OK
-     */
-    protected boolean checkSampleFile (final File wavFile)
-    {
-        if (!wavFile.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", wavFile.getAbsolutePath ());
-            return false;
-        }
-
-        try
-        {
-            final FormatChunk formatChunk = new WaveFile (wavFile, true).getFormatChunk ();
-            if (formatChunk == null)
-            {
-                this.notifier.logError (BROKEN_WAV, wavFile.getAbsolutePath ());
-                return false;
-            }
-
-            final int numberOfChannels = formatChunk.getNumberOfChannels ();
-            if (numberOfChannels > 2)
-            {
-                this.notifier.logError ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), wavFile.getAbsolutePath ());
-                return false;
-            }
-        }
-        catch (final IOException | ParseException ex)
-        {
-            this.notifier.logError (BROKEN_WAV, ex);
-            return false;
-        }
-
-        return true;
-    }
-
-
-    /**
      * Check if the sample start / stop and the sample rate is set, if not read them from the sample
      * file.
      *
@@ -290,7 +195,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError (BROKEN_WAV, ex);
+            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
         }
     }
 

@@ -18,6 +18,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -206,9 +207,9 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         final String name = FileUtils.getNameWithoutType (multiSampleFile);
         final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
+        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
-        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, this.subtractPaths (this.sourceFolder, multiSampleFile));
+        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
 
         // Use same guessing on the filename...
         multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
@@ -328,7 +329,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             final File sampleFile = new File (basePath, sampleName);
             if (libraryFile == null)
             {
-                if (!this.checkSampleFile (sampleFile))
+                if (!AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
                     return;
                 sampleMetadata = new DefaultSampleMetadata (sampleFile);
             }

@@ -17,6 +17,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2File;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Instrument;
@@ -67,7 +68,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         {
             final Sf2File sf2File = new Sf2File (sourceFile);
             final String name = FileUtils.getNameWithoutType (sourceFile);
-            final String [] parts = createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
+            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
             return this.parseSF2File (sourceFile, sf2File, parts);
         }
         catch (final IOException | ParseException ex)
@@ -96,7 +97,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         {
             final Sf2Preset preset = presets.get (i);
 
-            final String mappingName = this.subtractPaths (this.sourceFolder, sourceFile) + " : " + preset.getName ();
+            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + preset.getName ();
             final MultisampleSource source = new MultisampleSource (sourceFile, parts, preset.getName (), mappingName);
             source.setCreator (sf2File.getSoundDesigner ());
             source.setCategory (TagDetector.detectCategory (parts));

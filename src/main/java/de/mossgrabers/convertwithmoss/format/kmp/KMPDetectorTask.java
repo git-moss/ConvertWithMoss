@@ -10,6 +10,7 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -51,7 +52,7 @@ public class KMPDetectorTask extends AbstractDetectorTask
         {
             final KMPFile kmpFile = new KMPFile (this.notifier, sourceFile);
             final String name = FileUtils.getNameWithoutType (sourceFile);
-            final String [] parts = createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
+            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
             return this.parseKMPFile (sourceFile, kmpFile, parts);
         }
         catch (final IOException | ParseException ex)
