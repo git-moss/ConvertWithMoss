@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2022
+// (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.ui;
@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
+import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupDetector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
@@ -52,13 +53,8 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -80,34 +76,33 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private static final String RENAMING_CSV_FILE                   = "RenamingCSVFile";
     private static final String RENAMING_SOURCE_ENABLED             = "EnableRenaming";
 
-    private static final char   COMMA_DELIMITER                     = ',';
-    private static final char   QUOTATION_MARK                      = '"';
-    
     private final IDetector []  detectors;
     private final ICreator []   creators;
 
     private BorderPane          mainPane;
     private BorderPane          executePane;
-    private TextField           sourcePathField;
-    private TextField           destinationPathField;
-    private TextField           renamingCSVFileField;
+    private TextField           sourcePathField                     = new TextField ();
+    private TextField           destinationPathField                = new TextField ();
     private File                sourceFolder;
     private File                outputFolder;
     private CheckBox            createFolderStructure;
-    private CheckBox            renameSource;
     private CheckBox            addNewFiles;
     private CheckBox            enableDarkMode;
 
-    private TabPane             sourceTabPane;
-    private TabPane             destinationTabPane;
+    private TabPane             sourceTabPane                       = new TabPane ();
+    private TabPane             destinationTabPane                  = new TabPane ();
 
     private boolean             onlyAnalyse                         = true;
     private Button              closeButton;
     private Button              cancelButton;
-    private Button              renamingFileSelectButton;
+
+    private CheckBox            renameCheckbox;
+    private TextField           renameFilePathField                 = new TextField ();
+    private Button              renameFilePathSelectButton;
+
+    private CSVRenameFile       csvRenameFile                       = new CSVRenameFile ();
     private final LoggerBox     loggingArea                         = new LoggerBox ();
-    
-    private Map<String, String> renamingTable = new HashMap<>();
+
 
     /**
      * Main-method.
@@ -156,13 +151,16 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
 
     /**
-     * Enables/disables the renaming controls depending on the selection status of the renaming checkbox.
+     * Enables/disables the renaming controls depending on the selection status of the renaming
+     * checkbox.
      */
-    private void updateRenamingControls() {
-        this.renamingCSVFileField.setDisable (!this.renameSource.isSelected());
-        this.renamingFileSelectButton.setDisable (!this.renameSource.isSelected());
+    private void updateRenamingControls ()
+    {
+        this.renameFilePathField.setDisable (!this.renameCheckbox.isSelected ());
+        this.renameFilePathSelectButton.setDisable (!this.renameCheckbox.isSelected ());
     }
-    
+
+
     /** {@inheritDoc} */
     @Override
     public void initialise (final Stage stage, final Optional<String> baseTitleOptional) throws EndApplicationException
@@ -177,11 +175,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final Button analyseButton = setupButton (buttonPanel, "Analyse", "@IDS_MAIN_ANALYSE");
         analyseButton.setOnAction (event -> this.execute (true));
 
+        /////////////////////////////////////////////////////////////////////////////
         // Source pane
-        final BorderPane sourcePane = new BorderPane ();
-
-        this.sourcePathField = new TextField ();
-        final BorderPane sourceFolderPanel = new BorderPane (this.sourcePathField);
 
         final Button sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         sourceFolderSelectButton.setOnAction (event -> {
@@ -191,16 +186,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
                 this.sourcePathField.setText (file.get ().getAbsolutePath ());
 
         });
-        sourceFolderPanel.setRight (sourceFolderSelectButton);
-
         final BoxPanel sourceUpperPart = new BoxPanel (Orientation.VERTICAL);
         sourceUpperPart.addComponent (new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER")));
-        sourceUpperPart.addComponent (sourceFolderPanel);
+        sourceUpperPart.addComponent (new BorderPane (this.sourcePathField, null, sourceFolderSelectButton, null, null));
 
-        sourcePane.setTop (sourceUpperPart.getPane ());
-        this.sourceTabPane = new TabPane ();
         this.sourceTabPane.getStyleClass ().add ("paddingLeftBottomRight");
-        sourcePane.setCenter (this.sourceTabPane);
 
         final ObservableList<Tab> tabs = this.sourceTabPane.getTabs ();
         for (final IDetector detector: this.detectors)
@@ -209,41 +199,30 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             tab.setClosable (false);
             tabs.add (tab);
         }
-        
-        
 
-        final BoxPanel srcRenamingCheckboxPanel = new BoxPanel (Orientation.HORIZONTAL);
-        this.renameSource = srcRenamingCheckboxPanel.createCheckBox ("@IDS_MAIN_RENAMING", "@IDS_MAIN_RENAMING_TOOLTIP");
-        this.renameSource.setSelected (false);
+        // Rename CSV file section
+        final BoxPanel srcRenamingCheckboxPanel = new BoxPanel (Orientation.HORIZONTAL, false);
+        this.renameCheckbox = srcRenamingCheckboxPanel.createCheckBox ("@IDS_MAIN_RENAMING", "@IDS_MAIN_RENAMING_TOOLTIP");
+        this.renameCheckbox.getStyleClass ().add ("paddingRight");
+        this.renameCheckbox.setOnAction (event -> this.updateRenamingControls ());
+        this.renameFilePathSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE"));
+        this.renameFilePathSelectButton.setOnAction (event -> {
 
-        this.renamingCSVFileField = new TextField ();
-        this.renamingCSVFileField.setDisable(true);
-        final BorderPane sourceFolderRenamingPathPanel = new BorderPane (this.renamingCSVFileField);
-        renamingFileSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE"));
-        final BoxPanel srcRenamingPanel = new BoxPanel(Orientation.HORIZONTAL);
-        srcRenamingPanel.addComponent(renamingFileSelectButton);
-        renamingFileSelectButton.setDisable(true);
-        this.renameSource.setSelected(false);
-       
-        renamingFileSelectButton.setOnAction (event -> {        	
-            final Optional<File> file = Functions.getFileFromUser (this.getStage ().getOwner(), true, Functions.getText("@IDS_MAIN_SELECT_RENAMING_FILE_HEADER"), this.config, new FileChooser.ExtensionFilter(Functions.getText("@IDS_MAIN_SELECT_RENAMING_FILE_DESCRIPTION"), Functions.getText("@IDS_MAIN_SELECT_RENAMING_FILE_FILTER")));
-            if (file.isPresent ()) {
-            	this.renamingCSVFileField.setText (file.get ().getAbsolutePath ());
-            }
+            final Optional<File> file = Functions.getFileFromUser (this.getStage (), true, Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_HEADER"), this.config, new FileChooser.ExtensionFilter (Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_DESCRIPTION"), Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_FILTER")));
+            if (file.isPresent ())
+                this.renameFilePathField.setText (file.get ().getAbsolutePath ());
+
         });
+        final BorderPane sourceBottomPane = new BorderPane (this.renameFilePathField, null, this.renameFilePathSelectButton, null, srcRenamingCheckboxPanel.getPane ());
+        sourceBottomPane.getStyleClass ().add ("paddingRenameBar");
 
-        renameSource.setOnAction(event -> {
-        	updateRenamingControls();
-        });
+        final BorderPane sourcePane = new BorderPane (this.sourceTabPane);
+        sourcePane.setTop (sourceUpperPart.getPane ());
+        sourcePane.setBottom (sourceBottomPane);
 
-        updateRenamingControls();
-        
-        sourcePane.setBottom (new BorderPane (sourceFolderRenamingPathPanel, null, srcRenamingPanel.getPane(), null, srcRenamingCheckboxPanel.getPane ()));
-        
+        /////////////////////////////////////////////////////////////////////////////
         // Destination pane
-        final BorderPane destinationPane = new BorderPane ();
 
-        this.destinationPathField = new TextField ();
         final BorderPane destinationFolderPanel = new BorderPane (this.destinationPathField);
 
         final Button destinationFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION"));
@@ -260,10 +239,14 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         destinationUpperPart.addComponent (new TitledSeparator ("@IDS_MAIN_DESTINATION_HEADER"));
         destinationUpperPart.addComponent (destinationFolderPanel);
 
-        destinationPane.setTop (destinationUpperPart.getPane ());
-        this.destinationTabPane = new TabPane ();
         this.destinationTabPane.getStyleClass ().add ("paddingLeftBottomRight");
-        destinationPane.setCenter (this.destinationTabPane);
+        final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
+        for (final ICreator creator: this.creators)
+        {
+            final Tab tab = new Tab (creator.getName (), creator.getEditPane ());
+            tab.setClosable (false);
+            destinationTabs.add (tab);
+        }
 
         final BoxPanel bottomLeft = new BoxPanel (Orientation.HORIZONTAL);
         this.createFolderStructure = bottomLeft.createCheckBox ("@IDS_MAIN_CREATE_FOLDERS", "@IDS_MAIN_CREATE_FOLDERS_TOOLTIP");
@@ -282,15 +265,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
                 stylesheets.remove (stylesheet);
         });
 
+        final BorderPane destinationPane = new BorderPane (this.destinationTabPane);
+        destinationPane.setTop (destinationUpperPart.getPane ());
         destinationPane.setBottom (new BorderPane (null, null, bottomRight.getPane (), null, bottomLeft.getPane ()));
-
-        final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
-        for (final ICreator creator: this.creators)
-        {
-            final Tab tab = new Tab (creator.getName (), creator.getEditPane ());
-            tab.setClosable (false);
-            destinationTabs.add (tab);
-        }
 
         // Tie it all together ...
         final HBox grid = new HBox ();
@@ -339,18 +316,18 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final String destinationPath = this.config.getProperty (DESTINATION_PATH);
         if (destinationPath != null)
             this.destinationPathField.setText (destinationPath);
-        
+
         final String renamingFilePath = this.config.getProperty (RENAMING_CSV_FILE);
         if (renamingFilePath != null)
-            this.renamingCSVFileField.setText (renamingFilePath);        
+            this.renameFilePathField.setText (renamingFilePath);
 
         this.createFolderStructure.setSelected (this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true));
         this.addNewFiles.setSelected (this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false));
         this.enableDarkMode.setSelected (this.config.getBoolean (ENABLE_DARK_MODE, false));
-        this.renameSource.setSelected(this.config.getBoolean (RENAMING_SOURCE_ENABLED, false));
-        
-        updateRenamingControls();
-        
+        this.renameCheckbox.setSelected (this.config.getBoolean (RENAMING_SOURCE_ENABLED, false));
+
+        this.updateRenamingControls ();
+
         for (final IDetector detector: this.detectors)
             detector.loadSettings (this.config);
         for (final ICreator creator: this.creators)
@@ -372,11 +349,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.config.setProperty (SOURCE_PATH, this.sourcePathField.getText ());
         this.config.setProperty (DESTINATION_PATH, this.destinationPathField.getText ());
-        this.config.setProperty (RENAMING_CSV_FILE, this.renamingCSVFileField.getText());
+        this.config.setProperty (RENAMING_CSV_FILE, this.renameFilePathField.getText ());
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure.isSelected ());
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles.isSelected ());
         this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode.isSelected ());
-        this.config.setBoolean (RENAMING_SOURCE_ENABLED, this.renameSource.isSelected());
+        this.config.setBoolean (RENAMING_SOURCE_ENABLED, this.renameCheckbox.isSelected ());
 
         for (final IDetector detector: this.detectors)
             detector.saveSettings (this.config);
@@ -404,12 +381,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     {
         this.onlyAnalyse = onlyAnalyse;
 
-        if (!this.verifyFolders ())
+        if (!this.verifyFolders () || !this.verifyRenameFile ())
             return;
 
-        if (!this.initFileRenaming ()) 
-        	return;
-        
         final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
         if (selectedDetector < 0)
             return;
@@ -426,7 +400,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
-	/**
+    /**
      * Cancel button was pressed.
      */
     private void cancelExecution ()
@@ -496,146 +470,63 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         return true;
     }
 
-    /**
-     * Parses one line from a csv file consisting of exactly two columns. Writes the first value as a key and the second
-     * value as the value of a map entry to the renamingTable.
-     * @param line the line read from the CSV file
-     * @param lineNumber the line number of the line in the csv file (needed for logging)
-     * @param csvFileName the name of the csv file (needed for logging
-     * @return true if line could be processed correctly, false else
-     */
-    private boolean readColumnsFromRenamingCSVLineAndWriteThemToRenamingTable(String line, int lineNumber, String csvFileName) {
-        int columnNumber = 0;
-        boolean isQuoted = false;
 
-        StringBuilder sb = new StringBuilder();
-        String sourceName = null;
-        boolean quoteWasJustEnded = false;
-        for(int charIdx = 0; charIdx < line.length(); charIdx ++) {
-        	char ch = line.charAt(charIdx);
-        	switch(ch) {
-        	case COMMA_DELIMITER:
-        		if(!isQuoted) {
-        		    if(columnNumber == 0) {
-        		    	sourceName = sb.toString();
-        		    	sb.setLength(0);
-        		    	columnNumber ++;
-        		    }
-        		    else {
-        	            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_MORE_THAN_TWO_COLUMNS", Integer.toString(lineNumber), csvFileName);
-        	            return false;
-        		    }
-        		}
-        		else {
-        			sb.append(ch);
-        		}
-        		quoteWasJustEnded = false;
-        		break;
-        	case QUOTATION_MARK:
-        		if(isQuoted) {
-        			isQuoted = false;
-        			quoteWasJustEnded = true;
-        		}
-        		else {
-        			if(quoteWasJustEnded)
-        				sb.append(ch);
-    
-        			isQuoted = true;
-        			quoteWasJustEnded = false;
-        		}
-        		break;
-        	
-        	default:
-        	    sb.append(ch);	
-        	    quoteWasJustEnded = false;
-        	}
+    /**
+     * Set and check folder for existence.
+     *
+     * @return True if OK
+     */
+    private boolean verifyRenameFile ()
+    {
+        this.csvRenameFile.clear ();
+
+        if (!this.renameCheckbox.isSelected ())
+            return true;
+
+        final String renamingCSVFile = this.renameFilePathField.getText ();
+        if (renamingCSVFile.isBlank ())
+        {
+            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_NO_FILE_SPECIFIED");
+            this.renameFilePathField.requestFocus ();
+            return false;
         }
-        
-        if(columnNumber < 1) {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_LESS_THAN_TWO_COLUMNS", Integer.toString(lineNumber), csvFileName);
-            return false;		        	
+
+        final File renamingCSV = new File (renamingCSVFile);
+        if (!renamingCSV.exists ())
+        {
+            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_DOES_NOT_EXIST", renamingCSVFile);
+            this.renameFilePathField.requestFocus ();
+            return false;
         }
-        else {
-        	String targetName = sb.toString();
-        	sb.setLength(0);
-        	renamingTable.put(sourceName, targetName);
-        }   
-        
+
+        if (!renamingCSV.canRead ())
+        {
+            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_NOT_READABLE", renamingCSVFile);
+            this.renameFilePathField.requestFocus ();
+            return false;
+        }
+
+        if (!this.csvRenameFile.setRenameFile (renamingCSV))
+        {
+            this.renameFilePathField.requestFocus ();
+            return false;
+        }
         return true;
     }
-    
-    
-    /**
-     * Initializes the file renaming by loading the provided csv file if
-     * renaming is active.
-     * 
-     * @return true if renaming is not active or the provided csv file could be loaded successfully, false else.
-     */
-    private boolean initFileRenaming () {
-    	
-		if(!this.renameSource.isSelected())
-			return true;
 
-		String renamingCSVFile = this.renamingCSVFileField.getText();
-		
-		if(renamingCSVFile == null) {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_NO_FILE_SPECIFIED");
-			return false;
-		}
-		
-		File renamingCSV = new File(renamingCSVFile);
 
-		if(!renamingCSV.exists()) {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_DOES_NOT_EXIST", renamingCSVFile);
-            return false;
-		}
-		
-		if(!renamingCSV.canRead()) {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_NOT_READABLE", renamingCSVFile);
-            return false;
-		}
-		
-		try {
-			BufferedReader br = new BufferedReader(new FileReader(renamingCSV));
-			this.renamingTable.clear();
-		    String line;
-		    int lineNumber = 0;
-
-		    while ((line = br.readLine()) != null) {
-		        lineNumber ++;
-		        if(!readColumnsFromRenamingCSVLineAndWriteThemToRenamingTable(line, lineNumber, renamingCSVFile)) {
-		        	br.close();
-		        	return false;
-		        }
-		    }
-		  
-		    br.close();
-		} catch (FileNotFoundException e) {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_DOES_NOT_EXIST", renamingCSVFile);
-            return false;
-		}
-		catch (IOException e) {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_IO_EXCEPTION", e.getMessage());
-            return false;
-		}
-		
-		return true;
-	}
-    
-    
     /** {@inheritDoc} */
     @Override
     public void accept (final IMultisampleSource multisampleSource)
-    {		
+    {
         final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
         if (selectedCreator < 0)
             return;
 
         this.log ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ());
 
-        if(this.renameSource.isSelected())
-        	applyRenaming(multisampleSource);
-        
+        this.applyRenaming (multisampleSource);
+
         try
         {
             if (this.onlyAnalyse)
@@ -651,25 +542,30 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         }
     }
 
+
     /**
      * Applies the renaming of a IMultisampleSource according to the renaming table.
+     *
      * @param multisampleSource the multisample source to be renamed.
      */
-    private void applyRenaming(IMultisampleSource multisampleSource) {
-		String sourceName = multisampleSource.getName();
-		
-		if(this.renamingTable.containsKey(sourceName)) {
-			String targetName = renamingTable.get(sourceName);
-			this.log ("IDS_NOTIFY_RENAMING_SOURCE_TO", sourceName, targetName);
-			multisampleSource.setName(targetName);
-		}
-		else {
-			this.log ("IDS_NOTIFY_RENAMING_NOT_DEFINED", sourceName);
-		}
-	}
+    private void applyRenaming (final IMultisampleSource multisampleSource)
+    {
+        if (this.csvRenameFile.isEmpty ())
+            return;
+
+        final String sourceName = multisampleSource.getName ();
+        final String targetName = this.csvRenameFile.getMapping (sourceName);
+        if (targetName != null)
+        {
+            this.log ("IDS_NOTIFY_RENAMING_SOURCE_TO", sourceName, targetName);
+            multisampleSource.setName (targetName);
+        }
+        else
+            this.log ("IDS_NOTIFY_RENAMING_NOT_DEFINED", sourceName);
+    }
 
 
-	/** {@inheritDoc} */
+    /** {@inheritDoc} */
     @Override
     public void log (final String messageID, final String... replaceStrings)
     {

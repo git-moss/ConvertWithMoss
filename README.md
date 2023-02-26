@@ -70,8 +70,10 @@ The converter does not support any sophisticated synthesizer parameters like env
 
 ## Options
 
+* **Renaming**: Allows to rename multi-samples. Enable the checkbox to use this feature. If enabled select the file which contains the mapped names. The file is a simple text file in UTF-8 format (important if non-ASCII characters are used!). Each row contains one mapping. A mapping consists of 2 names separated either by ';' or ','. E.g. a row which contains "AcPno;Acoustic Piano" would name a multi-sample with the name "AcPno" into "Acoustic Piano" as output.
 * **Create folder structure**: If enabled, sub-folders from the source folder are created as well in the output folder. For example, if I select my whole "Sounds" folder, there are sub-folders like "Sounds\\07 Synth\\Lead\\01W Emerson'70 Samples". In that case the output folder would contain e.g. "07 Synth\\Lead\\01W Emerson'70.multisample" if Bitwig multisample is selected as the destination format.
 * **Add new files**: Starts the conversion even if the output folder is not empty but only adds files which are not already present.
+* **Dark Mode**: Toggles the user interface between a light and dark layout.
 
 # Supported formats
 
@@ -244,6 +246,10 @@ Since the format supports only one layer of a multisample, multiple files are cr
 Since the KMP format can only contain 1 layer of a multisample, sources with multiple velocity layers are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
 
 # Changes
+
+## 6.0.0 (unreleased)
+
+* New: Added option to rename multi-samples.
 
 ## 5.2.1
 
