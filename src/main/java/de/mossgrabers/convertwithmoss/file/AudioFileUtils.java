@@ -4,6 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.file;
 
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioFormat.Encoding;
@@ -12,6 +17,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -21,6 +28,9 @@ import java.io.IOException;
  */
 public final class AudioFileUtils
 {
+    private static final String BROKEN_WAV = "IDS_NOTIFY_ERR_BROKEN_WAV";
+
+
     /**
      * Private due to helper class.
      */
@@ -70,5 +80,95 @@ public final class AudioFileUtils
             return 0;
 
         return frameLength;
+    }
+
+
+    /**
+     * Test the sample file for compatibility.
+     *
+     * @param wavFile The sample file to check
+     * @param notifier Where to report errors
+     * @return True if OK
+     */
+    public static boolean checkSampleFile (final File wavFile, final INotifier notifier)
+    {
+        if (!wavFile.exists ())
+        {
+            notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", wavFile.getAbsolutePath ());
+            return false;
+        }
+
+        try
+        {
+            final FormatChunk formatChunk = new WaveFile (wavFile, true).getFormatChunk ();
+            if (formatChunk == null)
+            {
+                notifier.logError (BROKEN_WAV, wavFile.getAbsolutePath ());
+                return false;
+            }
+
+            final int numberOfChannels = formatChunk.getNumberOfChannels ();
+            if (numberOfChannels > 2)
+            {
+                notifier.logError ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), wavFile.getAbsolutePath ());
+                return false;
+            }
+        }
+        catch (final IOException | ParseException ex)
+        {
+            notifier.logError (BROKEN_WAV, ex);
+            return false;
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Split the parts of the path offset between the selected source folder and the currently
+     * processed sub-folder.
+     *
+     * @param msSourceFolder The currently processed sub-folder
+     * @param sourceFolder The source folder
+     * @param name The name of the multisample
+     * @return The array with all parts and the name in reverse order
+     */
+    public static String [] createPathParts (final File msSourceFolder, final File sourceFolder, final String name)
+    {
+        File f = msSourceFolder;
+        final List<String> pathNames = new ArrayList<> ();
+        while (!f.equals (sourceFolder))
+        {
+            pathNames.add (f.getName ());
+            f = f.getParentFile ();
+        }
+        pathNames.add (sourceFolder.getName ());
+
+        final String [] result = new String [pathNames.size () + 1];
+        result[0] = name;
+        for (int i = 0; i < pathNames.size (); i++)
+            result[i + 1] = pathNames.get (i);
+        return result;
+    }
+
+
+    /**
+     * Get the relative path of the sub-folder.
+     *
+     * @param sourceFolder The parent folder
+     * @param folder The sub-folder
+     * @return The relative path starting from the parent folder
+     */
+    public static String subtractPaths (final File sourceFolder, final File folder)
+    {
+        final String analysePath = folder.getAbsolutePath ();
+        final String sourcePath = sourceFolder.getAbsolutePath ();
+        if (analysePath.startsWith (sourcePath))
+        {
+            final String n = analysePath.substring (sourcePath.length ());
+            return n.isEmpty () ? analysePath : n;
+        }
+
+        return analysePath;
     }
 }

@@ -1,8 +1,17 @@
-package de.mossgrabers.convertwithmoss.format.nki;
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019-2023
+// Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
+package de.mossgrabers.convertwithmoss.format.nki.tag;
+
+/**
+ * Tags used in the NKI XML structure.
+ *
+ * @author J&uuml;rgen Mo&szlig;graber
+ * @author Philip Stolz
+ */
 public abstract class AbstractTagsAndAttributes
 {
-
     /** The program element name attribute. */
     private static final String PROGRAM_NAME           = "name";
 
@@ -16,7 +25,7 @@ public abstract class AbstractTagsAndAttributes
     private static final String VALUE_NAME_ATTRIBUTE   = "name";
 
     /** The value name attribute. */
-    private static final String VALUE_VAlUE_ATTRIBUTE  = "value";
+    private static final String VALUE_VALUE_ATTRIBUTE  = "value";
 
     /** The groups element of a program. */
     private static final String GROUPS                 = "Groups";
@@ -184,390 +193,740 @@ public abstract class AbstractTagsAndAttributes
     private static final String SAMPLE_END_PARAM       = "sampleEnd";
 
 
-    abstract public String program ();
+    /**
+     * Get the program tag.
+     *
+     * @return The tag
+     */
+    public abstract String program ();
 
 
+    /**
+     * Get the program name tag.
+     *
+     * @return The tag
+     */
     public String programName ()
     {
         return PROGRAM_NAME;
     }
 
 
+    /**
+     * Get the parameters tag.
+     *
+     * @return The tag
+     */
     public String parameters ()
     {
         return PARAMETERS;
     }
 
 
+    /**
+     * Get the value tag.
+     *
+     * @return The tag
+     */
     public String value ()
     {
         return VALUE;
     }
 
 
+    /**
+     * Get the value name tag.
+     *
+     * @return The tag
+     */
     public String valueNameAttribute ()
     {
         return VALUE_NAME_ATTRIBUTE;
     }
 
 
+    /**
+     * Get the value tag of the value tag.
+     *
+     * @return The tag
+     */
     public String valueValueAttribute ()
     {
-        return VALUE_VAlUE_ATTRIBUTE;
+        return VALUE_VALUE_ATTRIBUTE;
     }
 
 
+    /**
+     * Get the groups tag.
+     *
+     * @return The tag
+     */
     public String groups ()
     {
         return GROUPS;
     }
 
 
-    abstract public String group ();
+    /**
+     * Get the group tag.
+     *
+     * @return The tag
+     */
+    public abstract String group ();
 
 
+    /**
+     * Get the zones tag.
+     *
+     * @return The tag
+     */
     public String zones ()
     {
         return ZONES;
     }
 
 
-    abstract public String zone ();
+    /**
+     * Get the zone tag.
+     *
+     * @return The tag
+     */
+    public abstract String zone ();
 
 
+    /**
+     * Get the group name tag.
+     *
+     * @return The tag
+     */
     public String groupNameAttribute ()
     {
         return GROUP_NAME_ATTRIBUTE;
     }
 
 
+    /**
+     * Get the modulators tag.
+     *
+     * @return The tag
+     */
     public String intModulatorsElement ()
     {
         return INT_MODULATORS_ELEMENT;
     }
 
 
-    abstract public String intModulatorElement ();
+    /**
+     * Get the modulator tag.
+     *
+     * @return The tag
+     */
+    public abstract String intModulatorElement ();
 
 
+    /**
+     * Get the envelope element tag.
+     *
+     * @return The tag
+     */
     public String envelopeElement ()
     {
         return ENVELOPE_ELEMENT;
     }
 
 
+    /**
+     * Get the bypass tag.
+     *
+     * @return The tag
+     */
     public String bypassParam ()
     {
         return BYPASS_PARAM;
     }
 
 
+    /**
+     * Get the yes tag.
+     *
+     * @return The tag
+     */
     public String yes ()
     {
         return YES;
     }
 
 
+    /**
+     * Get the target volume value tag.
+     *
+     * @return The tag
+     */
     public String targetVolValue ()
     {
         return TARGET_VOL_VALUE;
     }
 
 
+    /**
+     * Get the target parameter tag.
+     *
+     * @return The tag
+     */
     public String targetParam ()
     {
         return TARGET_PARAM;
     }
 
 
+    /**
+     * Get the intensity tag.
+     *
+     * @return The tag
+     */
     public String intensityParam ()
     {
         return INTENSITY_PARAM;
     }
 
 
+    /**
+     * Get the envelope type tag.
+     *
+     * @return The tag
+     */
     public String envTypeAttribute ()
     {
         return ENV_TYPE_ATTRIBUTE;
     }
 
 
+    /**
+     * Get the AHD envelope value tag.
+     *
+     * @return The tag
+     */
     public String ahdEnvTypeValue ()
     {
         return AHD_ENV_TYPE_VALUE;
     }
 
 
+    /**
+     * Get the AHDSR envelope value tag.
+     *
+     * @return The tag
+     */
     public String ahdsrEnvTypeValue ()
     {
         return AHDSR_ENV_TYPE_VALUE;
     }
 
 
+    /**
+     * Get the envelope attack tag.
+     *
+     * @return The tag
+     */
     public String attackParam ()
     {
         return ATTACK_PARAM;
     }
 
 
+    /**
+     * Get the envelope hold tag.
+     *
+     * @return The tag
+     */
     public String holdParam ()
     {
         return HOLD_PARAM;
     }
 
 
+    /**
+     * Get the envelope decay tag.
+     *
+     * @return The tag
+     */
     public String decayParam ()
     {
         return DECAY_PARAM;
     }
 
 
+    /**
+     * Get the envelope sustain tag.
+     *
+     * @return The tag
+     */
     public String sustainParam ()
     {
         return SUSTAIN_PARAM;
     }
 
 
+    /**
+     * Get the envelope release tag.
+     *
+     * @return The tag
+     */
     public String releaseParam ()
     {
         return RELEASE_PARAM;
     }
 
 
+    /**
+     * Get the extended modulators tag.
+     *
+     * @return The tag
+     */
     public String extModulatorsElement ()
     {
         return EXT_MODULATORS_ELEMENT;
     }
 
 
-    abstract public String extModulatorElement ();
+    /**
+     * Get the extended modulator tag.
+     *
+     * @return The tag
+     */
+    public abstract String extModulatorElement ();
 
 
+    /**
+     * Get the source tag.
+     *
+     * @return The tag
+     */
     public String sourceParam ()
     {
         return SOURCE_PARAM;
     }
 
 
+    /**
+     * Get the pitch bend value tag.
+     *
+     * @return The tag
+     */
     public String pitchBendValue ()
     {
         return PITCH_BEND_VALUE;
     }
 
 
+    /**
+     * Get the pitch value tag.
+     *
+     * @return The tag
+     */
     public String pitchValue ()
     {
         return PITCH_VALUE;
     }
 
 
+    /**
+     * Get the intensity value tag.
+     *
+     * @return The tag
+     */
     public String intensityValue ()
     {
         return INTENSITY_VALUE;
     }
 
 
+    /**
+     * Get the index attribute tag.
+     *
+     * @return The tag
+     */
     public String indexAttribute ()
     {
         return INDEX_ATTRIBUTE;
     }
 
 
+    /**
+     * Get the group index tag.
+     *
+     * @return The tag
+     */
     public String groupIndexAttribute ()
     {
         return GROUP_INDEX_ATTRIBUTE;
     }
 
 
+    /**
+     * Get the zone sample tag.
+     *
+     * @return The tag
+     */
     public String zoneSample ()
     {
         return ZONE_SAMPLE;
     }
 
 
-    abstract public String sampleFileAttribute ();
+    /**
+     * Get the sample file tag.
+     *
+     * @return The tag
+     */
+    public abstract String sampleFileAttribute ();
 
 
+    /**
+     * Get the key tracking tag.
+     *
+     * @return The tag
+     */
     public String keyTrackingParam ()
     {
         return KEY_TRACKING_PARAM;
     }
 
 
+    /**
+     * Get the zone volume tag.
+     *
+     * @return The tag
+     */
     public String zoneVolParam ()
     {
         return ZONE_VOL_PARAM;
     }
 
 
+    /**
+     * Get the group volume tag.
+     *
+     * @return The tag
+     */
     public String groupVolParam ()
     {
         return GROUP_VOL_PARAM;
     }
 
 
-    abstract public String progVolParam ();
+    /**
+     * Get the program volume tag.
+     *
+     * @return The tag
+     */
+    public abstract String progVolParam ();
 
 
+    /**
+     * Get the zone tune parameter tag.
+     *
+     * @return The tag
+     */
     public String zoneTuneParam ()
     {
         return ZONE_TUNE_PARAM;
     }
 
 
+    /**
+     * Get the group tune tag.
+     *
+     * @return The tag
+     */
     public String groupTuneParam ()
     {
         return GROUP_TUNE_PARAM;
     }
 
 
-    abstract public String progTuneParam ();
+    /**
+     * Get the program tune parameter tag.
+     *
+     * @return The tag
+     */
+    public abstract String progTuneParam ();
 
 
+    /**
+     * Get the zone panorama parameter tag.
+     *
+     * @return The tag
+     */
     public String zonePanParam ()
     {
         return ZONE_PAN_PARAM;
     }
 
 
+    /**
+     * Get the group panorama parameter tag.
+     *
+     * @return The tag
+     */
     public String groupPanParam ()
     {
         return GROUP_PAN_PARAM;
     }
 
 
-    abstract public String progPanParam ();
+    /**
+     * Get the program panorama parameter tag.
+     *
+     * @return The tag
+     */
+    public abstract String progPanParam ();
 
 
+    /**
+     * Get the reverse parameter tag.
+     *
+     * @return The tag
+     */
     public String reverseParam ()
     {
         return REVERSE_PARAM;
     }
 
 
+    /**
+     * Get the loops element tag.
+     *
+     * @return The tag
+     */
     public String loopsElement ()
     {
         return LOOPS_ELEMENT;
     }
 
 
+    /**
+     * Get the loop element tag.
+     *
+     * @return The tag
+     */
     public String loopElement ()
     {
         return LOOP_ELEMENT;
     }
 
 
+    /**
+     * Get the loop start tag.
+     *
+     * @return The tag
+     */
     public String loopStartParam ()
     {
         return LOOP_START_PARAM;
     }
 
 
+    /**
+     * Get the loop length tag.
+     *
+     * @return The tag
+     */
     public String loopLengthParam ()
     {
         return LOOP_LENGTH_PARAM;
     }
 
 
+    /**
+     * Get the loop mode tag.
+     *
+     * @return The tag
+     */
     public String loopModeParam ()
     {
         return LOOP_MODE_PARAM;
     }
 
 
+    /**
+     * Get the crossfade length tag.
+     *
+     * @return The tag
+     */
     public String xfadeLengthParam ()
     {
         return XFADE_LENGTH_PARAM;
     }
 
 
+    /**
+     * Get the loop until end tag.
+     *
+     * @return The tag
+     */
     public String untilEndValue ()
     {
         return UNTIL_END_VALUE;
     }
 
 
+    /**
+     * Get the loop until release tag.
+     *
+     * @return The tag
+     */
     public String untilReleaseValue ()
     {
         return UNTIL_RELEASE_VALUE;
     }
 
 
+    /**
+     * Get the one shot value tag.
+     *
+     * @return The tag
+     */
     public String oneshotValue ()
     {
         return ONESHOT_VALUE;
     }
 
 
+    /**
+     * Get the alternating loop tag.
+     *
+     * @return The tag
+     */
     public String alternatingLoopParam ()
     {
         return ALTERNATING_LOOP_PARAM;
     }
 
 
-    abstract public String rootContainer ();
+    /**
+     * Get the root container tag.
+     *
+     * @return The tag
+     */
+    public abstract String rootContainer ();
 
 
+    /**
+     * Get the root key parameter tag.
+     *
+     * @return The tag
+     */
     public String rootKeyParam ()
     {
         return ROOT_KEY_PARAM;
     }
 
 
+    /**
+     * Get the low key parameter tag.
+     *
+     * @return The tag
+     */
     public String lowKeyParam ()
     {
         return LOW_KEY_PARAM;
     }
 
 
+    /**
+     * Get the high key parameter tag.
+     *
+     * @return The tag
+     */
     public String highKeyParam ()
     {
         return HIGH_KEY_PARAM;
     }
 
 
+    /**
+     * Get the low velocity parameter tag.
+     *
+     * @return The tag
+     */
     public String lowVelocityParam ()
     {
         return LOW_VELOCITY_PARAM;
     }
 
 
+    /**
+     * Get the high velocity parameter tag.
+     *
+     * @return The tag
+     */
     public String highVelocityParam ()
     {
         return HIGH_VELOCITY_PARAM;
     }
 
 
+    /**
+     * Get the fade low tag.
+     *
+     * @return The tag
+     */
     public String fadeLowParam ()
     {
         return FADE_LOW_PARAM;
     }
 
 
+    /**
+     * Get the fade high parameter tag.
+     *
+     * @return The tag
+     */
     public String fadeHighParam ()
     {
         return FADE_HIGH_PARAM;
     }
 
 
+    /**
+     * Get the fade low velocity parameter tag.
+     *
+     * @return The tag
+     */
     public String fadeLowVelParam ()
     {
         return FADE_LOW_VEL_PARAM;
     }
 
 
+    /**
+     * Get the fade high velocity parameter tag.
+     *
+     * @return The tag
+     */
     public String fadeHighVelParam ()
     {
         return FADE_HIGH_VEL_PARAM;
     }
 
 
+    /**
+     * Get the sample start parameter tag.
+     *
+     * @return The tag
+     */
     public String sampleStartParam ()
     {
         return SAMPLE_START_PARAM;
     }
 
 
+    /**
+     * Get the sample end parameter tag.
+     *
+     * @return The tag
+     */
     public String sampleEndParam ()
     {
         return SAMPLE_END_PARAM;

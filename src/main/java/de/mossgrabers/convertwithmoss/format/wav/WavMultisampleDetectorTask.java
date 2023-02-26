@@ -11,6 +11,7 @@ import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
@@ -135,7 +136,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
                 return Collections.emptyList ();
             }
 
-            String [] parts = createPathParts (folder, this.sourceFolder, name);
+            String [] parts = AudioFileUtils.createPathParts (folder, this.sourceFolder, name);
             if (parts.length > 1)
             {
                 // Remove the samples folder
@@ -144,7 +145,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
                 parts = subpaths.toArray (new String [subpaths.size ()]);
             }
 
-            final MultisampleSource multisampleSource = new MultisampleSource (folder, parts, name, this.subtractPaths (this.sourceFolder, folder));
+            final MultisampleSource multisampleSource = new MultisampleSource (folder, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, folder));
             multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
             multisampleSource.setCategory (TagDetector.detectCategory (parts));
             multisampleSource.setKeywords (TagDetector.detectKeywords (parts));

@@ -17,6 +17,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -155,8 +156,8 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         final Element programNameElement = XMLUtils.getChildElementByName (programElement, MPCKeygroupTag.PROGRAM_NAME);
         final String name = programNameElement == null ? FileUtils.getNameWithoutType (file) : programNameElement.getTextContent ();
         final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = createPathParts (file.getParentFile (), this.sourceFolder, n);
-        final MultisampleSource multisampleSource = new MultisampleSource (file, parts, name, this.subtractPaths (this.sourceFolder, file));
+        final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, n);
+        final MultisampleSource multisampleSource = new MultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
 
         // Use same guessing on the filename...
         multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
