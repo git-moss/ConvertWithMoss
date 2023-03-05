@@ -135,9 +135,10 @@ public class TagDetector
         {
             "Chip",
             "Computer",
-            "CPU"
+            "CPU",
+            "Wave"
         });
-        CATEGORIES.put ("Choir", new String []
+        CATEGORIES.put ("Vocal", new String []
         {
             "Choir",
             "Vocal",
@@ -148,6 +149,7 @@ public class TagDetector
             "Gregorian",
             "Ahh",
             "Whisper",
+            "Shout",
             "Sing"
         });
         CATEGORIES.put ("Chromatic Percussion", new String []
@@ -181,7 +183,8 @@ public class TagDetector
             "Ride",
             "808",
             "909",
-            "Gong"
+            "Gong",
+            "Pads"
         });
         CATEGORIES.put ("Ensemble", new String []
         {
@@ -203,7 +206,8 @@ public class TagDetector
             "Gun",
             "Heart",
             "Stadium",
-            "Applause"
+            "Applause",
+            "Surround"
         });
         CATEGORIES.put ("Guitar", new String []
         {
@@ -278,6 +282,7 @@ public class TagDetector
             "Piano",
             "Grand",
             "Electric Piano",
+            "E-Piano",
             "Upright",
             "Digital Piano",
             "Klavier",
@@ -324,7 +329,8 @@ public class TagDetector
             "Arco",
             "Str.",
             "Fiddle",
-            "Bowed"
+            "Bowed",
+            "Score"
         });
         CATEGORIES.put ("Synth", new String []
         {
@@ -352,6 +358,13 @@ public class TagDetector
         {
             "Loop",
             "Lps",
+            "Record",
+            "Player",
+            "Speaker"
+        });
+        CATEGORIES.put ("World", new String []
+        {
+            "Asian"
         });
 
         // Create inverse map and order by longest names first, to find the most relevant categories

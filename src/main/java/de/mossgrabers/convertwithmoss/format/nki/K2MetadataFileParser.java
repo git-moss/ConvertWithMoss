@@ -7,13 +7,11 @@ package de.mossgrabers.convertwithmoss.format.nki;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.nki.tag.K2Tag;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 import org.w3c.dom.Element;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,15 +40,12 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser
 
     /**
      * Constructor.
-     *
-     * @param notifier the notifier (needed for logging)
-     * @param metadata the metadata (needed for considering the user configuration details)
-     * @param sourceFolder the source folder
-     * @param processedFile the file that is currently being processed
+     * 
+     * @param notifier Where to report errors
      */
-    public K2MetadataFileParser (final INotifier notifier, final IMetadataConfig metadata, final File sourceFolder, final File processedFile)
+    public K2MetadataFileParser (final INotifier notifier)
     {
-        super (notifier, metadata, sourceFolder, processedFile, new K2Tag ());
+        super (new K2Tag (), notifier);
     }
 
 
@@ -68,10 +63,7 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser
         {
             rootContainers = XMLUtils.getChildElementsByName (top, this.tags.rootContainer (), true);
             if (rootContainers == null)
-            {
-                this.notifier.logError (BAD_METADATA_FILE);
                 return new Element [0];
-            }
         }
 
         final List<Element> programElements = new ArrayList<> ();
@@ -80,10 +72,7 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser
         {
             final Element programsElement = XMLUtils.getChildElementByName (rootContainer, K2Tag.K2_PROGRAMS);
             if (programsElement == null)
-            {
-                this.notifier.logError (BAD_METADATA_FILE);
                 return new Element [0];
-            }
             programElements.addAll (Arrays.asList (XMLUtils.getChildElementsByName (programsElement, this.tags.program (), false)));
         }
 
@@ -234,7 +223,7 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser
     @Override
     protected double normalizePanning (final double panningValue)
     {
-        // Doesn't need to be normalizes for K2 format
+        // Doesn't need to be normalized for K2 format
         return panningValue;
     }
 }

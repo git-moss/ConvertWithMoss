@@ -47,87 +47,80 @@ import java.util.Map;
  */
 public abstract class AbstractNKIMetadataFileParser
 {
-    protected static final String             BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String               NULL_ENTRY = "(null)";
 
-    protected final INotifier                 notifier;
-    protected final IMetadataConfig           metadata;
-    protected final File                      sourceFolder;
-    protected final File                      processedFile;
     protected final AbstractTagsAndAttributes tags;
+
+    private final INotifier                   notifier;
 
 
     /**
      * Constructor.
      *
-     * @param notifier the notifier (needed for logging)
-     * @param metadata the metadata (needed for considering the user configuration details)
-     * @param sourceFolder the source folder
-     * @param processedFile the file that is currently being processed
      * @param tags the format specific tags
+     * @param notifier Where to report errors
      */
-    protected AbstractNKIMetadataFileParser (final INotifier notifier, final IMetadataConfig metadata, final File sourceFolder, final File processedFile, final AbstractTagsAndAttributes tags)
+    protected AbstractNKIMetadataFileParser (final AbstractTagsAndAttributes tags, final INotifier notifier)
     {
-        this.notifier = notifier;
-        this.metadata = metadata;
-        this.sourceFolder = sourceFolder;
-        this.processedFile = processedFile;
         this.tags = tags;
+        this.notifier = notifier;
     }
 
 
     /**
-     * Load and parse the metadata description file.
+     * Parses the metadata description file.
      *
-     * @param file the file
-     * @param content the content to parse
+     * @param sourceFolder The top source folder for the detection
+     * @param sourceFile The source file which contains the XML document
+     * @param content The XML content to parse
+     * @param metadata Default metadata
      * @return The parsed multisample source
+     * @throws IOException An error occurred parsing the XML document
      */
-    public List<IMultisampleSource> parseMetadataFile (final File file, final String content)
+    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadata) throws IOException
     {
         try
         {
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseDescription (document);
+            final Element top = document.getDocumentElement ();
+
+            if (!this.isValidTopLevelElement (top))
+                return Collections.emptyList ();
+
+            final Element [] programElements = this.findProgramElements (top);
+            if (programElements.length == 0)
+                return Collections.emptyList ();
+
+            final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+            for (final Element programElement: programElements)
+            {
+                final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, sourceFile.getName ());
+                final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+                if (this.parseProgram (programElement, multisampleSource))
+                {
+                    // Use some guessing on the filename if no metadata is available...
+
+                    final String creator = multisampleSource.getCreator ();
+                    if (creator == null || creator.isBlank ())
+                        multisampleSource.setCreator (TagDetector.detect (parts, metadata.getCreatorTags (), metadata.getCreatorName ()));
+
+                    final String category = multisampleSource.getCategory ();
+                    if (category == null || category.isBlank ())
+                        multisampleSource.setCategory (TagDetector.detectCategory (parts));
+
+                    final String [] keywords = multisampleSource.getKeywords ();
+                    if (keywords == null || keywords.length == 0)
+                        multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
+
+                    multisampleSources.add (multisampleSource);
+                }
+            }
+            return multisampleSources;
         }
         catch (final SAXException ex)
         {
-            this.notifier.logError (BAD_METADATA_FILE, ex);
+            throw new IOException (ex);
         }
-        return Collections.emptyList ();
-    }
-
-
-    /**
-     * Process the multisample metadata file and the related wave files.
-     *
-     * @param document The metadata XML document
-     * @return The parsed multisample source
-     */
-    private List<IMultisampleSource> parseDescription (final Document document)
-    {
-        final Element top = document.getDocumentElement ();
-
-        if (!this.isValidTopLevelElement (top))
-        {
-            this.notifier.logError (BAD_METADATA_FILE);
-            return Collections.emptyList ();
-        }
-
-        final Element [] programElements = this.findProgramElements (top);
-        if (programElements.length == 0)
-        {
-            this.notifier.logError (BAD_METADATA_FILE);
-            return Collections.emptyList ();
-        }
-
-        final LinkedList<IMultisampleSource> multisampleSources = new LinkedList<> ();
-        for (final Element programElement: programElements)
-        {
-            final IMultisampleSource multisampleSource = this.parseProgram (programElement);
-            if (multisampleSource != null)
-                multisampleSources.add (multisampleSource);
-        }
-        return multisampleSources;
     }
 
 
@@ -153,37 +146,40 @@ public abstract class AbstractNKIMetadataFileParser
      * Parses a program element and retrieves a IMultisampleSource object representing the program.
      *
      * @param programElement The program element to be parsed
-     * @return The IMultisampleSource that could be read from the program or null if program
-     *         couldn't be read successfully
+     * @param multisampleSource Where to store the parsed data
+     * @return True if successful
+     * @throws IOException Could not create path for samples
      */
-    private IMultisampleSource parseProgram (final Element programElement)
+    private boolean parseProgram (final Element programElement, final MultisampleSource multisampleSource) throws IOException
     {
-        if (!programElement.hasAttribute (this.tags.programName ()))
-        {
-            this.notifier.logError (BAD_METADATA_FILE);
-            return null;
-        }
-
-        final String name = programElement.getAttribute (this.tags.programName ());
-        final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = AudioFileUtils.createPathParts (this.processedFile.getParentFile (), this.sourceFolder, n);
-        final MultisampleSource multisampleSource = new MultisampleSource (this.processedFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, this.processedFile));
-
-        // Use same guessing on the filename...
-        multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
-        multisampleSource.setCategory (TagDetector.detectCategory (parts));
-        multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
+        final String programName = this.tags.programName ();
+        if (!programElement.hasAttribute (programName))
+            return false;
 
         final Map<String, String> programParameters = this.readParameters (programElement);
+
+        final String name = programElement.getAttribute (programName);
+        multisampleSource.setName (name);
+        final String author = programParameters.get ("instrumentAuthor");
+        if (author != null)
+            multisampleSource.setCreator (author);
+        final String description = programParameters.get ("instrumentCredits");
+        if (description != null && !NULL_ENTRY.equals (description))
+            multisampleSource.setDescription (description);
 
         final Element [] groupElements = this.getGroupElements (programElement);
         final Element [] zoneElements = this.getZoneElements (programElement);
 
-        final List<IVelocityLayer> velocityLayers = this.getVelocityLayers (programParameters, groupElements, zoneElements);
+        final String sourcePath = multisampleSource.getSourceFile ().getParentFile ().getCanonicalPath ();
+        final List<IVelocityLayer> velocityLayers = this.getVelocityLayers (programParameters, groupElements, zoneElements, sourcePath);
+        if (velocityLayers.isEmpty ())
+        {
+            this.notifier.logError ("IDS_NKI_NO_VEL_LAYER_DETECTED");
+            return false;
+        }
 
         multisampleSource.setVelocityLayers (velocityLayers);
-
-        return multisampleSource;
+        return true;
     }
 
 
@@ -259,20 +255,18 @@ public abstract class AbstractNKIMetadataFileParser
      * @param programParameters The program parameters
      * @param groupElements The group elements
      * @param zoneElements The zone elements
+     * @param sourcePath The canonical path which contains the NKI file
      * @return the velocity layers created (empty list is returned if nothing was created)
      */
-    private List<IVelocityLayer> getVelocityLayers (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements)
+    private List<IVelocityLayer> getVelocityLayers (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath)
     {
         if (groupElements == null || zoneElements == null)
-        {
-            this.notifier.logError (BAD_METADATA_FILE);
             return Collections.emptyList ();
-        }
 
         final LinkedList<IVelocityLayer> velocityLayers = new LinkedList<> ();
         for (final Element groupElement: groupElements)
         {
-            final IVelocityLayer velocityLayer = this.getVelocityLayer (programParameters, groupElement, zoneElements);
+            final IVelocityLayer velocityLayer = this.getVelocityLayer (programParameters, groupElement, zoneElements, sourcePath);
             if (velocityLayer != null)
                 velocityLayers.add (velocityLayer);
         }
@@ -287,9 +281,10 @@ public abstract class AbstractNKIMetadataFileParser
      * @param programParameters The program parameters
      * @param groupElement The group element from which the velocity layer is created
      * @param zoneElements The program's zone elements
+     * @param sourcePath The canonical path which contains the NKI file
      * @return The velocity layer created from the zone element (null, if there is no group element)
      */
-    private IVelocityLayer getVelocityLayer (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements)
+    private IVelocityLayer getVelocityLayer (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath)
     {
         if (groupElement == null)
             return null;
@@ -301,7 +296,7 @@ public abstract class AbstractNKIMetadataFileParser
         final int pitchBend = this.readGroupPitchBend (groupElement);
         velocityLayer.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-        velocityLayer.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupAmpEnv, groupElement, groupZones, pitchBend));
+        velocityLayer.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupAmpEnv, groupElement, groupZones, pitchBend, sourcePath));
         return velocityLayer;
     }
 
@@ -314,11 +309,12 @@ public abstract class AbstractNKIMetadataFileParser
      * @param groupAmpEnv The group's amp envelope
      * @param groupElement The group element from which the metadata is created
      * @param groupZones The zone elements belonging to the group
-     * @param pitchBend
+     * @param pitchBend The pitchbend range (half tone steps)
+     * @param sourcePath The canonical path which contains the NKI file
      * @return A list of sample metadata object. If nothing can be created, an empty list is
      *         returned.
      */
-    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final IEnvelope groupAmpEnv, final Element groupElement, final Element [] groupZones, final int pitchBend)
+    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final IEnvelope groupAmpEnv, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath)
     {
         if (groupElement == null || groupZones == null)
             return Collections.emptyList ();
@@ -327,7 +323,7 @@ public abstract class AbstractNKIMetadataFileParser
 
         for (final Element zoneElement: groupZones)
         {
-            final File sampleFile = this.getZoneSampleFile (zoneElement);
+            final File sampleFile = this.getZoneSampleFile (zoneElement, sourcePath);
             if (sampleFile == null || !AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
                 continue;
 
@@ -532,9 +528,10 @@ public abstract class AbstractNKIMetadataFileParser
      * Retrieves a sample file from a zone element.
      *
      * @param zoneElement The zone element
+     * @param sourcePath The canonical path which contains the NKI file
      * @return The sample file. Null is returned if file cannot be retrieved successfully.
      */
-    private File getZoneSampleFile (final Element zoneElement)
+    private File getZoneSampleFile (final Element zoneElement, final String sourcePath)
     {
         final Element sampleElement = XMLUtils.getChildElementByName (zoneElement, this.tags.zoneSample ());
         if (sampleElement == null)
@@ -543,9 +540,12 @@ public abstract class AbstractNKIMetadataFileParser
         final Map<String, String> sampleParameters = this.readValueMap (sampleElement);
         final String encodedSampleFileName = sampleParameters.get (this.tags.sampleFileAttribute ());
         if (encodedSampleFileName == null)
+        {
+            this.notifier.logError ("IDS_NKI_SAMPLE_FILE_ATTRIBUTE_MISSING");
             return null;
+        }
 
-        return this.getFileFromEncodedSampleFileName (encodedSampleFileName);
+        return this.getFileFromEncodedSampleFileName (encodedSampleFileName, sourcePath);
     }
 
 
@@ -553,23 +553,29 @@ public abstract class AbstractNKIMetadataFileParser
      * Decodes an encoded sample file name and returns the respective File if it can be found.
      *
      * @param encodedSampleFileName The encoded sample file name
+     * @param sourcePath The canonical path which contains the NKI file
      * @return The File if it can be found, null else
      */
-    protected File getFileFromEncodedSampleFileName (final String encodedSampleFileName)
+    protected File getFileFromEncodedSampleFileName (final String encodedSampleFileName, final String sourcePath)
     {
         final StringBuilder path = new StringBuilder ();
         try
         {
             final String relativePath = this.decodeEncodedSampleFileName (encodedSampleFileName);
-            path.append (this.processedFile.getParentFile ().getCanonicalPath ()).append ('/').append (relativePath);
+            path.append (sourcePath).append ('/').append (relativePath);
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
+            this.notifier.logError (sourcePath, ex);
             return null;
         }
 
         final File sampleFile = new File (path.toString ());
-        return sampleFile.canRead () ? sampleFile : null;
+        if (sampleFile.exists () && sampleFile.canRead ())
+            return sampleFile;
+
+        this.notifier.logError ("IDS_NKI_SAMPLE_FILE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
+        return null;
     }
 
 
@@ -854,10 +860,7 @@ public abstract class AbstractNKIMetadataFileParser
     {
         final int index = XMLUtils.getIntegerAttribute (groupElement, this.tags.indexAttribute (), -1);
         if (index == -1 || zoneElements == null)
-        {
-            this.notifier.logError (BAD_METADATA_FILE);
             return new Element [0];
-        }
 
         final List<Element> matchingZoneElements = new ArrayList<> ();
         for (final Element zoneElement: zoneElements)

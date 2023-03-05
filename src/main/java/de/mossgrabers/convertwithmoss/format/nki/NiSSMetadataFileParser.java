@@ -7,12 +7,10 @@ package de.mossgrabers.convertwithmoss.format.nki;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.nki.tag.NiSSTag;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Element;
 
-import java.io.File;
 import java.util.Map;
 
 
@@ -22,19 +20,16 @@ import java.util.Map;
  * @author J&uuml;rgen Mo&szlig;graber
  * @author Philip Stolz
  */
-public class NiSSMetaDataFileParser extends AbstractNKIMetadataFileParser
+public class NiSSMetadataFileParser extends AbstractNKIMetadataFileParser
 {
     /**
      * Constructor.
-     *
-     * @param notifier the notifier (needed for logging)
-     * @param metadata the metadata (needed for considering the user configuration details)
-     * @param sourceFolder the source folder
-     * @param processedFile the file that is currently being processed
+     * 
+     * @param notifier Where to report errors
      */
-    public NiSSMetaDataFileParser (final INotifier notifier, final IMetadataConfig metadata, final File sourceFolder, final File processedFile)
+    public NiSSMetadataFileParser (final INotifier notifier)
     {
-        super (notifier, metadata, sourceFolder, processedFile, new NiSSTag ());
+        super (new NiSSTag (), notifier);
     }
 
 
@@ -53,7 +48,6 @@ public class NiSSMetaDataFileParser extends AbstractNKIMetadataFileParser
         if (this.tags.rootContainer ().equals (top.getNodeName ()))
             return XMLUtils.getChildElementsByName (top, this.tags.program (), false);
 
-        this.notifier.logError (BAD_METADATA_FILE);
         return new Element [0];
     }
 
