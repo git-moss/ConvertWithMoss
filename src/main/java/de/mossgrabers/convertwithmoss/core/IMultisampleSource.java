@@ -24,15 +24,31 @@ public interface IMultisampleSource
      *
      * @return The folder
      */
-    File getFolder ();
+    File getSourceFile ();
 
 
     /**
-     * Get the sub-folders which contain the samples up to the source path
+     * Set the folder which contains the multi-sample source or the file itself.
+     *
+     * @param folder The folder
+     */
+    void setFolder (File folder);
+
+
+    /**
+     * Get the sub-folders which contain the samples up to the source path.
      *
      * @return The sub folders
      */
     String [] getSubPath ();
+
+
+    /**
+     * Set the sub-folders which contain the samples up to the source path.
+     *
+     * @param subFolders The sub folders
+     */
+    void setSubPath (String [] subFolders);
 
 
     /**
@@ -116,7 +132,7 @@ public interface IMultisampleSource
 
 
     /**
-     *
+     * Set the keywords.
      *
      * @param keywords The keywords of the multi-sample
      */

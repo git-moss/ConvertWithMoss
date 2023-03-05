@@ -16,9 +16,6 @@ import javafx.concurrent.Task;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -332,66 +329,5 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     {
         final double v = Math.min (Math.max (value, 0), 1);
         return minimum + v * (maximum - minimum);
-    }
-
-
-    /**
-     * Converts a number of bytes to an unsigned integer with least significant bytes first.
-     *
-     * @param data The data to convert
-     * @return The converted integer
-     */
-    protected static int fromBytesLSB (final byte [] data)
-    {
-        int number = 0;
-        for (int i = 0; i < data.length; i++)
-            number |= (data[i] & 0xFF) << 8 * i;
-        return number;
-    }
-
-
-    /**
-     * Converts a 4 byte float value.
-     *
-     * @param data The 4 byte array
-     * @return The float value
-     */
-    protected static float readFloatLittleEndian (final byte [] data)
-    {
-        return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getFloat ();
-    }
-
-
-    /**
-     * Read an LSB 7 bit of a flexible number of bytes.
-     *
-     * @param in The input stream to read from
-     * @return Could not read next byte
-     * @throws IOException
-     */
-    protected static int [] read7bitNumberLSB (final InputStream in) throws IOException
-    {
-        int number = 0;
-        int count = 0;
-
-        byte [] value;
-
-        while ((value = in.readNBytes (1)).length > 0)
-        {
-            final int val = value[0] & 0x7F;
-            final int shift = 7 * count;
-            number = val << shift | number;
-
-            if ((value[0] & 0x80) == 0)
-                break;
-
-            count++;
-        }
-
-        return new int []
-        {
-            number,
-            count + 1
-        };
     }
 }

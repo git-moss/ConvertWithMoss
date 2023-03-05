@@ -23,10 +23,10 @@ import java.util.Optional;
  */
 public class MultisampleSource implements IMultisampleSource
 {
-    private final File           folder;
-    private final String []      subPath;
+    private File                 sourceFile;
+    private String []            subPath;
     private String               name;
-    private final String         mappingName;
+    private String               mappingName;
     private String               description = "";
     private String               creator     = "";
     private String               category    = "";
@@ -35,16 +35,25 @@ public class MultisampleSource implements IMultisampleSource
 
 
     /**
+     * Constructor. Values must be set by setters!
+     */
+    public MultisampleSource ()
+    {
+        this (null, null, null, null);
+    }
+
+
+    /**
      * Constructor.
      *
-     * @param folder The folder
+     * @param sourceFile The folder (contains the multi-sample source or the file itself)
      * @param subPath The names of the sub folders which contain the samples
      * @param name The name of the multi-sample
      * @param mappingName The name to display for the mapping process.
      */
-    public MultisampleSource (final File folder, final String [] subPath, final String name, final String mappingName)
+    public MultisampleSource (final File sourceFile, final String [] subPath, final String name, final String mappingName)
     {
-        this.folder = folder;
+        this.sourceFile = sourceFile;
         this.subPath = subPath;
         this.name = name;
         this.mappingName = mappingName;
@@ -53,9 +62,17 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public File getFolder ()
+    public File getSourceFile ()
     {
-        return this.folder;
+        return this.sourceFile;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setFolder (final File folder)
+    {
+        this.sourceFile = folder;
     }
 
 
@@ -64,6 +81,14 @@ public class MultisampleSource implements IMultisampleSource
     public String [] getSubPath ()
     {
         return this.subPath;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSubPath (final String [] subFolders)
+    {
+        this.subPath = subFolders;
     }
 
 
