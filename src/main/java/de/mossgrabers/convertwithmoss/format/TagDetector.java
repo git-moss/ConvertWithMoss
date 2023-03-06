@@ -150,7 +150,8 @@ public class TagDetector
             "Ahh",
             "Whisper",
             "Shout",
-            "Sing"
+            "Sing",
+            "Microphone"
         });
         CATEGORIES.put ("Chromatic Percussion", new String []
         {

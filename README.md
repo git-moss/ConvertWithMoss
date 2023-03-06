@@ -251,7 +251,8 @@ Since the KMP format can only contain 1 layer of a multisample, sources with mul
 
 * New: Added option to rename multi-samples (thanks to Philip Stolz).
 * New: Improved mapping of envelopes to MPC keygroups (thanks to Philip Stolz).
-* New: Added support for reading Kontakt NKI files (only the format of the versions before Kontakt 4.2.2 are supported, thanks to Philip Stolz).
+* New: Added support for reading Kontakt NKI files (only the format of the versions before Kontakt 4.2 are supported, thanks to Philip Stolz).
+* Fixed: Added missing reading of panorama value.
 
 ## 5.2.1
 

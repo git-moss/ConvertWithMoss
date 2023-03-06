@@ -47,8 +47,9 @@ public class Kontakt2Type extends AbstractKontaktType
     {
         KNOWN_BLOCK_IDS.add ("2noK"); // Kontakt 2
         KNOWN_BLOCK_IDS.add ("Kon3"); // Kontakt 3
+        KNOWN_BLOCK_IDS.add ("3noK"); // Kontakt 3
         KNOWN_BLOCK_IDS.add ("4noK"); // Kontakt 4
-        KNOWN_BLOCK_IDS.add ("iPkA"); // Kontakt 3 Library
+        KNOWN_BLOCK_IDS.add ("iPkA"); // Akustik Piano from Kontakt 3 Library
 
         ICON_MAP.put (Integer.valueOf (0x00), "Organ");
         ICON_MAP.put (Integer.valueOf (0x01), "Cello");
@@ -70,12 +71,12 @@ public class Kontakt2Type extends AbstractKontaktType
         ICON_MAP.put (Integer.valueOf (0x11), "Score");
         ICON_MAP.put (Integer.valueOf (0x12), "Conga");
         ICON_MAP.put (Integer.valueOf (0x13), "Pipe Organ");
-        ICON_MAP.put (Integer.valueOf (0x14), "Wave");
-        ICON_MAP.put (Integer.valueOf (0x15), "FX");
-        ICON_MAP.put (Integer.valueOf (0x16), "Computer");
-        ICON_MAP.put (Integer.valueOf (0x17), "Violin");
-        ICON_MAP.put (Integer.valueOf (0x18), "Surround");
-        ICON_MAP.put (Integer.valueOf (0x19), "Synthesizer");
+        ICON_MAP.put (Integer.valueOf (0x14), "FX");
+        ICON_MAP.put (Integer.valueOf (0x15), "Computer");
+        ICON_MAP.put (Integer.valueOf (0x16), "Violin");
+        ICON_MAP.put (Integer.valueOf (0x17), "Surround");
+        ICON_MAP.put (Integer.valueOf (0x18), "Synthesizer");
+        ICON_MAP.put (Integer.valueOf (0x19), "Microphone");
         ICON_MAP.put (Integer.valueOf (0x1A), "Oboe");
         ICON_MAP.put (Integer.valueOf (0x1B), "Saxophone");
         ICON_MAP.put (Integer.valueOf (0x1C), "New");

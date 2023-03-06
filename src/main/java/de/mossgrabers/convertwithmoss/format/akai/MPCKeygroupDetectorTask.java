@@ -410,6 +410,10 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (volumeStr != null && !volumeStr.isBlank ())
             sampleMetadata.setGain (convertGain (Double.parseDouble (volumeStr)));
 
+        final String panStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PAN);
+        if (panStr != null && !panStr.isBlank ())
+            sampleMetadata.setPanorama (clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
+
         final String pitchStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PITCH);
         if (pitchStr != null && !pitchStr.isBlank ())
             sampleMetadata.setTune (Double.parseDouble (pitchStr));

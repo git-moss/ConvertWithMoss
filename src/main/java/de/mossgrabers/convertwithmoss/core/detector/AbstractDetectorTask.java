@@ -330,4 +330,18 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         final double v = Math.min (Math.max (value, 0), 1);
         return minimum + v * (maximum - minimum);
     }
+
+
+    /**
+     * Limit the given value to the minimum/maximum range including minimum/maximum values.
+     *
+     * @param value The value to clamp
+     * @param minimum The minimum value
+     * @param maximum The maximum value
+     * @return The value clamped to the minimum/maximum range
+     */
+    protected static double clamp (final double value, final double minimum, final double maximum)
+    {
+        return Math.max (minimum, Math.min (value, maximum));
+    }
 }
