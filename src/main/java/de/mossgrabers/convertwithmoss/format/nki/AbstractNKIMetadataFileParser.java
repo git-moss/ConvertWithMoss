@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.tag.AbstractTagsAndAttributes;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -94,7 +95,8 @@ public abstract class AbstractNKIMetadataFileParser
             final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
             for (final Element programElement: programElements)
             {
-                final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, sourceFile.getName ());
+                final String n = metadata.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+                final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
                 final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
                 if (this.parseProgram (programElement, multisampleSource))
                 {
@@ -371,6 +373,7 @@ public abstract class AbstractNKIMetadataFileParser
                 final double zoneTune = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zoneTuneParam ());
                 final double groupTune = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupTuneParam ());
                 final double progTune = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progTuneParam ());
+                // TODO: This is not correct, log(1*0*0) gives -Infinity in Java
                 sampleMetadata.setTune (12.0d * Math.log (zoneTune * groupTune * progTune) / Math.log (2));
 
                 final double zonePan = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zonePanParam ());
@@ -392,11 +395,12 @@ public abstract class AbstractNKIMetadataFileParser
 
             if (groupAmpEnv != null)
             {
-                sampleMetadata.getAmplitudeEnvelope ().setAttack (groupAmpEnv.getAttack ());
-                sampleMetadata.getAmplitudeEnvelope ().setHold (groupAmpEnv.getHold ());
-                sampleMetadata.getAmplitudeEnvelope ().setDecay (groupAmpEnv.getDecay ());
-                sampleMetadata.getAmplitudeEnvelope ().setSustain (groupAmpEnv.getSustain ());
-                sampleMetadata.getAmplitudeEnvelope ().setRelease (groupAmpEnv.getRelease ());
+                final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+                amplitudeEnvelope.setAttack (groupAmpEnv.getAttack ());
+                amplitudeEnvelope.setHold (groupAmpEnv.getHold ());
+                amplitudeEnvelope.setDecay (groupAmpEnv.getDecay ());
+                amplitudeEnvelope.setSustain (groupAmpEnv.getSustain ());
+                amplitudeEnvelope.setRelease (groupAmpEnv.getRelease ());
             }
 
             if (groupParameters.containsKey (this.tags.reverseParam ()))
@@ -486,7 +490,6 @@ public abstract class AbstractNKIMetadataFileParser
             sampleLoop.setType (loopType);
             sampleMetadata.addLoop (sampleLoop);
         }
-
     }
 
 
@@ -627,14 +630,13 @@ public abstract class AbstractNKIMetadataFileParser
         if (modulators == null)
             return null;
 
-        IEnvelope env = null;
         for (final Element modulator: modulators)
         {
-            env = this.getAmpEnvFromModulator (modulator);
+            final IEnvelope env = this.getAmpEnvFromModulator (modulator);
             if (env != null)
-                break;
+                return env;
         }
-        return env;
+        return null;
     }
 
 
@@ -650,10 +652,9 @@ public abstract class AbstractNKIMetadataFileParser
         if (envElement == null || this.hasNameValuePairs (modulator, this.tags.bypassParam (), this.tags.yes ()))
             return null;
 
-        IEnvelope env = null;
         if (this.hasTarget (modulator, this.tags.targetVolValue ()))
-            env = this.readEnvelopeFromEnvelopeElement (envElement);
-        return env;
+            return this.readEnvelopeFromEnvelopeElement (envElement);
+        return null;
     }
 
 
@@ -801,14 +802,13 @@ public abstract class AbstractNKIMetadataFileParser
         if (modulators == null)
             return -1;
 
-        int pitchBend = -1;
         for (final Element modulator: modulators)
         {
-            pitchBend = this.getPitchBendFromModulator (modulator);
+            final int pitchBend = this.getPitchBendFromModulator (modulator);
             if (pitchBend >= 0)
-                break;
+                return pitchBend;
         }
-        return pitchBend;
+        return -1;
     }
 
 
