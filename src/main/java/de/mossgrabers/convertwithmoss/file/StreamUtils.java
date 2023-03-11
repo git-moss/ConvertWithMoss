@@ -29,15 +29,15 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readIntLSB (final InputStream in) throws IOException
+    public static int readDoubleWordLSB (final InputStream in) throws IOException
     {
-        int ch1 = in.read ();
-        int ch2 = in.read ();
-        int ch3 = in.read ();
-        int ch4 = in.read ();
+        final int ch1 = in.read ();
+        final int ch2 = in.read ();
+        final int ch3 = in.read ();
+        final int ch4 = in.read ();
         if ((ch1 | ch2 | ch3 | ch4) < 0)
             throw new EOFException ();
-        return ((ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1);
+        return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1;
     }
 
 
@@ -49,15 +49,33 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readIntLSB (final RandomAccessFile fileAccess) throws IOException
+    public static int readDoubleWordLSB (final RandomAccessFile fileAccess) throws IOException
     {
-        int ch1 = fileAccess.read ();
-        int ch2 = fileAccess.read ();
-        int ch3 = fileAccess.read ();
-        int ch4 = fileAccess.read ();
+        final int ch1 = fileAccess.read ();
+        final int ch2 = fileAccess.read ();
+        final int ch3 = fileAccess.read ();
+        final int ch4 = fileAccess.read ();
         if ((ch1 | ch2 | ch3 | ch4) < 0)
             throw new EOFException ();
-        return ((ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1);
+        return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1;
+    }
+
+
+    /**
+     * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
+     *
+     * @param fileAccess The random access file to read from
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readWordLSB (final RandomAccessFile fileAccess) throws IOException
+    {
+        final int ch1 = fileAccess.read ();
+        final int ch2 = fileAccess.read ();
+        if ((ch1 | ch2) < 0)
+            throw new EOFException ();
+        return (ch2 << 8) + ch1;
     }
 
 
@@ -171,6 +189,31 @@ public class StreamUtils
 
 
     /**
+     * Reads an UTF-16 string.
+     *
+     * @param fileAccess The random access file to read from
+     * @return The read string
+     * @throws IOException Could not read the string
+     */
+    public static String readUTF16 (final RandomAccessFile fileAccess) throws IOException
+    {
+        final StringBuilder sb = new StringBuilder ();
+
+        final byte [] buffer = new byte [2];
+        while (fileAccess.read (buffer) == 2)
+        {
+            if (buffer[0] == 0)
+                break;
+            if (buffer[1] == 0)
+                sb.append ((char) buffer[0]);
+            else
+                sb.append (new String (buffer, StandardCharsets.UTF_16));
+        }
+        return sb.toString ();
+    }
+
+
+    /**
      * Reads a 4 byte (LSB) Unix timestamp UTC+1, e.g. "0B 0B 64 4D" is 1298402059 is "22.02.2011
      * 20:14:19".
      *
@@ -180,7 +223,7 @@ public class StreamUtils
      */
     public static Date readTimestampLSB (final InputStream in) throws IOException
     {
-        return new Date (readIntLSB (in) * 1000L);
+        return new Date (readDoubleWordLSB (in) * 1000L);
     }
 
 
@@ -194,12 +237,12 @@ public class StreamUtils
      */
     public static Date readTimestampLSB (final RandomAccessFile fileAccess) throws IOException
     {
-        return new Date (readIntLSB (fileAccess) * 1000L);
+        return new Date (readDoubleWordLSB (fileAccess) * 1000L);
     }
 
 
     /**
-     * Skip N bytes.
+     * Skip exactly N bytes.
      *
      * @param fileAccess The random access file to read from
      * @param numBytes The number of bytes to skip
@@ -208,6 +251,42 @@ public class StreamUtils
     public static void skipNBytes (final RandomAccessFile fileAccess, final int numBytes) throws IOException
     {
         if (fileAccess.skipBytes (numBytes) != numBytes)
-            throw new IOException (Functions.getMessage ("IDS_NKI_FILE_CORRUPTED"));
+            throw new IOException (Functions.getMessage ("IDS_ERR_FILE_CORRUPTED"));
+    }
+
+
+    /**
+     * Read exactly N bytes.
+     *
+     * @param fileAccess The random access file to read from
+     * @param numBytes The number of bytes to read
+     * @return The read bytes
+     * @throws IOException Could not read the bytes
+     */
+    public static byte [] readNBytes (final RandomAccessFile fileAccess, final int numBytes) throws IOException
+    {
+        final byte [] buffer = new byte [numBytes];
+        if (fileAccess.read (buffer) != numBytes)
+            throw new IOException (Functions.getMessage ("IDS_ERR_FILE_CORRUPTED"));
+        return buffer;
+    }
+
+
+    /**
+     * Reads a number of bytes and then moves the file pointer back to the beginning of the read.
+     *
+     * @param fileAccess The random access file to read from
+     * @param numBytes The number of bytes to read
+     * @param error An error text to include into the exception text in case of an error
+     * @return The read bytes
+     * @throws IOException
+     */
+    public static byte [] peek (final RandomAccessFile fileAccess, final int numBytes, final String error) throws IOException
+    {
+        final byte [] buffer = new byte [numBytes];
+        if (fileAccess.read (buffer) != numBytes)
+            throw new IOException (error);
+        fileAccess.seek (fileAccess.getFilePointer () - numBytes);
+        return buffer;
     }
 }

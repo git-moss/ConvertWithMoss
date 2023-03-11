@@ -22,13 +22,13 @@ public interface IKontaktType
 {
     /**
      * Parse a file which uses this format type from the given input stream.
-     * 
+     *
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
-     * @param metadata Default metadata
+     * @param metadataConfig Default metadata
      * @return The parsed multisample sources
      * @throws IOException
      */
-    List<IMultisampleSource> parse (File sourceFolder, File sourceFile, RandomAccessFile fileAccess, IMetadataConfig metadata) throws IOException;
+    List<IMultisampleSource> parse (File sourceFolder, File sourceFile, RandomAccessFile fileAccess, IMetadataConfig metadataConfig) throws IOException;
 }

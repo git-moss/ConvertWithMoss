@@ -625,4 +625,30 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
         if (addLoops && this.loops.isEmpty ())
             this.loops.addAll (wavSampleMetadata.getLoops ());
     }
+
+
+    /**
+     * Check if the sample start / stop and the sample rate is set, if not read them from the given
+     * metadata.
+     *
+     * @param wavSampleMetadata The metadata to use as source
+     * @param addRootKey If true, set the root key
+     * @param addLoops If true, found loops are added
+     * @throws IOException Could not read or parse the wave file
+     */
+    public void addMissingInfoFromWaveFile (final WavSampleMetadata wavSampleMetadata, final boolean addRootKey, final boolean addLoops) throws IOException
+    {
+        if (this.start < 0)
+            this.start = 0;
+        if (this.stop <= 0)
+            this.stop = wavSampleMetadata.getStop ();
+
+        // Read the this.keyRoot if not set...
+        if (addRootKey && this.keyRoot == -1)
+            this.keyRoot = wavSampleMetadata.getKeyRoot ();
+
+        // Check for loops if not already present
+        if (addLoops && this.loops.isEmpty ())
+            this.loops.addAll (wavSampleMetadata.getLoops ());
+    }
 }

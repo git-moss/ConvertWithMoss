@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public class CSVRenameFile
 {
-    private Map<String, String> renamingTable = new HashMap<> ();
+    private final Map<String, String> renamingTable = new HashMap<> ();
 
 
     /**

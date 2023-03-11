@@ -63,7 +63,7 @@ public class KMPFile
     private int                 numSamples;
     private String              nameLong;
 
-    private List<KSFFile>       ksfFiles        = new ArrayList<> ();
+    private final List<KSFFile> ksfFiles        = new ArrayList<> ();
     private IVelocityLayer      layer;
 
 

@@ -121,4 +121,12 @@ public class NiSSTag extends AbstractTagsAndAttributes
     {
         return NISS_ROOT_CONTAINER;
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double calculateTune (final double zoneTune, final double groupTune, final double progTune)
+    {
+        return 0.12d * Math.log (zoneTune * groupTune * progTune) / Math.log (2);
+    }
 }

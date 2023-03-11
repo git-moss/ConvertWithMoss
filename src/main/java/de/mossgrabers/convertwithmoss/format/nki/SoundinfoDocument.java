@@ -29,14 +29,14 @@ public class SoundinfoDocument
         IGNORE_TAGS.add ("KontaktInstrument");
     }
 
-    private String      name;
-    private String      author;
-    private Set<String> categories = new HashSet<> ();
+    private String            name;
+    private String            author;
+    private final Set<String> categories = new HashSet<> ();
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param author The author of the 'sound'
      * @param category The category of the 'sound'
      */
@@ -82,7 +82,7 @@ public class SoundinfoDocument
 
     /**
      * Get the name.
-     * 
+     *
      * @return The name, might be null
      */
     public String getName ()
@@ -93,7 +93,7 @@ public class SoundinfoDocument
 
     /**
      * Get the author.
-     * 
+     *
      * @return The author, might be null
      */
     public String getAuthor ()
@@ -104,7 +104,7 @@ public class SoundinfoDocument
 
     /**
      * Get the categories.
-     * 
+     *
      * @return The categories, never null but might be empty
      */
     public Set<String> getCategories ()

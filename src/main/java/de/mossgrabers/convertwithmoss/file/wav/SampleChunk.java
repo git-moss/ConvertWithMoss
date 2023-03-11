@@ -218,7 +218,7 @@ public class SampleChunk extends WavChunk
      */
     public class SampleChunkLoop
     {
-        private int offset;
+        private final int offset;
 
 
         /**

@@ -35,7 +35,7 @@ public class RIFFParser
     /** List of stop chunks the visitor is interested in. */
     private final HashSet<Integer>    stopChunkTypes = new HashSet<> ();
     /** List of group chunks the visitor is interested in. */
-    private HashSet<RIFFChunk>        groupChunks    = new HashSet<> ();
+    private final HashSet<RIFFChunk>  groupChunks    = new HashSet<> ();
 
     /** Reference to the input stream. */
     private RIFFPrimitivesInputStream in;

@@ -26,7 +26,7 @@ public class MultisampleSource implements IMultisampleSource
     private File                 sourceFile;
     private String []            subPath;
     private String               name;
-    private String               mappingName;
+    private final String         mappingName;
     private String               description = "";
     private String               creator     = "";
     private String               category    = "";

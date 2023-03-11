@@ -136,4 +136,12 @@ public class K2Tag extends AbstractTagsAndAttributes
     {
         return K2_ROOT_CONTAINER;
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double calculateTune (final double zoneTune, final double groupTune, final double progTune)
+    {
+        return 0.36d * (zoneTune + groupTune + progTune);
+    }
 }

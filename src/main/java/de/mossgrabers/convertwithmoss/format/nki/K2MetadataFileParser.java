@@ -40,7 +40,7 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser
 
     /**
      * Constructor.
-     * 
+     *
      * @param notifier Where to report errors
      */
     public K2MetadataFileParser (final INotifier notifier)

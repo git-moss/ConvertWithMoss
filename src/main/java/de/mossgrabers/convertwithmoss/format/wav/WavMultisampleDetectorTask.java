@@ -33,12 +33,12 @@ import java.util.function.Consumer;
  */
 public class WavMultisampleDetectorTask extends AbstractDetectorTask
 {
-    private int       crossfadeNotes;
-    private int       crossfadeVelocities;
-    private String [] velocityLayerPatterns;
-    private boolean   isAscending;
-    private String [] monoSplitPatterns;
-    private String [] postfixTexts;
+    private final int       crossfadeNotes;
+    private final int       crossfadeVelocities;
+    private final String [] velocityLayerPatterns;
+    private final boolean   isAscending;
+    private final String [] monoSplitPatterns;
+    private final String [] postfixTexts;
 
 
     /**

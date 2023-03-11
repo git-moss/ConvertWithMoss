@@ -30,19 +30,19 @@ import java.util.List;
  */
 public class WaveFile
 {
-    InstrumentChunk      instrumentChunk;
-    SampleChunk          sampleChunk;
-    FormatChunk          formatChunk;
-    DataChunk            dataChunk;
+    InstrumentChunk            instrumentChunk;
+    SampleChunk                sampleChunk;
+    FormatChunk                formatChunk;
+    DataChunk                  dataChunk;
 
-    private List<String> unhandledChunks = new ArrayList<> ();
+    private final List<String> unhandledChunks = new ArrayList<> ();
 
 
     /**
      * Constructor. Creates a new file in memory.
      *
      * @param numberOfChannels The number of channels of the sample
-     * @param sampleRate The sample rate
+     * @param sampleRate The sample rate (in Hz)
      * @param bitsPerSample The resolution the sample in bits
      * @param lengthInSamples The number of samples of the wave
      */

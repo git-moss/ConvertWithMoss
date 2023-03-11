@@ -81,26 +81,26 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
     private BorderPane          mainPane;
     private BorderPane          executePane;
-    private TextField           sourcePathField                     = new TextField ();
-    private TextField           destinationPathField                = new TextField ();
+    private final TextField     sourcePathField                     = new TextField ();
+    private final TextField     destinationPathField                = new TextField ();
     private File                sourceFolder;
     private File                outputFolder;
     private CheckBox            createFolderStructure;
     private CheckBox            addNewFiles;
     private CheckBox            enableDarkMode;
 
-    private TabPane             sourceTabPane                       = new TabPane ();
-    private TabPane             destinationTabPane                  = new TabPane ();
+    private final TabPane       sourceTabPane                       = new TabPane ();
+    private final TabPane       destinationTabPane                  = new TabPane ();
 
     private boolean             onlyAnalyse                         = true;
     private Button              closeButton;
     private Button              cancelButton;
 
     private CheckBox            renameCheckbox;
-    private TextField           renameFilePathField                 = new TextField ();
+    private final TextField     renameFilePathField                 = new TextField ();
     private Button              renameFilePathSelectButton;
 
-    private CSVRenameFile       csvRenameFile                       = new CSVRenameFile ();
+    private final CSVRenameFile csvRenameFile                       = new CSVRenameFile ();
     private final LoggerBox     loggingArea                         = new LoggerBox ();
 
 

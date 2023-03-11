@@ -17,9 +17,11 @@ public class ValueNotAvailableException extends Exception
 
     /**
      * Standard constructor.
+     *
+     * @param parameterName The name of the parameter for which the value was missing
      */
-    public ValueNotAvailableException ()
+    public ValueNotAvailableException (final String parameterName)
     {
-        // Intentionally empty
+        super (parameterName);
     }
 }
