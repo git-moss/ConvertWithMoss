@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.core.creator;
 import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -82,21 +83,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     // Normalize to [0..1]
     protected static double normalizeValue (final double value, final double minimum, final double maximum)
     {
-        return clamp (value, minimum, maximum) / maximum;
-    }
-
-
-    /**
-     * Limit the given value to the minimum/maximum range including minimum/maximum values.
-     *
-     * @param value The value to clamp
-     * @param minimum The minimum value
-     * @param maximum The maximum value
-     * @return The value clamped to the minimum/maximum range
-     */
-    protected static double clamp (final double value, final double minimum, final double maximum)
-    {
-        return Math.max (minimum, Math.min (value, maximum));
+        return Utils.clamp (value, minimum, maximum) / maximum;
     }
 
 

@@ -92,7 +92,7 @@ public class FormatChunk extends WavChunk
      * @param numberOfChannels The number of channels of the sample
      * @param sampleRate The sample rate
      * @param bitsPerSample The resolution the sample in bits
-     * @param addFormatEx If true 4 additional empty bytes will be written
+     * @param addFormatEx If true, 4 additional empty bytes will be written
      */
     public FormatChunk (final int numberOfChannels, final int sampleRate, final int bitsPerSample, final boolean addFormatEx)
     {
@@ -146,8 +146,7 @@ public class FormatChunk extends WavChunk
 
     /**
      * The first word of format data specifies the type of compression used on the Wave data
-     * included in the Wave chunk found in this "RIFF" chunk. The following is a list of the common
-     * compression codes used today.
+     * included in the Wave chunk found in this "RIFF" chunk.
      *
      * @param compressionCode Use the WAVE_FORMAT_* constants in this class
      */

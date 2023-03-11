@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.akai;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -412,7 +413,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         final String panStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PAN);
         if (panStr != null && !panStr.isBlank ())
-            sampleMetadata.setPanorama (clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
+            sampleMetadata.setPanorama (Utils.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
 
         final String pitchStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PITCH);
         if (pitchStr != null && !pitchStr.isBlank ())
@@ -466,7 +467,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             }
             catch (final IOException ex)
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex.getMessage ());
+                this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
             }
         }
     }

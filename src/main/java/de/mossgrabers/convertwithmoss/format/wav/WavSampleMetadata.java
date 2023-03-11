@@ -39,6 +39,19 @@ public class WavSampleMetadata extends DefaultSampleMetadata
     /**
      * Constructor.
      *
+     * @param waveFile An already read wave file
+     * @throws IOException Could not read the file
+     */
+    public WavSampleMetadata (final WaveFile waveFile) throws IOException
+    {
+        this.waveFile = waveFile;
+        this.readFromChunks ();
+    }
+
+
+    /**
+     * Constructor.
+     *
      * @param file The file where the sample is stored
      * @throws IOException Could not read the file
      */
@@ -92,6 +105,9 @@ public class WavSampleMetadata extends DefaultSampleMetadata
 
     private void readFromChunks () throws IOException
     {
+        if (this.waveFile == null)
+            return;
+
         final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
         final DataChunk dataChunk = this.waveFile.getDataChunk ();
 
@@ -165,5 +181,13 @@ public class WavSampleMetadata extends DefaultSampleMetadata
             Files.copy (this.getFile ().toPath (), outputStream);
         else
             this.waveFile.write (outputStream);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void addMissingInfoFromWaveFile (final boolean addRootKey, final boolean addLoops) throws IOException
+    {
+        super.addMissingInfoFromWaveFile (new WavSampleMetadata (this.waveFile), addRootKey, addLoops);
     }
 }

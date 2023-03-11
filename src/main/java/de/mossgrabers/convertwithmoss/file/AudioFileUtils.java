@@ -100,23 +100,39 @@ public final class AudioFileUtils
 
         try
         {
-            final FormatChunk formatChunk = new WaveFile (wavFile, true).getFormatChunk ();
-            if (formatChunk == null)
-            {
-                notifier.logError (BROKEN_WAV, wavFile.getAbsolutePath ());
-                return false;
-            }
-
-            final int numberOfChannels = formatChunk.getNumberOfChannels ();
-            if (numberOfChannels > 2)
-            {
-                notifier.logError ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), wavFile.getAbsolutePath ());
-                return false;
-            }
+            checkSampleFile (wavFile.getAbsolutePath (), new WaveFile (wavFile, true), notifier);
         }
         catch (final IOException | ParseException ex)
         {
             notifier.logError (BROKEN_WAV, ex);
+            return false;
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Test the sample file for compatibility.
+     *
+     * @param filename The filename to include into error reporting
+     * @param waveFile The sample file to check
+     * @param notifier Where to report errors
+     * @return True if OK
+     */
+    public static boolean checkSampleFile (final String filename, final WaveFile waveFile, final INotifier notifier)
+    {
+        final FormatChunk formatChunk = waveFile.getFormatChunk ();
+        if (formatChunk == null)
+        {
+            notifier.logError (BROKEN_WAV, filename);
+            return false;
+        }
+
+        final int numberOfChannels = formatChunk.getNumberOfChannels ();
+        if (numberOfChannels > 2)
+        {
+            notifier.logError ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), filename);
             return false;
         }
 

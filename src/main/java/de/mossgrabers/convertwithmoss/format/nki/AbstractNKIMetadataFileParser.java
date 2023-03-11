@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
@@ -20,6 +21,7 @@ import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.tag.AbstractTagsAndAttributes;
+import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -75,10 +77,11 @@ public abstract class AbstractNKIMetadataFileParser
      * @param sourceFile The source file which contains the XML document
      * @param content The XML content to parse
      * @param metadata Default metadata
+     * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return The parsed multisample source
      * @throws IOException An error occurred parsing the XML document
      */
-    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadata) throws IOException
+    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadata, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
     {
         try
         {
@@ -98,7 +101,7 @@ public abstract class AbstractNKIMetadataFileParser
                 final String n = metadata.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
                 final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
                 final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
-                if (this.parseProgram (programElement, multisampleSource))
+                if (this.parseProgram (programElement, multisampleSource, monolithSamples))
                 {
                     // Use some guessing on the filename if no metadata is available...
 
@@ -149,10 +152,11 @@ public abstract class AbstractNKIMetadataFileParser
      *
      * @param programElement The program element to be parsed
      * @param multisampleSource Where to store the parsed data
+     * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return True if successful
      * @throws IOException Could not create path for samples
      */
-    private boolean parseProgram (final Element programElement, final MultisampleSource multisampleSource) throws IOException
+    private boolean parseProgram (final Element programElement, final MultisampleSource multisampleSource, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
     {
         final String programName = this.tags.programName ();
         if (!programElement.hasAttribute (programName))
@@ -173,7 +177,7 @@ public abstract class AbstractNKIMetadataFileParser
         final Element [] zoneElements = this.getZoneElements (programElement);
 
         final String sourcePath = multisampleSource.getSourceFile ().getParentFile ().getCanonicalPath ();
-        final List<IVelocityLayer> velocityLayers = this.getVelocityLayers (programParameters, groupElements, zoneElements, sourcePath);
+        final List<IVelocityLayer> velocityLayers = this.getVelocityLayers (programParameters, groupElements, zoneElements, sourcePath, monolithSamples);
         if (velocityLayers.isEmpty ())
         {
             this.notifier.logError ("IDS_NKI_NO_VEL_LAYER_DETECTED");
@@ -258,9 +262,10 @@ public abstract class AbstractNKIMetadataFileParser
      * @param groupElements The group elements
      * @param zoneElements The zone elements
      * @param sourcePath The canonical path which contains the NKI file
+     * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return the velocity layers created (empty list is returned if nothing was created)
      */
-    private List<IVelocityLayer> getVelocityLayers (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath)
+    private List<IVelocityLayer> getVelocityLayers (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
     {
         if (groupElements == null || zoneElements == null)
             return Collections.emptyList ();
@@ -268,7 +273,7 @@ public abstract class AbstractNKIMetadataFileParser
         final LinkedList<IVelocityLayer> velocityLayers = new LinkedList<> ();
         for (final Element groupElement: groupElements)
         {
-            final IVelocityLayer velocityLayer = this.getVelocityLayer (programParameters, groupElement, zoneElements, sourcePath);
+            final IVelocityLayer velocityLayer = this.getVelocityLayer (programParameters, groupElement, zoneElements, sourcePath, monolithSamples);
             if (velocityLayer != null)
                 velocityLayers.add (velocityLayer);
         }
@@ -284,9 +289,10 @@ public abstract class AbstractNKIMetadataFileParser
      * @param groupElement The group element from which the velocity layer is created
      * @param zoneElements The program's zone elements
      * @param sourcePath The canonical path which contains the NKI file
+     * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return The velocity layer created from the zone element (null, if there is no group element)
      */
-    private IVelocityLayer getVelocityLayer (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath)
+    private IVelocityLayer getVelocityLayer (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
     {
         if (groupElement == null)
             return null;
@@ -298,7 +304,7 @@ public abstract class AbstractNKIMetadataFileParser
         final int pitchBend = this.readGroupPitchBend (groupElement);
         velocityLayer.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-        velocityLayer.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupAmpEnv, groupElement, groupZones, pitchBend, sourcePath));
+        velocityLayer.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupAmpEnv, groupElement, groupZones, pitchBend, sourcePath, monolithSamples));
         return velocityLayer;
     }
 
@@ -313,10 +319,11 @@ public abstract class AbstractNKIMetadataFileParser
      * @param groupZones The zone elements belonging to the group
      * @param pitchBend The pitchbend range (half tone steps)
      * @param sourcePath The canonical path which contains the NKI file
+     * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return A list of sample metadata object. If nothing can be created, an empty list is
      *         returned.
      */
-    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final IEnvelope groupAmpEnv, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath)
+    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final IEnvelope groupAmpEnv, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
     {
         if (groupElement == null || groupZones == null)
             return Collections.emptyList ();
@@ -325,102 +332,112 @@ public abstract class AbstractNKIMetadataFileParser
 
         for (final Element zoneElement: groupZones)
         {
-            final File sampleFile = this.getZoneSampleFile (zoneElement, sourcePath);
-            if (sampleFile == null || !AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                continue;
-
-            final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (sampleFile);
-            try
+            final File sampleFile = this.getZoneSampleFile (zoneElement, sourcePath, monolithSamples != null);
+            if (sampleFile != null)
             {
-                sampleMetadata.addMissingInfoFromWaveFile (true, true);
-            }
-            catch (final IOException e1)
-            {
-                continue;
-            }
-
-            final Map<String, String> zoneParameters = this.readParameters (zoneElement);
-            try
-            {
-                sampleMetadata.setKeyRoot (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.rootKeyParam ()));
-                sampleMetadata.setKeyLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.lowKeyParam ()));
-                sampleMetadata.setKeyHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.highKeyParam ()));
-                sampleMetadata.setVelocityLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.lowVelocityParam ()));
-                sampleMetadata.setVelocityHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.highVelocityParam ()));
-                sampleMetadata.setNoteCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeLowParam ()));
-                sampleMetadata.setNoteCrossfadeHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeHighParam ()));
-                sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeLowVelParam ()));
-                sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeHighVelParam ()));
-
-                final int sampleStart = AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.sampleStartParam ());
-                final int sampleEnd = AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.sampleEndParam ());
-
-                if (sampleEnd > sampleStart)
-                {
-                    sampleMetadata.setStart (sampleStart);
-                    sampleMetadata.setStop (sampleEnd);
-                }
-
-                final String keyTracking = AbstractNKIMetadataFileParser.getString (groupParameters, this.tags.keyTrackingParam ());
-                final double keyTrackingValue = keyTracking.equals (this.tags.yes ()) ? 1.0d : 0.0d;
-                sampleMetadata.setKeyTracking (keyTrackingValue);
-
-                final double zoneVol = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zoneVolParam ());
-                final double groupVol = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupVolParam ());
-                final double progVol = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progVolParam ());
-                sampleMetadata.setGain (20.0d * Math.log10 (zoneVol * groupVol * progVol));
-
-                final double zoneTune = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zoneTuneParam ());
-                final double groupTune = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupTuneParam ());
-                final double progTune = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progTuneParam ());
-                // TODO: This is not correct, log(1*0*0) gives -Infinity in Java
-                sampleMetadata.setTune (12.0d * Math.log (zoneTune * groupTune * progTune) / Math.log (2));
-
-                final double zonePan = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zonePanParam ());
-                final double groupPan = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupPanParam ());
-                final double progPan = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progPanParam ());
-
-                double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
-                if (totalPan < -1.0d)
-                    totalPan = -1.0d;
-                else if (totalPan > 1.0d)
-                    totalPan = 1.0d;
-                sampleMetadata.setPanorama (totalPan);
-
-            }
-            catch (final ValueNotAvailableException e)
-            {
-                continue;
-            }
-
-            if (groupAmpEnv != null)
-            {
-                final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
-                amplitudeEnvelope.setAttack (groupAmpEnv.getAttack ());
-                amplitudeEnvelope.setHold (groupAmpEnv.getHold ());
-                amplitudeEnvelope.setDecay (groupAmpEnv.getDecay ());
-                amplitudeEnvelope.setSustain (groupAmpEnv.getSustain ());
-                amplitudeEnvelope.setRelease (groupAmpEnv.getRelease ());
-            }
-
-            if (groupParameters.containsKey (this.tags.reverseParam ()))
-            {
-                final String reversed = groupParameters.get (this.tags.reverseParam ());
-                sampleMetadata.setReversed (reversed.equals (this.tags.yes ()));
-            }
-
-            this.readLoopInformation (zoneElement, sampleMetadata);
-
-            sampleMetadataList.add (sampleMetadata);
-
-            if (pitchBend >= 0)
-            {
-                sampleMetadata.setBendUp (pitchBend);
-                sampleMetadata.setBendDown (pitchBend);
+                DefaultSampleMetadata sampleMetadata = null;
+                if (monolithSamples != null)
+                    sampleMetadata = monolithSamples.get (sampleFile.getName ());
+                else if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                    sampleMetadata = new DefaultSampleMetadata (sampleFile);
+                if (sampleMetadata != null)
+                    this.readMetadata (programParameters, groupParameters, groupAmpEnv, pitchBend, sampleMetadataList, zoneElement, sampleMetadata);
             }
         }
 
         return sampleMetadataList;
+    }
+
+
+    private void readMetadata (final Map<String, String> programParameters, final Map<String, String> groupParameters, final IEnvelope groupAmpEnv, final int pitchBend, final LinkedList<ISampleMetadata> sampleMetadataList, final Element zoneElement, final DefaultSampleMetadata sampleMetadata)
+    {
+        try
+        {
+            sampleMetadata.addMissingInfoFromWaveFile (true, true);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
+            return;
+        }
+
+        final Map<String, String> zoneParameters = this.readParameters (zoneElement);
+        try
+        {
+            sampleMetadata.setKeyRoot (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.rootKeyParam ()));
+            sampleMetadata.setKeyLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.lowKeyParam ()));
+            sampleMetadata.setKeyHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.highKeyParam ()));
+            sampleMetadata.setVelocityLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.lowVelocityParam ()));
+            sampleMetadata.setVelocityHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.highVelocityParam ()));
+            sampleMetadata.setNoteCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeLowParam ()));
+            sampleMetadata.setNoteCrossfadeHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeHighParam ()));
+            sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeLowVelParam ()));
+            sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeHighVelParam ()));
+
+            final int sampleStart = AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.sampleStartParam ());
+            final int sampleEnd = AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.sampleEndParam ());
+
+            if (sampleEnd > sampleStart)
+            {
+                sampleMetadata.setStart (sampleStart);
+                sampleMetadata.setStop (sampleEnd);
+            }
+
+            final String keyTracking = AbstractNKIMetadataFileParser.getString (groupParameters, this.tags.keyTrackingParam ());
+            final double keyTrackingValue = keyTracking.equals (this.tags.yes ()) ? 1.0d : 0.0d;
+            sampleMetadata.setKeyTracking (keyTrackingValue);
+
+            final double zoneVol = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zoneVolParam ());
+            final double groupVol = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupVolParam ());
+            final double progVol = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progVolParam ());
+            sampleMetadata.setGain (20.0d * Math.log10 (zoneVol * groupVol * progVol));
+
+            final double zoneTune = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zoneTuneParam ());
+            final double groupTune = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupTuneParam ());
+            final double progTune = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progTuneParam ());
+
+            // TODO Remove
+            this.notifier.logText ("TUNE: " + zoneTune + " : " + groupTune + " : " + progTune + "\n");
+
+            sampleMetadata.setTune (this.tags.calculateTune (zoneTune, groupTune, progTune));
+
+            final double zonePan = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zonePanParam ());
+            final double groupPan = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupPanParam ());
+            final double progPan = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progPanParam ());
+            final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
+            sampleMetadata.setPanorama (Utils.clamp (totalPan, -1.0d, 1.0d));
+        }
+        catch (final ValueNotAvailableException e)
+        {
+            this.notifier.logError ("IDS_NKI_ERROR_MISSING_VALUE", e);
+            return;
+        }
+
+        if (groupAmpEnv != null)
+        {
+            final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+            amplitudeEnvelope.setAttack (groupAmpEnv.getAttack ());
+            amplitudeEnvelope.setHold (groupAmpEnv.getHold ());
+            amplitudeEnvelope.setDecay (groupAmpEnv.getDecay ());
+            amplitudeEnvelope.setSustain (groupAmpEnv.getSustain ());
+            amplitudeEnvelope.setRelease (groupAmpEnv.getRelease ());
+        }
+
+        if (groupParameters.containsKey (this.tags.reverseParam ()))
+        {
+            final String reversed = groupParameters.get (this.tags.reverseParam ());
+            sampleMetadata.setReversed (reversed.equals (this.tags.yes ()));
+        }
+
+        this.readLoopInformation (zoneElement, sampleMetadata);
+
+        sampleMetadataList.add (sampleMetadata);
+
+        if (pitchBend >= 0)
+        {
+            sampleMetadata.setBendUp (pitchBend);
+            sampleMetadata.setBendDown (pitchBend);
+        }
     }
 
 
@@ -494,47 +511,14 @@ public abstract class AbstractNKIMetadataFileParser
 
 
     /**
-     * Returns a String value from a value map.
-     *
-     * @param valueMap The value
-     * @param valueName The value's name
-     * @return The String value
-     * @throws ValueNotAvailableException indicates that the valueName is not in the valueMap
-     */
-    private static String getString (final Map<String, String> valueMap, final String valueName) throws ValueNotAvailableException
-    {
-        final String valueStr = valueMap.get (valueName);
-        if (valueStr == null)
-            throw new ValueNotAvailableException ();
-        return valueStr;
-    }
-
-
-    /**
-     * Returns an integer value from a value map.
-     *
-     * @param valueMap The value
-     * @param valueName The value's name
-     * @return The integer value
-     * @throws ValueNotAvailableException indicates that the valueName is not in the valueMap
-     */
-    private static int getInt (final Map<String, String> valueMap, final String valueName) throws ValueNotAvailableException
-    {
-        final String valueStr = valueMap.get (valueName);
-        if (valueStr == null)
-            throw new ValueNotAvailableException ();
-        return Integer.parseInt (valueStr);
-    }
-
-
-    /**
      * Retrieves a sample file from a zone element.
      *
      * @param zoneElement The zone element
      * @param sourcePath The canonical path which contains the NKI file
+     * @param isMonolith True if samples are contained in the NKI as well
      * @return The sample file. Null is returned if file cannot be retrieved successfully.
      */
-    private File getZoneSampleFile (final Element zoneElement, final String sourcePath)
+    private File getZoneSampleFile (final Element zoneElement, final String sourcePath, final boolean isMonolith)
     {
         final Element sampleElement = XMLUtils.getChildElementByName (zoneElement, this.tags.zoneSample ());
         if (sampleElement == null)
@@ -548,7 +532,7 @@ public abstract class AbstractNKIMetadataFileParser
             return null;
         }
 
-        return this.getFileFromEncodedSampleFileName (encodedSampleFileName, sourcePath);
+        return this.getFileFromEncodedSampleFileName (encodedSampleFileName, sourcePath, isMonolith);
     }
 
 
@@ -557,14 +541,17 @@ public abstract class AbstractNKIMetadataFileParser
      *
      * @param encodedSampleFileName The encoded sample file name
      * @param sourcePath The canonical path which contains the NKI file
+     * @param isMonolith True if samples are contained in the NKI as well
      * @return The File if it can be found, null else
      */
-    protected File getFileFromEncodedSampleFileName (final String encodedSampleFileName, final String sourcePath)
+    protected File getFileFromEncodedSampleFileName (final String encodedSampleFileName, final String sourcePath, final boolean isMonolith)
     {
         final StringBuilder path = new StringBuilder ();
         try
         {
             final String relativePath = this.decodeEncodedSampleFileName (encodedSampleFileName);
+            if (isMonolith)
+                return new File (relativePath);
             path.append (sourcePath).append ('/').append (relativePath);
         }
         catch (final IOException ex)
@@ -702,6 +689,40 @@ public abstract class AbstractNKIMetadataFileParser
 
 
     /**
+     * Returns a String value from a value map.
+     *
+     * @param valueMap The value
+     * @param valueName The value's name
+     * @return The String value
+     * @throws ValueNotAvailableException indicates that the valueName is not in the valueMap
+     */
+    private static String getString (final Map<String, String> valueMap, final String valueName) throws ValueNotAvailableException
+    {
+        final String valueStr = valueMap.get (valueName);
+        if (valueStr == null)
+            throw new ValueNotAvailableException (valueName);
+        return valueStr;
+    }
+
+
+    /**
+     * Returns an integer value from a value map.
+     *
+     * @param valueMap The value
+     * @param valueName The value's name
+     * @return The integer value
+     * @throws ValueNotAvailableException indicates that the valueName is not in the valueMap
+     */
+    private static int getInt (final Map<String, String> valueMap, final String valueName) throws ValueNotAvailableException
+    {
+        final String valueStr = valueMap.get (valueName);
+        if (valueStr == null)
+            throw new ValueNotAvailableException (valueName);
+        return Integer.parseInt (valueStr);
+    }
+
+
+    /**
      * Returns a double value from a value map.
      *
      * @param valueMap The value
@@ -713,7 +734,7 @@ public abstract class AbstractNKIMetadataFileParser
     {
         final String valueStr = valueMap.get (valueName);
         if (valueStr == null)
-            throw new ValueNotAvailableException ();
+            throw new ValueNotAvailableException (valueName);
         return Double.parseDouble (valueStr);
     }
 

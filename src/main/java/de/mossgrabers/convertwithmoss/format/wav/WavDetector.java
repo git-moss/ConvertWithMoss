@@ -48,7 +48,7 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
     private TextField           crossfadeVelocitiesField;
     private TextField           postfixField;
 
-    private MetadataPane        metadataPane             = new MetadataPane ("Wav");
+    private final MetadataPane  metadataPane             = new MetadataPane ("Wav");
 
 
     /**

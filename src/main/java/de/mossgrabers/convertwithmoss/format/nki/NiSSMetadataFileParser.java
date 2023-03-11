@@ -24,7 +24,7 @@ public class NiSSMetadataFileParser extends AbstractNKIMetadataFileParser
 {
     /**
      * Constructor.
-     * 
+     *
      * @param notifier Where to report errors
      */
     public NiSSMetadataFileParser (final INotifier notifier)

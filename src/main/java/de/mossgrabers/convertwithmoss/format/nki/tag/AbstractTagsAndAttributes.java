@@ -931,4 +931,15 @@ public abstract class AbstractTagsAndAttributes
     {
         return SAMPLE_END_PARAM;
     }
+
+
+    /**
+     * Calculate the tuning value from the different tuning values.
+     *
+     * @param zoneTune The zone tuning
+     * @param groupTune The group tuning
+     * @param progTune The program tuning
+     * @return The tuning [-1..1] which stands for [-100,100] semitones
+     */
+    public abstract double calculateTune (double zoneTune, double groupTune, double progTune);
 }

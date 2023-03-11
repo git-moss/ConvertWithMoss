@@ -19,15 +19,15 @@ import java.util.List;
 public class Sf2Preset
 {
     /** The length of the preset header */
-    public static final int     LENGTH_PRESET_HEADER = 38;
+    public static final int           LENGTH_PRESET_HEADER = 38;
 
-    private String              name;
-    private int                 number;
-    private int                 bankNumber;
+    private String                    name;
+    private int                       number;
+    private int                       bankNumber;
     /** Pointer into PBAG list. */
-    private int                 firstZoneIndex;
+    private int                       firstZoneIndex;
 
-    private List<Sf2PresetZone> zones                = new ArrayList<> ();
+    private final List<Sf2PresetZone> zones                = new ArrayList<> ();
 
 
     /**

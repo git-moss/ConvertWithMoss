@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.akai;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -243,7 +244,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ACTIVE, MPCKeygroupTag.TRUE);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (sampleMetadata.getGain ())));
 
-        final double pan = (clamp (sampleMetadata.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
+        final double pan = (Utils.clamp (sampleMetadata.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, String.format (Locale.US, "%.6f", Double.valueOf (pan)));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH, Double.toString (sampleMetadata.getTune ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (sampleMetadata.getVelocityLow ()));
@@ -388,7 +389,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         // Only positive modulation values are supported with MPC
         if (pitchDepth > 0)
         {
-            final double mpcPitchDepth = clamp (pitchDepth, -3600, 3600) / 3600.0 / 2.0 + 0.5;
+            final double mpcPitchDepth = Utils.clamp (pitchDepth, -3600, 3600) / 3600.0 / 2.0 + 0.5;
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, formatDouble (mpcPitchDepth, 2));
 
             final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
@@ -479,7 +480,7 @@ public class MPCKeygroupCreator extends AbstractCreator
      */
     private static double normalizedLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
     {
-        return Math.log (clamp (value, minimum, maximum) / minimum) / Math.log (maximum / minimum);
+        return Math.log (Utils.clamp (value, minimum, maximum) / minimum) / Math.log (maximum / minimum);
     }
 
 

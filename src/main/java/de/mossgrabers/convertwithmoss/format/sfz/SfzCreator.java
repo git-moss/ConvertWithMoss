@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -403,7 +404,7 @@ public class SfzCreator extends AbstractCreator
 
         final IFilter filter = optFilter.get ();
         final String type = FILTER_TYPE_MAP.get (filter.getType ());
-        addAttribute (sb, SfzOpcode.FILTER_TYPE, type + "_" + (int) clamp (filter.getPoles (), 1, 4) + "p", false);
+        addAttribute (sb, SfzOpcode.FILTER_TYPE, type + "_" + Utils.clamp (filter.getPoles (), 1, 4) + "p", false);
         addAttribute (sb, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
         addAttribute (sb, SfzOpcode.RESONANCE, formatDouble (Math.min (40, filter.getResonance ()), 2), true);
 
@@ -449,6 +450,6 @@ public class SfzCreator extends AbstractCreator
             return;
         if (sb.length () > 0)
             sb.append (' ');
-        sb.append (opcode).append ('=').append (clamp (value, 0, 100));
+        sb.append (opcode).append ('=').append (Utils.clamp (value, 0.0, 100.0));
     }
 }

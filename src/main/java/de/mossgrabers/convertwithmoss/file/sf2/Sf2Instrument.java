@@ -19,13 +19,13 @@ import java.util.List;
 public class Sf2Instrument
 {
     /** The length of the preset header */
-    public static final int         LENGTH_INSTRUMENT = 22;
+    public static final int               LENGTH_INSTRUMENT = 22;
 
-    private String                  name;
+    private String                        name;
     /** Pointer into IBAG list. */
-    private int                     firstZoneIndex;
+    private int                           firstZoneIndex;
 
-    private List<Sf2InstrumentZone> zones             = new ArrayList<> ();
+    private final List<Sf2InstrumentZone> zones             = new ArrayList<> ();
 
 
     /**
