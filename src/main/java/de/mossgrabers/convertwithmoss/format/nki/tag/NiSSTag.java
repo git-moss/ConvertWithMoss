@@ -127,6 +127,7 @@ public class NiSSTag extends AbstractTagsAndAttributes
     @Override
     public double calculateTune (final double zoneTune, final double groupTune, final double progTune)
     {
+        // All three tune values are stored logarithmically
         return 0.12d * Math.log (zoneTune * groupTune * progTune) / Math.log (2);
     }
 }
