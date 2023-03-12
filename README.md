@@ -264,7 +264,7 @@ Since the KMP format can only contain 1 layer of a multisample, sources with mul
 
 # Changes
 
-## 6.0.0 (unreleased)
+## 6.0.0
 
 * New: Added option to rename multi-samples (thanks to Philip Stolz).
 * New: Improved mapping of envelopes to MPC keygroups (thanks to Philip Stolz).
