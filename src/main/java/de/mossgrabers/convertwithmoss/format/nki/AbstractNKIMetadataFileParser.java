@@ -395,10 +395,6 @@ public abstract class AbstractNKIMetadataFileParser
             final double zoneTune = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zoneTuneParam ());
             final double groupTune = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupTuneParam ());
             final double progTune = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progTuneParam ());
-
-            // TODO Remove
-            this.notifier.logText ("TUNE: " + zoneTune + " : " + groupTune + " : " + progTune + "\n");
-
             sampleMetadata.setTune (this.tags.calculateTune (zoneTune, groupTune, progTune));
 
             final double zonePan = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zonePanParam ());

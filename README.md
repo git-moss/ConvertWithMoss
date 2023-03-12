@@ -79,30 +79,109 @@ The converter does not support any sophisticated synthesizer parameters like env
 
 The following multisample formats are supported as the source format:
 
-1. WAV files (*.wav)
+1. Akai MPC Keygroups (*.xpm)
 2. Bitwig Studio multisample (*.multisample)
-3. SFZ (*.sfz)
-4. SoundFont 2 (*.sf2)
-5. DecentSampler (*.dspreset, *.dslibrary)
-6. Akai MPC Keygroups (*.xpm)
-7. Korg wavestate/modwave (*.korgmultisample)
-8. Korg KMP/KSF (*.KMP)
+3. DecentSampler (*.dspreset, *.dslibrary)
+4. Korg KMP/KSF (*.KMP)
+5. Korg wavestate/modwave (*.korgmultisample)
+6. Native Instruments Kontakt (*.nki) 1-4
+7. SFZ (*.sfz)
+8. SoundFont 2 (*.sf2)
+9. WAV files (*.wav)
 
 The following multisample formats are supported as the destination format:
 
-1. WAV files (*.wav)
+1. Akai MPC Keygroups (*.xpm)
 2. Bitwig Studio multisample (*.multisample)
-3. SFZ (*.sfz)
-4. DecentSampler (*.dspreset, *.dslibrary)
-5. Akai MPC Keygroups (*.xpm)
-6. Korg wavestate/modwave (*.korgmultisample)
-7. Korg KMP/KSF (*.KMP)
+3. DecentSampler (*.dspreset, *.dslibrary)
+4. Korg KMP/KSF (*.KMP)
+5. Korg wavestate/modwave (*.korgmultisample)
+6. SFZ (*.sfz)
+7. WAV files (*.wav)
 
 ## Source formats
 
 The following multisample formats can be the source of a conversion.
 
-### Plain WAV files
+### Akai MPC Keygroups / Drum
+
+A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
+Both keygroup and drum types are supported.
+
+There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
+
+### Bitwig Studio multisample
+
+The parser can read all information from Bitwig Studio multisamples except the layer color, select and parameter 1 to 3, which are not mappable.
+
+A Bitwig multisample file is a zip archive which contains all samples in WAV format and a metadata file in XML format.
+This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
+
+### DecentSampler
+
+The Decent Sampler plugin is a free (but closed source) sample player plugin that allows you to play sample libraries in the DecentSampler format (files with extensions: dspreset and dslibrary). See https://www.decentsamples.com/product/decent-sampler-plugin/
+The format specification is available here: https://www.decentsamples.com/wp-content/uploads/2020/06/format-documentation.html#the-sample-element
+
+A preset file contains a single preset. A dspreset file contains only the description of the multisample. The related samples are normally kept in a separate folder. Only WAV files are supported.
+A dslibrary file contains several dspreset files incl. the samples compressed in ZIP format.
+
+There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
+
+### Korg KMP/KSF
+
+The KMP/KSF format (*.KMP) was first introduced in the Korg Trinity workstation (1995) and since then supported in many Korg workstations and entertainment keyboards up to the latest Korg Nautilus (2020). The following keyboards are known to support the format:
+
+* Trinity
+* Triton
+* OASYS
+* M3
+* Kronos
+* KROSS (only for pads)
+* PA1X/PA800/PA2X/PA3X/PA4X
+* Nautilus
+
+The format is documented in detail in the appendix of the respective parameter guides. The KMP format contains only 1 layer of a multisample, which means there are only key splits but no velocity layers. The file references several KSF files which contain the sample data for each key region.
+
+### Korg wavestate/modwave
+
+The korgmultisample format is currently used by the Korg wavestate and modwave keyboards. Files in that format (*.korgmultisample) can be opened with the Korg Sample Builder software and transferred to the keyboard.
+
+Since the format is pretty simple all data stored in the file is available for the conversion.
+
+### Native Instruments Kontakt
+
+Kontakt is a sampler from Native Instruments which uses a plethora of file formats which all are sadly proprietary
+and therefore no documentation is publicly available. Nevertheless, several people analysed the format and by now
+sufficient information is available to provide the support as the source.
+
+However, the format changed many times across the different Kontakt versions. So far, the following formats are known:
+
+| Kontakt Version | Supported | Monolith supported |
+|:----------------|:----------|:-------------------|
+| 1               | Yes       | No                 |
+| 2 - 4.1.x       | Yes       | Yes                |
+| 5 - 7           | No        | No                 |
+
+A NKI file contains one instrument which is a mutli-sample with many parameters. Currently, the multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude envelope and pitchbend.
+
+### SFZ
+
+The SFZ format is a file format to define how a collection of samples are arranged for performance. The goal behind the SFZ format is to provide a free, simple, minimalistic and expandable format to arrange, distribute and use audio samples with the highest possible quality and the highest possible performance flexibility (cited from https://sfzformat.com/).
+
+The SFZ file contains only the description of the multisample. The related samples are normally kept in a separate folder. The converter supports only samples in WAV format encoded as (split) stereo uncompressed and IEEE float 32 bit format.
+
+There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
+
+### SoundFont 2
+
+The original SoundFont file format was developed in the early 1990s by E-mu Systems and Creative Labs. It was first used on the Sound Blaster AWE32 sound card for its General MIDI support.
+
+A SoundFont can contain several presets grouped into banks. Presets refer to one or more instruments which are distributed over a keyboard by key and velocity ranges.
+The sample data contained in the file is in mono or split stereo with 16 or 24 bit.
+
+The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
+
+### WAV files
 
 This is not a multisample format but a clever algorithm tries to detect the necessary information from each multisample file. It uses metadata found int the WAV file or from its' name.
 
@@ -137,68 +216,6 @@ Stereo samples might be split up into 2 mono files (the left and right channel).
 * Crossfade notes: You can automatically create crossfades between the different note ranges. This makes especially sense if you only sampled a couple of notes. Set the number of notes, which should be crossfaded between two samples (0-127). If you set a too high number the crossfade is automatically limited to the maximum number of notes between the two neighbouring samples.
 * Crossfade velocities: You can automatically create crossfades between the different velocity layers. This makes especially sense if you sampled several sample layers with different velocity values. Set the number of velocity steps (0-127), which should be crossfaded between two samples. If you set a too high number the crossfade is automatically limited to the maximum number of velocity steps between the two neighbouring samples.
 * Postfix text to remove: The algorithm automatically removes the note information to extract the name of the multisample but there might be further text at the end of the name, which you might want to remove. For example the multisamples I created with SampleRobot have a layer information like "_ms0_0". You can set a comma separated list of such postfix texts in that field.
-
-### Bitwig Studio multisample
-
-The parser can read all information from Bitwig Studio multisamples except the layer color, select and parameter 1 to 3, which are not mappable.
-
-A Bitwig multisample file is a zip archive which contains all samples in WAV format and a metadata file in XML format.
-This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
-
-### SFZ
-
-The SFZ format is a file format to define how a collection of samples are arranged for performance. The goal behind the SFZ format is to provide a free, simple, minimalistic and expandable format to arrange, distribute and use audio samples with the highest possible quality and the highest possible performance flexibility (cited from https://sfzformat.com/).
-
-The SFZ file contains only the description of the multisample. The related samples are normally kept in a separate folder. The converter supports only samples in WAV format encoded as (split) stereo uncompressed and IEEE float 32 bit format.
-
-There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
-
-### SoundFont 2
-
-The original SoundFont file format was developed in the early 1990s by E-mu Systems and Creative Labs. It was first used on the Sound Blaster AWE32 sound card for its General MIDI support.
-
-A SoundFont can contain several presets grouped into banks. Presets refer to one or more instruments which are distributed over a keyboard by key and velocity ranges.
-The sample data contained in the file is in mono or split stereo with 16 or 24 bit.
-
-The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
-
-### DecentSampler
-
-The Decent Sampler plugin is a free (but closed source) sample player plugin that allows you to play sample libraries in the DecentSampler format (files with extensions: dspreset and dslibrary). See https://www.decentsamples.com/product/decent-sampler-plugin/
-The format specification is available here: https://www.decentsamples.com/wp-content/uploads/2020/06/format-documentation.html#the-sample-element
-
-A preset file contains a single preset. A dspreset file contains only the description of the multisample. The related samples are normally kept in a separate folder. Only WAV files are supported.
-A dslibrary file contains several dspreset files incl. the samples compressed in ZIP format.
-
-There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
-
-### Akai MPC Keygroups / Drum
-
-A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
-Both keygroup and drum types are supported.
-
-There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
-
-### Korg wavestate/modwave
-
-The korgmultisample format is currently used by the Korg wavestate and modwave keyboards. Files in that format (*.korgmultisample) can be opened with the Korg Sample Builder software and transferred to the keyboard.
-
-Since the format is pretty simple all data stored in the file is available for the conversion.
-
-### Korg KMP/KSF
-
-The KMP/KSF format (*.KMP) was first introduced in the Korg Trinity workstation (1995) and since then supported in many Korg workstations and entertainment keyboards up to the latest Korg Nautilus (2020). The following keyboards are known to support the format:
-
-* Trinity
-* Triton
-* OASYS
-* M3
-* Kronos
-* KROSS (only for pads)
-* PA1X/PA800/PA2X/PA3X/PA4X
-* Nautilus
-
-The format is documented in detail in the appendix of the respective parameter guides. The KMP format contains only 1 layer of a multisample, which means there are only key splits but no velocity layers. The file references several KSF files which contain the sample data for each key region.
 
 ## Destination formats
 
