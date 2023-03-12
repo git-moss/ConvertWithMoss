@@ -160,9 +160,10 @@ However, the format changed many times across the different Kontakt versions. So
 |:----------------|:----------|:-------------------|
 | 1               | Yes       | No                 |
 | 2 - 4.1.x       | Yes       | Yes                |
+| 4.2.2+          | No        | No                 |
 | 5 - 7           | No        | No                 |
 
-A NKI file contains one instrument which is a mutli-sample with many parameters. Currently, the multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude envelope and pitchbend.
+A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude envelope and pitchbend.
 
 ### SFZ
 
@@ -221,17 +222,17 @@ Stereo samples might be split up into 2 mono files (the left and right channel).
 
 The following multisample formats can be the destination of a conversion.
 
-### Plain WAV files
+### Akai MPC Keygroups
 
-Only stores the WAV files from the source format in a sub-folder. Use e.g. to extract the audio files from a SF2 file.
+A MPC Keygroup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
+This format has some restrictions:
+
+* A round robin keygroup can only contain up to 4 layers. An error is displayed in this case but the file is converted anyway.
+* Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
 
 ### Bitwig Studio multisample
 
 This format can be loaded in the Bitwig Sampler device. It supports multiple layers, key and velocity crossfades as well as several metadata information: creator, sound category and keywords.
-
-### SFZ
-
-Writes a SFZ file (see above) and puts all samples in a sub-folder with the same name.
 
 ### DecentSampler
 
@@ -244,13 +245,9 @@ Further options:
 * Add filter: Adds a low pass filter and creates a cutoff and resonance knob for it.
 * Add reverb: Adds a reverb effect and  creates two parameter knobs for it.
 
-### Akai MPC Keygroups
+### Korg KMP/KSF
 
-A MPC Keygroup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
-This format has some restrictions:
-
-* A round robin keygroup can only contain up to 4 layers. An error is displayed in this case but the file is converted anyway.
-* Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
+Since the KMP format can only contain 1 layer of a multisample, sources with multiple velocity layers are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
 
 ### Korg wavestate/modwave (*.korgmultisample)
 
@@ -258,9 +255,13 @@ The korgmultisample format is currently used by the Korg wavestate and modwave k
 
 Since the format supports only one layer of a multisample, multiple files are created for each layer available in the source. If there is more than one layer in the source the name of the created file has the velocity range of the layer added. Using that information a multisample with up to 4 layers can be created as Performance in the device.
 
-### Korg KMP/KSF
+### SFZ
 
-Since the KMP format can only contain 1 layer of a multisample, sources with multiple velocity layers are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
+Writes a SFZ file (see above) and puts all samples in a sub-folder with the same name.
+
+### WAV files
+
+Only stores the WAV files from the source format in a sub-folder. Use e.g. to extract the audio files from a SF2 file.
 
 # Changes
 
