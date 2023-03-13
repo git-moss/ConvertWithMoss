@@ -25,11 +25,12 @@ public class StreamUtils
      * Reads and converts 4 bytes to an unsigned integer with least significant bytes first.
      *
      * @param in The input stream
+     * @param isBigEndian True if bytes are stored big-endian
      * @return The converted integer
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readDoubleWordLSB (final InputStream in) throws IOException
+    public static int readDoubleWord (final InputStream in, final boolean isBigEndian) throws IOException
     {
         final int ch1 = in.read ();
         final int ch2 = in.read ();
@@ -37,6 +38,8 @@ public class StreamUtils
         final int ch4 = in.read ();
         if ((ch1 | ch2 | ch3 | ch4) < 0)
             throw new EOFException ();
+        if (isBigEndian)
+            return (ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4;
         return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1;
     }
 
@@ -45,11 +48,12 @@ public class StreamUtils
      * Reads and converts 4 bytes to an unsigned integer with least significant bytes first.
      *
      * @param fileAccess The random access file to read from
+     * @param isBigEndian True if bytes are stored big-endian
      * @return The converted integer
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readDoubleWordLSB (final RandomAccessFile fileAccess) throws IOException
+    public static int readDoubleWord (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
         final int ch1 = fileAccess.read ();
         final int ch2 = fileAccess.read ();
@@ -57,6 +61,8 @@ public class StreamUtils
         final int ch4 = fileAccess.read ();
         if ((ch1 | ch2 | ch3 | ch4) < 0)
             throw new EOFException ();
+        if (isBigEndian)
+            return (ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4;
         return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1;
     }
 
@@ -65,16 +71,19 @@ public class StreamUtils
      * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
      *
      * @param fileAccess The random access file to read from
+     * @param isBigEndian True if bytes are stored big-endian
      * @return The converted integer
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readWordLSB (final RandomAccessFile fileAccess) throws IOException
+    public static int readWord (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
         final int ch1 = fileAccess.read ();
         final int ch2 = fileAccess.read ();
         if ((ch1 | ch2) < 0)
             throw new EOFException ();
+        if (isBigEndian)
+            return (ch1 << 8) + ch2;
         return (ch2 << 8) + ch1;
     }
 
@@ -176,15 +185,64 @@ public class StreamUtils
      *
      * @param in The stream to read from
      * @param length The length of the text
+     * @param reverse Reverses the text if true
+     * @return The read text
+     * @throws IOException
+     */
+    public static String readASCII (final DataInput in, final int length, final boolean reverse) throws IOException
+    {
+        return readASCII (in, length, StandardCharsets.US_ASCII, reverse);
+    }
+
+
+    /**
+     * Reads a fixed number of bytes from an input stream and interprets it as ASCII text.
+     *
+     * @param in The stream to read from
+     * @param length The length of the text
      * @param charset The character set to use
      * @return The read text
      * @throws IOException
      */
     public static String readASCII (final DataInput in, final int length, final Charset charset) throws IOException
     {
+        return readASCII (in, length, charset, false);
+    }
+
+
+    /**
+     * Reads a fixed number of bytes from an input stream and interprets it as ASCII text.
+     *
+     * @param in The stream to read from
+     * @param length The length of the text
+     * @param charset The character set to use
+     * @param reverse Reverses the text if true
+     * @return The read text
+     * @throws IOException
+     */
+    public static String readASCII (final DataInput in, final int length, final Charset charset, final boolean reverse) throws IOException
+    {
         final byte [] buffer = new byte [length];
         in.readFully (buffer);
+        if (reverse)
+            reverseArray (buffer);
         return new String (buffer, charset);
+    }
+
+
+    /**
+     * Reverses the content of the given array.
+     *
+     * @param buffer The array
+     */
+    public static void reverseArray (final byte [] buffer)
+    {
+        for (int i = 0; i < buffer.length / 2; i++)
+        {
+            final byte temp = buffer[i];
+            buffer[i] = buffer[buffer.length - i - 1];
+            buffer[buffer.length - i - 1] = temp;
+        }
     }
 
 
@@ -218,12 +276,13 @@ public class StreamUtils
      * 20:14:19".
      *
      * @param in The stream to read from
+     * @param isBigEndian True if bytes are stored big-endian
      * @return The timestamp as a date
      * @throws IOException
      */
-    public static Date readTimestampLSB (final InputStream in) throws IOException
+    public static Date readTimestamp (final InputStream in, final boolean isBigEndian) throws IOException
     {
-        return new Date (readDoubleWordLSB (in) * 1000L);
+        return new Date (readDoubleWord (in, isBigEndian) * 1000L);
     }
 
 
@@ -232,12 +291,13 @@ public class StreamUtils
      * "22.02.2011 20:14:19".
      *
      * @param fileAccess The random access file to read from
+     * @param isBigEndian True if bytes are stored big-endian
      * @return The timestamp as a date
      * @throws IOException
      */
-    public static Date readTimestampLSB (final RandomAccessFile fileAccess) throws IOException
+    public static Date readTimestamp (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
-        return new Date (readDoubleWordLSB (fileAccess) * 1000L);
+        return new Date (readDoubleWord (fileAccess, isBigEndian) * 1000L);
     }
 
 

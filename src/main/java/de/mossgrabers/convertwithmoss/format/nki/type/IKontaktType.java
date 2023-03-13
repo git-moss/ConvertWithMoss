@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.format.nki.type;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,9 +25,8 @@ public interface IKontaktType
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
-     * @param metadataConfig Default metadata
      * @return The parsed multisample sources
      * @throws IOException
      */
-    List<IMultisampleSource> parse (File sourceFolder, File sourceFile, RandomAccessFile fileAccess, IMetadataConfig metadataConfig) throws IOException;
+    List<IMultisampleSource> parse (File sourceFolder, File sourceFile, RandomAccessFile fileAccess) throws IOException;
 }

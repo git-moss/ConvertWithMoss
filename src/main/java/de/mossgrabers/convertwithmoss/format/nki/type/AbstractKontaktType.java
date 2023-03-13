@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.nki.type;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -21,19 +22,22 @@ import java.util.zip.Inflater;
  */
 public abstract class AbstractKontaktType implements IKontaktType
 {
-    private static final int  BUFFER_SIZE_INPUT  = 1024;
-    private static final int  BUFFER_SIZE_OUTPUT = 2048;
+    private static final int        BUFFER_SIZE_INPUT  = 1024;
+    private static final int        BUFFER_SIZE_OUTPUT = 2048;
 
-    protected final INotifier notifier;
+    protected final IMetadataConfig metadataConfig;
+    protected final INotifier       notifier;
 
 
     /**
      * Constructor.
      *
+     * @param metadataConfig Default metadata
      * @param notifier Where to report errors
      */
-    protected AbstractKontaktType (final INotifier notifier)
+    protected AbstractKontaktType (final IMetadataConfig metadataConfig, final INotifier notifier)
     {
+        this.metadataConfig = metadataConfig;
         this.notifier = notifier;
     }
 

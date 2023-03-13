@@ -56,11 +56,10 @@ public class Kontakt2Type extends AbstractKontaktType
     private static final Map<Integer, String> ICON_MAP        = new HashMap<> ();
     static
     {
-        KNOWN_BLOCK_IDS.add ("2noK"); // Kontakt 2
+        KNOWN_BLOCK_IDS.add ("Kon2"); // Kontakt 2
         KNOWN_BLOCK_IDS.add ("Kon3"); // Kontakt 3
-        KNOWN_BLOCK_IDS.add ("3noK"); // Kontakt 3
-        KNOWN_BLOCK_IDS.add ("4noK"); // Kontakt 4
-        KNOWN_BLOCK_IDS.add ("iPkA"); // Akustik Piano from Kontakt 3 Library
+        KNOWN_BLOCK_IDS.add ("Kon4"); // Kontakt 4
+        KNOWN_BLOCK_IDS.add ("AkPi"); // Akustik Piano from Kontakt 3 Library
 
         ICON_MAP.put (Integer.valueOf (0x00), "Organ");
         ICON_MAP.put (Integer.valueOf (0x01), "Cello");
@@ -101,39 +100,43 @@ public class Kontakt2Type extends AbstractKontaktType
         (byte) 0x16
     };
 
+    private final boolean              isBigEndian;
     private final K2MetadataFileParser parser;
 
 
     /**
      * Constructor.
      *
+     * @param metadataConfig Default metadata
      * @param notifier Where to report errors
+     * @param isBigEndian Larger bytes are first, other wise smaller bytes are first (little-endian)
      */
-    public Kontakt2Type (final INotifier notifier)
+    public Kontakt2Type (final IMetadataConfig metadataConfig, final INotifier notifier, final boolean isBigEndian)
     {
-        super (notifier);
+        super (metadataConfig, notifier);
 
+        this.isBigEndian = isBigEndian;
         this.parser = new K2MetadataFileParser (notifier);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess) throws IOException
     {
         // The size of the ZLIB block, we do not need the info
         StreamUtils.skipNBytes (fileAccess, 4);
 
-        // No idea yet about these 8 bytes...
+        // No idea yet about these 8 bytes (they are 3 blocks 2/4/2)...
         StreamUtils.skipNBytes (fileAccess, 8);
 
         String version = readVersion (fileAccess);
 
-        final String blockID = StreamUtils.readASCII (fileAccess, 4);
+        final String blockID = StreamUtils.readASCII (fileAccess, 4, !this.isBigEndian);
         if (!KNOWN_BLOCK_IDS.contains (blockID))
             this.notifier.log ("IDS_NKI_UNKNOWN_BLOCK_ID", blockID);
 
-        final Date creation = StreamUtils.readTimestampLSB (fileAccess);
+        final Date creation = StreamUtils.readTimestamp (fileAccess, this.isBigEndian);
         final SimpleDateFormat sdf = new SimpleDateFormat ("dd.MM.yyyy HH:mm:ss", Locale.GERMAN);
         sdf.setTimeZone (TimeZone.getTimeZone ("UTC+1"));
         final String formattedCreation = sdf.format (creation);
@@ -141,7 +144,10 @@ public class Kontakt2Type extends AbstractKontaktType
         // No idea yet about these 26 bytes...
         StreamUtils.skipNBytes (fileAccess, 26);
 
-        final String iconName = ICON_MAP.get (Integer.valueOf (StreamUtils.readDoubleWordLSB (fileAccess)));
+        final Integer iconID = Integer.valueOf (StreamUtils.readDoubleWord (fileAccess, this.isBigEndian));
+        final String iconName = ICON_MAP.get (iconID);
+        if (iconName == null)
+            this.notifier.logError ("IDS_NKI_UNKNOWN_ICON_ID", iconID.toString ());
         final String author = StreamUtils.readASCII (fileAccess, 8, StandardCharsets.ISO_8859_1).trim ();
 
         // No idea yet about these 3 bytes...
@@ -161,10 +167,10 @@ public class Kontakt2Type extends AbstractKontaktType
             StreamUtils.skipNBytes (fileAccess, 12);
         }
 
-        // No idea yet about these 4 bytes... could be a checksum...
+        // Skip the checksum
         StreamUtils.skipNBytes (fileAccess, 4);
 
-        final int patchLevel = StreamUtils.readDoubleWordLSB (fileAccess);
+        final int patchLevel = StreamUtils.readDoubleWord (fileAccess, this.isBigEndian);
         if (version.endsWith ("?"))
             version = version.substring (0, version.length () - 1) + Integer.toString (patchLevel);
 
@@ -177,10 +183,10 @@ public class Kontakt2Type extends AbstractKontaktType
         // Is it a monolith?
         final boolean isMonolith = fileAccess.read () != 0x78;
         fileAccess.seek (fileAccess.getFilePointer () - 1);
-        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "2", version, isMonolith ? " - monolith" : "");
+        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "2", version, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
         final Map<String, WavSampleMetadata> monolithSamples = isMonolith ? this.readMonolith (fileAccess) : null;
 
-        return this.handleZLIB (sourceFolder, sourceFile, fileAccess, metadataConfig, formattedCreation, iconName, author, website, monolithSamples);
+        return this.handleZLIB (sourceFolder, sourceFile, fileAccess, formattedCreation, iconName, author, website, monolithSamples);
     }
 
 
@@ -190,7 +196,6 @@ public class Kontakt2Type extends AbstractKontaktType
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
-     * @param metadataConfig Default metadata
      * @param formattedCreation The formatted creation date/time
      * @param iconName The descriptive name of the icon
      * @param author The author of the multi-sample
@@ -199,7 +204,7 @@ public class Kontakt2Type extends AbstractKontaktType
      * @return All parsed multi-samples
      * @throws IOException
      */
-    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig, final String formattedCreation, final String iconName, final String author, final String website, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
+    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final String formattedCreation, final String iconName, final String author, final String website, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
     {
         final String xmlCode = readZLIB (fileAccess);
 
@@ -209,7 +214,7 @@ public class Kontakt2Type extends AbstractKontaktType
 
         try
         {
-            final List<IMultisampleSource> multiSamples = this.parser.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, monolithSamples);
+            final List<IMultisampleSource> multiSamples = this.parser.parse (sourceFolder, sourceFile, xmlCode, this.metadataConfig, monolithSamples);
             updateMetadata (multiSamples, formattedCreation, website, soundinfo);
             return multiSamples;
         }
@@ -273,7 +278,7 @@ public class Kontakt2Type extends AbstractKontaktType
      */
     private Map<String, WavSampleMetadata> readMonolith (final RandomAccessFile fileAccess) throws IOException
     {
-        final Dictionary dictionary = new Dictionary (fileAccess);
+        final Dictionary dictionary = new Dictionary (fileAccess, this.isBigEndian);
         final int nkiPointer = getNKIPointer (dictionary);
         if (nkiPointer == -1)
             throw new IOException (Functions.getMessage ("IDS_NKI_DICT_NKI_NOT_FOUND"));
@@ -449,18 +454,21 @@ public class Kontakt2Type extends AbstractKontaktType
      *         separately.
      * @throws IOException
      */
-    private static String readVersion (final DataInput in) throws IOException
+    private String readVersion (final DataInput in) throws IOException
     {
         final byte [] buffer = new byte [4];
         in.readFully (buffer);
 
+        if (!this.isBigEndian)
+            StreamUtils.reverseArray (buffer);
+
         final StringBuilder sb = new StringBuilder ();
-        for (int i = 3; i > 0; i--)
+        for (int i = 0; i < 3; i++)
             sb.append (Integer.toString (buffer[i])).append ('.');
-        if (buffer[0] == -1)
+        if (buffer[3] == -1)
             sb.append ('?');
         else
-            sb.append (String.format ("%03d", Integer.valueOf (buffer[0])));
+            sb.append (String.format ("%03d", Integer.valueOf (buffer[3])));
         return sb.toString ();
     }
 

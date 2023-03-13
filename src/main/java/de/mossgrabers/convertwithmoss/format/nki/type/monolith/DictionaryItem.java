@@ -19,6 +19,7 @@ import java.io.RandomAccessFile;
 public class DictionaryItem
 {
     private final RandomAccessFile            fileAccess;
+    private final boolean                     isBigEndian;
     private final int                         length;
     private final int                         pointer;
     private final DictionaryItemReferenceType referenceType;
@@ -30,16 +31,18 @@ public class DictionaryItem
      * Constructor.
      *
      * @param fileAccess The file to read from
+     * @param isBigEndian True if bytes are stored big-endian
      * @throws IOException An error occurred
      */
-    public DictionaryItem (final RandomAccessFile fileAccess) throws IOException
+    public DictionaryItem (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
         this.fileAccess = fileAccess;
+        this.isBigEndian = isBigEndian;
 
-        this.length = StreamUtils.readWordLSB (fileAccess);
-        this.pointer = StreamUtils.readDoubleWordLSB (fileAccess);
+        this.length = StreamUtils.readWord (fileAccess, isBigEndian);
+        this.pointer = StreamUtils.readDoubleWord (fileAccess, isBigEndian);
 
-        final int type = StreamUtils.readWordLSB (fileAccess);
+        final int type = StreamUtils.readWord (fileAccess, isBigEndian);
         if (type < 0 || type > 4)
             throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_DICT_ITEM_REF_TYPE", Integer.toString (type)));
         this.referenceType = DictionaryItemReferenceType.values ()[type];
@@ -58,7 +61,7 @@ public class DictionaryItem
         if (this.referenceType == DictionaryItemReferenceType.DICTIONARY)
         {
             this.fileAccess.seek (this.pointer);
-            this.dictionary = new Dictionary (this.fileAccess);
+            this.dictionary = new Dictionary (this.fileAccess, this.isBigEndian);
         }
     }
 

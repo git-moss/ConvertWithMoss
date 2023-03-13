@@ -25,11 +25,16 @@ import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 import java.io.File;
 import java.io.IOException;
@@ -338,8 +343,31 @@ public abstract class AbstractNKIMetadataFileParser
                 DefaultSampleMetadata sampleMetadata = null;
                 if (monolithSamples != null)
                     sampleMetadata = monolithSamples.get (sampleFile.getName ());
-                else if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                    sampleMetadata = new DefaultSampleMetadata (sampleFile);
+                else
+                {
+                    // Check the type of the source sample for compatibility and handle them
+                    // accordingly
+                    try
+                    {
+                        final AudioFileFormat.Type type = AudioSystem.getAudioFileFormat (sampleFile).getType ();
+                        if (AudioFileFormat.Type.WAVE.equals (type))
+                        {
+                            if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                                sampleMetadata = new DefaultSampleMetadata (sampleFile);
+                        }
+                        else if (AudioFileFormat.Type.AIFF.equals (type))
+                        {
+                            this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
+                            sampleMetadata = new AiffSampleMetadata (sampleFile);
+                        }
+                        else
+                            this.notifier.logError (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
+                    }
+                    catch (final UnsupportedAudioFileException | IOException ex)
+                    {
+                        this.notifier.logError (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", ex));
+                    }
+                }
                 if (sampleMetadata != null)
                     this.readMetadata (programParameters, groupParameters, groupAmpEnv, pitchBend, sampleMetadataList, zoneElement, sampleMetadata);
             }
