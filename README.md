@@ -265,6 +265,12 @@ Only stores the WAV files from the source format in a sub-folder. Use e.g. to ex
 
 # Changes
 
+## 6.1.0 (unreleased)
+
+* Native Instruments NKI files
+  * New: Added support for AIFF files (will be converted to WAV).
+  * New: Added support for reading Kontakt NKI files stored in big-endian format. But could not test with any monolith file, therefore an error is shown.
+
 ## 6.0.0
 
 * New: Added option to rename multi-samples (thanks to Philip Stolz).

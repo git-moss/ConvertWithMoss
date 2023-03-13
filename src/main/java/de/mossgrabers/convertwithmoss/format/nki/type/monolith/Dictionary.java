@@ -36,10 +36,14 @@ public class Dictionary
      * Constructor.
      *
      * @param fileAccess The file to read from
+     * @param isBigEndian True if bytes are stored big-endian
      * @throws IOException An error occurred
      */
-    public Dictionary (final RandomAccessFile fileAccess) throws IOException
+    public Dictionary (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
+        if (isBigEndian)
+            throw new IOException (Functions.getMessage ("IDS_NKI_ERR_MONOLITH_BIG_ENDIAN_NOT_SUPPORTED"));
+
         final byte [] dictionaryHeader = StreamUtils.readNBytes (fileAccess, 22);
         if (Arrays.compare (dictionaryHeader, 0, 4, DICTIONARY_HEADER_ID, 0, 4) != 0)
             throw new IOException (Functions.getMessage ("IDS_ERR_FILE_CORRUPTED"));
@@ -47,7 +51,7 @@ public class Dictionary
         // Read all dictionary items
         final int numSubBlocks = dictionaryHeader[14];
         for (int i = 0; i < numSubBlocks; i++)
-            this.items.add (new DictionaryItem (fileAccess));
+            this.items.add (new DictionaryItem (fileAccess, isBigEndian));
 
         // Follow the references (needs to be here since it moves the file pointer)
         for (final DictionaryItem item: this.items)

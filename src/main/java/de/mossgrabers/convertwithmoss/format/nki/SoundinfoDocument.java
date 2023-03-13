@@ -43,7 +43,8 @@ public class SoundinfoDocument
     public SoundinfoDocument (final String author, final String category)
     {
         this.author = author;
-        this.categories.add (category);
+        if (category != null)
+            this.categories.add (category);
     }
 
 

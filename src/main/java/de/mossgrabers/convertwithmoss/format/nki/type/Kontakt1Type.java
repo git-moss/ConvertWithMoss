@@ -32,11 +32,12 @@ public class Kontakt1Type extends AbstractKontaktType
     /**
      * Constructor.
      *
+     * @param metadataConfig Default metadata
      * @param notifier Where to report errors
      */
-    public Kontakt1Type (final INotifier notifier)
+    public Kontakt1Type (final IMetadataConfig metadataConfig, final INotifier notifier)
     {
-        super (notifier);
+        super (metadataConfig, notifier);
 
         this.parser = new NiSSMetadataFileParser (notifier);
     }
@@ -44,19 +45,19 @@ public class Kontakt1Type extends AbstractKontaktType
 
     /** {@inheritDoc} */
     @Override
-    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess) throws IOException
     {
         this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE_1");
 
         // Read the offset to the ZLIB part, 8 bytes have already been read
-        final int offset = StreamUtils.readDoubleWordLSB (fileAccess) - 8;
+        final int offset = StreamUtils.readDoubleWord (fileAccess, false) - 8;
         if (fileAccess.skipBytes (offset) != offset)
             throw new IOException (Functions.getMessage ("IDS_ERR_FILE_CORRUPTED"));
 
         try
         {
             final String xmlCode = readZLIB (fileAccess);
-            return this.parser.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, null);
+            return this.parser.parse (sourceFolder, sourceFile, xmlCode, this.metadataConfig, null);
         }
         catch (final UnsupportedEncodingException ex)
         {

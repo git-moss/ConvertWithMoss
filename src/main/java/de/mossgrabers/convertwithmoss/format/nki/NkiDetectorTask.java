@@ -33,11 +33,13 @@ import java.util.function.Consumer;
  */
 public class NkiDetectorTask extends AbstractDetectorTask
 {
-    private static final Integer             ID_KONTAKT1          = Integer.valueOf (0x5EE56EB3);
-    private static final Integer             ID_KONTAKT2          = Integer.valueOf (0x1290A87F);
-    private static final Integer             ID_KONTAKT5_MONOLITH = Integer.valueOf (0x2F5C204E);
+    private static final Integer             ID_KONTAKT1               = Integer.valueOf (0x5EE56EB3);
+    private static final Integer             ID_KONTAKT2_LITTLE_ENDIAN = Integer.valueOf (0x1290A87F);
+    private static final Integer             ID_KONTAKT2_BIG_ENDIAN    = Integer.valueOf (0x7FA89012);
 
-    private final Map<Integer, IKontaktType> kontaktTypes         = new HashMap<> (2);
+    private static final Integer             ID_KONTAKT5_MONOLITH      = Integer.valueOf (0x2F5C204E);
+
+    private final Map<Integer, IKontaktType> kontaktTypes              = new HashMap<> (2);
 
 
     /**
@@ -52,8 +54,9 @@ public class NkiDetectorTask extends AbstractDetectorTask
     {
         super (notifier, consumer, sourceFolder, metadata, ".nki");
 
-        this.kontaktTypes.put (ID_KONTAKT1, new Kontakt1Type (notifier));
-        this.kontaktTypes.put (ID_KONTAKT2, new Kontakt2Type (notifier));
+        this.kontaktTypes.put (ID_KONTAKT1, new Kontakt1Type (metadata, notifier));
+        this.kontaktTypes.put (ID_KONTAKT2_LITTLE_ENDIAN, new Kontakt2Type (metadata, notifier, false));
+        this.kontaktTypes.put (ID_KONTAKT2_BIG_ENDIAN, new Kontakt2Type (metadata, notifier, true));
     }
 
 
@@ -85,7 +88,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
             final IKontaktType kontaktType = this.kontaktTypes.get (Integer.valueOf (typeID));
             if (kontaktType == null)
                 throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_FILE_ID", Integer.toHexString (typeID).toUpperCase ()));
-            final List<IMultisampleSource> result = kontaktType.parse (this.sourceFolder, sourceFile, fileAccess, this.metadata);
+            final List<IMultisampleSource> result = kontaktType.parse (this.sourceFolder, sourceFile, fileAccess);
             if (result.isEmpty ())
                 this.notifier.logError ("IDS_NKI_COULD_NOT_DETECT_LAYERS");
             return result;
