@@ -6,6 +6,7 @@ import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -22,7 +23,7 @@ import java.util.Date;
 public class StreamUtils
 {
     /**
-     * Reads and converts 4 bytes to an unsigned integer with least significant bytes first.
+     * Reads and converts 4 bytes to an unsigned integer.
      *
      * @param in The input stream
      * @param isBigEndian True if bytes are stored big-endian
@@ -41,6 +42,35 @@ public class StreamUtils
         if (isBigEndian)
             return (ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4;
         return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1;
+    }
+
+
+    /**
+     * Writes an integer as 4 bytes.
+     *
+     * @param out The output stream
+     * @param value The value to write
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian (least
+     *            significant bytes first)
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static void writeDoubleWord (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    {
+        if (isBigEndian)
+        {
+            out.write ((value >> 24) & 0xFF);
+            out.write ((value >> 16) & 0xFF);
+            out.write ((value >> 8) & 0xFF);
+            out.write (value & 0xFF);
+        }
+        else
+        {
+            out.write (value & 0xFF);
+            out.write ((value >> 8) & 0xFF);
+            out.write ((value >> 16) & 0xFF);
+            out.write ((value >> 24) & 0xFF);
+        }
     }
 
 
@@ -85,6 +115,31 @@ public class StreamUtils
         if (isBigEndian)
             return (ch1 << 8) + ch2;
         return (ch2 << 8) + ch1;
+    }
+
+
+    /**
+     * Writes an integer as 2 bytes.
+     *
+     * @param out The output stream
+     * @param value The value to write
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian (least
+     *            significant bytes first)
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static void writeWord (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    {
+        if (isBigEndian)
+        {
+            out.write ((value >> 8) & 0xFF);
+            out.write (value & 0xFF);
+        }
+        else
+        {
+            out.write (value & 0xFF);
+            out.write ((value >> 8) & 0xFF);
+        }
     }
 
 

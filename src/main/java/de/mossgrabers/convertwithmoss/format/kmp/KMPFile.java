@@ -312,7 +312,6 @@ public class KMPFile
         this.writeParameterChunk3 (out);
 
         this.writeKSFFiles (folder);
-
     }
 
 
@@ -431,7 +430,7 @@ public class KMPFile
                 KSFFile.write (sample, i, out);
 
                 this.notifier.log ("IDS_NOTIFY_PROGRESS");
-                if (i % 80 == 0)
+                if (i > 0 && i % 80 == 0)
                     this.notifier.log ("IDS_NOTIFY_LINE_FEED");
             }
             catch (final ParseException | CompressionNotSupportedException ex)

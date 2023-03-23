@@ -75,7 +75,7 @@ public class MPCKeygroupCreator extends AbstractCreator
      */
     public MPCKeygroupCreator (final INotifier notifier)
     {
-        super ("MPC Keygroup", notifier);
+        super ("Akai MPC Keygroup", notifier);
     }
 
 
@@ -213,7 +213,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         programElement.appendChild (document.createElement (MPCKeygroupTag.PROGRAM_PADS + APP_VERSION));
 
         // Pitchbend 2 semitones up/down
-        final List<IVelocityLayer> layers = getNonEmptyLayers (multisampleSource.getLayers (), false);
+        final List<IVelocityLayer> layers = multisampleSource.getNonEmptyLayers (false);
         if (!layers.isEmpty ())
         {
             final int bendUp = Math.abs (layers.get (0).getSampleMetadata ().get (0).getBendUp ());

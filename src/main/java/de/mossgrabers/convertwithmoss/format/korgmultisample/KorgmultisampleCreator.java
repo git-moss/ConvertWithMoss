@@ -37,7 +37,7 @@ public class KorgmultisampleCreator extends AbstractCreator
      */
     public KorgmultisampleCreator (final INotifier notifier)
     {
-        super ("wavestate/modwave", notifier);
+        super ("Korg Wavestate/Modwave", notifier);
     }
 
 
@@ -57,7 +57,7 @@ public class KorgmultisampleCreator extends AbstractCreator
 
         // Korg multisample format supports only 1 multi sample layer. Therefore create 1 output
         // file for each layer
-        final List<IVelocityLayer> layers = getNonEmptyLayers (multisampleSource.getLayers (), true);
+        final List<IVelocityLayer> layers = multisampleSource.getNonEmptyLayers (true);
         final int size = layers.size ();
         for (int i = 0; i < size; i++)
         {

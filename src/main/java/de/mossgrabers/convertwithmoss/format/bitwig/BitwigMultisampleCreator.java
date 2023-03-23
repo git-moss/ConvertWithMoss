@@ -102,7 +102,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         for (final String keyword: multisampleSource.getKeywords ())
             XMLUtils.addTextElement (document, keywordsElement, "keyword", keyword);
 
-        final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers (), true);
+        final List<IVelocityLayer> velocityLayers = multisampleSource.getNonEmptyLayers (true);
         for (final IVelocityLayer layer: velocityLayers)
         {
             final String name = layer.getName ();

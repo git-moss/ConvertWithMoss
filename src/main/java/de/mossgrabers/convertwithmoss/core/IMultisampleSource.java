@@ -60,6 +60,15 @@ public interface IMultisampleSource
 
 
     /**
+     * Get only the layers which do contain at least one sample.
+     *
+     * @param filterReleaseTriggers Removes all layers which do only contain release triggers
+     * @return The layer without empty ones
+     */
+    List<IVelocityLayer> getNonEmptyLayers (final boolean filterReleaseTriggers);
+
+
+    /**
      * Get the name of the multi sample.
      *
      * @return The name

@@ -224,7 +224,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // No metadata at all
 
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
-        final List<IVelocityLayer> velocityLayers = getNonEmptyLayers (multisampleSource.getLayers (), false);
+        final List<IVelocityLayer> velocityLayers = multisampleSource.getNonEmptyLayers (false);
 
         boolean hasRoundRobin = false;
 

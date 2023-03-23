@@ -20,14 +20,14 @@ import java.util.Map;
  * @author J&uuml;rgen Mo&szlig;graber
  * @author Philip Stolz
  */
-public class NiSSMetadataFileParser extends AbstractNKIMetadataFileParser
+public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
 {
     /**
      * Constructor.
      *
      * @param notifier Where to report errors
      */
-    public NiSSMetadataFileParser (final INotifier notifier)
+    public NiSSMetadataFileHandler (final INotifier notifier)
     {
         super (new NiSSTag (), notifier);
     }

@@ -10,7 +10,6 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -358,10 +357,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multisample
+     * @return The written files
      * @throws IOException Could not store the samples
      */
-    protected void writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        final List<File> writtenFiles = new ArrayList<> ();
+
         int outputCount = 0;
         for (final IVelocityLayer layer: multisampleSource.getLayers ())
         {
@@ -370,7 +372,8 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 final Optional<String> filename = info.getUpdatedFilename ();
                 if (filename.isEmpty ())
                     continue;
-                try (final FileOutputStream fos = new FileOutputStream (new File (sampleFolder, filename.get ())))
+                final File file = new File (sampleFolder, filename.get ());
+                try (final FileOutputStream fos = new FileOutputStream (file))
                 {
                     this.notifier.log ("IDS_NOTIFY_PROGRESS");
                     outputCount++;
@@ -379,43 +382,11 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
                     info.writeSample (fos);
                 }
+                writtenFiles.add (file);
             }
         }
-    }
 
-
-    /**
-     * Removes all layers which do not contain any samples.
-     *
-     * @param layers The layers to check
-     * @param filterReleaseTriggers Removes all layers which do only contain release triggers
-     * @return The layer without empty ones
-     */
-    protected static List<IVelocityLayer> getNonEmptyLayers (final List<IVelocityLayer> layers, final boolean filterReleaseTriggers)
-    {
-        final List<IVelocityLayer> cleanedLayers = new ArrayList<> ();
-        for (final IVelocityLayer layer: layers)
-        {
-            final List<ISampleMetadata> sampleMetadata = layer.getSampleMetadata ();
-            if (sampleMetadata.isEmpty ())
-                continue;
-
-            if (filterReleaseTriggers)
-            {
-                // There needs to be at least one sample with a normal attack trigger
-                for (final ISampleMetadata sample: sampleMetadata)
-                {
-                    if (sample.getTrigger () != TriggerType.RELEASE)
-                    {
-                        cleanedLayers.add (layer);
-                        break;
-                    }
-                }
-            }
-            else
-                cleanedLayers.add (layer);
-        }
-        return cleanedLayers;
+        return writtenFiles;
     }
 
 

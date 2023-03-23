@@ -25,7 +25,7 @@ import java.util.Map;
  * @author J&uuml;rgen Mo&szlig;graber
  * @author Philip Stolz
  */
-public class K2MetadataFileParser extends AbstractNKIMetadataFileParser
+public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
 {
     private enum SmpFNameParsingState
     {
@@ -43,7 +43,7 @@ public class K2MetadataFileParser extends AbstractNKIMetadataFileParser
      *
      * @param notifier Where to report errors
      */
-    public K2MetadataFileParser (final INotifier notifier)
+    public K2MetadataFileHandler (final INotifier notifier)
     {
         super (new K2Tag (), notifier);
     }

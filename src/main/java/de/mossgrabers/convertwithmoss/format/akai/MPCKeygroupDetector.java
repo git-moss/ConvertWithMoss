@@ -26,7 +26,7 @@ public class MPCKeygroupDetector extends AbstractDetectorWithMetadataPane<MPCKey
      */
     public MPCKeygroupDetector (final INotifier notifier)
     {
-        super ("MPC Keygroup", notifier, "MPC");
+        super ("Akai MPC Keygroup", notifier, "MPC");
     }
 
 

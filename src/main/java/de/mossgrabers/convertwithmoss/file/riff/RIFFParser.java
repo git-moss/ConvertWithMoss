@@ -157,7 +157,7 @@ public class RIFFParser
                     this.parseLocalChunk (chunk, id);
                 else
                 {
-                    final ParseException pex = new ParseException ("Invalid Chunk: \"" + id + "\" at offset:" + idscan);
+                    final ParseException pex = new ParseException ("Invalid Chunk: \"" + RiffID.toASCII (id) + "\" (" + id + ") at offset:" + idscan);
                     chunk.setParserMessage (pex.getMessage ());
                     throw pex;
                 }
@@ -220,7 +220,7 @@ public class RIFFParser
                     else
                     {
                         this.parseGarbage (chunk, id, finish - this.getPosition (this.in));
-                        final ParseException pex = new ParseException ("Invalid Chunk: \"" + id + "\" at offset:" + idscan);
+                        final ParseException pex = new ParseException ("Invalid Chunk: \"" + RiffID.toASCII (id) + "\" (" + id + ") at offset:" + idscan);
                         chunk.setParserMessage (pex.getMessage ());
                     }
 
