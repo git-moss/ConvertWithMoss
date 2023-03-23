@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.convertwithmoss.format.nki.K2MetadataFileParser;
+import de.mossgrabers.convertwithmoss.format.nki.K2MetadataFileHandler;
 import de.mossgrabers.convertwithmoss.format.nki.SoundinfoDocument;
 import de.mossgrabers.convertwithmoss.format.nki.type.monolith.Dictionary;
 import de.mossgrabers.convertwithmoss.format.nki.type.monolith.DictionaryItem;
@@ -21,10 +21,12 @@ import de.mossgrabers.tools.ui.Functions;
 
 import org.xml.sax.SAXException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.nio.channels.Channels;
@@ -60,6 +62,7 @@ public class Kontakt2Type extends AbstractKontaktType
         KNOWN_BLOCK_IDS.add ("Kon3"); // Kontakt 3
         KNOWN_BLOCK_IDS.add ("Kon4"); // Kontakt 4
         KNOWN_BLOCK_IDS.add ("AkPi"); // Akustik Piano from Kontakt 3 Library
+        KNOWN_BLOCK_IDS.add ("ElPi"); // Elektrik Piano from Kontakt 3 Library
 
         ICON_MAP.put (Integer.valueOf (0x00), "Organ");
         ICON_MAP.put (Integer.valueOf (0x01), "Cello");
@@ -92,7 +95,7 @@ public class Kontakt2Type extends AbstractKontaktType
         ICON_MAP.put (Integer.valueOf (0x1C), "New");
     }
 
-    private static final byte []       SAMPLE_DATA_HEADER_ID =
+    private static final byte []        SAMPLE_DATA_HEADER_ID =
     {
         (byte) 0x0A,
         (byte) 0xF8,
@@ -100,8 +103,8 @@ public class Kontakt2Type extends AbstractKontaktType
         (byte) 0x16
     };
 
-    private final boolean              isBigEndian;
-    private final K2MetadataFileParser parser;
+    private final boolean               isBigEndian;
+    private final K2MetadataFileHandler handler;
 
 
     /**
@@ -116,13 +119,13 @@ public class Kontakt2Type extends AbstractKontaktType
         super (metadataConfig, notifier);
 
         this.isBigEndian = isBigEndian;
-        this.parser = new K2MetadataFileParser (notifier);
+        this.handler = new K2MetadataFileHandler (notifier);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess) throws IOException
+    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess) throws IOException
     {
         // The size of the ZLIB block, we do not need the info
         StreamUtils.skipNBytes (fileAccess, 4);
@@ -176,6 +179,23 @@ public class Kontakt2Type extends AbstractKontaktType
 
         if (isFourDotTwo)
         {
+            fileAccess.skipBytes (110);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream ();
+
+            int value;
+            int count = 0;
+            while ((value = fileAccess.read ()) != -1)
+            {
+                if (count % 16 == 0)
+                    System.out.println ("");
+
+                System.out.print (String.format ("%02X ", value));
+                out.write (value);
+
+                count++;
+            }
+
             this.notifier.logError ("IDS_NKI_KONTAKT422_NOT_SUPPORTED");
             return Collections.emptyList ();
         }
@@ -186,7 +206,17 @@ public class Kontakt2Type extends AbstractKontaktType
         this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "2", version, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
         final Map<String, WavSampleMetadata> monolithSamples = isMonolith ? this.readMonolith (fileAccess) : null;
 
-        return this.handleZLIB (sourceFolder, sourceFile, fileAccess, formattedCreation, iconName, author, website, monolithSamples);
+        final List<IMultisampleSource> multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples);
+        this.handleSoundinfo (sourceFile, fileAccess, multiSamples, formattedCreation, iconName, author, website);
+        return multiSamples;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
+    {
+        // TODO Implement storing a NKI
     }
 
 
@@ -196,27 +226,17 @@ public class Kontakt2Type extends AbstractKontaktType
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
-     * @param formattedCreation The formatted creation date/time
-     * @param iconName The descriptive name of the icon
-     * @param author The author of the multi-sample
-     * @param website The web site of the author
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return All parsed multi-samples
      * @throws IOException
      */
-    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final String formattedCreation, final String iconName, final String author, final String website, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
+    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
     {
         final String xmlCode = readZLIB (fileAccess);
 
-        // Read the sound info block after the ZLIB block
-        final int numOfPendingbytes = (int) (sourceFile.length () - fileAccess.getFilePointer ());
-        final SoundinfoDocument soundinfo = this.readSoundinfo (fileAccess, numOfPendingbytes, iconName, author);
-
         try
         {
-            final List<IMultisampleSource> multiSamples = this.parser.parse (sourceFolder, sourceFile, xmlCode, this.metadataConfig, monolithSamples);
-            updateMetadata (multiSamples, formattedCreation, website, soundinfo);
-            return multiSamples;
+            return this.handler.parse (sourceFolder, sourceFile, xmlCode, this.metadataConfig, monolithSamples);
         }
         catch (final UnsupportedEncodingException ex)
         {
@@ -228,6 +248,33 @@ public class Kontakt2Type extends AbstractKontaktType
         }
 
         return Collections.emptyList ();
+    }
+
+
+    /**
+     * Read the sound info block after the ZLIB block.
+     *
+     * @param sourceFile The source file which contains the XML document
+     * @param fileAccess The random access file to read from
+     * @param multiSamples
+     * @param formattedCreation The formatted creation date/time
+     * @param iconName The descriptive name of the icon
+     * @param author The author of the multi-sample
+     * @param website The web site of the author
+     */
+    private void handleSoundinfo (final File sourceFile, final RandomAccessFile fileAccess, final List<IMultisampleSource> multiSamples, final String formattedCreation, final String iconName, final String author, final String website)
+    {
+        try
+        {
+            final int numOfPendingbytes = (int) (sourceFile.length () - fileAccess.getFilePointer ());
+            final SoundinfoDocument soundinfo = this.readSoundinfo (fileAccess, numOfPendingbytes, iconName, author);
+            updateMetadata (multiSamples, formattedCreation, website, soundinfo);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+        }
+
     }
 
 

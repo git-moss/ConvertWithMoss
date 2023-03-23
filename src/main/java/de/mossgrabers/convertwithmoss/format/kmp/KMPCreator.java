@@ -31,7 +31,7 @@ public class KMPCreator extends AbstractCreator
      */
     public KMPCreator (final INotifier notifier)
     {
-        super ("KMP/KSF", notifier);
+        super ("Korg KMP/KSF", notifier);
     }
 
 
@@ -49,17 +49,30 @@ public class KMPCreator extends AbstractCreator
             return;
         }
 
-        // Korg KMP format supports only 1 multi sample layer. Therefore create 1 output
+        // Korg KMP format supports only 1 velocity layer. Therefore, create 1 output
         // file for each layer
-        final List<IVelocityLayer> layers = getNonEmptyLayers (multisampleSource.getLayers (), true);
+        final List<IVelocityLayer> layers = multisampleSource.getNonEmptyLayers (true);
         final int size = layers.size ();
+        boolean needsSubDir = size > 1;
         for (int i = 0; i < size; i++)
         {
             final IVelocityLayer layer = layers.get (i);
             final ISampleMetadata sampleMetadata = layer.getSampleMetadata ().get (0);
             final String layerName = size > 1 ? String.format ("%d-%s", Integer.valueOf (sampleMetadata.getVelocityHigh ()), sampleName) : sampleName;
             final String dosFileName = createDOSFileName (layerName) + ".KMP";
-            final File multiFile = new File (subFolder, dosFileName);
+            final File layerSubFolder;
+            if (needsSubDir)
+            {
+                layerSubFolder = new File (subFolder, dosFileName);
+                if (!layerSubFolder.exists () && !layerSubFolder.mkdirs ())
+                {
+                    this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", layerSubFolder.getAbsolutePath ());
+                    return;
+                }
+            }
+            else
+                layerSubFolder = subFolder;
+            final File multiFile = new File (layerSubFolder, dosFileName);
             if (multiFile.exists ())
             {
                 this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
@@ -68,9 +81,9 @@ public class KMPCreator extends AbstractCreator
 
             this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
             this.storeMultisample (multiFile, dosFileName, layerName, layer);
-        }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+            this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        }
     }
 
 
