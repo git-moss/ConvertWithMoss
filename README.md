@@ -3,15 +3,13 @@
 Converts multisamples in a specific source format to a different destination format.
 Furthermore, it can create multisample files from plain WAV files.
 
-The conversion process reads and write metadata (name, category, creator,
+The conversion process reads and writes metadata (name, category, creator,
 description and keywords) if supported by the format. If the source format
 does not support the information a guessing algorithm is applied to the name.
 
-Furthermore, samples can be grouped in velocity layers and key ranges. Each sample
-can have 1 or no loop and parameters for pitch and different playback parameters.
-
-The converter does not support any sophisticated synthesizer parameters like
-envelopes, filters or modulation.
+Furthermore, samples can be grouped into velocity layers and key ranges. Each 
+sample can have 1 or no loop and parameters for pitch and different playback 
+parameters.
 
 ## Supported formats
 
