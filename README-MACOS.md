@@ -1,8 +1,8 @@
 # macOS
 
-## IMPORTANT: Mojave and later
+## Mojave and later
 
-Mojave prevents now software to run which is not authorized by Apple.
+Mojave prevents software to be run which is not authorized by Apple.
 But instead of telling you so, you get an error that the files are corrupted
 (so, your OS is lying to you now...).
 
