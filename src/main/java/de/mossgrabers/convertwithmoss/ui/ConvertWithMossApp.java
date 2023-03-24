@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.nki.NkiCreator;
 import de.mossgrabers.convertwithmoss.format.nki.NkiDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
@@ -126,26 +127,27 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.detectors = new IDetector []
         {
-            new WavDetector (this),
+            new MPCKeygroupDetector (this),
             new BitwigMultisampleDetector (this),
-            new SfzDetector (this),
-            new Sf2Detector (this),
             new DecentSamplerDetector (this),
             new NkiDetector (this),
-            new MPCKeygroupDetector (this),
+            new KMPDetector (this),
             new KorgmultisampleDetector (this),
-            new KMPDetector (this)
+            new SfzDetector (this),
+            new Sf2Detector (this),
+            new WavDetector (this)
         };
 
         this.creators = new ICreator []
         {
-            new WavCreator (this),
-            new BitwigMultisampleCreator (this),
-            new SfzCreator (this),
-            new DecentSamplerCreator (this),
             new MPCKeygroupCreator (this),
+            new BitwigMultisampleCreator (this),
+            new DecentSamplerCreator (this),
+            new NkiCreator (this),
+            new KMPCreator (this),
             new KorgmultisampleCreator (this),
-            new KMPCreator (this)
+            new SfzCreator (this),
+            new WavCreator (this)
         };
     }
 

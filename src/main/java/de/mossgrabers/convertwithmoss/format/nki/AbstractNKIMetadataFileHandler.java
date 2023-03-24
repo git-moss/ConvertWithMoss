@@ -35,6 +35,8 @@ import org.xml.sax.SAXException;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +47,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -53,9 +56,71 @@ import java.util.Map;
  * @author J&uuml;rgen Mo&szlig;graber
  * @author Philip Stolz
  */
-public abstract class AbstractNKIMetadataFileParser
+public abstract class AbstractNKIMetadataFileHandler
 {
-    private static final String               NULL_ENTRY = "(null)";
+    private static final String               GLOBAL_XML_PROPERTIES = """
+            <Parameters>
+                  <V name="midiChannel" value="0"/>
+                  <V name="output" value="0"/>
+                  <V name="transpose" value="0"/>
+                  <V name="masterVolume" value="0.5"/>
+                  <V name="masterPan" value="0.5"/>
+                  <V name="masterTune" value="1"/>
+                  <V name="lowVelocity" value="1"/>
+                  <V name="highVelocity" value="127"/>
+                  <V name="lowKey" value="0"/>
+                  <V name="highKey" value="127"/>
+                  <V name="fingerPrint" value="256"/>
+                  <V name="activeGroupIdx" value="0"/>
+                  <V name="inputQuantizeMode" value="off"/>
+                  <V name="inputQuantizeNoteValue" value="1"/>
+                  <V name="muteMode" value="none"/>
+                  <V name="songTempo" value="0"/>
+                </Parameters>
+                <Polyphony>
+                  <VoiceGroup index="0" version="0.60">
+                    <V name="name" value="&lt;instrument>"/>
+                    <V name="mode" value="kill_oldest"/>
+                    <V name="preferReleased" value="yes"/>
+                    <V name="maxNumVoices" value="128"/>
+                    <V name="msFadeTime" value="10"/>
+                    <V name="exclusionGroup" value="-1"/>
+                  </VoiceGroup>
+                </Polyphony>
+                <FXDelay version="0.50"/>
+                <FXChorus version="0.50"/>
+                <FXFlanger version="0.50"/>
+                <FXPhaser version="0.50"/>
+                <FXReverb version="0.50"/>
+                <FXCompressor version="0.60"/>
+                <FXInverter version="0.60"/>
+                <FXLoFi version="0.60"/>
+                <FXShaper version="0.60"/>
+                <FXStereo version="0.70"/>
+                <FXFilter version="0.60"/>
+                <FXDistortion version="0.60"/>""";
+
+    private static final String               GROUP_XML_PROPERTIES  = """
+            <Parameters>
+                  <V name="volume" value="1.0"/>
+                  <V name="pan" value="0.5"/>
+                  <V name="tune" value="1.0"/>
+                  <V name="keyTracking" value="yes"/>
+                  <V name="reverse" value="no"/>
+                  <V name="releaseTrigger" value="no"/>
+                  <V name="releaseTriggerNoteMonophonic" value="no"/>
+                  <V name="m_bMuted" value="no"/>
+                  <V name="m_bSolo" value="no"/>
+                  <V name="m_iRow" value="-1"/>
+                  <V name="m_iCol" value="-1"/>
+                  <V name="rlsTrigCounter" value="0"/>
+                  <V name="output" value="0"/>
+                  <V name="midiChannel" value="0"/>
+                  <V name="voiceGroup" value="-1"/>
+                  <V name="selectedForEdit" value="yes"/>
+                </Parameters>""";
+
+    private static final String               NULL_ENTRY            = "(null)";
 
     protected final AbstractTagsAndAttributes tags;
 
@@ -68,7 +133,7 @@ public abstract class AbstractNKIMetadataFileParser
      * @param tags the format specific tags
      * @param notifier Where to report errors
      */
-    protected AbstractNKIMetadataFileParser (final AbstractTagsAndAttributes tags, final INotifier notifier)
+    protected AbstractNKIMetadataFileHandler (final AbstractTagsAndAttributes tags, final INotifier notifier)
     {
         this.tags = tags;
         this.notifier = notifier;
@@ -131,6 +196,111 @@ public abstract class AbstractNKIMetadataFileParser
         {
             throw new IOException (ex);
         }
+    }
+
+
+    /**
+     * Creates a metadata description file.
+     *
+     * @param multisampleSource The multisample source
+     * @return The XML document as a text
+     */
+    public Optional<String> create (final IMultisampleSource multisampleSource)
+    {
+        try
+        {
+            final Document document = XMLUtils.newDocument ();
+            document.setXmlStandalone (true);
+
+            final Element programElement = document.createElement (this.tags.program ());
+            document.appendChild (programElement);
+            programElement.setAttribute ("index", "0");
+            programElement.setAttribute (this.tags.programName (), multisampleSource.getName ());
+            programElement.setAttribute ("version", "0.5");
+
+            // TODO for K2
+            // final String author = programParameters.get ("instrumentAuthor");
+            // multisampleSource.setCreator (author);
+            // final String description = programParameters.get ("instrumentCredits");
+            // multisampleSource.setDescription (description);
+
+            final Element parametersElement = XMLUtils.addElement (document, programElement, this.tags.parameters ());
+            // final Element parametersElement = XMLUtils.addElement (document, programElement,
+            // this.tags.po);
+            final Element groupsElement = XMLUtils.addElement (document, programElement, this.tags.groups ());
+            final Element zonesElement = XMLUtils.addElement (document, programElement, this.tags.zones ());
+
+            // Add all layers
+            final List<IVelocityLayer> velocityLayers = multisampleSource.getNonEmptyLayers (false);
+            for (int i = 0; i < velocityLayers.size (); i++)
+            {
+                final IVelocityLayer layer = velocityLayers.get (i);
+
+                final Element groupElement = XMLUtils.addElement (document, groupsElement, this.tags.group ());
+                groupElement.setAttribute (this.tags.indexAttribute (), Integer.toString (i));
+                final String name = layer.getName ();
+                if (name != null && !name.isBlank ())
+                    groupElement.setAttribute (this.tags.groupNameAttribute (), name);
+                groupElement.setAttribute ("version", "0.60");
+
+                XMLUtils.addElement (document, groupElement, "GROUP_PARAMETERS");
+
+                // if (hasRoundRobin)
+                // {
+                // groupElement.setAttribute (DecentSamplerTag.SEQ_POSITION, Integer.toString
+                // (this.seqPosition));
+                // this.seqPosition++;
+                // }
+
+                // final TriggerType triggerType = layer.getTrigger ();
+                // if (triggerType != TriggerType.ATTACK)
+                // groupElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name
+                // ().toLowerCase (Locale.ENGLISH));
+                //
+                // -> from Reader:
+                // velocityLayer.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
+
+                // final IEnvelope groupAmpEnv = this.readGroupAmpEnv (groupElement);
+                // final int pitchBend = this.readGroupPitchBend (groupElement);
+
+                // final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
+
+                for (final ISampleMetadata sample: layer.getSampleMetadata ())
+                {
+                    // this.createSample (document, folderName, groupElement, sample);
+                }
+            }
+
+            String text = XMLUtils.toString (document).replace (" encoding=\"UTF-8\"", "").replace ("<Parameters/>", GLOBAL_XML_PROPERTIES);
+            text = text.replace ("<GROUP_PARAMETERS/>", GROUP_XML_PROPERTIES);
+
+            System.out.println (text);
+
+            return Optional.of (text);
+        }
+        catch (final ParserConfigurationException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_PARSER", ex);
+            return Optional.empty ();
+        }
+        catch (final TransformerException ex)
+        {
+            this.notifier.logError (ex);
+            return Optional.empty ();
+        }
+
+        // TODO Fake it till we make it!
+        // try
+        // {
+        // return Files.readString (new File
+        // ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\1\\TEST\\Synth1982_-_01.txt").toPath
+        // ());
+        // }
+        // catch (IOException ex)
+        // {
+        // // TODO Auto-generated catch block
+        // ex.printStackTrace ();
+        // }
     }
 
 
@@ -392,18 +562,18 @@ public abstract class AbstractNKIMetadataFileParser
         final Map<String, String> zoneParameters = this.readParameters (zoneElement);
         try
         {
-            sampleMetadata.setKeyRoot (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.rootKeyParam ()));
-            sampleMetadata.setKeyLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.lowKeyParam ()));
-            sampleMetadata.setKeyHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.highKeyParam ()));
-            sampleMetadata.setVelocityLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.lowVelocityParam ()));
-            sampleMetadata.setVelocityHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.highVelocityParam ()));
-            sampleMetadata.setNoteCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeLowParam ()));
-            sampleMetadata.setNoteCrossfadeHigh (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeHighParam ()));
-            sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeLowVelParam ()));
-            sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.fadeHighVelParam ()));
+            sampleMetadata.setKeyRoot (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.rootKeyParam ()));
+            sampleMetadata.setKeyLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.lowKeyParam ()));
+            sampleMetadata.setKeyHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.highKeyParam ()));
+            sampleMetadata.setVelocityLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.lowVelocityParam ()));
+            sampleMetadata.setVelocityHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.highVelocityParam ()));
+            sampleMetadata.setNoteCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeLowParam ()));
+            sampleMetadata.setNoteCrossfadeHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighParam ()));
+            sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeLowVelParam ()));
+            sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighVelParam ()));
 
-            final int sampleStart = AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.sampleStartParam ());
-            final int sampleEnd = AbstractNKIMetadataFileParser.getInt (zoneParameters, this.tags.sampleEndParam ());
+            final int sampleStart = AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.sampleStartParam ());
+            final int sampleEnd = AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.sampleEndParam ());
 
             if (sampleEnd > sampleStart)
             {
@@ -411,23 +581,23 @@ public abstract class AbstractNKIMetadataFileParser
                 sampleMetadata.setStop (sampleEnd);
             }
 
-            final String keyTracking = AbstractNKIMetadataFileParser.getString (groupParameters, this.tags.keyTrackingParam ());
+            final String keyTracking = AbstractNKIMetadataFileHandler.getString (groupParameters, this.tags.keyTrackingParam ());
             final double keyTrackingValue = keyTracking.equals (this.tags.yes ()) ? 1.0d : 0.0d;
             sampleMetadata.setKeyTracking (keyTrackingValue);
 
-            final double zoneVol = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zoneVolParam ());
-            final double groupVol = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupVolParam ());
-            final double progVol = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progVolParam ());
+            final double zoneVol = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneVolParam ());
+            final double groupVol = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupVolParam ());
+            final double progVol = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progVolParam ());
             sampleMetadata.setGain (20.0d * Math.log10 (zoneVol * groupVol * progVol));
 
-            final double zoneTune = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zoneTuneParam ());
-            final double groupTune = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupTuneParam ());
-            final double progTune = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progTuneParam ());
+            final double zoneTune = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneTuneParam ());
+            final double groupTune = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ());
+            final double progTune = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progTuneParam ());
             sampleMetadata.setTune (this.tags.calculateTune (zoneTune, groupTune, progTune));
 
-            final double zonePan = AbstractNKIMetadataFileParser.getDouble (zoneParameters, this.tags.zonePanParam ());
-            final double groupPan = AbstractNKIMetadataFileParser.getDouble (groupParameters, this.tags.groupPanParam ());
-            final double progPan = AbstractNKIMetadataFileParser.getDouble (programParameters, this.tags.progPanParam ());
+            final double zonePan = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zonePanParam ());
+            final double groupPan = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ());
+            final double progPan = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progPanParam ());
             final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
             sampleMetadata.setPanorama (Utils.clamp (totalPan, -1.0d, 1.0d));
         }
@@ -501,11 +671,11 @@ public abstract class AbstractNKIMetadataFileParser
             String alternatingLoop;
             try
             {
-                loopStart = AbstractNKIMetadataFileParser.getInt (loopParams, this.tags.loopStartParam ());
-                loopLength = AbstractNKIMetadataFileParser.getInt (loopParams, this.tags.loopLengthParam ());
-                loopMode = AbstractNKIMetadataFileParser.getString (loopParams, this.tags.loopModeParam ());
-                xFadeLength = AbstractNKIMetadataFileParser.getInt (loopParams, this.tags.xfadeLengthParam ());
-                alternatingLoop = AbstractNKIMetadataFileParser.getString (loopParams, this.tags.alternatingLoopParam ());
+                loopStart = AbstractNKIMetadataFileHandler.getInt (loopParams, this.tags.loopStartParam ());
+                loopLength = AbstractNKIMetadataFileHandler.getInt (loopParams, this.tags.loopLengthParam ());
+                loopMode = AbstractNKIMetadataFileHandler.getString (loopParams, this.tags.loopModeParam ());
+                xFadeLength = AbstractNKIMetadataFileHandler.getInt (loopParams, this.tags.xfadeLengthParam ());
+                alternatingLoop = AbstractNKIMetadataFileHandler.getString (loopParams, this.tags.alternatingLoopParam ());
             }
             catch (final ValueNotAvailableException e)
             {
@@ -580,7 +750,7 @@ public abstract class AbstractNKIMetadataFileParser
         }
         catch (final IOException ex)
         {
-            this.notifier.logError (sourcePath, ex);
+            this.notifier.logError ("IDS_NKI_ERR_CANNOT_FIND_PATH", ex.getMessage ());
             return null;
         }
 
@@ -689,18 +859,18 @@ public abstract class AbstractNKIMetadataFileParser
             final double attackTimeMs = getDouble (envParams, this.tags.attackParam ());
             env.setAttack (attackTimeMs / 1000.0d);
 
-            final double holdTimeMs = AbstractNKIMetadataFileParser.getDouble (envParams, this.tags.holdParam ());
+            final double holdTimeMs = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.holdParam ());
             env.setHold (holdTimeMs / 1000.0d);
 
-            final double decayTimeMs = AbstractNKIMetadataFileParser.getDouble (envParams, this.tags.decayParam ());
+            final double decayTimeMs = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.decayParam ());
             env.setDecay (decayTimeMs / 1000.0d);
 
             if (!envType.equals (this.tags.ahdEnvTypeValue ()))
             {
-                final double sustainLinear = AbstractNKIMetadataFileParser.getDouble (envParams, this.tags.sustainParam ());
+                final double sustainLinear = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.sustainParam ());
                 env.setSustain (sustainLinear);
 
-                final double releaseTimeMs = AbstractNKIMetadataFileParser.getDouble (envParams, this.tags.releaseParam ());
+                final double releaseTimeMs = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.releaseParam ());
                 env.setRelease (releaseTimeMs / 1000.0d);
             }
             return env;

@@ -26,7 +26,7 @@ public class KorgmultisampleDetector extends AbstractDetector<KorgmultisampleDet
      */
     public KorgmultisampleDetector (final INotifier notifier)
     {
-        super ("wavestate/modwave", notifier);
+        super ("Korg Wavestate/Modwave", notifier);
     }
 
 

@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -97,6 +98,36 @@ public class MultisampleSource implements IMultisampleSource
     public List<IVelocityLayer> getLayers ()
     {
         return this.layers;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public List<IVelocityLayer> getNonEmptyLayers (final boolean filterReleaseTriggers)
+    {
+        final List<IVelocityLayer> cleanedLayers = new ArrayList<> ();
+        for (final IVelocityLayer layer: this.layers)
+        {
+            final List<ISampleMetadata> sampleMetadata = layer.getSampleMetadata ();
+            if (sampleMetadata.isEmpty ())
+                continue;
+
+            if (filterReleaseTriggers)
+            {
+                // There needs to be at least one sample with a normal attack trigger
+                for (final ISampleMetadata sample: sampleMetadata)
+                {
+                    if (sample.getTrigger () != TriggerType.RELEASE)
+                    {
+                        cleanedLayers.add (layer);
+                        break;
+                    }
+                }
+            }
+            else
+                cleanedLayers.add (layer);
+        }
+        return cleanedLayers;
     }
 
 

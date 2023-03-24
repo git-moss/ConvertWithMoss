@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.List;
 
@@ -20,13 +21,25 @@ import java.util.List;
 public interface IKontaktType
 {
     /**
-     * Parse a file which uses this format type from the given input stream.
+     * Read and parse a file which uses this format type from the given random access file.
      *
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
      * @return The parsed multisample sources
-     * @throws IOException
+     * @throws IOException Error reading the file
      */
-    List<IMultisampleSource> parse (File sourceFolder, File sourceFile, RandomAccessFile fileAccess) throws IOException;
+    List<IMultisampleSource> readNKI (File sourceFolder, File sourceFile, RandomAccessFile fileAccess) throws IOException;
+
+
+    /**
+     * Write a new NKI file from the given multisample source.
+     *
+     * @param out Where to write the data
+     * @param safeSampleFolderName The folder where the samples are placed
+     * @param multisampleSource The source
+     * @param sizeOfSamples
+     * @throws IOException Error writing the file
+     */
+    void writeNKI (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int sizeOfSamples) throws IOException;
 }
