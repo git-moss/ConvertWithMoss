@@ -21,7 +21,7 @@ jobs:
       - name: Convert MD files to PDF
         uses: docker://pandoc/latex:2.9
         with:
-          args: --standalone --toc -V geometry:margin=2.5cm --number-sections --output=output/ConvertWithMoss-Manual.pdf README.md
+          args: --standalone --toc -V geometry:margin=2.5cm --number-sections --output=output/ConvertWithMoss-Manual.pdf README.md README-MACOS.md README-FORMATS.md
       
       - name: Publish result
         uses: actions/upload-artifact@v3
