@@ -103,4 +103,12 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     {
         return (panningValue - 0.5d) / 0.5d;
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected double denormalizePanning (final double panningValue)
+    {
+        return 0.5d + panningValue * 0.5d;
+    }
 }

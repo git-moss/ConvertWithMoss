@@ -1,0 +1,9 @@
+        <Loop index="%LOOP_INDEX%" version="0.60">
+          <V name="loopStart" value="%LOOP_START%"/>
+          <V name="loopLength" value="%LOOP_LENGTH%"/>
+          <V name="loopCount" value="0"/>
+          <V name="mode" value="until_end"/>
+          <V name="alternatingLoop" value="%LOOP_ALTERNATING%"/>
+          <V name="loopTuning" value="1"/>
+          <V name="xfadeLength" value="%LOOP_XFADE%"/>
+        </Loop>

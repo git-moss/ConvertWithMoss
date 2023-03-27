@@ -59,17 +59,17 @@ public class StreamUtils
     {
         if (isBigEndian)
         {
-            out.write ((value >> 24) & 0xFF);
-            out.write ((value >> 16) & 0xFF);
-            out.write ((value >> 8) & 0xFF);
+            out.write (value >> 24 & 0xFF);
+            out.write (value >> 16 & 0xFF);
+            out.write (value >> 8 & 0xFF);
             out.write (value & 0xFF);
         }
         else
         {
             out.write (value & 0xFF);
-            out.write ((value >> 8) & 0xFF);
-            out.write ((value >> 16) & 0xFF);
-            out.write ((value >> 24) & 0xFF);
+            out.write (value >> 8 & 0xFF);
+            out.write (value >> 16 & 0xFF);
+            out.write (value >> 24 & 0xFF);
         }
     }
 
@@ -132,13 +132,13 @@ public class StreamUtils
     {
         if (isBigEndian)
         {
-            out.write ((value >> 8) & 0xFF);
+            out.write (value >> 8 & 0xFF);
             out.write (value & 0xFF);
         }
         else
         {
             out.write (value & 0xFF);
-            out.write ((value >> 8) & 0xFF);
+            out.write (value >> 8 & 0xFF);
         }
     }
 

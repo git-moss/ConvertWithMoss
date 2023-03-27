@@ -109,7 +109,7 @@ public class Kontakt1Type extends AbstractKontaktType
         // Unknown. Always 4 empty bytes.
         StreamUtils.writeDoubleWord (out, 0x00, false);
 
-        final Optional<String> result = this.handler.create (multisampleSource);
+        final Optional<String> result = this.handler.create (safeSampleFolderName, multisampleSource);
         if (result.isPresent ())
             writeZLIB (out, result.get (), 6);
     }

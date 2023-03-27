@@ -6,6 +6,7 @@
 * Native Instruments NKI files
   * New: Added support for AIFF files (will be converted to WAV).
   * New: Added support for reading Kontakt NKI files stored in big-endian format. But could not test with any monolith file, therefore an error is shown.
+  * Fixed: High velocity crossover value did overwrite low velocity crossover.
 * Korg KMP
   * Fixed: Extracting velocity layers into single KMP files did overwrite the KSF sample files.
 

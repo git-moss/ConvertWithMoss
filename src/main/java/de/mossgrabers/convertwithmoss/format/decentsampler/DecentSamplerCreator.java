@@ -309,7 +309,7 @@ public class DecentSamplerCreator extends AbstractCreator
         final Element sampleElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.SAMPLE);
         final Optional<String> filename = info.getUpdatedFilename ();
         if (filename.isPresent ())
-            sampleElement.setAttribute (DecentSamplerTag.PATH, this.formatFileName (folderName, filename.get ()));
+            sampleElement.setAttribute (DecentSamplerTag.PATH, AbstractCreator.formatFileName (folderName, filename.get ()));
 
         final double gain = info.getGain ();
         if (gain != 0)

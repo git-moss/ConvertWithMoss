@@ -1,0 +1,36 @@
+    <NiSS_Zone index="%ZONE_INDEX%" groupIdx="%GROUP_INDEX%" version="0.60">
+      <Parameters>
+        <V name="sampleStart" value="%ZONE_SAMPLE_START%"/>
+        <V name="sampleEnd" value="%ZONE_SAMPLE_END%"/>
+        <V name="lowVelocity" value="%ZONE_VEL_LOW%"/>
+        <V name="highVelocity" value="%ZONE_VEL_HIGH%"/>
+        <V name="lowKey" value="%ZONE_KEY_LOW%"/>
+        <V name="highKey" value="%ZONE_KEY_HIGH%"/>
+        <V name="fadeLowVelo" value="%ZONE_VEL_CROSS_LOW%"/>
+        <V name="fadeHighVelo" value="%ZONE_VEL_CROSS_HIGH%"/>
+        <V name="fadeLowKey" value="%ZONE_KEY_CROSS_LOW%"/>
+        <V name="fadeHighKey" value="%ZONE_KEY_CROSS_HIGH%"/>
+        <V name="rootKey" value="%ZONE_KEY_ROOT%"/>
+        <V name="zoneVolume" value="%ZONE_VOLUME%"/>
+        <V name="zonePan" value="%ZONE_PAN%"/>
+        <V name="zoneTune" value="%ZONE_TUNE%"/>
+        <V name="slicerSens" value="0"/>
+        <V name="sourceZoneIdx" value="-1"/>
+        <V name="sourceZoneSliceIdx" value="-1"/>
+        <V name="expandedSliceKey" value="-1"/>
+        <V name="origTempo" value="-1"/>
+        <V name="mRetriggerInfo.active" value="no"/>
+        <V name="mRetriggerInfo.clockCount" value="0"/>
+        <V name="mRetriggerInfo.lengthMode" value="-1"/>
+        <V name="mRetriggerInfo.bars" value="-1"/>
+        <V name="mRetriggerInfo.beats" value="-1"/>
+        <V name="mRetriggerInfo.signNominator" value="-1"/>
+        <V name="mRetriggerInfo.signDenominator" value="-1"/>
+      </Parameters>
+      <Loops>
+%ZONE_LOOPS%
+      </Loops>
+      <Sample>
+        <V name="file" value="%ZONE_SAMPLE_NAME%"/>
+      </Sample>
+    </NiSS_Zone>

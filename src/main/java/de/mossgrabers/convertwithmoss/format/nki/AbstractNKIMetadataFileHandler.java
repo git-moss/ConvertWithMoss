@@ -7,8 +7,10 @@ package de.mossgrabers.convertwithmoss.format.nki;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -35,17 +37,17 @@ import org.xml.sax.SAXException;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -58,69 +60,8 @@ import java.util.Optional;
  */
 public abstract class AbstractNKIMetadataFileHandler
 {
-    private static final String               GLOBAL_XML_PROPERTIES = """
-            <Parameters>
-                  <V name="midiChannel" value="0"/>
-                  <V name="output" value="0"/>
-                  <V name="transpose" value="0"/>
-                  <V name="masterVolume" value="0.5"/>
-                  <V name="masterPan" value="0.5"/>
-                  <V name="masterTune" value="1"/>
-                  <V name="lowVelocity" value="1"/>
-                  <V name="highVelocity" value="127"/>
-                  <V name="lowKey" value="0"/>
-                  <V name="highKey" value="127"/>
-                  <V name="fingerPrint" value="256"/>
-                  <V name="activeGroupIdx" value="0"/>
-                  <V name="inputQuantizeMode" value="off"/>
-                  <V name="inputQuantizeNoteValue" value="1"/>
-                  <V name="muteMode" value="none"/>
-                  <V name="songTempo" value="0"/>
-                </Parameters>
-                <Polyphony>
-                  <VoiceGroup index="0" version="0.60">
-                    <V name="name" value="&lt;instrument>"/>
-                    <V name="mode" value="kill_oldest"/>
-                    <V name="preferReleased" value="yes"/>
-                    <V name="maxNumVoices" value="128"/>
-                    <V name="msFadeTime" value="10"/>
-                    <V name="exclusionGroup" value="-1"/>
-                  </VoiceGroup>
-                </Polyphony>
-                <FXDelay version="0.50"/>
-                <FXChorus version="0.50"/>
-                <FXFlanger version="0.50"/>
-                <FXPhaser version="0.50"/>
-                <FXReverb version="0.50"/>
-                <FXCompressor version="0.60"/>
-                <FXInverter version="0.60"/>
-                <FXLoFi version="0.60"/>
-                <FXShaper version="0.60"/>
-                <FXStereo version="0.70"/>
-                <FXFilter version="0.60"/>
-                <FXDistortion version="0.60"/>""";
-
-    private static final String               GROUP_XML_PROPERTIES  = """
-            <Parameters>
-                  <V name="volume" value="1.0"/>
-                  <V name="pan" value="0.5"/>
-                  <V name="tune" value="1.0"/>
-                  <V name="keyTracking" value="yes"/>
-                  <V name="reverse" value="no"/>
-                  <V name="releaseTrigger" value="no"/>
-                  <V name="releaseTriggerNoteMonophonic" value="no"/>
-                  <V name="m_bMuted" value="no"/>
-                  <V name="m_bSolo" value="no"/>
-                  <V name="m_iRow" value="-1"/>
-                  <V name="m_iCol" value="-1"/>
-                  <V name="rlsTrigCounter" value="0"/>
-                  <V name="output" value="0"/>
-                  <V name="midiChannel" value="0"/>
-                  <V name="voiceGroup" value="-1"/>
-                  <V name="selectedForEdit" value="yes"/>
-                </Parameters>""";
-
-    private static final String               NULL_ENTRY            = "(null)";
+    private static final String               TEMPLATE_FOLDER = "de/mossgrabers/convertwithmoss/templates/nki/";
+    private static final String               NULL_ENTRY      = "(null)";
 
     protected final AbstractTagsAndAttributes tags;
 
@@ -202,105 +143,133 @@ public abstract class AbstractNKIMetadataFileHandler
     /**
      * Creates a metadata description file.
      *
+     * @param safeSampleFolderName The folder where the samples are placed
      * @param multisampleSource The multisample source
      * @return The XML document as a text
      */
-    public Optional<String> create (final IMultisampleSource multisampleSource)
+    public Optional<String> create (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
     {
         try
         {
-            final Document document = XMLUtils.newDocument ();
-            document.setXmlStandalone (true);
-
-            final Element programElement = document.createElement (this.tags.program ());
-            document.appendChild (programElement);
-            programElement.setAttribute ("index", "0");
-            programElement.setAttribute (this.tags.programName (), multisampleSource.getName ());
-            programElement.setAttribute ("version", "0.5");
-
-            // TODO for K2
-            // final String author = programParameters.get ("instrumentAuthor");
-            // multisampleSource.setCreator (author);
-            // final String description = programParameters.get ("instrumentCredits");
-            // multisampleSource.setDescription (description);
-
-            final Element parametersElement = XMLUtils.addElement (document, programElement, this.tags.parameters ());
-            // final Element parametersElement = XMLUtils.addElement (document, programElement,
-            // this.tags.po);
-            final Element groupsElement = XMLUtils.addElement (document, programElement, this.tags.groups ());
-            final Element zonesElement = XMLUtils.addElement (document, programElement, this.tags.zones ());
+            String text = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_01_Header.xml").replace ("%PROGRAM_NAME%", multisampleSource.getName ());
 
             // Add all layers
-            final List<IVelocityLayer> velocityLayers = multisampleSource.getNonEmptyLayers (false);
-            for (int i = 0; i < velocityLayers.size (); i++)
-            {
-                final IVelocityLayer layer = velocityLayers.get (i);
+            final String result = this.addGroups (safeSampleFolderName, multisampleSource.getNonEmptyLayers (false));
 
-                final Element groupElement = XMLUtils.addElement (document, groupsElement, this.tags.group ());
-                groupElement.setAttribute (this.tags.indexAttribute (), Integer.toString (i));
-                final String name = layer.getName ();
-                if (name != null && !name.isBlank ())
-                    groupElement.setAttribute (this.tags.groupNameAttribute (), name);
-                groupElement.setAttribute ("version", "0.60");
+            text += result + Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_06_Footer.xml");
 
-                XMLUtils.addElement (document, groupElement, "GROUP_PARAMETERS");
-
-                // if (hasRoundRobin)
-                // {
-                // groupElement.setAttribute (DecentSamplerTag.SEQ_POSITION, Integer.toString
-                // (this.seqPosition));
-                // this.seqPosition++;
-                // }
-
-                // final TriggerType triggerType = layer.getTrigger ();
-                // if (triggerType != TriggerType.ATTACK)
-                // groupElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name
-                // ().toLowerCase (Locale.ENGLISH));
-                //
-                // -> from Reader:
-                // velocityLayer.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
-
-                // final IEnvelope groupAmpEnv = this.readGroupAmpEnv (groupElement);
-                // final int pitchBend = this.readGroupPitchBend (groupElement);
-
-                // final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-
-                for (final ISampleMetadata sample: layer.getSampleMetadata ())
-                {
-                    // this.createSample (document, folderName, groupElement, sample);
-                }
-            }
-
-            String text = XMLUtils.toString (document).replace (" encoding=\"UTF-8\"", "").replace ("<Parameters/>", GLOBAL_XML_PROPERTIES);
-            text = text.replace ("<GROUP_PARAMETERS/>", GROUP_XML_PROPERTIES);
-
-            System.out.println (text);
+            // TODO Remove
+            Files.writeString (new File ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\1\\TEST\\Synth1982_-_01_WRITTEN.txt").toPath (), text);
 
             return Optional.of (text);
         }
-        catch (final ParserConfigurationException ex)
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_PARSER", ex);
-            return Optional.empty ();
-        }
-        catch (final TransformerException ex)
+        catch (final IOException ex)
         {
             this.notifier.logError (ex);
             return Optional.empty ();
         }
+    }
 
-        // TODO Fake it till we make it!
-        // try
-        // {
-        // return Files.readString (new File
-        // ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\1\\TEST\\Synth1982_-_01.txt").toPath
-        // ());
-        // }
-        // catch (IOException ex)
-        // {
-        // // TODO Auto-generated catch block
-        // ex.printStackTrace ();
-        // }
+
+    private String addGroups (final String safeSampleFolderName, final List<IVelocityLayer> velocityLayers) throws IOException
+    {
+        final String groupTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_02_Group.xml");
+        final String zoneTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_04_Zone.xml");
+
+        final StringBuilder groups = new StringBuilder ();
+        final StringBuilder zones = new StringBuilder ();
+
+        // Samples are numbered across all groups!
+        int sampleCount = 0;
+
+        for (int groupCount = 0; groupCount < velocityLayers.size (); groupCount++)
+        {
+            final IVelocityLayer layer = velocityLayers.get (groupCount);
+
+            String name = layer.getName ();
+            if (name == null || name.isBlank ())
+                name = "Layer " + (groupCount + 1);
+
+            String groupContent = groupTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%GROUP_NAME%", name);
+
+            boolean keyTracking = true;
+            boolean reverse = false;
+            double pitchBendUp = 0;
+
+            IEnvelope amplitudeEnvelope = null;
+
+            for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
+            {
+                String zoneContent = zoneTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%ZONE_INDEX%", Integer.toString (sampleCount));
+                final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
+
+                zoneContent = zoneContent.replace ("%ZONE_SAMPLE_START%", Integer.toString (sampleMetadata.getStart ()));
+                zoneContent = zoneContent.replace ("%ZONE_SAMPLE_END%", Integer.toString (sampleMetadata.getStop ()));
+                zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (sampleMetadata.getVelocityLow ()));
+                zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (sampleMetadata.getVelocityHigh ()));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (sampleMetadata.getKeyLow ()));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (sampleMetadata.getKeyHigh ()));
+                zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (sampleMetadata.getVelocityCrossfadeLow ()));
+                zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (sampleMetadata.getVelocityCrossfadeLow ()));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (sampleMetadata.getNoteCrossfadeLow ()));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (sampleMetadata.getNoteCrossfadeHigh ()));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (sampleMetadata.getKeyRoot ()));
+                zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, sampleMetadata.getGain () / 20.0d)));
+                zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (sampleMetadata.getTune () / 0.12d * Math.log (2))));
+                zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (sampleMetadata.getPanorama ())));
+                zoneContent = zoneContent.replace ("%ZONE_SAMPLE_NAME%", filename.isPresent () ? AbstractCreator.formatFileName (safeSampleFolderName, filename.get ()) : "");
+
+                amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+
+                final StringBuilder loopsContent = new StringBuilder ();
+                final String loopTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_05_Loop.xml");
+                final List<ISampleLoop> loops = sampleMetadata.getLoops ();
+                for (int loopIndex = 0; loopIndex < loops.size (); loopIndex++)
+                {
+                    final ISampleLoop loop = loops.get (loopIndex);
+
+                    String loopContent = loopTemplate.replace ("%LOOP_INDEX%", Integer.toString (loopIndex));
+
+                    final int loopStart = loop.getStart ();
+                    loopContent = loopContent.replace ("%LOOP_START%", Integer.toString (loopStart));
+                    loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getEnd () - loopStart));
+
+                    final LoopType type = loop.getType ();
+                    loopContent = loopContent.replace ("%LOOP_ALTERNATING%", type == LoopType.ALTERNATING ? "yes" : "no");
+                    loopContent = loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
+
+                    reverse = type == LoopType.BACKWARDS;
+
+                    if (loopIndex > 0)
+                        loopsContent.append ("\r\n");
+                    loopsContent.append (loopContent);
+                }
+                zoneContent = zoneContent.replace ("%ZONE_LOOPS%", loopsContent.toString ());
+                zones.append (zoneContent);
+
+                keyTracking = sampleMetadata.getKeyTracking () > 0;
+                pitchBendUp = sampleMetadata.getBendUp ();
+
+                sampleCount++;
+            }
+
+            if (amplitudeEnvelope != null)
+            {
+                groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (amplitudeEnvelope.getAttack () * 1000.0d));
+                groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (amplitudeEnvelope.getHold () * 1000.0d));
+                groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (amplitudeEnvelope.getDecay () * 1000.0d));
+                groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (amplitudeEnvelope.getRelease () * 1000.0d));
+                groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (amplitudeEnvelope.getSustain ()));
+            }
+
+            groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
+            groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
+            groupContent = groupContent.replace ("%GROUP_REVERSE%", reverse ? "yes" : "no");
+
+            groups.append (groupContent);
+        }
+
+        return groups.toString () + Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_03_Groups_Zones.xml") + zones.toString ();
     }
 
 
@@ -570,7 +539,7 @@ public abstract class AbstractNKIMetadataFileHandler
             sampleMetadata.setNoteCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeLowParam ()));
             sampleMetadata.setNoteCrossfadeHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighParam ()));
             sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeLowVelParam ()));
-            sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighVelParam ()));
+            sampleMetadata.setVelocityCrossfadeHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighVelParam ()));
 
             final int sampleStart = AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.sampleStartParam ());
             final int sampleEnd = AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.sampleEndParam ());
@@ -645,6 +614,18 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
+     * De-normalizes a panning value from a range from -1 to 1 where 0 is center and -1 is left.
+     *
+     * @param panningValue The panning value to normalize
+     * @return The normalized panning value
+     */
+    protected double denormalizePanning (double panningValue)
+    {
+        return panningValue;
+    }
+
+
+    /**
      * Reads the loop information from a zone element and writes it to a ISampleMetadata object.
      *
      * @param zoneElement The zone element
@@ -660,6 +641,9 @@ public abstract class AbstractNKIMetadataFileHandler
         if (loopElements == null)
             return;
 
+        final List<ISampleLoop> loops = sampleMetadata.getLoops ();
+        if (loopElements.length > 0)
+            loops.clear ();
         for (final Element loopElement: loopElements)
         {
             final Map<String, String> loopParams = this.readValueMap (loopElement);
@@ -682,7 +666,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 return;
             }
 
-            // If it a one shot then there is no loop
+            // If it is a one shot then there is no loop
             if (loopMode.equals (this.tags.oneshotValue ()))
                 continue;
 
@@ -1095,4 +1079,10 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The pitch bend intensity value or null, if intensity couldn't be read.
      */
     protected abstract String readPitchBendIntensity (final Element modulator);
+
+
+    private static String formatDouble (final double value)
+    {
+        return String.format (Locale.US, "%.6f", Double.valueOf (value));
+    }
 }

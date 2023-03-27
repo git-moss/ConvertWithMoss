@@ -133,7 +133,7 @@ public class Kontakt2Type extends AbstractKontaktType
         // No idea yet about these 8 bytes (they are 3 blocks 2/4/2)...
         StreamUtils.skipNBytes (fileAccess, 8);
 
-        String version = readVersion (fileAccess);
+        String version = this.readVersion (fileAccess);
 
         final String blockID = StreamUtils.readASCII (fileAccess, 4, !this.isBigEndian);
         if (!KNOWN_BLOCK_IDS.contains (blockID))
@@ -181,7 +181,7 @@ public class Kontakt2Type extends AbstractKontaktType
         {
             fileAccess.skipBytes (110);
 
-            ByteArrayOutputStream out = new ByteArrayOutputStream ();
+            final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
             int value;
             int count = 0;
