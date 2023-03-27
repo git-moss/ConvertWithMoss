@@ -105,7 +105,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param filename A filename
      * @return The formatted path
      */
-    protected String formatFileName (final String path, final String filename)
+    public static String formatFileName (final String path, final String filename)
     {
         return new StringBuilder ().append (path).append ('/').append (filename).toString ().replace ('\\', '/');
     }

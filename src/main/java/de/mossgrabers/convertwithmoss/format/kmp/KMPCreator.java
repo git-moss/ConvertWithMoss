@@ -53,7 +53,7 @@ public class KMPCreator extends AbstractCreator
         // file for each layer
         final List<IVelocityLayer> layers = multisampleSource.getNonEmptyLayers (true);
         final int size = layers.size ();
-        boolean needsSubDir = size > 1;
+        final boolean needsSubDir = size > 1;
         for (int i = 0; i < size; i++)
         {
             final IVelocityLayer layer = layers.get (i);

@@ -104,7 +104,7 @@ public abstract class AbstractKontaktType implements IKontaktType
     protected static void writeZLIB (final OutputStream out, final String text, final int level) throws IOException
     {
         final byte [] input = text.getBytes (StandardCharsets.UTF_8);
-        Deflater deflater = new Deflater (level);
+        final Deflater deflater = new Deflater (level);
         deflater.setInput (input);
         deflater.finish ();
         final byte [] compressedData = new byte [input.length];

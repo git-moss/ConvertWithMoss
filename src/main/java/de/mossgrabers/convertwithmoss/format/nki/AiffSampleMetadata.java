@@ -75,7 +75,7 @@ public class AiffSampleMetadata extends DefaultSampleMetadata
         {
             // Obtains the file types that the system can write from the audio input stream
             // specified. Check if WAV can be written
-            AudioFileFormat.Type [] supportedTypes = AudioSystem.getAudioFileTypes (in);
+            final AudioFileFormat.Type [] supportedTypes = AudioSystem.getAudioFileTypes (in);
             if (!Arrays.asList (supportedTypes).contains (AudioFileFormat.Type.AIFF))
                 throw new IOException (Functions.getMessage ("IDS_ERR_AIFF_TO_WAV_NOT_SUPPORTED"));
 

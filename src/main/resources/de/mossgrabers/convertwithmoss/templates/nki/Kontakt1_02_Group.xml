@@ -1,0 +1,103 @@
+    <NiSS_Group index="%GROUP_INDEX%" name="%GROUP_NAME%" version="0.60">
+      <Parameters>
+        <V name="volume" value="1.0"/>
+        <V name="pan" value="0.5"/>
+        <V name="tune" value="1.0"/>
+        <V name="keyTracking" value="%GROUP_KEY_TRACKING%"/>
+        <V name="reverse" value="%GROUP_REVERSE%"/>
+        <V name="releaseTrigger" value="no"/>
+        <V name="releaseTriggerNoteMonophonic" value="no"/>
+        <V name="m_bMuted" value="no"/>
+        <V name="m_bSolo" value="no"/>
+        <V name="m_iRow" value="-1"/>
+        <V name="m_iCol" value="-1"/>
+        <V name="rlsTrigCounter" value="0"/>
+        <V name="output" value="0"/>
+        <V name="midiChannel" value="0"/>
+        <V name="voiceGroup" value="-1"/>
+        <V name="selectedForEdit" value="yes"/>
+      </Parameters>
+      <PlayPosOffset version="0.50"/>
+      <LoopOffset version="0.50"/>
+      <SendLevels version="0.50"/>
+      <GroupStart>
+        <StartCriteria index="0" version="0.70"/>
+        <StartCriteria index="1" version="0.70"/>
+        <StartCriteria index="2" version="0.70"/>
+        <StartCriteria index="3" version="0.70"/>
+      </GroupStart>
+      <Grain version="0.70"/>
+      <Filter version="0.70">
+        <V name="type" value="lp2pole"/>
+        <V name="executionOrder" value="1"/>
+        <V name="bypass" value="no"/>
+        <V name="cutoff" value="0.983333"/>
+        <V name="resonance" value="0.000000"/>
+      </Filter>
+      <FXCompressor version="0.60"/>
+      <FXInverter version="0.60"/>
+      <FXLoFi version="0.60"/>
+      <FXShaper version="0.60"/>
+      <FXStereo version="0.70"/>
+      <FXDistortion version="0.60"/>
+      <IntModulators>
+        <NiSS_IntMod index="0" version="0.50">
+          <V name="target" value="volume"/>
+          <V name="intensity" value="1"/>
+          <V name="bypass" value="no"/>
+          <V name="retrigger" value="yes"/>
+          <Envelope type="ahdsr" version="0.60">
+            <V name="atkCurving" value="0"/>
+            <V name="attack" value="%ENVELOPE_ATTACK%"/>
+            <V name="decay" value="%ENVELOPE_DECAY%"/>
+            <V name="hold" value="%ENVELOPE_HOLD%"/>
+            <V name="release" value="%ENVELOPE_RELEASE%"/>
+            <V name="sustain" value="%ENVELOPE_SUSTAIN%"/>
+          </Envelope>
+        </NiSS_IntMod>
+        <NiSS_IntMod index="1" version="0.50">
+          <V name="target" value="filterCutoff"/>
+          <V name="intensity" value="0.000000"/>
+          <V name="bypass" value="no"/>
+          <V name="retrigger" value="yes"/>
+          <Envelope type="ahdsr" version="0.60">
+            <V name="atkCurving" value="0"/>
+            <V name="attack" value="0.000000"/>
+            <V name="decay" value="0.000000"/>
+            <V name="hold" value="0.000000"/>
+            <V name="release" value="0.000000"/>
+            <V name="sustain" value="1.000000"/>
+          </Envelope>
+        </NiSS_IntMod>
+        <NiSS_IntMod index="2" version="0.50">
+          <V name="target" value="pitch"/>
+          <V name="intensity" value="0.000000"/>
+          <V name="bypass" value="no"/>
+          <V name="retrigger" value="yes"/>
+          <Envelope type="ahdsr" version="0.60">
+            <V name="atkCurving" value="0"/>
+            <V name="attack" value="0.000000"/>
+            <V name="decay" value="0.000000"/>
+            <V name="hold" value="0.000000"/>
+            <V name="release" value="0.000000"/>
+            <V name="sustain" value="1.000000"/>
+          </Envelope>
+        </NiSS_IntMod>
+      </IntModulators>
+      <ExtModulators>
+        <NiSS_ExtMod index="0" version="0.80">
+          <V name="target" value="volume"/>
+          <V name="intensity" value="1"/>
+          <V name="bypass" value="no"/>
+          <V name="delay" value="0"/>
+          <V name="source" value="velocity"/>
+        </NiSS_ExtMod>
+        <NiSS_ExtMod index="1" version="0.80">
+          <V name="target" value="pitch"/>
+          <V name="intensity" value="%PITCH_BEND%"/>
+          <V name="bypass" value="no"/>
+          <V name="delay" value="0"/>
+          <V name="source" value="pitchBend"/>
+        </NiSS_ExtMod>
+      </ExtModulators>
+    </NiSS_Group>

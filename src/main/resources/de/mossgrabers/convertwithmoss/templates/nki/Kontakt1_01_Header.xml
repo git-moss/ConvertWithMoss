@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<NiSS_Program index="0" name="%PROGRAM_NAME%" version="0.50">
+  <Parameters>
+    <V name="midiChannel" value="0"/>
+    <V name="output" value="0"/>
+    <V name="transpose" value="0"/>
+    <V name="masterVolume" value="0.5"/>
+    <V name="masterPan" value="0.5"/>
+    <V name="masterTune" value="1"/>
+    <V name="lowVelocity" value="1"/>
+    <V name="highVelocity" value="127"/>
+    <V name="lowKey" value="0"/>
+    <V name="highKey" value="127"/>
+    <V name="fingerPrint" value="256"/>
+    <V name="activeGroupIdx" value="0"/>
+    <V name="inputQuantizeMode" value="off"/>
+    <V name="inputQuantizeNoteValue" value="1"/>
+    <V name="muteMode" value="none"/>
+    <V name="songTempo" value="0"/>
+  </Parameters>
+  <Polyphony>
+    <VoiceGroup index="0" version="0.60">
+      <V name="name" value="&lt;instrument>"/>
+      <V name="mode" value="kill_oldest"/>
+      <V name="preferReleased" value="yes"/>
+      <V name="maxNumVoices" value="128"/>
+      <V name="msFadeTime" value="10"/>
+      <V name="exclusionGroup" value="-1"/>
+    </VoiceGroup>
+  </Polyphony>
+  <FXDelay version="0.50"/>
+  <FXChorus version="0.50"/>
+  <FXFlanger version="0.50"/>
+  <FXPhaser version="0.50"/>
+  <FXReverb version="0.50"/>
+  <FXCompressor version="0.60"/>
+  <FXInverter version="0.60"/>
+  <FXLoFi version="0.60"/>
+  <FXShaper version="0.60"/>
+  <FXStereo version="0.70"/>
+  <FXFilter version="0.60"/>
+  <FXDistortion version="0.60"/>
+  <Groups>

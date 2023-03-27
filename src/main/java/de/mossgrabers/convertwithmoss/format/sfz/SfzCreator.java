@@ -185,7 +185,7 @@ public class SfzCreator extends AbstractCreator
         sb.append ("\n<").append (SfzHeader.REGION).append (">\n");
         final Optional<String> filename = info.getUpdatedFilename ();
         if (filename.isPresent ())
-            addAttribute (sb, SfzOpcode.SAMPLE, this.formatFileName (safeSampleFolderName, filename.get ()), true);
+            addAttribute (sb, SfzOpcode.SAMPLE, AbstractCreator.formatFileName (safeSampleFolderName, filename.get ()), true);
 
         // Default is 'attack' and does not need to be added
         final TriggerType trigger = info.getTrigger ();
