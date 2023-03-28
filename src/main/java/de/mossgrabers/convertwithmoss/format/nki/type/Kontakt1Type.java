@@ -78,8 +78,6 @@ public class Kontakt1Type extends AbstractKontaktType
     @Override
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
-        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE_1");
-
         // Kontakt 1 NKI File ID
         StreamUtils.writeDoubleWord (out, KontaktTypes.ID_KONTAKT1.intValue (), true);
 
