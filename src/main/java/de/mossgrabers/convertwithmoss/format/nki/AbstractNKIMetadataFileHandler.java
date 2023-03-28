@@ -255,11 +255,11 @@ public abstract class AbstractNKIMetadataFileHandler
 
             if (amplitudeEnvelope != null)
             {
-                groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (amplitudeEnvelope.getAttack () * 1000.0d));
-                groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (amplitudeEnvelope.getHold () * 1000.0d));
-                groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (amplitudeEnvelope.getDecay () * 1000.0d));
-                groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (amplitudeEnvelope.getRelease () * 1000.0d));
-                groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (amplitudeEnvelope.getSustain ()));
+                groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (limitToDefault (amplitudeEnvelope.getAttack ()) * 1000.0d));
+                groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (limitToDefault (amplitudeEnvelope.getHold ()) * 1000.0d));
+                groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (limitToDefault (amplitudeEnvelope.getDecay ()) * 1000.0d));
+                groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getRelease ()) * 1000.0d));
+                groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustain ())));
             }
 
             groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
@@ -270,6 +270,12 @@ public abstract class AbstractNKIMetadataFileHandler
         }
 
         return groups.toString () + Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_03_Groups_Zones.xml") + zones.toString ();
+    }
+
+
+    private static double limitToDefault (final double value)
+    {
+        return value < 0 ? 1 : value;
     }
 
 

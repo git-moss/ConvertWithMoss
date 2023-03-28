@@ -89,13 +89,13 @@ public class NkiCreator extends AbstractCreator
             return;
         }
 
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+
         // First, store all samples
         final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
         final List<File> writeSamples = this.writeSamples (sampleFolder, multisampleSource);
-
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
