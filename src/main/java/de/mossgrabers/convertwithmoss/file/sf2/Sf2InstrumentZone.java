@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 /**
  * A SF2 instrument zone.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2InstrumentZone extends AbstractZone
 {

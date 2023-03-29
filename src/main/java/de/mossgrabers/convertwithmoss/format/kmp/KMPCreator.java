@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Creator for Korg Multisample (KMP) files.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class KMPCreator extends AbstractCreator
 {

@@ -10,19 +10,23 @@ import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
+import de.mossgrabers.convertwithmoss.file.AiffSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.convertwithmoss.format.nki.tag.AbstractTagsAndAttributes;
 import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -44,24 +48,37 @@ import java.io.StringReader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
  * Base class for parsing the NKI XML structure.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  * @author Philip Stolz
  */
 public abstract class AbstractNKIMetadataFileHandler
 {
-    private static final String               TEMPLATE_FOLDER = "de/mossgrabers/convertwithmoss/templates/nki/";
-    private static final String               NULL_ENTRY      = "(null)";
+    private static final String                  TEMPLATE_FOLDER     = "de/mossgrabers/convertwithmoss/templates/nki/";
+    private static final String                  NULL_ENTRY          = "(null)";
+
+    private static final Pattern                 FILTER_TYPE_PATTERN = Pattern.compile ("^(lp|hp|bp)(\\d+)pole$");
+
+    private static final Map<FilterType, String> FILTER_PREFIXES     = new EnumMap<> (FilterType.class);
+    static
+    {
+        FILTER_PREFIXES.put (FilterType.LOW_PASS, "lp");
+        FILTER_PREFIXES.put (FilterType.HIGH_PASS, "hp");
+        FILTER_PREFIXES.put (FilterType.BAND_PASS, "bp");
+    }
 
     protected final AbstractTagsAndAttributes tags;
 
@@ -114,20 +131,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
                 if (this.parseProgram (programElement, multisampleSource, monolithSamples))
                 {
-                    // Use some guessing on the filename if no metadata is available...
-
-                    final String creator = multisampleSource.getCreator ();
-                    if (creator == null || creator.isBlank ())
-                        multisampleSource.setCreator (TagDetector.detect (parts, metadata.getCreatorTags (), metadata.getCreatorName ()));
-
-                    final String category = multisampleSource.getCategory ();
-                    if (category == null || category.isBlank ())
-                        multisampleSource.setCategory (TagDetector.detectCategory (parts));
-
-                    final String [] keywords = multisampleSource.getKeywords ();
-                    if (keywords == null || keywords.length == 0)
-                        multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
-
+                    updateMetadata (metadata, parts, multisampleSource);
                     multisampleSources.add (multisampleSource);
                 }
             }
@@ -137,6 +141,29 @@ public abstract class AbstractNKIMetadataFileHandler
         {
             throw new IOException (ex);
         }
+    }
+
+
+    /**
+     * Tries to fill empty metadata fields by using some guessing on the filename.
+     *
+     * @param metadata The read metadata
+     * @param parts The filename and path parts
+     * @param multisampleSource Where to set the found metadata
+     */
+    private static void updateMetadata (final IMetadataConfig metadata, final String [] parts, final MultisampleSource multisampleSource)
+    {
+        final String creator = multisampleSource.getCreator ();
+        if (creator == null || creator.isBlank ())
+            multisampleSource.setCreator (TagDetector.detect (parts, metadata.getCreatorTags (), metadata.getCreatorName ()));
+
+        final String category = multisampleSource.getCategory ();
+        if (category == null || category.isBlank ())
+            multisampleSource.setCategory (TagDetector.detectCategory (parts));
+
+        final String [] keywords = multisampleSource.getKeywords ();
+        if (keywords == null || keywords.length == 0)
+            multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
     }
 
 
@@ -158,7 +185,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
             text += result + Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_06_Footer.xml");
 
-            // TODO Remove
+            // TODO Remove when Kontakt 2 writing is finished
             Files.writeString (new File ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\1\\TEST\\Synth1982_-_01_WRITTEN.txt").toPath (), text);
 
             return Optional.of (text);
@@ -181,45 +208,39 @@ public abstract class AbstractNKIMetadataFileHandler
 
         // Samples are numbered across all groups!
         int sampleCount = 0;
+        boolean isReverse = false;
 
         for (int groupCount = 0; groupCount < velocityLayers.size (); groupCount++)
         {
             final IVelocityLayer layer = velocityLayers.get (groupCount);
 
+            // Set the group index and name
             String name = layer.getName ();
             if (name == null || name.isBlank ())
                 name = "Layer " + (groupCount + 1);
-
             String groupContent = groupTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%GROUP_NAME%", name);
 
-            boolean keyTracking = true;
-            boolean reverse = false;
-            double pitchBendUp = 0;
-
-            IEnvelope amplitudeEnvelope = null;
-
-            for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
+            List<ISampleMetadata> sampleMetadataList = layer.getSampleMetadata ();
+            for (final ISampleMetadata sampleMetadata: sampleMetadataList)
             {
                 String zoneContent = zoneTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%ZONE_INDEX%", Integer.toString (sampleCount));
                 final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
 
                 zoneContent = zoneContent.replace ("%ZONE_SAMPLE_START%", Integer.toString (sampleMetadata.getStart ()));
                 zoneContent = zoneContent.replace ("%ZONE_SAMPLE_END%", Integer.toString (sampleMetadata.getStop ()));
-                zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (sampleMetadata.getVelocityLow ()));
-                zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (sampleMetadata.getVelocityHigh ()));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (sampleMetadata.getKeyLow ()));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (sampleMetadata.getKeyHigh ()));
-                zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (sampleMetadata.getVelocityCrossfadeLow ()));
-                zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (sampleMetadata.getVelocityCrossfadeLow ()));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (sampleMetadata.getNoteCrossfadeLow ()));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (sampleMetadata.getNoteCrossfadeHigh ()));
+                zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (limitToDefault (sampleMetadata.getVelocityLow (), 0)));
+                zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getVelocityHigh (), 127)));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (limitToDefault (sampleMetadata.getKeyLow (), 0)));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getKeyHigh (), 127)));
+                zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (limitToDefault (sampleMetadata.getVelocityCrossfadeLow (), 0)));
+                zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getVelocityCrossfadeLow (), 0)));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (limitToDefault (sampleMetadata.getNoteCrossfadeLow (), 0)));
+                zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getNoteCrossfadeHigh (), 0)));
                 zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (sampleMetadata.getKeyRoot ()));
                 zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, sampleMetadata.getGain () / 20.0d)));
                 zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (sampleMetadata.getTune () / 0.12d * Math.log (2))));
                 zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (sampleMetadata.getPanorama ())));
                 zoneContent = zoneContent.replace ("%ZONE_SAMPLE_NAME%", filename.isPresent () ? AbstractCreator.formatFileName (safeSampleFolderName, filename.get ()) : "");
-
-                amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
 
                 final StringBuilder loopsContent = new StringBuilder ();
                 final String loopTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_05_Loop.xml");
@@ -238,7 +259,7 @@ public abstract class AbstractNKIMetadataFileHandler
                     loopContent = loopContent.replace ("%LOOP_ALTERNATING%", type == LoopType.ALTERNATING ? "yes" : "no");
                     loopContent = loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
 
-                    reverse = type == LoopType.BACKWARDS;
+                    isReverse = type == LoopType.BACKWARDS;
 
                     if (loopIndex > 0)
                         loopsContent.append ("\r\n");
@@ -247,24 +268,54 @@ public abstract class AbstractNKIMetadataFileHandler
                 zoneContent = zoneContent.replace ("%ZONE_LOOPS%", loopsContent.toString ());
                 zones.append (zoneContent);
 
-                keyTracking = sampleMetadata.getKeyTracking () > 0;
-                pitchBendUp = sampleMetadata.getBendUp ();
-
                 sampleCount++;
             }
 
-            if (amplitudeEnvelope != null)
-            {
-                groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (limitToDefault (amplitudeEnvelope.getAttack ()) * 1000.0d));
-                groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (limitToDefault (amplitudeEnvelope.getHold ()) * 1000.0d));
-                groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (limitToDefault (amplitudeEnvelope.getDecay ()) * 1000.0d));
-                groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getRelease ()) * 1000.0d));
-                groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustain ())));
-            }
+            // These parameters can only be set on the group. This implementation uses the first
+            // found
+            final ISampleMetadata sampleMetadata = sampleMetadataList.isEmpty () ? null : sampleMetadataList.get (0);
 
+            final IModulator amplitudeModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getAmplitudeModulator ();
+            final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
+            groupContent = groupContent.replace ("%ENVELOPE_INTENSITY%", formatDouble (limitToDefault (amplitudeModulator.getDepth (), 0)));
+            groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (limitToDefault (amplitudeEnvelope.getAttack (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (limitToDefault (amplitudeEnvelope.getHold (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (limitToDefault (amplitudeEnvelope.getDecay (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getRelease (), 1) * 1000.0d));
+            groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustain (), 1)));
+
+            final IModulator pitchModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getPitchModulator ();
+            final IEnvelope pitchEnvelope = pitchModulator.getSource ();
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (pitchModulator.getDepth (), 0)));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (limitToDefault (pitchEnvelope.getAttack (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getHold (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_HOLD%", formatDouble (limitToDefault (pitchEnvelope.getDecay (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_RELEASE%", formatDouble (limitToDefault (pitchEnvelope.getRelease (), 1) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (pitchEnvelope.getSustain (), 1)));
+
+            final Optional<IFilter> filterOpt = sampleMetadata == null ? Optional.empty () : sampleMetadata.getFilter ();
+            final IFilter filter = filterOpt.isPresent () ? filterOpt.get () : new DefaultFilter (FilterType.LOW_PASS, 2, IFilter.MAX_FREQUENCY, 0);
+            groupContent = groupContent.replace ("%FILTER_TYPE%", createFilterType (filter));
+            groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (filter.getCutoff () / IFilter.MAX_FREQUENCY));
+            groupContent = groupContent.replace ("%FILTER_RESONANCE%", formatDouble (filter.getResonance ()));
+
+            final IModulator filterCutoffModulator = filter.getCutoffModulator ();
+            final IEnvelope filterCutoffEnvelope = filterCutoffModulator.getSource ();
+            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (filterCutoffModulator.getDepth (), 0)));
+            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_ATTACK%", formatDouble (limitToDefault (filterCutoffEnvelope.getAttack (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_DECAY%", formatDouble (limitToDefault (filterCutoffEnvelope.getHold (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_HOLD%", formatDouble (limitToDefault (filterCutoffEnvelope.getDecay (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_RELEASE%", formatDouble (limitToDefault (filterCutoffEnvelope.getRelease (), 1) * 1000.0d));
+            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (filterCutoffEnvelope.getSustain (), 1)));
+
+            double pitchBendUp = sampleMetadata == null ? 0 : sampleMetadata.getBendUp ();
             groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
+            boolean keyTracking = sampleMetadata == null || sampleMetadata.getKeyTracking () > 0;
             groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
-            groupContent = groupContent.replace ("%GROUP_REVERSE%", reverse ? "yes" : "no");
+            boolean isReleaseTrigger = sampleMetadata != null && sampleMetadata.getTrigger () == TriggerType.RELEASE;
+            groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
+
+            groupContent = groupContent.replace ("%GROUP_REVERSE%", isReverse ? "yes" : "no");
 
             groups.append (groupContent);
         }
@@ -273,9 +324,21 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private static double limitToDefault (final double value)
+    private static String createFilterType (final IFilter filter)
     {
-        return value < 0 ? 1 : value;
+        return FILTER_PREFIXES.getOrDefault (filter.getType (), "lp") + filter.getPoles () + "pole";
+    }
+
+
+    private static double limitToDefault (final double value, final double defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
+    }
+
+
+    private static int limitToDefault (final int value, final int defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
     }
 
 
@@ -450,11 +513,12 @@ public abstract class AbstractNKIMetadataFileHandler
         final DefaultVelocityLayer velocityLayer = new DefaultVelocityLayer ();
         velocityLayer.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
-        final IEnvelope groupAmpEnv = this.readGroupAmpEnv (groupElement);
+        final IFilter filter = this.readFilter (groupElement);
+        final Map<String, IModulator> groupModulators = this.readGroupModulators (groupElement);
         final int pitchBend = this.readGroupPitchBend (groupElement);
         velocityLayer.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-        velocityLayer.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupAmpEnv, groupElement, groupZones, pitchBend, sourcePath, monolithSamples));
+        velocityLayer.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, sourcePath, monolithSamples, filter));
         return velocityLayer;
     }
 
@@ -464,16 +528,17 @@ public abstract class AbstractNKIMetadataFileHandler
      *
      * @param programParameters The program's parameters
      * @param groupParameters The group's parameters
-     * @param groupAmpEnv The group's amp envelope
+     * @param groupModulators The group's modulation envelopes
      * @param groupElement The group element from which the metadata is created
      * @param groupZones The zone elements belonging to the group
      * @param pitchBend The pitchbend range (half tone steps)
      * @param sourcePath The canonical path which contains the NKI file
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
+     * @param filter The filter or null if none is applied
      * @return A list of sample metadata object. If nothing can be created, an empty list is
      *         returned.
      */
-    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final IEnvelope groupAmpEnv, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
+    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples, final IFilter filter)
     {
         if (groupElement == null || groupZones == null)
             return Collections.emptyList ();
@@ -483,38 +548,42 @@ public abstract class AbstractNKIMetadataFileHandler
         for (final Element zoneElement: groupZones)
         {
             final File sampleFile = this.getZoneSampleFile (zoneElement, sourcePath, monolithSamples != null);
-            if (sampleFile != null)
+            if (sampleFile == null)
+                continue;
+
+            DefaultSampleMetadata sampleMetadata = null;
+            if (monolithSamples != null)
+                sampleMetadata = monolithSamples.get (sampleFile.getName ());
+            else
             {
-                DefaultSampleMetadata sampleMetadata = null;
-                if (monolithSamples != null)
-                    sampleMetadata = monolithSamples.get (sampleFile.getName ());
-                else
+                // Check the type of the source sample for compatibility and handle them
+                // accordingly
+                try
                 {
-                    // Check the type of the source sample for compatibility and handle them
-                    // accordingly
-                    try
+                    final AudioFileFormat.Type type = AudioSystem.getAudioFileFormat (sampleFile).getType ();
+                    if (AudioFileFormat.Type.WAVE.equals (type))
                     {
-                        final AudioFileFormat.Type type = AudioSystem.getAudioFileFormat (sampleFile).getType ();
-                        if (AudioFileFormat.Type.WAVE.equals (type))
-                        {
-                            if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                                sampleMetadata = new DefaultSampleMetadata (sampleFile);
-                        }
-                        else if (AudioFileFormat.Type.AIFF.equals (type))
-                        {
-                            this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
-                            sampleMetadata = new AiffSampleMetadata (sampleFile);
-                        }
-                        else
-                            this.notifier.logError (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
+                        if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                            sampleMetadata = new DefaultSampleMetadata (sampleFile);
                     }
-                    catch (final UnsupportedAudioFileException | IOException ex)
+                    else if (AudioFileFormat.Type.AIFF.equals (type))
                     {
-                        this.notifier.logError (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", ex));
+                        this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
+                        sampleMetadata = new AiffSampleMetadata (sampleFile);
                     }
+                    else
+                        this.notifier.logError (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
                 }
-                if (sampleMetadata != null)
-                    this.readMetadata (programParameters, groupParameters, groupAmpEnv, pitchBend, sampleMetadataList, zoneElement, sampleMetadata);
+                catch (final UnsupportedAudioFileException | IOException ex)
+                {
+                    this.notifier.logError (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", ex));
+                }
+            }
+            if (sampleMetadata != null)
+            {
+                if (filter != null)
+                    sampleMetadata.setFilter (filter);
+                this.readMetadata (programParameters, groupParameters, groupModulators, pitchBend, sampleMetadataList, zoneElement, sampleMetadata);
             }
         }
 
@@ -522,7 +591,7 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private void readMetadata (final Map<String, String> programParameters, final Map<String, String> groupParameters, final IEnvelope groupAmpEnv, final int pitchBend, final LinkedList<ISampleMetadata> sampleMetadataList, final Element zoneElement, final DefaultSampleMetadata sampleMetadata)
+    private void readMetadata (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final int pitchBend, final LinkedList<ISampleMetadata> sampleMetadataList, final Element zoneElement, final DefaultSampleMetadata sampleMetadata)
     {
         try
         {
@@ -582,15 +651,7 @@ public abstract class AbstractNKIMetadataFileHandler
             return;
         }
 
-        if (groupAmpEnv != null)
-        {
-            final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
-            amplitudeEnvelope.setAttack (groupAmpEnv.getAttack ());
-            amplitudeEnvelope.setHold (groupAmpEnv.getHold ());
-            amplitudeEnvelope.setDecay (groupAmpEnv.getDecay ());
-            amplitudeEnvelope.setSustain (groupAmpEnv.getSustain ());
-            amplitudeEnvelope.setRelease (groupAmpEnv.getRelease ());
-        }
+        setModulators (groupModulators, sampleMetadata);
 
         if (groupParameters.containsKey (this.tags.reverseParam ()))
         {
@@ -610,6 +671,61 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
+    private void setModulators (final Map<String, IModulator> groupEnvelopes, final ISampleMetadata sampleMetadata)
+    {
+        final IModulator groupAmpModulator = groupEnvelopes.get (this.tags.targetVolValue ());
+        if (groupAmpModulator != null)
+        {
+            final IEnvelope source = groupAmpModulator.getSource ();
+            final IModulator amplitudeModulator = sampleMetadata.getAmplitudeModulator ();
+            amplitudeModulator.setDepth (groupAmpModulator.getDepth ());
+
+            final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
+            amplitudeEnvelope.setAttack (source.getAttack ());
+            amplitudeEnvelope.setHold (source.getHold ());
+            amplitudeEnvelope.setDecay (source.getDecay ());
+            amplitudeEnvelope.setSustain (source.getSustain ());
+            amplitudeEnvelope.setRelease (source.getRelease ());
+        }
+
+        final IModulator groupPitchModulator = groupEnvelopes.get (this.tags.targetPitchValue ());
+        if (groupPitchModulator != null)
+        {
+            final IEnvelope source = groupPitchModulator.getSource ();
+            final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+            pitchModulator.setDepth (groupPitchModulator.getDepth ());
+
+            final IEnvelope pitchEnvelope = pitchModulator.getSource ();
+            pitchEnvelope.setAttack (source.getAttack ());
+            pitchEnvelope.setHold (source.getHold ());
+            pitchEnvelope.setDecay (source.getDecay ());
+            pitchEnvelope.setSustain (source.getSustain ());
+            pitchEnvelope.setRelease (source.getRelease ());
+        }
+
+        final Optional<IFilter> filterOpt = sampleMetadata.getFilter ();
+        if (filterOpt.isPresent ())
+        {
+            final IModulator groupFilterCutoffModulator = groupEnvelopes.get (this.tags.targetFilterCutoffValue ());
+            if (groupFilterCutoffModulator != null)
+            {
+                final IFilter filter = filterOpt.get ();
+
+                final IEnvelope source = groupFilterCutoffModulator.getSource ();
+                final IModulator filterCutoffModulator = filter.getCutoffModulator ();
+                filterCutoffModulator.setDepth (groupFilterCutoffModulator.getDepth ());
+
+                final IEnvelope filterCutoffEnvelope = filterCutoffModulator.getSource ();
+                filterCutoffEnvelope.setAttack (source.getAttack ());
+                filterCutoffEnvelope.setHold (source.getHold ());
+                filterCutoffEnvelope.setDecay (source.getDecay ());
+                filterCutoffEnvelope.setSustain (source.getSustain ());
+                filterCutoffEnvelope.setRelease (source.getRelease ());
+            }
+        }
+    }
+
+
     /**
      * Normalizes a panning value to a range from -1 to 1 where 0 is center and -1 is left.
      *
@@ -625,7 +741,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param panningValue The panning value to normalize
      * @return The normalized panning value
      */
-    protected double denormalizePanning (double panningValue)
+    protected double denormalizePanning (final double panningValue)
     {
         return panningValue;
     }
@@ -786,56 +902,101 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Reads an amplitude envelope from a group element.
+     * Reads all modulator envelopes from a group element.
      *
      * @param groupElement The group element
-     * @return The amp envelope, if one could be found, otherwise null
+     * @return The found envelopes
      */
-    private IEnvelope readGroupAmpEnv (final Element groupElement)
+    private Map<String, IModulator> readGroupModulators (final Element groupElement)
     {
         final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.intModulatorsElement ());
         if (modulatorsElement == null)
-            return null;
+            return Collections.emptyMap ();
 
-        final Element [] modulators = XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement (), false);
-        if (modulators == null)
-            return null;
+        final Element [] modulatorElements = XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement (), false);
+        if (modulatorElements == null)
+            return Collections.emptyMap ();
 
-        for (final Element modulator: modulators)
+        final Map<String, IModulator> modulators = new HashMap<> ();
+        for (final Element modulatorElement: modulatorElements)
         {
-            final IEnvelope env = this.getAmpEnvFromModulator (modulator);
-            if (env != null)
-                return env;
+            final Element envElement = XMLUtils.getChildElementByName (modulatorElement, this.tags.envelopeElement ());
+            if (envElement != null && !this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()))
+            {
+                final String modulationTarget = this.getModulationTarget (modulatorElement);
+                if (modulationTarget != null)
+                {
+                    final double modulationIntensity = this.getModulationIntensity (modulatorElement);
+                    if (modulationIntensity != 0)
+                    {
+                        final IModulator modulator = this.readModulatorFromElement (envElement);
+                        if (modulator != null)
+                        {
+                            modulator.setDepth (modulationIntensity);
+                            modulators.put (modulationTarget, modulator);
+                        }
+                    }
+                }
+            }
         }
-        return null;
+        return modulators;
     }
 
 
     /**
-     * Reads an amplitude envelope from a modulator Element.
+     * Reads the filter settings from a group element. Only present for Kontakt 1.
      *
-     * @param modulator The modulator Element
-     * @return The amp envelop. If none could be found, null is returned.
+     * @param groupElement The group element
+     * @return The filter or null if none is found
      */
-    private IEnvelope getAmpEnvFromModulator (final Element modulator)
+    private IFilter readFilter (final Element groupElement)
     {
-        final Element envElement = XMLUtils.getChildElementByName (modulator, this.tags.envelopeElement ());
-        if (envElement == null || this.hasNameValuePairs (modulator, this.tags.bypassParam (), this.tags.yes ()))
+        final Element filterElement = XMLUtils.getChildElementByName (groupElement, this.tags.groupFilter ());
+        if (filterElement == null)
             return null;
+        final Map<String, String> valueMap = this.readValueMap (filterElement);
+        if (valueMap.isEmpty ())
+            return null;
+        final String type = valueMap.get ("type");
+        if (type == null)
+            return null;
+        final Matcher matcher = FILTER_TYPE_PATTERN.matcher (type);
+        if (!matcher.matches ())
+        {
+            this.notifier.logError ("IDS_NKI_UNKNOWN_FILTER_TYPE", type);
+            return null;
+        }
+        FilterType filterType;
+        switch (matcher.group (1))
+        {
+            case "lp":
+                filterType = FilterType.LOW_PASS;
+                break;
+            case "hp":
+                filterType = FilterType.HIGH_PASS;
+                break;
+            case "bp":
+                filterType = FilterType.BAND_PASS;
+                break;
+            default:
+                return null;
+        }
 
-        if (this.hasTarget (modulator, this.tags.targetVolValue ()))
-            return this.readEnvelopeFromEnvelopeElement (envElement);
-        return null;
+        final String cutoffText = valueMap.get ("cutoff");
+        final double cutoff = cutoffText == null ? 1.0 : Double.parseDouble (cutoffText);
+        final String resonanceText = valueMap.get ("resonance");
+        final double resonance = resonanceText == null ? 1.0 : Double.parseDouble (resonanceText);
+        return new DefaultFilter (filterType, Integer.parseInt (matcher.group (2)), cutoff * IFilter.MAX_FREQUENCY, resonance);
     }
 
 
     /**
-     * Reads an IEnvelope from an envelope XML element.
+     * Reads a modulator from a modulator XML element.
      *
-     * @param envElement The envelope XML element.
-     * @return The IEnvelope, if envelope could be read successfully, null else.
+     * @param envElement The modulator XML element
+     * @return The IModulator, if modulator could be read successfully, otherwise null
      */
-    private IEnvelope readEnvelopeFromEnvelopeElement (final Element envElement)
+    private IModulator readModulatorFromElement (final Element envElement)
     {
         final String envType = envElement.getAttribute (this.tags.envTypeAttribute ());
         if (envType == null)
@@ -843,27 +1004,20 @@ public abstract class AbstractNKIMetadataFileHandler
 
         try
         {
-            final DefaultEnvelope env = new DefaultEnvelope ();
+            final DefaultModulator modulator = new DefaultModulator ();
+            final IEnvelope env = modulator.getSource ();
 
             final Map<String, String> envParams = this.readValueMap (envElement);
-            final double attackTimeMs = getDouble (envParams, this.tags.attackParam ());
-            env.setAttack (attackTimeMs / 1000.0d);
-
-            final double holdTimeMs = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.holdParam ());
-            env.setHold (holdTimeMs / 1000.0d);
-
-            final double decayTimeMs = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.decayParam ());
-            env.setDecay (decayTimeMs / 1000.0d);
+            env.setAttack (getDouble (envParams, this.tags.attackParam ()) / 1000.0d);
+            env.setHold (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.holdParam ()) / 1000.0d);
+            env.setDecay (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.decayParam ()) / 1000.0d);
 
             if (!envType.equals (this.tags.ahdEnvTypeValue ()))
             {
-                final double sustainLinear = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.sustainParam ());
-                env.setSustain (sustainLinear);
-
-                final double releaseTimeMs = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.releaseParam ());
-                env.setRelease (releaseTimeMs / 1000.0d);
+                env.setSustain (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.sustainParam ()));
+                env.setRelease (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.releaseParam ()) / 1000.0d);
             }
-            return env;
+            return modulator;
         }
         catch (final ValueNotAvailableException e)
         {
@@ -924,13 +1078,21 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Retrieves whether a given modulator element has a specific target.
+     * Retrieves the target from the given modulator element.
      *
-     * @param modulator The modulator
-     * @param expectedTargetValue The target value that is expected
-     * @return True if the modulator has the expected target value, false else
+     * @param modulator The modulator element
+     * @return The target value, null if not present
      */
-    protected abstract boolean hasTarget (Element modulator, String expectedTargetValue);
+    protected abstract String getModulationTarget (Element modulator);
+
+
+    /**
+     * Retrieves the intensity from the given modulator element.
+     *
+     * @param modulator The modulator element
+     * @return The intensity value, 0 if not present or could parsed
+     */
+    protected abstract double getModulationIntensity (Element modulator);
 
 
     /**

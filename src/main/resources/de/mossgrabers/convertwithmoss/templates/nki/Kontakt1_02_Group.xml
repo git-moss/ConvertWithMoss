@@ -5,7 +5,7 @@
         <V name="tune" value="1.0"/>
         <V name="keyTracking" value="%GROUP_KEY_TRACKING%"/>
         <V name="reverse" value="%GROUP_REVERSE%"/>
-        <V name="releaseTrigger" value="no"/>
+        <V name="releaseTrigger" value="%GROUP_RELEASE_TRIGGER%"/>
         <V name="releaseTriggerNoteMonophonic" value="no"/>
         <V name="m_bMuted" value="no"/>
         <V name="m_bSolo" value="no"/>
@@ -28,11 +28,11 @@
       </GroupStart>
       <Grain version="0.70"/>
       <Filter version="0.70">
-        <V name="type" value="lp2pole"/>
+        <V name="type" value="%FILTER_TYPE%"/>
         <V name="executionOrder" value="1"/>
         <V name="bypass" value="no"/>
-        <V name="cutoff" value="0.983333"/>
-        <V name="resonance" value="0.000000"/>
+        <V name="cutoff" value="%FILTER_CUTOFF%"/>
+        <V name="resonance" value="%FILTER_RESONANCE%"/>
       </Filter>
       <FXCompressor version="0.60"/>
       <FXInverter version="0.60"/>
@@ -43,7 +43,7 @@
       <IntModulators>
         <NiSS_IntMod index="0" version="0.50">
           <V name="target" value="volume"/>
-          <V name="intensity" value="1"/>
+          <V name="intensity" value="%ENVELOPE_INTENSITY%"/>
           <V name="bypass" value="no"/>
           <V name="retrigger" value="yes"/>
           <Envelope type="ahdsr" version="0.60">
@@ -57,30 +57,30 @@
         </NiSS_IntMod>
         <NiSS_IntMod index="1" version="0.50">
           <V name="target" value="filterCutoff"/>
-          <V name="intensity" value="0.000000"/>
+          <V name="intensity" value="%FILTER_CUTOFF_ENVELOPE_INTENSITY%"/>
           <V name="bypass" value="no"/>
           <V name="retrigger" value="yes"/>
           <Envelope type="ahdsr" version="0.60">
             <V name="atkCurving" value="0"/>
-            <V name="attack" value="0.000000"/>
-            <V name="decay" value="0.000000"/>
-            <V name="hold" value="0.000000"/>
-            <V name="release" value="0.000000"/>
-            <V name="sustain" value="1.000000"/>
+            <V name="attack" value="%FILTER_CUTOFF_ENVELOPE_ATTACK%"/>
+            <V name="decay" value="%FILTER_CUTOFF_ENVELOPE_DECAY%"/>
+            <V name="hold" value="%FILTER_CUTOFF_ENVELOPE_HOLD%"/>
+            <V name="release" value="%FILTER_CUTOFF_ENVELOPE_RELEASE%"/>
+            <V name="sustain" value="%FILTER_CUTOFF_ENVELOPE_SUSTAIN%"/>
           </Envelope>
         </NiSS_IntMod>
         <NiSS_IntMod index="2" version="0.50">
           <V name="target" value="pitch"/>
-          <V name="intensity" value="0.000000"/>
+          <V name="intensity" value="%PITCH_ENVELOPE_INTENSITY%"/>
           <V name="bypass" value="no"/>
           <V name="retrigger" value="yes"/>
           <Envelope type="ahdsr" version="0.60">
             <V name="atkCurving" value="0"/>
-            <V name="attack" value="0.000000"/>
-            <V name="decay" value="0.000000"/>
-            <V name="hold" value="0.000000"/>
-            <V name="release" value="0.000000"/>
-            <V name="sustain" value="1.000000"/>
+            <V name="attack" value="%PITCH_ENVELOPE_ATTACK%"/>
+            <V name="decay" value="%PITCH_ENVELOPE_DECAY%"/>
+            <V name="hold" value="%PITCH_ENVELOPE_HOLD%"/>
+            <V name="release" value="%PITCH_ENVELOPE_RELEASE%"/>
+            <V name="sustain" value="%PITCH_ENVELOPE_SUSTAIN%"/>
           </Envelope>
         </NiSS_IntMod>
       </IntModulators>

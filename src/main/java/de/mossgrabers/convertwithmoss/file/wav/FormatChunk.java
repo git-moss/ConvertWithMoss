@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Accessor for a format chunk ("fmt ") in a WAV file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class FormatChunk extends WavChunk
 {

@@ -29,7 +29,7 @@ import java.util.function.Consumer;
  * must end with <i>.wav</i>. All wave files in a folder are considered to belong to one
  * multi-sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class WavMultisampleDetectorTask extends AbstractDetectorTask
 {

@@ -19,7 +19,7 @@ import javafx.scene.control.ScrollPane;
  *
  * @param <T> The type of the descriptor task
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public abstract class AbstractDetectorWithMetadataPane<T extends AbstractDetectorTask> extends AbstractDetector<T>
 {

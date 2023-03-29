@@ -20,7 +20,7 @@ import java.util.logging.SimpleFormatter;
 /**
  * Command line utility to look for specific settings in a sample chunk.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DumpWaveFileChunks
 {

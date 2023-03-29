@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * A SF2 sample descriptor.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2SampleDescriptor
 {

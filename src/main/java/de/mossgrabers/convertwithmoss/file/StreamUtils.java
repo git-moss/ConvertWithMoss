@@ -18,7 +18,7 @@ import java.util.Date;
 /**
  * Helper class for dealing reading from streams and data inputs.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class StreamUtils
 {

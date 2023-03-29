@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 /**
  * Interface to a filters' settings.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface IFilter
 {
@@ -53,25 +53,9 @@ public interface IFilter
 
 
     /**
-     * Set the modulation depth of the filter envelope.
+     * Get the filter cutoff modulator.
      *
-     * @param depth The depth in the range of [-12000..12000] cents
+     * @return The modulator
      */
-    void setEnvelopeDepth (int depth);
-
-
-    /**
-     * Get the modulation depth of the filter envelope.
-     *
-     * @return The depth in the range of [-12000..12000] cents
-     */
-    int getEnvelopeDepth ();
-
-
-    /**
-     * Get the filter envelope.
-     *
-     * @return The envelope
-     */
-    IEnvelope getEnvelope ();
+    IModulator getCutoffModulator ();
 }

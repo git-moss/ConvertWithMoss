@@ -2,12 +2,13 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.type;
+package de.mossgrabers.convertwithmoss.format.nki.type.kontakt1;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.nki.NiSSMetadataFileHandler;
+import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
+import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -24,7 +25,7 @@ import java.util.Optional;
 /**
  * Can handle NKI files in Kontakt 1 format.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Kontakt1Type extends AbstractKontaktType
 {

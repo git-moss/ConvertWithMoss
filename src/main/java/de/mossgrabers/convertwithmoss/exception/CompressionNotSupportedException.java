@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.exception;
 /**
  * Exception that indicates that only uncompressed WAV files are supported.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class CompressionNotSupportedException extends Exception
 {

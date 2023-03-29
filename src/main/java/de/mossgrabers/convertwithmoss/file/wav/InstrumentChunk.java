@@ -12,7 +12,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 /**
  * Accessor for an instrument chunk ("inst") in a WAV file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class InstrumentChunk extends WavChunk
 {

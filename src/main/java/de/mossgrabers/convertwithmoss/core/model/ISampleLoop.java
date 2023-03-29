@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 /**
  * Interface to the loop of a sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface ISampleLoop
 {

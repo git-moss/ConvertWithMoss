@@ -15,7 +15,7 @@ import java.util.function.Consumer;
  * Detects all potential multi-sample source files (or aggregates multiple required ones depending
  * on the source format).
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface IDetector extends ICoreTask
 {

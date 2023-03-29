@@ -15,7 +15,7 @@ import java.util.Optional;
 /**
  * A detected source for a multi-sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface IMultisampleSource
 {

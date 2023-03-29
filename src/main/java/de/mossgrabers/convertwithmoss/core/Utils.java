@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.core;
 /**
  * Some helper functions.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Utils
 {

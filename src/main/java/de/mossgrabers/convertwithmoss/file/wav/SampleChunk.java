@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Accessor for a sample chunk ("smpl") in a WAV file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class SampleChunk extends WavChunk
 {

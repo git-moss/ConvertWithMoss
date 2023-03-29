@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 /**
  * The SFZ format consists of a number of headers. See https://sfzformat.com
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class SfzHeader
 {

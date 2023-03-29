@@ -14,7 +14,7 @@ import java.io.IOException;
 /**
  * Creates and stores a multi-sample file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface ICreator extends ICoreTask
 {

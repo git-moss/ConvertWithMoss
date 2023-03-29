@@ -20,7 +20,7 @@ import java.util.zip.Inflater;
 /**
  * Abstract base class for handling NKI files in a specific format.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public abstract class AbstractKontaktType implements IKontaktType
 {

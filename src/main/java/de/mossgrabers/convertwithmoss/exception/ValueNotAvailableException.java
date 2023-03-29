@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.exception;
 /**
  * Indicates that a value is not available.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  * @author Philip Stolz
  */
 public class ValueNotAvailableException extends Exception

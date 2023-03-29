@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.format.akai;
 /**
  * The MPC keygroup format consists of several XML tags.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class MPCKeygroupTag
 {

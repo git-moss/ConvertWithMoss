@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Accessor to a WAV file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class WaveFile
 {

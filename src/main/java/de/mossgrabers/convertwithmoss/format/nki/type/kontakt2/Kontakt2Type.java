@@ -2,7 +2,7 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.type;
+package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -10,8 +10,8 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.convertwithmoss.format.nki.K2MetadataFileHandler;
 import de.mossgrabers.convertwithmoss.format.nki.SoundinfoDocument;
+import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.monolith.Dictionary;
 import de.mossgrabers.convertwithmoss.format.nki.type.monolith.DictionaryItem;
 import de.mossgrabers.convertwithmoss.format.nki.type.monolith.DictionaryItemReferenceType;
@@ -21,7 +21,6 @@ import de.mossgrabers.tools.ui.Functions;
 
 import org.xml.sax.SAXException;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +47,7 @@ import java.util.TimeZone;
 /**
  * Can handle NKI files in Kontakt 2 format including monolith. But only WAV files are supported.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Kontakt2Type extends AbstractKontaktType
 {
@@ -179,23 +178,6 @@ public class Kontakt2Type extends AbstractKontaktType
 
         if (isFourDotTwo)
         {
-            fileAccess.skipBytes (110);
-
-            final ByteArrayOutputStream out = new ByteArrayOutputStream ();
-
-            int value;
-            int count = 0;
-            while ((value = fileAccess.read ()) != -1)
-            {
-                if (count % 16 == 0)
-                    System.out.println ("");
-
-                System.out.print (String.format ("%02X ", value));
-                out.write (value);
-
-                count++;
-            }
-
             this.notifier.logError ("IDS_NKI_KONTAKT422_NOT_SUPPORTED");
             return Collections.emptyList ();
         }

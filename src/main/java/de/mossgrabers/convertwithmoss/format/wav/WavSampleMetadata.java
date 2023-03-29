@@ -29,7 +29,7 @@ import java.util.zip.ZipFile;
 /**
  * Metadata for a WAV sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class WavSampleMetadata extends DefaultSampleMetadata
 {

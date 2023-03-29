@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Helper class for keeping track of created keygroups.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Keygroup
 {

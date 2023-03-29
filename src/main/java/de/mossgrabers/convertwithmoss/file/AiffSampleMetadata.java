@@ -2,7 +2,7 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki;
+package de.mossgrabers.convertwithmoss.file;
 
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.tools.ui.Functions;
@@ -24,7 +24,7 @@ import java.util.Arrays;
 /**
  * Metadata for a AIFF sample. Converts the output to a WAV file when writing!
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class AiffSampleMetadata extends DefaultSampleMetadata
 {

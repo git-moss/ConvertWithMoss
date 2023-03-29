@@ -4,15 +4,15 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
-import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 
 
 /**
  * Default implementation for a filters' settings.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DefaultFilter implements IFilter
 {
@@ -21,7 +21,7 @@ public class DefaultFilter implements IFilter
     protected double     cutoff;
     protected double     resonance;
     protected int        envelopeDepth;
-    protected IEnvelope  envelope = new DefaultEnvelope ();
+    protected IModulator cutoffModulator = new DefaultModulator ();
 
 
     /**
@@ -75,25 +75,9 @@ public class DefaultFilter implements IFilter
 
     /** {@inheritDoc} */
     @Override
-    public IEnvelope getEnvelope ()
+    public IModulator getCutoffModulator ()
     {
-        return this.envelope;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setEnvelopeDepth (final int envelopeDepth)
-    {
-        this.envelopeDepth = envelopeDepth;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public int getEnvelopeDepth ()
-    {
-        return this.envelopeDepth;
+        return this.cutoffModulator;
     }
 
 
@@ -106,7 +90,7 @@ public class DefaultFilter implements IFilter
         long temp;
         temp = Double.doubleToLongBits (this.cutoff);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        result = prime * result + (this.envelope == null ? 0 : this.envelope.hashCode ());
+        result = prime * result + (this.cutoffModulator == null ? 0 : this.cutoffModulator.hashCode ());
         result = prime * result + this.envelopeDepth;
         result = prime * result + this.poles;
         temp = Double.doubleToLongBits (this.resonance);
@@ -127,12 +111,12 @@ public class DefaultFilter implements IFilter
         final DefaultFilter other = (DefaultFilter) obj;
         if (Double.doubleToLongBits (this.cutoff) != Double.doubleToLongBits (other.cutoff))
             return false;
-        if (this.envelope == null)
+        if (this.cutoffModulator == null)
         {
-            if (other.envelope != null)
+            if (other.cutoffModulator != null)
                 return false;
         }
-        else if (!this.envelope.equals (other.envelope))
+        else if (!this.cutoffModulator.equals (other.cutoffModulator))
             return false;
         if (this.envelopeDepth != other.envelopeDepth || this.poles != other.poles || Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance))
             return false;

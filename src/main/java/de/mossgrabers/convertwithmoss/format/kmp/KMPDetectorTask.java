@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  * Detects recursively KMP (KORG Multisample Parameter) files in folders. Files must end with
  * <i>.kmp</i>.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class KMPDetectorTask extends AbstractDetectorTask
 {

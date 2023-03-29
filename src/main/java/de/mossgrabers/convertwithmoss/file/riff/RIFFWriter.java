@@ -11,7 +11,7 @@ import java.io.OutputStream;
 /**
  * Parses Resource Interchange File Format (RIFF) data. See the RIFF specification for more info.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class RIFFWriter
 {

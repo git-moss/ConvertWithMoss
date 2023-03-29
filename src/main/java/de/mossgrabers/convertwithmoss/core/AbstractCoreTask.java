@@ -13,7 +13,7 @@ import javafx.scene.layout.BorderPane;
 /**
  * Base class for creator and detector classes.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public abstract class AbstractCoreTask implements ICoreTask
 {

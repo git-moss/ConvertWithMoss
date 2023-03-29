@@ -13,7 +13,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 /**
  * Accessor for a data chunk ("data") in a WAV file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DataChunk extends WavChunk
 {

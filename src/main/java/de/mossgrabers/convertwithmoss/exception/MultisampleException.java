@@ -14,7 +14,7 @@ import java.util.Optional;
 /**
  * Exception that indicates that there is a problem with creating a multisample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class MultisampleException extends Exception
 {

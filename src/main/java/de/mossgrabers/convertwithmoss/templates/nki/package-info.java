@@ -5,6 +5,6 @@
 /**
  * Resources folder for XML template files.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 package de.mossgrabers.convertwithmoss.templates.nki;

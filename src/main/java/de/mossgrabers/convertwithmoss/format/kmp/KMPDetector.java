@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 /**
  * Descriptor for Korg Multisample (KMP) files detector.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class KMPDetector extends AbstractDetectorWithMetadataPane<KMPDetectorTask>
 {

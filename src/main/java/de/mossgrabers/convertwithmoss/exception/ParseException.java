@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.exception;
 /**
  * Exception indicating a parsing error.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class ParseException extends Exception
 {

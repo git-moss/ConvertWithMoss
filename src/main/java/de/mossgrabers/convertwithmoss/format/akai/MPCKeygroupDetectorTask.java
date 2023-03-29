@@ -11,6 +11,7 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -44,7 +45,7 @@ import java.util.function.Consumer;
 /**
  * Detects recursively MPC Keygroup files in folders. Files must end with <i>.xpm</i>.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 {
@@ -291,7 +292,9 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                         continue;
                     samples.add (sampleMetadata);
 
-                    final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+                    final IModulator amplitudeModulator = sampleMetadata.getAmplitudeModulator ();
+                    amplitudeModulator.setDepth (1.0);
+                    final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
                     amplitudeEnvelope.setAttack (volumeAttack);
                     amplitudeEnvelope.setHold (volumeHold);
                     amplitudeEnvelope.setDecay (volumeDecay);
@@ -302,9 +305,10 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                     if (pitchEnvAmount != 0.5)
                     {
                         final int cents = (int) Math.min (3600, Math.max (-3600, Math.round ((pitchEnvAmount - 0.5) * 2.0 * 3600.0)));
-                        sampleMetadata.setPitchEnvelopeDepth (cents);
+                        final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+                        pitchModulator.setDepth (cents);
 
-                        final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
+                        final IEnvelope pitchEnvelope = pitchModulator.getSource ();
                         pitchEnvelope.setAttack (pitchAttack);
                         pitchEnvelope.setHold (pitchHold);
                         pitchEnvelope.setDecay (pitchDecay);
@@ -347,9 +351,10 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         final double filterAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, 0);
         if (filterAmount > 0)
         {
-            filter.setEnvelopeDepth ((int) Math.round (filterAmount * IFilter.MAX_ENVELOPE_DEPTH));
+            final IModulator cutoffModulator = filter.getCutoffModulator ();
+            cutoffModulator.setDepth ((int) Math.round (filterAmount * IFilter.MAX_ENVELOPE_DEPTH));
 
-            final IEnvelope filterEnvelope = filter.getEnvelope ();
+            final IEnvelope filterEnvelope = cutoffModulator.getSource ();
             filterEnvelope.setAttack (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, 0, 30, 0));
             filterEnvelope.setHold (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, 0, 30, 0));
             filterEnvelope.setDecay (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, 0, 30, 0));

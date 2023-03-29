@@ -46,7 +46,7 @@ import java.util.zip.ZipOutputStream;
  * related samples are in a separate folder. The description file and sample files can optionally be
  * zipped into a dslibrary file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DecentSamplerCreator extends AbstractCreator
 {
@@ -232,7 +232,7 @@ public class DecentSamplerCreator extends AbstractCreator
         if (!velocityLayers.isEmpty ())
         {
             final ISampleMetadata sampleMetadata = velocityLayers.get (0).getSampleMetadata ().get (0);
-            amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+            amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
             addVolumeEnvelope (amplitudeEnvelope, groupsElement);
 
             final PlayLogic playLogic = sampleMetadata.getPlayLogic ();
@@ -263,7 +263,7 @@ public class DecentSamplerCreator extends AbstractCreator
                 groupElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
             for (final ISampleMetadata sample: layer.getSampleMetadata ())
-                this.createSample (document, folderName, groupElement, sample);
+                createSample (document, folderName, groupElement, sample);
         }
 
         this.makeMonophonic (document, multisampleElement, groupsElement);
@@ -301,7 +301,7 @@ public class DecentSamplerCreator extends AbstractCreator
      * @param groupElement The element where to add the sample information
      * @param info Where to get the sample info from
      */
-    private void createSample (final Document document, final String folderName, final Element groupElement, final ISampleMetadata info)
+    private static void createSample (final Document document, final String folderName, final Element groupElement, final ISampleMetadata info)
     {
         /////////////////////////////////////////////////////
         // Sample element and attributes

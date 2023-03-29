@@ -2,11 +2,11 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki;
+package de.mossgrabers.convertwithmoss.format.nki.type.kontakt1;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.format.nki.tag.NiSSTag;
+import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Element;
@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Parses a NKI XML file in NiSS format.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  * @author Philip Stolz
  */
 public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
@@ -54,9 +54,41 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected boolean hasTarget (final Element modulator, final String expectedTargetValue)
+    protected String getModulationTarget (final Element modulator)
     {
-        return this.hasNameValuePairs (modulator, this.tags.targetParam (), this.tags.targetVolValue (), this.tags.intensityParam (), "1");
+        final Element [] valueElements = XMLUtils.getChildElementsByName (modulator, this.tags.value (), false);
+        for (final Element valueElement: valueElements)
+        {
+            // We only support 1 target!
+            if (this.tags.targetParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
+                return valueElement.getAttribute (this.tags.valueValueAttribute ());
+        }
+        return null;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected double getModulationIntensity (final Element modulator)
+    {
+        final Element [] valueElements = XMLUtils.getChildElementsByName (modulator, this.tags.value (), false);
+        for (final Element valueElement: valueElements)
+        {
+            // We only support 1 target!
+            if (this.tags.intensityParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
+            {
+                final String attribute = valueElement.getAttribute (this.tags.valueValueAttribute ());
+                try
+                {
+                    return attribute == null ? 0 : Double.parseDouble (attribute);
+                }
+                catch (final NumberFormatException ex)
+                {
+                    return 0;
+                }
+            }
+        }
+        return 0;
     }
 
 

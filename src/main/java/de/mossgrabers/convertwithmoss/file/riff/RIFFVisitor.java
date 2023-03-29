@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 /**
  * Callback interface for the RIFF parser.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface RIFFVisitor
 {

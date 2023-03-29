@@ -28,7 +28,7 @@ import java.util.Set;
  * <p>
  * Preset ->1:N Zones ->1:1 Instrument ->1:N Zone ->1:1 Sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2File
 {

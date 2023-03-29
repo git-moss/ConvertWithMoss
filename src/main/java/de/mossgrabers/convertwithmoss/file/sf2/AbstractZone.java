@@ -14,7 +14,7 @@ import java.util.Optional;
 /**
  * Base class for SF2 zones.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public abstract class AbstractZone
 {

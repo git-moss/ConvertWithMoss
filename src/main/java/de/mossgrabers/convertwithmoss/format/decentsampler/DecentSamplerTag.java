@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * The Decent Sampler preset format consists of several XML tags.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DecentSamplerTag
 {

@@ -11,7 +11,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 /**
  * The loop of a sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DefaultSampleLoop implements ISampleLoop
 {

@@ -17,7 +17,7 @@ import java.util.Set;
 /**
  * RIFF Chunks form the building blocks of a RIFF file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class RIFFChunk implements IChunk
 {

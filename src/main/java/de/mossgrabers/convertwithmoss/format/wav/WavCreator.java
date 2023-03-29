@@ -15,7 +15,7 @@ import java.io.IOException;
 /**
  * Only stores WAV files. There is no file and all related samples are stored in a separate folder.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class WavCreator extends AbstractCreator
 {

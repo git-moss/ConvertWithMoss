@@ -8,7 +8,7 @@ package de.mossgrabers.convertwithmoss.exception;
  * Exception that indicates that a chunk has no data, e.g. because it was too large to be loaded or
  * was not initialized.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class NoDataInChunkException extends RuntimeException
 {

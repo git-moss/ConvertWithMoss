@@ -10,6 +10,7 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
@@ -47,7 +48,7 @@ import java.util.regex.Pattern;
 /**
  * Detects recursively SFZ multisample files in folders. Files must end with <i>.sfz</i>.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class SfzDetectorTask extends AbstractDetectorTask
 {
@@ -488,9 +489,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
         int envelopeDepth = this.getIntegerValue (SfzOpcode.PITCHEG_DEPTH, 0);
         if (envelopeDepth == 0)
             envelopeDepth = this.getIntegerValue (SfzOpcode.PITCH_DEPTH, 0);
-        sampleMetadata.setPitchEnvelopeDepth (envelopeDepth);
+        final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+        pitchModulator.setDepth (envelopeDepth);
 
-        final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
+        final IEnvelope pitchEnvelope = pitchModulator.getSource ();
         pitchEnvelope.setDelay (this.getDoubleValue (SfzOpcode.PITCHEG_DELAY, SfzOpcode.PITCH_DELAY));
         pitchEnvelope.setAttack (this.getDoubleValue (SfzOpcode.PITCHEG_ATTACK, SfzOpcode.PITCH_ATTACK));
         pitchEnvelope.setHold (this.getDoubleValue (SfzOpcode.PITCHEG_HOLD, SfzOpcode.PITCH_HOLD));
@@ -547,10 +549,11 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final IFilter filter = new DefaultFilter (filterType, poles, cutoff, resonance);
         sampleMetadata.setFilter (filter);
 
-        filter.setEnvelopeDepth (envelopeDepth);
+        final IModulator cutoffModulator = filter.getCutoffModulator ();
+        cutoffModulator.setDepth (envelopeDepth);
 
         // Filter envelope
-        final IEnvelope filterEnvelope = filter.getEnvelope ();
+        final IEnvelope filterEnvelope = cutoffModulator.getSource ();
         filterEnvelope.setDelay (this.getDoubleValue (SfzOpcode.FILEG_DELAY, SfzOpcode.FIL_DELAY));
         filterEnvelope.setAttack (this.getDoubleValue (SfzOpcode.FILEG_ATTACK, SfzOpcode.FIL_ATTACK));
         filterEnvelope.setHold (this.getDoubleValue (SfzOpcode.FILEG_HOLD, SfzOpcode.FIL_HOLD));
@@ -632,7 +635,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final double volume = this.getDoubleValue (SfzOpcode.VOLUME, 0);
         sampleMetadata.setGain (Math.min (12, Math.max (-12, volume)));
 
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
         amplitudeEnvelope.setDelay (this.getDoubleValue (SfzOpcode.AMPEG_DELAY, SfzOpcode.AMP_DELAY));
         amplitudeEnvelope.setAttack (this.getDoubleValue (SfzOpcode.AMPEG_ATTACK, SfzOpcode.AMP_ATTACK));
         amplitudeEnvelope.setHold (this.getDoubleValue (SfzOpcode.AMPEG_HOLD, SfzOpcode.AMP_HOLD));

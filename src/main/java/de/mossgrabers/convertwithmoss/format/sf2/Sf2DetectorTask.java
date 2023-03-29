@@ -10,6 +10,7 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -43,7 +44,7 @@ import java.util.function.Consumer;
 /**
  * Detects recursively SoundFont 2 files in folders. Files must end with <i>.sf2</i>.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2DetectorTask extends AbstractDetectorTask
 {
@@ -422,7 +423,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             sampleMetadata.setGain (-initialAttenuation / 10.0);
 
         // Volume envelope
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
         amplitudeEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DELAY)));
         amplitudeEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_ATTACK)));
         amplitudeEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_HOLD)));
@@ -452,10 +453,12 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 }
 
                 final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance);
-                filter.setEnvelopeDepth (generators.getSignedValue (Generator.MOD_ENV_TO_FILTER_CUTOFF).intValue ());
-                if (filter.getEnvelopeDepth () != 0)
+                final IModulator cutoffModulator = filter.getCutoffModulator ();
+                final int cutoffModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_FILTER_CUTOFF).intValue ();
+                cutoffModulator.setDepth (cutoffModDepth);
+                if (cutoffModDepth != 0)
                 {
-                    final IEnvelope filterEnvelope = filter.getEnvelope ();
+                    final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                     filterEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
                     filterEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
                     filterEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
@@ -466,10 +469,12 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
                 sampleMetadata.setFilter (filter);
 
-                sampleMetadata.setPitchEnvelopeDepth (generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ());
-                if (sampleMetadata.getPitchEnvelopeDepth () != 0)
+                final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+                final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
+                pitchModulator.setDepth (pitchModDepth);
+                if (pitchModDepth != 0)
                 {
-                    final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
+                    final IEnvelope pitchEnvelope = pitchModulator.getSource ();
                     pitchEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
                     pitchEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
                     pitchEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));

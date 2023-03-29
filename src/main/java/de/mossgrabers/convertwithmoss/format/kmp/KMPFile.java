@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Accessor to a Korg Multisample (KMP) file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class KMPFile
 {

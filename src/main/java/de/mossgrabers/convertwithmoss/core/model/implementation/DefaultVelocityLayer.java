@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * A velocity layer.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DefaultVelocityLayer implements IVelocityLayer
 {

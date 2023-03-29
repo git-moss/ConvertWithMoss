@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.file.riff;
 /**
  * Interface to a chunk.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface IChunk
 {

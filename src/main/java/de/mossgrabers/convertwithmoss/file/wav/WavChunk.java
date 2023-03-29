@@ -13,7 +13,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 /**
  * Base class for a wave chunk.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class WavChunk implements IChunk
 {
