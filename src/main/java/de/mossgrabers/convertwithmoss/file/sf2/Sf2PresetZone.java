@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 /**
  * A SF2 preset zone.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2PresetZone extends AbstractZone
 {

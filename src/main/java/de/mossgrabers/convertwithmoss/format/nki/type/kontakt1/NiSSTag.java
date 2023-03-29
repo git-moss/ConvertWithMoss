@@ -2,12 +2,15 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.tag;
+package de.mossgrabers.convertwithmoss.format.nki.type.kontakt1;
+
+import de.mossgrabers.convertwithmoss.format.nki.AbstractTagsAndAttributes;
+
 
 /**
  * Tags used in the NKI NiSS XML structure.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  * @author Philip Stolz
  */
 public class NiSSTag extends AbstractTagsAndAttributes

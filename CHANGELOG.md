@@ -3,9 +3,13 @@
 ## 6.1.0 (unreleased)
 
 * Tabs are now orderd alphabetically.
+* Bitwig Multisamples
+  * Fixed: If a loop was set to Off it was still applied.
 * Native Instruments NKI files
   * New: Added support for AIFF files (will be converted to WAV).
   * New: Added support for reading Kontakt NKI files stored in big-endian format. But could not test with any monolith file, therefore an error is shown.
+  * New: Added support for pitch envelopes.
+  * New: Added support for filter settings and cutoff envelope.
   * Fixed: High velocity crossover value did overwrite low velocity crossover.
 * Korg KMP
   * Fixed: Extracting velocity layers into single KMP files did overwrite the KSF sample files.
@@ -20,7 +24,7 @@
 ## 5.2.1
 
 * Fixed: Bitwig Multisample files with old layer formatting had duplicated layers as output.
-* Fixed: Missing trigger types in Decenter Sampler files did show an unecessary error.
+* Fixed: Missing trigger types in Decenter Sampler files did show an unnecessary error.
 
 ## 5.2
 

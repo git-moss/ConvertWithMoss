@@ -31,7 +31,7 @@ import java.util.Optional;
 /**
  * Accessor to a Korg Sample (KSF) file.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class KSFFile extends DefaultSampleMetadata
 {

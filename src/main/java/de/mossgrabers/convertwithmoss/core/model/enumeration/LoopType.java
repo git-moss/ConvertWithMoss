@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.core.model.enumeration;
 /**
  * The playback type of a loop in a sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public enum LoopType
 {

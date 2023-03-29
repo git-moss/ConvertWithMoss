@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 /**
  * Base class for detector tasks.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public abstract class AbstractDetectorTask extends Task<Boolean>
 {

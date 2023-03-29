@@ -19,7 +19,7 @@ import java.util.Set;
 /**
  * Manages a Soundinfo XML document containing some metadata information about a NKI instrument.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class SoundinfoDocument
 {

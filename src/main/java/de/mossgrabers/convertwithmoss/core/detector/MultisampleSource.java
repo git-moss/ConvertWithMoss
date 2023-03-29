@@ -20,7 +20,7 @@ import java.util.Optional;
 /**
  * Holds the data of a multi-sample source.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class MultisampleSource implements IMultisampleSource
 {

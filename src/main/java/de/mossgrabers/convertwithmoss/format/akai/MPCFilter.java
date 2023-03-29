@@ -12,7 +12,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 /**
  * MPC extension to a filters' settings.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class MPCFilter extends DefaultFilter
 {

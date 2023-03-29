@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * A Kontakt 2 Monolith dictionary.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Dictionary
 {

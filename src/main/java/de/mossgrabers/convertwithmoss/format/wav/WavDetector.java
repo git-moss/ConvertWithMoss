@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 /**
  * Descriptor for WAV files detector.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
 {

@@ -63,7 +63,7 @@ import java.util.function.Consumer;
 /**
  * The sample converter application.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class ConvertWithMossApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {

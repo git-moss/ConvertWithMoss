@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * A velocity layer in a multi-sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface IVelocityLayer
 {

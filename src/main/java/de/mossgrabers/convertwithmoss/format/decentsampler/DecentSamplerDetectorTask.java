@@ -49,7 +49,7 @@ import java.util.zip.ZipFile;
  * Detects recursively DecentSampler preset and library files in folders. Files must end with
  * <i>.dspreset</i> or <i>.dslibrary</i>.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DecentSamplerDetectorTask extends AbstractDetectorTask
 {
@@ -389,7 +389,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             /////////////////////////////////////////////////////
             // Volume envelope
 
-            final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+            final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
             amplitudeEnvelope.setAttack (this.getDoubleValue (DecentSamplerTag.AMP_ENV_ATTACK, -1));
             amplitudeEnvelope.setDecay (this.getDoubleValue (DecentSamplerTag.AMP_ENV_DECAY, -1));
             amplitudeEnvelope.setSustain (this.getDoubleValue (DecentSamplerTag.AMP_ENV_SUSTAIN, -1));

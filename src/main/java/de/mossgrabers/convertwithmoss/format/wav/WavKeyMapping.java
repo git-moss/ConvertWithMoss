@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 /**
  * Detects MIDI notes and creates a key mapping for the multisample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class WavKeyMapping
 {

@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * A SF2 modulator.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2Modulator
 {

@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Creator for Native Instruments Kontakt NKI files.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class NkiCreator extends AbstractCreator
 {

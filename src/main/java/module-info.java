@@ -1,7 +1,7 @@
 /**
  * The ConvertWithMoss module.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 module de.mossgrabers.convertwithmoss
 {

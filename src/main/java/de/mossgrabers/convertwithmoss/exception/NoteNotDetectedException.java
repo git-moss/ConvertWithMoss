@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.exception;
 /**
  * Exception that indicates that no note could be detected in a file name.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class NoteNotDetectedException extends Exception
 {

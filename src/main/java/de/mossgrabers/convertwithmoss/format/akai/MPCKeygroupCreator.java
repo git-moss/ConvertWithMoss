@@ -10,6 +10,7 @@ import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
@@ -40,7 +41,7 @@ import java.util.Optional;
  * folder. A keygroup program offers up to 128 keygroups, and each keygroup can hold up to four
  * samples (Layers 1–4). This is a total of 512 samples.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class MPCKeygroupCreator extends AbstractCreator
 {
@@ -60,7 +61,7 @@ public class MPCKeygroupCreator extends AbstractCreator
     private static final double PLUS_6_DB            = 1.0;
     private static final double VALUE_RANGE          = PLUS_6_DB - MINUS_12_DB;
 
-    private static final double MIN_ENV_TIME_S       = 0.001;                  // 0.00147392290249433d;
+    private static final double MIN_ENV_TIME_S       = 0.001;
     private static final double MAX_ENV_TIME_S       = 30.0d;
     private static final double DEFAULT_RELEASE_TIME = 0.0d;
     private static final double DEFAULT_DECAY_TIME   = 0.0022861319686154d;
@@ -359,13 +360,14 @@ public class MPCKeygroupCreator extends AbstractCreator
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, formatDouble (normalizeFrequency (filter.getCutoff ()), 2));
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RESONANCE, formatDouble (Math.min (40, filter.getResonance ()) / 40.0, 2));
 
-            final int envelopeDepth = filter.getEnvelopeDepth ();
+            final IModulator cutoffModulator = filter.getCutoffModulator ();
+            final double envelopeDepth = cutoffModulator.getDepth ();
             // Only positive modulation values are supported with MPC
             if (envelopeDepth > 0)
             {
-                XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, formatDouble (envelopeDepth / (double) IFilter.MAX_ENVELOPE_DEPTH, 2));
+                XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, formatDouble (envelopeDepth / IFilter.MAX_ENVELOPE_DEPTH, 2));
 
-                final IEnvelope filterEnvelope = filter.getEnvelope ();
+                final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                 setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
                 setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, filterEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
                 setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, filterEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
@@ -378,21 +380,22 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, sampleMetadata.getKeyTracking () == 0 ? "True" : "False");
 
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1, 1);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_RELEASE_TIME, true);
 
-        final int pitchDepth = sampleMetadata.getPitchEnvelopeDepth ();
+        final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+        final double pitchDepth = pitchModulator.getDepth ();
         // Only positive modulation values are supported with MPC
         if (pitchDepth > 0)
         {
             final double mpcPitchDepth = Utils.clamp (pitchDepth, -3600, 3600) / 3600.0 / 2.0 + 0.5;
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, formatDouble (mpcPitchDepth, 2));
 
-            final IEnvelope pitchEnvelope = sampleMetadata.getPitchEnvelope ();
+            final IEnvelope pitchEnvelope = pitchModulator.getSource ();
             setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, pitchEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
             setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, pitchEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
             setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, pitchEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
@@ -406,11 +409,8 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         if (trigger == TriggerType.RELEASE)
             triggerMode = SamplePlay.NOTE_OFF;
-        else if (sampleMetadata.getAmplitudeEnvelope ().getSustain () <= 0)
-        {
-            if (sampleMetadata.getKeyLow () == sampleMetadata.getKeyHigh ())
-                triggerMode = SamplePlay.ONE_SHOT;
-        }
+        else if (amplitudeEnvelope.getSustain () <= 0 && sampleMetadata.getKeyLow () == sampleMetadata.getKeyHigh ())
+            triggerMode = SamplePlay.ONE_SHOT;
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode.ordinal ()));
 

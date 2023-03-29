@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.core;
 /**
  * Executes a multi-sample format conversion.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 @FunctionalInterface
 public interface IExecute

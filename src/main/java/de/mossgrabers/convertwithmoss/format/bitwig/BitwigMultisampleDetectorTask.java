@@ -40,7 +40,7 @@ import java.util.zip.ZipFile;
  * Detects recursively Bitwig multi-sample files in folders. Files must end with
  * <i>.multisample</i>.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 {
@@ -325,7 +325,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             this.checkAttributes (BitwigMultisampleTag.LOOP, loopElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LOOP));
 
             final String attribute = loopElement.getAttribute ("mode");
-            if (attribute != null)
+            if (attribute != null && !"off".equalsIgnoreCase (attribute))
             {
                 final DefaultSampleLoop loop = new DefaultSampleLoop ();
                 switch (attribute)

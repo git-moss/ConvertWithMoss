@@ -19,7 +19,7 @@ import java.util.Map;
  * with.
  *
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class CSVRenameFile
 {

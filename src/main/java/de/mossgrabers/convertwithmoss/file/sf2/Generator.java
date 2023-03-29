@@ -10,7 +10,7 @@ import java.util.Set;
 /**
  * All SF2 generators (= a synthesizer parameter).
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Generator
 {

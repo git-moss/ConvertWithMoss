@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 /**
  * Descriptor for Native Instruments Kontakt Instrument (NKI/NKM) files detector.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class NkiDetector extends AbstractDetectorWithMetadataPane<NkiDetectorTask>
 {

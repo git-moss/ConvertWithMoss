@@ -12,7 +12,7 @@ import javafx.scene.Node;
 /**
  * Base interface for creators and detectors providing some descriptive metadata.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface ICoreTask
 {

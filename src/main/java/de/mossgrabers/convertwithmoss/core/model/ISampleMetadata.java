@@ -17,9 +17,9 @@ import java.util.Optional;
 /**
  * Metadata for a sample.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
-public interface ISampleMetadata extends IEnvelopeAccess
+public interface ISampleMetadata
 {
     /**
      * Get the file where the sample is stored.
@@ -399,6 +399,22 @@ public interface ISampleMetadata extends IEnvelopeAccess
      * @return The four bytes converted to an integer
      */
     int getSampleRate ();
+
+
+    /**
+     * Get the amplitude modulator.
+     * 
+     * @return The modulator, never null
+     */
+    IModulator getAmplitudeModulator ();
+
+
+    /**
+     * Get the pitch modulator.
+     * 
+     * @return The modulator, never null
+     */
+    IModulator getPitchModulator ();
 
 
     /**

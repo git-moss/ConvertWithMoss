@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 /**
  * Descriptor for SoundFont 2 files detector.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2Detector extends AbstractDetector<Sf2DetectorTask>
 {

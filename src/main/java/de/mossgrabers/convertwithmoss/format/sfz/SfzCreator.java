@@ -10,6 +10,7 @@ import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
@@ -33,7 +34,7 @@ import java.util.Optional;
  * Creator for SFZ multi-sample files. SFZ has a description file and all related samples in a
  * separate folder.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class SfzCreator extends AbstractCreator
 {
@@ -85,7 +86,7 @@ public class SfzCreator extends AbstractCreator
         }
 
         final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
-        final String metadata = this.createMetadata (safeSampleFolderName, multisampleSource);
+        final String metadata = createMetadata (safeSampleFolderName, multisampleSource);
 
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
@@ -110,7 +111,7 @@ public class SfzCreator extends AbstractCreator
      * @param multisampleSource The multi-sample
      * @return The XML structure
      */
-    private String createMetadata (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
+    private static String createMetadata (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
     {
         final StringBuilder sb = new StringBuilder (SFZ_HEADER);
 
@@ -162,7 +163,7 @@ public class SfzCreator extends AbstractCreator
             sequence = 1;
             for (final ISampleMetadata info: sampleMetadata)
             {
-                this.createSample (safeSampleFolderName, sb, info, sequence);
+                createSample (safeSampleFolderName, sb, info, sequence);
                 if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                     sequence++;
             }
@@ -180,7 +181,7 @@ public class SfzCreator extends AbstractCreator
      * @param info Where to get the sample info from
      * @param sequenceNumber The number in the sequence for round-robin playback
      */
-    private void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
+    private static void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
     {
         sb.append ("\n<").append (SfzHeader.REGION).append (">\n");
         final Optional<String> filename = info.getUpdatedFilename ();
@@ -285,12 +286,13 @@ public class SfzCreator extends AbstractCreator
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final int envelopeDepth = info.getPitchEnvelopeDepth ();
+        final IModulator pitchModulator = info.getPitchModulator ();
+        final double envelopeDepth = pitchModulator.getDepth ();
         if (envelopeDepth > 0)
         {
-            sb.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append (info.getPitchEnvelopeDepth ()).append (LINE_FEED);
+            sb.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) envelopeDepth).append (LINE_FEED);
 
-            final IEnvelope pitchEnvelope = info.getPitchEnvelope ();
+            final IEnvelope pitchEnvelope = pitchModulator.getSource ();
 
             addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DELAY, pitchEnvelope.getDelay ());
             addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK, pitchEnvelope.getAttack ());
@@ -374,7 +376,7 @@ public class SfzCreator extends AbstractCreator
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeEnvelope ();
+        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
 
         addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DELAY, amplitudeEnvelope.getDelay ());
         addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK, amplitudeEnvelope.getAttack ());
@@ -410,12 +412,13 @@ public class SfzCreator extends AbstractCreator
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final int envelopeDepth = filter.getEnvelopeDepth ();
+        final IModulator cutoffModulator = filter.getCutoffModulator ();
+        final double envelopeDepth = cutoffModulator.getDepth ();
         if (envelopeDepth > 0)
         {
-            sb.append (SfzOpcode.FILEG_DEPTH).append ('=').append (filter.getEnvelopeDepth ()).append (LINE_FEED);
+            sb.append (SfzOpcode.FILEG_DEPTH).append ('=').append ((int) envelopeDepth).append (LINE_FEED);
 
-            final IEnvelope filterEnvelope = filter.getEnvelope ();
+            final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 
             addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DELAY, filterEnvelope.getDelay ());
             addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK, filterEnvelope.getAttack ());

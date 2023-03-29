@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  * Detects recursively Korgmultisample files in folders. Files must end with
  * <i>.korgmultisample</i>.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 {

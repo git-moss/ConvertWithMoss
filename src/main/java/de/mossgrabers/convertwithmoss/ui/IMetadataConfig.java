@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.ui;
 /**
  * Interface to metadata configuration parameters.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface IMetadataConfig
 {

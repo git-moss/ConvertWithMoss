@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
  *
  * @param <T> The type of the descriptor task
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public abstract class AbstractDetector<T extends AbstractDetectorTask> extends AbstractCoreTask implements IDetector
 {

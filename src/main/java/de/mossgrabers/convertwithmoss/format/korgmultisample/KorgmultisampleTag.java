@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.format.korgmultisample;
 /**
  * Tags and IDs used in the Korgmultisample format.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class KorgmultisampleTag
 {

@@ -2,11 +2,11 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki;
+package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.format.nki.tag.K2Tag;
+import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Parses a NKI XML file in K2 format.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  * @author Philip Stolz
  */
 public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
@@ -82,13 +82,51 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected boolean hasTarget (final Element modulator, final String expectedTargetValue)
+    protected String getModulationTarget (final Element modulator)
     {
         final Element targetsElement = XMLUtils.getChildElementByName (modulator, K2Tag.K2_TARGETS_ELEMENT);
         if (targetsElement == null)
-            return false;
+            return null;
+        for (final Element targetElement: XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false))
+        {
+            for (final Element valueElement: XMLUtils.getChildElementsByName (targetElement, this.tags.value (), false))
+            {
+                // We only support 1 target!
+                if (this.tags.targetParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
+                    return valueElement.getAttribute (this.tags.valueValueAttribute ());
+            }
+        }
+        return null;
+    }
 
-        return this.findElementWithParameters (targetsElement, K2Tag.K2_TARGET_ELEMENT, this.tags.targetParam (), this.tags.targetVolValue (), this.tags.intensityParam (), "1") != null;
+
+    /** {@inheritDoc} */
+    @Override
+    protected double getModulationIntensity (final Element modulator)
+    {
+        final Element targetsElement = XMLUtils.getChildElementByName (modulator, K2Tag.K2_TARGETS_ELEMENT);
+        if (targetsElement == null)
+            return 0;
+        for (final Element targetElement: XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false))
+        {
+            for (final Element valueElement: XMLUtils.getChildElementsByName (targetElement, this.tags.value (), false))
+            {
+                // We only support 1 target!
+                if (this.tags.intensityParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
+                {
+                    final String attribute = valueElement.getAttribute (this.tags.valueValueAttribute ());
+                    try
+                    {
+                        return attribute == null ? 0 : Double.parseDouble (attribute);
+                    }
+                    catch (final NumberFormatException ex)
+                    {
+                        return 0;
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
 

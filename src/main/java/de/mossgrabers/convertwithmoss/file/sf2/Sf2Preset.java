@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * A SF2 preset.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2Preset
 {

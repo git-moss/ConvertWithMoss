@@ -32,7 +32,7 @@ import java.util.zip.ZipOutputStream;
  * Creator for Bitwig multi-sample files. Such a file is a renamed ZIP file with the ending
  * "multisample" and contains all WAV files and a metadata description file (multisample.xml).
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class BitwigMultisampleCreator extends AbstractCreator
 {

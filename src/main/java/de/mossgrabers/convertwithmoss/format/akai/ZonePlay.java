@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 /**
  * Mapping of play logic to zone play.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public enum ZonePlay
 {

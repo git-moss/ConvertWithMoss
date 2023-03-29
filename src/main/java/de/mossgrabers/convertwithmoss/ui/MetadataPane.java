@@ -15,7 +15,7 @@ import javafx.scene.control.TextField;
 /**
  * Encapsulates metadata fields used by different detectors.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class MetadataPane implements IMetadataConfig
 {

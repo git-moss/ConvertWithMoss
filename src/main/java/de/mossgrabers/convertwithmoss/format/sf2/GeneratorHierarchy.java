@@ -18,7 +18,7 @@ import java.util.TreeSet;
  * Get generator values in inverse hierarchical order: instrument zone -> instrument zone global ->
  * preset zone -> preset zone global.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class GeneratorHierarchy
 {

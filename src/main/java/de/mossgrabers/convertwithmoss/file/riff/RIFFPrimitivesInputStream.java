@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
  * A RIFF primitives input stream lets an application read primitive data types in the Microsoft
  * Resource Interchange File Format (RIFF) format from an underlying input stream.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class RIFFPrimitivesInputStream extends FilterInputStream
 {

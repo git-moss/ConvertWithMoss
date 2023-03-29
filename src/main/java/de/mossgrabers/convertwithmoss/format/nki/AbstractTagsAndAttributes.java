@@ -2,195 +2,204 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.tag;
+package de.mossgrabers.convertwithmoss.format.nki;
 
 /**
  * Tags used in the NKI XML structure.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  * @author Philip Stolz
  */
 public abstract class AbstractTagsAndAttributes
 {
     /** The program element name attribute. */
-    private static final String PROGRAM_NAME           = "name";
+    private static final String PROGRAM_NAME               = "name";
 
     /** The parameters element. */
-    private static final String PARAMETERS             = "Parameters";
+    private static final String PARAMETERS                 = "Parameters";
 
     /** The value element. */
-    private static final String VALUE                  = "V";
+    private static final String VALUE                      = "V";
 
     /** The value name attribute. */
-    private static final String VALUE_NAME_ATTRIBUTE   = "name";
+    private static final String VALUE_NAME_ATTRIBUTE       = "name";
 
     /** The value name attribute. */
-    private static final String VALUE_VALUE_ATTRIBUTE  = "value";
+    private static final String VALUE_VALUE_ATTRIBUTE      = "value";
 
     /** The groups element of a program. */
-    private static final String GROUPS                 = "Groups";
+    private static final String GROUPS                     = "Groups";
 
     /** The zones element of a program. */
-    private static final String ZONES                  = "Zones";
+    private static final String ZONES                      = "Zones";
 
     /** The group name attribute. */
-    private static final String GROUP_NAME_ATTRIBUTE   = "name";
+    private static final String GROUP_NAME_ATTRIBUTE       = "name";
 
     /** The internal modulators element. */
-    private static final String INT_MODULATORS_ELEMENT = "IntModulators";
+    private static final String INT_MODULATORS_ELEMENT     = "IntModulators";
 
     /** The envelope element. */
-    private static final String ENVELOPE_ELEMENT       = "Envelope";
+    private static final String ENVELOPE_ELEMENT           = "Envelope";
 
     /** The bypass parameter. */
-    private static final String BYPASS_PARAM           = "bypass";
+    private static final String BYPASS_PARAM               = "bypass";
 
     /** The yes value. */
-    private static final String YES                    = "yes";
+    private static final String YES                        = "yes";
 
     /** The target volume value. */
-    private static final String TARGET_VOL_VALUE       = "volume";
+    private static final String TARGET_VOL_VALUE           = "volume";
+
+    /** The target pitch value. */
+    private static final String TARGET_PITCH_VALUE         = "pitch";
+
+    /** The target filter cutoff value. */
+    private static final String TARGET_FILTER_CUTOFF_VALUE = "filterCutoff";
 
     /** The target parameter. */
-    private static final String TARGET_PARAM           = "target";
+    private static final String TARGET_PARAM               = "target";
 
     /** The intensity parameter. */
-    private static final String INTENSITY_PARAM        = "intensity";
+    private static final String INTENSITY_PARAM            = "intensity";
 
     /** The envelope type attribute. */
-    private static final String ENV_TYPE_ATTRIBUTE     = "type";
+    private static final String ENV_TYPE_ATTRIBUTE         = "type";
 
     /** The AHD envelope type value. */
-    private static final String AHD_ENV_TYPE_VALUE     = "ahd";
+    private static final String AHD_ENV_TYPE_VALUE         = "ahd";
 
     /** The AHDSR envelope type value. */
-    private static final String AHDSR_ENV_TYPE_VALUE   = "ahdsr";
+    private static final String AHDSR_ENV_TYPE_VALUE       = "ahdsr";
 
     /** The attack parameter. */
-    private static final String ATTACK_PARAM           = "attack";
+    private static final String ATTACK_PARAM               = "attack";
 
     /** The hold parameter. */
-    private static final String HOLD_PARAM             = "hold";
+    private static final String HOLD_PARAM                 = "hold";
 
     /** The decay parameter. */
-    private static final String DECAY_PARAM            = "decay";
+    private static final String DECAY_PARAM                = "decay";
 
     /** The hold parameter. */
-    private static final String SUSTAIN_PARAM          = "sustain";
+    private static final String SUSTAIN_PARAM              = "sustain";
 
     /** The release parameter. */
-    private static final String RELEASE_PARAM          = "release";
+    private static final String RELEASE_PARAM              = "release";
 
     /** The external modulators element. */
-    private static final String EXT_MODULATORS_ELEMENT = "ExtModulators";
+    private static final String EXT_MODULATORS_ELEMENT     = "ExtModulators";
 
     /** The source parameter. */
-    private static final String SOURCE_PARAM           = "source";
+    private static final String SOURCE_PARAM               = "source";
 
     /** The pitch bend value. */
-    private static final String PITCH_BEND_VALUE       = "pitchBend";
+    private static final String PITCH_BEND_VALUE           = "pitchBend";
 
     /** The pitch value. */
-    private static final String PITCH_VALUE            = "pitch";
+    private static final String PITCH_VALUE                = "pitch";
 
     /** The intensity value. */
-    private static final String INTENSITY_VALUE        = "intensity";
+    private static final String INTENSITY_VALUE            = "intensity";
 
     /** The index attribute. */
-    private static final String INDEX_ATTRIBUTE        = "index";
+    private static final String INDEX_ATTRIBUTE            = "index";
 
     /** The group index attribute. */
-    private static final String GROUP_INDEX_ATTRIBUTE  = "groupIdx";
+    private static final String GROUP_INDEX_ATTRIBUTE      = "groupIdx";
 
     /** The sample element of a program. */
-    private static final String ZONE_SAMPLE            = "Sample";
+    private static final String ZONE_SAMPLE                = "Sample";
 
     /** The key tracking parameter. */
-    private static final String KEY_TRACKING_PARAM     = "keyTracking";
+    private static final String KEY_TRACKING_PARAM         = "keyTracking";
 
     /** The group volume parameter. */
-    private static final String GROUP_VOL_PARAM        = "volume";
+    private static final String GROUP_VOL_PARAM            = "volume";
 
     /** The zone volume parameter. */
-    private static final String ZONE_VOL_PARAM         = "zoneVolume";
+    private static final String ZONE_VOL_PARAM             = "zoneVolume";
 
     /** The zone tune parameter. */
-    private static final String ZONE_TUNE_PARAM        = "zoneTune";
+    private static final String ZONE_TUNE_PARAM            = "zoneTune";
 
     /** The group tune parameter. */
-    private static final String GROUP_TUNE_PARAM       = "tune";
+    private static final String GROUP_TUNE_PARAM           = "tune";
 
     /** The zone pan parameter. */
-    private static final String ZONE_PAN_PARAM         = "zonePan";
+    private static final String ZONE_PAN_PARAM             = "zonePan";
 
     /** The group pan parameter. */
-    private static final String GROUP_PAN_PARAM        = "pan";
+    private static final String GROUP_PAN_PARAM            = "pan";
 
     /** The reverse parameter. */
-    private static final String REVERSE_PARAM          = "reverse";
+    private static final String REVERSE_PARAM              = "reverse";
 
     /** The loops element. */
-    private static final String LOOPS_ELEMENT          = "Loops";
+    private static final String LOOPS_ELEMENT              = "Loops";
 
     /** The loop element. */
-    private static final String LOOP_ELEMENT           = "Loop";
+    private static final String LOOP_ELEMENT               = "Loop";
 
     /** The loop start parameter. */
-    private static final String LOOP_START_PARAM       = "loopStart";
+    private static final String LOOP_START_PARAM           = "loopStart";
 
     /** The loop length parameter. */
-    private static final String LOOP_LENGTH_PARAM      = "loopLength";
+    private static final String LOOP_LENGTH_PARAM          = "loopLength";
 
     /** The mode parameter. */
-    private static final String LOOP_MODE_PARAM        = "mode";
+    private static final String LOOP_MODE_PARAM            = "mode";
 
     /** The crossfade length parameter. */
-    private static final String XFADE_LENGTH_PARAM     = "xfadeLength";
+    private static final String XFADE_LENGTH_PARAM         = "xfadeLength";
 
     /** The until end value. */
-    private static final String UNTIL_END_VALUE        = "until_end";
+    private static final String UNTIL_END_VALUE            = "until_end";
 
     /** The until release value. */
-    private static final String UNTIL_RELEASE_VALUE    = "until_release";
+    private static final String UNTIL_RELEASE_VALUE        = "until_release";
 
-    /** The oneshot value. */
-    private static final String ONESHOT_VALUE          = "oneshot";
+    /** The one-shot value. */
+    private static final String ONESHOT_VALUE              = "oneshot";
 
     /** The alternating loop parameter. */
-    private static final String ALTERNATING_LOOP_PARAM = "alternatingLoop";
+    private static final String ALTERNATING_LOOP_PARAM     = "alternatingLoop";
 
     /** The root key parameter. */
-    private static final String ROOT_KEY_PARAM         = "rootKey";
+    private static final String ROOT_KEY_PARAM             = "rootKey";
 
     /** The low key parameter. */
-    private static final String LOW_KEY_PARAM          = "lowKey";
+    private static final String LOW_KEY_PARAM              = "lowKey";
 
     /** The high key parameter. */
-    private static final String HIGH_KEY_PARAM         = "highKey";
+    private static final String HIGH_KEY_PARAM             = "highKey";
 
     /** The low key parameter. */
-    private static final String LOW_VELOCITY_PARAM     = "lowVelocity";
+    private static final String LOW_VELOCITY_PARAM         = "lowVelocity";
 
     /** The high key parameter. */
-    private static final String HIGH_VELOCITY_PARAM    = "highVelocity";
+    private static final String HIGH_VELOCITY_PARAM        = "highVelocity";
 
     /** The fade low parameter. */
-    private static final String FADE_LOW_PARAM         = "fadeLowKey";
+    private static final String FADE_LOW_PARAM             = "fadeLowKey";
 
     /** The fade high parameter. */
-    private static final String FADE_HIGH_PARAM        = "fadeHighKey";
+    private static final String FADE_HIGH_PARAM            = "fadeHighKey";
 
     /** The fade low velocity parameter. */
-    private static final String FADE_LOW_VEL_PARAM     = "fadeLowVelo";
+    private static final String FADE_LOW_VEL_PARAM         = "fadeLowVelo";
 
     /** The fade high velocity parameter. */
-    private static final String FADE_HIGH_VEL_PARAM    = "fadeHighVelo";
+    private static final String FADE_HIGH_VEL_PARAM        = "fadeHighVelo";
 
     /** The sample start parameter. */
-    private static final String SAMPLE_START_PARAM     = "sampleStart";
+    private static final String SAMPLE_START_PARAM         = "sampleStart";
 
     /** The sample end parameter. */
-    private static final String SAMPLE_END_PARAM       = "sampleEnd";
+    private static final String SAMPLE_END_PARAM           = "sampleEnd";
+
+    /** The group filter element. */
+    private static final String GROUP_FILTER               = "Filter";
 
 
     /**
@@ -365,6 +374,28 @@ public abstract class AbstractTagsAndAttributes
     public String targetVolValue ()
     {
         return TARGET_VOL_VALUE;
+    }
+
+
+    /**
+     * Get the target pitch value tag.
+     *
+     * @return The tag
+     */
+    public String targetPitchValue ()
+    {
+        return TARGET_PITCH_VALUE;
+    }
+
+
+    /**
+     * Get the target filter cutoff value tag.
+     *
+     * @return The tag
+     */
+    public String targetFilterCutoffValue ()
+    {
+        return TARGET_FILTER_CUTOFF_VALUE;
     }
 
 
@@ -930,6 +961,17 @@ public abstract class AbstractTagsAndAttributes
     public String sampleEndParam ()
     {
         return SAMPLE_END_PARAM;
+    }
+
+
+    /**
+     * Get the group filter tag (only Kontakt 1).
+     *
+     * @return The tag
+     */
+    public String groupFilter ()
+    {
+        return GROUP_FILTER;
     }
 
 

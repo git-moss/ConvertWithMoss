@@ -5,6 +5,8 @@
 package de.mossgrabers.convertwithmoss.format.nki.type;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt1.Kontakt1Type;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.Kontakt2Type;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 import java.util.HashMap;
@@ -14,7 +16,7 @@ import java.util.Map;
 /**
  * Manages readers/writers for the different Kontakt versions.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class KontaktTypes
 {

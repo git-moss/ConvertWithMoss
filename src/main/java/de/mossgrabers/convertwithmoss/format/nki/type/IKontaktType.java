@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Interface to a specific Kontakt format type.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface IKontaktType
 {

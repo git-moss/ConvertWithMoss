@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.core;
 /**
  * Interface to notify the user about notification messages.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public interface INotifier
 {

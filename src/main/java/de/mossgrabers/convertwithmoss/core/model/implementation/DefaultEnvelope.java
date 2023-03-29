@@ -8,9 +8,9 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 
 
 /**
- * Interface to an envelope e.g. volume, filter and pitch.
+ * Default implementation of an envelope e.g. volume, filter and pitch.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class DefaultEnvelope implements IEnvelope
 {

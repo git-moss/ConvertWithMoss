@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.exception;
 /**
  * Exception that indicates that two wave files cannot be combined into one.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class CombinationNotPossibleException extends Exception
 {

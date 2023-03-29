@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Audio file utility functions.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public final class AudioFileUtils
 {

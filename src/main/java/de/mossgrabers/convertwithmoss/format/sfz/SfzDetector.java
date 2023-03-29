@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 /**
  * Descriptor for SFZ multisample files detector.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class SfzDetector extends AbstractDetectorWithMetadataPane<SfzDetectorTask>
 {

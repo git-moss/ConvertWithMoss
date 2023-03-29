@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  * Detector for Native Instruments Kontakt Instrument (NKI) files. Currently, only the format of the
  * versions before Kontakt 4.2.2 are supported.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  * @author Philip Stolz
  */
 public class NkiDetectorTask extends AbstractDetectorTask

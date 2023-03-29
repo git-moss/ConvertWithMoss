@@ -38,7 +38,7 @@ import java.util.zip.ZipOutputStream;
 /**
  * Base class for creator classes.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public abstract class AbstractCreator extends AbstractCoreTask implements ICreator
 {

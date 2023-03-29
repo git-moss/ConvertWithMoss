@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -28,9 +29,9 @@ import java.util.zip.ZipFile;
 /**
  * Base class for a samples' metadata.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
-public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMetadata
+public class DefaultSampleMetadata implements ISampleMetadata
 {
     protected String            filename;
     protected File              sampleFile;
@@ -64,6 +65,8 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
     protected int               bendUp                  = 0;
     protected int               bendDown                = 0;
     protected boolean           isReversed              = false;
+    protected IModulator        amplitudeModulator      = new DefaultModulator ();
+    protected IModulator        pitchModulator          = new DefaultModulator ();
     protected IFilter           filter                  = null;
 
     protected List<ISampleLoop> loops                   = new ArrayList<> (1);
@@ -498,6 +501,22 @@ public class DefaultSampleMetadata extends AbstractEnvelope implements ISampleMe
     public void setReversed (final boolean isReversed)
     {
         this.isReversed = isReversed;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IModulator getAmplitudeModulator ()
+    {
+        return this.amplitudeModulator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IModulator getPitchModulator ()
+    {
+        return this.pitchModulator;
     }
 
 

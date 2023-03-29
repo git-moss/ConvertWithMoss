@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * An SF2 instrument.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public class Sf2Instrument
 {

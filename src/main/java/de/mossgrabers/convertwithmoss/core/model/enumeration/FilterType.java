@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.core.model.enumeration;
 /**
  * Different types of filters.
  *
- * @author J&uuml;rgen Mo&szlig;graber
+ * @author Jürgen Moßgraber
  */
 public enum FilterType
 {
