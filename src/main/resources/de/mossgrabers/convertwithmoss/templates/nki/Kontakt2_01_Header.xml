@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<K2_Container index="0" name="(null)" type="single_program" version="0.50">
+  <Parameters>
+    <V name="loadPurged" value="no"/>
+    <V name="tableOpen" value="no"/>
+    <V name="smallRackUnit" value="no"/>
+    <V name="auxSendsVisible" value="no"/>
+    <V name="curProgramChangeNum" value="0"/>
+    <V name="outputMask" value="131072"/>
+    <V name="volume" value="0.5"/>
+    <V name="pan" value="0."/>
+    <V name="origSaveMode" value="0"/>
+    <V name="origAbsolutePaths" value="yes"/>
+    <V name="origCompressedSamples" value="no"/>
+    <V name="hasBeenSaved" value="yes"/>
+  </Parameters>
+  <Automation/>
+  <Polyphony>
+    <VoiceGroup index="0" version="0.60">
+      <V name="mode" value="kill_oldest"/>
+      <V name="preferReleased" value="yes"/>
+      <V name="maxNumVoices" value="64"/>
+      <V name="msFadeTime" value="10"/>
+      <V name="exclusionGroup" value="-1"/>
+    </VoiceGroup>
+  </Polyphony>
+  <Programs>
+    <K2_Program index="0" name="%PROGRAM_NAME%" version="0.80">
+      <Parameters>
+        <V name="numBytesSamplesTotal" value="0."/>
+        <V name="transpose" value="0"/>
+        <V name="volume" value="0.5"/>
+        <V name="pan" value="0."/>
+        <V name="tune" value="0."/>
+        <V name="lowVelocity" value="1"/>
+        <V name="highVelocity" value="127"/>
+        <V name="lowKey" value="0"/>
+        <V name="highKey" value="127"/>
+        <V name="defaultKeyKeySwitch" value="-1"/>
+        <V name="dfdChannelPreloadSize" value="61440"/>
+        <V name="libraryID" value="0"/>
+        <V name="loadingFlags" value="0"/>
+        <V name="groupSolo" value="no"/>
+        <V name="cc64Mode" value="cc64_mode_sustain_plus_controller"/>
+        <V name="useStdCC_7_10" value="yes"/>
+        <V name="useStdCC_120_123" value="yes"/>
+        <V name="cc7MaxVolume" value="0"/>
+        <V name="activeGroupIdx" value="0"/>
+        <V name="scriptIdxEdited" value="0"/>
+        <V name="ifxBeingEdited" value="no"/>
+        <V name="idxIFXBeingEdited" value="0"/>
+        <V name="sfxBeingEdited" value="no"/>
+        <V name="mapEditListMode" value="no"/>
+        <V name="mapEditLocked" value="no"/>
+        <V name="idxSFXBeingEdited" value="0"/>
+        <V name="routersOpenSource" value="no"/>
+        <V name="routersOpenAmp" value="no"/>
+        <V name="upDownMixOpenGroup" value="no"/>
+        <V name="editorOpenMap" value="no"/>
+        <V name="editorOpenSample" value="no"/>
+        <V name="editorOpenGroup" value="no"/>
+        <V name="editorOpenScript" value="no"/>
+        <V name="editorOpenProp" value="no"/>
+        <V name="mapEditSelGroupsOnly" value="no"/>
+        <V name="ifxVisible" value="yes"/>
+        <V name="sfxVisible" value="yes"/>
+        <V name="modVisible" value="yes"/>
+        <V name="masterZoneIdx" value="-1"/>
+        <V name="batteryNumRowsVisible" value="-1"/>
+        <V name="batteryNumColumnsVisible" value="-1"/>
+        <V name="batteryIRCVisible" value="no"/>
+        <V name="perfViewScriptIdx" value="-1"/>
+        <V name="catIconIdx" value="28"/>
+        <V name="instrumentCredits" value=""/>
+        <V name="instrumentAuthor" value=""/>
+        <V name="instrumentURL" value=""/>
+        <V name="instrumentCat1" value="0"/>
+        <V name="instrumentCat2" value="0"/>
+        <V name="instrumentCat3" value="0"/>
+      </Parameters>
+      <Scripts/>
+      <Automation/>
+      <MorphGroups/>
+      <MorphMaps/>
+      <Polyphony>
+        <VoiceGroup index="0" version="0.60">
+          <V name="name" value="&lt;instrument>"/>
+          <V name="mode" value="kill_oldest"/>
+          <V name="preferReleased" value="yes"/>
+          <V name="maxNumVoices" value="32"/>
+          <V name="msFadeTime" value="10"/>
+          <V name="exclusionGroup" value="-1"/>
+        </VoiceGroup>
+      </Polyphony>
+      <ProgramInsertFX/>
+      <ProgramSendFX/>
+      <Groups>

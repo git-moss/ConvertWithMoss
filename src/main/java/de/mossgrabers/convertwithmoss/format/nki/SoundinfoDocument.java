@@ -12,6 +12,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,13 +39,43 @@ public class SoundinfoDocument
      * Constructor.
      *
      * @param author The author of the 'sound'
-     * @param category The category of the 'sound'
+     * @param categories The category of the 'sound'
      */
-    public SoundinfoDocument (final String author, final String category)
+    public SoundinfoDocument (final String author, final String... categories)
     {
         this.author = author;
-        if (category != null)
-            this.categories.add (category);
+        if (categories != null)
+            Collections.addAll (this.categories, categories);
+    }
+
+
+    /**
+     * Create the XML structure.
+     *
+     * @param name The name of the sound
+     * @return The XML code
+     */
+    public String createDocument (final String name)
+    {
+        final StringBuilder sb = new StringBuilder ();
+        sb.append ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n");
+        sb.append ("<soundinfo version=\"400\">\n\n");
+        sb.append ("  <properties>\n");
+        sb.append ("    <name>").append (name).append ("</name>\n");
+        sb.append ("    <author>").append (this.author).append ("</author>\n");
+        sb.append ("  </properties>\n\n");
+        sb.append ("  <attributes>\n");
+
+        for (final String category: this.categories)
+        {
+            sb.append ("    <attribute>\n");
+            sb.append ("      <value>").append (category).append ("</value>\n");
+            sb.append ("    </attribute>\n");
+        }
+
+        sb.append ("  </attributes>\n\n");
+        sb.append ("</soundinfo>\n");
+        return sb.toString ();
     }
 
 

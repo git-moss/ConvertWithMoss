@@ -12,6 +12,15 @@ package de.mossgrabers.convertwithmoss.core;
 public class Utils
 {
     /**
+     * Helper class.
+     */
+    private Utils ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Limit the given value to the minimum/maximum range including minimum/maximum values.
      *
      * @param value The value to clamp

@@ -14,8 +14,12 @@ import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 
+import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleGroup;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,9 +34,11 @@ import java.util.List;
  */
 public class NkiCreator extends AbstractCreator
 {
-    private static final String FOLDER_POSTFIX = "Samples";
+    private static final String NKI_OUTPUT_FORMAT = "NkiOutputFormat";
+    private static final String FOLDER_POSTFIX    = " Samples";
 
     private final KontaktTypes  kontaktTypes;
+    private ToggleGroup         outputFormatGroup;
 
 
     /**
@@ -54,6 +60,15 @@ public class NkiCreator extends AbstractCreator
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
+        panel.createSeparator ("@IDS_NKI_OUTPUT_FORMAT");
+
+        this.outputFormatGroup = new ToggleGroup ();
+        final RadioButton order1 = panel.createRadioButton ("@IDS_NKI_KONTAKT_1");
+        order1.setToggleGroup (this.outputFormatGroup);
+        final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_2");
+        order2.setToggleGroup (this.outputFormatGroup);
+        order2.setDisable (true);
+
         return panel.getPane ();
     }
 
@@ -62,7 +77,9 @@ public class NkiCreator extends AbstractCreator
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        // TODO Load settings
+        final int formatIndex = config.getInteger (NKI_OUTPUT_FORMAT, 0);
+        final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
+        this.outputFormatGroup.selectToggle (toggles.get (formatIndex < toggles.size () ? formatIndex : 0));
     }
 
 
@@ -70,7 +87,15 @@ public class NkiCreator extends AbstractCreator
     @Override
     public void saveSettings (final BasicConfig config)
     {
-        // TODO Save settings
+        final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
+        for (int i = 0; i < toggles.size (); i++)
+        {
+            if (toggles.get (i).isSelected ())
+            {
+                config.setInteger (NKI_OUTPUT_FORMAT, i);
+                break;
+            }
+        }
     }
 
 
@@ -78,8 +103,8 @@ public class NkiCreator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        // TODO Currently, only Kontakt 1 is supported (read from settings when supported))
-        final IKontaktType kontaktType = this.kontaktTypes.getType (KontaktTypes.ID_KONTAKT1);
+        final Integer kontaktID = this.outputFormatGroup.getToggles ().get (0).isSelected () ? KontaktTypes.ID_KONTAKT1 : KontaktTypes.ID_KONTAKT2_BIG_ENDIAN;
+        final IKontaktType kontaktType = this.kontaktTypes.getType (kontaktID);
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
         final File multiFile = new File (destinationFolder, sampleName + ".nki");

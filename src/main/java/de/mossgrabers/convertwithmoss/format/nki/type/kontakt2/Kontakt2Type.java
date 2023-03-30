@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
@@ -21,6 +22,7 @@ import de.mossgrabers.tools.ui.Functions;
 
 import org.xml.sax.SAXException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 
@@ -94,12 +97,36 @@ public class Kontakt2Type extends AbstractKontaktType
         ICON_MAP.put (Integer.valueOf (0x1C), "New");
     }
 
+    private static final byte []        FILE_HEADER_ID        =
+    {
+        (byte) 0x12,
+        (byte) 0x90,
+        (byte) 0xA8,
+        (byte) 0x7F
+    };
+
     private static final byte []        SAMPLE_DATA_HEADER_ID =
     {
         (byte) 0x0A,
         (byte) 0xF8,
         (byte) 0xCC,
         (byte) 0x16
+    };
+
+    private static final byte []        SOUNDINFO_HEADER      =
+    {
+        (byte) 0xAE,
+        (byte) 0xE1,
+        (byte) 0x0E,
+        (byte) 0xB0,
+        (byte) 0x01,
+        (byte) 0x01,
+        (byte) 0x0C,
+        (byte) 0x00,
+        (byte) 0xD9,
+        (byte) 0x00,
+        (byte) 0x00,
+        (byte) 0x00
     };
 
     private final boolean               isBigEndian;
@@ -198,7 +225,26 @@ public class Kontakt2Type extends AbstractKontaktType
     @Override
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
-        // TODO Implement storing a NKI
+        final Optional<String> result = this.handler.create (safeSampleFolderName, multisampleSource);
+        if (result.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_NKI_NO_XML"));
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream ();
+        CompressionUtils.writeZLIB (bout, result.get (), 1);
+        final byte [] zlibContent = bout.toByteArray ();
+
+        out.write (FILE_HEADER_ID);
+        StreamUtils.writeDoubleWord (out, zlibContent.length, false);
+
+        // Since we still do not understand how to calculate the checksum, go with a static header
+        // with no metadata at all --> this does not work since e.g. the number of zones/groups
+        // needs to be set
+        out.write (Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/nki/Kontakt2_Static_Header.bin"));
+
+        out.write (zlibContent);
+
+        out.write (SOUNDINFO_HEADER);
+        final SoundinfoDocument soundinfoDocument = new SoundinfoDocument (multisampleSource.getCreator (), multisampleSource.getCategory ());
+        out.write (soundinfoDocument.createDocument (multisampleSource.getName ()).getBytes (StandardCharsets.UTF_8));
     }
 
 
@@ -214,7 +260,7 @@ public class Kontakt2Type extends AbstractKontaktType
      */
     private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
     {
-        final String xmlCode = readZLIB (fileAccess);
+        final String xmlCode = CompressionUtils.readZLIB (fileAccess);
 
         try
         {
