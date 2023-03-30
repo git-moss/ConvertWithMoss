@@ -1,11 +1,12 @@
 # Changes
 
-## 6.1.0 (unreleased)
+## 6.1.0
 
 * Tabs are now orderd alphabetically.
 * Bitwig Multisamples
   * Fixed: If a loop was set to Off it was still applied.
 * Native Instruments NKI files
+  * New: Added support to write NKI files in Kontakt 1 format.
   * New: Added support for AIFF files (will be converted to WAV).
   * New: Added support for reading Kontakt NKI files stored in big-endian format. But could not test with any monolith file, therefore an error is shown.
   * New: Added support for pitch envelopes.

@@ -45,7 +45,6 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -67,7 +66,8 @@ import java.util.regex.Pattern;
  */
 public abstract class AbstractNKIMetadataFileHandler
 {
-    private static final String                  TEMPLATE_FOLDER     = "de/mossgrabers/convertwithmoss/templates/nki/";
+    protected static final String                TEMPLATE_FOLDER     = "de/mossgrabers/convertwithmoss/templates/nki/";
+
     private static final String                  NULL_ENTRY          = "(null)";
 
     private static final Pattern                 FILTER_TYPE_PATTERN = Pattern.compile ("^(lp|hp|bp)(\\d+)pole$");
@@ -81,8 +81,7 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
     protected final AbstractTagsAndAttributes tags;
-
-    private final INotifier                   notifier;
+    protected final INotifier                 notifier;
 
 
     /**
@@ -176,18 +175,15 @@ public abstract class AbstractNKIMetadataFileHandler
      */
     public Optional<String> create (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
     {
+        final String templatePrefix = this.getTemplatePrefix ();
+
         try
         {
-            String text = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_01_Header.xml").replace ("%PROGRAM_NAME%", multisampleSource.getName ());
+            String text = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Header.xml").replace ("%PROGRAM_NAME%", multisampleSource.getName ());
 
             // Add all layers
-            final String result = this.addGroups (safeSampleFolderName, multisampleSource.getNonEmptyLayers (false));
-
-            text += result + Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_06_Footer.xml");
-
-            // TODO Remove when Kontakt 2 writing is finished
-            Files.writeString (new File ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\1\\TEST\\Synth1982_-_01_WRITTEN.txt").toPath (), text);
-
+            final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyLayers (false));
+            text += result + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_06_Footer.xml");
             return Optional.of (text);
         }
         catch (final IOException ex)
@@ -198,10 +194,14 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private String addGroups (final String safeSampleFolderName, final List<IVelocityLayer> velocityLayers) throws IOException
+    protected abstract String getTemplatePrefix ();
+
+
+    protected String addGroups (final String templatePrefix, final String safeSampleFolderName, final List<IVelocityLayer> velocityLayers) throws IOException
     {
-        final String groupTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_02_Group.xml");
-        final String zoneTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_04_Zone.xml");
+        final String groupTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_02_Group.xml");
+        final String zoneTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_04_Zone.xml");
+        final String loopTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_05_Loop.xml");
 
         final StringBuilder groups = new StringBuilder ();
         final StringBuilder zones = new StringBuilder ();
@@ -243,7 +243,6 @@ public abstract class AbstractNKIMetadataFileHandler
                 zoneContent = zoneContent.replace ("%ZONE_SAMPLE_NAME%", filename.isPresent () ? AbstractCreator.formatFileName (safeSampleFolderName, filename.get ()) : "");
 
                 final StringBuilder loopsContent = new StringBuilder ();
-                final String loopTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_05_Loop.xml");
                 final List<ISampleLoop> loops = sampleMetadata.getLoops ();
                 for (int loopIndex = 0; loopIndex < loops.size (); loopIndex++)
                 {
@@ -320,7 +319,7 @@ public abstract class AbstractNKIMetadataFileHandler
             groups.append (groupContent);
         }
 
-        return groups.toString () + Functions.textFileFor (TEMPLATE_FOLDER + "Kontakt1_03_Groups_Zones.xml") + zones.toString ();
+        return groups.toString () + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_03_Groups_Zones.xml") + zones.toString ();
     }
 
 

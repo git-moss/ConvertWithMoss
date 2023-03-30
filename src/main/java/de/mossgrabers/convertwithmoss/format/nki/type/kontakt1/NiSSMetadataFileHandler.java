@@ -143,4 +143,12 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     {
         return 0.5d + panningValue * 0.5d;
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected String getTemplatePrefix ()
+    {
+        return "Kontakt1";
+    }
 }

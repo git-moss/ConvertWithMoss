@@ -23,6 +23,15 @@ import java.util.Date;
 public class StreamUtils
 {
     /**
+     * Helper class.
+     */
+    private StreamUtils ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Reads and converts 4 bytes to an unsigned integer.
      *
      * @param in The input stream

@@ -264,4 +264,12 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
         // Doesn't need to be normalized for K2 format
         return panningValue;
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected String getTemplatePrefix ()
+    {
+        return "Kontakt2";
+    }
 }

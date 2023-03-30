@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt1;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
@@ -59,7 +60,7 @@ public class Kontakt1Type extends AbstractKontaktType
 
         try
         {
-            final String xmlCode = readZLIB (fileAccess);
+            final String xmlCode = CompressionUtils.readZLIB (fileAccess);
             return this.handler.parse (sourceFolder, sourceFile, xmlCode, this.metadataConfig, null);
         }
         catch (final UnsupportedEncodingException ex)
@@ -110,6 +111,6 @@ public class Kontakt1Type extends AbstractKontaktType
 
         final Optional<String> result = this.handler.create (safeSampleFolderName, multisampleSource);
         if (result.isPresent ())
-            writeZLIB (out, result.get (), 6);
+            CompressionUtils.writeZLIB (out, result.get (), 6);
     }
 }
