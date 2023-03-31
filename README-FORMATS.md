@@ -62,7 +62,8 @@ However, the format changed many times across the different Kontakt versions. So
 | 4.2.2+          | No        | No                 |
 | 5 - 7           | No        | No                 |
 
-A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude envelope and pitchbend.
+A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters
+as well as pitchbend.
 
 ## SFZ
 
@@ -153,6 +154,11 @@ Since the KMP format can only contain 1 layer of a multisample, sources with mul
 The korgmultisample format is currently used by the Korg wavestate and modwave keyboards. Files in that format can be opened with the Korg Sample Builder software and transferred to the keyboard.
 
 Since the format supports only one layer of a multisample, multiple files are created for each layer available in the source. If there is more than one layer in the source the name of the created file has the velocity range of the layer added. Using that information a multisample with up to 4 layers can be created as Performance in the device.
+
+## Native Instruments Kontakt
+
+Writes a NKI file (see above) and puts all samples in a sub-folder with the same name. Currently, only the Kontakt 1 format
+is supported which does not contain any metadata information.
 
 ### SFZ
 

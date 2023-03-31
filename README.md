@@ -32,10 +32,13 @@ The following multisample formats are supported as the destination format:
 3. DecentSampler (*.dspreset, *.dslibrary)
 4. Korg KMP/KSF (*.KMP)
 5. Korg wavestate/modwave (*.korgmultisample)
-6. SFZ (*.sfz)
-7. WAV files (*.wav)
+6. Native Instruments Kontakt (*.nki) 1
+7. SFZ (*.sfz)
+8. WAV files (*.wav)
 
-See [README-FORMATS.md][1] document for more details.
+See [README-FORMATS.md][1] document for more details. Even more details about the specific converted parameters can 
+be found here:
+https://github.com/git-moss/ConvertWithMoss/blob/main/documentation/SupportedFeaturesSampleFormats.ods
 
 ## Installation
 
