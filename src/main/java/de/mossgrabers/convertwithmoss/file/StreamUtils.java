@@ -32,6 +32,52 @@ public class StreamUtils
 
 
     /**
+     * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
+     *
+     * @param fileAccess The random access file to read from
+     * @param isBigEndian True if bytes are stored big-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readUnsigned16 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    {
+        final int ch1 = fileAccess.read ();
+        final int ch2 = fileAccess.read ();
+        if ((ch1 | ch2) < 0)
+            throw new EOFException ();
+        if (isBigEndian)
+            return (ch1 << 8) + ch2;
+        return (ch2 << 8) + ch1;
+    }
+
+
+    /**
+     * Writes an integer as 2 bytes.
+     *
+     * @param out The output stream
+     * @param value The value to write
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian (least
+     *            significant bytes first)
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static void writeUnsigned16 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    {
+        if (isBigEndian)
+        {
+            out.write (value >> 8 & 0xFF);
+            out.write (value & 0xFF);
+        }
+        else
+        {
+            out.write (value & 0xFF);
+            out.write (value >> 8 & 0xFF);
+        }
+    }
+
+
+    /**
      * Reads and converts 4 bytes to an unsigned integer.
      *
      * @param in The input stream
@@ -40,7 +86,7 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readDoubleWord (final InputStream in, final boolean isBigEndian) throws IOException
+    public static int readUnsigned32 (final InputStream in, final boolean isBigEndian) throws IOException
     {
         final int ch1 = in.read ();
         final int ch2 = in.read ();
@@ -64,7 +110,7 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static void writeDoubleWord (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    public static void writeUnsigned32 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
     {
         if (isBigEndian)
         {
@@ -92,7 +138,7 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readDoubleWord (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    public static int readUnsigned32 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
         final int ch1 = fileAccess.read ();
         final int ch2 = fileAccess.read ();
@@ -107,28 +153,24 @@ public class StreamUtils
 
 
     /**
-     * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
+     * Reads and converts 8 bytes to an unsigned integer.
      *
-     * @param fileAccess The random access file to read from
+     * @param in The input stream
      * @param isBigEndian True if bytes are stored big-endian
      * @return The converted integer
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readWord (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    public static long readUnsigned64 (final InputStream in, final boolean isBigEndian) throws IOException
     {
-        final int ch1 = fileAccess.read ();
-        final int ch2 = fileAccess.read ();
-        if ((ch1 | ch2) < 0)
-            throw new EOFException ();
-        if (isBigEndian)
-            return (ch1 << 8) + ch2;
-        return (ch2 << 8) + ch1;
+        final ByteBuffer buffer = ByteBuffer.wrap (in.readNBytes (8));
+        buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        return buffer.getLong () & 0xFFFFFFFFFFFFFFFFL;
     }
 
 
     /**
-     * Writes an integer as 2 bytes.
+     * Writes an integer as 4 bytes.
      *
      * @param out The output stream
      * @param value The value to write
@@ -137,18 +179,51 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static void writeWord (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    public static void writeUnsigned64 (final OutputStream out, final long value, final boolean isBigEndian) throws IOException
     {
-        if (isBigEndian)
-        {
-            out.write (value >> 8 & 0xFF);
-            out.write (value & 0xFF);
-        }
-        else
-        {
-            out.write (value & 0xFF);
-            out.write (value >> 8 & 0xFF);
-        }
+        final ByteBuffer buffer = ByteBuffer.allocate (8);
+        buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        buffer.putLong (value);
+        out.write (buffer.array ());
+    }
+
+
+    /**
+     * First reads an 8 byte unsigned number which indicates the length of the block. The number can
+     * be either in big- or little-endian but actually only 4 bytes (up to 4GB) are supported
+     * (otherwise an exception is thrown). After that the number of bytes (minus the already read 8
+     * byte) are read and returned.
+     *
+     * @param in The input stream to read from
+     * @param isBigEndian True if bytes of the size number are stored big-endian otherwise
+     *            little-endian (least significant bytes first)
+     * @return The read bytes of the data block
+     * @throws IOException Data could not be read
+     */
+    public static byte [] readBlock64 (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        final long blockSize = readUnsigned64 (in, isBigEndian);
+        if (blockSize > Integer.MAX_VALUE)
+            throw new IOException ("Data is larger than 4GB and cannot be read.");
+        return in.readNBytes ((int) blockSize - 8);
+    }
+
+
+    /**
+     * Writes the size of the block as an 8 byte unsigned number either in big- or little-endian but
+     * actually only 4 bytes (up to 4GB) are supported which is the maximum length of an array in
+     * Java. After that the given bytes are written.
+     *
+     * @param out The input stream to read from
+     * @param data The data of the block to write
+     * @param isBigEndian True if bytes of the size number are stored big-endian otherwise
+     *            little-endian (least significant bytes first)
+     * @throws IOException Data could not be read
+     */
+    public static void writeBlock64 (final OutputStream out, final byte [] data, final boolean isBigEndian) throws IOException
+    {
+        writeUnsigned64 (out, data.length + 8L, isBigEndian);
+        out.write (data);
     }
 
 
@@ -158,7 +233,7 @@ public class StreamUtils
      * @param data The data to convert
      * @return The converted integer
      */
-    public static int fromBytesLSB (final byte [] data)
+    public static int fromBytesLE (final byte [] data)
     {
         int number = 0;
         for (int i = 0; i < data.length; i++)
@@ -173,7 +248,7 @@ public class StreamUtils
      * @param data The 4 byte array
      * @return The float value
      */
-    public static float readFloatLittleEndian (final byte [] data)
+    public static float readFloat32LE (final byte [] data)
     {
         return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getFloat ();
     }
@@ -186,7 +261,7 @@ public class StreamUtils
      * @return Could not read next byte
      * @throws IOException
      */
-    public static int [] read7bitNumberLSB (final InputStream in) throws IOException
+    public static int [] read7bitNumberLE (final InputStream in) throws IOException
     {
         int number = 0;
         int count = 0;
@@ -320,18 +395,30 @@ public class StreamUtils
     public static String readUTF16 (final RandomAccessFile fileAccess) throws IOException
     {
         final StringBuilder sb = new StringBuilder ();
-
         final byte [] buffer = new byte [2];
         while (fileAccess.read (buffer) == 2)
         {
             if (buffer[0] == 0)
                 break;
-            if (buffer[1] == 0)
-                sb.append ((char) buffer[0]);
-            else
-                sb.append (new String (buffer, StandardCharsets.UTF_16));
+            sb.append (new String (buffer, StandardCharsets.UTF_16LE));
         }
         return sb.toString ();
+    }
+
+
+    /**
+     * Reads an UTF-16 string. The length of the string is stored in the first 4 bytes
+     * (little-endian). There are no null termination bytes.
+     *
+     * @param in The input stream to read from
+     * @return The read string
+     * @throws IOException Could not read the string
+     */
+    public static String readWithLengthUTF16 (final InputStream in) throws IOException
+    {
+        final int size = readUnsigned32 (in, false);
+        final byte [] wideStringBytes = in.readNBytes (size * 2);
+        return new String (wideStringBytes, StandardCharsets.UTF_16LE);
     }
 
 
@@ -346,7 +433,7 @@ public class StreamUtils
      */
     public static Date readTimestamp (final InputStream in, final boolean isBigEndian) throws IOException
     {
-        return new Date (readDoubleWord (in, isBigEndian) * 1000L);
+        return new Date (readUnsigned32 (in, isBigEndian) * 1000L);
     }
 
 
@@ -361,7 +448,7 @@ public class StreamUtils
      */
     public static Date readTimestamp (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
-        return new Date (readDoubleWord (fileAccess, isBigEndian) * 1000L);
+        return new Date (readUnsigned32 (fileAccess, isBigEndian) * 1000L);
     }
 
 

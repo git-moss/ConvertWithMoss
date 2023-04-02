@@ -403,7 +403,7 @@ public interface ISampleMetadata
 
     /**
      * Get the amplitude modulator.
-     * 
+     *
      * @return The modulator, never null
      */
     IModulator getAmplitudeModulator ();
@@ -411,7 +411,7 @@ public interface ISampleMetadata
 
     /**
      * Get the pitch modulator.
-     * 
+     *
      * @return The modulator, never null
      */
     IModulator getPitchModulator ();

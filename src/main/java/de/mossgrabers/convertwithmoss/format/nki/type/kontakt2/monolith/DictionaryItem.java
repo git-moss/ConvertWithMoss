@@ -2,7 +2,7 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.type.monolith;
+package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -39,10 +39,10 @@ public class DictionaryItem
         this.fileAccess = fileAccess;
         this.isBigEndian = isBigEndian;
 
-        this.length = StreamUtils.readWord (fileAccess, isBigEndian);
-        this.pointer = StreamUtils.readDoubleWord (fileAccess, isBigEndian);
+        this.length = StreamUtils.readUnsigned16 (fileAccess, isBigEndian);
+        this.pointer = StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
 
-        final int type = StreamUtils.readWord (fileAccess, isBigEndian);
+        final int type = StreamUtils.readUnsigned16 (fileAccess, isBigEndian);
         if (type < 0 || type > 4)
             throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_DICT_ITEM_REF_TYPE", Integer.toString (type)));
         this.referenceType = DictionaryItemReferenceType.values ()[type];

@@ -2,7 +2,7 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.type.monolith;
+package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith;
 
 /**
  * A reference type in a Kontakt 2 Monolith dictionary.
