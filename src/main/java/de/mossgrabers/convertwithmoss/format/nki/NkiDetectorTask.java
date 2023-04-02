@@ -10,12 +10,19 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerChunk;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerChunkType;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerItem;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.RootChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -58,15 +65,30 @@ public class NkiDetectorTask extends AbstractDetectorTask
 
         try (final RandomAccessFile fileAccess = new RandomAccessFile (sourceFile, "r"))
         {
+            // Is this Kontakt 5+ container format?
             fileAccess.seek (12);
             if ("hsin".equals (StreamUtils.readASCII (fileAccess, 4)))
             {
+                fileAccess.seek (0);
+                final FileChannel channel = fileAccess.getChannel ();
+                final InputStream inputStream = Channels.newInputStream (channel);
+                final NIContainerItem niContainerItem = new NIContainerItem ();
+                niContainerItem.read (inputStream);
+                // TODO
+                System.out.println (niContainerItem.dump (0));
+
+                final NIContainerChunk rootChunk = niContainerItem.find (NIContainerChunkType.CONTAINER_ROOT);
+                if (rootChunk != null && rootChunk.getData () instanceof final RootChunkData rootChunkData)
+                {
+                    this.notifier.logText (rootChunkData.getMajorVersion () + "." + rootChunkData.getMinorVersion () + "." + rootChunkData.getPatchVersion ());
+                }
+
                 this.notifier.logError ("IDS_NKI_KONTAKT5_NOT_SUPPORTED");
                 return Collections.emptyList ();
             }
 
+            // Is this Kontakt 5+ container format?
             fileAccess.seek (0);
-
             final int typeID = fileAccess.readInt ();
             if (KontaktTypes.ID_KONTAKT5_MONOLITH.intValue () == typeID)
             {
@@ -74,6 +96,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
                 return Collections.emptyList ();
             }
 
+            // Check for Kontakt 1 or 2-4 formats
             final IKontaktType kontaktType = this.kontaktTypes.getType (typeID);
             if (kontaktType == null)
                 throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_FILE_ID", Integer.toHexString (typeID).toUpperCase ()));

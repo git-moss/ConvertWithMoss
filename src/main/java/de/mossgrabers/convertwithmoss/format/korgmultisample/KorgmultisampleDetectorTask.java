@@ -202,7 +202,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
     private ISampleMetadata readSample (final InputStream in) throws IOException, FormatException
     {
         // Size of the sample block
-        final int [] size = StreamUtils.read7bitNumberLSB (in);
+        final int [] size = StreamUtils.read7bitNumberLE (in);
         final int blockLength = size[0];
 
         // 0x0A, Offset to key zone data
@@ -255,17 +255,17 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
             switch (currentID)
             {
                 case KorgmultisampleTag.ID_START:
-                    final int [] startNumber = StreamUtils.read7bitNumberLSB (in);
+                    final int [] startNumber = StreamUtils.read7bitNumberLE (in);
                     r -= startNumber[1];
                     sample.setStart (startNumber[0]);
                     break;
                 case KorgmultisampleTag.ID_LOOP_START:
-                    final int [] loopStartNumber = StreamUtils.read7bitNumberLSB (in);
+                    final int [] loopStartNumber = StreamUtils.read7bitNumberLE (in);
                     r -= loopStartNumber[1];
                     loopStart = loopStartNumber[0];
                     break;
                 case KorgmultisampleTag.ID_END:
-                    final int [] endNumber = StreamUtils.read7bitNumberLSB (in);
+                    final int [] endNumber = StreamUtils.read7bitNumberLE (in);
                     r -= endNumber[1];
                     sample.setStop (endNumber[0]);
                     break;
@@ -353,12 +353,12 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                 case KorgmultisampleTag.ID_TUNE:
                     r -= 4;
                     // Read value is in the range of [-999..999]
-                    sample.setTune (StreamUtils.readFloatLittleEndian (in.readNBytes (4)) / 1000.0);
+                    sample.setTune (StreamUtils.readFloat32LE (in.readNBytes (4)) / 1000.0);
                     break;
                 case KorgmultisampleTag.ID_LEVEL_LEFT:
                     r -= 4;
                     // Note: The left/right link button in the editor is only a UI thing!
-                    final float levelLeftValue = StreamUtils.readFloatLittleEndian (in.readNBytes (4));
+                    final float levelLeftValue = StreamUtils.readFloat32LE (in.readNBytes (4));
                     // This is not fully correct but since it is not documented what the percentages
                     // (-100..100%) mean in dB this is better than nothing...
                     sample.setGain (levelLeftValue / 100.0 * 12.0);

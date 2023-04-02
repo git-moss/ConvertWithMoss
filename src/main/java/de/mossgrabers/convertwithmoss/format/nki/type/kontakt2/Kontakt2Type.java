@@ -13,9 +13,9 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.SoundinfoDocument;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
-import de.mossgrabers.convertwithmoss.format.nki.type.monolith.Dictionary;
-import de.mossgrabers.convertwithmoss.format.nki.type.monolith.DictionaryItem;
-import de.mossgrabers.convertwithmoss.format.nki.type.monolith.DictionaryItemReferenceType;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.Dictionary;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItem;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItemReferenceType;
 import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -173,7 +173,7 @@ public class Kontakt2Type extends AbstractKontaktType
         // No idea yet about these 26 bytes...
         StreamUtils.skipNBytes (fileAccess, 26);
 
-        final Integer iconID = Integer.valueOf (StreamUtils.readDoubleWord (fileAccess, this.isBigEndian));
+        final Integer iconID = Integer.valueOf (StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian));
         final String iconName = ICON_MAP.get (iconID);
         if (iconName == null)
             this.notifier.logError ("IDS_NKI_UNKNOWN_ICON_ID", iconID.toString ());
@@ -199,7 +199,7 @@ public class Kontakt2Type extends AbstractKontaktType
         // Skip the checksum
         StreamUtils.skipNBytes (fileAccess, 4);
 
-        final int patchLevel = StreamUtils.readDoubleWord (fileAccess, this.isBigEndian);
+        final int patchLevel = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
         if (version.endsWith ("?"))
             version = version.substring (0, version.length () - 1) + Integer.toString (patchLevel);
 
@@ -233,7 +233,7 @@ public class Kontakt2Type extends AbstractKontaktType
         final byte [] zlibContent = bout.toByteArray ();
 
         out.write (FILE_HEADER_ID);
-        StreamUtils.writeDoubleWord (out, zlibContent.length, false);
+        StreamUtils.writeUnsigned32 (out, zlibContent.length, false);
 
         // Since we still do not understand how to calculate the checksum, go with a static header
         // with no metadata at all --> this does not work since e.g. the number of zones/groups

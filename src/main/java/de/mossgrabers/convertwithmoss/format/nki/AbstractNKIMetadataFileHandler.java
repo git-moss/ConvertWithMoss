@@ -220,7 +220,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 name = "Layer " + (groupCount + 1);
             String groupContent = groupTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%GROUP_NAME%", name);
 
-            List<ISampleMetadata> sampleMetadataList = layer.getSampleMetadata ();
+            final List<ISampleMetadata> sampleMetadataList = layer.getSampleMetadata ();
             for (final ISampleMetadata sampleMetadata: sampleMetadataList)
             {
                 String zoneContent = zoneTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%ZONE_INDEX%", Integer.toString (sampleCount));
@@ -307,11 +307,11 @@ public abstract class AbstractNKIMetadataFileHandler
             groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_RELEASE%", formatDouble (limitToDefault (filterCutoffEnvelope.getRelease (), 1) * 1000.0d));
             groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (filterCutoffEnvelope.getSustain (), 1)));
 
-            double pitchBendUp = sampleMetadata == null ? 0 : sampleMetadata.getBendUp ();
+            final double pitchBendUp = sampleMetadata == null ? 0 : sampleMetadata.getBendUp ();
             groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
-            boolean keyTracking = sampleMetadata == null || sampleMetadata.getKeyTracking () > 0;
+            final boolean keyTracking = sampleMetadata == null || sampleMetadata.getKeyTracking () > 0;
             groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
-            boolean isReleaseTrigger = sampleMetadata != null && sampleMetadata.getTrigger () == TriggerType.RELEASE;
+            final boolean isReleaseTrigger = sampleMetadata != null && sampleMetadata.getTrigger () == TriggerType.RELEASE;
             groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
 
             groupContent = groupContent.replace ("%GROUP_REVERSE%", isReverse ? "yes" : "no");
@@ -650,7 +650,7 @@ public abstract class AbstractNKIMetadataFileHandler
             return;
         }
 
-        setModulators (groupModulators, sampleMetadata);
+        this.setModulators (groupModulators, sampleMetadata);
 
         if (groupParameters.containsKey (this.tags.reverseParam ()))
         {
