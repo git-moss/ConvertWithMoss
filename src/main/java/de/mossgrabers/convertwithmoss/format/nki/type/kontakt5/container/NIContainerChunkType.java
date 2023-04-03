@@ -21,11 +21,13 @@ public enum NIContainerChunkType
     BNI_SOUND_PRESET(3, "BNI Sound Preset"),
     BNI_SOUND_HEADER(4, "BNI Sound Header"),
     BANK(100, "Bank"),
+    /** Information about the application that created the preset. */
     PRESET(101, "Preset"),
     BANK_CONTAINER(102, "Bank Container"),
     PRESET_CONTAINER(103, "Preset Container"),
     BINARY_CHUNK_ITEM(104, "Binary Chunk Item"),
     AUTHORIZATION(106, "Authorization"),
+    /** Some metadata information. */
     SOUNDINFO_ITEM(108, "Soundinfo Item"),
     PRESET_CHUNK_ITEM(109, "Preset Chunk Item"),
     EXTERNAL_FILE_REFERENCE(110, "External File Reference"),
