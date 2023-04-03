@@ -13,7 +13,8 @@ import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerChunkType;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerItem;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.RootChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.AuthoringApplication;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.PresetChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -74,13 +75,21 @@ public class NkiDetectorTask extends AbstractDetectorTask
                 final InputStream inputStream = Channels.newInputStream (channel);
                 final NIContainerItem niContainerItem = new NIContainerItem ();
                 niContainerItem.read (inputStream);
-                // TODO
+                // TODO remove
                 System.out.println (niContainerItem.dump (0));
 
-                final NIContainerChunk rootChunk = niContainerItem.find (NIContainerChunkType.CONTAINER_ROOT);
-                if (rootChunk != null && rootChunk.getData () instanceof final RootChunkData rootChunkData)
+                final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET);
+                if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
                 {
-                    this.notifier.logText (rootChunkData.getMajorVersion () + "." + rootChunkData.getMinorVersion () + "." + rootChunkData.getPatchVersion ());
+                    final AuthoringApplication application = presetChunkData.getApplication ();
+                    if (application != AuthoringApplication.KONTAKT)
+                    {
+                        this.notifier.logError ("IDS_NKI5_NOT_A_KONTAKT_FILE", application == null ? "Unknown" : application.getName ());
+                        return Collections.emptyList ();
+                    }
+
+                    final boolean isMonolith = false;
+                    this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", presetChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
                 }
 
                 this.notifier.logError ("IDS_NKI_KONTAKT5_NOT_SUPPORTED");
