@@ -26,7 +26,7 @@ public class NkiDetector extends AbstractDetectorWithMetadataPane<NkiDetectorTas
      */
     public NkiDetector (final INotifier notifier)
     {
-        super ("Kontakt NKI", notifier, "Nki");
+        super ("Kontakt NKI/NKM", notifier, "Nki");
     }
 
 

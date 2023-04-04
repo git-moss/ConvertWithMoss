@@ -223,46 +223,19 @@ public abstract class AbstractNKIMetadataFileHandler
             final List<ISampleMetadata> sampleMetadataList = layer.getSampleMetadata ();
             for (final ISampleMetadata sampleMetadata: sampleMetadataList)
             {
-                String zoneContent = zoneTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%ZONE_INDEX%", Integer.toString (sampleCount));
-                final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
-
-                zoneContent = zoneContent.replace ("%ZONE_SAMPLE_START%", Integer.toString (sampleMetadata.getStart ()));
-                zoneContent = zoneContent.replace ("%ZONE_SAMPLE_END%", Integer.toString (sampleMetadata.getStop ()));
-                zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (limitToDefault (sampleMetadata.getVelocityLow (), 0)));
-                zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getVelocityHigh (), 127)));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (limitToDefault (sampleMetadata.getKeyLow (), 0)));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getKeyHigh (), 127)));
-                zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (limitToDefault (sampleMetadata.getVelocityCrossfadeLow (), 0)));
-                zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getVelocityCrossfadeLow (), 0)));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (limitToDefault (sampleMetadata.getNoteCrossfadeLow (), 0)));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getNoteCrossfadeHigh (), 0)));
-                zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (sampleMetadata.getKeyRoot ()));
-                zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, sampleMetadata.getGain () / 20.0d)));
-                zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (sampleMetadata.getTune () / 0.12d * Math.log (2))));
-                zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (sampleMetadata.getPanorama ())));
-                zoneContent = zoneContent.replace ("%ZONE_SAMPLE_NAME%", filename.isPresent () ? AbstractCreator.formatFileName (safeSampleFolderName, filename.get ()) : "");
+                String zoneContent = this.addZoneData (sampleMetadata, safeSampleFolderName, zoneTemplate, sampleCount, groupCount);
 
                 final StringBuilder loopsContent = new StringBuilder ();
                 final List<ISampleLoop> loops = sampleMetadata.getLoops ();
                 for (int loopIndex = 0; loopIndex < loops.size (); loopIndex++)
                 {
                     final ISampleLoop loop = loops.get (loopIndex);
-
-                    String loopContent = loopTemplate.replace ("%LOOP_INDEX%", Integer.toString (loopIndex));
-
-                    final int loopStart = loop.getStart ();
-                    loopContent = loopContent.replace ("%LOOP_START%", Integer.toString (loopStart));
-                    loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getEnd () - loopStart));
-
-                    final LoopType type = loop.getType ();
-                    loopContent = loopContent.replace ("%LOOP_ALTERNATING%", type == LoopType.ALTERNATING ? "yes" : "no");
-                    loopContent = loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
-
-                    isReverse = type == LoopType.BACKWARDS;
-
+                    final String loopContent = addLoop (loop, loopTemplate, loopIndex);
                     if (loopIndex > 0)
                         loopsContent.append ("\r\n");
                     loopsContent.append (loopContent);
+
+                    isReverse = loop.getType () == LoopType.BACKWARDS;
                 }
                 zoneContent = zoneContent.replace ("%ZONE_LOOPS%", loopsContent.toString ());
                 zones.append (zoneContent);
@@ -273,53 +246,92 @@ public abstract class AbstractNKIMetadataFileHandler
             // These parameters can only be set on the group. This implementation uses the first
             // found
             final ISampleMetadata sampleMetadata = sampleMetadataList.isEmpty () ? null : sampleMetadataList.get (0);
-
-            final IModulator amplitudeModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getAmplitudeModulator ();
-            final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
-            groupContent = groupContent.replace ("%ENVELOPE_INTENSITY%", formatDouble (limitToDefault (amplitudeModulator.getDepth (), 0)));
-            groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (limitToDefault (amplitudeEnvelope.getAttack (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (limitToDefault (amplitudeEnvelope.getHold (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (limitToDefault (amplitudeEnvelope.getDecay (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getRelease (), 1) * 1000.0d));
-            groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustain (), 1)));
-
-            final IModulator pitchModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getPitchModulator ();
-            final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-            groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (pitchModulator.getDepth (), 0)));
-            groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (limitToDefault (pitchEnvelope.getAttack (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getHold (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%PITCH_ENVELOPE_HOLD%", formatDouble (limitToDefault (pitchEnvelope.getDecay (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%PITCH_ENVELOPE_RELEASE%", formatDouble (limitToDefault (pitchEnvelope.getRelease (), 1) * 1000.0d));
-            groupContent = groupContent.replace ("%PITCH_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (pitchEnvelope.getSustain (), 1)));
-
-            final Optional<IFilter> filterOpt = sampleMetadata == null ? Optional.empty () : sampleMetadata.getFilter ();
-            final IFilter filter = filterOpt.isPresent () ? filterOpt.get () : new DefaultFilter (FilterType.LOW_PASS, 2, IFilter.MAX_FREQUENCY, 0);
-            groupContent = groupContent.replace ("%FILTER_TYPE%", createFilterType (filter));
-            groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (filter.getCutoff () / IFilter.MAX_FREQUENCY));
-            groupContent = groupContent.replace ("%FILTER_RESONANCE%", formatDouble (filter.getResonance ()));
-
-            final IModulator filterCutoffModulator = filter.getCutoffModulator ();
-            final IEnvelope filterCutoffEnvelope = filterCutoffModulator.getSource ();
-            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (filterCutoffModulator.getDepth (), 0)));
-            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_ATTACK%", formatDouble (limitToDefault (filterCutoffEnvelope.getAttack (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_DECAY%", formatDouble (limitToDefault (filterCutoffEnvelope.getHold (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_HOLD%", formatDouble (limitToDefault (filterCutoffEnvelope.getDecay (), 0) * 1000.0d));
-            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_RELEASE%", formatDouble (limitToDefault (filterCutoffEnvelope.getRelease (), 1) * 1000.0d));
-            groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (filterCutoffEnvelope.getSustain (), 1)));
-
             final double pitchBendUp = sampleMetadata == null ? 0 : sampleMetadata.getBendUp ();
-            groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
             final boolean keyTracking = sampleMetadata == null || sampleMetadata.getKeyTracking () > 0;
-            groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
             final boolean isReleaseTrigger = sampleMetadata != null && sampleMetadata.getTrigger () == TriggerType.RELEASE;
+            groupContent = addModulators (sampleMetadata, groupContent);
+            groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
+            groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
-
             groupContent = groupContent.replace ("%GROUP_REVERSE%", isReverse ? "yes" : "no");
-
             groups.append (groupContent);
         }
 
         return groups.toString () + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_03_Groups_Zones.xml") + zones.toString ();
+    }
+
+
+    private String addZoneData (final ISampleMetadata sampleMetadata, final String safeSampleFolderName, final String zoneTemplate, int sampleCount, int groupCount)
+    {
+        String zoneContent = zoneTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%ZONE_INDEX%", Integer.toString (sampleCount));
+        final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
+
+        zoneContent = zoneContent.replace ("%ZONE_SAMPLE_START%", Integer.toString (sampleMetadata.getStart ()));
+        zoneContent = zoneContent.replace ("%ZONE_SAMPLE_END%", Integer.toString (sampleMetadata.getStop ()));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (limitToDefault (sampleMetadata.getVelocityLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getVelocityHigh (), 127)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (limitToDefault (sampleMetadata.getKeyLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getKeyHigh (), 127)));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (limitToDefault (sampleMetadata.getVelocityCrossfadeLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getVelocityCrossfadeLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (limitToDefault (sampleMetadata.getNoteCrossfadeLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getNoteCrossfadeHigh (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (sampleMetadata.getKeyRoot ()));
+        zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, sampleMetadata.getGain () / 20.0d)));
+        zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (sampleMetadata.getTune () / 0.12d * Math.log (2))));
+        zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (sampleMetadata.getPanorama ())));
+        return zoneContent.replace ("%ZONE_SAMPLE_NAME%", filename.isPresent () ? AbstractCreator.formatFileName (safeSampleFolderName, filename.get ()) : "");
+    }
+
+
+    private static String addLoop (final ISampleLoop loop, final String loopTemplate, int loopIndex)
+    {
+        String loopContent = loopTemplate.replace ("%LOOP_INDEX%", Integer.toString (loopIndex));
+
+        final int loopStart = loop.getStart ();
+        loopContent = loopContent.replace ("%LOOP_START%", Integer.toString (loopStart));
+        loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getEnd () - loopStart));
+
+        loopContent = loopContent.replace ("%LOOP_ALTERNATING%", loop.getType () == LoopType.ALTERNATING ? "yes" : "no");
+        return loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
+    }
+
+
+    private static String addModulators (final ISampleMetadata sampleMetadata, final String groupContentTemplate)
+    {
+        final IModulator amplitudeModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getAmplitudeModulator ();
+        final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
+        String groupContent = groupContentTemplate.replace ("%ENVELOPE_INTENSITY%", formatDouble (limitToDefault (amplitudeModulator.getDepth (), 1)));
+        groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (limitToDefault (amplitudeEnvelope.getAttack (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (limitToDefault (amplitudeEnvelope.getDecay (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (limitToDefault (amplitudeEnvelope.getHold (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getRelease (), 1) * 1000.0d));
+        groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustain (), 1)));
+
+        final IModulator pitchModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getPitchModulator ();
+        final IEnvelope pitchEnvelope = pitchModulator.getSource ();
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (pitchModulator.getDepth (), 1)));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (limitToDefault (pitchEnvelope.getAttack (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getDecay (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_HOLD%", formatDouble (limitToDefault (pitchEnvelope.getHold (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_RELEASE%", formatDouble (limitToDefault (pitchEnvelope.getRelease (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (pitchEnvelope.getSustain (), 0)));
+
+        final Optional<IFilter> filterOpt = sampleMetadata == null ? Optional.empty () : sampleMetadata.getFilter ();
+        final IFilter filter = filterOpt.isPresent () ? filterOpt.get () : new DefaultFilter (FilterType.LOW_PASS, 2, IFilter.MAX_FREQUENCY, 0);
+        groupContent = groupContent.replace ("%FILTER_TYPE%", createFilterType (filter));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (filter.getCutoff () / IFilter.MAX_FREQUENCY));
+        groupContent = groupContent.replace ("%FILTER_RESONANCE%", formatDouble (filter.getResonance ()));
+
+        final IModulator filterCutoffModulator = filter.getCutoffModulator ();
+        final IEnvelope filterCutoffEnvelope = filterCutoffModulator.getSource ();
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (filterCutoffModulator.getDepth (), 1)));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_ATTACK%", formatDouble (limitToDefault (filterCutoffEnvelope.getAttack (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_DECAY%", formatDouble (limitToDefault (filterCutoffEnvelope.getDecay (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_HOLD%", formatDouble (limitToDefault (filterCutoffEnvelope.getHold (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_RELEASE%", formatDouble (limitToDefault (filterCutoffEnvelope.getRelease (), 1) * 1000.0d));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (filterCutoffEnvelope.getSustain (), 1)));
+        return groupContent;
     }
 
 

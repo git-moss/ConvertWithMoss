@@ -103,7 +103,7 @@ public class NkiCreator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final Integer kontaktID = this.outputFormatGroup.getToggles ().get (0).isSelected () ? KontaktTypes.ID_KONTAKT1 : KontaktTypes.ID_KONTAKT2_BIG_ENDIAN;
+        final Integer kontaktID = this.outputFormatGroup.getToggles ().get (0).isSelected () ? KontaktTypes.ID_KONTAKT1_INSTRUMENT : KontaktTypes.ID_KONTAKT2_BIG_ENDIAN;
         final IKontaktType kontaktType = this.kontaktTypes.getType (kontaktID);
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());

@@ -34,6 +34,27 @@ public class StreamUtils
     /**
      * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
      *
+     * @param in The input stream
+     * @param isBigEndian True if bytes are stored big-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readUnsigned16 (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        final int ch1 = in.read ();
+        final int ch2 = in.read ();
+        if ((ch1 | ch2) < 0)
+            throw new EOFException ();
+        if (isBigEndian)
+            return (ch1 << 8) + ch2;
+        return (ch2 << 8) + ch1;
+    }
+
+
+    /**
+     * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
+     *
      * @param fileAccess The random access file to read from
      * @param isBigEndian True if bytes are stored big-endian
      * @return The converted integer

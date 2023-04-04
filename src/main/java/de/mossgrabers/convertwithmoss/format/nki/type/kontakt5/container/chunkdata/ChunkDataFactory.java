@@ -24,7 +24,9 @@ public class ChunkDataFactory
         TEMPLATES.put (NIContainerChunkType.TERMINATOR, TerminatorChunkData.class);
         TEMPLATES.put (NIContainerChunkType.CONTAINER_ROOT, RootChunkData.class);
         TEMPLATES.put (NIContainerChunkType.SOUNDINFO_ITEM, SoundinfoChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.PRESET, PresetChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.AUTHORING_APPLICATION, AuthoringApplicationChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.SUB_TREE_ITEM, SubTreeItemChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.PRESET_DATA, PresetDataChunkData.class);
     }
 
 
