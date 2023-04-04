@@ -14,7 +14,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIConta
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerChunkType;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerItem;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.AuthoringApplication;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.PresetChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.AuthoringApplicationChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -51,7 +50,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
      */
     public NkiDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
     {
-        super (notifier, consumer, sourceFolder, metadata, ".nki");
+        super (notifier, consumer, sourceFolder, metadata, ".nki", ".nkm");
 
         this.kontaktTypes = new KontaktTypes (notifier, metadata);
     }
@@ -71,29 +70,10 @@ public class NkiDetectorTask extends AbstractDetectorTask
             if ("hsin".equals (StreamUtils.readASCII (fileAccess, 4)))
             {
                 fileAccess.seek (0);
-                final FileChannel channel = fileAccess.getChannel ();
-                final InputStream inputStream = Channels.newInputStream (channel);
-                final NIContainerItem niContainerItem = new NIContainerItem ();
-                niContainerItem.read (inputStream);
-                // TODO remove
-                System.out.println (niContainerItem.dump (0));
-
-                final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET);
-                if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+                try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
                 {
-                    final AuthoringApplication application = presetChunkData.getApplication ();
-                    if (application != AuthoringApplication.KONTAKT)
-                    {
-                        this.notifier.logError ("IDS_NKI5_NOT_A_KONTAKT_FILE", application == null ? "Unknown" : application.getName ());
-                        return Collections.emptyList ();
-                    }
-
-                    final boolean isMonolith = false;
-                    this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", presetChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
+                    return this.readNIContainer (inputStream);
                 }
-
-                this.notifier.logError ("IDS_NKI_KONTAKT5_NOT_SUPPORTED");
-                return Collections.emptyList ();
             }
 
             // Is this Kontakt 5+ container format?
@@ -118,6 +98,43 @@ public class NkiDetectorTask extends AbstractDetectorTask
         {
             this.notifier.logError ("IDS_NKI_UNSUPPORTED_FILE_FORMAT", ex);
         }
+        return Collections.emptyList ();
+    }
+
+
+    /**
+     * Reads an NI container, which hopefully contains a NKI preset.
+     *
+     * @param inputStream The input stream to read from
+     * @return The parsed multi-samples, if any
+     * @throws IOException Could not read the container
+     */
+    private List<IMultisampleSource> readNIContainer (final InputStream inputStream) throws IOException
+    {
+        final NIContainerItem niContainerItem = new NIContainerItem ();
+        niContainerItem.read (inputStream);
+        // TODO remove
+        System.out.println (niContainerItem.dump (0));
+
+        final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
+        if (presetChunk != null && presetChunk.getData () instanceof final AuthoringApplicationChunkData presetChunkData)
+        {
+            final AuthoringApplication application = presetChunkData.getApplication ();
+            if (application != AuthoringApplication.KONTAKT)
+            {
+                this.notifier.logError ("IDS_NKI5_NOT_A_KONTAKT_FILE", application == null ? "Unknown" : application.getName ());
+                return Collections.emptyList ();
+            }
+
+            final NIContainerChunk subTreeItemChunk = niContainerItem.find (NIContainerChunkType.SUB_TREE_ITEM);
+            // TODO get the preset and create a MultisampleSource
+
+            // TODO Detect monolith
+            final boolean isMonolith = false;
+            this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", presetChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
+        }
+
+        this.notifier.logError ("IDS_NKI_KONTAKT5_NOT_SUPPORTED");
         return Collections.emptyList ();
     }
 }

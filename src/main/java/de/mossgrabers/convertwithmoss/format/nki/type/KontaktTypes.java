@@ -21,7 +21,9 @@ import java.util.Map;
 public class KontaktTypes
 {
     /** ID for Kontakt 1 NKI files. */
-    public static final Integer              ID_KONTAKT1               = Integer.valueOf (0x5EE56EB3);
+    public static final Integer              ID_KONTAKT1_INSTRUMENT    = Integer.valueOf (0x5EE56EB3);
+    /** ID for Kontakt 1 NKM files. */
+    public static final Integer              ID_KONTAKT1_MULTI         = Integer.valueOf (0x5AE5D6A4);
     /** ID for Kontakt 2 NKI files (little-endian). */
     public static final Integer              ID_KONTAKT2_LITTLE_ENDIAN = Integer.valueOf (0x1290A87F);
     /** ID for Kontakt 2 NKI files (big-endian). */
@@ -41,7 +43,10 @@ public class KontaktTypes
      */
     public KontaktTypes (final INotifier notifier, final IMetadataConfig metadata)
     {
-        this.typeHandlers.put (ID_KONTAKT1, new Kontakt1Type (metadata, notifier));
+        final Kontakt1Type kontakt1 = new Kontakt1Type (metadata, notifier);
+        this.typeHandlers.put (ID_KONTAKT1_INSTRUMENT, kontakt1);
+        this.typeHandlers.put (ID_KONTAKT1_MULTI, kontakt1);
+
         this.typeHandlers.put (ID_KONTAKT2_LITTLE_ENDIAN, new Kontakt2Type (metadata, notifier, false));
         this.typeHandlers.put (ID_KONTAKT2_BIG_ENDIAN, new Kontakt2Type (metadata, notifier, true));
     }

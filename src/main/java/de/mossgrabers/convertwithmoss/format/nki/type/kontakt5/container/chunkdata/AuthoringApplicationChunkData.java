@@ -7,11 +7,11 @@ import java.io.InputStream;
 
 
 /**
- * The root chunk of all containers.
+ * Metadata information about the authoring application.
  *
  * @author Jürgen Moßgraber
  */
-public class PresetChunkData extends AbstractChunkData
+public class AuthoringApplicationChunkData extends AbstractChunkData
 {
     private boolean              isCompressed;
     private String               applicationVersion;

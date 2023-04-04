@@ -1,5 +1,15 @@
 # Changes
 
+## 6.2.0 (unreleased)
+
+* Added support for reading Native Instruments NKM files (Kontakt Multis) in Kontakt version 1-4.
+* Native Instruments NKI files - Reading
+  * For Kontakt 5+ NKI files the exact version number is displayed (but reading is still not supported).
+* Native Instruments NKI files - Writing
+  * New: Intensity of default envelopes is now set to 1 (was 0).
+  * New: The default pitch envelope has now 0 for all parameters.
+  * Fixed: Envelope hold and decay were flipped.
+
 ## 6.1.0
 
 * Tabs are now orderd alphabetically.

@@ -81,7 +81,7 @@ public class Kontakt1Type extends AbstractKontaktType
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
         // Kontakt 1 NKI File ID
-        StreamUtils.writeUnsigned32 (out, KontaktTypes.ID_KONTAKT1.intValue (), true);
+        StreamUtils.writeUnsigned32 (out, KontaktTypes.ID_KONTAKT1_INSTRUMENT.intValue (), true);
 
         // The number of bytes in the file where the ZLIB starts. Always 0x24.
         StreamUtils.writeUnsigned32 (out, 0x24, false);
