@@ -60,7 +60,7 @@ public class SubTreeItemChunkData extends AbstractChunkData
         this.subItem.read (childBin);
 
         // TODO remove
-        System.out.println ("Sub Tree");
-        System.out.println (this.subItem.dump (0));
+        // System.out.println ("Sub Tree");
+        // System.out.println (this.subItem.dump (0));
     }
 }

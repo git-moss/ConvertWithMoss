@@ -114,7 +114,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (inputStream);
         // TODO remove
-        System.out.println (niContainerItem.dump (0));
+        // System.out.println (niContainerItem.dump (0));
 
         final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
         if (presetChunk != null && presetChunk.getData () instanceof final AuthoringApplicationChunkData presetChunkData)

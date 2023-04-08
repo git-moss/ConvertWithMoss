@@ -1,6 +1,6 @@
 # Changes
 
-## 6.2.0 (unreleased)
+## 6.2.0
 
 * Added support for reading Native Instruments NKM files (Kontakt Multis) in Kontakt version 1-4.
 * Native Instruments NKI files - Reading
