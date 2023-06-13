@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -35,7 +36,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -67,87 +67,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
         LOOP_TYPE_MAP.put ("forward", LoopType.FORWARD);
         LOOP_TYPE_MAP.put ("backward", LoopType.BACKWARDS);
         LOOP_TYPE_MAP.put ("alternate", LoopType.ALTERNATING);
-    }
-
-    /** The names of notes. */
-    private static final String []            NOTE_NAMES_FLAT         =
-    {
-        "C",
-        "Db",
-        "D",
-        "Eb",
-        "E",
-        "F",
-        "Gb",
-        "G",
-        "Ab",
-        "A",
-        "Bb",
-        "B"
-    };
-    private static final String []            NOTE_NAMES_SHARP        =
-    {
-        "C",
-        "C#",
-        "D",
-        "D#",
-        "E",
-        "F",
-        "F#",
-        "G",
-        "G#",
-        "A",
-        "A#",
-        "B"
-    };
-    /** The names of notes. */
-    private static final String []            NOTE_NAMES_FLAT_GERMAN  =
-    {
-        "C",
-        "Db",
-        "D",
-        "Eb",
-        "E",
-        "F",
-        "Gb",
-        "G",
-        "Ab",
-        "A",
-        "Bb",
-        "H"
-    };
-    private static final String []            NOTE_NAMES_SHARP_GERMAN =
-    {
-        "C",
-        "C#",
-        "D",
-        "D#",
-        "E",
-        "F",
-        "F#",
-        "G",
-        "G#",
-        "A",
-        "A#",
-        "H"
-    };
-
-    private static final Map<String, Integer> KEY_MAP                 = new HashMap<> ();
-
-    static
-    {
-        // Create note map
-        for (int note = 0; note < 128; note++)
-        {
-            final int n = Math.abs (note % 12);
-            final String octave = Integer.toString (note / 12 - 2);
-            final Integer ni = Integer.valueOf (note);
-            KEY_MAP.put (NOTE_NAMES_FLAT[n] + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_SHARP[n] + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_FLAT_GERMAN[n] + octave, ni);
-            KEY_MAP.put (NOTE_NAMES_SHARP_GERMAN[n] + octave, ni);
-            KEY_MAP.put (String.format ("%d", ni), ni);
-        }
     }
 
     private Map<String, String> globalAttributes = Collections.emptyMap ();
@@ -771,13 +690,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
     private int getKeyValue (final String key)
     {
         final Optional<String> value = this.getAttribute (key);
-        if (value.isEmpty ())
-            return -1;
-        final String noteValue = value.get ().toUpperCase (Locale.US);
-        // The lookup map contains all variations of note representations including MIDI numbers.
-        // The specific value 'sample' is ignored and -1 is returned which therefore causes it to be
-        // loaded from the WAV file
-        return KEY_MAP.getOrDefault (noteValue, Integer.valueOf (-1)).intValue ();
+        return value.isEmpty () ? -1 : NoteParser.parseNote (value.get ());
     }
 
 

@@ -310,6 +310,19 @@ public class StreamUtils
 
 
     /**
+     * Reads all bytes from an input stream and interprets it as ASCII text.
+     *
+     * @param in The stream to read from
+     * @return The read text
+     * @throws IOException
+     */
+    public static String readUTF8 (final InputStream in) throws IOException
+    {
+        return new String (in.readAllBytes (), StandardCharsets.UTF_8);
+    }
+
+
+    /**
      * Reads a number of bytes from an input stream and interprets it as ASCII text.
      *
      * @param in The stream to read from
