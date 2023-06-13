@@ -1,5 +1,12 @@
 # Changes
 
+## 6.2.1 (unreleased)
+
+* Decent Sampler - Reading
+  * New: Implemented workaround for invalid XML document (contains comments before XML header).
+  * New: Added support for notes which are formatted as text instead of MIDI numbers.
+  * Fixed: Groups were not detected.
+
 ## 6.2.0
 
 * Added support for reading Native Instruments NKM files (Kontakt Multis) in Kontakt version 1-4.
@@ -35,7 +42,7 @@
 ## 5.2.1
 
 * Fixed: Bitwig Multisample files with old layer formatting had duplicated layers as output.
-* Fixed: Missing trigger types in Decenter Sampler files did show an unnecessary error.
+* Fixed: Missing trigger types in Decent Sampler files did show an unnecessary error.
 
 ## 5.2
 

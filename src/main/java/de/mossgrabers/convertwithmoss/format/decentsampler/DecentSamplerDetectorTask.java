@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.decentsampler;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -19,6 +20,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -31,10 +33,10 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -139,7 +141,8 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         try (final InputStream in = zipFile.getInputStream (entry))
         {
-            final Document document = XMLUtils.parseDocument (new InputSource (in));
+            final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
+            final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (file, parent, true, document);
         }
         catch (final SAXException ex)
@@ -151,6 +154,19 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
 
     /**
+     * Workaround for invalid XML files which contain comments before the XML header.
+     *
+     * @param content The XML document
+     * @return The potentially fixed XML document
+     */
+    private static String fixInvalidXML (final String content)
+    {
+        final int headerStart = content.indexOf ("<?xml");
+        return headerStart > 0 ? content.substring (headerStart) : content;
+    }
+
+
+    /**
      * Reads and processes the Decent Sampler preset file.
      *
      * @param file The preset file
@@ -158,9 +174,10 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      */
     private List<IMultisampleSource> processPresetFile (final File file)
     {
-        try (final FileReader reader = new FileReader (file, StandardCharsets.UTF_8))
+        try (final FileInputStream in = new FileInputStream (file))
         {
-            final Document document = XMLUtils.parseDocument (new InputSource (reader));
+            final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
+            final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (file, file.getParent (), false, document);
         }
         catch (final IOException | SAXException ex)
@@ -203,7 +220,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         final double globalTuningOffset = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.GLOBAL_TUNING, 0);
 
-        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (top, basePath, isLibrary ? multiSampleFile : null, globalTuningOffset);
+        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (groupsElement, basePath, isLibrary ? multiSampleFile : null, globalTuningOffset);
 
         final String name = FileUtils.getNameWithoutType (multiSampleFile);
         final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
@@ -253,15 +270,15 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
     /**
      * Parses all velocity layers (groups).
      *
-     * @param top The top XML element
+     * @param groups The XML element containing all groups
      * @param basePath The base path of the samples
      * @param libraryFile If it is a library otherwise null
      * @param globalTuningOffset The global tuning offset
      * @return All parsed layers
      */
-    private List<IVelocityLayer> parseVelocityLayers (final Element top, final String basePath, final File libraryFile, final double globalTuningOffset)
+    private List<IVelocityLayer> parseVelocityLayers (final Element groups, final String basePath, final File libraryFile, final double globalTuningOffset)
     {
-        final Node [] groupNodes = XMLUtils.getChildrenByName (top, DecentSamplerTag.GROUP, false);
+        final Node [] groupNodes = XMLUtils.getChildrenByName (groups, DecentSamplerTag.GROUP, false);
         final List<IVelocityLayer> layers = new ArrayList<> (groupNodes.length);
         int groupCounter = 1;
         for (final Node groupNode: groupNodes)
@@ -360,9 +377,9 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             sampleMetadata.setPlayLogic (zoneLogic != null && "round_robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
 
             sampleMetadata.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, 1));
-            sampleMetadata.setKeyRoot (XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE, -1));
-            sampleMetadata.setKeyLow (XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LO_NOTE, -1));
-            sampleMetadata.setKeyHigh (XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.HI_NOTE, -1));
+            sampleMetadata.setKeyRoot (getNoteAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE));
+            sampleMetadata.setKeyLow (getNoteAttribute (sampleElement, DecentSamplerTag.LO_NOTE));
+            sampleMetadata.setKeyHigh (getNoteAttribute (sampleElement, DecentSamplerTag.HI_NOTE));
             sampleMetadata.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LO_VEL, -1));
             sampleMetadata.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, -1));
 
@@ -397,6 +414,20 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
             velocityLayer.addSampleMetadata (sampleMetadata);
         }
+    }
+
+
+    /**
+     * Get the value of a note element. The value can be either an integer MIDI note or a text like
+     * C#5.
+     *
+     * @param element The element
+     * @param attributeName The name of the attribute from which to get the note value
+     * @return The value
+     */
+    private static int getNoteAttribute (final Element element, final String attributeName)
+    {
+        return NoteParser.parseNote (element.getAttribute (attributeName));
     }
 
 
