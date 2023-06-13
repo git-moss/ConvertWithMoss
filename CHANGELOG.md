@@ -1,6 +1,6 @@
 # Changes
 
-## 6.2.1 (unreleased)
+## 6.2.1
 
 * Decent Sampler - Reading
   * New: Implemented workaround for invalid XML document (contains comments before XML header).
