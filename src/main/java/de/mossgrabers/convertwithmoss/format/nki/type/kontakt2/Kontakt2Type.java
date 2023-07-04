@@ -16,6 +16,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.Dictionary;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItem;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItemReferenceType;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.PresetDataChunkData;
 import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -131,6 +132,7 @@ public class Kontakt2Type extends AbstractKontaktType
 
     private final boolean               isBigEndian;
     private final K2MetadataFileHandler handler;
+    private final PresetDataChunkData   kontakt5Preset        = new PresetDataChunkData ();
 
 
     /**
@@ -154,12 +156,13 @@ public class Kontakt2Type extends AbstractKontaktType
     public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess) throws IOException
     {
         // The size of the ZLIB block, we do not need the info
-        StreamUtils.skipNBytes (fileAccess, 4);
+        final int zlibLength = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
 
-        // No idea yet about these 8 bytes (they are 3 blocks 2/4/2)...
+        // Skip Header Version, Patch Version and Patch Type
         StreamUtils.skipNBytes (fileAccess, 8);
 
-        String version = this.readVersion (fileAccess);
+        // The version of Kontakt which stored this file
+        String kontaktVersion = this.readVersion (fileAccess);
 
         final String blockID = StreamUtils.readASCII (fileAccess, 4, !this.isBigEndian);
         if (!KNOWN_BLOCK_IDS.contains (blockID))
@@ -170,8 +173,18 @@ public class Kontakt2Type extends AbstractKontaktType
         sdf.setTimeZone (TimeZone.getTimeZone ("UTC+1"));
         final String formattedCreation = sdf.format (creation);
 
-        // No idea yet about these 26 bytes...
-        StreamUtils.skipNBytes (fileAccess, 26);
+        // No idea yet about these 4 bytes...
+        StreamUtils.skipNBytes (fileAccess, 4);
+
+        // Number of Zones
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+        // Number of Groups
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+        // Number of Instruments
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+
+        // No idea yet about these 16 bytes...
+        StreamUtils.skipNBytes (fileAccess, 16);
 
         final Integer iconID = Integer.valueOf (StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian));
         final String iconName = ICON_MAP.get (iconID);
@@ -189,7 +202,7 @@ public class Kontakt2Type extends AbstractKontaktType
         // No idea yet about these 7 bytes... could be padded zeros
         StreamUtils.skipNBytes (fileAccess, 7);
 
-        final boolean isFourDotTwo = version.startsWith ("4") && !version.startsWith ("4.0") && !version.startsWith ("4.1");
+        final boolean isFourDotTwo = kontaktVersion.startsWith ("4") && !kontaktVersion.startsWith ("4.0") && !kontaktVersion.startsWith ("4.1");
         if (isFourDotTwo)
         {
             // 12 new bytes introduced in 4.2
@@ -200,22 +213,43 @@ public class Kontakt2Type extends AbstractKontaktType
         StreamUtils.skipNBytes (fileAccess, 4);
 
         final int patchLevel = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-        if (version.endsWith ("?"))
-            version = version.substring (0, version.length () - 1) + Integer.toString (patchLevel);
+        if (kontaktVersion.endsWith ("?"))
+            kontaktVersion = kontaktVersion.substring (0, kontaktVersion.length () - 1) + Integer.toString (patchLevel);
 
         if (isFourDotTwo)
         {
-            this.notifier.logError ("IDS_NKI_KONTAKT422_NOT_SUPPORTED");
-            return Collections.emptyList ();
+            // Unknown
+            StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+            // Unknown - Length?
+            StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+            // Padding?
+            StreamUtils.skipNBytes (fileAccess, 32);
         }
 
         // Is it a monolith?
-        final boolean isMonolith = fileAccess.read () != 0x78;
+        final int type = fileAccess.read ();
+        final boolean isMonolith = (type != 0x78 && !isFourDotTwo) || (type != 0x0A && isFourDotTwo);
         fileAccess.seek (fileAccess.getFilePointer () - 1);
-        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "2", version, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
+        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", isFourDotTwo ? "4.2" : "2", kontaktVersion, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
         final Map<String, WavSampleMetadata> monolithSamples = isMonolith ? this.readMonolith (fileAccess) : null;
 
-        final List<IMultisampleSource> multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples);
+        final List<IMultisampleSource> multiSamples;
+        if (isFourDotTwo)
+        {
+            // 0x0A
+            StreamUtils.skipNBytes (fileAccess, 1);
+
+            final byte [] presetData = new byte [zlibLength - 1];
+            fileAccess.readFully (presetData);
+
+            this.kontakt5Preset.parseKontakt5Preset (presetData);
+
+            this.notifier.logError ("IDS_NKI_KONTAKT422_NOT_SUPPORTED");
+            multiSamples = Collections.emptyList ();
+        }
+        else
+            multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples);
+
         this.handleSoundinfo (sourceFile, fileAccess, multiSamples, formattedCreation, iconName, author, website);
         return multiSamples;
     }
@@ -302,7 +336,6 @@ public class Kontakt2Type extends AbstractKontaktType
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
         }
-
     }
 
 
