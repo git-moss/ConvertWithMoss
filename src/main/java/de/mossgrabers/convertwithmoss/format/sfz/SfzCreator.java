@@ -373,6 +373,9 @@ public class SfzCreator extends AbstractCreator
         final double volume = sampleMetadata.getGain ();
         if (volume != 0)
             addAttribute (sb, SfzOpcode.VOLUME, formatDouble (volume, 2), true);
+        final double pan = sampleMetadata.getPanorama ();
+        if (pan != 0)
+            addAttribute (sb, SfzOpcode.PANORAMA, Integer.toString ((int) Math.round (pan * 100)), true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 

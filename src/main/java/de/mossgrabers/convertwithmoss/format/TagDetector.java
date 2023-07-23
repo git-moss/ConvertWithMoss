@@ -19,13 +19,47 @@ import java.util.TreeMap;
  *
  * @author Jürgen Moßgraber
  */
+@SuppressWarnings("javadoc")
 public class TagDetector
 {
-    private static final Map<String, String []> CATEGORIES      = new HashMap<> ();
-    private static final Map<String, String>    CATEGORY_LOOKUP = new TreeMap<> (new StringLengthComparator ());
-    private static final Map<String, String>    KEYWORD_LOOKUP  = new TreeMap<> (new StringLengthComparator ());
+    private static final Map<String, String []> CATEGORIES                    = new HashMap<> ();
+    private static final Map<String, String>    CATEGORY_LOOKUP               = new TreeMap<> (new StringLengthComparator ());
+    private static final Map<String, String>    KEYWORD_LOOKUP                = new TreeMap<> (new StringLengthComparator ());
 
-    private static final String []              KEYWORDS        =
+    public static final String                  CATEGORY_ACOUSTIC_DRUMS       = "Acoustic Drums";
+    public static final String                  CATEGORY_BASS                 = "Bass";
+    public static final String                  CATEGORY_BELL                 = "Bell";
+    public static final String                  CATEGORY_BRASS                = "Brass";
+    public static final String                  CATEGORY_CHIP                 = "Chip";
+    public static final String                  CATEGORY_VOCAL                = "Vocal";
+    public static final String                  CATEGORY_CHROMATIC_PERCUSSION = "Chromatic Percussion";
+    public static final String                  CATEGORY_CLAP                 = "Clap";
+    public static final String                  CATEGORY_DESTRUCTION          = "Destruction";
+    public static final String                  CATEGORY_DRONE                = "Drone";
+    public static final String                  CATEGORY_DRUMS                = "Drums";
+    public static final String                  CATEGORY_ENSEMBLE             = "Ensemble";
+    public static final String                  CATEGORY_FX                   = "FX";
+    public static final String                  CATEGORY_GUITAR               = "Guitar";
+    public static final String                  CATEGORY_HI_HAT               = "Hi-Hat";
+    public static final String                  CATEGORY_KEYBOARDS            = "Keyboards";
+    public static final String                  CATEGORY_KICK                 = "Kick";
+    public static final String                  CATEGORY_LEAD                 = "Lead";
+    public static final String                  CATEGORY_MONOSYNTH            = "Monosynth";
+    public static final String                  CATEGORY_ORCHESTRAL           = "Orchestral";
+    public static final String                  CATEGORY_ORGAN                = "Organ";
+    public static final String                  CATEGORY_PAD                  = "Pad";
+    public static final String                  CATEGORY_PERCUSSION           = "Percussion";
+    public static final String                  CATEGORY_PIANO                = "Piano";
+    public static final String                  CATEGORY_PIPE                 = "Pipe";
+    public static final String                  CATEGORY_PLUCKS               = "Plucks";
+    public static final String                  CATEGORY_SNARE                = "Snare";
+    public static final String                  CATEGORY_STRINGS              = "Strings";
+    public static final String                  CATEGORY_SYNTH                = "Synth";
+    public static final String                  CATEGORY_WINDS                = "Winds";
+    public static final String                  CATEGORY_LOOPS                = "Loops";
+    public static final String                  CATEGORY_WORLD                = "World";
+
+    private static final String []              KEYWORDS                      =
     {
         "acoustic",
         "aggressive",
@@ -105,25 +139,25 @@ public class TagDetector
 
     static
     {
-        CATEGORIES.put ("Acoustic Drums", new String []
+        CATEGORIES.put (CATEGORY_ACOUSTIC_DRUMS, new String []
         {
             "Acoustic Drum"
         });
-        CATEGORIES.put ("Bass", new String []
+        CATEGORIES.put (CATEGORY_BASS, new String []
         {
             "Bass",
             "Fretless",
             "Slap",
             "Fingered"
         });
-        CATEGORIES.put ("Bell", new String []
+        CATEGORIES.put (CATEGORY_BELL, new String []
         {
             "Bell",
             "Musical Box",
             "Music Box",
             "Tubular"
         });
-        CATEGORIES.put ("Brass", new String []
+        CATEGORIES.put (CATEGORY_BRASS, new String []
         {
             "Brass",
             "Horn",
@@ -131,14 +165,14 @@ public class TagDetector
             "Trombone",
             "Tuba"
         });
-        CATEGORIES.put ("Chip", new String []
+        CATEGORIES.put (CATEGORY_CHIP, new String []
         {
             "Chip",
             "Computer",
             "CPU",
             "Wave"
         });
-        CATEGORIES.put ("Vocal", new String []
+        CATEGORIES.put (CATEGORY_VOCAL, new String []
         {
             "Choir",
             "Vocal",
@@ -153,7 +187,7 @@ public class TagDetector
             "Sing",
             "Microphone"
         });
-        CATEGORIES.put ("Chromatic Percussion", new String []
+        CATEGORIES.put (CATEGORY_CHROMATIC_PERCUSSION, new String []
         {
             "Chromatic Percussion",
             "Marimba",
@@ -161,21 +195,22 @@ public class TagDetector
             "Vibraphone",
             "Glockenspiel",
             "Celesta",
-            "Mallet"
+            "Mallet",
+            "Kalimba"
         });
-        CATEGORIES.put ("Clap", new String []
+        CATEGORIES.put (CATEGORY_CLAP, new String []
         {
             "Clap"
         });
-        CATEGORIES.put ("Destruction", new String []
+        CATEGORIES.put (CATEGORY_DESTRUCTION, new String []
         {
             "Destruction"
         });
-        CATEGORIES.put ("Drone", new String []
+        CATEGORIES.put (CATEGORY_DRONE, new String []
         {
             "Drone"
         });
-        CATEGORIES.put ("Drums", new String []
+        CATEGORIES.put (CATEGORY_DRUMS, new String []
         {
             "Drum",
             "Kit",
@@ -187,11 +222,11 @@ public class TagDetector
             "Gong",
             "Pads"
         });
-        CATEGORIES.put ("Ensemble", new String []
+        CATEGORIES.put (CATEGORY_ENSEMBLE, new String []
         {
             "Ensemble"
         });
-        CATEGORIES.put ("FX", new String []
+        CATEGORIES.put (CATEGORY_FX, new String []
         {
             "FX",
             "SciFi",
@@ -210,28 +245,30 @@ public class TagDetector
             "Applause",
             "Surround"
         });
-        CATEGORIES.put ("Guitar", new String []
+        CATEGORIES.put (CATEGORY_GUITAR, new String []
         {
-            "Guitar"
+            "Guitar",
+            "Rajao",
+            "Banjo"
         });
-        CATEGORIES.put ("Hi-Hat", new String []
+        CATEGORIES.put (CATEGORY_HI_HAT, new String []
         {
             "Hi-Hat",
             "HiHat",
             "HH",
             "Hats"
         });
-        CATEGORIES.put ("Keyboards", new String []
+        CATEGORIES.put (CATEGORY_KEYBOARDS, new String []
         {
             "Keyboard",
             "Clavinet",
             "Harpsi"
         });
-        CATEGORIES.put ("Kick", new String []
+        CATEGORIES.put (CATEGORY_KICK, new String []
         {
             "Kick"
         });
-        CATEGORIES.put ("Lead", new String []
+        CATEGORIES.put (CATEGORY_LEAD, new String []
         {
             "Lead",
             "Solo",
@@ -239,15 +276,16 @@ public class TagDetector
             "Sync",
             "Supersaw"
         });
-        CATEGORIES.put ("Monosynth", new String []
+        CATEGORIES.put (CATEGORY_MONOSYNTH, new String []
         {
             "Monosynth"
         });
-        CATEGORIES.put ("Orchestral", new String []
+        CATEGORIES.put (CATEGORY_ORCHESTRAL, new String []
         {
-            "Orchestral"
+            "Orchestral",
+            "Orchestra",
         });
-        CATEGORIES.put ("Organ", new String []
+        CATEGORIES.put (CATEGORY_ORGAN, new String []
         {
             "Organ",
             "Tonewheel",
@@ -257,11 +295,11 @@ public class TagDetector
             "B3",
             "C3"
         });
-        CATEGORIES.put ("Pad", new String []
+        CATEGORIES.put (CATEGORY_PAD, new String []
         {
             "Pad"
         });
-        CATEGORIES.put ("Percussion", new String []
+        CATEGORIES.put (CATEGORY_PERCUSSION, new String []
         {
             "Percussion",
             "Conga",
@@ -278,7 +316,7 @@ public class TagDetector
             "Triangle",
             "Woodblock"
         });
-        CATEGORIES.put ("Piano", new String []
+        CATEGORIES.put (CATEGORY_PIANO, new String []
         {
             "Piano",
             "Grand",
@@ -295,7 +333,7 @@ public class TagDetector
             "Mark I",
             "Rhodes"
         });
-        CATEGORIES.put ("Pipe", new String []
+        CATEGORIES.put (CATEGORY_PIPE, new String []
         {
             "Pipe",
             "Flute",
@@ -304,7 +342,7 @@ public class TagDetector
             "Piccolo",
             "Recorder"
         });
-        CATEGORIES.put ("Plucks", new String []
+        CATEGORIES.put (CATEGORY_PLUCKS, new String []
         {
             "Pluck",
             "Mandolin",
@@ -315,11 +353,11 @@ public class TagDetector
             "Mandolin",
             "Oud"
         });
-        CATEGORIES.put ("Snare", new String []
+        CATEGORIES.put (CATEGORY_SNARE, new String []
         {
             "Snare"
         });
-        CATEGORIES.put ("Strings", new String []
+        CATEGORIES.put (CATEGORY_STRINGS, new String []
         {
             "String",
             "Viola",
@@ -333,7 +371,7 @@ public class TagDetector
             "Bowed",
             "Score"
         });
-        CATEGORIES.put ("Synth", new String []
+        CATEGORIES.put (CATEGORY_SYNTH, new String []
         {
             "Syn",
             "Sequence",
@@ -342,7 +380,7 @@ public class TagDetector
             "Mini",
             "Moog"
         });
-        CATEGORIES.put ("Winds", new String []
+        CATEGORIES.put (CATEGORY_WINDS, new String []
         {
             "Winds",
             "Sax",
@@ -355,7 +393,7 @@ public class TagDetector
             "Musette",
             "Woodwind"
         });
-        CATEGORIES.put ("Loops", new String []
+        CATEGORIES.put (CATEGORY_LOOPS, new String []
         {
             "Loop",
             "Lps",
@@ -363,7 +401,7 @@ public class TagDetector
             "Player",
             "Speaker"
         });
-        CATEGORIES.put ("World", new String []
+        CATEGORIES.put (CATEGORY_WORLD, new String []
         {
             "Asian"
         });

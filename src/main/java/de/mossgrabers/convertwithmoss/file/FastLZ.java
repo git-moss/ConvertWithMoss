@@ -25,7 +25,7 @@ public class FastLZ
 
     private static final int MAX_DISTANCE_LZ1    = 8192;
     private static final int MAX_DISTANCE_LZ2    = 8191;
-    private static final int MAX_FARDISTANCE_LZ2 = (65535 + MAX_DISTANCE_LZ2 - 1);
+    private static final int MAX_FARDISTANCE_LZ2 = 65535 + MAX_DISTANCE_LZ2 - 1;
     private static final int MAX_COPY            = 32;
     private static final int MAX_LEN             = 264;
 
@@ -165,15 +165,9 @@ public class FastLZ
             {
                 while (true)
                 {
+                    if (data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++])
+                        break;
                     if ((data[ref++] != data[ip++]) || (data[ref++] != data[ip++]) || (data[ref++] != data[ip++]) || (data[ref++] != data[ip++]))
-                        break;
-                    if (data[ref++] != data[ip++])
-                        break;
-                    if (data[ref++] != data[ip++])
-                        break;
-                    if (data[ref++] != data[ip++])
-                        break;
-                    if (data[ref++] != data[ip++])
                         break;
                     while (ip < ipBound)
                     {
@@ -409,7 +403,7 @@ public class FastLZ
     private static int hashFunction (final byte [] in, final int offset)
     {
         int v = readU16 (in, offset);
-        v ^= readU16 (in, offset + 1) ^ v >>> (16 - HASH_LOG);
+        v ^= readU16 (in, offset + 1) ^ v >>> 16 - HASH_LOG;
         v &= HASH_MASK;
         return v;
     }

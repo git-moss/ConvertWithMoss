@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -397,10 +398,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
         if (tune == 0)
             tune = this.getDoubleValue (SfzOpcode.PITCH, 0);
-        sampleMetadata.setTune (Math.min (100, Math.max (-100, tune)) / 100.0);
+        sampleMetadata.setTune (Utils.clamp (tune, -3600, 3600) / 100.0);
 
         final double pitchKeytrack = this.getDoubleValue (SfzOpcode.PITCH_KEYTRACK, 100);
-        sampleMetadata.setKeyTracking (Math.min (100, Math.max (0, pitchKeytrack)) / 100.0);
+        sampleMetadata.setKeyTracking (Utils.clamp (pitchKeytrack, 0, 100) / 100.0);
 
         sampleMetadata.setBendUp (this.getIntegerValue (SfzOpcode.BEND_UP, 0));
         sampleMetadata.setBendDown (this.getIntegerValue (SfzOpcode.BEND_DOWN, 0));
@@ -552,7 +553,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
     private void parseVolume (final ISampleMetadata sampleMetadata)
     {
         final double volume = this.getDoubleValue (SfzOpcode.VOLUME, 0);
-        sampleMetadata.setGain (Math.min (12, Math.max (-12, volume)));
+        sampleMetadata.setGain (Utils.clamp (volume, -12, 12));
+        final double panorama = this.getDoubleValue (SfzOpcode.PANORAMA, 0);
+        sampleMetadata.setPanorama (Utils.clamp (panorama, -100, 100) / 100.0);
 
         final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
         amplitudeEnvelope.setDelay (this.getDoubleValue (SfzOpcode.AMPEG_DELAY, SfzOpcode.AMP_DELAY));

@@ -1,5 +1,17 @@
 # Changes
 
+## 6.3.0
+
+* Default volume envelopes are applied based on the detected category if none is present.
+* Decent Sampler
+  * Fixed: Read: Wrong velocity range (0-0) when velocity settings were missing.
+* MPC keygroups
+  * Fixed: Read/Write: Improved mapping of envelopes.
+  * Fixed: Write: Pitch was not correct.
+* SFZ
+  * Fixed: Increased allowed range of pitch values.
+  * Fixed: Panorama was not read / written.
+
 ## 6.2.1
 
 * Decent Sampler - Reading
@@ -19,8 +31,8 @@
 
 ## 6.1.0
 
-* Tabs are now orderd alphabetically.
-* Bitwig Multisamples
+* Tabs are now ordered alphabetically.
+* Bitwig Multisample
   * Fixed: If a loop was set to Off it was still applied.
 * Native Instruments NKI files
   * New: Added support to write NKI files in Kontakt 1 format.

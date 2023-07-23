@@ -8,6 +8,10 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupDetector;
@@ -528,6 +532,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.log ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ());
 
         this.applyRenaming (multisampleSource);
+        this.applyDefaultEnvelope (multisampleSource);
 
         try
         {
@@ -542,6 +547,32 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         {
             this.logError ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ());
         }
+    }
+
+
+    /**
+     * Apply a volume envelopes if none are set based on the category of the multisample source.
+     *
+     * @param multisampleSource The multisample source
+     */
+    private void applyDefaultEnvelope (final IMultisampleSource multisampleSource)
+    {
+        final String category = multisampleSource.getCategory ();
+        boolean wasSet = false;
+        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        {
+            for (final ISampleMetadata sample: layer.getSampleMetadata ())
+            {
+                final IEnvelope volumeEnvelope = sample.getAmplitudeModulator ().getSource ();
+                if (!volumeEnvelope.isSet ())
+                {
+                    volumeEnvelope.set (DefaultEnvelope.getDefaultEnvelope (category));
+                    wasSet = true;
+                }
+            }
+        }
+        if (wasSet)
+            this.log ("IDS_NOTIFY_APPLY_DEFAULT_ENVELOPE", category);
     }
 
 

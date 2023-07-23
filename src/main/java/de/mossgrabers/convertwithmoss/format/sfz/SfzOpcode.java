@@ -97,6 +97,8 @@ public class SfzOpcode
 
     /** SFZ v1. The volume for the region, in decibels. */
     public static final String VOLUME           = "volume";
+    /** SFZ v1. The panorama for the region, in decibels. */
+    public static final String PANORAMA         = "pan";
 
     /** SFZ v1. Allows playing samples with loops defined in the not looped mode. */
     public static final String LOOP_MODE        = "loop_mode";

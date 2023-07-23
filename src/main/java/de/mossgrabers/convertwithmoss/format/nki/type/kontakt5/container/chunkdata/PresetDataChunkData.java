@@ -3,8 +3,11 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkd
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.util.UUID;
 
 
 /**
@@ -48,7 +51,7 @@ public class PresetDataChunkData extends AbstractChunkData
         if (in.available () != 0) // TODO
             throw new IOException ("Not all bytes read!");
 
-        this.readKontakt5Preset (data);
+        this.parseKontakt5Preset (data);
 
         // TODO remove
         // final byte [] data = in.readAllBytes ();
@@ -56,7 +59,7 @@ public class PresetDataChunkData extends AbstractChunkData
     }
 
 
-    private void readKontakt5Preset (final byte [] data) throws IOException
+    public void parseKontakt5Preset (final byte [] data) throws IOException
     {
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
@@ -86,12 +89,29 @@ public class PresetDataChunkData extends AbstractChunkData
     {
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
-        final int type = in.read ();
-        if (type != 1)
-            throw new IOException ("Unexpected type: " + type);
+        final boolean readChunked = in.read () > 0;
 
-        // Checksum
-        StreamUtils.readUnsigned16 (in, false);
+        // Item version: 0x80
+        final int itemVersion = StreamUtils.readUnsigned16 (in, false);
+
+        switch (itemVersion)
+        {
+            case 0x80:
+                // TODO ProgramDataV80::read(&mut reader)?;
+
+                final String fileID = UUID.randomUUID ().toString ();
+                Files.write (new File ("C:\\Users\\mos\\Desktop\\" + fileID + "-preset-item-data.bin").toPath (), data);
+                return;
+            // break;
+
+            case 0xA5:
+                // TODO ProgramDataVA5::read(&mut reader)?;
+                break;
+
+            // Found 0xA8 - 0xAF
+            default:
+                throw new IOException ("ProgramData not supported: " + Integer.toHexString (itemVersion));
+        }
 
         // Unknown content
         final int blockLength = StreamUtils.readUnsigned32 (in, false);

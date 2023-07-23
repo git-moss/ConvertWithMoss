@@ -34,7 +34,7 @@ public abstract class AbstractChunkData implements IChunkData
 
     /**
      * Get the format version.
-     * 
+     *
      * @return The version number
      */
     public int getVersion ()

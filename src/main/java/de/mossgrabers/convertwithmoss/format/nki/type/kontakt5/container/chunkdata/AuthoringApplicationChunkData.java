@@ -38,7 +38,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
 
     /**
      * Is the preset compressed?
-     * 
+     *
      * @return True if compressed
      */
     public boolean isCompressed ()
@@ -49,7 +49,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
 
     /**
      * Get the application version that created the preset.
-     * 
+     *
      * @return The application version as a string
      */
     public String getApplicationVersion ()
@@ -60,7 +60,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
 
     /**
      * Get the application.
-     * 
+     *
      * @return The application
      */
     public AuthoringApplication getApplication ()

@@ -42,7 +42,7 @@ public class SubTreeItemChunkData extends AbstractChunkData
                 // TODO
                 uncompressedData = FastLZ.uncompress (compressedData, sizeUncompressed);
             }
-            catch (Exception ex)
+            catch (final Exception ex)
             {
                 // TODO
                 throw new IOException (ex);

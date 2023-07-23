@@ -53,22 +53,6 @@ public class MPCKeygroupCreator extends AbstractCreator
     }
 
 
-    private static final String DOUBLE_ZERO          = "0.000000";
-    private static final String FILE_VERSION         = "2.1";
-    private static final String APP_VERSION          = "v2.11.6.6";
-
-    private static final double MINUS_12_DB          = 0.353000;
-    private static final double PLUS_6_DB            = 1.0;
-    private static final double VALUE_RANGE          = PLUS_6_DB - MINUS_12_DB;
-
-    private static final double MIN_ENV_TIME_S       = 0.001;
-    private static final double MAX_ENV_TIME_S       = 30.0d;
-    private static final double DEFAULT_RELEASE_TIME = 0.0d;
-    private static final double DEFAULT_DECAY_TIME   = 0.0022861319686154d;
-    private static final double DEFAULT_ATTACK_TIME  = 0.0d;
-    private static final double DEFAULT_HOLD_TIME    = 0.0d;
-
-
     /**
      * Constructor.
      *
@@ -154,7 +138,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         final Element multisampleElement = document.createElement (MPCKeygroupTag.ROOT);
         document.appendChild (multisampleElement);
         final Element versionElement = document.createElement (MPCKeygroupTag.ROOT_VERSION);
-        XMLUtils.addTextElement (document, versionElement, MPCKeygroupTag.VERSION_FILE_VERSION, FILE_VERSION);
+        XMLUtils.addTextElement (document, versionElement, MPCKeygroupTag.VERSION_FILE_VERSION, MPCKeygroupConstants.FILE_VERSION);
 
         final Element programElement = createProgramElement (document, multisampleSource);
         multisampleElement.appendChild (programElement);
@@ -211,7 +195,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         final Element programElement = document.createElement (MPCKeygroupTag.ROOT_PROGRAM);
         programElement.setAttribute (MPCKeygroupTag.PROGRAM_TYPE, MPCKeygroupTag.TYPE_KEYGROUP);
         XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_NAME, multisampleSource.getName ());
-        programElement.appendChild (document.createElement (MPCKeygroupTag.PROGRAM_PADS + APP_VERSION));
+        programElement.appendChild (document.createElement (MPCKeygroupTag.PROGRAM_PADS + MPCKeygroupConstants.APP_VERSION));
 
         // Pitchbend 2 semitones up/down
         final List<IVelocityLayer> layers = multisampleSource.getNonEmptyLayers (false);
@@ -247,7 +231,15 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         final double pan = (Utils.clamp (sampleMetadata.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, String.format (Locale.US, "%.6f", Double.valueOf (pan)));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH, Double.toString (sampleMetadata.getTune ()));
+
+        final double tuneCent = sampleMetadata.getTune ();
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH, Double.toString (tuneCent));
+        // Values need to be identical to the pitch element!
+        final int tuneCentInteger = (int) tuneCent;
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_COARSE_TUNE, Integer.toString (tuneCentInteger));
+        // First multiply with 100 to prevent rounding error!
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_FINE_TUNE, Integer.toString ((int) (tuneCent * 100.0 - tuneCentInteger * 100.0)));
+
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (sampleMetadata.getVelocityLow ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_END, Integer.toString (sampleMetadata.getVelocityHigh ()));
 
@@ -276,10 +268,10 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ROOT_NOTE, Integer.toString (sampleMetadata.getKeyRoot () + 1));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_KEY_TRACK, MPCKeygroupTag.TRUE);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME, fn);
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH_RANDOM, DOUBLE_ZERO);
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME_RANDOM, DOUBLE_ZERO);
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN_RANDOM, DOUBLE_ZERO);
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_OFFSET_RANDOM, DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_OFFSET_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_FILE, "");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_INDEX, "129");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_DIRECTION, "0");
@@ -301,7 +293,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, sampleMetadata.isReversed () ? "3" : "1");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, Double.toString (sampleLoop.getCrossfade ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_POSITION, "0.500000");
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_LENGTH, DOUBLE_ZERO);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_LENGTH, MPCKeygroupConstants.DOUBLE_ZERO);
 
         return layerElement;
     }
@@ -368,11 +360,11 @@ public class MPCKeygroupCreator extends AbstractCreator
                 XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, formatDouble (envelopeDepth / IFilter.MAX_ENVELOPE_DEPTH, 2));
 
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, filterEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, filterEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttack (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, filterEnvelope.getHold (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, filterEnvelope.getDecay (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
                 setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, filterEnvelope.getSustain (), 0, 1, 1);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, filterEnvelope.getRelease (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_RELEASE_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, filterEnvelope.getRelease (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
             }
         }
 
@@ -381,11 +373,11 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, sampleMetadata.getKeyTracking () == 0 ? "True" : "False");
 
         final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttack (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHold (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1, 1);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_RELEASE_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
 
         final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
         final double pitchDepth = pitchModulator.getDepth ();
@@ -396,11 +388,11 @@ public class MPCKeygroupCreator extends AbstractCreator
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, formatDouble (mpcPitchDepth, 2));
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, pitchEnvelope.getAttack (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_ATTACK_TIME, true);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, pitchEnvelope.getHold (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_HOLD_TIME, true);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, pitchEnvelope.getDecay (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_DECAY_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, pitchEnvelope.getAttack (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, pitchEnvelope.getHold (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, pitchEnvelope.getDecay (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
             setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, pitchEnvelope.getSustain (), 0, 1, 1);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, pitchEnvelope.getRelease (), MIN_ENV_TIME_S, MAX_ENV_TIME_S, DEFAULT_RELEASE_TIME);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, pitchEnvelope.getRelease (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
         }
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (sampleMetadata.getPlayLogic ()).getID ());
@@ -460,8 +452,8 @@ public class MPCKeygroupCreator extends AbstractCreator
     private static double convertGain (final double volumeDB)
     {
         final double v = 12 + (volumeDB > 6 ? 6 : volumeDB);
-        final double result = VALUE_RANGE * v / 18.0;
-        return MINUS_12_DB + result;
+        final double result = MPCKeygroupConstants.VALUE_RANGE * v / 18.0;
+        return MPCKeygroupConstants.MINUS_12_DB + result;
     }
 
 
@@ -478,22 +470,22 @@ public class MPCKeygroupCreator extends AbstractCreator
      * @param maximum The maximum value
      * @return the normalized logarithmic value
      */
-    private static double normalizedLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
+    private static double normalizeLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
     {
         return Math.log (Utils.clamp (value, minimum, maximum) / minimum) / Math.log (maximum / minimum);
-    }
-
-
-    private static void setEnvelopeAttribute (final Document document, final Element element, final String attribute, final double value, final double minimum, final double maximum, final double defaultValue, final boolean logarithmic)
-    {
-        final double v = value < 0 ? defaultValue : value;
-        final double normalizedValue = logarithmic ? normalizedLogarithmicEnvTimeValue (v, minimum, maximum) : normalizeValue (v, minimum, maximum);
-        XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.6f", Double.valueOf (normalizedValue)));
     }
 
 
     private static void setEnvelopeAttribute (final Document document, final Element element, final String attribute, final double value, final double minimum, final double maximum, final double defaultValue)
     {
         setEnvelopeAttribute (document, element, attribute, value, minimum, maximum, defaultValue, false);
+    }
+
+
+    private static void setEnvelopeAttribute (final Document document, final Element element, final String attribute, final double value, final double minimum, final double maximum, final double defaultValue, final boolean logarithmic)
+    {
+        final double v = value < 0 ? defaultValue : value;
+        final double normalizedValue = logarithmic ? normalizeLogarithmicEnvTimeValue (v, minimum, maximum) : normalizeValue (v, minimum, maximum);
+        XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.6f", Double.valueOf (normalizedValue)));
     }
 }
