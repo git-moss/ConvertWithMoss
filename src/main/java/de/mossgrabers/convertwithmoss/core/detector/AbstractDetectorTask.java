@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.core.detector;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
@@ -325,9 +326,17 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     }
 
 
+    /**
+     * Translates a value in the range of [0..1] to the range [minimum..maximum]. Ensures that the
+     * given value is in the range [0..1].
+     *
+     * @param value The value to translate
+     * @param minimum The minimum of the range
+     * @param maximum The maximum of the range
+     * @return The translated value
+     */
     protected static double denormalizeValue (final double value, final double minimum, final double maximum)
     {
-        final double v = Math.min (Math.max (value, 0), 1);
-        return minimum + v * (maximum - minimum);
+        return minimum + Utils.clamp (value, 0, 1) * (maximum - minimum);
     }
 }

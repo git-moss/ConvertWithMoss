@@ -228,7 +228,7 @@ public class Kontakt2Type extends AbstractKontaktType
 
         // Is it a monolith?
         final int type = fileAccess.read ();
-        final boolean isMonolith = (type != 0x78 && !isFourDotTwo) || (type != 0x0A && isFourDotTwo);
+        final boolean isMonolith = type != 0x78 && !isFourDotTwo || type != 0x0A && isFourDotTwo;
         fileAccess.seek (fileAccess.getFilePointer () - 1);
         this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", isFourDotTwo ? "4.2" : "2", kontaktVersion, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
         final Map<String, WavSampleMetadata> monolithSamples = isMonolith ? this.readMonolith (fileAccess) : null;

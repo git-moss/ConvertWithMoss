@@ -261,7 +261,7 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private String addZoneData (final ISampleMetadata sampleMetadata, final String safeSampleFolderName, final String zoneTemplate, int sampleCount, int groupCount)
+    private String addZoneData (final ISampleMetadata sampleMetadata, final String safeSampleFolderName, final String zoneTemplate, final int sampleCount, final int groupCount)
     {
         String zoneContent = zoneTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%ZONE_INDEX%", Integer.toString (sampleCount));
         final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
@@ -284,7 +284,7 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private static String addLoop (final ISampleLoop loop, final String loopTemplate, int loopIndex)
+    private static String addLoop (final ISampleLoop loop, final String loopTemplate, final int loopIndex)
     {
         String loopContent = loopTemplate.replace ("%LOOP_INDEX%", Integer.toString (loopIndex));
 

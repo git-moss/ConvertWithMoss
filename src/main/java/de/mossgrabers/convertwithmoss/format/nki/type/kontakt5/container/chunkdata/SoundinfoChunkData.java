@@ -21,9 +21,9 @@ public class SoundinfoChunkData extends AbstractChunkData
     private String              name;
     private String              author;
     private String              vendor;
-    private List<String>        tags       = new ArrayList<> ();
-    private List<String>        attributes = new ArrayList<> ();
-    private Map<String, String> properties = new HashMap<> ();
+    private final List<String>        tags       = new ArrayList<> ();
+    private final List<String>        attributes = new ArrayList<> ();
+    private final Map<String, String> properties = new HashMap<> ();
 
 
     /** {@inheritDoc} */
@@ -78,7 +78,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Get the version of the sound info.
-     * 
+     *
      * @return The sound info version
      */
     public String getSoundInfoVersion ()
@@ -89,7 +89,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Get the name of the sound.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -100,7 +100,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Get the author of the sound.
-     * 
+     *
      * @return The author
      */
     public String getAuthor ()
@@ -111,7 +111,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Get the vendor of the sound.
-     * 
+     *
      * @return The vendor
      */
     public String getVendor ()
@@ -122,7 +122,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Get the tags.
-     * 
+     *
      * @return The tags
      */
     public List<String> getTags ()
@@ -133,7 +133,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Get the attributes.
-     * 
+     *
      * @return The attributes
      */
     public List<String> getAttributes ()
@@ -144,7 +144,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Get the properties.
-     * 
+     *
      * @return The properties
      */
     public Map<String, String> getProperties ()

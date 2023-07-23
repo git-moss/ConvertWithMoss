@@ -380,8 +380,13 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             sampleMetadata.setKeyRoot (getNoteAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE));
             sampleMetadata.setKeyLow (getNoteAttribute (sampleElement, DecentSamplerTag.LO_NOTE));
             sampleMetadata.setKeyHigh (getNoteAttribute (sampleElement, DecentSamplerTag.HI_NOTE));
-            sampleMetadata.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LO_VEL, -1));
-            sampleMetadata.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, -1));
+
+            final int velLow = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LO_VEL, -1);
+            final int velHigh = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, -1);
+            if (velLow > 0)
+                sampleMetadata.setVelocityLow (velLow);
+            if (velHigh > 0)
+                sampleMetadata.setVelocityHigh (velHigh);
 
             /////////////////////////////////////////////////////
             // Loops

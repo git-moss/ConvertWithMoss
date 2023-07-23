@@ -16,6 +16,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
@@ -50,10 +51,6 @@ import java.util.function.Consumer;
 public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 {
     private static final String BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
-
-    private static final double MINUS_12_DB       = 0.353000;
-    private static final double PLUS_6_DB         = 1.0;
-    private static final double VALUE_RANGE       = PLUS_6_DB - MINUS_12_DB;
 
 
     /**
@@ -266,17 +263,8 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
             final IFilter filter = parseFilter (instrumentElement);
 
-            final double volumeAttack = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, 0, 30, 0);
-            final double volumeHold = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, 0, 30, 0);
-            final double volumeDecay = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, 0, 30, 0);
-            final double volumeSustain = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, 0, 1, 1);
-            final double volumeRelease = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, 0, 30, 0.63);
-
-            final double pitchAttack = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, 0, 30, 0);
-            final double pitchHold = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, 0, 30, 0);
-            final double pitchDecay = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, 0, 30, 0);
-            final double pitchSustain = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, 0, 1, 1);
-            final double pitchRelease = getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, 0, 30, 0.63);
+            final IEnvelope volumeEnvelope = parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE);
+            final IEnvelope pitchEnvelope = parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE);
 
             final Element layersElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LAYERS);
             if (layersElement != null)
@@ -294,12 +282,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
                     final IModulator amplitudeModulator = sampleMetadata.getAmplitudeModulator ();
                     amplitudeModulator.setDepth (1.0);
-                    final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
-                    amplitudeEnvelope.setAttack (volumeAttack);
-                    amplitudeEnvelope.setHold (volumeHold);
-                    amplitudeEnvelope.setDecay (volumeDecay);
-                    amplitudeEnvelope.setSustain (volumeSustain);
-                    amplitudeEnvelope.setRelease (volumeRelease);
+                    amplitudeModulator.getSource ().set (volumeEnvelope);
 
                     final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
                     if (pitchEnvAmount != 0.5)
@@ -307,13 +290,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                         final int cents = (int) Math.min (3600, Math.max (-3600, Math.round ((pitchEnvAmount - 0.5) * 2.0 * 3600.0)));
                         final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
                         pitchModulator.setDepth (cents);
-
-                        final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-                        pitchEnvelope.setAttack (pitchAttack);
-                        pitchEnvelope.setHold (pitchHold);
-                        pitchEnvelope.setDecay (pitchDecay);
-                        pitchEnvelope.setSustain (pitchSustain);
-                        pitchEnvelope.setRelease (pitchRelease);
+                        pitchModulator.getSource ().set (pitchEnvelope);
                     }
 
                     // No loop if it is a one-shot
@@ -353,13 +330,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         {
             final IModulator cutoffModulator = filter.getCutoffModulator ();
             cutoffModulator.setDepth ((int) Math.round (filterAmount * IFilter.MAX_ENVELOPE_DEPTH));
-
-            final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-            filterEnvelope.setAttack (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, 0, 30, 0));
-            filterEnvelope.setHold (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, 0, 30, 0));
-            filterEnvelope.setDecay (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, 0, 30, 0));
-            filterEnvelope.setSustain (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, 0, 1, 1));
-            filterEnvelope.setRelease (getEnvelopeAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, 0, 30, 0.63));
+            cutoffModulator.getSource ().set (parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE));
         }
         return filter;
     }
@@ -593,14 +564,34 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      */
     private static double convertGain (final double volume)
     {
-        final double result = volume - MINUS_12_DB;
-        return result * 18.0 / VALUE_RANGE - 12;
+        final double result = volume - MPCKeygroupConstants.MINUS_12_DB;
+        return result * 18.0 / MPCKeygroupConstants.VALUE_RANGE - 12;
     }
 
 
-    private static double getEnvelopeAttribute (final Element element, final String attribute, final double minimum, final double maximum, final double defaultValue)
+    private static IEnvelope parseEnvelope (final Element element, final String attackTag, final String holdTag, final String decayTag, final String sustainTag, final String releaseTag)
+    {
+        final IEnvelope envelope = new DefaultEnvelope ();
+        envelope.setAttack (getEnvelopeAttribute (element, attackTag, MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, 0, true));
+        envelope.setHold (getEnvelopeAttribute (element, holdTag, MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, 0, true));
+        envelope.setDecay (getEnvelopeAttribute (element, decayTag, MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, 0, true));
+        envelope.setSustain (getEnvelopeAttribute (element, sustainTag, 0, 1, 1, false));
+        envelope.setRelease (getEnvelopeAttribute (element, releaseTag, MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, 0.63, true));
+        return envelope;
+    }
+
+
+    private static double getEnvelopeAttribute (final Element element, final String attribute, final double minimum, final double maximum, final double defaultValue, final boolean logarithmic)
     {
         final double value = XMLUtils.getChildElementDoubleContent (element, attribute, defaultValue);
-        return value < 0 ? defaultValue : denormalizeValue (value, minimum, maximum);
+        if (value < 0)
+            return defaultValue;
+        return logarithmic ? denormalizeLogarithmicEnvTimeValue (value, minimum, maximum) : denormalizeValue (value, minimum, maximum);
+    }
+
+
+    private static double denormalizeLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
+    {
+        return minimum * Math.exp (Utils.clamp (value, 0, 1) * Math.log (maximum / minimum));
     }
 }

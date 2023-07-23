@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.core.model;
 /**
  * Interface to an envelope e.g. volume, filter and pitch.
  *
- * @author J&uuml();rgen Mo&szlig();graber
+ * @author Jürgen Moßgraber
  */
 public interface IEnvelope
 {
@@ -132,4 +132,20 @@ public interface IEnvelope
      * @param release The duration of the release phase in seconds, -1 to ignore the parameter
      */
     void setRelease (double release);
+
+
+    /**
+     * Copies all values from the source envelope to this envelope.
+     *
+     * @param sourceEnvelope The source envelope
+     */
+    void set (IEnvelope sourceEnvelope);
+
+
+    /**
+     * Returns true if at least one of the envelope attributes is not -1.
+     *
+     * @return True if set
+     */
+    boolean isSet ();
 }
