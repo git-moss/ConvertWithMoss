@@ -2,9 +2,9 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata;
+package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerChunkType;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunkType;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.EnumMap;
@@ -27,6 +27,26 @@ public class ChunkDataFactory
         TEMPLATES.put (NIContainerChunkType.AUTHORING_APPLICATION, AuthoringApplicationChunkData.class);
         TEMPLATES.put (NIContainerChunkType.SUB_TREE_ITEM, SubTreeItemChunkData.class);
         TEMPLATES.put (NIContainerChunkType.PRESET_DATA, PresetDataChunkData.class);
+
+        // Not used
+        TEMPLATES.put (NIContainerChunkType.BNI_SOUND_PRESET, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.BNI_SOUND_HEADER, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.BANK, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.BANK_CONTAINER, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.PRESET_CONTAINER, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.BINARY_CHUNK_ITEM, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.AUTHORIZATION, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.EXTERNAL_FILE_REFERENCE, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.RESOURCES, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.AUDIO_SAMPLE_ITEM, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.INTERNAL_RESOURCE_REFERENCE_ITEM, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.PICTURE_ITEM, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.ENCRYPTION_ITEM, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.APP_SPECIFIC, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.AUTOMATION_PARAMETERS, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.CONTROLLER_ASSIGNMENTS, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.MODULE, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.MODULE_BANK, UnusedChunkData.class);
     }
 
 

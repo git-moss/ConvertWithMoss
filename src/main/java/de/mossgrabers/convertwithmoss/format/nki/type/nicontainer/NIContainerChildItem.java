@@ -2,7 +2,7 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container;
+package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
@@ -31,7 +31,7 @@ public class NIContainerChildItem
      */
     public void read (final InputStream in) throws IOException
     {
-        // Unknown
+        // Unknown - seen 0, 1, 2 and 1001
         StreamUtils.readUnsigned32 (in, false);
 
         this.domainID = StreamUtils.readASCII (in, 4);

@@ -167,7 +167,7 @@ public class FastLZ
                 {
                     if (data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++])
                         break;
-                    if ((data[ref++] != data[ip++]) || (data[ref++] != data[ip++]) || (data[ref++] != data[ip++]) || (data[ref++] != data[ip++]))
+                    if (data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++])
                         break;
                     while (ip < ipBound)
                     {
