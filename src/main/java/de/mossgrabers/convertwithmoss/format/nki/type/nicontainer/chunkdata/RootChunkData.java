@@ -1,4 +1,8 @@
-package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata;
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019-2023
+// Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
+
+package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
@@ -24,7 +28,7 @@ public class RootChunkData extends AbstractChunkData
     @Override
     public void read (final InputStream in) throws IOException
     {
-        super.read (in);
+        this.readVersion (in);
 
         final int niSoundVersion = StreamUtils.readUnsigned32 (in, false);
         this.repositoryMagic = StreamUtils.readUnsigned32 (in, false);

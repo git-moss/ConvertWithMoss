@@ -10,11 +10,11 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerChunk;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerChunkType;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.NIContainerItem;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.AuthoringApplication;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.AuthoringApplicationChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunk;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunkType;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerItem;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplication;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplicationChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -76,7 +76,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
                 }
             }
 
-            // Is this Kontakt 5+ container format?
+            // Is this Kontakt 5+ monolith container format?
             fileAccess.seek (0);
             final int typeID = fileAccess.readInt ();
             if (KontaktTypes.ID_KONTAKT5_MONOLITH.intValue () == typeID)
@@ -113,8 +113,6 @@ public class NkiDetectorTask extends AbstractDetectorTask
     {
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (inputStream);
-        // TODO remove
-        // System.out.println (niContainerItem.dump (0));
 
         final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
         if (presetChunk != null && presetChunk.getData () instanceof final AuthoringApplicationChunkData presetChunkData)

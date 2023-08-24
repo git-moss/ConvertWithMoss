@@ -1,4 +1,8 @@
-package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata;
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019-2023
+// Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
+
+package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -23,8 +27,7 @@ public abstract class AbstractChunkData implements IChunkData
      * @param in The input stream to read from
      * @throws IOException Error during reading
      */
-    @Override
-    public void read (final InputStream in) throws IOException
+    protected void readVersion (final InputStream in) throws IOException
     {
         this.version = StreamUtils.readUnsigned32 (in, false);
         if (this.version != 1)

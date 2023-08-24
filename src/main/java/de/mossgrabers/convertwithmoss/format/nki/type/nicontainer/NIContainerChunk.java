@@ -2,11 +2,11 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container;
+package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.ChunkDataFactory;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.IChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.ChunkDataFactory;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.IChunkData;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -44,6 +44,8 @@ public class NIContainerChunk
         this.domainID = StreamUtils.readASCII (bin, 4);
         this.chunkTypeID = StreamUtils.readUnsigned32 (bin, false);
         this.version = StreamUtils.readUnsigned32 (bin, false);
+        if (this.version != 1)
+            throw new IOException (Functions.getMessage ("IDS_NKI5_ITEM_HEADER_VERSION", Integer.toString (this.version)));
 
         final NIContainerChunkType chunkType = this.getChunkType ();
         if (chunkType == null)
@@ -57,8 +59,9 @@ public class NIContainerChunk
         }
 
         this.data = ChunkDataFactory.createChunkData (chunkType);
-        if (this.data != null)
-            this.data.read (bin);
+        if (this.data == null)
+            throw new IOException (Functions.getMessage ("IDS_NKI_UNSUPPORTED_CONTAINER_CHUNK_TYPE"));
+        this.data.read (bin);
     }
 
 

@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
+import de.mossgrabers.convertwithmoss.file.FastLZ;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
@@ -16,7 +17,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.Dictionary;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItem;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItemReferenceType;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container.chunkdata.PresetDataChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetDataChunkData;
 import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -55,10 +56,11 @@ import java.util.TimeZone;
  */
 public class Kontakt2Type extends AbstractKontaktType
 {
-    private static final String               NULL_ENTRY      = "(null)";
+    private static final String               NULL_ENTRY        = "(null)";
+    private static final int                  HEADER_KONTAKT_42 = 0x110;
 
-    private static final Set<String>          KNOWN_BLOCK_IDS = new HashSet<> ();
-    private static final Map<Integer, String> ICON_MAP        = new HashMap<> ();
+    private static final Set<String>          KNOWN_BLOCK_IDS   = new HashSet<> ();
+    private static final Map<Integer, String> ICON_MAP          = new HashMap<> ();
     static
     {
         KNOWN_BLOCK_IDS.add ("Kon2"); // Kontakt 2
@@ -130,6 +132,7 @@ public class Kontakt2Type extends AbstractKontaktType
         (byte) 0x00
     };
 
+    private final SimpleDateFormat      simpleDateFormatter   = new SimpleDateFormat ("dd.MM.yyyy HH:mm:ss", Locale.GERMAN);
     private final boolean               isBigEndian;
     private final K2MetadataFileHandler handler;
     private final PresetDataChunkData   kontakt5Preset        = new PresetDataChunkData ();
@@ -148,6 +151,7 @@ public class Kontakt2Type extends AbstractKontaktType
 
         this.isBigEndian = isBigEndian;
         this.handler = new K2MetadataFileHandler (notifier);
+        this.simpleDateFormatter.setTimeZone (TimeZone.getTimeZone ("UTC+1"));
     }
 
 
@@ -158,8 +162,11 @@ public class Kontakt2Type extends AbstractKontaktType
         // The size of the ZLIB block, we do not need the info
         final int zlibLength = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
 
-        // Skip Header Version, Patch Version and Patch Type
-        StreamUtils.skipNBytes (fileAccess, 8);
+        // 0x100 = Kontakt 2, 0x110 = Kontakt 4.2
+        final int headerVersion = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+
+        // Skip Patch Version and Patch Type
+        StreamUtils.skipNBytes (fileAccess, 6);
 
         // The version of Kontakt which stored this file
         String kontaktVersion = this.readVersion (fileAccess);
@@ -169,9 +176,7 @@ public class Kontakt2Type extends AbstractKontaktType
             this.notifier.log ("IDS_NKI_UNKNOWN_BLOCK_ID", blockID);
 
         final Date creation = StreamUtils.readTimestamp (fileAccess, this.isBigEndian);
-        final SimpleDateFormat sdf = new SimpleDateFormat ("dd.MM.yyyy HH:mm:ss", Locale.GERMAN);
-        sdf.setTimeZone (TimeZone.getTimeZone ("UTC+1"));
-        final String formattedCreation = sdf.format (creation);
+        final String formattedCreation = this.simpleDateFormatter.format (creation);
 
         // No idea yet about these 4 bytes...
         StreamUtils.skipNBytes (fileAccess, 4);
@@ -190,20 +195,23 @@ public class Kontakt2Type extends AbstractKontaktType
         final String iconName = ICON_MAP.get (iconID);
         if (iconName == null)
             this.notifier.logError ("IDS_NKI_UNKNOWN_ICON_ID", iconID.toString ());
-        final String author = StreamUtils.readASCII (fileAccess, 8, StandardCharsets.ISO_8859_1).trim ();
+        // 8 characters, null terminated
+        final String author = StreamUtils.readASCII (fileAccess, 9, StandardCharsets.ISO_8859_1).trim ();
 
-        // No idea yet about these 3 bytes...
-        StreamUtils.skipNBytes (fileAccess, 3);
+        // No idea yet about these 2 bytes... Found once in monolith with IR Samples and Wallpaper
+        final int unknown = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+        if (unknown != 0)
+            this.notifier.logError ("IDS_NKI_UNKNOWN_NOT_NULL", Integer.toString (unknown));
 
-        String website = StreamUtils.readASCII (fileAccess, 86).trim ();
+        String website = StreamUtils.readASCII (fileAccess, 87).trim ();
         if (website.isBlank () || NULL_ENTRY.equals (website))
             website = null;
 
-        // No idea yet about these 7 bytes... could be padded zeros
-        StreamUtils.skipNBytes (fileAccess, 7);
+        // No idea yet about these 6 bytes... could be padded zeros
+        StreamUtils.skipNBytes (fileAccess, 6);
 
-        final boolean isFourDotTwo = kontaktVersion.startsWith ("4") && !kontaktVersion.startsWith ("4.0") && !kontaktVersion.startsWith ("4.1");
-        if (isFourDotTwo)
+        final boolean isFourDotTwo = headerVersion == HEADER_KONTAKT_42;
+        if (headerVersion == HEADER_KONTAKT_42)
         {
             // 12 new bytes introduced in 4.2
             StreamUtils.skipNBytes (fileAccess, 12);
@@ -216,12 +224,14 @@ public class Kontakt2Type extends AbstractKontaktType
         if (kontaktVersion.endsWith ("?"))
             kontaktVersion = kontaktVersion.substring (0, kontaktVersion.length () - 1) + Integer.toString (patchLevel);
 
+        int decompressedLength = 0;
         if (isFourDotTwo)
         {
             // Unknown
             StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-            // Unknown - Length?
-            StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+
+            decompressedLength = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+
             // Padding?
             StreamUtils.skipNBytes (fileAccess, 32);
         }
@@ -236,14 +246,11 @@ public class Kontakt2Type extends AbstractKontaktType
         final List<IMultisampleSource> multiSamples;
         if (isFourDotTwo)
         {
-            // 0x0A
-            StreamUtils.skipNBytes (fileAccess, 1);
-
-            final byte [] presetData = new byte [zlibLength - 1];
-            fileAccess.readFully (presetData);
-
-            this.kontakt5Preset.parseKontakt5Preset (presetData);
-
+            final byte [] compressedData = new byte [zlibLength];
+            fileAccess.readFully (compressedData);
+            final byte [] uncompressedData = FastLZ.uncompress (compressedData, decompressedLength);
+            this.kontakt5Preset.parsePresetChunks (uncompressedData);
+            // TODO Implement parsing of multi-samples
             this.notifier.logError ("IDS_NKI_KONTAKT422_NOT_SUPPORTED");
             multiSamples = Collections.emptyList ();
         }

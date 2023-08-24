@@ -2,7 +2,7 @@
 // (c) 2019-2023
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.container;
+package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
@@ -50,8 +50,9 @@ public class NIContainerItem
         final byte [] itemBlock = StreamUtils.readBlock64 (in, false);
         final ByteArrayInputStream bin = new ByteArrayInputStream (itemBlock);
 
-        // Unknown
-        StreamUtils.readUnsigned32 (bin, false);
+        final int headerVersion = StreamUtils.readUnsigned32 (bin, false);
+        if (headerVersion != 1)
+            throw new IOException (Functions.getMessage ("IDS_NKI5_ITEM_HEADER_VERSION", Integer.toString (headerVersion)));
 
         // Check for Native Instruments sound header
         final String domainID = StreamUtils.readASCII (bin, 4);
