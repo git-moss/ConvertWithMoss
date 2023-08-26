@@ -13,7 +13,7 @@ import java.util.List;
 
 
 /**
- * A velocity layer.
+ * A velocity layer (actually a group).
  *
  * @author Jürgen Moßgraber
  */

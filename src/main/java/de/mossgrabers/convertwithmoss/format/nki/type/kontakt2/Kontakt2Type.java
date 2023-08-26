@@ -6,7 +6,9 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.FastLZ;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -14,12 +16,15 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.SoundinfoDocument;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
+import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.Dictionary;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItem;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItemReferenceType;
-import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetDataChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
 import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 import org.xml.sax.SAXException;
@@ -56,11 +61,10 @@ import java.util.TimeZone;
  */
 public class Kontakt2Type extends AbstractKontaktType
 {
-    private static final String               NULL_ENTRY        = "(null)";
-    private static final int                  HEADER_KONTAKT_42 = 0x110;
+    private static final String      NULL_ENTRY        = "(null)";
+    private static final int         HEADER_KONTAKT_42 = 0x110;
 
-    private static final Set<String>          KNOWN_BLOCK_IDS   = new HashSet<> ();
-    private static final Map<Integer, String> ICON_MAP          = new HashMap<> ();
+    private static final Set<String> KNOWN_BLOCK_IDS   = new HashSet<> ();
     static
     {
         KNOWN_BLOCK_IDS.add ("Kon2"); // Kontakt 2
@@ -68,36 +72,6 @@ public class Kontakt2Type extends AbstractKontaktType
         KNOWN_BLOCK_IDS.add ("Kon4"); // Kontakt 4
         KNOWN_BLOCK_IDS.add ("AkPi"); // Akustik Piano from Kontakt 3 Library
         KNOWN_BLOCK_IDS.add ("ElPi"); // Elektrik Piano from Kontakt 3 Library
-
-        ICON_MAP.put (Integer.valueOf (0x00), "Organ");
-        ICON_MAP.put (Integer.valueOf (0x01), "Cello");
-        ICON_MAP.put (Integer.valueOf (0x02), "Drum Kit");
-        ICON_MAP.put (Integer.valueOf (0x03), "Bell");
-        ICON_MAP.put (Integer.valueOf (0x04), "Trumpet");
-        ICON_MAP.put (Integer.valueOf (0x05), "Guitar");
-        ICON_MAP.put (Integer.valueOf (0x06), "Piano");
-        ICON_MAP.put (Integer.valueOf (0x07), "Marimba");
-        ICON_MAP.put (Integer.valueOf (0x08), "Record Player");
-        ICON_MAP.put (Integer.valueOf (0x09), "E-Piano");
-        ICON_MAP.put (Integer.valueOf (0x0A), "Drum Pads");
-        ICON_MAP.put (Integer.valueOf (0x0B), "Bass Guitar");
-        ICON_MAP.put (Integer.valueOf (0x0C), "Electric Guitar");
-        ICON_MAP.put (Integer.valueOf (0x0D), "Wave");
-        ICON_MAP.put (Integer.valueOf (0x0E), "Asian Symbol");
-        ICON_MAP.put (Integer.valueOf (0x0F), "Flute");
-        ICON_MAP.put (Integer.valueOf (0x10), "Speaker");
-        ICON_MAP.put (Integer.valueOf (0x11), "Score");
-        ICON_MAP.put (Integer.valueOf (0x12), "Conga");
-        ICON_MAP.put (Integer.valueOf (0x13), "Pipe Organ");
-        ICON_MAP.put (Integer.valueOf (0x14), "FX");
-        ICON_MAP.put (Integer.valueOf (0x15), "Computer");
-        ICON_MAP.put (Integer.valueOf (0x16), "Violin");
-        ICON_MAP.put (Integer.valueOf (0x17), "Surround");
-        ICON_MAP.put (Integer.valueOf (0x18), "Synthesizer");
-        ICON_MAP.put (Integer.valueOf (0x19), "Microphone");
-        ICON_MAP.put (Integer.valueOf (0x1A), "Oboe");
-        ICON_MAP.put (Integer.valueOf (0x1B), "Saxophone");
-        ICON_MAP.put (Integer.valueOf (0x1C), "New");
     }
 
     private static final byte []        FILE_HEADER_ID        =
@@ -135,7 +109,7 @@ public class Kontakt2Type extends AbstractKontaktType
     private final SimpleDateFormat      simpleDateFormatter   = new SimpleDateFormat ("dd.MM.yyyy HH:mm:ss", Locale.GERMAN);
     private final boolean               isBigEndian;
     private final K2MetadataFileHandler handler;
-    private final PresetDataChunkData   kontakt5Preset        = new PresetDataChunkData ();
+    private final PresetChunkData       kontakt5Preset        = new PresetChunkData ();
 
 
     /**
@@ -191,10 +165,10 @@ public class Kontakt2Type extends AbstractKontaktType
         // No idea yet about these 16 bytes...
         StreamUtils.skipNBytes (fileAccess, 16);
 
-        final Integer iconID = Integer.valueOf (StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian));
-        final String iconName = ICON_MAP.get (iconID);
+        final int iconID = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+        final String iconName = KontaktIcon.getName (iconID);
         if (iconName == null)
-            this.notifier.logError ("IDS_NKI_UNKNOWN_ICON_ID", iconID.toString ());
+            this.notifier.logError ("IDS_NKI_UNKNOWN_ICON_ID", Integer.toString (iconID));
         // 8 characters, null terminated
         final String author = StreamUtils.readASCII (fileAccess, 9, StandardCharsets.ISO_8859_1).trim ();
 
@@ -249,10 +223,20 @@ public class Kontakt2Type extends AbstractKontaktType
             final byte [] compressedData = new byte [zlibLength];
             fileAccess.readFully (compressedData);
             final byte [] uncompressedData = FastLZ.uncompress (compressedData, decompressedLength);
-            this.kontakt5Preset.parsePresetChunks (uncompressedData);
-            // TODO Implement parsing of multi-samples
-            this.notifier.logError ("IDS_NKI_KONTAKT422_NOT_SUPPORTED");
-            multiSamples = Collections.emptyList ();
+            final Optional<Program> optionalProgram = this.kontakt5Preset.parse (uncompressedData);
+            if (optionalProgram.isEmpty ())
+            {
+                this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
+                multiSamples = Collections.emptyList ();
+            }
+            else
+            {
+                final String n = this.metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+                final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
+                final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+                optionalProgram.get ().fillInto (multisampleSource);
+                multiSamples = Collections.singletonList (multisampleSource);
+            }
         }
         else
             multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples);

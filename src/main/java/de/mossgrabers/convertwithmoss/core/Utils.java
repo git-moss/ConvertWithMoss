@@ -46,4 +46,18 @@ public class Utils
     {
         return Math.max (minimum, Math.min (value, maximum));
     }
+
+
+    /**
+     * Convert continuous double value to dB.
+     *
+     * @param x The value to convert
+     * @return The value converted to dB
+     */
+    public static double valueToDb (final double x)
+    {
+        if (x < 0.0000000298023223876953125)
+            return -150;
+        return Math.max (-150.0, Math.log (x) * 8.6858896380650365530225783783321);
+    }
 }

@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.ChunkDataFactory;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.IChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.SubTreeItemChunkData;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -141,6 +142,11 @@ public class NIContainerChunk
     {
         final StringBuilder sb = new StringBuilder ();
         sb.append (StringUtils.padLeftSpaces ("Type: ", level * 4)).append (this.getChunkType ()).append ("\n");
+        if (this.data instanceof final SubTreeItemChunkData subTree)
+        {
+            sb.append (StringUtils.padLeftSpaces ("Sub Tree:\n", level * 4));
+            sb.append (subTree.getSubTree ().dump (level + 1));
+        }
         if (this.nextChunk != null)
             sb.append (this.nextChunk.dump (level));
         return sb.toString ();

@@ -122,11 +122,12 @@ public abstract class AbstractNKIMetadataFileHandler
             if (programElements.length == 0)
                 return Collections.emptyList ();
 
+            final String n = metadata.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
+
             final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
             for (final Element programElement: programElements)
             {
-                final String n = metadata.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
-                final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
                 final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
                 if (this.parseProgram (programElement, multisampleSource, monolithSamples))
                 {

@@ -38,7 +38,7 @@ public class RootChunkData extends AbstractChunkData
         this.minorVersion = niSoundVersion >> 0xC & 0xFF;
         this.patchVersion = niSoundVersion & 0xFFF;
 
-        // 42 more bytes pending...
+        // 42 more bytes referenced repository...
     }
 
 

@@ -26,7 +26,7 @@ public class ChunkDataFactory
         TEMPLATES.put (NIContainerChunkType.SOUNDINFO_ITEM, SoundinfoChunkData.class);
         TEMPLATES.put (NIContainerChunkType.AUTHORING_APPLICATION, AuthoringApplicationChunkData.class);
         TEMPLATES.put (NIContainerChunkType.SUB_TREE_ITEM, SubTreeItemChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.PRESET_DATA, PresetDataChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.PRESET_CHUNK_ITEM, PresetChunkData.class);
 
         // Not used
         TEMPLATES.put (NIContainerChunkType.BNI_SOUND_PRESET, UnusedChunkData.class);

@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.SubTreeItemChunkData;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -23,8 +24,8 @@ import java.util.List;
  */
 public class NIContainerItem
 {
-    private final NIContainerChunk           data     = new NIContainerChunk ();
-    private final List<NIContainerChildItem> children = new ArrayList<> ();
+    private final NIContainerChunk           dataChunk = new NIContainerChunk ();
+    private final List<NIContainerChildItem> children  = new ArrayList<> ();
 
     private byte []                          uuid;
     private int                              version;
@@ -59,15 +60,15 @@ public class NIContainerItem
         if (!"hsin".equals (domainID))
             throw new IOException (Functions.getMessage ("IDS_NKI5_CORRUPTED_FILE_NO_HSIN"));
 
-        // Flags?
-        StreamUtils.readUnsigned32 (bin, false);
         // Unknown
+        StreamUtils.readUnsigned32 (bin, false);
+        // Flags?
         StreamUtils.readUnsigned32 (bin, false);
 
         // 16 Byte UUID
         this.uuid = bin.readNBytes (16);
 
-        this.data.read (bin);
+        this.dataChunk.read (bin);
 
         this.version = StreamUtils.readUnsigned32 (bin, false);
 
@@ -111,7 +112,7 @@ public class NIContainerItem
      */
     public NIContainerChunk getData ()
     {
-        return this.data;
+        return this.dataChunk;
     }
 
 
@@ -141,7 +142,7 @@ public class NIContainerItem
 
         final int childLevel = level + 1;
 
-        sb.append (StringUtils.padLeftSpaces ("Data:\n", length + 4)).append (this.data.dump (childLevel + 1));
+        sb.append (StringUtils.padLeftSpaces ("Data:\n", length + 4)).append (this.dataChunk.dump (childLevel + 1));
 
         if (this.children.isEmpty ())
             sb.append (StringUtils.padLeftSpaces ("Children: None\n", length + 4));
@@ -165,19 +166,27 @@ public class NIContainerItem
      */
     public NIContainerChunk find (final NIContainerChunkType type)
     {
-        NIContainerChunk chunk = this.data;
+        NIContainerChunk chunk = this.dataChunk;
         while (chunk != null)
         {
             if (chunk.getChunkType () == type)
                 return chunk;
+
+            if (chunk.getData () instanceof final SubTreeItemChunkData subTree)
+            {
+                final NIContainerChunk found = subTree.getSubTree ().find (type);
+                if (found != null)
+                    return found;
+            }
+
             chunk = chunk.getNextChunk ();
         }
 
         for (final NIContainerChildItem childItem: this.children)
         {
-            chunk = childItem.getItem ().find (type);
-            if (chunk != null)
-                return chunk;
+            final NIContainerChunk found = childItem.getItem ().find (type);
+            if (found != null)
+                return found;
         }
 
         return null;
