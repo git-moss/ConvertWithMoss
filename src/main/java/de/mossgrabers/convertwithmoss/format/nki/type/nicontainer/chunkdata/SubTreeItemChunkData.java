@@ -20,7 +20,7 @@ import java.io.InputStream;
  */
 public class SubTreeItemChunkData extends AbstractChunkData
 {
-    private NIContainerItem subItem;
+    private NIContainerItem subTreeItem;
 
 
     /** {@inheritDoc} */
@@ -43,8 +43,19 @@ public class SubTreeItemChunkData extends AbstractChunkData
         else
             uncompressedData = in.readNBytes (sizeUncompressed);
 
-        this.subItem = new NIContainerItem ();
+        this.subTreeItem = new NIContainerItem ();
         final ByteArrayInputStream childBin = new ByteArrayInputStream (uncompressedData);
-        this.subItem.read (childBin);
+        this.subTreeItem.read (childBin);
+    }
+
+
+    /**
+     * Get the sub tree item.
+     *
+     * @return The sub tree item
+     */
+    public NIContainerItem getSubTree ()
+    {
+        return this.subTreeItem;
     }
 }

@@ -7,15 +7,20 @@ package de.mossgrabers.convertwithmoss.format.nki;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunkType;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerItem;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplication;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplicationChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.File;
@@ -25,6 +30,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 
@@ -72,7 +78,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
                 fileAccess.seek (0);
                 try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
                 {
-                    return this.readNIContainer (inputStream);
+                    return this.readNIContainer (inputStream, sourceFile);
                 }
             }
 
@@ -106,33 +112,59 @@ public class NkiDetectorTask extends AbstractDetectorTask
      * Reads an NI container, which hopefully contains a NKI preset.
      *
      * @param inputStream The input stream to read from
+     * @param sourceFile The source file to convert
      * @return The parsed multi-samples, if any
      * @throws IOException Could not read the container
      */
-    private List<IMultisampleSource> readNIContainer (final InputStream inputStream) throws IOException
+    private List<IMultisampleSource> readNIContainer (final InputStream inputStream, final File sourceFile) throws IOException
     {
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (inputStream);
 
-        final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
-        if (presetChunk != null && presetChunk.getData () instanceof final AuthoringApplicationChunkData presetChunkData)
+        final NIContainerChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
+        if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
         {
-            final AuthoringApplication application = presetChunkData.getApplication ();
+            final AuthoringApplication application = appChunkData.getApplication ();
             if (application != AuthoringApplication.KONTAKT)
-            {
-                this.notifier.logError ("IDS_NKI5_NOT_A_KONTAKT_FILE", application == null ? "Unknown" : application.getName ());
-                return Collections.emptyList ();
-            }
-
-            final NIContainerChunk subTreeItemChunk = niContainerItem.find (NIContainerChunkType.SUB_TREE_ITEM);
-            // TODO get the preset and create a MultisampleSource
+                throw new IOException (Functions.getMessage ("IDS_NKI5_NOT_A_KONTAKT_FILE", application == null ? "Unknown" : application.getName ()));
 
             // TODO Detect monolith
             final boolean isMonolith = false;
-            this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", presetChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
+            this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", appChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
+
+            final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+            if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+            {
+                final List<IMultisampleSource> sources = convertProgram (presetChunkData, sourceFile);
+                if (!sources.isEmpty ())
+                    return sources;
+            }
         }
 
-        this.notifier.logError ("IDS_NKI_KONTAKT5_NOT_SUPPORTED");
+        this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
         return Collections.emptyList ();
+    }
+
+
+    /**
+     * Convert the program object into a multisample source.
+     *
+     * @param presetChunkData The preset chunk data which contains the preset information
+     * @param sourceFile The source file to convert
+     * @return The multisample source
+     * @throws IOException Could not convert the program
+     */
+    private List<IMultisampleSource> convertProgram (final PresetChunkData presetChunkData, final File sourceFile) throws IOException
+    {
+        final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
+        final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+
+        final Optional<Program> optionalProgram = presetChunkData.parseProgram ();
+        if (optionalProgram.isEmpty ())
+            return Collections.emptyList ();
+
+        optionalProgram.get ().fillInto (multisampleSource);
+        return Collections.singletonList (multisampleSource);
     }
 }

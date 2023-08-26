@@ -37,7 +37,7 @@ public enum NIContainerChunkType
     /** Some metadata information. */
     SOUNDINFO_ITEM(108, "Soundinfo Item"),
     /** The actual data of a preset. */
-    PRESET_DATA(109, "Preset Data"),
+    PRESET_CHUNK_ITEM(109, "Preset Chunk Item"),
     /** External File Reference. */
     EXTERNAL_FILE_REFERENCE(110, "External File Reference"),
     /** Resources. */

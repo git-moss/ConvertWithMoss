@@ -31,7 +31,7 @@ public class NIContainerChildItem
      */
     public void read (final InputStream in) throws IOException
     {
-        // Unknown - seen 0, 1, 2 and 1001
+        // The index of the child
         StreamUtils.readUnsigned32 (in, false);
 
         this.domainID = StreamUtils.readASCII (in, 4);

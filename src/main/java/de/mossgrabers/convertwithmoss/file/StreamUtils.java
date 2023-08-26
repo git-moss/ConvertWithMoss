@@ -266,12 +266,38 @@ public class StreamUtils
     /**
      * Converts a 4 byte float value.
      *
-     * @param data The 4 byte array
+     * @param in The input stream to read from
+     * @return The float value
+     * @throws IOException Data could not be read
+     */
+    public static float readFloatLE (final InputStream in) throws IOException
+    {
+        final byte [] data = in.readNBytes (4);
+        return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getFloat ();
+    }
+
+
+    /**
+     * Converts a N byte float value.
+     *
+     * @param data The N byte array
      * @return The float value
      */
-    public static float readFloat32LE (final byte [] data)
+    public static float readFloatLE (final byte [] data)
     {
         return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getFloat ();
+    }
+
+
+    /**
+     * Converts a N byte double value.
+     *
+     * @param data The N byte array
+     * @return The double value
+     */
+    public static double readDoubleLE (final byte [] data)
+    {
+        return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getDouble ();
     }
 
 

@@ -288,7 +288,7 @@ public class FastLZ
     {
         final int compressionLevel = findLevel (compressed);
         if (compressionLevel == FASTLZ_LEVEL0)
-            throw new IOException ("Cannot uncompress level 0.");
+            throw new IOException ("FastLZ: Cannot uncompress level 0.");
 
         int ip = 0;
         int op = 0;
@@ -337,9 +337,9 @@ public class FastLZ
                 }
 
                 if (op + len + 3 > uncompressed.length)
-                    throw new IOException ("(op+len+3 > out.length)");
+                    throw new IOException ("FastLZ: (op+len+3 > out.length)");
                 if (ref - 1 < 0)
-                    throw new IOException ("(ref-1 < 0)");
+                    throw new IOException ("FastLZ: (ref-1 < 0)");
 
                 if (ip < compressed.length)
                     ctrl = compressed[ip++] & 0xff;
@@ -373,9 +373,9 @@ public class FastLZ
                 ctrl++;
 
                 if (op + ctrl > uncompressed.length)
-                    throw new IOException ("Unsound data (op + ctrl > out.length).");
+                    throw new IOException ("FastLZ: Unsound data (op + ctrl > out.length).");
                 if (ip + ctrl > compressed.length)
-                    throw new IOException ("Unsound data (ip + ctrl > in.length).");
+                    throw new IOException ("FastLZ: Unsound data (ip + ctrl > in.length).");
 
                 uncompressed[op++] = compressed[ip++];
 

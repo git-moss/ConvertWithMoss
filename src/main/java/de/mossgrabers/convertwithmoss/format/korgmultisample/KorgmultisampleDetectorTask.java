@@ -353,12 +353,12 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                 case KorgmultisampleTag.ID_TUNE:
                     r -= 4;
                     // Read value is in the range of [-999..999]
-                    sample.setTune (StreamUtils.readFloat32LE (in.readNBytes (4)) / 1000.0);
+                    sample.setTune (StreamUtils.readFloatLE (in.readNBytes (4)) / 1000.0);
                     break;
                 case KorgmultisampleTag.ID_LEVEL_LEFT:
                     r -= 4;
                     // Note: The left/right link button in the editor is only a UI thing!
-                    final float levelLeftValue = StreamUtils.readFloat32LE (in.readNBytes (4));
+                    final float levelLeftValue = StreamUtils.readFloatLE (in.readNBytes (4));
                     // This is not fully correct but since it is not documented what the percentages
                     // (-100..100%) mean in dB this is better than nothing...
                     sample.setGain (levelLeftValue / 100.0 * 12.0);
