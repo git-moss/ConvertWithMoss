@@ -227,24 +227,13 @@ public class Program
      */
     public void fillInto (final MultisampleSource source) throws IOException
     {
-        source.setName (this.name);
-
-        if (this.instrumentAuthor != null && !this.instrumentAuthor.isBlank ())
-            source.setCreator (this.instrumentAuthor);
-        if (this.instrumentURL != null && !this.instrumentURL.isBlank ())
-            source.setDescription (this.instrumentURL);
-        source.setCategory (this.instrumentIconName);
+        this.setMetadata (source);
 
         final List<ISampleMetadata> samples = new ArrayList<> ();
 
         for (final Zone zone: this.zones)
         {
-            final int filenameId = zone.getFilenameId ();
-            if (filenameId < 0 || filenameId >= this.filePaths.size ())
-                throw new IOException (Functions.getMessage ("IDS_NKI5_NO_WRONG_FILE_INDEX", Integer.toString (filenameId)));
-
-            final File sampleFile = new File (source.getSourceFile ().getParent (), this.filePaths.get (filenameId));
-            final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (sampleFile);
+            final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (getFilename (source, zone));
             samples.add (sampleMetadata);
 
             sampleMetadata.setStart (zone.getSampleStart ());
@@ -291,6 +280,32 @@ public class Program
         // TODO Group by velocity layer
 
         source.setVelocityLayers (Collections.singletonList (new DefaultVelocityLayer (samples)));
+    }
+
+
+    private File getFilename (final MultisampleSource source, final Zone zone) throws IOException
+    {
+        final int filenameId = zone.getFilenameId ();
+        if (filenameId < 0 || filenameId >= this.filePaths.size ())
+            throw new IOException (Functions.getMessage ("IDS_NKI5_NO_WRONG_FILE_INDEX", Integer.toString (filenameId)));
+
+        final String filename = this.filePaths.get (filenameId);
+        if (filename.endsWith (".ncw"))
+            throw new IOException (Functions.getMessage ("IDS_NKI5_COMPRESSED_SAMPLES_NOT_SUPPORTED"));
+
+        return new File (source.getSourceFile ().getParent (), filename);
+    }
+
+
+    private void setMetadata (final MultisampleSource source)
+    {
+        source.setName (this.name);
+
+        if (this.instrumentAuthor != null && !this.instrumentAuthor.isBlank ())
+            source.setCreator (this.instrumentAuthor);
+        if (this.instrumentURL != null && !this.instrumentURL.isBlank ())
+            source.setDescription (this.instrumentURL);
+        source.setCategory (this.instrumentIconName);
     }
 
 
