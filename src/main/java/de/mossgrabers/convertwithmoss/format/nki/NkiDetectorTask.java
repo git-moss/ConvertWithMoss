@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerIte
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplication;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplicationChunkData;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.SoundinfoChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -102,7 +103,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NKI_UNSUPPORTED_FILE_FORMAT", ex);
+            this.notifier.logError (ex);
         }
         return Collections.emptyList ();
     }
@@ -137,12 +138,39 @@ public class NkiDetectorTask extends AbstractDetectorTask
             {
                 final List<IMultisampleSource> sources = convertProgram (presetChunkData, sourceFile);
                 if (!sources.isEmpty ())
+                {
+                    updateMetadata (niContainerItem, sources);
                     return sources;
+                }
             }
         }
 
         this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
         return Collections.emptyList ();
+    }
+
+
+    /**
+     * Update metadata from a SoundInfo chunk.
+     *
+     * @param niContainerItem The top item to start searching for the SoundInfo chunk.
+     * @param sources The sources to update
+     */
+    private static void updateMetadata (final NIContainerItem niContainerItem, final List<IMultisampleSource> sources)
+    {
+        final NIContainerChunk soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
+        if (soundInfoChunk != null && soundInfoChunk.getData () instanceof SoundinfoChunkData soundinfo)
+        {
+            final List<String> attributes = soundinfo.getAttributes ();
+            for (final IMultisampleSource source: sources)
+            {
+                source.setKeywords (attributes.toArray (new String [attributes.size ()]));
+                if (source.getCreator () == null)
+                    source.setCreator (soundinfo.getAuthor ());
+                if (source.getCategory () == null && !attributes.isEmpty ())
+                    source.setCategory (attributes.get (0));
+            }
+        }
     }
 
 
