@@ -43,72 +43,133 @@ public class FileList
             final int version = StreamUtils.readUnsigned16 (in, false);
             if (version != 2)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_EX_VERSION", Integer.toString (version)));
-            // Unknown
+
+            // The file category: 1 = File or Folder, 2 = NKR file
             StreamUtils.readUnsigned32 (in, false);
+
+            while (true)
+            {
+                in.mark (4);
+                int type = StreamUtils.readUnsigned32 (in, false);
+                if (type == 0)
+                    break;
+                in.reset ();
+                readFile (in);
+            }
+        }
+        else
+        {
+            final int version = StreamUtils.readUnsigned32 (in, false);
+            if (version != 0)
+                throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_VERSION", Integer.toString (version)));
         }
 
-        this.readPublicData (in);
+        this.readFiles (in);
+
+        if (in.available () > 2)
+        {
+            // Last changed date of files
+            final int numFiles = this.filePaths.size ();
+            for (int i = 0; i < numFiles; i++)
+            {
+                // The last update date of the file
+                StreamUtils.readTimestamp (in, false);
+                // Padding - always zero
+                StreamUtils.readUnsigned32 (in, false);
+            }
+
+            // Padding
+            StreamUtils.readUnsigned32 (in, false);
+
+            if (in.available () > 2)
+            {
+                // Unknown but there is 1 integer for each file
+                for (int i = 0; i < numFiles; i++)
+                {
+                    // The file at the last index is set to 0, 1, 2 or 3. All others seem to be
+                    // always 0.
+                    StreamUtils.readUnsigned32 (in, false);
+                }
+
+                if (in.available () > 2)
+                {
+                    // The full path of the NKI file
+                    readFile (in);
+                }
+            }
+
+            // There is more data for reverb samples (and maybe wallpaper)
+            final int rest = in.available ();
+            if (rest == 0)
+                return;
+
+            in.readNBytes (rest - 2);
+        }
+
+        // Always 1?
+        StreamUtils.readUnsigned16 (in, false);
     }
 
 
     /**
-     * Parse the public data section.
+     * Read all file names with their paths.
      *
      * @param in The data to parse
      * @throws IOException Could not read the data
      */
-    private void readPublicData (final ByteArrayInputStream in) throws IOException
+    private void readFiles (final ByteArrayInputStream in) throws IOException
     {
-        final int version = StreamUtils.readUnsigned32 (in, false);
-        if (version > 1)
-            throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_VERSION", Integer.toString (version)));
-
-        if (version == 1)
-        {
-            // Read the resource container (NKR file)
-            final StringBuilder sb = new StringBuilder ();
-            parseSegment (in, sb);
-
-            // Padding?
-            StreamUtils.readUnsigned32 (in, false);
-        }
-
         final int fileCount = StreamUtils.readUnsigned32 (in, false);
-
         for (int i = 0; i < fileCount; i++)
-        {
-            final StringBuilder sb = new StringBuilder ();
-            final int segmentCount = StreamUtils.readUnsigned32 (in, false);
-            for (int s = 0; s < segmentCount; s++)
-                parseSegment (in, sb);
-
-            this.filePaths.add (sb.toString ());
-        }
-
-        // There are much more bytes available...
+            this.filePaths.add (readFile (in));
     }
 
 
     /**
-     * Parses a segment of a file path.
+     * Read one file name with it's path.
+     *
+     * @param in The data to parse
+     * @return The read file
+     * @throws IOException Could not read the data
+     */
+    private static String readFile (final ByteArrayInputStream in) throws IOException
+    {
+        final StringBuilder sb = new StringBuilder ();
+        final int segmentCount = StreamUtils.readUnsigned32 (in, false);
+        for (int s = 0; s < segmentCount; s++)
+            readSegment (in, sb);
+        return sb.toString ();
+    }
+
+
+    /**
+     * Reads a segment of a file path.
      *
      * @param in Where to read the segment from
      * @param sb Where to append the read path segment
      * @throws IOException Could not read
      */
-    private static void parseSegment (final ByteArrayInputStream in, final StringBuilder sb) throws IOException
+    private static void readSegment (final ByteArrayInputStream in, final StringBuilder sb) throws IOException
     {
         final int segmentType = in.read ();
         switch (segmentType)
         {
+            // Drive letter
+            case 1:
+                final String drive = StreamUtils.readWithLengthUTF16 (in);
+                sb.append (drive).append (":/");
+                break;
+
+            // Path segment
             case 2:
                 final String pathSegment = StreamUtils.readWithLengthUTF16 (in);
                 sb.append (pathSegment).append ('/');
                 break;
 
+            // File name
             case 4:
-                final String pathSegment2 = StreamUtils.readWithLengthUTF16 (in);
-                sb.append (pathSegment2);
+                final String filenameSegment = StreamUtils.readWithLengthUTF16 (in);
+                sb.append (filenameSegment);
                 break;
 
             default:
@@ -118,7 +179,7 @@ public class FileList
 
 
     /**
-     * Get the parsed file paths.
+     * Get the file paths.
      * 
      * @return The file paths
      */

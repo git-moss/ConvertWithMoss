@@ -359,8 +359,9 @@ public class StreamUtils
     public static String readASCII (final InputStream in, final int length) throws IOException
     {
         final byte [] buffer = new byte [length];
-        if (in.read (buffer) != length)
-            throw new IOException ();
+        int resultLength = in.read (buffer);
+        if (resultLength != length)
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ASCII_LENGTH_TOO_SHORT", Integer.toBinaryString (length), Integer.toBinaryString (resultLength)));
         return new String (buffer, StandardCharsets.US_ASCII);
     }
 
