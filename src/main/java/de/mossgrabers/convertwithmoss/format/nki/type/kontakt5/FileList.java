@@ -50,7 +50,7 @@ public class FileList
             while (true)
             {
                 in.mark (4);
-                int type = StreamUtils.readUnsigned32 (in, false);
+                final int type = StreamUtils.readUnsigned32 (in, false);
                 if (type == 0)
                     break;
                 in.reset ();
@@ -180,7 +180,7 @@ public class FileList
 
     /**
      * Get the file paths.
-     * 
+     *
      * @return The file paths
      */
     public List<String> getFilePaths ()

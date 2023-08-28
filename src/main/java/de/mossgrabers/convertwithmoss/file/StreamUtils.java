@@ -32,6 +32,23 @@ public class StreamUtils
 
 
     /**
+     * Reads and converts 2 bytes to an signed integer with least significant bytes first.
+     *
+     * @param in The input stream
+     * @param isBigEndian True if bytes are stored big-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readSigned16 (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        final ByteBuffer buffer = ByteBuffer.wrap (in.readNBytes (2));
+        buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        return buffer.getShort ();
+    }
+
+
+    /**
      * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
      *
      * @param in The input stream
@@ -359,7 +376,7 @@ public class StreamUtils
     public static String readASCII (final InputStream in, final int length) throws IOException
     {
         final byte [] buffer = new byte [length];
-        int resultLength = in.read (buffer);
+        final int resultLength = in.read (buffer);
         if (resultLength != length)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ASCII_LENGTH_TOO_SHORT", Integer.toBinaryString (length), Integer.toBinaryString (resultLength)));
         return new String (buffer, StandardCharsets.US_ASCII);

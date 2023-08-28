@@ -57,7 +57,7 @@ public class ZoneLoop
 
     /**
      * Get the loop mode.
-     * 
+     *
      * @return The mode
      */
     public int getMode ()
@@ -68,7 +68,7 @@ public class ZoneLoop
 
     /**
      * Get the start of the loop in samples.
-     * 
+     *
      * @return The loop start
      */
     public int getLoopStart ()
@@ -79,7 +79,7 @@ public class ZoneLoop
 
     /**
      * Get the length of the loop in samples.
-     * 
+     *
      * @return The loop length
      */
     public int getLoopLength ()
@@ -90,7 +90,7 @@ public class ZoneLoop
 
     /**
      * Get the loop count.
-     * 
+     *
      * @return The loop count
      */
     public int getLoopCount ()
@@ -101,7 +101,7 @@ public class ZoneLoop
 
     /**
      * Is the loop alternating?
-     * 
+     *
      * @return 1 if alternating otherwise 0
      */
     public int getAlternatingLoop ()
@@ -112,7 +112,7 @@ public class ZoneLoop
 
     /**
      * Get the loop tuning.
-     * 
+     *
      * @return The loop tuning
      */
     public float getLoopTuning ()
@@ -123,7 +123,7 @@ public class ZoneLoop
 
     /**
      * Get the length of the crossfade in samples.
-     * 
+     *
      * @return The length of the crossfade in samples.
      */
     public int getCrossfadeLength ()

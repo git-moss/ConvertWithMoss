@@ -39,17 +39,56 @@ public class PresetChunk
     {
         this.id = StreamUtils.readUnsigned16 (in, false);
         final int objectSize = StreamUtils.readUnsigned32 (in, false);
+        final byte [] objectData = in.readNBytes (objectSize);
+        final ByteArrayInputStream objectInputStream = new ByteArrayInputStream (objectData);
 
         switch (this.id)
         {
+            case PresetChunkID.GROUP_LIST:
+            {
+                this.readArray (objectInputStream, objectSize, false);
+                break;
+            }
+
+            case PresetChunkID.ZONE_LIST:
+            {
+                this.readArray (objectInputStream, objectSize, true);
+                break;
+            }
+
             case PresetChunkID.PROGRAM, PresetChunkID.PAR_SCRIPT, PresetChunkID.PAR_FX_SEND_LEVELS, PresetChunkID.VOICE_GROUPS, PresetChunkID.PARAMETER_ARRAY_8, PresetChunkID.INSERT_BUS, PresetChunkID.SAVE_SETTINGS, PresetChunkID.QUICK_BROWSE_DATA:
-                this.readStructure (in, objectSize);
+                this.readStructure (objectInputStream, objectSize);
                 break;
 
-            case PresetChunkID.PAR_FX, PresetChunkID.GROUP_LIST, PresetChunkID.ZONE_LIST, PresetChunkID.FILENAME_LIST_EX, PresetChunkID.FILENAME_LIST, PresetChunkID.PARAMETER_ARRAY_16:
+            case PresetChunkID.PAR_FX, PresetChunkID.FILENAME_LIST_EX, PresetChunkID.FILENAME_LIST, PresetChunkID.PARAMETER_ARRAY_16:
             default:
-                this.publicData = in.readNBytes (objectSize);
+                this.publicData = objectInputStream.readNBytes (objectSize);
                 return;
+        }
+    }
+
+
+    /**
+     * Reads an array structure which is a list of preset object structures (which do not have an ID
+     * or size as the header).
+     *
+     * @param in The input stream to read the preset data from
+     * @param objectSize The size of the structure to read
+     * @param hasAdditionalData If true another (unknown) integer is read before each array object
+     * @throws IOException Could not read
+     */
+    public void readArray (final InputStream in, final int objectSize, final boolean hasAdditionalData) throws IOException
+    {
+        final int arrayLength = StreamUtils.readUnsigned32 (in, false);
+        for (int index = 0; index < arrayLength; index++)
+        {
+            // Unknown
+            if (hasAdditionalData)
+                StreamUtils.readUnsigned32 (in, false);
+
+            final PresetChunk arrayObject = new PresetChunk ();
+            arrayObject.readStructure (in, objectSize);
+            this.children.add (arrayObject);
         }
     }
 

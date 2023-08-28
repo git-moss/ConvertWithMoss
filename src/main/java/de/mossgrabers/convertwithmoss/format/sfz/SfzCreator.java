@@ -331,33 +331,33 @@ public class SfzCreator extends AbstractCreator
         if (loops.isEmpty ())
         {
             addAttribute (sb, SfzOpcode.LOOP_MODE, "no_loop", false);
-            return;
         }
-
-        final ISampleLoop sampleLoop = loops.get (0);
-        // SFZ currently only supports forward looping
-        addAttribute (sb, SfzOpcode.LOOP_MODE, "loop_continuous", false);
-        final String type = LOOP_TYPE_MAP.get (sampleLoop.getType ());
-        // No need to write the default value
-        if (!"forward".equals (type))
-            addAttribute (sb, SfzOpcode.LOOP_TYPE, type, false);
-        addIntegerAttribute (sb, SfzOpcode.LOOP_START, sampleLoop.getStart (), false);
-        sb.append (SfzOpcode.LOOP_END).append ('=').append (sampleLoop.getEnd ());
-
-        // Calculate the crossfade in seconds from a percentage of the loop length
-        final double crossfade = sampleLoop.getCrossfade ();
-        if (crossfade > 0)
+        else
         {
-            final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
-            if (loopLength > 0)
-            {
-                final double loopLengthInSeconds = loopLength / (double) info.getSampleRate ();
+            final ISampleLoop sampleLoop = loops.get (0);
+            // SFZ currently only supports forward looping
+            addAttribute (sb, SfzOpcode.LOOP_MODE, "loop_continuous", false);
+            final String type = LOOP_TYPE_MAP.get (sampleLoop.getType ());
+            // No need to write the default value
+            if (!"forward".equals (type))
+                addAttribute (sb, SfzOpcode.LOOP_TYPE, type, false);
+            addIntegerAttribute (sb, SfzOpcode.LOOP_START, sampleLoop.getStart (), false);
+            sb.append (SfzOpcode.LOOP_END).append ('=').append (sampleLoop.getEnd ());
 
-                final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
-                sb.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
+            // Calculate the crossfade in seconds from a percentage of the loop length
+            final double crossfade = sampleLoop.getCrossfade ();
+            if (crossfade > 0)
+            {
+                final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
+                if (loopLength > 0)
+                {
+                    final double loopLengthInSeconds = loopLength / (double) info.getSampleRate ();
+
+                    final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
+                    sb.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
+                }
             }
         }
-
         sb.append (LINE_FEED);
     }
 

@@ -41,25 +41,18 @@ public class Zone
     private int            numFrames;
     private int            rootNote;
     private float          tuning;
-    private List<ZoneLoop> loops = new ArrayList<> ();
+    private final List<ZoneLoop> loops = new ArrayList<> ();
 
 
     /**
      * Parse the zone data.
-     * 
+     *
      * Known zone structure versions:
      * <ul>
-     * <li>4.2.x: 0x93
-     * <li>5.3.0: 0x98
-     * <li>5.4.3: 0x98
-     * <li>5.5.2: 0x98
-     * <li>5.6.8: 0x98
-     * <li>5.8.1: 0x99
-     * <li>6.2.1: ?
-     * <li>6.5.2: 0x9A
-     * <li>6.6.0: 0x9A
-     * <li>6.7.1: 0x9A
-     * <li>6.8.0: 0x9A
+     * <li>0x93: 4.2.x
+     * <li>0x98: 5.3.0 - 5.6.8
+     * <li>0x99: 5.8.1
+     * <li>0x9A: 6.5.2 - 6.8.0
      * </ul>
      *
      * @param data The data to parse
@@ -68,10 +61,10 @@ public class Zone
      */
     public void parse (final byte [] data, final int version) throws IOException
     {
-        final ByteArrayInputStream in = new ByteArrayInputStream (data);
-
         if (version > 0x9A)
             throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_ZONE_VERSION", Integer.toHexString (version).toUpperCase ()));
+
+        final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
         this.sampleStart = StreamUtils.readUnsigned32 (in, false);
         this.sampleEnd = StreamUtils.readUnsigned32 (in, false);
@@ -127,7 +120,7 @@ public class Zone
 
     /**
      * Get the start of the sample.
-     * 
+     *
      * @return The sample start
      */
     public int getSampleStart ()
@@ -138,7 +131,7 @@ public class Zone
 
     /**
      * Get the end of the sample.
-     * 
+     *
      * @return The negative offset from the end of the sample (numFrames)
      */
     public int getSampleEnd ()
@@ -149,7 +142,7 @@ public class Zone
 
     /**
      * Get the lower bound velocity (including the value).
-     * 
+     *
      * @return The velocity in the range of [1..127]
      */
     public int getLowVelocity ()
@@ -160,7 +153,7 @@ public class Zone
 
     /**
      * Get the upper bound velocity (including the value).
-     * 
+     *
      * @return The velocity in the range of [1..127]
      */
     public int getHighVelocity ()
@@ -171,7 +164,7 @@ public class Zone
 
     /**
      * Get the lower bound key (including the value).
-     * 
+     *
      * @return The key in the range of [0..127]
      */
     public int getLowKey ()
@@ -182,7 +175,7 @@ public class Zone
 
     /**
      * Get the upper bound key (including the value).
-     * 
+     *
      * @return The key in the range of [0..127]
      */
     public int getHighKey ()
@@ -193,7 +186,7 @@ public class Zone
 
     /**
      * Get the lower velocity fade value.
-     * 
+     *
      * @return The number of velocity steps to crossfade in the range of [0..127]
      */
     public int getFadeLowVelocity ()
@@ -204,7 +197,7 @@ public class Zone
 
     /**
      * Get the upper velocity fade value.
-     * 
+     *
      * @return The number of velocity steps to crossfade in the range of [0..127]
      */
     public int getFadeHighVelocity ()
@@ -215,7 +208,7 @@ public class Zone
 
     /**
      * Get the lower key fade value.
-     * 
+     *
      * @return The number of semitones to crossfade in the range of [0..127]
      */
     public int getFadeLowKey ()
@@ -226,7 +219,7 @@ public class Zone
 
     /**
      * Get the upper key fade value.
-     * 
+     *
      * @return The number of semitones to crossfade in the range of [0..127]
      */
     public int getFadeHighKey ()
@@ -237,7 +230,7 @@ public class Zone
 
     /**
      * Get the root key at which to play the sample (the assigned MIDI note).
-     * 
+     *
      * @return The root key of the sample in the range of [0..127]
      */
     public int getRootKey ()
@@ -248,7 +241,7 @@ public class Zone
 
     /**
      * The root note at which the sample was recorded. Ignore if set to 0.
-     * 
+     *
      * @return The root note in the range of [0..127]
      */
     public int getRootNote ()
@@ -259,7 +252,7 @@ public class Zone
 
     /**
      * Get the volume of the zone.
-     * 
+     *
      * @return The volume, 0.0dB = 1.0, 0.015625 = -36dB, 64 = +36dB
      */
     public float getZoneVolume ()
@@ -270,7 +263,7 @@ public class Zone
 
     /**
      * Get the panorama.
-     * 
+     *
      * @return The panorama in the range of [-1..1]
      */
     public float getZonePan ()
@@ -281,7 +274,7 @@ public class Zone
 
     /**
      * Get the zone tuning.
-     * 
+     *
      * @return The tune setting in the range of [-32..32] semitones which is returned as 2^octave
      *         which maps to the range [0.125, 8.0], 2^(-32/12) = 0.125
      */
@@ -293,7 +286,7 @@ public class Zone
 
     /**
      * Get the index of the filename.
-     * 
+     *
      * @return The index into the filename list
      */
     public int getFilenameId ()
@@ -304,7 +297,7 @@ public class Zone
 
     /**
      * Get the type of the sample data.
-     * 
+     *
      * @return The type: 2 = 16 bit, 3 = 24 bit
      */
     public int getSampleDataType ()
@@ -315,7 +308,7 @@ public class Zone
 
     /**
      * The sample rate.
-     * 
+     *
      * @return The sample rate in Hertz, e.g. 44100
      */
     public int getSampleRate ()
@@ -326,7 +319,7 @@ public class Zone
 
     /**
      * The number of channels.
-     * 
+     *
      * @return The number of channels, e.g. 2
      */
     public int getNumChannels ()
@@ -337,7 +330,7 @@ public class Zone
 
     /**
      * The number of frames.
-     * 
+     *
      * @return The number of frames (number of samples of 1 channel)
      */
     public int getNumFrames ()
@@ -348,7 +341,7 @@ public class Zone
 
     /**
      * Get the tuning.
-     * 
+     *
      * @return The tuning
      */
     public float getTuning ()
@@ -370,7 +363,7 @@ public class Zone
 
     /**
      * Get the loops.
-     * 
+     *
      * @return The loops
      */
     public List<ZoneLoop> getLoops ()

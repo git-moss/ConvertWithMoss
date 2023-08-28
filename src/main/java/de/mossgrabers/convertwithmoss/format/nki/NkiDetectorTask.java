@@ -136,7 +136,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
             final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
             if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
             {
-                final List<IMultisampleSource> sources = convertProgram (presetChunkData, sourceFile);
+                final List<IMultisampleSource> sources = this.convertProgram (presetChunkData, sourceFile);
                 if (!sources.isEmpty ())
                 {
                     updateMetadata (niContainerItem, sources);
@@ -159,7 +159,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
     private static void updateMetadata (final NIContainerItem niContainerItem, final List<IMultisampleSource> sources)
     {
         final NIContainerChunk soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
-        if (soundInfoChunk != null && soundInfoChunk.getData () instanceof SoundinfoChunkData soundinfo)
+        if (soundInfoChunk != null && soundInfoChunk.getData () instanceof final SoundinfoChunkData soundinfo)
         {
             final List<String> attributes = soundinfo.getAttributes ();
             for (final IMultisampleSource source: sources)
