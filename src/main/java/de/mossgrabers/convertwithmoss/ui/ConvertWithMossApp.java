@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupCreator;
@@ -559,7 +559,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     {
         final String category = multisampleSource.getCategory ();
         boolean wasSet = false;
-        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        for (final IGroup layer: multisampleSource.getGroups ())
         {
             for (final ISampleMetadata sample: layer.getSampleMetadata ())
             {

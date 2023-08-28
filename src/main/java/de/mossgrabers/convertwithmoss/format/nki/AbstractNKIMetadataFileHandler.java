@@ -10,18 +10,18 @@ import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
 import de.mossgrabers.convertwithmoss.file.AiffSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -197,22 +197,22 @@ public abstract class AbstractNKIMetadataFileHandler
     protected abstract String getTemplatePrefix ();
 
 
-    protected String addGroups (final String templatePrefix, final String safeSampleFolderName, final List<IVelocityLayer> velocityLayers) throws IOException
+    protected String addGroups (final String templatePrefix, final String safeSampleFolderName, final List<IGroup> groups) throws IOException
     {
         final String groupTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_02_Group.xml");
         final String zoneTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_04_Zone.xml");
         final String loopTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_05_Loop.xml");
 
-        final StringBuilder groups = new StringBuilder ();
-        final StringBuilder zones = new StringBuilder ();
+        final StringBuilder groupsText = new StringBuilder ();
+        final StringBuilder zonesText = new StringBuilder ();
 
         // Samples are numbered across all groups!
         int sampleCount = 0;
         boolean isReverse = false;
 
-        for (int groupCount = 0; groupCount < velocityLayers.size (); groupCount++)
+        for (int groupCount = 0; groupCount < groups.size (); groupCount++)
         {
-            final IVelocityLayer layer = velocityLayers.get (groupCount);
+            final IGroup layer = groups.get (groupCount);
 
             // Set the group index and name
             String name = layer.getName ();
@@ -238,7 +238,7 @@ public abstract class AbstractNKIMetadataFileHandler
                     isReverse = loop.getType () == LoopType.BACKWARDS;
                 }
                 zoneContent = zoneContent.replace ("%ZONE_LOOPS%", loopsContent.toString ());
-                zones.append (zoneContent);
+                zonesText.append (zoneContent);
 
                 sampleCount++;
             }
@@ -254,10 +254,10 @@ public abstract class AbstractNKIMetadataFileHandler
             groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_REVERSE%", isReverse ? "yes" : "no");
-            groups.append (groupContent);
+            groupsText.append (groupContent);
         }
 
-        return groups.toString () + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_03_Groups_Zones.xml") + zones.toString ();
+        return groupsText.toString () + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_03_Groups_Zones.xml") + zonesText.toString ();
     }
 
 
@@ -408,14 +408,14 @@ public abstract class AbstractNKIMetadataFileHandler
         final Element [] zoneElements = this.getZoneElements (programElement);
 
         final String sourcePath = multisampleSource.getSourceFile ().getParentFile ().getCanonicalPath ();
-        final List<IVelocityLayer> velocityLayers = this.getVelocityLayers (programParameters, groupElements, zoneElements, sourcePath, monolithSamples);
-        if (velocityLayers.isEmpty ())
+        final List<IGroup> groups = this.getGroups (programParameters, groupElements, zoneElements, sourcePath, monolithSamples);
+        if (groups.isEmpty ())
         {
             this.notifier.logError ("IDS_NKI_NO_VEL_LAYER_DETECTED");
             return false;
         }
 
-        multisampleSource.setVelocityLayers (velocityLayers);
+        multisampleSource.setGroups (groups);
         return true;
     }
 
@@ -487,57 +487,57 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Creates velocity layers from a program's parameters and its group and zone elements.
+     * Creates groups from a program's parameters and its group and zone elements.
      *
      * @param programParameters The program parameters
      * @param groupElements The group elements
      * @param zoneElements The zone elements
      * @param sourcePath The canonical path which contains the NKI file
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
-     * @return the velocity layers created (empty list is returned if nothing was created)
+     * @return the groups created (empty list is returned if nothing was created)
      */
-    private List<IVelocityLayer> getVelocityLayers (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
+    private List<IGroup> getGroups (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
     {
         if (groupElements == null || zoneElements == null)
             return Collections.emptyList ();
 
-        final LinkedList<IVelocityLayer> velocityLayers = new LinkedList<> ();
+        final LinkedList<IGroup> groups = new LinkedList<> ();
         for (final Element groupElement: groupElements)
         {
-            final IVelocityLayer velocityLayer = this.getVelocityLayer (programParameters, groupElement, zoneElements, sourcePath, monolithSamples);
-            if (velocityLayer != null)
-                velocityLayers.add (velocityLayer);
+            final IGroup group = this.getGroups (programParameters, groupElement, zoneElements, sourcePath, monolithSamples);
+            if (group != null)
+                groups.add (group);
         }
-        return velocityLayers;
+        return groups;
     }
 
 
     /**
-     * Creates one velocity layer from a program's parameters, a given group element and the
-     * program's zone elements.
+     * Creates one group from a program's parameters, a given group element and the program's zone
+     * elements.
      *
      * @param programParameters The program parameters
-     * @param groupElement The group element from which the velocity layer is created
+     * @param groupElement The group element from which the group is created
      * @param zoneElements The program's zone elements
      * @param sourcePath The canonical path which contains the NKI file
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
-     * @return The velocity layer created from the zone element (null, if there is no group element)
+     * @return The group created from the zone element (null, if there is no group element)
      */
-    private IVelocityLayer getVelocityLayer (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
+    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
     {
         if (groupElement == null)
             return null;
 
-        final DefaultVelocityLayer velocityLayer = new DefaultVelocityLayer ();
-        velocityLayer.setName (this.getGroupName (groupElement));
+        final DefaultGroup group = new DefaultGroup ();
+        group.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
         final IFilter filter = this.readFilter (groupElement);
         final Map<String, IModulator> groupModulators = this.readGroupModulators (groupElement);
         final int pitchBend = this.readGroupPitchBend (groupElement);
-        velocityLayer.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
+        group.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-        velocityLayer.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, sourcePath, monolithSamples, filter));
-        return velocityLayer;
+        group.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, sourcePath, monolithSamples, filter));
+        return group;
     }
 
 

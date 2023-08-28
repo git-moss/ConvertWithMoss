@@ -12,18 +12,18 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
@@ -129,7 +129,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
-        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (multiSampleFile.getParentFile (), result);
+        final List<IGroup> groups = this.parseGroups (multiSampleFile.getParentFile (), result);
 
         final Optional<String> globalName = this.getAttribute (SfzOpcode.GLOBAL_LABEL);
         if (globalName.isPresent ())
@@ -142,25 +142,25 @@ public class SfzDetectorTask extends AbstractDetectorTask
         multisampleSource.setCategory (TagDetector.detectCategory (parts));
         multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
 
-        multisampleSource.setVelocityLayers (velocityLayers);
+        multisampleSource.setGroups (groups);
 
         return Collections.singletonList (multisampleSource);
     }
 
 
     /**
-     * Parses all velocity layers (= regions in SFZ).
+     * Parses all groups (= regions in SFZ).
      *
      * @param basePath The path where the SFZ file is located, this is the base path for samples
      * @param headers All parsed headers with their key/value pairs
-     * @return The parsed velocity layers
+     * @return The parsed groups
      */
-    private List<IVelocityLayer> parseVelocityLayers (final File basePath, final List<Pair<String, Map<String, String>>> headers)
+    private List<IGroup> parseGroups (final File basePath, final List<Pair<String, Map<String, String>>> headers)
     {
         File sampleBaseFolder = basePath;
 
-        final List<IVelocityLayer> velocityLayers = new ArrayList<> ();
-        IVelocityLayer layer = new DefaultVelocityLayer ();
+        final List<IGroup> groups = new ArrayList<> ();
+        IGroup layer = new DefaultGroup ();
         for (final Pair<String, Map<String, String>> pair: headers)
         {
             final Map<String, String> attributes = pair.getValue ();
@@ -179,7 +179,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                         if (!sampleBaseFolder.exists ())
                         {
                             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_FOLDER_DOES_NOT_EXIST", sampleBaseFolder.getAbsolutePath ());
-                            return velocityLayers;
+                            return groups;
                         }
                     }
                     break;
@@ -194,8 +194,8 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
                 case SfzHeader.GROUP:
                     if (!layer.getSampleMetadata ().isEmpty ())
-                        velocityLayers.add (layer);
-                    layer = new DefaultVelocityLayer ();
+                        groups.add (layer);
+                    layer = new DefaultGroup ();
 
                     this.groupAttributes = attributes;
 
@@ -237,20 +237,20 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
         // Don't forget to add the last layer
         if (!layer.getSampleMetadata ().isEmpty ())
-            velocityLayers.add (layer);
+            groups.add (layer);
 
         this.printUnsupportedOpcodes (this.diffOpcodes ());
 
         // Fix empty names
-        for (int i = 0; i < velocityLayers.size (); i++)
+        for (int i = 0; i < groups.size (); i++)
         {
-            final IVelocityLayer velocityLayer = velocityLayers.get (i);
-            final String name = velocityLayer.getName ();
+            final IGroup group = groups.get (i);
+            final String name = group.getName ();
             if (name == null || name.isBlank ())
-                velocityLayer.setName ("Group " + (i + 1));
+                group.setName ("Group " + (i + 1));
         }
 
-        return velocityLayers;
+        return groups;
     }
 
 

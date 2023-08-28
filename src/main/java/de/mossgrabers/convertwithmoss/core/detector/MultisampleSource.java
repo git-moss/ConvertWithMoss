@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.core.detector;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 import java.io.File;
@@ -32,7 +32,7 @@ public class MultisampleSource implements IMultisampleSource
     private String               creator     = "";
     private String               category    = "";
     private String []            keywords    = new String [0];
-    private List<IVelocityLayer> layers      = Collections.emptyList ();
+    private List<IGroup> layers      = Collections.emptyList ();
 
 
     /**
@@ -95,7 +95,7 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public List<IVelocityLayer> getLayers ()
+    public List<IGroup> getGroups ()
     {
         return this.layers;
     }
@@ -103,10 +103,10 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public List<IVelocityLayer> getNonEmptyLayers (final boolean filterReleaseTriggers)
+    public List<IGroup> getNonEmptyLayers (final boolean filterReleaseTriggers)
     {
-        final List<IVelocityLayer> cleanedLayers = new ArrayList<> ();
-        for (final IVelocityLayer layer: this.layers)
+        final List<IGroup> cleanedLayers = new ArrayList<> ();
+        for (final IGroup layer: this.layers)
         {
             final List<ISampleMetadata> sampleMetadata = layer.getSampleMetadata ();
             if (sampleMetadata.isEmpty ())
@@ -214,7 +214,7 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public void setVelocityLayers (final List<IVelocityLayer> layers)
+    public void setGroups (final List<IGroup> layers)
     {
         this.layers = new ArrayList<> (layers);
     }
@@ -233,7 +233,7 @@ public class MultisampleSource implements IMultisampleSource
     public Optional<IFilter> getGlobalFilter ()
     {
         IFilter globalFilter = null;
-        for (final IVelocityLayer layer: this.layers)
+        for (final IGroup layer: this.layers)
         {
             for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
             {
@@ -256,7 +256,7 @@ public class MultisampleSource implements IMultisampleSource
     @Override
     public void setGlobalFilter (final IFilter filter)
     {
-        for (final IVelocityLayer layer: this.layers)
+        for (final IGroup layer: this.layers)
         {
             for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
                 sampleMetadata.setFilter (filter);

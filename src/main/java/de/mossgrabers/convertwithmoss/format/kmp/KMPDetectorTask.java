@@ -8,7 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
@@ -81,11 +81,11 @@ public class KMPDetectorTask extends AbstractDetectorTask
         source.setKeywords (TagDetector.detectKeywords (parts));
 
         // Create the layers
-        final DefaultVelocityLayer layer = new DefaultVelocityLayer (name);
+        final DefaultGroup layer = new DefaultGroup (name);
 
         kmpFile.getKsfFiles ().forEach (layer::addSampleMetadata);
 
-        source.setVelocityLayers (Collections.singletonList (layer));
+        source.setGroups (Collections.singletonList (layer));
         return Collections.singletonList (source);
     }
 }

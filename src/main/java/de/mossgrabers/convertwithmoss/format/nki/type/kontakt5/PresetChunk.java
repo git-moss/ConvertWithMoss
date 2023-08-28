@@ -74,21 +74,22 @@ public class PresetChunk
      *
      * @param in The input stream to read the preset data from
      * @param objectSize The size of the structure to read
-     * @param hasAdditionalData If true another (unknown) integer is read before each array object
+     * @param hasReference If true another integer is read before each array object and stored in
+     *            the ID of the children
      * @throws IOException Could not read
      */
-    public void readArray (final InputStream in, final int objectSize, final boolean hasAdditionalData) throws IOException
+    public void readArray (final InputStream in, final int objectSize, final boolean hasReference) throws IOException
     {
         final int arrayLength = StreamUtils.readUnsigned32 (in, false);
         for (int index = 0; index < arrayLength; index++)
         {
-            // Unknown
-            if (hasAdditionalData)
-                StreamUtils.readUnsigned32 (in, false);
+            final int reference = hasReference ? StreamUtils.readUnsigned32 (in, false) : 0;
 
             final PresetChunk arrayObject = new PresetChunk ();
             arrayObject.readStructure (in, objectSize);
             this.children.add (arrayObject);
+
+            arrayObject.id = reference;
         }
     }
 

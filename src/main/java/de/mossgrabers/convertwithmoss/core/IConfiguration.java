@@ -36,17 +36,17 @@ public interface IConfiguration
 
 
     /**
-     * Get the velocity layer patterns.
+     * Get the group patterns.
      *
      * @return The patterns
      */
-    String getVelocityLayersPatterns ();
+    String getGroupPatterns ();
 
 
     /**
-     * Get if the velocity layers are numbered in ascending order.
+     * Get if the groups are numbered in ascending order.
      *
-     * @return True if the velocity layers are numbered in ascending order
+     * @return True if the groups are numbered in ascending order
      */
     boolean isVelLayersOrderAscending ();
 

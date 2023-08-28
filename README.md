@@ -7,7 +7,7 @@ The conversion process reads and writes metadata (name, category, creator,
 description and keywords) if supported by the format. If the source format
 does not support the information a guessing algorithm is applied to the name.
 
-Furthermore, samples can be grouped into velocity layers and key ranges. Each 
+Furthermore, samples can be grouped into groups and key ranges. Each 
 sample can have 1 or no loop and parameters for pitch and different playback 
 parameters.
 

@@ -11,7 +11,7 @@ There are currently no metadata fields (category, creator, etc.) specified in th
 
 ## Bitwig Studio multisample
 
-The parser can read all information from Bitwig Studio multisamples except the layer color, select and parameter 1 to 3, which are not mappable.
+The parser can read all information from Bitwig Studio multi-samples except the layer color, select and parameter 1 to 3, which are not mappable.
 
 A Bitwig multisample file is a zip archive which contains all samples in WAV format and a metadata file in XML format.
 This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
@@ -39,7 +39,7 @@ The KMP/KSF format (*.KMP) was first introduced in the Korg Trinity workstation 
 * PA1X/PA800/PA2X/PA3X/PA4X
 * Nautilus
 
-The format is documented in detail in the appendix of the respective parameter guides. The KMP format contains only 1 layer of a multisample, which means there are only key splits but no velocity layers. The file references several KSF files which contain the sample data for each key region.
+The format is documented in detail in the appendix of the respective parameter guides. The KMP format contains only 1 layer of a multisample, which means there are only key splits but no groups. The file references several KSF files which contain the sample data for each key region.
 
 ## Korg wavestate/modwave
 
@@ -50,7 +50,7 @@ Since the format is pretty simple all data stored in the file is available for t
 ## Native Instruments Kontakt
 
 Kontakt is a sampler from Native Instruments which uses a plethora of file formats which all are sadly proprietary
-and therefore no documentation is publicly available. Nevertheless, several people analysed the format and by now
+and therefore no documentation is publicly available. Nevertheless, several people analyzed the format and by now
 sufficient information is available to provide the support as the source.
 
 However, the format changed many times across the different Kontakt versions. So far, the following formats are known:
@@ -97,10 +97,10 @@ The algorithm tries to detect as much metadata as possible from the WAV files:
 
 ### Velocity layers
 
-Detected velocity layers will be equally distributed across the velocity range. E.g. if 2 layers are detected the first will be mapped to the velocity range of 0-63 and the second to 64-127.
+Detected groups will be equally distributed across the velocity range. E.g. if 2 layers are detected the first will be mapped to the velocity range of 0-63 and the second to 64-127.
 
-* Detection pattern: Comma separated list of patterns to detect velocity layers. The pattern must contain a star character ("*"), which indicates the position which contains the layer number.
-* Order of layer numbering: Enable to map velocity layers inversed. This means that the highest number will be mapped to the lowest velocity range.
+* Detection pattern: Comma separated list of patterns to detect groups. The pattern must contain a star character ("*"), which indicates the position which contains the layer number.
+* Order of layer numbering: Enable to map groups inversed. This means that the highest number will be mapped to the lowest velocity range.
 
 ### Mono Splits
 
@@ -114,9 +114,9 @@ Stereo samples might be split up into 2 mono files (the left and right channel).
 * Prefer folder name: If enabled the name of the multisample will be extracted from the folder instead of the sample names.
 * Default creator: The name which is set as the creator of the multisamples, if no creator tag could be found.
 * Creator tag(s): Here you can set a number of creator names, which need to be separated by comma. You can also use this to look up other things. For example, I set the names of the synthesizers which I sampled. My string looks like: "01W,FM8,Pro-53,Virus B,XV" (without the quotes).
-* Crossfade notes: You can automatically create crossfades between the different note ranges. This makes especially sense if you only sampled a couple of notes. Set the number of notes, which should be crossfaded between two samples (0-127). If you set a too high number the crossfade is automatically limited to the maximum number of notes between the two neighbouring samples.
-* Crossfade velocities: You can automatically create crossfades between the different velocity layers. This makes especially sense if you sampled several sample layers with different velocity values. Set the number of velocity steps (0-127), which should be crossfaded between two samples. If you set a too high number the crossfade is automatically limited to the maximum number of velocity steps between the two neighbouring samples.
-* Postfix text to remove: The algorithm automatically removes the note information to extract the name of the multisample but there might be further text at the end of the name, which you might want to remove. For example the multisamples I created with SampleRobot have a layer information like "_ms0_0". You can set a comma separated list of such postfix texts in that field.
+* Crossfade notes: You can automatically create crossfades between the different note ranges. This makes especially sense if you only sampled a couple of notes. Set the number of notes, which should be cross-faded between two samples (0-127). If you set a too high number the crossfade is automatically limited to the maximum number of notes between the two neighboring samples.
+* Crossfade velocities: You can automatically create crossfades between the different groups. This makes especially sense if you sampled several sample layers with different velocity values. Set the number of velocity steps (0-127), which should be crossfaded between two samples. If you set a too high number the crossfade is automatically limited to the maximum number of velocity steps between the two neighbouring samples.
+* Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multisample but there might be further text at the end of the name, which you might want to remove. For example the multisamples I created with SampleRobot have a layer information like "_ms0_0". You can set a comma separated list of such postfix texts in that field.
 
 ## Destination formats
 
@@ -147,7 +147,7 @@ Further options:
 
 ### Korg KMP/KSF
 
-Since the KMP format can only contain 1 layer of a multisample, sources with multiple velocity layers are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
+Since the KMP format can only contain 1 layer of a multisample, sources with multiple groups are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
 
 ### Korg wavestate/modwave (*.korgmultisample)
 

@@ -4,8 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 import java.util.ArrayList;
@@ -13,11 +13,11 @@ import java.util.List;
 
 
 /**
- * A velocity layer (actually a group).
+ * Default implementation for a group.
  *
  * @author Jürgen Moßgraber
  */
-public class DefaultVelocityLayer implements IVelocityLayer
+public class DefaultGroup implements IGroup
 {
     private List<ISampleMetadata> samples     = new ArrayList<> ();
     private String                name;
@@ -27,7 +27,7 @@ public class DefaultVelocityLayer implements IVelocityLayer
     /**
      * Constructor.
      */
-    public DefaultVelocityLayer ()
+    public DefaultGroup ()
     {
         // Intentionally empty
     }
@@ -38,7 +38,7 @@ public class DefaultVelocityLayer implements IVelocityLayer
      *
      * @param name The layers' name
      */
-    public DefaultVelocityLayer (final String name)
+    public DefaultGroup (final String name)
     {
         this.name = name;
     }
@@ -49,7 +49,7 @@ public class DefaultVelocityLayer implements IVelocityLayer
      *
      * @param samples The layers' samples
      */
-    public DefaultVelocityLayer (final List<ISampleMetadata> samples)
+    public DefaultGroup (final List<ISampleMetadata> samples)
     {
         this.samples = samples;
     }

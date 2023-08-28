@@ -11,14 +11,14 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
@@ -220,7 +220,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         final double globalTuningOffset = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.GLOBAL_TUNING, 0);
 
-        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (groupsElement, basePath, isLibrary ? multiSampleFile : null, globalTuningOffset);
+        final List<IGroup> groups = this.parseGroups (groupsElement, basePath, isLibrary ? multiSampleFile : null, globalTuningOffset);
 
         final String name = FileUtils.getNameWithoutType (multiSampleFile);
         final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
@@ -233,7 +233,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         multisampleSource.setCategory (TagDetector.detectCategory (parts));
         multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
 
-        multisampleSource.setVelocityLayers (velocityLayers);
+        multisampleSource.setGroups (groups);
 
         parseEffects (top, multisampleSource);
 
@@ -268,7 +268,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Parses all velocity layers (groups).
+     * Parses all groups.
      *
      * @param groups The XML element containing all groups
      * @param basePath The base path of the samples
@@ -276,10 +276,10 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param globalTuningOffset The global tuning offset
      * @return All parsed layers
      */
-    private List<IVelocityLayer> parseVelocityLayers (final Element groups, final String basePath, final File libraryFile, final double globalTuningOffset)
+    private List<IGroup> parseGroups (final Element groups, final String basePath, final File libraryFile, final double globalTuningOffset)
     {
         final Node [] groupNodes = XMLUtils.getChildrenByName (groups, DecentSamplerTag.GROUP, false);
-        final List<IVelocityLayer> layers = new ArrayList<> (groupNodes.length);
+        final List<IGroup> layers = new ArrayList<> (groupNodes.length);
         int groupCounter = 1;
         for (final Node groupNode: groupNodes)
         {
@@ -291,7 +291,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
                 final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
                 final String layerName = k == null || k.isBlank () ? "Velocity Layer " + groupCounter : k;
-                final DefaultVelocityLayer velocityLayer = new DefaultVelocityLayer (layerName);
+                final DefaultGroup group = new DefaultGroup (layerName);
 
                 final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
                 double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.GROUP_TUNING, 0);
@@ -301,8 +301,8 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
                 final String triggerAttribute = groupElement.getAttribute (DecentSamplerTag.TRIGGER);
 
-                this.parseVelocityLayer (velocityLayer, groupElement, basePath, libraryFile, groupVolumeOffset, globalTuningOffset + groupTuningOffset, triggerAttribute);
-                layers.add (velocityLayer);
+                this.parseGroup (group, groupElement, basePath, libraryFile, groupVolumeOffset, globalTuningOffset + groupTuningOffset, triggerAttribute);
+                layers.add (group);
                 groupCounter++;
             }
             else
@@ -316,9 +316,9 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Parse a velocity layer (group).
+     * Parse a group.
      *
-     * @param velocityLayer The object to fill in the data
+     * @param group The object to fill in the data
      * @param groupElement The XML group element
      * @param basePath The base path of the samples
      * @param libraryFile If it is a library otherwise null
@@ -326,7 +326,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param tuningOffset The tuning offset
      * @param trigger The trigger value
      */
-    private void parseVelocityLayer (final DefaultVelocityLayer velocityLayer, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset, final String trigger)
+    private void parseGroup (final DefaultGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset, final String trigger)
     {
         for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE, false))
         {
@@ -417,7 +417,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             amplitudeEnvelope.setSustain (this.getDoubleValue (DecentSamplerTag.AMP_ENV_SUSTAIN, -1));
             amplitudeEnvelope.setRelease (this.getDoubleValue (DecentSamplerTag.AMP_ENV_RELEASE, -1));
 
-            velocityLayer.addSampleMetadata (sampleMetadata);
+            group.addSampleMetadata (sampleMetadata);
         }
     }
 

@@ -10,14 +10,14 @@ import java.util.List;
 
 
 /**
- * A velocity layer in a multi-sample.
+ * A group in a multi-sample which groups several sample zones.
  *
  * @author Jürgen Moßgraber
  */
-public interface IVelocityLayer
+public interface IGroup
 {
     /**
-     * Get the name of the velocity layer.
+     * Get the name of the group.
      *
      * @return The name
      */
@@ -25,7 +25,7 @@ public interface IVelocityLayer
 
 
     /**
-     * Set the name of the velocity layer.
+     * Set the name of the group.
      *
      * @param name The name
      */
@@ -49,7 +49,7 @@ public interface IVelocityLayer
 
 
     /**
-     * Get the description of the samples which belong to the velocity layer.
+     * Get the description of the samples which belong to the group.
      *
      * @return The descriptions in an ordered map
      */
@@ -57,7 +57,7 @@ public interface IVelocityLayer
 
 
     /**
-     * Set the description of the samples which belong to the velocity layer.
+     * Set the description of the samples which belong to the group.
      *
      * @param samples The sample descriptions
      */

@@ -10,10 +10,10 @@ import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
@@ -93,7 +93,7 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         // Store all samples
         int outputCount = 0;
-        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        for (final IGroup layer: multisampleSource.getGroups ())
         {
             for (final ISampleMetadata info: layer.getSampleMetadata ())
             {
@@ -147,12 +147,12 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         final Map<String, List<Keygroup>> keygroupsMap = new HashMap<> ();
 
-        // Need to stack the parts of velocity layers in key ranges
-        for (final IVelocityLayer velocityLayer: multisampleSource.getLayers ())
+        // Need to stack the parts of groups in key ranges
+        for (final IGroup group: multisampleSource.getGroups ())
         {
-            final TriggerType trigger = velocityLayer.getTrigger ();
+            final TriggerType trigger = group.getTrigger ();
 
-            for (final ISampleMetadata sampleMetadata: velocityLayer.getSampleMetadata ())
+            for (final ISampleMetadata sampleMetadata: group.getSampleMetadata ())
             {
                 final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger, multisampleSource.getGlobalFilter ());
                 if (keygroupOpt.isEmpty ())
@@ -198,7 +198,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         programElement.appendChild (document.createElement (MPCKeygroupTag.PROGRAM_PADS + MPCKeygroupConstants.APP_VERSION));
 
         // Pitchbend 2 semitones up/down
-        final List<IVelocityLayer> layers = multisampleSource.getNonEmptyLayers (false);
+        final List<IGroup> layers = multisampleSource.getNonEmptyLayers (false);
         if (!layers.isEmpty ())
         {
             final int bendUp = Math.abs (layers.get (0).getSampleMetadata ().get (0).getBendUp ());

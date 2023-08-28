@@ -9,7 +9,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -236,7 +236,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     {
         int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
-        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        for (final IGroup layer: multisampleSource.getGroups ())
         {
             for (final ISampleMetadata info: layer.getSampleMetadata ())
             {
@@ -299,7 +299,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     {
         int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
-        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        for (final IGroup layer: multisampleSource.getGroups ())
         {
             for (final ISampleMetadata info: layer.getSampleMetadata ())
             {
@@ -365,7 +365,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         final List<File> writtenFiles = new ArrayList<> ();
 
         int outputCount = 0;
-        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        for (final IGroup layer: multisampleSource.getGroups ())
         {
             for (final ISampleMetadata info: layer.getSampleMetadata ())
             {

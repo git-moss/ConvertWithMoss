@@ -6,22 +6,25 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
 import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
+import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 
 /**
@@ -205,7 +208,7 @@ public class Program
 
         for (final PresetChunk zoneChunk: presetChunk.getChildren ())
         {
-            final Zone zone = new Zone ();
+            final Zone zone = new Zone (zoneChunk.getId ());
             zone.parse (zoneChunk.getPublicData (), zoneChunk.getVersion ());
             this.zones.add (zone);
 
@@ -259,12 +262,20 @@ public class Program
     {
         this.setMetadata (source);
 
-        final List<ISampleMetadata> samples = new ArrayList<> ();
+        final Map<Integer, Pair<DefaultGroup, Group>> indexedGroups = this.createGroups ();
 
         for (final Zone zone: this.zones)
         {
+            final Integer groupIndex = Integer.valueOf (zone.getGroupIndex ());
+            final Pair<DefaultGroup, Group> groupPair = indexedGroups.get (groupIndex);
+            if (groupPair == null)
+                throw new IOException (Functions.getMessage ("IDS_NKI5_MISSING_GROUP", groupIndex.toString ()));
+
+            final DefaultGroup defaultGroup = groupPair.getKey ();
+            final Group group = groupPair.getValue ();
+
             final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (this.getFilename (source, zone));
-            samples.add (sampleMetadata);
+            defaultGroup.addSampleMetadata (sampleMetadata);
 
             sampleMetadata.setStart (zone.getSampleStart ());
             sampleMetadata.setStop (zone.getNumFrames () - zone.getSampleEnd ());
@@ -281,8 +292,7 @@ public class Program
             final int rootNote = zone.getRootNote ();
             final int offset = rootNote == 0 ? 0 : (rootNote - rootKey) * 100;
 
-            // TODO set the group tune
-            sampleMetadata.setTune (offset + calculateTune (zone.getZoneTune (), 0, this.instrumentTune));
+            sampleMetadata.setTune ((offset + calculateTune (zone.getZoneTune (), group.getTune (), this.instrumentTune)) / 1000);
 
             sampleMetadata.setVelocityLow (zone.getLowVelocity ());
             sampleMetadata.setVelocityHigh (zone.getHighVelocity ());
@@ -293,9 +303,7 @@ public class Program
             sampleMetadata.setVelocityCrossfadeHigh (zone.getFadeHighVelocity ());
 
             // Only on a group level...
-            // sampleMetadata.setPlayLogic (group.getPlayLogic ());
-            // sampleMetadata.setReversed ();
-            // sampleMetadata.setTrigger (TriggerType.RELEASE);
+            sampleMetadata.setReversed (group.isReverse ());
 
             // TODO fill missing info
             // sampleMetadata.setBendUp ();
@@ -317,9 +325,31 @@ public class Program
             }
         }
 
-        // TODO Group by velocity layer
+        final List<IGroup> defaultGroups = new ArrayList<> ();
+        for (final Pair<DefaultGroup, Group> pair: indexedGroups.values ())
+            defaultGroups.add (pair.getKey ());
+        source.setGroups (defaultGroups);
+    }
 
-        source.setVelocityLayers (Collections.singletonList (new DefaultVelocityLayer (samples)));
+
+    /**
+     * Creates all groups.
+     *
+     * @return The indexed groups
+     */
+    private Map<Integer, Pair<DefaultGroup, Group>> createGroups ()
+    {
+        final Map<Integer, Pair<DefaultGroup, Group>> map = new TreeMap<> ();
+        for (int i = 0; i < this.groups.size (); i++)
+        {
+            final Group group = this.groups.get (i);
+            final DefaultGroup defaultGroup = new DefaultGroup ();
+            defaultGroup.setName (group.getName ());
+            if (group.isReleaseTrigger ())
+                defaultGroup.setTrigger (TriggerType.RELEASE);
+            map.put (Integer.valueOf (i), new Pair<> (defaultGroup, group));
+        }
+        return map;
     }
 
 

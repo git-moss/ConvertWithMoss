@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.kmp;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.tools.FileUtils;
@@ -64,7 +64,7 @@ public class KMPFile
     private String              nameLong;
 
     private final List<KSFFile> ksfFiles        = new ArrayList<> ();
-    private IVelocityLayer      layer;
+    private IGroup      layer;
 
 
     /**
@@ -75,7 +75,7 @@ public class KMPFile
      * @param layerName The name of the layer
      * @param layer The layer
      */
-    public KMPFile (final INotifier notifier, final String dosFilename, final String layerName, final IVelocityLayer layer)
+    public KMPFile (final INotifier notifier, final String dosFilename, final String layerName, final IGroup layer)
     {
         this.notifier = notifier;
         this.sampleFolder1 = null;

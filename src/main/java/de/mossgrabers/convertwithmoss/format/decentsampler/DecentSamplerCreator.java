@@ -11,7 +11,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -224,14 +224,14 @@ public class DecentSamplerCreator extends AbstractCreator
         // No metadata at all
 
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
-        final List<IVelocityLayer> velocityLayers = multisampleSource.getNonEmptyLayers (false);
+        final List<IGroup> groups = multisampleSource.getNonEmptyLayers (false);
 
         boolean hasRoundRobin = false;
 
         IEnvelope amplitudeEnvelope = null;
-        if (!velocityLayers.isEmpty ())
+        if (!groups.isEmpty ())
         {
-            final ISampleMetadata sampleMetadata = velocityLayers.get (0).getSampleMetadata ().get (0);
+            final ISampleMetadata sampleMetadata = groups.get (0).getSampleMetadata ().get (0);
             amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
             addVolumeEnvelope (amplitudeEnvelope, groupsElement);
 
@@ -244,7 +244,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
         // Add all layers
 
-        for (final IVelocityLayer layer: velocityLayers)
+        for (final IGroup layer: groups)
         {
             final Element groupElement = XMLUtils.addElement (document, groupsElement, DecentSamplerTag.GROUP);
 
