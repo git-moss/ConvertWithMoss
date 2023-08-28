@@ -9,6 +9,8 @@ import de.mossgrabers.tools.ui.Functions;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -18,27 +20,28 @@ import java.io.IOException;
  */
 public class Zone
 {
-    private int   sampleStart;
-    private int   sampleEnd;
-    private int   lowVelocity;
-    private int   highVelocity;
-    private int   lowKey;
-    private int   highKey;
-    private int   fadeLowVelocity;
-    private int   fadeHighVelocity;
-    private int   fadeLowKey;
-    private int   fadeHighKey;
-    private int   rootKey;
-    private float zoneVolume;
-    private float zonePan;
-    private float zoneTune;
-    private int   filenameId;
-    private int   sampleDataType;
-    private int   sampleRate;
-    private int   numChannels;
-    private int   numFrames;
-    private int   rootNote;
-    private float tuning;
+    private int            sampleStart;
+    private int            sampleEnd;
+    private int            lowVelocity;
+    private int            highVelocity;
+    private int            lowKey;
+    private int            highKey;
+    private int            fadeLowVelocity;
+    private int            fadeHighVelocity;
+    private int            fadeLowKey;
+    private int            fadeHighKey;
+    private int            rootKey;
+    private float          zoneVolume;
+    private float          zonePan;
+    private float          zoneTune;
+    private int            filenameId;
+    private int            sampleDataType;
+    private int            sampleRate;
+    private int            numChannels;
+    private int            numFrames;
+    private int            rootNote;
+    private float          tuning;
+    private List<ZoneLoop> loops = new ArrayList<> ();
 
 
     /**
@@ -351,5 +354,27 @@ public class Zone
     public float getTuning ()
     {
         return this.tuning;
+    }
+
+
+    /**
+     * Add a loop.
+     *
+     * @param loop The loop to add
+     */
+    public void addLoop (final ZoneLoop loop)
+    {
+        this.loops.add (loop);
+    }
+
+
+    /**
+     * Get the loops.
+     * 
+     * @return The loops
+     */
+    public List<ZoneLoop> getLoops ()
+    {
+        return this.loops;
     }
 }

@@ -6,7 +6,10 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
 import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -34,15 +37,12 @@ public class Program
     private String                  instrumentIconName;
     private String                  instrumentAuthor;
     private String                  instrumentURL;
+    private float                   instrumentVolume;
+    private float                   instrumentPan;
+    private float                   instrumentTune;
     private final List<PresetChunk> children   = new ArrayList<> ();
     private List<Zone>              zones      = new ArrayList<> ();
     private final List<String>      filePaths;
-
-    private float                   instrumentVolume;
-
-    private float                   instrumentPan;
-
-    private float                   instrumentTune;
 
 
     /**
@@ -60,16 +60,16 @@ public class Program
     /**
      * Parse the program data from a Program preset chunk.
      *
-     * @param chunk
-     * @param filePaths
-     * @throws IOException
+     * @param chunk The chunk from which to read the program data
+     * @param filePaths The list with all referenced files
+     * @throws IOException Could not read the program
      */
     public void parse (final PresetChunk chunk, final List<String> filePaths) throws IOException
     {
         if (chunk.getId () != PresetChunkID.PROGRAM)
             throw new IOException ("Not a program chunk!");
 
-        this.readPublicData (chunk.getPublicData ());
+        this.readProgramData (chunk.getPublicData ());
 
         for (final PresetChunk presetChunk: chunk.getChildren ())
         {
@@ -94,23 +94,24 @@ public class Program
         }
 
         // Known versions:
-        // 4.2.x 0x80
-        // 5.3.0 0xA5
-        // 5.4.3 0xA8
-        // 5.5.2 0xA8
-        // 5.6.8 0xAB
-        // 5.8.1 0xAB
-        // 6.5.2 0xAE
-        // 6.6.0 0xAE
-        // 6.7.1 0xAE
-        // 6.8.0 0xAE
-        // 7.1.3 0xAF
+        // 0x80: 4.2.x
+        // 0xA5: 5.3.0
+        // 0xA8: 5.4.3 - 5.5.2
+        // 0xAB: 5.6.8 - 5.8.1
+        // 0xAE: 6.5.2 - 6.8.0
+        // 0xAF: 7.1.3
         final int version = chunk.getVersion ();
         if (version > 0xAF)
             throw new IOException ("Unsupported Program Version: " + Integer.toHexString (version).toUpperCase ());
     }
 
 
+    /**
+     * Read all zones from the zone list.
+     *
+     * @param presetChunk The chunk which contains the zone list
+     * @throws IOException Could not read the zones
+     */
     private void parseZoneList (final PresetChunk presetChunk) throws IOException
     {
         final ByteArrayInputStream in = new ByteArrayInputStream (presetChunk.getPublicData ());
@@ -130,36 +131,27 @@ public class Program
             final int version = StreamUtils.readUnsigned16 (in, false);
 
             final int privateDataSize = StreamUtils.readUnsigned32 (in, false);
-            // The private data
+            // The private data - currently not used
             in.readNBytes (privateDataSize);
 
+            // Read all zones
             final int publicDataSize = StreamUtils.readUnsigned32 (in, false);
             final byte [] publicData = in.readNBytes (publicDataSize);
-
-            final int childrenDataSize = StreamUtils.readUnsigned32 (in, false);
-            final byte [] childrenData = in.readNBytes (childrenDataSize);
-            final ByteArrayInputStream inChildren = new ByteArrayInputStream (childrenData);
-            while (inChildren.available () > 0)
-            {
-                // TODO contains LoopArray 0x39
-                final PresetChunk object = new PresetChunk ();
-                object.parse (inChildren);
-                this.children.add (object);
-            }
-
             zone.parse (publicData, version);
             this.zones.add (zone);
+
+            this.readZoneChildren (zone, in);
         }
     }
 
 
     /**
-     * Parses the public data block of a Program chunk.
+     * Parses the Program data.
      *
      * @param data The data to parse
      * @throws IOException Could not read the data
      */
-    private void readPublicData (final byte [] data) throws IOException
+    private void readProgramData (final byte [] data) throws IOException
     {
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
@@ -220,6 +212,62 @@ public class Program
 
 
     /**
+     * Read the children of a zone, e.g. loops.
+     * 
+     * @param zone The zone to which to add the data from the children
+     * @param in Where to read the data from
+     * @throws IOException Could not read the children
+     */
+    private void readZoneChildren (final Zone zone, final ByteArrayInputStream in) throws IOException
+    {
+        final int childrenDataSize = StreamUtils.readUnsigned32 (in, false);
+        final byte [] childrenData = in.readNBytes (childrenDataSize);
+
+        final ByteArrayInputStream inChildren = new ByteArrayInputStream (childrenData);
+        while (inChildren.available () > 0)
+        {
+            final PresetChunk childChunk = new PresetChunk ();
+            childChunk.parse (inChildren);
+            this.children.add (childChunk);
+
+            if (childChunk.getId () == PresetChunkID.LOOP_ARRAY)
+                parseLoops (zone, childChunk.getPublicData ());
+        }
+    }
+
+
+    /**
+     * Parse a loop list.
+     *
+     * @param zone The zone to which to add the loops
+     * @param data The loop list data
+     * @throws IOException Could not read the data
+     */
+    private static void parseLoops (final Zone zone, final byte [] data) throws IOException
+    {
+        if (data.length < 2)
+            return;
+
+        final ByteArrayInputStream childDataIn = new ByteArrayInputStream (data);
+        final int loopEnablement = StreamUtils.readUnsigned16 (childDataIn, false);
+        final int u1 = StreamUtils.readUnsigned16 (childDataIn, false);
+        if (u1 != 0x60)
+            throw new IOException (Functions.getMessage ("IDS_NKI5_UNKNOWN_LOOP_VALUE", Integer.toHexString (u1).toUpperCase ()));
+
+        for (int i = 0; i < 8; i++)
+        {
+            int j = (int) Math.pow (2, i);
+            if ((loopEnablement & j) > 0)
+            {
+                final ZoneLoop loop = new ZoneLoop ();
+                loop.parse (childDataIn);
+                zone.addLoop (loop);
+            }
+        }
+    }
+
+
+    /**
      * Fill the given multisample instance with data from the program.
      *
      * @param source The multisample to fill
@@ -274,7 +322,17 @@ public class Program
             // sampleMetadata.getAmplitudeModulator ()
             // sampleMetadata.getPitchModulator ()
 
-            // addLoop (final ISampleLoop loop)
+            for (final ZoneLoop zoneLoop: zone.getLoops ())
+            {
+                final ISampleLoop loop = new DefaultSampleLoop ();
+                if (zoneLoop.getAlternatingLoop () > 0)
+                    loop.setType (LoopType.ALTERNATING);
+                loop.setStart (zoneLoop.getLoopStart ());
+                final int loopLength = zoneLoop.getLoopLength ();
+                loop.setEnd (zoneLoop.getLoopStart () + loopLength);
+                loop.setCrossfade (zoneLoop.getCrossfadeLength () / (double) loopLength);
+                sampleMetadata.addLoop (loop);
+            }
         }
 
         // TODO Group by velocity layer

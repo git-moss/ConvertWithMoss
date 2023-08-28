@@ -29,6 +29,8 @@ public class PresetChunkID
     public static final int                   GROUP_LIST         = 0x33;
     /** The list with all zones. */
     public static final int                   ZONE_LIST          = 0x34;
+    /** An array with up to 8 Loops. */
+    public static final int                   LOOP_ARRAY         = 0x39;
     /** A parameter array with 8 entries. */
     public static final int                   PARAMETER_ARRAY_8  = 0x3A;
     /** A parameter array with 16 entries. */
@@ -91,20 +93,20 @@ public class PresetChunkID
     // 0x28 BProgram
     // 0x29 BProgramContainer
     // 0x2a BSample
-    // 0x2b ? VoiceGroup
+    // 0x2b VoiceGroup
     // 0x2c BZone
     // 0x2d BZoneLevelEnv
     // 0x2e BZoneArraySer
     // 0x2f BGroupCompleteSer
     // 0x30 PresetImpl
-    // 0x32 ? VoiceGroups
-    // 0x33 ? GroupList
-    // 0x34 ? ZoneList
-    // 0x35 ? PrivateRawObject
-    // 0x36 ? ProgramList
-    // 0x37 ? SlotList
-    // 0x38 ? StarCritList
-    // 0x39 ? LoopArray
+    // 0x32 VoiceGroups
+    // 0x33 GroupList
+    // 0x34 ZoneList
+    // 0x35 PrivateRawObject
+    // 0x36 ProgramList
+    // 0x37 SlotList
+    // 0x38 StarCritList
+    // 0x39 LoopArray
     // 0x3a BParameterArraySer<BParFX,8>
     // 0x3b BParameterArraySer<BParInternalMod,16>
     // 0x3c BParameterArraySer<BParExternalMod,32>
@@ -168,6 +170,7 @@ public class PresetChunkID
         CHUNK_NAMES.put (Integer.valueOf (SAVE_SETTINGS), "SAVE_SETTINGS");
         CHUNK_NAMES.put (Integer.valueOf (FILENAME_LIST_EX), "FILENAME_LIST_EX");
         CHUNK_NAMES.put (Integer.valueOf (QUICK_BROWSE_DATA), "QUICK_BROWSE_DATA");
+        CHUNK_NAMES.put (Integer.valueOf (LOOP_ARRAY), "LOOP_ARRAY");
     }
 
 

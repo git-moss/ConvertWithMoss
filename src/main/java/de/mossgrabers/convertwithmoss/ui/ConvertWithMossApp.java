@@ -626,7 +626,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void logError (final Throwable throwable)
     {
-        this.loggingArea.notifyError (throwable.getMessage (), throwable);
+        final String message = throwable.getMessage ();
+        this.loggingArea.notifyError (message == null ? throwable.getClass ().getName () : message, throwable);
     }
 
 
