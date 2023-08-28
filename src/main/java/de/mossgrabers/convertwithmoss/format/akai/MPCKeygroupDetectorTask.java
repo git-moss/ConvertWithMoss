@@ -11,15 +11,15 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
@@ -170,18 +170,18 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         final int numKeygroups = XMLUtils.getChildElementIntegerContent (programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, 128);
 
         final Element [] instrumentElements = XMLUtils.getChildElementsByName (instrumentsElement, MPCKeygroupTag.INSTRUMENTS_INSTRUMENT, false);
-        final List<IVelocityLayer> velocityLayers = this.parseVelocityLayers (file.getParentFile (), numKeygroups, instrumentElements, isDrum);
+        final List<IGroup> groups = this.parseGroups (file.getParentFile (), numKeygroups, instrumentElements, isDrum);
 
         if (isDrum)
-            this.applyPadNoteMap (programElement, velocityLayers);
+            this.applyPadNoteMap (programElement, groups);
 
-        multisampleSource.setVelocityLayers (velocityLayers);
+        multisampleSource.setGroups (groups);
 
         final double pitchBendRange = XMLUtils.getChildElementDoubleContent (programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, 0);
         if (pitchBendRange != 0)
         {
             final int pitchBend = (int) Math.round (pitchBendRange * 1200.0);
-            for (final IVelocityLayer layer: velocityLayers)
+            for (final IGroup layer: groups)
             {
                 for (final ISampleMetadata sample: layer.getSampleMetadata ())
                 {
@@ -196,16 +196,16 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Parses all velocity layers (= regions in SFZ).
+     * Parses all groups (= regions in SFZ).
      *
      * @param basePath The path where the XPM file is located, this is the base path for samples
      * @param numKeygroups The number of valid keygroups
      * @param instrumentsElements The instrument elements
      * @param isDrum True, if it is a drum type (not a keygroup)
-     * @return The parsed velocity layers
+     * @return The parsed groups
      * @throws FileNotFoundException The WAV file could not be found
      */
-    private List<IVelocityLayer> parseVelocityLayers (final File basePath, final int numKeygroups, final Element [] instrumentsElements, final boolean isDrum) throws FileNotFoundException
+    private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final Element [] instrumentsElements, final boolean isDrum) throws FileNotFoundException
     {
         final List<DefaultSampleMetadata> samples = new ArrayList<> ();
 
@@ -478,29 +478,29 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Create velocity layers from the velocity values of the individual samples.
+     * Create groups from the velocity values of the individual samples.
      *
-     * @param samples The samples to group into velocity layers
+     * @param samples The samples to group into groups
      * @return The layers
      */
-    private static List<IVelocityLayer> groupIntoLayers (final List<DefaultSampleMetadata> samples)
+    private static List<IGroup> groupIntoLayers (final List<DefaultSampleMetadata> samples)
     {
-        final Map<String, IVelocityLayer> layerMap = new HashMap<> ();
+        final Map<String, IGroup> layerMap = new HashMap<> ();
 
         int count = 1;
 
         for (final DefaultSampleMetadata sampleMetadata: samples)
         {
             final String id = sampleMetadata.getVelocityLow () + "-" + sampleMetadata.getVelocityHigh ();
-            final IVelocityLayer velocityLayer = layerMap.computeIfAbsent (id, key -> new DefaultVelocityLayer ());
+            final IGroup group = layerMap.computeIfAbsent (id, key -> new DefaultGroup ());
 
-            if (velocityLayer.getName () == null)
+            if (group.getName () == null)
             {
-                velocityLayer.setName ("Layer " + count);
+                group.setName ("Layer " + count);
                 count++;
             }
 
-            velocityLayer.addSampleMetadata (sampleMetadata);
+            group.addSampleMetadata (sampleMetadata);
         }
 
         return new ArrayList<> (layerMap.values ());
@@ -511,9 +511,9 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      * Update the low/high key and root note if not set with the note found in the pad note mapping.
      *
      * @param programElement The program element which contains the pad note map
-     * @param velocityLayers The velocity layers which contain the samples to be updated
+     * @param groups The groups which contain the samples to be updated
      */
-    private void applyPadNoteMap (final Element programElement, final List<IVelocityLayer> velocityLayers)
+    private void applyPadNoteMap (final Element programElement, final List<IGroup> groups)
     {
         final Element padNoteMapElement = XMLUtils.getChildElementByName (programElement, MPCKeygroupTag.PROGRAM_PAD_NOTE_MAP);
         if (padNoteMapElement == null)
@@ -534,7 +534,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                 padNoteMap.put (Integer.valueOf (padNumber), Integer.valueOf (note));
         }
 
-        for (final IVelocityLayer layer: velocityLayers)
+        for (final IGroup layer: groups)
         {
             for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
             {

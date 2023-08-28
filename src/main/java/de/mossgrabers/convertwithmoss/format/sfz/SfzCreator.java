@@ -13,7 +13,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -135,7 +135,7 @@ public class SfzCreator extends AbstractCreator
         if (name != null && !name.isBlank ())
             addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
 
-        for (final IVelocityLayer layer: multisampleSource.getLayers ())
+        for (final IGroup layer: multisampleSource.getGroups ())
         {
             final List<ISampleMetadata> sampleMetadata = layer.getSampleMetadata ();
             if (sampleMetadata.isEmpty ())

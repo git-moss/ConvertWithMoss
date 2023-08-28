@@ -5,7 +5,7 @@
 package de.mossgrabers.convertwithmoss.core;
 
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 
 import java.io.File;
 import java.util.List;
@@ -56,7 +56,7 @@ public interface IMultisampleSource
      *
      * @return The descriptions
      */
-    List<IVelocityLayer> getLayers ();
+    List<IGroup> getGroups ();
 
 
     /**
@@ -65,7 +65,7 @@ public interface IMultisampleSource
      * @param filterReleaseTriggers Removes all layers which do only contain release triggers
      * @return The layer without empty ones
      */
-    List<IVelocityLayer> getNonEmptyLayers (final boolean filterReleaseTriggers);
+    List<IGroup> getNonEmptyLayers (final boolean filterReleaseTriggers);
 
 
     /**
@@ -149,11 +149,11 @@ public interface IMultisampleSource
 
 
     /**
-     * Set the sample data.
+     * Set the groups with the related sample zones.
      *
-     * @param sampleMetadata The sample file information
+     * @param groups The groups with the related sample zones
      */
-    void setVelocityLayers (List<IVelocityLayer> sampleMetadata);
+    void setGroups (List<IGroup> groups);
 
 
     /**

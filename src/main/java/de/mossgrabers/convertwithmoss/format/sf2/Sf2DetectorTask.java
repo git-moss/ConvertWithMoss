@@ -12,11 +12,11 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
@@ -108,7 +108,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             final GeneratorHierarchy generators = new GeneratorHierarchy ();
 
             // Create the layers
-            final List<IVelocityLayer> layers = new ArrayList<> ();
+            final List<IGroup> layers = new ArrayList<> ();
             for (int presetZoneIndex = 0; presetZoneIndex < preset.getZoneCount (); presetZoneIndex++)
             {
                 final Sf2PresetZone zone = preset.getZone (presetZoneIndex);
@@ -120,7 +120,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 generators.setPresetZoneGenerators (zone.getGenerators ());
 
                 final Sf2Instrument instrument = zone.getInstrument ();
-                final DefaultVelocityLayer layer = new DefaultVelocityLayer (instrument.getName ());
+                final DefaultGroup layer = new DefaultGroup (instrument.getName ());
 
                 for (int instrumentZoneIndex = 0; instrumentZoneIndex < instrument.getZoneCount (); instrumentZoneIndex++)
                 {
@@ -141,7 +141,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
             this.printUnsupportedGenerators (generators.diffGenerators ());
 
-            source.setVelocityLayers (this.combineToStereo (layers));
+            source.setGroups (this.combineToStereo (layers));
 
             multisamples.add (source);
         }
@@ -175,9 +175,9 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * @param layers The layers which contain the samples to combine
      * @return The layers with combined samples for convenience
      */
-    private List<IVelocityLayer> combineToStereo (final List<IVelocityLayer> layers)
+    private List<IGroup> combineToStereo (final List<IGroup> layers)
     {
-        for (final IVelocityLayer layer: layers)
+        for (final IGroup layer: layers)
         {
             final List<ISampleMetadata> sampleMetadataOfLayer = layer.getSampleMetadata ();
 

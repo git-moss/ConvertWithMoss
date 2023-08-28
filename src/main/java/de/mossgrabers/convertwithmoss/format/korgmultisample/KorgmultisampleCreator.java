@@ -9,7 +9,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -57,11 +57,11 @@ public class KorgmultisampleCreator extends AbstractCreator
 
         // Korg multisample format supports only 1 multi sample layer. Therefore create 1 output
         // file for each layer
-        final List<IVelocityLayer> layers = multisampleSource.getNonEmptyLayers (true);
+        final List<IGroup> layers = multisampleSource.getNonEmptyLayers (true);
         final int size = layers.size ();
         for (int i = 0; i < size; i++)
         {
-            final IVelocityLayer layer = layers.get (i);
+            final IGroup layer = layers.get (i);
             final ISampleMetadata sampleMetadata = layer.getSampleMetadata ().get (0);
             final String layerName = size > 1 ? String.format ("%s %03d-%03d", sampleName, Integer.valueOf (sampleMetadata.getVelocityLow ()), Integer.valueOf (sampleMetadata.getVelocityHigh ())) : sampleName;
             final File multiFile = new File (subFolder, layerName + ".korgmultisample");
@@ -90,7 +90,7 @@ public class KorgmultisampleCreator extends AbstractCreator
      * @param layer The layer to store
      * @throws IOException Could not store the file
      */
-    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final String layerName, final IVelocityLayer layer) throws IOException
+    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final String layerName, final IGroup layer) throws IOException
     {
         try (final OutputStream out = new FileOutputStream (multiFile))
         {
@@ -135,7 +135,7 @@ public class KorgmultisampleCreator extends AbstractCreator
     }
 
 
-    private static void writeSample (final ByteArrayOutputStream multisampleOutput, final IVelocityLayer layer) throws IOException
+    private static void writeSample (final ByteArrayOutputStream multisampleOutput, final IGroup layer) throws IOException
     {
         // Create one sample block for each sample
         for (final ISampleMetadata sample: layer.getSampleMetadata ())

@@ -4,9 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;
@@ -125,9 +125,9 @@ public class WavKeyMapping
         }
     }
 
-    private final List<IVelocityLayer> orderedSampleMetadata;
-    private final Set<String>          extractedNames = new HashSet<> ();
-    private final String               name;
+    private final List<IGroup> orderedSampleMetadata;
+    private final Set<String>  extractedNames = new HashSet<> ();
+    private final String       name;
 
 
     /**
@@ -153,7 +153,7 @@ public class WavKeyMapping
         int low = 0;
         int high = range;
         final int crossfadeVel = Math.min (range, crossfadeVelocities);
-        for (final IVelocityLayer layer: this.orderedSampleMetadata)
+        for (final IGroup layer: this.orderedSampleMetadata)
         {
             int velHigh = Math.min (high + crossfadeVel, 127);
             final int next = high + range;
@@ -192,7 +192,7 @@ public class WavKeyMapping
      *
      * @return The sample metadata list by layer
      */
-    public List<IVelocityLayer> getSampleMetadata ()
+    public List<IGroup> getSampleMetadata ()
     {
         return this.orderedSampleMetadata;
     }
@@ -211,7 +211,7 @@ public class WavKeyMapping
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    private List<IVelocityLayer> createLayers (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    private List<IGroup> createLayers (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
         final Map<Integer, List<WavSampleMetadata>> sampleMetadata = new TreeMap<> ();
         final Map<Integer, List<WavSampleMetadata>> layers = detectLayers (sampleInfos, layerPatterns);
@@ -238,19 +238,19 @@ public class WavKeyMapping
      * @param isAscending Sort ascending otherwise descending
      * @return The sample metadata list by layer
      */
-    private static List<IVelocityLayer> orderLayers (final Map<Integer, List<WavSampleMetadata>> sampleMetadata, final boolean isAscending)
+    private static List<IGroup> orderLayers (final Map<Integer, List<WavSampleMetadata>> sampleMetadata, final boolean isAscending)
     {
         final Collection<List<WavSampleMetadata>> layers = sampleMetadata.values ();
-        final List<IVelocityLayer> reorderedSampleMetadata = new ArrayList<> (layers.size ());
+        final List<IGroup> reorderedSampleMetadata = new ArrayList<> (layers.size ());
 
         // Reorder descending
         layers.forEach (layer -> {
 
-            final IVelocityLayer velocityLayer = new DefaultVelocityLayer (new ArrayList<> (layer));
+            final IGroup group = new DefaultGroup (new ArrayList<> (layer));
             if (isAscending)
-                reorderedSampleMetadata.add (velocityLayer);
+                reorderedSampleMetadata.add (group);
             else
-                reorderedSampleMetadata.add (0, velocityLayer);
+                reorderedSampleMetadata.add (0, group);
 
         });
 
@@ -386,10 +386,10 @@ public class WavKeyMapping
 
 
     /**
-     * Detect velocity layers.
+     * Detect groups.
      *
      * @param sampleInfos Info about all available samples
-     * @param layerPatterns The patterns to match for velocity layers
+     * @param layerPatterns The patterns to match for groups
      * @return The detected layers
      * @throws MultisampleException There was a pattern detected but (or more) of the samples could
      *             not be matched

@@ -7,8 +7,8 @@ package de.mossgrabers.convertwithmoss.format.kmp;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -49,14 +49,14 @@ public class KMPCreator extends AbstractCreator
             return;
         }
 
-        // Korg KMP format supports only 1 velocity layer. Therefore, create 1 output
-        // file for each layer
-        final List<IVelocityLayer> layers = multisampleSource.getNonEmptyLayers (true);
+        // Korg KMP format supports only 1 group. Therefore, create 1 output
+        // file for each group
+        final List<IGroup> layers = multisampleSource.getNonEmptyLayers (true);
         final int size = layers.size ();
         final boolean needsSubDir = size > 1;
         for (int i = 0; i < size; i++)
         {
-            final IVelocityLayer layer = layers.get (i);
+            final IGroup layer = layers.get (i);
             final ISampleMetadata sampleMetadata = layer.getSampleMetadata ().get (0);
             final String layerName = size > 1 ? String.format ("%d-%s", Integer.valueOf (sampleMetadata.getVelocityHigh ()), sampleName) : sampleName;
             final String dosFileName = createDOSFileName (layerName) + ".KMP";
@@ -96,7 +96,7 @@ public class KMPCreator extends AbstractCreator
      * @param layer The layer to store
      * @throws IOException Could not store the file
      */
-    private void storeMultisample (final File multiFile, final String dosFilename, final String layerName, final IVelocityLayer layer) throws IOException
+    private void storeMultisample (final File multiFile, final String dosFilename, final String layerName, final IGroup layer) throws IOException
     {
         try (final OutputStream out = new FileOutputStream (multiFile))
         {

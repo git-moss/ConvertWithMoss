@@ -9,10 +9,10 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -108,10 +108,10 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
         final MultisampleSource multisampleSource = new MultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
-        final List<IVelocityLayer> velocityLayers = new ArrayList<> ();
+        final List<IGroup> groups = new ArrayList<> ();
         // There is only one layer (no velocity zones)
-        final DefaultVelocityLayer velocityLayer = new DefaultVelocityLayer ("Layer");
-        velocityLayers.add (velocityLayer);
+        final DefaultGroup group = new DefaultGroup ("Layer");
+        groups.add (group);
 
         int id;
         while ((id = in.read ()) != -1)
@@ -131,7 +131,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                     break;
 
                 case KorgmultisampleTag.ID_SAMPLE:
-                    velocityLayer.addSampleMetadata (this.readSample (in));
+                    group.addSampleMetadata (this.readSample (in));
                     break;
 
                 case KorgmultisampleTag.ID_UUID:
@@ -148,7 +148,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         if (n == null || n.isBlank () || "Empty".equals (n))
             multisampleSource.setName (FileUtils.getNameWithoutType (file));
 
-        multisampleSource.setVelocityLayers (velocityLayers);
+        multisampleSource.setGroups (groups);
         return Collections.singletonList (multisampleSource);
     }
 

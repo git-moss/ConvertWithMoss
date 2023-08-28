@@ -20,28 +20,40 @@ import java.util.List;
  */
 public class Zone
 {
-    private int            sampleStart;
-    private int            sampleEnd;
-    private int            lowVelocity;
-    private int            highVelocity;
-    private int            lowKey;
-    private int            highKey;
-    private int            fadeLowVelocity;
-    private int            fadeHighVelocity;
-    private int            fadeLowKey;
-    private int            fadeHighKey;
-    private int            rootKey;
-    private float          zoneVolume;
-    private float          zonePan;
-    private float          zoneTune;
-    private int            filenameId;
-    private int            sampleDataType;
-    private int            sampleRate;
-    private int            numChannels;
-    private int            numFrames;
-    private int            rootNote;
-    private float          tuning;
+    private int                  groupIndex;
+    private int                  sampleStart;
+    private int                  sampleEnd;
+    private int                  lowVelocity;
+    private int                  highVelocity;
+    private int                  lowKey;
+    private int                  highKey;
+    private int                  fadeLowVelocity;
+    private int                  fadeHighVelocity;
+    private int                  fadeLowKey;
+    private int                  fadeHighKey;
+    private int                  rootKey;
+    private float                zoneVolume;
+    private float                zonePan;
+    private float                zoneTune;
+    private int                  filenameId;
+    private int                  sampleDataType;
+    private int                  sampleRate;
+    private int                  numChannels;
+    private int                  numFrames;
+    private int                  rootNote;
+    private float                tuning;
     private final List<ZoneLoop> loops = new ArrayList<> ();
+
+
+    /**
+     * Constructor.
+     *
+     * @param groupIndex The index of the group to which the zone belongs
+     */
+    public Zone (final int groupIndex)
+    {
+        this.groupIndex = groupIndex;
+    }
 
 
     /**
@@ -115,6 +127,17 @@ public class Zone
         // Unknown
         in.read ();
         StreamUtils.readUnsigned32 (in, false);
+    }
+
+
+    /**
+     * Get the group index.
+     * 
+     * @return The group index
+     */
+    public int getGroupIndex ()
+    {
+        return this.groupIndex;
     }
 
 

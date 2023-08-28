@@ -8,7 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -35,7 +35,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
 {
     private final int       crossfadeNotes;
     private final int       crossfadeVelocities;
-    private final String [] velocityLayerPatterns;
+    private final String [] groupPatterns;
     private final boolean   isAscending;
     private final String [] monoSplitPatterns;
     private final String [] postfixTexts;
@@ -47,7 +47,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
      * @param notifier The notifier
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
-     * @param velocityLayerPatterns Detection patterns for velocity layers
+     * @param groupPatterns Detection patterns for groups
      * @param isAscending Are layers ordered ascending?
      * @param monoSplitPatterns Detection pattern for mono splits (to be combined to stereo files)
      * @param postfixTexts Post-fix text to remove
@@ -55,11 +55,11 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
      * @param crossfadeVelocities The number of velocity steps to crossfade ranges
      * @param metadata Additional metadata configuration parameters
      */
-    public WavMultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] velocityLayerPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities, final IMetadataConfig metadata)
+    public WavMultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] groupPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities, final IMetadataConfig metadata)
     {
         super (notifier, consumer, sourceFolder, metadata, ".wav");
 
-        this.velocityLayerPatterns = velocityLayerPatterns;
+        this.groupPatterns = groupPatterns;
         this.isAscending = isAscending;
         this.monoSplitPatterns = monoSplitPatterns;
         this.postfixTexts = postfixTexts;
@@ -128,7 +128,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
     {
         try
         {
-            final WavKeyMapping keyMapping = new WavKeyMapping (sampleFileMetadata, this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.velocityLayerPatterns, this.monoSplitPatterns);
+            final WavKeyMapping keyMapping = new WavKeyMapping (sampleFileMetadata, this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.groupPatterns, this.monoSplitPatterns);
             final String name = cleanupName (this.metadata.isPreferFolderName () ? folder.getName () : keyMapping.getName (), this.postfixTexts);
             if (name.isEmpty ())
             {
@@ -150,8 +150,8 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             multisampleSource.setCategory (TagDetector.detectCategory (parts));
             multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
 
-            final List<IVelocityLayer> sampleMetadata = keyMapping.getSampleMetadata ();
-            multisampleSource.setVelocityLayers (sampleMetadata);
+            final List<IGroup> sampleMetadata = keyMapping.getSampleMetadata ();
+            multisampleSource.setGroups (sampleMetadata);
 
             this.notifier.log ("IDS_NOTIFY_DETECED_LAYERS", Integer.toString (sampleMetadata.size ()));
             if (this.waitForDelivery ())

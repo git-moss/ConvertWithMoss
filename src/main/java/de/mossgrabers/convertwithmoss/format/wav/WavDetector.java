@@ -68,12 +68,12 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
     {
         final boolean isAscending = this.sortAscendingGroup.getToggles ().get (1).isSelected ();
 
-        final String [] velocityLayerPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
-        for (final String velocityLayerPattern: velocityLayerPatterns)
+        final String [] groupPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
+        for (final String groupPattern: groupPatterns)
         {
-            if (!velocityLayerPattern.contains ("*"))
+            if (!groupPattern.contains ("*"))
             {
-                Functions.message ("@IDS_NOTIFY_ERR_SPLIT_REGEX", velocityLayerPattern);
+                Functions.message ("@IDS_NOTIFY_ERR_SPLIT_REGEX", groupPattern);
                 this.notifier.updateButtonStates (true);
                 this.detectionPatternField.selectAll ();
                 return;
@@ -116,7 +116,7 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
             return;
         }
 
-        this.startDetection (new WavMultisampleDetectorTask (this.notifier, consumer, folder, velocityLayerPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane));
+        this.startDetection (new WavMultisampleDetectorTask (this.notifier, consumer, folder, groupPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane));
     }
 
 

@@ -7,9 +7,9 @@ package de.mossgrabers.convertwithmoss.format.bitwig;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IVelocityLayer;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -102,10 +102,10 @@ public class BitwigMultisampleCreator extends AbstractCreator
         for (final String keyword: multisampleSource.getKeywords ())
             XMLUtils.addTextElement (document, keywordsElement, "keyword", keyword);
 
-        final List<IVelocityLayer> velocityLayers = multisampleSource.getNonEmptyLayers (true);
-        for (final IVelocityLayer layer: velocityLayers)
+        final List<IGroup> groups = multisampleSource.getNonEmptyLayers (true);
+        for (final IGroup group: groups)
         {
-            final String name = layer.getName ();
+            final String name = group.getName ();
             if (name != null && !name.isBlank ())
             {
                 final Element groupElement = XMLUtils.addElement (document, multisampleElement, "group");
@@ -115,7 +115,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         }
 
         int index = 0;
-        for (final IVelocityLayer layer: velocityLayers)
+        for (final IGroup layer: groups)
         {
             final String name = layer.getName ();
             final int idx = name == null || name.isBlank () ? -1 : index;
@@ -129,6 +129,18 @@ public class BitwigMultisampleCreator extends AbstractCreator
             index++;
         }
 
+        return this.prepareResult (document);
+    }
+
+
+    /**
+     * Create the XML document and return it on success.
+     *
+     * @param document The document to convert to a XML text
+     * @return The optional value
+     */
+    private Optional<String> prepareResult (final Document document)
+    {
         try
         {
             return Optional.of (XMLUtils.toString (document));

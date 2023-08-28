@@ -1,5 +1,12 @@
 # Changes
 
+## 6.4.0 (unreleased)
+
+* Native Instruments NKI files - Reading
+  * New: A basic conversion of Kontakt 4.2 - 7 files is now implemented: metadata, zones and loops do work. So far, no support for groups, envelopes, filters, monoliths or NCW files.
+* Native Instruments NKI files - Writing
+  * Fixed: Created Kontakt 1 files could be opened with Kontakt but not saved again due to the use of forward slashes for sample paths. Backward slashes are used now.
+
 ## 6.3.0
 
 * Default volume envelopes are applied based on the detected category if none is present.
@@ -42,7 +49,7 @@
   * New: Added support for filter settings and cutoff envelope.
   * Fixed: High velocity crossover value did overwrite low velocity crossover.
 * Korg KMP
-  * Fixed: Extracting velocity layers into single KMP files did overwrite the KSF sample files.
+  * Fixed: Extracting groups into single KMP files did overwrite the KSF sample files.
 
 ## 6.0.0
 
@@ -133,7 +140,7 @@
 ## 3.1
 
 * New: Akai MPC Keygroup - round-robin groups are now converted (up to 4).
-* New: Akai MPC Keygroup - more than 4 velocity layers can now be converted; this creates multiple keygroups.
+* New: Akai MPC Keygroup - more than 4 groups can now be converted; this creates multiple keygroups.
 * Fixed: Akai MPC Keygroup - root notes of samples were off by 1.
 
 ## 3.0
@@ -143,7 +150,7 @@
 ## 2.2.0
 
 * New: DecentSampler creator got some options to choose which controls to create and to make the sound monophonic.
-* Fixed: WAV detector: Upper velocity layer was not always 127.
+* Fixed: WAV detector: Upper group was not always 127.
 
 ## 2.1.1
 
