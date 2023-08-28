@@ -31,18 +31,18 @@ import java.util.List;
  */
 public class Program
 {
-    private static final String     NULL_ENTRY = "(null)";
+    private static final String NULL_ENTRY = "(null)";
 
-    private String                  name;
-    private String                  instrumentIconName;
-    private String                  instrumentAuthor;
-    private String                  instrumentURL;
-    private float                   instrumentVolume;
-    private float                   instrumentPan;
-    private float                   instrumentTune;
-    private final List<PresetChunk> children   = new ArrayList<> ();
-    private List<Zone>              zones      = new ArrayList<> ();
-    private final List<String>      filePaths;
+    private String              name;
+    private String              instrumentIconName;
+    private String              instrumentAuthor;
+    private String              instrumentURL;
+    private float               instrumentVolume;
+    private float               instrumentPan;
+    private float               instrumentTune;
+    private final List<Group>   groups     = new ArrayList<> ();
+    private final List<Zone>    zones      = new ArrayList<> ();
+    private final List<String>  filePaths;
 
 
     /**
@@ -73,21 +73,25 @@ public class Program
 
         for (final PresetChunk presetChunk: chunk.getChildren ())
         {
-            int id = presetChunk.getId ();
+            final int id = presetChunk.getId ();
             switch (id)
             {
                 case PresetChunkID.GROUP_LIST:
-                    // TODO
+                    this.parseGroupList (presetChunk);
                     break;
                 case PresetChunkID.ZONE_LIST:
                     this.parseZoneList (presetChunk);
                     break;
                 case PresetChunkID.VOICE_GROUPS:
-                    // TODO
-                    break;
-                case PresetChunkID.PARAMETER_ARRAY_8, PresetChunkID.PAR_SCRIPT, PresetChunkID.INSERT_BUS, PresetChunkID.QUICK_BROWSE_DATA:
                     // Not used
                     break;
+                case PresetChunkID.PARAMETER_ARRAY_8:
+                    // Not used
+                    break;
+                case PresetChunkID.PAR_SCRIPT, PresetChunkID.PAR_MOD_BASE, PresetChunkID.INSERT_BUS, PresetChunkID.QUICK_BROWSE_DATA:
+                    // Not used
+                    break;
+
                 default:
                     throw new IOException ("Unsupported child ID: " + id);
             }
@@ -103,45 +107,6 @@ public class Program
         final int version = chunk.getVersion ();
         if (version > 0xAF)
             throw new IOException ("Unsupported Program Version: " + Integer.toHexString (version).toUpperCase ());
-    }
-
-
-    /**
-     * Read all zones from the zone list.
-     *
-     * @param presetChunk The chunk which contains the zone list
-     * @throws IOException Could not read the zones
-     */
-    private void parseZoneList (final PresetChunk presetChunk) throws IOException
-    {
-        final ByteArrayInputStream in = new ByteArrayInputStream (presetChunk.getPublicData ());
-
-        final int arrayLength = StreamUtils.readUnsigned32 (in, false);
-
-        this.zones.clear ();
-
-        for (int zoneIndex = 0; zoneIndex < arrayLength; zoneIndex++)
-        {
-            final Zone zone = new Zone ();
-
-            // Number of children
-            StreamUtils.readUnsigned32 (in, false);
-            // Is data structured
-            in.read ();
-            final int version = StreamUtils.readUnsigned16 (in, false);
-
-            final int privateDataSize = StreamUtils.readUnsigned32 (in, false);
-            // The private data - currently not used
-            in.readNBytes (privateDataSize);
-
-            // Read all zones
-            final int publicDataSize = StreamUtils.readUnsigned32 (in, false);
-            final byte [] publicData = in.readNBytes (publicDataSize);
-            zone.parse (publicData, version);
-            this.zones.add (zone);
-
-            this.readZoneChildren (zone, in);
-        }
     }
 
 
@@ -212,26 +177,43 @@ public class Program
 
 
     /**
-     * Read the children of a zone, e.g. loops.
-     * 
-     * @param zone The zone to which to add the data from the children
-     * @param in Where to read the data from
-     * @throws IOException Could not read the children
+     * Read all groups from the group list.
+     *
+     * @param presetChunk The chunk which contains the group list
+     * @throws IOException Could not read the groups
      */
-    private void readZoneChildren (final Zone zone, final ByteArrayInputStream in) throws IOException
+    private void parseGroupList (final PresetChunk presetChunk) throws IOException
     {
-        final int childrenDataSize = StreamUtils.readUnsigned32 (in, false);
-        final byte [] childrenData = in.readNBytes (childrenDataSize);
-
-        final ByteArrayInputStream inChildren = new ByteArrayInputStream (childrenData);
-        while (inChildren.available () > 0)
+        for (final PresetChunk groupChunk: presetChunk.getChildren ())
         {
-            final PresetChunk childChunk = new PresetChunk ();
-            childChunk.parse (inChildren);
-            this.children.add (childChunk);
+            final Group group = new Group ();
+            group.parse (groupChunk.getPublicData (), groupChunk.getVersion ());
+            this.groups.add (group);
+        }
+    }
 
-            if (childChunk.getId () == PresetChunkID.LOOP_ARRAY)
-                parseLoops (zone, childChunk.getPublicData ());
+
+    /**
+     * Read all zones from the zone list.
+     *
+     * @param presetChunk The chunk which contains the zone list
+     * @throws IOException Could not read the zones
+     */
+    private void parseZoneList (final PresetChunk presetChunk) throws IOException
+    {
+        this.zones.clear ();
+
+        for (final PresetChunk zoneChunk: presetChunk.getChildren ())
+        {
+            final Zone zone = new Zone ();
+            zone.parse (zoneChunk.getPublicData (), zoneChunk.getVersion ());
+            this.zones.add (zone);
+
+            for (final PresetChunk zoneChildChunk: zoneChunk.getChildren ())
+            {
+                if (zoneChildChunk.getId () == PresetChunkID.LOOP_ARRAY)
+                    parseLoops (zone, zoneChildChunk.getPublicData ());
+            }
         }
     }
 
@@ -256,7 +238,7 @@ public class Program
 
         for (int i = 0; i < 8; i++)
         {
-            int j = (int) Math.pow (2, i);
+            final int j = (int) Math.pow (2, i);
             if ((loopEnablement & j) > 0)
             {
                 final ZoneLoop loop = new ZoneLoop ();
@@ -281,7 +263,7 @@ public class Program
 
         for (final Zone zone: this.zones)
         {
-            final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (getFilename (source, zone));
+            final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (this.getFilename (source, zone));
             samples.add (sampleMetadata);
 
             sampleMetadata.setStart (zone.getSampleStart ());

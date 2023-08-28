@@ -15,6 +15,8 @@ import java.util.Map;
  */
 public class PresetChunkID
 {
+    /** Parameter Modulation. */
+    public static final int                   PAR_MOD_BASE       = 0x00;
     /** Scripting. */
     public static final int                   PAR_SCRIPT         = 0x06;
     /** Send levels. */
@@ -182,7 +184,7 @@ public class PresetChunkID
      */
     public static String getName (final int id)
     {
-        return CHUNK_NAMES.getOrDefault (Integer.valueOf (id), "Unknown");
+        return CHUNK_NAMES.getOrDefault (Integer.valueOf (id), "Unknown: " + Integer.toHexString (id).toUpperCase ());
     }
 
 
