@@ -7,7 +7,6 @@ package de.mossgrabers.convertwithmoss.format.nki;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -281,7 +280,14 @@ public abstract class AbstractNKIMetadataFileHandler
         zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, sampleMetadata.getGain () / 20.0d)));
         zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (sampleMetadata.getTune () / 0.12d * Math.log (2))));
         zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (sampleMetadata.getPanorama ())));
-        return zoneContent.replace ("%ZONE_SAMPLE_NAME%", filename.isPresent () ? AbstractCreator.formatFileName (safeSampleFolderName, filename.get ()) : "");
+
+        // Note: we need to use backward slashes otherwise Kontakt can read but not save the file
+        // again!
+        String formattedFilename = "";
+        if (filename.isPresent ())
+            formattedFilename = new StringBuilder ().append (safeSampleFolderName).append ('\\').append (filename.get ()).toString ().replace ('/', '\\');
+
+        return zoneContent.replace ("%ZONE_SAMPLE_NAME%", formattedFilename);
     }
 
 
