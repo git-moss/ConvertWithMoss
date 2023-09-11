@@ -7,11 +7,10 @@ package de.mossgrabers.convertwithmoss.format.kmp;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 
@@ -74,18 +73,16 @@ public class KMPDetectorTask extends AbstractDetectorTask
     private List<IMultisampleSource> parseKMPFile (final File sourceFile, final KMPFile kmpFile, final String [] parts)
     {
         final String name = kmpFile.getName ();
-        final MultisampleSource source = new MultisampleSource (sourceFile, parts, name, sourceFile.getName ());
+        final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, name, sourceFile.getName ());
         // Use same guessing on the filename...
-        source.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
-        source.setCategory (TagDetector.detectCategory (parts));
-        source.setKeywords (TagDetector.detectKeywords (parts));
+        source.getMetadata ().detectMetadata (this.metadataConfig, parts);
 
-        // Create the layers
-        final DefaultGroup layer = new DefaultGroup (name);
+        // Create the groups
+        final DefaultGroup group = new DefaultGroup (name);
 
-        kmpFile.getKsfFiles ().forEach (layer::addSampleMetadata);
+        kmpFile.getKsfFiles ().forEach (group::addSampleMetadata);
 
-        source.setGroups (Collections.singletonList (layer));
+        source.setGroups (Collections.singletonList (group));
         return Collections.singletonList (source);
     }
 }

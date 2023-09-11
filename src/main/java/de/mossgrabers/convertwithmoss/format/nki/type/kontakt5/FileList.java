@@ -50,7 +50,7 @@ public class FileList
             while (true)
             {
                 in.mark (4);
-                final int type = StreamUtils.readUnsigned32 (in, false);
+                final long type = StreamUtils.readUnsigned32 (in, false);
                 if (type == 0)
                     break;
                 in.reset ();
@@ -59,13 +59,18 @@ public class FileList
         }
         else
         {
-            final int version = StreamUtils.readUnsigned32 (in, false);
+            final long version = StreamUtils.readUnsigned32 (in, false);
             if (version != 0)
-                throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_VERSION", Integer.toString (version)));
+                throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_VERSION", Long.toString (version)));
         }
 
         this.readFiles (in);
+        this.readMetadata (in);
+    }
 
+
+    private void readMetadata (final ByteArrayInputStream in) throws IOException
+    {
         if (in.available () > 2)
         {
             // Last changed date of files
@@ -119,8 +124,8 @@ public class FileList
      */
     private void readFiles (final ByteArrayInputStream in) throws IOException
     {
-        final int fileCount = StreamUtils.readUnsigned32 (in, false);
-        for (int i = 0; i < fileCount; i++)
+        final long fileCount = StreamUtils.readUnsigned32 (in, false);
+        for (long i = 0; i < fileCount; i++)
             this.filePaths.add (readFile (in));
     }
 
@@ -135,7 +140,7 @@ public class FileList
     private static String readFile (final ByteArrayInputStream in) throws IOException
     {
         final StringBuilder sb = new StringBuilder ();
-        final int segmentCount = StreamUtils.readUnsigned32 (in, false);
+        final long segmentCount = StreamUtils.readUnsigned32 (in, false);
         for (int s = 0; s < segmentCount; s++)
             readSegment (in, sb);
         return sb.toString ();

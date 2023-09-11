@@ -36,9 +36,9 @@ public class SoundinfoChunkData extends AbstractChunkData
     {
         this.readVersion (in);
 
-        final int versionMajor = StreamUtils.readUnsigned32 (in, false);
-        final int versionMinor = StreamUtils.readUnsigned32 (in, false);
-        final int versionPatch = StreamUtils.readUnsigned32 (in, false);
+        final int versionMajor = (int) StreamUtils.readUnsigned32 (in, false);
+        final int versionMinor = (int) StreamUtils.readUnsigned32 (in, false);
+        final int versionPatch = (int) StreamUtils.readUnsigned32 (in, false);
         this.soundInfoVersion = versionMajor + "." + versionMinor + "." + versionPatch;
 
         this.name = StreamUtils.readWithLengthUTF16 (in);
@@ -59,18 +59,18 @@ public class SoundinfoChunkData extends AbstractChunkData
         // Always 1
         StreamUtils.readUnsigned32 (in, false);
 
-        final int numberOfTags = StreamUtils.readUnsigned32 (in, false);
+        final int numberOfTags = (int) StreamUtils.readUnsigned32 (in, false);
         for (int i = 0; i < numberOfTags; i++)
             this.tags.add (StreamUtils.readWithLengthUTF16 (in));
 
-        final int numberOfAttributes = StreamUtils.readUnsigned32 (in, false);
+        final int numberOfAttributes = (int) StreamUtils.readUnsigned32 (in, false);
         for (int i = 0; i < numberOfAttributes; i++)
             this.attributes.add (StreamUtils.readWithLengthUTF16 (in));
 
         // Always 0
         StreamUtils.readUnsigned32 (in, false);
 
-        final int numberOfProperties = StreamUtils.readUnsigned32 (in, false);
+        final int numberOfProperties = (int) StreamUtils.readUnsigned32 (in, false);
         for (int i = 0; i < numberOfProperties; i++)
         {
             final String key = StreamUtils.readWithLengthUTF16 (in);

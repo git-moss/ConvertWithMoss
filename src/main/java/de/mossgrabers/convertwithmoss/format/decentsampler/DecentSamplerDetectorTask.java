@@ -8,7 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -21,7 +21,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -223,15 +222,13 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         final List<IGroup> groups = this.parseGroups (groupsElement, basePath, isLibrary ? multiSampleFile : null, globalTuningOffset);
 
         final String name = FileUtils.getNameWithoutType (multiSampleFile);
-        final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
-        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
 
         // Use same guessing on the filename...
-        multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
-        multisampleSource.setCategory (TagDetector.detectCategory (parts));
-        multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
+        multisampleSource.getMetadata ().detectMetadata (this.metadataConfig, parts);
 
         multisampleSource.setGroups (groups);
 
@@ -247,7 +244,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param top The top element
      * @param multisampleSource The multisample to fill
      */
-    private static void parseEffects (final Element top, final MultisampleSource multisampleSource)
+    private static void parseEffects (final Element top, final DefaultMultisampleSource multisampleSource)
     {
         final Element effectsElement = XMLUtils.getChildElementByName (top, DecentSamplerTag.EFFECTS);
         if (effectsElement == null)
@@ -270,16 +267,16 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
     /**
      * Parses all groups.
      *
-     * @param groups The XML element containing all groups
+     * @param groupElements The XML element containing all groups
      * @param basePath The base path of the samples
      * @param libraryFile If it is a library otherwise null
      * @param globalTuningOffset The global tuning offset
-     * @return All parsed layers
+     * @return All parsed groups
      */
-    private List<IGroup> parseGroups (final Element groups, final String basePath, final File libraryFile, final double globalTuningOffset)
+    private List<IGroup> parseGroups (final Element groupElements, final String basePath, final File libraryFile, final double globalTuningOffset)
     {
-        final Node [] groupNodes = XMLUtils.getChildrenByName (groups, DecentSamplerTag.GROUP, false);
-        final List<IGroup> layers = new ArrayList<> (groupNodes.length);
+        final Node [] groupNodes = XMLUtils.getChildrenByName (groupElements, DecentSamplerTag.GROUP, false);
+        final List<IGroup> groups = new ArrayList<> (groupNodes.length);
         int groupCounter = 1;
         for (final Node groupNode: groupNodes)
         {
@@ -290,8 +287,8 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 this.checkAttributes (DecentSamplerTag.GROUP, groupElement.getAttributes (), DecentSamplerTag.getAttributes (DecentSamplerTag.GROUP));
 
                 final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
-                final String layerName = k == null || k.isBlank () ? "Velocity Layer " + groupCounter : k;
-                final DefaultGroup group = new DefaultGroup (layerName);
+                final String groupName = k == null || k.isBlank () ? "Velocity Layer " + groupCounter : k;
+                final DefaultGroup group = new DefaultGroup (groupName);
 
                 final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
                 double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.GROUP_TUNING, 0);
@@ -302,7 +299,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 final String triggerAttribute = groupElement.getAttribute (DecentSamplerTag.TRIGGER);
 
                 this.parseGroup (group, groupElement, basePath, libraryFile, groupVolumeOffset, globalTuningOffset + groupTuningOffset, triggerAttribute);
-                layers.add (group);
+                groups.add (group);
                 groupCounter++;
             }
             else
@@ -311,7 +308,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 return Collections.emptyList ();
             }
         }
-        return layers;
+        return groups;
     }
 
 

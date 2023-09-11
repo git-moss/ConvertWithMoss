@@ -23,8 +23,8 @@ import java.util.Set;
 
 /**
  * Accessor to a SoundFont 2 file. A SoundFont consists of a couple of presets. A preset consists of
- * one or more instrument layers. An instrument references one or more samples. Synthesizer and
- * effect parameters can be applied on instrument and preset level.
+ * one or more instrument layers (groups). An instrument references one or more samples. Synthesizer
+ * and effect parameters can be applied on instrument and preset level.
  * <p>
  * Preset ->1:N Zones ->1:1 Instrument ->1:N Zone ->1:1 Sample.
  *

@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -93,16 +94,17 @@ public class BitwigMultisampleCreator extends AbstractCreator
         document.appendChild (multisampleElement);
         multisampleElement.setAttribute ("name", multisampleSource.getName ());
 
+        final IMetadata metadata = multisampleSource.getMetadata ();
         XMLUtils.addTextElement (document, multisampleElement, "generator", "ConvertWithMoss");
-        XMLUtils.addTextElement (document, multisampleElement, "category", multisampleSource.getCategory ());
-        XMLUtils.addTextElement (document, multisampleElement, "creator", multisampleSource.getCreator ());
-        XMLUtils.addTextElement (document, multisampleElement, "description", multisampleSource.getDescription ());
+        XMLUtils.addTextElement (document, multisampleElement, "category", metadata.getCategory ());
+        XMLUtils.addTextElement (document, multisampleElement, "creator", metadata.getCreator ());
+        XMLUtils.addTextElement (document, multisampleElement, "description", metadata.getDescription ());
 
         final Element keywordsElement = XMLUtils.addElement (document, multisampleElement, "keywords");
-        for (final String keyword: multisampleSource.getKeywords ())
+        for (final String keyword: metadata.getKeywords ())
             XMLUtils.addTextElement (document, keywordsElement, "keyword", keyword);
 
-        final List<IGroup> groups = multisampleSource.getNonEmptyLayers (true);
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
         for (final IGroup group: groups)
         {
             final String name = group.getName ();
@@ -115,12 +117,12 @@ public class BitwigMultisampleCreator extends AbstractCreator
         }
 
         int index = 0;
-        for (final IGroup layer: groups)
+        for (final IGroup group: groups)
         {
-            final String name = layer.getName ();
+            final String name = group.getName ();
             final int idx = name == null || name.isBlank () ? -1 : index;
 
-            for (final ISampleMetadata sample: layer.getSampleMetadata ())
+            for (final ISampleMetadata sample: group.getSampleMetadata ())
             {
                 if (sample.getTrigger () != TriggerType.RELEASE)
                     createSample (document, multisampleElement, idx, sample);

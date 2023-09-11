@@ -30,9 +30,9 @@ public class RootChunkData extends AbstractChunkData
     {
         this.readVersion (in);
 
-        final int niSoundVersion = StreamUtils.readUnsigned32 (in, false);
-        this.repositoryMagic = StreamUtils.readUnsigned32 (in, false);
-        this.repositoryType = StreamUtils.readUnsigned32 (in, false);
+        final int niSoundVersion = (int) StreamUtils.readUnsigned32 (in, false);
+        this.repositoryMagic = (int) StreamUtils.readUnsigned32 (in, false);
+        this.repositoryType = (int) StreamUtils.readUnsigned32 (in, false);
 
         this.majorVersion = niSoundVersion >> 0x14 & 0xFF;
         this.minorVersion = niSoundVersion >> 0xC & 0xFF;

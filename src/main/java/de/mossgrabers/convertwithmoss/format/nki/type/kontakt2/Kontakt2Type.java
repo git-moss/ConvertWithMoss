@@ -6,7 +6,9 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
@@ -134,7 +136,7 @@ public class Kontakt2Type extends AbstractKontaktType
     public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess) throws IOException
     {
         // The size of the ZLIB block, we do not need the info
-        final int zlibLength = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+        final int zlibLength = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
 
         // 0x100 = Kontakt 2, 0x110 = Kontakt 4.2
         final int headerVersion = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
@@ -149,43 +151,10 @@ public class Kontakt2Type extends AbstractKontaktType
         if (!KNOWN_BLOCK_IDS.contains (blockID))
             this.notifier.log ("IDS_NKI_UNKNOWN_BLOCK_ID", blockID);
 
-        final Date creation = StreamUtils.readTimestamp (fileAccess, this.isBigEndian);
-        final String formattedCreation = this.simpleDateFormatter.format (creation);
-
-        // No idea yet about these 4 bytes...
-        StreamUtils.skipNBytes (fileAccess, 4);
-
-        // Number of Zones
-        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
-        // Number of Groups
-        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
-        // Number of Instruments
-        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
-
-        // No idea yet about these 16 bytes...
-        StreamUtils.skipNBytes (fileAccess, 16);
-
-        final int iconID = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-        final String iconName = KontaktIcon.getName (iconID);
-        if (iconName == null)
-            this.notifier.logError ("IDS_NKI_UNKNOWN_ICON_ID", Integer.toString (iconID));
-        // 8 characters, null terminated
-        final String author = StreamUtils.readASCII (fileAccess, 9, StandardCharsets.ISO_8859_1).trim ();
-
-        // No idea yet about these 2 bytes... Found once in monolith with IR Samples and Wallpaper
-        final int unknown = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
-        if (unknown != 0)
-            this.notifier.logError ("IDS_NKI_UNKNOWN_NOT_NULL", Integer.toString (unknown));
-
-        String website = StreamUtils.readASCII (fileAccess, 87).trim ();
-        if (website.isBlank () || NULL_ENTRY.equals (website))
-            website = null;
-
-        // No idea yet about these 6 bytes... could be padded zeros
-        StreamUtils.skipNBytes (fileAccess, 6);
+        final DefaultMetadata metadata = this.readMetadata (fileAccess);
 
         final boolean isFourDotTwo = headerVersion == HEADER_KONTAKT_42;
-        if (headerVersion == HEADER_KONTAKT_42)
+        if (isFourDotTwo)
         {
             // 12 new bytes introduced in 4.2
             StreamUtils.skipNBytes (fileAccess, 12);
@@ -194,7 +163,7 @@ public class Kontakt2Type extends AbstractKontaktType
         // Skip the checksum
         StreamUtils.skipNBytes (fileAccess, 4);
 
-        final int patchLevel = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+        final int patchLevel = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
         if (kontaktVersion.endsWith ("?"))
             kontaktVersion = kontaktVersion.substring (0, kontaktVersion.length () - 1) + Integer.toString (patchLevel);
 
@@ -204,7 +173,7 @@ public class Kontakt2Type extends AbstractKontaktType
             // Unknown
             StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
 
-            decompressedLength = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+            decompressedLength = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
 
             // Padding?
             StreamUtils.skipNBytes (fileAccess, 32);
@@ -219,30 +188,58 @@ public class Kontakt2Type extends AbstractKontaktType
 
         final List<IMultisampleSource> multiSamples;
         if (isFourDotTwo)
-        {
-            final byte [] compressedData = new byte [zlibLength];
-            fileAccess.readFully (compressedData);
-            final byte [] uncompressedData = FastLZ.uncompress (compressedData, decompressedLength);
-            final Optional<Program> optionalProgram = this.kontakt5Preset.parse (uncompressedData);
-            if (optionalProgram.isEmpty ())
-            {
-                this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
-                multiSamples = Collections.emptyList ();
-            }
-            else
-            {
-                final String n = this.metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
-                final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
-                final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
-                optionalProgram.get ().fillInto (multisampleSource);
-                multiSamples = Collections.singletonList (multisampleSource);
-            }
-        }
+            multiSamples = this.handleFastLZ (sourceFolder, sourceFile, fileAccess, zlibLength, decompressedLength);
         else
             multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples);
 
-        this.handleSoundinfo (sourceFile, fileAccess, multiSamples, formattedCreation, iconName, author, website);
+        this.handleSoundinfo (sourceFile, fileAccess, multiSamples, metadata);
         return multiSamples;
+    }
+
+
+    private DefaultMetadata readMetadata (final RandomAccessFile fileAccess) throws IOException
+    {
+        final DefaultMetadata metadata = new DefaultMetadata ();
+
+        final Date creation = StreamUtils.readTimestamp (fileAccess, this.isBigEndian);
+
+        // No idea yet about these 4 bytes...
+        StreamUtils.skipNBytes (fileAccess, 4);
+
+        // Number of Zones
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+        // Number of Groups
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+        // Number of Instruments
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+
+        // No idea yet about these 16 bytes...
+        StreamUtils.skipNBytes (fileAccess, 16);
+
+        final int iconID = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+        final String iconName = KontaktIcon.getName (iconID);
+        if (iconName == null)
+            this.notifier.logError ("IDS_NKI_UNKNOWN_ICON_ID", Integer.toString (iconID));
+        metadata.setCategory (iconName);
+        // 8 characters, null terminated
+        metadata.setCreator (StreamUtils.readASCII (fileAccess, 9, StandardCharsets.ISO_8859_1).trim ());
+
+        // No idea yet about these 2 bytes... Found once in monolith with IR Samples and Wallpaper
+        final int unknown = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+        if (unknown != 0)
+            this.notifier.logError ("IDS_NKI_UNKNOWN_NOT_NULL", Integer.toString (unknown));
+
+        final String website = StreamUtils.readASCII (fileAccess, 87).trim ();
+
+        // No idea yet about these 6 bytes... could be padded zeros
+        StreamUtils.skipNBytes (fileAccess, 6);
+
+        String additionalInfo = "Creation: " + this.simpleDateFormatter.format (creation);
+        if (!website.isBlank () && !NULL_ENTRY.equals (website))
+            additionalInfo += "\nWebsite : " + website;
+        metadata.setDescription (additionalInfo);
+
+        return metadata;
     }
 
 
@@ -268,8 +265,41 @@ public class Kontakt2Type extends AbstractKontaktType
         out.write (zlibContent);
 
         out.write (SOUNDINFO_HEADER);
-        final SoundinfoDocument soundinfoDocument = new SoundinfoDocument (multisampleSource.getCreator (), multisampleSource.getCategory ());
+
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        final SoundinfoDocument soundinfoDocument = new SoundinfoDocument (metadata.getCreator (), metadata.getCategory ());
         out.write (soundinfoDocument.createDocument (multisampleSource.getName ()).getBytes (StandardCharsets.UTF_8));
+    }
+
+
+    /**
+     * Handles the Kontakt 4.2 FastLZ section.
+     *
+     * @param sourceFolder The top source folder for the detection
+     * @param sourceFile The source file which contains the XML document
+     * @param fileAccess The random access file to read from
+     * @param compressedDataSize The size of the compressed data
+     * @param uncompressedSize The size of the uncompressed data size
+     * @return All parsed multi-samples
+     * @throws IOException
+     */
+    private List<IMultisampleSource> handleFastLZ (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final int compressedDataSize, int uncompressedSize) throws IOException
+    {
+        final byte [] compressedData = new byte [compressedDataSize];
+        fileAccess.readFully (compressedData);
+        final byte [] uncompressedData = FastLZ.uncompress (compressedData, uncompressedSize);
+        final Optional<Program> optionalProgram = this.kontakt5Preset.parse (uncompressedData);
+        if (optionalProgram.isEmpty ())
+        {
+            this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
+            return Collections.emptyList ();
+        }
+
+        final String n = this.metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+        optionalProgram.get ().fillInto (multisampleSource);
+        return Collections.singletonList (multisampleSource);
     }
 
 
@@ -309,19 +339,16 @@ public class Kontakt2Type extends AbstractKontaktType
      *
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
-     * @param multiSamples
-     * @param formattedCreation The formatted creation date/time
-     * @param iconName The descriptive name of the icon
-     * @param author The author of the multi-sample
-     * @param website The web site of the author
+     * @param multiSamples The multi-samples to update
+     * @param metadata The metadata already found in the header
      */
-    private void handleSoundinfo (final File sourceFile, final RandomAccessFile fileAccess, final List<IMultisampleSource> multiSamples, final String formattedCreation, final String iconName, final String author, final String website)
+    private void handleSoundinfo (final File sourceFile, final RandomAccessFile fileAccess, final List<IMultisampleSource> multiSamples, final IMetadata metadata)
     {
         try
         {
             final int numOfPendingbytes = (int) (sourceFile.length () - fileAccess.getFilePointer ());
-            final SoundinfoDocument soundinfo = this.readSoundinfo (fileAccess, numOfPendingbytes, iconName, author);
-            updateMetadata (multiSamples, formattedCreation, website, soundinfo);
+            final Optional<SoundinfoDocument> soundinfo = this.readSoundinfo (fileAccess, numOfPendingbytes);
+            updateMetadata (multiSamples, metadata, soundinfo);
         }
         catch (final IOException ex)
         {
@@ -335,12 +362,10 @@ public class Kontakt2Type extends AbstractKontaktType
      *
      * @param fileAccess The random access file to read from
      * @param numOfPendingbytes The number of bytes not yet handled by the ZLIB de-compressor
-     * @param iconName The descriptive name of the icon
-     * @param author The author of the multi-sample
      * @return The parsed sound info document
      * @throws IOException
      */
-    private SoundinfoDocument readSoundinfo (final RandomAccessFile fileAccess, final int numOfPendingbytes, final String iconName, final String author) throws IOException
+    private Optional<SoundinfoDocument> readSoundinfo (final RandomAccessFile fileAccess, final int numOfPendingbytes) throws IOException
     {
         if (numOfPendingbytes > 0)
         {
@@ -353,18 +378,14 @@ public class Kontakt2Type extends AbstractKontaktType
             final String soundinfoXML = new String (rest, StandardCharsets.UTF_8);
             try
             {
-                final SoundinfoDocument soundinfo = new SoundinfoDocument (soundinfoXML);
-                final Set<String> categories = soundinfo.getCategories ();
-                if (categories.isEmpty ())
-                    categories.add (iconName);
-                return soundinfo;
+                return Optional.of (new SoundinfoDocument (soundinfoXML));
             }
             catch (final SAXException ex)
             {
                 this.notifier.logError ("IDS_NKI_UNSOUND_SOUNDINFO", ex);
             }
         }
-        return new SoundinfoDocument (author, iconName);
+        return Optional.empty ();
     }
 
 
@@ -576,34 +597,42 @@ public class Kontakt2Type extends AbstractKontaktType
      * Update the metadata info on all multi samples.
      *
      * @param multiSamples The multi samples to update
-     * @param creation The formatted creation date
-     * @param website The web site link
+     * @param headerMetadata The metadata found in the header
      * @param soundinfo The sound info
      */
-    private static void updateMetadata (final List<IMultisampleSource> multiSamples, final String creation, final String website, final SoundinfoDocument soundinfo)
+    private static void updateMetadata (final List<IMultisampleSource> multiSamples, final IMetadata headerMetadata, final Optional<SoundinfoDocument> soundinfo)
     {
-        String additionalInfo = "Creation: " + creation;
-        if (website != null)
-            additionalInfo += "\nWebsite : " + website;
+        final Set<String> categories;
+        if (soundinfo.isPresent ())
+        {
+            final SoundinfoDocument soundinfoDocument = soundinfo.get ();
+
+            categories = soundinfoDocument.getCategories ();
+            if (categories.isEmpty ())
+                headerMetadata.setCategory (categories.iterator ().next ());
+
+            final String soundAuthor = soundinfoDocument.getAuthor ();
+            if (soundAuthor != null && !soundAuthor.isBlank ())
+                headerMetadata.setCreator (soundAuthor);
+        }
+        else
+            categories = Collections.emptySet ();
 
         for (final IMultisampleSource multiSample: multiSamples)
         {
-            // Update the author
-            final String soundAuthor = soundinfo.getAuthor ();
-            if (soundAuthor != null && !soundAuthor.isBlank ())
-                multiSample.setCreator (soundAuthor);
+            final IMetadata metadata = multiSample.getMetadata ();
+            metadata.setCreator (headerMetadata.getCreator ());
+            metadata.setCategory (headerMetadata.getCategory ());
 
-            // Update the category and keywords
-            final Set<String> soundCategories = soundinfo.getCategories ();
-            if (!soundCategories.isEmpty ())
-                multiSample.setCategory (soundCategories.iterator ().next ());
-            Collections.addAll (soundCategories, multiSample.getKeywords ());
-            multiSample.setKeywords (TagDetector.detectKeywords (soundCategories.toArray (new String [soundCategories.size ()])));
+            final List<String> soundCategories = new ArrayList<> ();
+            soundCategories.addAll (categories);
+            Collections.addAll (soundCategories, metadata.getKeywords ());
+            metadata.setKeywords (TagDetector.detectKeywords (soundCategories.toArray (new String [soundCategories.size ()])));
 
             // Update the description
-            String description = multiSample.getDescription ();
+            String description = metadata.getDescription ();
             description = description == null ? "" : "\n" + description;
-            multiSample.setDescription (additionalInfo + description);
+            metadata.setDescription (headerMetadata.getDescription () + description);
         }
     }
 }

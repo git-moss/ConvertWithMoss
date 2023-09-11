@@ -40,9 +40,9 @@ public class DictionaryItem
         this.isBigEndian = isBigEndian;
 
         this.length = StreamUtils.readUnsigned16 (fileAccess, isBigEndian);
-        this.pointer = StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
+        this.pointer = (int) StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
 
-        final int type = StreamUtils.readUnsigned16 (fileAccess, isBigEndian);
+        final int type = StreamUtils.readSigned16 (fileAccess, isBigEndian);
         if (type < 0 || type > 4)
             throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_DICT_ITEM_REF_TYPE", Integer.toString (type)));
         this.referenceType = DictionaryItemReferenceType.values ()[type];

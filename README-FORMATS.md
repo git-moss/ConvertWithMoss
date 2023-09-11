@@ -11,7 +11,7 @@ There are currently no metadata fields (category, creator, etc.) specified in th
 
 ## Bitwig Studio multisample
 
-The parser can read all information from Bitwig Studio multi-samples except the layer color, select and parameter 1 to 3, which are not mappable.
+The parser can read all information from Bitwig Studio multi-samples except the group color, select and parameter 1 to 3, which are not mappable.
 
 A Bitwig multisample file is a zip archive which contains all samples in WAV format and a metadata file in XML format.
 This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
@@ -39,7 +39,7 @@ The KMP/KSF format (*.KMP) was first introduced in the Korg Trinity workstation 
 * PA1X/PA800/PA2X/PA3X/PA4X
 * Nautilus
 
-The format is documented in detail in the appendix of the respective parameter guides. The KMP format contains only 1 layer of a multisample, which means there are only key splits but no groups. The file references several KSF files which contain the sample data for each key region.
+The format is documented in detail in the appendix of the respective parameter guides. The KMP format contains only 1 group of a multisample, which means there are only key splits but no groups. The file references several KSF files which contain the sample data for each key region.
 
 ## Korg wavestate/modwave
 
@@ -95,12 +95,12 @@ The algorithm tries to detect as much metadata as possible from the WAV files:
 * The category is tried to be extracted from the file name. If this fails it tries with the folder names (e.g. you might have sorted your lead sounds in a folder called *Lead*). Furthermore, several synonyms and abbreviations are considered (e.g. Solo as a synonym for Lead).
 * Characterizations like *hard* are tried to be extracted with a similar algorithm as for the category.
 
-### Velocity layers
+### Groups
 
-Detected groups will be equally distributed across the velocity range. E.g. if 2 layers are detected the first will be mapped to the velocity range of 0-63 and the second to 64-127.
+Detected groups will be equally distributed across the velocity range. E.g. if 2 groups are detected the first will be mapped to the velocity range of 0-63 and the second to 64-127.
 
-* Detection pattern: Comma separated list of patterns to detect groups. The pattern must contain a star character ("*"), which indicates the position which contains the layer number.
-* Order of layer numbering: Enable to map groups inversed. This means that the highest number will be mapped to the lowest velocity range.
+* Detection pattern: Comma separated list of patterns to detect groups. The pattern must contain a star character ("*"), which indicates the position which contains the group number.
+* Order of group numbering: Enable to map groups inversed. This means that the highest number will be mapped to the lowest velocity range.
 
 ### Mono Splits
 
@@ -115,8 +115,8 @@ Stereo samples might be split up into 2 mono files (the left and right channel).
 * Default creator: The name which is set as the creator of the multisamples, if no creator tag could be found.
 * Creator tag(s): Here you can set a number of creator names, which need to be separated by comma. You can also use this to look up other things. For example, I set the names of the synthesizers which I sampled. My string looks like: "01W,FM8,Pro-53,Virus B,XV" (without the quotes).
 * Crossfade notes: You can automatically create crossfades between the different note ranges. This makes especially sense if you only sampled a couple of notes. Set the number of notes, which should be cross-faded between two samples (0-127). If you set a too high number the crossfade is automatically limited to the maximum number of notes between the two neighboring samples.
-* Crossfade velocities: You can automatically create crossfades between the different groups. This makes especially sense if you sampled several sample layers with different velocity values. Set the number of velocity steps (0-127), which should be crossfaded between two samples. If you set a too high number the crossfade is automatically limited to the maximum number of velocity steps between the two neighbouring samples.
-* Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multisample but there might be further text at the end of the name, which you might want to remove. For example the multisamples I created with SampleRobot have a layer information like "_ms0_0". You can set a comma separated list of such postfix texts in that field.
+* Crossfade velocities: You can automatically create crossfades between the different groups. This makes especially sense if you sampled several sample groups with different velocity values. Set the number of velocity steps (0-127), which should be crossfaded between two samples. If you set a too high number the crossfade is automatically limited to the maximum number of velocity steps between the two neighbouring samples.
+* Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multisample but there might be further text at the end of the name, which you might want to remove. For example the multisamples I created with SampleRobot have a group information like "_ms0_0". You can set a comma separated list of such postfix texts in that field.
 
 ## Destination formats
 
@@ -127,12 +127,12 @@ The following multisample formats can be the destination of a conversion.
 A MPC Keygroup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV).
 This format has some restrictions:
 
-* A round robin keygroup can only contain up to 4 layers. An error is displayed in this case but the file is converted anyway.
+* A round robin keygroup can only contain up to 4 layers (groups). An error is displayed in this case but the file is converted anyway.
 * Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
 
 ### Bitwig Studio multisample
 
-This format can be loaded in the Bitwig Sampler device. It supports multiple layers, key and velocity crossfades as well as several metadata information: creator, sound category and keywords.
+This format can be loaded in the Bitwig Sampler device. It supports multiple groups, key and velocity crossfades as well as several metadata information: creator, sound category and keywords.
 
 ### DecentSampler
 
@@ -147,13 +147,13 @@ Further options:
 
 ### Korg KMP/KSF
 
-Since the KMP format can only contain 1 layer of a multisample, sources with multiple groups are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
+Since the KMP format can only contain 1 group of a multisample, sources with multiple groups are split up into several KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported.
 
 ### Korg wavestate/modwave (*.korgmultisample)
 
 The korgmultisample format is currently used by the Korg wavestate and modwave keyboards. Files in that format can be opened with the Korg Sample Builder software and transferred to the keyboard.
 
-Since the format supports only one layer of a multisample, multiple files are created for each layer available in the source. If there is more than one layer in the source the name of the created file has the velocity range of the layer added. Using that information a multisample with up to 4 layers can be created as Performance in the device.
+Since the format supports only one group of a multisample, multiple files are created for each group available in the source. If there is more than one group in the source the name of the created file has the velocity range of the group added. Using that information a multisample with up to 4 groups can be created as Performance in the device.
 
 ## Native Instruments Kontakt
 

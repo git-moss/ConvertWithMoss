@@ -8,7 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -21,7 +21,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -154,14 +153,10 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         final Element programNameElement = XMLUtils.getChildElementByName (programElement, MPCKeygroupTag.PROGRAM_NAME);
         final String name = programNameElement == null ? FileUtils.getNameWithoutType (file) : programNameElement.getTextContent ();
-        final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, n);
-        final MultisampleSource multisampleSource = new MultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
-
-        // Use same guessing on the filename...
-        multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
-        multisampleSource.setCategory (isDrum ? "Drums" : TagDetector.detectCategory (parts));
-        multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+        multisampleSource.getMetadata ().detectMetadata (this.metadataConfig, parts, isDrum ? "Drums" : null);
 
         final Element instrumentsElement = XMLUtils.getChildElementByName (programElement, MPCKeygroupTag.PROGRAM_INSTRUMENTS);
         if (instrumentsElement == null)
@@ -181,9 +176,9 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (pitchBendRange != 0)
         {
             final int pitchBend = (int) Math.round (pitchBendRange * 1200.0);
-            for (final IGroup layer: groups)
+            for (final IGroup group: groups)
             {
-                for (final ISampleMetadata sample: layer.getSampleMetadata ())
+                for (final ISampleMetadata sample: group.getSampleMetadata ())
                 {
                     sample.setBendUp (pitchBend);
                     sample.setBendDown (-pitchBend);

@@ -9,7 +9,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -25,7 +25,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
@@ -126,7 +125,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
             return Collections.emptyList ();
 
         String name = FileUtils.getNameWithoutType (multiSampleFile);
-        final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
         final List<IGroup> groups = this.parseGroups (multiSampleFile.getParentFile (), result);
@@ -135,15 +134,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (globalName.isPresent ())
             name = globalName.get ();
 
-        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
-
-        // Use same guessing on the filename...
-        multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
-        multisampleSource.setCategory (TagDetector.detectCategory (parts));
-        multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
-
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        multisampleSource.getMetadata ().detectMetadata (this.metadataConfig, parts);
         multisampleSource.setGroups (groups);
-
         return Collections.singletonList (multisampleSource);
     }
 
@@ -160,7 +153,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         File sampleBaseFolder = basePath;
 
         final List<IGroup> groups = new ArrayList<> ();
-        IGroup layer = new DefaultGroup ();
+        IGroup group = new DefaultGroup ();
         for (final Pair<String, Map<String, String>> pair: headers)
         {
             final Map<String, String> attributes = pair.getValue ();
@@ -193,19 +186,19 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     break;
 
                 case SfzHeader.GROUP:
-                    if (!layer.getSampleMetadata ().isEmpty ())
-                        groups.add (layer);
-                    layer = new DefaultGroup ();
+                    if (!group.getSampleMetadata ().isEmpty ())
+                        groups.add (group);
+                    group = new DefaultGroup ();
 
                     this.groupAttributes = attributes;
 
                     final Optional<String> groupLabel = this.getAttribute (SfzOpcode.GROUP_LABEL);
                     if (groupLabel.isPresent ())
-                        layer.setName (groupLabel.get ());
+                        group.setName (groupLabel.get ());
 
                     final TriggerType triggerType = this.getTriggerType (this.getAttribute (SfzOpcode.TRIGGER));
                     if (triggerType != TriggerType.ATTACK)
-                        layer.setTrigger (triggerType);
+                        group.setTrigger (triggerType);
 
                     // We do not need the value but mark it as processed
                     this.getIntegerValue (SfzOpcode.SEQ_LENGTH);
@@ -225,7 +218,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                         final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (sampleFile);
                         this.parseRegion (sampleMetadata);
                         this.readMissingValues (sampleMetadata);
-                        layer.addSampleMetadata (sampleMetadata);
+                        group.addSampleMetadata (sampleMetadata);
                     }
                     break;
 
@@ -235,16 +228,16 @@ public class SfzDetectorTask extends AbstractDetectorTask
             }
         }
 
-        // Don't forget to add the last layer
-        if (!layer.getSampleMetadata ().isEmpty ())
-            groups.add (layer);
+        // Don't forget to add the last group
+        if (!group.getSampleMetadata ().isEmpty ())
+            groups.add (group);
 
         this.printUnsupportedOpcodes (this.diffOpcodes ());
 
         // Fix empty names
         for (int i = 0; i < groups.size (); i++)
         {
-            final IGroup group = groups.get (i);
+            group = groups.get (i);
             final String name = group.getName ();
             if (name == null || name.isBlank ())
                 group.setName ("Group " + (i + 1));

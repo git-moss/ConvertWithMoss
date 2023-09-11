@@ -43,8 +43,8 @@ public class NIContainerChunk
         final ByteArrayInputStream bin = new ByteArrayInputStream (chunkStackBlock);
 
         this.domainID = StreamUtils.readASCII (bin, 4);
-        this.chunkTypeID = StreamUtils.readUnsigned32 (bin, false);
-        this.version = StreamUtils.readUnsigned32 (bin, false);
+        this.chunkTypeID = (int) StreamUtils.readUnsigned32 (bin, false);
+        this.version = (int) StreamUtils.readUnsigned32 (bin, false);
         if (this.version != 1)
             throw new IOException (Functions.getMessage ("IDS_NKI5_ITEM_HEADER_VERSION", Integer.toString (this.version)));
 

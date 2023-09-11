@@ -93,13 +93,13 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
                 final int rightOffset = 2 * rightStart + sampleOffset;
 
                 // Support for different lengths of left/right mono file
-                if (leftOffset < leftSampleData.length)
+                if (i < leftLengthInSamples && leftOffset < leftSampleData.length)
                 {
                     data[dataOffset] = leftSampleData[leftOffset];
                     data[dataOffset + 1] = leftSampleData[leftOffset + 1];
                     data[dataOffset + 2] = leftSample24Data[leftStart + i];
                 }
-                if (rightOffset < rightSampleData.length)
+                if (i < rightLengthInSamples && rightOffset < rightSampleData.length)
                 {
                     data[dataOffset + 3] = rightSampleData[rightOffset];
                     data[dataOffset + 4] = rightSampleData[rightOffset + 1];
@@ -116,12 +116,12 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
                 final int leftOffset = 2 * leftStart + sampleOffset;
                 final int rightOffset = 2 * rightStart + sampleOffset;
 
-                if (leftOffset < leftSampleData.length)
+                if (i < leftLengthInSamples && leftOffset < leftSampleData.length)
                 {
                     data[dataOffset] = leftSampleData[leftOffset];
                     data[dataOffset + 1] = leftSampleData[leftOffset + 1];
                 }
-                if (rightOffset < rightSampleData.length)
+                if (i < rightLengthInSamples && rightOffset < rightSampleData.length)
                 {
                     data[dataOffset + 2] = rightSampleData[rightOffset];
                     data[dataOffset + 3] = rightSampleData[rightOffset + 1];

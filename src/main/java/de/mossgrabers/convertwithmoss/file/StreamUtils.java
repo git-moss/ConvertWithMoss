@@ -3,7 +3,6 @@ package de.mossgrabers.convertwithmoss.file;
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.DataInput;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -32,10 +31,10 @@ public class StreamUtils
 
 
     /**
-     * Reads and converts 2 bytes to an signed integer with least significant bytes first.
+     * Reads and converts 2 bytes to an signed integer.
      *
      * @param in The input stream
-     * @param isBigEndian True if bytes are stored big-endian
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
      * @return The converted integer
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
@@ -49,28 +48,42 @@ public class StreamUtils
 
 
     /**
-     * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
+     * Reads and converts 2 bytes to an unsigned integer.
      *
      * @param in The input stream
-     * @param isBigEndian True if bytes are stored big-endian
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
      * @return The converted integer
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
     public static int readUnsigned16 (final InputStream in, final boolean isBigEndian) throws IOException
     {
-        final int ch1 = in.read ();
-        final int ch2 = in.read ();
-        if ((ch1 | ch2) < 0)
-            throw new EOFException ();
+        final byte [] bytes = in.readNBytes (2);
         if (isBigEndian)
-            return (ch1 << 8) + ch2;
-        return (ch2 << 8) + ch1;
+            return (bytes[1] & 0xFF) | ((bytes[0] & 0xFF) << 8);
+        return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8);
     }
 
 
     /**
-     * Reads and converts 2 bytes to an unsigned integer with least significant bytes first.
+     * Reads and converts 2 bytes to an signed integer.
+     *
+     * @param fileAccess The random access file to read from
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readSigned16 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    {
+        final ByteBuffer buffer = ByteBuffer.wrap (readNBytes (fileAccess, 2));
+        buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        return buffer.getShort ();
+    }
+
+
+    /**
+     * Reads and converts 2 bytes to an unsigned integer.
      *
      * @param fileAccess The random access file to read from
      * @param isBigEndian True if bytes are stored big-endian
@@ -80,13 +93,10 @@ public class StreamUtils
      */
     public static int readUnsigned16 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
-        final int ch1 = fileAccess.read ();
-        final int ch2 = fileAccess.read ();
-        if ((ch1 | ch2) < 0)
-            throw new EOFException ();
+        final byte [] bytes = readNBytes (fileAccess, 2);
         if (isBigEndian)
-            return (ch1 << 8) + ch2;
-        return (ch2 << 8) + ch1;
+            return (bytes[1] & 0xFF) | ((bytes[0] & 0xFF) << 8);
+        return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8);
     }
 
 
@@ -116,6 +126,50 @@ public class StreamUtils
 
 
     /**
+     * Writes an integer as 3 bytes.
+     *
+     * @param out The output stream
+     * @param value The value to write
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian (least
+     *            significant bytes first)
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static void writeUnsigned24 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    {
+        if (isBigEndian)
+        {
+            out.write (value >> 16 & 0xFF);
+            out.write (value >> 8 & 0xFF);
+            out.write (value & 0xFF);
+        }
+        else
+        {
+            out.write (value & 0xFF);
+            out.write (value >> 8 & 0xFF);
+            out.write (value >> 16 & 0xFF);
+        }
+    }
+
+
+    /**
+     * Reads and converts 4 bytes to a signed integer.
+     *
+     * @param in The input stream
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readSigned32 (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        final ByteBuffer buffer = ByteBuffer.wrap (in.readNBytes (4));
+        buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        return buffer.getShort ();
+    }
+
+
+    /**
      * Reads and converts 4 bytes to an unsigned integer.
      *
      * @param in The input stream
@@ -124,17 +178,12 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readUnsigned32 (final InputStream in, final boolean isBigEndian) throws IOException
+    public static long readUnsigned32 (final InputStream in, final boolean isBigEndian) throws IOException
     {
-        final int ch1 = in.read ();
-        final int ch2 = in.read ();
-        final int ch3 = in.read ();
-        final int ch4 = in.read ();
-        if ((ch1 | ch2 | ch3 | ch4) < 0)
-            throw new EOFException ();
+        final byte [] bytes = in.readNBytes (4);
         if (isBigEndian)
-            return (ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4;
-        return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1;
+            return (bytes[3] & 0xFF) | ((bytes[2] & 0xFF) << 8) | ((bytes[1] & 0xFF) << 16) | ((long) (bytes[0] & 0xFF) << 24);
+        return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8) | ((bytes[2] & 0xFF) << 16) | ((long) (bytes[3] & 0xFF) << 24);
     }
 
 
@@ -168,6 +217,23 @@ public class StreamUtils
 
 
     /**
+     * Reads and converts 4 bytes to a signed integer.
+     *
+     * @param fileAccess The random access file to read from
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readSigned32 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    {
+        final ByteBuffer buffer = ByteBuffer.wrap (readNBytes (fileAccess, 4));
+        buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        return buffer.getShort ();
+    }
+
+
+    /**
      * Reads and converts 4 bytes to an unsigned integer with least significant bytes first.
      *
      * @param fileAccess The random access file to read from
@@ -176,17 +242,12 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static int readUnsigned32 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    public static long readUnsigned32 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
-        final int ch1 = fileAccess.read ();
-        final int ch2 = fileAccess.read ();
-        final int ch3 = fileAccess.read ();
-        final int ch4 = fileAccess.read ();
-        if ((ch1 | ch2 | ch3 | ch4) < 0)
-            throw new EOFException ();
+        final byte [] bytes = readNBytes (fileAccess, 4);
         if (isBigEndian)
-            return (ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4;
-        return (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + ch1;
+            return (bytes[3] & 0xFF) | ((bytes[2] & 0xFF) << 8) | ((bytes[1] & 0xFF) << 16) | ((long) (bytes[0] & 0xFF) << 24);
+        return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8) | ((bytes[2] & 0xFF) << 16) | ((long) (bytes[3] & 0xFF) << 24);
     }
 
 
@@ -494,7 +555,7 @@ public class StreamUtils
      */
     public static String readWithLengthUTF16 (final InputStream in) throws IOException
     {
-        final int size = readUnsigned32 (in, false);
+        final int size = (int) readUnsigned32 (in, false);
         final byte [] wideStringBytes = in.readNBytes (size * 2);
         return new String (wideStringBytes, StandardCharsets.UTF_16LE);
     }

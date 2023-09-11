@@ -159,22 +159,22 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
         final String comma = Functions.getMessage ("IDS_NOTIFY_COMMA");
 
         ////////////////////////////////////////////////////////////
-        // Velocity layers
+        // Groups
 
-        panel.createSeparator ("@IDS_WAV_VEL_LAYERS");
+        panel.createSeparator ("@IDS_WAV_GROUPS");
 
         // Layer detection pattern
         this.detectionPatternField = panel.createField ("@IDS_WAV_DETECTION", comma, -1);
 
-        // Order of layer numbering
+        // Order of group numbering
         final BoxPanel orderPanel = new BoxPanel (Orientation.HORIZONTAL);
         this.sortAscendingGroup = new ToggleGroup ();
-        final RadioButton order1 = orderPanel.createRadioButton ("@IDS_WAV_LAYERS_DESC");
+        final RadioButton order1 = orderPanel.createRadioButton ("@IDS_WAV_GROUPS_DESC");
         order1.setToggleGroup (this.sortAscendingGroup);
-        final RadioButton order2 = orderPanel.createRadioButton ("@IDS_WAV_LAYERS_ASC");
+        final RadioButton order2 = orderPanel.createRadioButton ("@IDS_WAV_GROUPS_ASC");
         order2.setToggleGroup (this.sortAscendingGroup);
         final BorderPane borderPane = new BorderPane ();
-        final Label orderLabel = orderPanel.createLabel ("@IDS_WAV_LAYER_NUMBERING");
+        final Label orderLabel = orderPanel.createLabel ("@IDS_WAV_GROUP_NUMBERING");
         borderPane.setLeft (orderLabel);
         BorderPane.setAlignment (orderLabel, Pos.CENTER_LEFT);
         borderPane.setRight (orderPanel.getPane ());

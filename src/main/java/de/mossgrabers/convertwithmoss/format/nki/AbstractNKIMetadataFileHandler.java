@@ -7,10 +7,11 @@ package de.mossgrabers.convertwithmoss.format.nki;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
@@ -127,10 +128,10 @@ public abstract class AbstractNKIMetadataFileHandler
             final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
             for (final Element programElement: programElements)
             {
-                final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+                final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
                 if (this.parseProgram (programElement, multisampleSource, monolithSamples))
                 {
-                    updateMetadata (metadata, parts, multisampleSource);
+                    updateMetadata (metadata, parts, multisampleSource.getMetadata ());
                     multisampleSources.add (multisampleSource);
                 }
             }
@@ -146,23 +147,23 @@ public abstract class AbstractNKIMetadataFileHandler
     /**
      * Tries to fill empty metadata fields by using some guessing on the filename.
      *
-     * @param metadata The read metadata
+     * @param metadataConfig The configuration
      * @param parts The filename and path parts
-     * @param multisampleSource Where to set the found metadata
+     * @param metadata Where to set the found metadata
      */
-    private static void updateMetadata (final IMetadataConfig metadata, final String [] parts, final MultisampleSource multisampleSource)
+    private static void updateMetadata (final IMetadataConfig metadataConfig, final String [] parts, final IMetadata metadata)
     {
-        final String creator = multisampleSource.getCreator ();
+        final String creator = metadata.getCreator ();
         if (creator == null || creator.isBlank ())
-            multisampleSource.setCreator (TagDetector.detect (parts, metadata.getCreatorTags (), metadata.getCreatorName ()));
+            metadata.setCreator (TagDetector.detect (parts, metadataConfig.getCreatorTags (), metadataConfig.getCreatorName ()));
 
-        final String category = multisampleSource.getCategory ();
+        final String category = metadata.getCategory ();
         if (category == null || category.isBlank ())
-            multisampleSource.setCategory (TagDetector.detectCategory (parts));
+            metadata.setCategory (TagDetector.detectCategory (parts));
 
-        final String [] keywords = multisampleSource.getKeywords ();
+        final String [] keywords = metadata.getKeywords ();
         if (keywords == null || keywords.length == 0)
-            multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
+            metadata.setKeywords (TagDetector.detectKeywords (parts));
     }
 
 
@@ -181,8 +182,8 @@ public abstract class AbstractNKIMetadataFileHandler
         {
             String text = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Header.xml").replace ("%PROGRAM_NAME%", multisampleSource.getName ());
 
-            // Add all layers
-            final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyLayers (false));
+            // Add all groups
+            final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyGroups (false));
             text += result + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_06_Footer.xml");
             return Optional.of (text);
         }
@@ -212,15 +213,15 @@ public abstract class AbstractNKIMetadataFileHandler
 
         for (int groupCount = 0; groupCount < groups.size (); groupCount++)
         {
-            final IGroup layer = groups.get (groupCount);
+            final IGroup group = groups.get (groupCount);
 
             // Set the group index and name
-            String name = layer.getName ();
+            String name = group.getName ();
             if (name == null || name.isBlank ())
-                name = "Layer " + (groupCount + 1);
+                name = "Group " + (groupCount + 1);
             String groupContent = groupTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%GROUP_NAME%", name);
 
-            final List<ISampleMetadata> sampleMetadataList = layer.getSampleMetadata ();
+            final List<ISampleMetadata> sampleMetadataList = group.getSampleMetadata ();
             for (final ISampleMetadata sampleMetadata: sampleMetadataList)
             {
                 String zoneContent = this.addZoneData (sampleMetadata, safeSampleFolderName, zoneTemplate, sampleCount, groupCount);
@@ -387,7 +388,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return True if successful
      * @throws IOException Could not create path for samples
      */
-    private boolean parseProgram (final Element programElement, final MultisampleSource multisampleSource, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
+    private boolean parseProgram (final Element programElement, final DefaultMultisampleSource multisampleSource, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
     {
         final String programName = this.tags.programName ();
         if (!programElement.hasAttribute (programName))
@@ -397,12 +398,13 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final String name = programElement.getAttribute (programName);
         multisampleSource.setName (name);
+        final IMetadata metadata = multisampleSource.getMetadata ();
         final String author = programParameters.get ("instrumentAuthor");
         if (author != null)
-            multisampleSource.setCreator (author);
+            metadata.setCreator (author);
         final String description = programParameters.get ("instrumentCredits");
         if (description != null && !NULL_ENTRY.equals (description))
-            multisampleSource.setDescription (description);
+            metadata.setDescription (description);
 
         final Element [] groupElements = this.getGroupElements (programElement);
         final Element [] zoneElements = this.getZoneElements (programElement);
@@ -411,7 +413,7 @@ public abstract class AbstractNKIMetadataFileHandler
         final List<IGroup> groups = this.getGroups (programParameters, groupElements, zoneElements, sourcePath, monolithSamples);
         if (groups.isEmpty ())
         {
-            this.notifier.logError ("IDS_NKI_NO_VEL_LAYER_DETECTED");
+            this.notifier.logError ("IDS_NKI_NO_VEL_GROUP_DETECTED");
             return false;
         }
 

@@ -9,6 +9,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.FileList;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.PresetChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.PresetChunkID;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
+import de.mossgrabers.tools.ui.Functions;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -38,20 +39,19 @@ public class PresetChunkData extends AbstractChunkData
         StreamUtils.readUnsigned32 (in, false);
 
         // Number of items in the Dictionary
-        final int numberOfItems = StreamUtils.readUnsigned32 (in, false);
+        final int numberOfItems = (int) StreamUtils.readUnsigned32 (in, false);
         if (numberOfItems != 1)
-            throw new IOException ("Found more than one item!");
+            throw new IOException (Functions.getMessage ("IDS_NKI_FOUND_MORE_THAN_ONE_ENTRY"));
 
-        final int sizeOfItem = StreamUtils.readUnsigned32 (in, false);
+        final int sizeOfItem = (int) StreamUtils.readUnsigned32 (in, false);
 
         // Reference for multiple items in the dictionary or does this belong to the size?!
         StreamUtils.readUnsigned32 (in, false);
 
         final byte [] data = in.readNBytes (sizeOfItem);
 
-        final int endPadding = StreamUtils.readUnsigned32 (in, false);
-        if (endPadding != 0)
-            throw new IOException ("No end padding");
+        // Padding
+        StreamUtils.readUnsigned32 (in, false);
 
         // Checksum?!
         StreamUtils.readUnsigned32 (in, false);

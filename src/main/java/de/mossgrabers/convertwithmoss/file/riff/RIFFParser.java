@@ -89,8 +89,7 @@ public class RIFFParser
                 this.parseLocalChunk (null, id);
                 break;
 
-            case NULL_NUL_ID:
-            case NULL_ID:
+            case NULL_NUL_ID, NULL_ID:
                 // Ignore
                 break;
 
@@ -261,34 +260,8 @@ public class RIFFParser
             if (size < 0)
                 throw new ParseException ("Found negative chunk length. File is broken?!");
 
-            if (this.isDataChunk (chunk))
-            {
-                final byte [] data = new byte [size];
-                this.in.read (data, 0, size);
-                chunk.setData (data);
-                this.visitor.visitChunk (parent, chunk);
+            if (this.handleChunks (parent, chunk, size))
                 return;
-            }
-
-            if (this.isPropertyChunk (chunk))
-            {
-                final byte [] data = new byte [size];
-                this.in.read (data, 0, size);
-                chunk.setData (data);
-                if (parent != null)
-                    parent.putPropertyChunk (chunk);
-                return;
-            }
-
-            if (this.isCollectionChunk (chunk))
-            {
-                final byte [] data = new byte [size];
-                this.in.read (data, 0, size);
-                chunk.setData (data);
-                if (parent != null)
-                    parent.addCollectionChunk (chunk);
-                return;
-            }
         }
         else
         {
@@ -298,6 +271,45 @@ public class RIFFParser
         this.in.skipFully (longSize);
         if (this.isStopChunks)
             this.visitor.visitChunk (parent, chunk);
+    }
+
+
+    /**
+     * Handles the given chunk.
+     *
+     * @param parent The parent chunk
+     * @param chunk The chunk to handle
+     * @param size The size of the chunk
+     * @return True if handled
+     * @throws ParseException Indicates a parsing error
+     * @throws IOException Could not read data from the stream
+     */
+    private boolean handleChunks (final RIFFChunk parent, final RIFFChunk chunk, final int size) throws IOException, ParseException
+    {
+        if (this.isDataChunk (chunk))
+        {
+            chunk.setData (this.in.readNBytes (size));
+            this.visitor.visitChunk (parent, chunk);
+            return true;
+        }
+
+        if (this.isPropertyChunk (chunk))
+        {
+            chunk.setData (this.in.readNBytes (size));
+            if (parent != null)
+                parent.putPropertyChunk (chunk);
+            return true;
+        }
+
+        if (this.isCollectionChunk (chunk))
+        {
+            chunk.setData (this.in.readNBytes (size));
+            if (parent != null)
+                parent.addCollectionChunk (chunk);
+            return true;
+        }
+
+        return false;
     }
 
 

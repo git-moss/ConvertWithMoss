@@ -7,8 +7,9 @@ package de.mossgrabers.convertwithmoss.format.bitwig;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -139,8 +140,8 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
 
-        final MultisampleSource multisampleSource = new MultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
-        this.parseMetadata (top, multisampleSource);
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        this.parseMetadata (top, multisampleSource.getMetadata ());
 
         // Parse all groups
         final Map<Integer, IGroup> indexedGroups = new TreeMap<> ();
@@ -153,8 +154,8 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.GROUP));
 
                 final String k = groupElement.getAttribute ("name");
-                final String layerName = k.isBlank () ? "Velocity Layer " + (groupCounter + 1) : k;
-                indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (layerName));
+                final String groupName = k.isBlank () ? "Group " + (groupCounter + 1) : k;
+                indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
                 groupCounter++;
             }
             else
@@ -163,7 +164,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 return Collections.emptyList ();
             }
         }
-        // Additional layer for potentially un-grouped samples
+        // Additional group for potentially un-grouped samples
         indexedGroups.put (Integer.valueOf (-1), new DefaultGroup ());
 
         // Parse (deprecated) layer tag
@@ -175,8 +176,8 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LAYER));
 
                 final String k = layerElement.getAttribute ("name");
-                final String layerName = k == null || k.isBlank () ? "Velocity Layer " + (groupCounter + 1) : k;
-                indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (layerName));
+                final String groupName = k == null || k.isBlank () ? "Group " + (groupCounter + 1) : k;
+                indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
                 groupCounter++;
 
                 // Parse all samples of the layer
@@ -207,28 +208,28 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
      * Parse the Bitwig multisample description file.
      *
      * @param top The top XML element
-     * @param multisampleSource Where to store the parsed information
+     * @param metadata Where to store the parsed information
      */
-    private void parseMetadata (final Element top, final MultisampleSource multisampleSource)
+    private void parseMetadata (final Element top, final IMetadata metadata)
     {
         final Element categoryTag = XMLUtils.getChildElementByName (top, BitwigMultisampleTag.CATEGORY);
         if (categoryTag != null)
         {
-            multisampleSource.setCategory (XMLUtils.readTextContent (categoryTag));
+            metadata.setCategory (XMLUtils.readTextContent (categoryTag));
             this.checkAttributes (BitwigMultisampleTag.CATEGORY, categoryTag.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.CATEGORY));
         }
 
         final Element creatorTag = XMLUtils.getChildElementByName (top, BitwigMultisampleTag.CREATOR);
         if (creatorTag != null)
         {
-            multisampleSource.setCreator (XMLUtils.readTextContent (creatorTag));
+            metadata.setCreator (XMLUtils.readTextContent (creatorTag));
             this.checkAttributes (BitwigMultisampleTag.CREATOR, creatorTag.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.CREATOR));
         }
 
         final Element descriptionTag = XMLUtils.getChildElementByName (top, BitwigMultisampleTag.DESCRIPTION);
         if (descriptionTag != null)
         {
-            multisampleSource.setDescription (XMLUtils.readTextContent (descriptionTag));
+            metadata.setDescription (XMLUtils.readTextContent (descriptionTag));
             this.checkAttributes (BitwigMultisampleTag.DESCRIPTION, descriptionTag.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.DESCRIPTION));
         }
 
@@ -246,7 +247,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 if (!k.isBlank ())
                     keywords.add (k);
             }
-            multisampleSource.setKeywords (keywords.toArray (new String [keywords.size ()]));
+            metadata.setKeywords (keywords.toArray (new String [keywords.size ()]));
         }
     }
 
@@ -264,7 +265,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         this.checkChildTags (BitwigMultisampleTag.SAMPLE, BitwigMultisampleTag.SAMPLE_TAGS, XMLUtils.getChildElements (sampleElement));
 
         final int groupIndex = XMLUtils.getIntegerAttribute (sampleElement, BitwigMultisampleTag.GROUP, -1);
-        final IGroup group = indexedGroups.computeIfAbsent (Integer.valueOf (groupIndex), groupIdx -> new DefaultGroup ("Velocity layer " + (groupIdx.intValue () + 1)));
+        final IGroup group = indexedGroups.computeIfAbsent (Integer.valueOf (groupIndex), groupIdx -> new DefaultGroup ("Group " + (groupIdx.intValue () + 1)));
 
         final String filename = sampleElement.getAttribute ("file");
         if (filename == null || filename.isBlank ())

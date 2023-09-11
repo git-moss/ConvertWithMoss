@@ -28,7 +28,7 @@ public class Group
     private boolean releaseTriggerNoteMonophonic;
     private boolean muted;
     private boolean soloed;
-    private int     rlsTrigCounter;
+    private int     releaseTriggerCounter;
     private int     voiceGroupIdx;
     private int     fxIdxAmpSplitPoint;
     private int     interpQuality;
@@ -57,13 +57,13 @@ public class Group
         this.reverse = in.read () > 0;
         this.releaseTrigger = in.read () > 0;
         this.releaseTriggerNoteMonophonic = in.read () > 0;
-        this.rlsTrigCounter = StreamUtils.readUnsigned32 (in, false);
+        this.releaseTriggerCounter = StreamUtils.readSigned32 (in, false);
         this.midiChannel = StreamUtils.readSigned16 (in, false);
-        this.voiceGroupIdx = StreamUtils.readUnsigned32 (in, false);
-        this.fxIdxAmpSplitPoint = StreamUtils.readUnsigned32 (in, false);
+        this.voiceGroupIdx = StreamUtils.readSigned32 (in, false);
+        this.fxIdxAmpSplitPoint = StreamUtils.readSigned32 (in, false);
         this.muted = in.read () > 0;
         this.soloed = in.read () > 0;
-        this.interpQuality = StreamUtils.readUnsigned32 (in, false);
+        this.interpQuality = StreamUtils.readSigned32 (in, false);
     }
 
 
@@ -184,7 +184,7 @@ public class Group
      */
     public int getRlsTrigCounter ()
     {
-        return this.rlsTrigCounter;
+        return this.releaseTriggerCounter;
     }
 
 

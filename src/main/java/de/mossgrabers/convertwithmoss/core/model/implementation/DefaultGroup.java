@@ -36,7 +36,7 @@ public class DefaultGroup implements IGroup
     /**
      * Constructor.
      *
-     * @param name The layers' name
+     * @param name The group's name
      */
     public DefaultGroup (final String name)
     {
@@ -47,7 +47,7 @@ public class DefaultGroup implements IGroup
     /**
      * Constructor.
      *
-     * @param samples The layers' samples
+     * @param samples The group's samples
      */
     public DefaultGroup (final List<ISampleMetadata> samples)
     {

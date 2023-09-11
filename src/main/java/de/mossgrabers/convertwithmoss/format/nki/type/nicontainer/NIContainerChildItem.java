@@ -35,7 +35,7 @@ public class NIContainerChildItem
         StreamUtils.readUnsigned32 (in, false);
 
         this.domainID = StreamUtils.readASCII (in, 4);
-        this.chunkTypeID = StreamUtils.readUnsigned32 (in, false);
+        this.chunkTypeID = (int) StreamUtils.readUnsigned32 (in, false);
 
         this.item.read (in);
     }

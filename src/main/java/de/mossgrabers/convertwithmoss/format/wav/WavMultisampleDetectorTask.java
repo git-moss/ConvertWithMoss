@@ -7,12 +7,11 @@ package de.mossgrabers.convertwithmoss.format.wav;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 import java.io.File;
@@ -48,7 +47,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
      * @param groupPatterns Detection patterns for groups
-     * @param isAscending Are layers ordered ascending?
+     * @param isAscending Are groups ordered ascending?
      * @param monoSplitPatterns Detection pattern for mono splits (to be combined to stereo files)
      * @param postfixTexts Post-fix text to remove
      * @param crossfadeNotes Number of notes to crossfade
@@ -129,7 +128,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
         try
         {
             final WavKeyMapping keyMapping = new WavKeyMapping (sampleFileMetadata, this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.groupPatterns, this.monoSplitPatterns);
-            final String name = cleanupName (this.metadata.isPreferFolderName () ? folder.getName () : keyMapping.getName (), this.postfixTexts);
+            final String name = cleanupName (this.metadataConfig.isPreferFolderName () ? folder.getName () : keyMapping.getName (), this.postfixTexts);
             if (name.isEmpty ())
             {
                 this.notifier.logError ("IDS_NOTIFY_NO_NAME");
@@ -145,15 +144,13 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
                 parts = subpaths.toArray (new String [subpaths.size ()]);
             }
 
-            final MultisampleSource multisampleSource = new MultisampleSource (folder, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, folder));
-            multisampleSource.setCreator (TagDetector.detect (parts, this.metadata.getCreatorTags (), this.metadata.getCreatorName ()));
-            multisampleSource.setCategory (TagDetector.detectCategory (parts));
-            multisampleSource.setKeywords (TagDetector.detectKeywords (parts));
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (folder, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, folder));
+            multisampleSource.getMetadata ().detectMetadata (this.metadataConfig, parts);
 
             final List<IGroup> sampleMetadata = keyMapping.getSampleMetadata ();
             multisampleSource.setGroups (sampleMetadata);
 
-            this.notifier.log ("IDS_NOTIFY_DETECED_LAYERS", Integer.toString (sampleMetadata.size ()));
+            this.notifier.log ("IDS_NOTIFY_DETECTED_GROUPS", Integer.toString (sampleMetadata.size ()));
             if (this.waitForDelivery ())
                 return Collections.emptyList ();
 

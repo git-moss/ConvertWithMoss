@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.core;
 
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 
 import java.io.File;
 import java.util.List;
@@ -19,6 +20,14 @@ import java.util.Optional;
  */
 public interface IMultisampleSource
 {
+    /**
+     * Get the metadata description for the source.
+     *
+     * @return The folder
+     */
+    IMetadata getMetadata ();
+
+
     /**
      * Get the folder which contains the multi-sample source or the file itself.
      *
@@ -52,7 +61,7 @@ public interface IMultisampleSource
 
 
     /**
-     * Get the description of the layers which belong to the multi-sample.
+     * Get the description of the groups which belong to the multi-sample.
      *
      * @return The descriptions
      */
@@ -60,16 +69,16 @@ public interface IMultisampleSource
 
 
     /**
-     * Get only the layers which do contain at least one sample.
+     * Get only the groups which do contain at least one sample.
      *
-     * @param filterReleaseTriggers Removes all layers which do only contain release triggers
-     * @return The layer without empty ones
+     * @param filterReleaseTriggers Removes all groups which do only contain release triggers
+     * @return The group without empty ones
      */
-    List<IGroup> getNonEmptyLayers (final boolean filterReleaseTriggers);
+    List<IGroup> getNonEmptyGroups (final boolean filterReleaseTriggers);
 
 
     /**
-     * Get the name of the multi sample.
+     * Get the name of the multi-sample.
      *
      * @return The name
      */
@@ -77,75 +86,11 @@ public interface IMultisampleSource
 
 
     /**
-     * Get a description of the multi sample.
-     *
-     * @return The description
-     */
-    String getDescription ();
-
-
-    /**
-     * Get the creator (author) of the multi-sample.
-     *
-     * @return The creator
-     */
-    String getCreator ();
-
-
-    /**
-     * Get the sound category of the multi-sample.
-     *
-     * @return The category
-     */
-    String getCategory ();
-
-
-    /**
-     * Get the keywords of the multi-sample.
-     *
-     * @return The keywords
-     */
-    String [] getKeywords ();
-
-
-    /**
-     * Set the name of the multi sample.
+     * Set the name of the multi-sample.
      *
      * @param name The name
      */
     void setName (String name);
-
-
-    /**
-     * Set the description.
-     *
-     * @param description The description
-     */
-    void setDescription (String description);
-
-
-    /**
-     * Set the creator (author).
-     *
-     * @param creator The creator (author) of the multi sample
-     */
-    void setCreator (String creator);
-
-
-    /**
-     * Set the category.
-     *
-     * @param category The sound category of the multi-sample
-     */
-    void setCategory (String category);
-
-
-    /**
-     * Set the keywords.
-     *
-     * @param keywords The keywords of the multi-sample
-     */
-    void setKeywords (String [] keywords);
 
 
     /**
@@ -165,7 +110,7 @@ public interface IMultisampleSource
 
 
     /**
-     * Checks all samples in all layers for filter settings. Only if all samples contain the same
+     * Checks all samples in all groups for filter settings. Only if all samples contain the same
      * filter settings a result is returned.
      *
      * @return The filter if a global filter setting is found
@@ -174,7 +119,7 @@ public interface IMultisampleSource
 
 
     /**
-     * Sets a filter on all samples in all layers.
+     * Sets a filter on all samples in all groups.
      *
      * @param filter The filter to set
      */
