@@ -54,7 +54,7 @@ public class Kontakt1Type extends AbstractKontaktType
         this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE_1");
 
         // Read the offset to the ZLIB part, 8 bytes have already been read
-        final int offset = StreamUtils.readUnsigned32 (fileAccess, false) - 8;
+        final int offset = (int) StreamUtils.readUnsigned32 (fileAccess, false) - 8;
         if (fileAccess.skipBytes (offset) != offset)
             throw new IOException (Functions.getMessage ("IDS_ERR_FILE_CORRUPTED"));
 

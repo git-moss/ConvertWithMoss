@@ -31,8 +31,8 @@ public class SubTreeItemChunkData extends AbstractChunkData
 
         final boolean isCompressed = in.read () > 0;
 
-        final int sizeUncompressed = StreamUtils.readUnsigned32 (in, false);
-        final int sizeCompressed = StreamUtils.readUnsigned32 (in, false);
+        final int sizeUncompressed = (int) StreamUtils.readUnsigned32 (in, false);
+        final int sizeCompressed = (int) StreamUtils.readUnsigned32 (in, false);
 
         final byte [] uncompressedData;
         if (isCompressed)

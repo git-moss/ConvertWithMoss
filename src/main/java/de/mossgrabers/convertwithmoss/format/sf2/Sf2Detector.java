@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.sf2;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadataPane;
 
 import java.io.File;
 import java.util.function.Consumer;
@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  *
  * @author Jürgen Moßgraber
  */
-public class Sf2Detector extends AbstractDetector<Sf2DetectorTask>
+public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTask>
 {
     /**
      * Constructor.
@@ -26,7 +26,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorTask>
      */
     public Sf2Detector (final INotifier notifier)
     {
-        super ("SoundFont 2", notifier);
+        super ("SoundFont 2", notifier, "Sf2");
     }
 
 
@@ -34,6 +34,6 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorTask>
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.startDetection (new Sf2DetectorTask (this.notifier, consumer, folder));
+        this.startDetection (new Sf2DetectorTask (this.notifier, consumer, folder, this.metadataPane));
     }
 }

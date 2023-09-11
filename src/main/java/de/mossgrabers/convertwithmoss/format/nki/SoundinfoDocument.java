@@ -36,7 +36,7 @@ public class SoundinfoDocument
 
 
     /**
-     * Constructor.
+     * Constructor. Creates an empty sound info.
      *
      * @param author The author of the 'sound'
      * @param categories The category of the 'sound'
@@ -46,6 +46,39 @@ public class SoundinfoDocument
         this.author = author;
         if (categories != null)
             Collections.addAll (this.categories, categories);
+    }
+
+
+    /**
+     * Constructor. Parses the sound info from a XML document.
+     *
+     * @param content The XML document as a string
+     * @throws SAXException Could not parse the document
+     */
+    public SoundinfoDocument (final String content) throws SAXException
+    {
+        final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
+        final Element top = document.getDocumentElement ();
+
+        // Read the properties
+        final Element propertiesElement = XMLUtils.getChildElementByName (top, "properties");
+        if (propertiesElement != null)
+        {
+            this.name = XMLUtils.read (propertiesElement, "name");
+            this.author = XMLUtils.read (propertiesElement, "author");
+        }
+
+        // Read the attribute tags
+        final Element attributesElement = XMLUtils.getChildElementByName (top, "attributes");
+        if (attributesElement != null)
+        {
+            for (final Element attributeElement: XMLUtils.getChildElementsByName (attributesElement, "attribute", false))
+            {
+                final String value = XMLUtils.read (attributeElement, "value");
+                if (value != null && !value.isBlank () && !IGNORE_TAGS.contains (value))
+                    this.categories.add (value);
+            }
+        }
     }
 
 
@@ -76,39 +109,6 @@ public class SoundinfoDocument
         sb.append ("  </attributes>\n\n");
         sb.append ("</soundinfo>\n");
         return sb.toString ();
-    }
-
-
-    /**
-     * Constructor.
-     *
-     * @param content The XML document as a string
-     * @throws SAXException Could not parse the document
-     */
-    public SoundinfoDocument (final String content) throws SAXException
-    {
-        final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-        final Element top = document.getDocumentElement ();
-
-        // Read the properties
-        final Element propertiesElement = XMLUtils.getChildElementByName (top, "properties");
-        if (propertiesElement != null)
-        {
-            this.name = XMLUtils.read (propertiesElement, "name");
-            this.author = XMLUtils.read (propertiesElement, "author");
-        }
-
-        // Read the attribute tags
-        final Element attributesElement = XMLUtils.getChildElementByName (top, "attributes");
-        if (attributesElement != null)
-        {
-            for (final Element attributeElement: XMLUtils.getChildElementsByName (attributesElement, "attribute", false))
-            {
-                final String value = XMLUtils.read (attributeElement, "value");
-                if (value != null && !value.isBlank () && !IGNORE_TAGS.contains (value))
-                    this.categories.add (value);
-            }
-        }
     }
 
 

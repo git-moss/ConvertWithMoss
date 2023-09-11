@@ -570,7 +570,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public void setFilenameWithoutLayer (final String nameWithoutLayer)
+    public void setFilenameWithoutGroup (final String nameWithoutLayer)
     {
         this.filenameWithoutLayer = Optional.ofNullable (nameWithoutLayer);
     }
@@ -578,7 +578,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public String getFilenameWithoutLayer ()
+    public String getFilenameWithoutGroup ()
     {
         return this.filenameWithoutLayer.isEmpty () ? this.getFilename () : this.filenameWithoutLayer.get ();
     }

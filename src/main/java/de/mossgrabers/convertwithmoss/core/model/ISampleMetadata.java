@@ -38,19 +38,19 @@ public interface ISampleMetadata
 
 
     /**
-     * Get the name without the layer text.
+     * Get the name without the group text.
      *
-     * @return The name without the layer text
+     * @return The name without the group text
      */
-    String getFilenameWithoutLayer ();
+    String getFilenameWithoutGroup ();
 
 
     /**
-     * Set the name without the layer text.
+     * Set the name without the group text.
      *
-     * @param nameWithoutLayer The name without the layer text
+     * @param nameWithoutGroup The name without the group text
      */
-    void setFilenameWithoutLayer (String nameWithoutLayer);
+    void setFilenameWithoutGroup (String nameWithoutGroup);
 
 
     /**

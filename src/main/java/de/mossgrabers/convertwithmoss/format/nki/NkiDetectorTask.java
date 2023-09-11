@@ -7,7 +7,8 @@ package de.mossgrabers.convertwithmoss.format.nki;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktType;
@@ -88,8 +89,11 @@ public class NkiDetectorTask extends AbstractDetectorTask
             final int typeID = fileAccess.readInt ();
             if (KontaktTypes.ID_KONTAKT5_MONOLITH.intValue () == typeID)
             {
-                this.notifier.logError ("IDS_NKI_KONTAKT5_MONOLITH_NOT_SUPPORTED");
-                return Collections.emptyList ();
+                fileAccess.seek (0);
+                try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
+                {
+                    return this.readNIMonolithContainer (inputStream, sourceFile);
+                }
             }
 
             // Check for Kontakt 1 or 2-4 formats
@@ -98,13 +102,53 @@ public class NkiDetectorTask extends AbstractDetectorTask
                 throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_FILE_ID", Integer.toHexString (typeID).toUpperCase ()));
             final List<IMultisampleSource> result = kontaktType.readNKI (this.sourceFolder, sourceFile, fileAccess);
             if (result.isEmpty ())
-                this.notifier.logError ("IDS_NKI_COULD_NOT_DETECT_LAYERS");
+                this.notifier.logError ("IDS_NKI_COULD_NOT_DETECT_GROUPS");
             return result;
         }
         catch (final IOException ex)
         {
             this.notifier.logError (ex);
         }
+        return Collections.emptyList ();
+    }
+
+
+    /**
+     * Reads an NI file container.
+     *
+     * @param inputStream The input stream to read from
+     * @param sourceFile The source file to convert
+     * @return The parsed multi-samples, if any
+     * @throws IOException Could not read the file container
+     */
+    private List<IMultisampleSource> readNIMonolithContainer (final InputStream inputStream, final File sourceFile) throws IOException
+    {
+        final String FILE_CONTAINER_MAGIC = "/\\ NI FC MTD  /\\";
+        final String FILE_CONTAINER_TABLE_OF_CONTENTS = "/\\ NI FC TOC  /\\";
+
+        final String magic = StreamUtils.readASCII (inputStream, 16);
+        if (!FILE_CONTAINER_MAGIC.equals (magic))
+            throw new IOException (Functions.getMessage ("IDS_NKI5_NOT_A_FILE_CONTAINER"));
+
+        // Header chunk
+        inputStream.skip (256);
+
+        final int fileCount = (int) StreamUtils.readUnsigned64 (inputStream, false);
+        final long totalSize = StreamUtils.readUnsigned64 (inputStream, false);
+
+        final String magicTOC = StreamUtils.readASCII (inputStream, 16);
+        if (!FILE_CONTAINER_TABLE_OF_CONTENTS.equals (magicTOC))
+            throw new IOException (Functions.getMessage ("IDS_NKI5_NOT_A_FILE_CONTAINER"));
+
+        // // NI FC TOC
+        // // Native Instruments FileContainer Table Of Contents
+        // let mtd_magic = reader.read_bytes(16)?;
+        // debug_assert_eq!(mtd_magic, b"/\\ NI FC TOC /\\");
+
+        // this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container",
+        // appChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
+
+        this.notifier.logError ("IDS_NKI_KONTAKT5_MONOLITH_NOT_SUPPORTED");
         return Collections.emptyList ();
     }
 
@@ -129,9 +173,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
             if (application != AuthoringApplication.KONTAKT)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_NOT_A_KONTAKT_FILE", application == null ? "Unknown" : application.getName ()));
 
-            // TODO Detect monolith
-            final boolean isMonolith = false;
-            this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", appChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
+            this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", appChunkData.getApplicationVersion (), "", "Little-Endian");
 
             final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
             if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
@@ -164,11 +206,12 @@ public class NkiDetectorTask extends AbstractDetectorTask
             final List<String> attributes = soundinfo.getAttributes ();
             for (final IMultisampleSource source: sources)
             {
-                source.setKeywords (attributes.toArray (new String [attributes.size ()]));
-                if (source.getCreator () == null)
-                    source.setCreator (soundinfo.getAuthor ());
-                if (source.getCategory () == null && !attributes.isEmpty ())
-                    source.setCategory (attributes.get (0));
+                final IMetadata metadata = source.getMetadata ();
+                metadata.setKeywords (attributes.toArray (new String [attributes.size ()]));
+                if (metadata.getCreator () == null)
+                    metadata.setCreator (soundinfo.getAuthor ());
+                if (metadata.getCategory () == null && !attributes.isEmpty ())
+                    metadata.setCategory (attributes.get (0));
             }
         }
     }
@@ -184,9 +227,9 @@ public class NkiDetectorTask extends AbstractDetectorTask
      */
     private List<IMultisampleSource> convertProgram (final PresetChunkData presetChunkData, final File sourceFile) throws IOException
     {
-        final String n = this.metadata.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+        final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-        final MultisampleSource multisampleSource = new MultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
 
         final Optional<Program> optionalProgram = presetChunkData.parseProgram ();
         if (optionalProgram.isEmpty ())

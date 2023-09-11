@@ -30,7 +30,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
 
         this.isCompressed = in.read () > 0;
 
-        final int applicationID = StreamUtils.readUnsigned32 (in, false);
+        final long applicationID = StreamUtils.readUnsigned32 (in, false);
         this.application = AuthoringApplication.get (applicationID);
 
         // Always 1

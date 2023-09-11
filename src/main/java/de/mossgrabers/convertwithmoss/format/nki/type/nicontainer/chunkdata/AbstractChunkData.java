@@ -29,7 +29,7 @@ public abstract class AbstractChunkData implements IChunkData
      */
     protected void readVersion (final InputStream in) throws IOException
     {
-        this.version = StreamUtils.readUnsigned32 (in, false);
+        this.version = (int) StreamUtils.readUnsigned32 (in, false);
         if (this.version != 1)
             throw new IOException (Functions.getMessage ("IDS_NKI5_WRONG_ROOT_VERSION", Integer.toString (this.version)));
     }

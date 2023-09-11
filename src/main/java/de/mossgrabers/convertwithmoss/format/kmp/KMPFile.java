@@ -5,8 +5,8 @@
 package de.mossgrabers.convertwithmoss.format.kmp;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.tools.FileUtils;
@@ -64,7 +64,7 @@ public class KMPFile
     private String              nameLong;
 
     private final List<KSFFile> ksfFiles        = new ArrayList<> ();
-    private IGroup      layer;
+    private IGroup              group;
 
 
     /**
@@ -72,20 +72,20 @@ public class KMPFile
      *
      * @param notifier For logging errors
      * @param dosFilename Classic 8.3 file name
-     * @param layerName The name of the layer
-     * @param layer The layer
+     * @param groupName The name of the group
+     * @param group The group
      */
-    public KMPFile (final INotifier notifier, final String dosFilename, final String layerName, final IGroup layer)
+    public KMPFile (final INotifier notifier, final String dosFilename, final String groupName, final IGroup group)
     {
         this.notifier = notifier;
         this.sampleFolder1 = null;
         this.sampleFolder2 = null;
 
-        this.layer = layer;
-        this.numSamples = this.layer.getSampleMetadata ().size ();
+        this.group = group;
+        this.numSamples = this.group.getSampleMetadata ().size ();
 
         this.name = dosFilename;
-        this.nameLong = layerName;
+        this.nameLong = groupName;
     }
 
 
@@ -351,7 +351,7 @@ public class KMPFile
         out.write (KMP_REL1_ID.getBytes ());
         out.writeInt (this.numSamples * KMP_REL1_SIZE);
 
-        final List<ISampleMetadata> sampleMetadata = this.layer.getSampleMetadata ();
+        final List<ISampleMetadata> sampleMetadata = this.group.getSampleMetadata ();
         for (int i = 0; i < sampleMetadata.size (); i++)
         {
             final ISampleMetadata sample = sampleMetadata.get (i);
@@ -420,7 +420,7 @@ public class KMPFile
 
     private void writeKSFFiles (final File folder) throws IOException
     {
-        final List<ISampleMetadata> sampleMetadata = this.layer.getSampleMetadata ();
+        final List<ISampleMetadata> sampleMetadata = this.group.getSampleMetadata ();
         for (int i = 0; i < sampleMetadata.size (); i++)
         {
             final ISampleMetadata sample = sampleMetadata.get (i);

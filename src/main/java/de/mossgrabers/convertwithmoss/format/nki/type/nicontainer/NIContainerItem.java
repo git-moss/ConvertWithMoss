@@ -51,7 +51,7 @@ public class NIContainerItem
         final byte [] itemBlock = StreamUtils.readBlock64 (in, false);
         final ByteArrayInputStream bin = new ByteArrayInputStream (itemBlock);
 
-        final int headerVersion = StreamUtils.readUnsigned32 (bin, false);
+        final int headerVersion = (int) StreamUtils.readUnsigned32 (bin, false);
         if (headerVersion != 1)
             throw new IOException (Functions.getMessage ("IDS_NKI5_ITEM_HEADER_VERSION", Integer.toString (headerVersion)));
 
@@ -70,10 +70,10 @@ public class NIContainerItem
 
         this.dataChunk.read (bin);
 
-        this.version = StreamUtils.readUnsigned32 (bin, false);
+        this.version = (int) StreamUtils.readUnsigned32 (bin, false);
 
         // Read all child items
-        final int numChildren = StreamUtils.readUnsigned32 (bin, false);
+        final int numChildren = (int) StreamUtils.readUnsigned32 (bin, false);
         for (int i = 0; i < numChildren; i++)
         {
             final NIContainerChildItem childItem = new NIContainerChildItem ();

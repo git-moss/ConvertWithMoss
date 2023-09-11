@@ -80,11 +80,11 @@ public enum AuthoringApplication
     TRAKTOR(31, "Traktor");
 
 
-    private static final Map<Integer, AuthoringApplication> LOOKUP = new HashMap<> ();
+    private static final Map<Long, AuthoringApplication> LOOKUP = new HashMap<> ();
     static
     {
         for (final AuthoringApplication type: AuthoringApplication.values ())
-            LOOKUP.put (Integer.valueOf (type.id), type);
+            LOOKUP.put (Long.valueOf (type.id), type);
     }
 
 
@@ -94,9 +94,9 @@ public enum AuthoringApplication
      * @param id An ID
      * @return The authoring application or null if none exists with that ID
      */
-    public static AuthoringApplication get (final int id)
+    public static AuthoringApplication get (final long id)
     {
-        return LOOKUP.get (Integer.valueOf (id));
+        return LOOKUP.get (Long.valueOf (id));
     }
 
 

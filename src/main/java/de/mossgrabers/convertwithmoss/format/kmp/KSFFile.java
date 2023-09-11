@@ -150,8 +150,7 @@ public class KSFFile extends DefaultSampleMetadata
                     assertSize (id, dataSize, KSF_SAMPLE_FILENAME_SIZE);
                     throw new ParseException (Functions.getMessage ("IDS_KMP_ERR_REFERENCED_KSF_NOT_SUPPORTED"));
 
-                case KSF_SAMPLE_DIVIDED_PARAM_ID:
-                case KSF_SAMPLE_DIVIDED_DATA_ID:
+                case KSF_SAMPLE_DIVIDED_PARAM_ID, KSF_SAMPLE_DIVIDED_DATA_ID:
                     throw new ParseException (Functions.getMessage ("IDS_KMP_ERR_DISTRIBUTED_KSF_NOT_SUPPORTED"));
 
                 default:

@@ -78,8 +78,8 @@ public class Zone
 
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
-        this.sampleStart = StreamUtils.readUnsigned32 (in, false);
-        this.sampleEnd = StreamUtils.readUnsigned32 (in, false);
+        this.sampleStart = (int) StreamUtils.readUnsigned32 (in, false);
+        this.sampleEnd = (int) StreamUtils.readUnsigned32 (in, false);
 
         // Sample start modulation range
         StreamUtils.readUnsigned32 (in, false);
@@ -105,11 +105,11 @@ public class Zone
             StreamUtils.readUnsigned32 (in, false);
         }
 
-        this.filenameId = StreamUtils.readUnsigned32 (in, false);
-        this.sampleDataType = StreamUtils.readUnsigned32 (in, false);
-        this.sampleRate = StreamUtils.readUnsigned32 (in, false);
+        this.filenameId = (int) StreamUtils.readUnsigned32 (in, false);
+        this.sampleDataType = (int) StreamUtils.readUnsigned32 (in, false);
+        this.sampleRate = (int) StreamUtils.readUnsigned32 (in, false);
         this.numChannels = in.read ();
-        this.numFrames = StreamUtils.readUnsigned32 (in, false);
+        this.numFrames = (int) StreamUtils.readUnsigned32 (in, false);
 
         // Unknown
         StreamUtils.readUnsigned32 (in, false);
@@ -120,7 +120,7 @@ public class Zone
             StreamUtils.readUnsigned32 (in, false);
         }
 
-        this.rootNote = StreamUtils.readUnsigned32 (in, false);
+        this.rootNote = (int) StreamUtils.readUnsigned32 (in, false);
         // Seems never to be set to anything but 1.0, no idea where this might be set in Kontakt
         this.tuning = StreamUtils.readFloatLE (in);
 

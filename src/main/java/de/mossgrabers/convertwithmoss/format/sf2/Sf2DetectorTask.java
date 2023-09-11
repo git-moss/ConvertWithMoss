@@ -6,17 +6,19 @@ package de.mossgrabers.convertwithmoss.format.sf2;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
@@ -27,7 +29,7 @@ import de.mossgrabers.convertwithmoss.file.sf2.Sf2Modulator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Preset;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2PresetZone;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 
@@ -54,10 +56,11 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * @param notifier The notifier
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
+     * @param metadata Additional metadata configuration parameters
      */
-    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
+    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
     {
-        super (notifier, consumer, sourceFolder, null, ".sf2");
+        super (notifier, consumer, sourceFolder, metadata, ".sf2");
     }
 
 
@@ -99,16 +102,16 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             final Sf2Preset preset = presets.get (i);
 
             final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + preset.getName ();
-            final MultisampleSource source = new MultisampleSource (sourceFile, parts, preset.getName (), mappingName);
-            source.setCreator (sf2File.getSoundDesigner ());
-            source.setCategory (TagDetector.detectCategory (parts));
-            source.setKeywords (TagDetector.detectKeywords (parts));
-            source.setDescription (createDescription (sf2File));
+            final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, preset.getName (), mappingName);
+            final IMetadata metadata = source.getMetadata ();
+            metadata.detectMetadata (this.metadataConfig, parts);
+            metadata.setCreator (sf2File.getSoundDesigner ());
+            metadata.setDescription (createDescription (sf2File));
 
             final GeneratorHierarchy generators = new GeneratorHierarchy ();
 
-            // Create the layers
-            final List<IGroup> layers = new ArrayList<> ();
+            // Create the groups
+            final List<IGroup> groups = new ArrayList<> ();
             for (int presetZoneIndex = 0; presetZoneIndex < preset.getZoneCount (); presetZoneIndex++)
             {
                 final Sf2PresetZone zone = preset.getZone (presetZoneIndex);
@@ -120,7 +123,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 generators.setPresetZoneGenerators (zone.getGenerators ());
 
                 final Sf2Instrument instrument = zone.getInstrument ();
-                final DefaultGroup layer = new DefaultGroup (instrument.getName ());
+                final DefaultGroup group = new DefaultGroup (instrument.getName ());
 
                 for (int instrumentZoneIndex = 0; instrumentZoneIndex < instrument.getZoneCount (); instrumentZoneIndex++)
                 {
@@ -133,15 +136,15 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                     generators.setInstrumentZoneGenerators (instrZone.getGenerators ());
                     final Sf2SampleMetadata sampleMetadata = createSampleMetadata (instrZone.getSample (), generators);
                     parseModulators (sampleMetadata, zone, instrZone);
-                    layer.addSampleMetadata (sampleMetadata);
+                    group.addSampleMetadata (sampleMetadata);
                 }
 
-                layers.add (layer);
+                groups.add (group);
             }
 
             this.printUnsupportedGenerators (generators.diffGenerators ());
 
-            source.setGroups (this.combineToStereo (layers));
+            source.setGroups (this.combineToStereo (groups));
 
             multisamples.add (source);
         }
@@ -172,23 +175,23 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * SF2 contains only mono files. Combine them to stereo, if setup as split-stereo or (only)
      * panned left/right. If it is a pure mono file (not panned) leave it as it is.
      *
-     * @param layers The layers which contain the samples to combine
-     * @return The layers with combined samples for convenience
+     * @param groups The groups which contain the samples to combine
+     * @return The groups with combined samples for convenience
      */
-    private List<IGroup> combineToStereo (final List<IGroup> layers)
+    private List<IGroup> combineToStereo (final List<IGroup> groups)
     {
-        for (final IGroup layer: layers)
+        for (final IGroup group: groups)
         {
-            final List<ISampleMetadata> sampleMetadataOfLayer = layer.getSampleMetadata ();
+            final List<ISampleMetadata> sampleMetadataOfGroup = group.getSampleMetadata ();
 
-            final int initialCapacity = sampleMetadataOfLayer.size () / 2;
+            final int initialCapacity = sampleMetadataOfGroup.size () / 2;
             final List<ISampleMetadata> resultSamples = new ArrayList<> (initialCapacity);
             final List<Sf2SampleMetadata> leftSamples = new ArrayList<> (initialCapacity);
             final List<Sf2SampleMetadata> rightSamples = new ArrayList<> (initialCapacity);
             final List<Sf2SampleMetadata> panLeftSamples = new ArrayList<> (initialCapacity);
             final List<Sf2SampleMetadata> panRightSamples = new ArrayList<> (initialCapacity);
 
-            for (final ISampleMetadata sampleMetadata: sampleMetadataOfLayer)
+            for (final ISampleMetadata sampleMetadata: sampleMetadataOfGroup)
             {
                 final Sf2SampleMetadata sf2SampleMetadata = (Sf2SampleMetadata) sampleMetadata;
                 final Sf2SampleDescriptor sample = sf2SampleMetadata.getSample ();
@@ -223,10 +226,10 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             resultSamples.addAll (this.combineLinkedSamples (leftSamples, rightSamples));
             resultSamples.addAll (this.combinePanoramaSamples (panLeftSamples, panRightSamples));
 
-            layer.setSampleMetadata (resultSamples);
+            group.setSampleMetadata (resultSamples);
         }
 
-        return layers;
+        return groups;
     }
 
 
@@ -259,6 +262,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                     {
                         // Store the matching right side sample with the left side one
                         leftSample.setRightSample (sample);
+                        leftSample.setPanorama (Utils.clamp (leftSample.getPanorama () + rightSample.getPanorama (), -1.0, 1.0));
                         resultSamples.add (leftSample);
                         rightSamples.remove (i);
                         found = true;
@@ -310,6 +314,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                     {
                         // Store the matching right side sample with the left side one
                         panLeftSample.setRightSample (panRightSample.getSample ());
+                        panLeftSample.setPanorama (Utils.clamp (panLeftSample.getPanorama () + panRightSample.getPanorama (), -1.0, 1.0));
                         resultSamples.add (panLeftSample);
                         panRightSamples.remove (i);
                         found = true;

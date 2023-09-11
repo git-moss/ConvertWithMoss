@@ -6,9 +6,11 @@ package de.mossgrabers.convertwithmoss.core.detector;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,23 +24,20 @@ import java.util.Optional;
  *
  * @author Jürgen Moßgraber
  */
-public class MultisampleSource implements IMultisampleSource
+public class DefaultMultisampleSource implements IMultisampleSource
 {
-    private File                 sourceFile;
-    private String []            subPath;
-    private String               name;
-    private final String         mappingName;
-    private String               description = "";
-    private String               creator     = "";
-    private String               category    = "";
-    private String []            keywords    = new String [0];
-    private List<IGroup> layers      = Collections.emptyList ();
+    private File         sourceFile;
+    private String []    subPath;
+    private String       name;
+    private final String mappingName;
+    private List<IGroup> groups   = Collections.emptyList ();
+    private IMetadata    metadata = new DefaultMetadata ();
 
 
     /**
      * Constructor. Values must be set by setters!
      */
-    public MultisampleSource ()
+    public DefaultMultisampleSource ()
     {
         this (null, null, null, null);
     }
@@ -52,12 +51,20 @@ public class MultisampleSource implements IMultisampleSource
      * @param name The name of the multi-sample
      * @param mappingName The name to display for the mapping process.
      */
-    public MultisampleSource (final File sourceFile, final String [] subPath, final String name, final String mappingName)
+    public DefaultMultisampleSource (final File sourceFile, final String [] subPath, final String name, final String mappingName)
     {
         this.sourceFile = sourceFile;
         this.subPath = subPath;
         this.name = name;
         this.mappingName = mappingName;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IMetadata getMetadata ()
+    {
+        return this.metadata;
     }
 
 
@@ -97,18 +104,18 @@ public class MultisampleSource implements IMultisampleSource
     @Override
     public List<IGroup> getGroups ()
     {
-        return this.layers;
+        return this.groups;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public List<IGroup> getNonEmptyLayers (final boolean filterReleaseTriggers)
+    public List<IGroup> getNonEmptyGroups (final boolean filterReleaseTriggers)
     {
-        final List<IGroup> cleanedLayers = new ArrayList<> ();
-        for (final IGroup layer: this.layers)
+        final List<IGroup> cleanedGroups = new ArrayList<> ();
+        for (final IGroup group: this.groups)
         {
-            final List<ISampleMetadata> sampleMetadata = layer.getSampleMetadata ();
+            final List<ISampleMetadata> sampleMetadata = group.getSampleMetadata ();
             if (sampleMetadata.isEmpty ())
                 continue;
 
@@ -119,15 +126,15 @@ public class MultisampleSource implements IMultisampleSource
                 {
                     if (sample.getTrigger () != TriggerType.RELEASE)
                     {
-                        cleanedLayers.add (layer);
+                        cleanedGroups.add (group);
                         break;
                     }
                 }
             }
             else
-                cleanedLayers.add (layer);
+                cleanedGroups.add (group);
         }
-        return cleanedLayers;
+        return cleanedGroups;
     }
 
 
@@ -141,38 +148,6 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public String getDescription ()
-    {
-        return this.description;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String getCreator ()
-    {
-        return this.creator;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String getCategory ()
-    {
-        return this.category;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String [] getKeywords ()
-    {
-        return this.keywords;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     public void setName (final String name)
     {
         this.name = name;
@@ -181,42 +156,9 @@ public class MultisampleSource implements IMultisampleSource
 
     /** {@inheritDoc} */
     @Override
-    public void setDescription (final String description)
+    public void setGroups (final List<IGroup> groups)
     {
-        this.description = description;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setCreator (final String creator)
-    {
-        if (creator != null)
-            this.creator = creator;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setCategory (final String category)
-    {
-        this.category = category;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setKeywords (final String [] keywords)
-    {
-        this.keywords = keywords;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setGroups (final List<IGroup> layers)
-    {
-        this.layers = new ArrayList<> (layers);
+        this.groups = new ArrayList<> (groups);
     }
 
 
@@ -233,9 +175,9 @@ public class MultisampleSource implements IMultisampleSource
     public Optional<IFilter> getGlobalFilter ()
     {
         IFilter globalFilter = null;
-        for (final IGroup layer: this.layers)
+        for (final IGroup group: this.groups)
         {
-            for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
+            for (final ISampleMetadata sampleMetadata: group.getSampleMetadata ())
             {
                 final Optional<IFilter> optFilter = sampleMetadata.getFilter ();
                 if (optFilter.isEmpty ())
@@ -256,9 +198,9 @@ public class MultisampleSource implements IMultisampleSource
     @Override
     public void setGlobalFilter (final IFilter filter)
     {
-        for (final IGroup layer: this.layers)
+        for (final IGroup group: this.groups)
         {
-            for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
+            for (final ISampleMetadata sampleMetadata: group.getSampleMetadata ())
                 sampleMetadata.setFilter (filter);
         }
     }

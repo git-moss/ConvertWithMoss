@@ -5,8 +5,9 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
 import de.mossgrabers.convertwithmoss.core.Utils;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -159,7 +160,7 @@ public class Program
         // Group Solo
         in.read ();
 
-        this.instrumentIconName = KontaktIcon.getName (StreamUtils.readUnsigned32 (in, false));
+        this.instrumentIconName = KontaktIcon.getName ((int) StreamUtils.readUnsigned32 (in, false));
 
         // Ignore instrument credits
         StreamUtils.readWithLengthUTF16 (in);
@@ -176,6 +177,8 @@ public class Program
         in.readNBytes (2);
 
         // Note: 8 (v5.3+), 20 (5.4+), or 24 (v7) more bytes available
+        // TODO resource_container_filename: reader.read_i32_le()?,
+        // TODO wallpaper_filename: reader.read_i32_le()?,
     }
 
 
@@ -258,7 +261,7 @@ public class Program
      * @param source The multisample to fill
      * @throws IOException Error finding samples
      */
-    public void fillInto (final MultisampleSource source) throws IOException
+    public void fillInto (final DefaultMultisampleSource source) throws IOException
     {
         this.setMetadata (source);
 
@@ -353,7 +356,7 @@ public class Program
     }
 
 
-    private File getFilename (final MultisampleSource source, final Zone zone) throws IOException
+    private File getFilename (final DefaultMultisampleSource source, final Zone zone) throws IOException
     {
         final int filenameId = zone.getFilenameId ();
         if (filenameId < 0 || filenameId >= this.filePaths.size ())
@@ -367,15 +370,17 @@ public class Program
     }
 
 
-    private void setMetadata (final MultisampleSource source)
+    private void setMetadata (final DefaultMultisampleSource source)
     {
         source.setName (this.name);
 
+        final IMetadata metadata = source.getMetadata ();
+
         if (this.instrumentAuthor != null && !this.instrumentAuthor.isBlank ())
-            source.setCreator (this.instrumentAuthor);
+            metadata.setCreator (this.instrumentAuthor);
         if (this.instrumentURL != null && !this.instrumentURL.isBlank ())
-            source.setDescription (this.instrumentURL);
-        source.setCategory (this.instrumentIconName);
+            metadata.setDescription (this.instrumentURL);
+        metadata.setCategory (this.instrumentIconName);
     }
 
 

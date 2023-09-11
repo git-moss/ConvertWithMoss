@@ -44,7 +44,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     private final Map<String, Set<String>>       unsupportedElements   = new HashMap<> ();
     private final Map<String, Set<String>>       unsupportedAttributes = new HashMap<> ();
 
-    protected final IMetadataConfig              metadata;
+    protected final IMetadataConfig              metadataConfig;
 
 
     /**
@@ -62,7 +62,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         this.consumer = consumer;
         this.sourceFolder = sourceFolder;
         this.fileEndings = fileEndings;
-        this.metadata = metadata;
+        this.metadataConfig = metadata;
     }
 
 

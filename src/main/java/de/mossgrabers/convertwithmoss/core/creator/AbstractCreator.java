@@ -8,8 +8,8 @@ import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -225,7 +225,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
 
     /**
-     * Add all samples from all layers in the given compressed ZIP output stream.
+     * Add all samples from all groups in the given compressed ZIP output stream.
      *
      * @param zos The ZIP output stream to which to add the samples
      * @param relativeFolderName The relative folder under which to store the file in the ZIP
@@ -236,9 +236,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     {
         int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
-        for (final IGroup layer: multisampleSource.getGroups ())
+        for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleMetadata info: layer.getSampleMetadata ())
+            for (final ISampleMetadata info: group.getSampleMetadata ())
             {
                 this.notifier.log ("IDS_NOTIFY_PROGRESS");
                 outputCount++;
@@ -288,7 +288,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
 
     /**
-     * Add all samples from all layers in the given uncompressed ZIP output stream.
+     * Add all samples from all groups in the given uncompressed ZIP output stream.
      *
      * @param zos The ZIP output stream to which to add the samples
      * @param relativeFolderName The relative folder under which to store the file in the ZIP
@@ -299,9 +299,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     {
         int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
-        for (final IGroup layer: multisampleSource.getGroups ())
+        for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleMetadata info: layer.getSampleMetadata ())
+            for (final ISampleMetadata info: group.getSampleMetadata ())
             {
                 this.notifier.log ("IDS_NOTIFY_PROGRESS");
                 outputCount++;
@@ -353,7 +353,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
 
     /**
-     * Writes all samples from all layers in the given folder.
+     * Writes all samples from all groups in the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multisample
@@ -365,9 +365,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         final List<File> writtenFiles = new ArrayList<> ();
 
         int outputCount = 0;
-        for (final IGroup layer: multisampleSource.getGroups ())
+        for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleMetadata info: layer.getSampleMetadata ())
+            for (final ISampleMetadata info: group.getSampleMetadata ())
             {
                 final Optional<String> filename = info.getUpdatedFilename ();
                 if (filename.isEmpty ())

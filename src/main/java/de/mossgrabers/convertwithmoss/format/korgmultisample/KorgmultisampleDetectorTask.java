@@ -7,12 +7,13 @@ package de.mossgrabers.convertwithmoss.format.korgmultisample;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.MultisampleSource;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -107,11 +108,13 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         final String name = readAscii (in);
 
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
-        final MultisampleSource multisampleSource = new MultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
         final List<IGroup> groups = new ArrayList<> ();
-        // There is only one layer (no velocity zones)
+        // There is only one group (no velocity zones)
         final DefaultGroup group = new DefaultGroup ("Layer");
         groups.add (group);
+
+        final IMetadata metadata = multisampleSource.getMetadata ();
 
         int id;
         while ((id = in.read ()) != -1)
@@ -119,15 +122,15 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
             switch (id)
             {
                 case KorgmultisampleTag.ID_AUTHOR:
-                    multisampleSource.setCreator (readAscii (in));
+                    metadata.setCreator (readAscii (in));
                     break;
 
                 case KorgmultisampleTag.ID_CATEGORY:
-                    multisampleSource.setCategory (readAscii (in));
+                    metadata.setCategory (readAscii (in));
                     break;
 
                 case KorgmultisampleTag.ID_COMMENT:
-                    multisampleSource.setDescription (readAscii (in));
+                    metadata.setDescription (readAscii (in));
                     break;
 
                 case KorgmultisampleTag.ID_SAMPLE:

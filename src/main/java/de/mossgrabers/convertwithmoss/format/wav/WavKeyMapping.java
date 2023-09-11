@@ -138,14 +138,14 @@ public class WavKeyMapping
      * @param isAscending Sort ascending otherwise descending
      * @param crossfadeNotes The number of notes to crossfade ranges
      * @param crossfadeVelocities The number of velocity steps to crossfade ranges
-     * @param layerPatterns The layer patterns
+     * @param groupPatterns The group patterns
      * @param leftChannelPatterns The left channel detection patterns
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    public WavKeyMapping (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    public WavKeyMapping (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
-        this.orderedSampleMetadata = this.createLayers (sampleInfos, isAscending, crossfadeNotes, layerPatterns, leftChannelPatterns);
+        this.orderedSampleMetadata = this.createGroups (sampleInfos, isAscending, crossfadeNotes, groupPatterns, leftChannelPatterns);
         this.name = this.calculateCommonName (this.findShortestFilename ());
 
         // Calculate velocity crossfades
@@ -153,16 +153,16 @@ public class WavKeyMapping
         int low = 0;
         int high = range;
         final int crossfadeVel = Math.min (range, crossfadeVelocities);
-        for (final IGroup layer: this.orderedSampleMetadata)
+        for (final IGroup group: this.orderedSampleMetadata)
         {
             int velHigh = Math.min (high + crossfadeVel, 127);
             final int next = high + range;
-            // Make sure that the last layer always reaches 127
+            // Make sure that the last group always reaches 127
             if (next > 127)
                 velHigh = 127;
             final int crossfadeHigh = velHigh == 127 ? 0 : Math.min (velHigh - low, crossfadeVel);
 
-            for (final ISampleMetadata info: layer.getSampleMetadata ())
+            for (final ISampleMetadata info: group.getSampleMetadata ())
             {
                 info.setVelocityLow (low);
                 info.setVelocityCrossfadeLow (0);
@@ -190,7 +190,7 @@ public class WavKeyMapping
     /**
      * Get the sample metadata ordered by their root notes.
      *
-     * @return The sample metadata list by layer
+     * @return The sample metadata list by group
      */
     public List<IGroup> getSampleMetadata ()
     {
@@ -199,54 +199,54 @@ public class WavKeyMapping
 
 
     /**
-     * Detect and create a layer order.
+     * Detect and create a group order.
      *
      * @param sampleInfos The sample information from which to get the filenames and set the key
      *            ranges.
      * @param isAscending Sort ascending otherwise descending
      * @param crossfadeNotes The number of notes to crossfade ranges
-     * @param layerPatterns The layer patterns
+     * @param groupPatterns The group patterns
      * @param leftChannelPatterns The left channel detection patterns
-     * @return The created layers
+     * @return The created groups
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    private List<IGroup> createLayers (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] layerPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    private List<IGroup> createGroups (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
         final Map<Integer, List<WavSampleMetadata>> sampleMetadata = new TreeMap<> ();
-        final Map<Integer, List<WavSampleMetadata>> layers = detectLayers (sampleInfos, layerPatterns);
+        final Map<Integer, List<WavSampleMetadata>> groups = detectGroups (sampleInfos, groupPatterns);
 
-        for (final Entry<Integer, List<WavSampleMetadata>> entry: layers.entrySet ())
+        for (final Entry<Integer, List<WavSampleMetadata>> entry: groups.entrySet ())
         {
-            final List<WavSampleMetadata> layer = entry.getValue ();
-            final Map<Integer, List<WavSampleMetadata>> noteMap = this.detectNotes (layer);
-            final Map<Integer, WavSampleMetadata> layerNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
-            sampleMetadata.put (entry.getKey (), createKeyMaps (layerNoteMap));
+            final List<WavSampleMetadata> group = entry.getValue ();
+            final Map<Integer, List<WavSampleMetadata>> noteMap = this.detectNotes (group);
+            final Map<Integer, WavSampleMetadata> groupNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
+            sampleMetadata.put (entry.getKey (), createKeyMaps (groupNoteMap));
 
             if (crossfadeNotes > 0 && crossfadeNotes < 128)
-                createCrossfades (layerNoteMap, crossfadeNotes);
+                createCrossfades (groupNoteMap, crossfadeNotes);
         }
 
-        return orderLayers (sampleMetadata, isAscending);
+        return orderGroups (sampleMetadata, isAscending);
     }
 
 
     /**
      * Get the sample metadata ordered by their root notes.
      *
-     * @param sampleMetadata The layers to sort
+     * @param sampleMetadata The groups to sort
      * @param isAscending Sort ascending otherwise descending
-     * @return The sample metadata list by layer
+     * @return The sample metadata list by group
      */
-    private static List<IGroup> orderLayers (final Map<Integer, List<WavSampleMetadata>> sampleMetadata, final boolean isAscending)
+    private static List<IGroup> orderGroups (final Map<Integer, List<WavSampleMetadata>> sampleMetadata, final boolean isAscending)
     {
-        final Collection<List<WavSampleMetadata>> layers = sampleMetadata.values ();
-        final List<IGroup> reorderedSampleMetadata = new ArrayList<> (layers.size ());
+        final Collection<List<WavSampleMetadata>> groups = sampleMetadata.values ();
+        final List<IGroup> reorderedSampleMetadata = new ArrayList<> (groups.size ());
 
         // Reorder descending
-        layers.forEach (layer -> {
+        groups.forEach (groupSampleMetadata -> {
 
-            final IGroup group = new DefaultGroup (new ArrayList<> (layer));
+            final IGroup group = new DefaultGroup (new ArrayList<> (groupSampleMetadata));
             if (isAscending)
                 reorderedSampleMetadata.add (group);
             else
@@ -255,7 +255,7 @@ public class WavKeyMapping
         });
 
         for (int i = 0; i < reorderedSampleMetadata.size (); i++)
-            reorderedSampleMetadata.get (i).setName ("Velocity Layer " + (i + 1));
+            reorderedSampleMetadata.get (i).setName ("Group " + (i + 1));
 
         return reorderedSampleMetadata;
     }
@@ -389,72 +389,72 @@ public class WavKeyMapping
      * Detect groups.
      *
      * @param sampleInfos Info about all available samples
-     * @param layerPatterns The patterns to match for groups
-     * @return The detected layers
+     * @param groupPatterns The patterns to match for groups
+     * @return The detected groups
      * @throws MultisampleException There was a pattern detected but (or more) of the samples could
      *             not be matched
      */
-    private static Map<Integer, List<WavSampleMetadata>> detectLayers (final WavSampleMetadata [] sampleInfos, final String [] layerPatterns) throws MultisampleException
+    private static Map<Integer, List<WavSampleMetadata>> detectGroups (final WavSampleMetadata [] sampleInfos, final String [] groupPatterns) throws MultisampleException
     {
-        final Map<Integer, List<WavSampleMetadata>> layers = new TreeMap<> ();
+        final Map<Integer, List<WavSampleMetadata>> groups = new TreeMap<> ();
 
-        // If no layers are detected create one layer which contains all samples
-        final Optional<Pattern> patternResult = getLayerPattern (sampleInfos, layerPatterns);
+        // If no groups are detected create one group which contains all samples
+        final Optional<Pattern> patternResult = getGroupPattern (sampleInfos, groupPatterns);
         if (patternResult.isEmpty ())
         {
-            layers.put (Integer.valueOf (0), new ArrayList<> (Arrays.asList (sampleInfos)));
-            return layers;
+            groups.put (Integer.valueOf (0), new ArrayList<> (Arrays.asList (sampleInfos)));
+            return groups;
         }
 
-        // Now match all sample names with the detected layer pattern
+        // Now match all sample names with the detected group pattern
         final Pattern pattern = patternResult.get ();
         for (final WavSampleMetadata si: sampleInfos)
         {
             final String filename = si.getFilename ();
             final Matcher matcher = pattern.matcher (filename);
             if (!matcher.matches ())
-                throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_VEL_LAYER_DETECTED", filename));
+                throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_VEL_GROUP_DETECTED", filename));
             try
             {
                 final String number = matcher.group ("value");
                 final Integer id = Integer.valueOf (number);
                 final String prefix = matcher.group ("prefix");
                 final String postfix = matcher.group ("postfix");
-                si.setFilenameWithoutLayer (prefix + postfix);
-                layers.computeIfAbsent (id, key -> new ArrayList<> ()).add (si);
+                si.setFilenameWithoutGroup (prefix + postfix);
+                groups.computeIfAbsent (id, key -> new ArrayList<> ()).add (si);
             }
             catch (final NumberFormatException ex)
             {
-                throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_VEL_LAYER_DETECTED", filename));
+                throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_VEL_GROUP_DETECTED", filename));
             }
         }
 
-        return layers;
+        return groups;
     }
 
 
     /**
-     * Check if one of the layer patterns matches.
+     * Check if one of the group patterns matches.
      *
-     * @param sampleInfos
-     * @param layerPatterns
+     * @param sampleInfos The sample metadata
+     * @param groupPatterns The patterns to detect groups
      * @return The matching pattern or null
      * @throws MultisampleException If a pattern could not be parsed
      */
-    private static Optional<Pattern> getLayerPattern (final ISampleMetadata [] sampleInfos, final String [] layerPatterns) throws MultisampleException
+    private static Optional<Pattern> getGroupPattern (final ISampleMetadata [] sampleInfos, final String [] groupPatterns) throws MultisampleException
     {
-        if (layerPatterns.length == 0 || sampleInfos.length == 0)
+        if (groupPatterns.length == 0 || sampleInfos.length == 0)
             return Optional.empty ();
         final String filename = sampleInfos[0].getFilename ();
-        for (final String layerPattern: layerPatterns)
+        for (final String groupPattern: groupPatterns)
         {
-            final String [] parts = layerPattern.split ("\\*");
+            final String [] parts = groupPattern.split ("\\*");
             String query;
 
             if (parts.length == 1)
             {
                 // * is at the end or the beginning
-                if (layerPattern.endsWith ("*"))
+                if (groupPattern.endsWith ("*"))
                     query = "(?<prefix>.*)" + Pattern.quote (parts[0]) + "(?<value>\\d+)(?<postfix>.*)";
                 else
                     query = "(?<prefix>.*)(?<value>\\d+)" + Pattern.quote (parts[0]) + "(?<postfix>.*)";
@@ -465,7 +465,7 @@ public class WavKeyMapping
                 query = "(?<prefix>.*)" + Pattern.quote (parts[0]) + "(?<value>\\d+)" + Pattern.quote (parts[1]) + "(?<postfix>.*)";
             }
             else
-                throw new MultisampleException (Functions.getMessage ("IDS_WAV_ERR_IN_LAYER_PATTERN", layerPattern));
+                throw new MultisampleException (Functions.getMessage ("IDS_WAV_ERR_IN_GROUP_PATTERN", groupPattern));
 
             final Pattern p = Pattern.compile (query);
             if (p.matcher (filename).matches ())
@@ -530,7 +530,7 @@ public class WavKeyMapping
             int midiNote = -1;
             for (final WavSampleMetadata sample: samples)
             {
-                filename = sample.getFilenameWithoutLayer ();
+                filename = sample.getFilenameWithoutGroup ();
                 midiNote = this.lookupMidiNote (keyMap, filename);
                 if (midiNote < 0)
                     break;
@@ -553,7 +553,7 @@ public class WavKeyMapping
             final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex.intValue ());
             for (final WavSampleMetadata sample: samples)
             {
-                final int midiNote = this.lookupMidiNote (keyMap, sample.getFilenameWithoutLayer ());
+                final int midiNote = this.lookupMidiNote (keyMap, sample.getFilenameWithoutGroup ());
                 orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (sample);
             }
 

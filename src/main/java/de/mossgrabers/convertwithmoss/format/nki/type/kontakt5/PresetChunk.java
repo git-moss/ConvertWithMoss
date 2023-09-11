@@ -38,7 +38,7 @@ public class PresetChunk
     public void parse (final InputStream in) throws IOException
     {
         this.id = StreamUtils.readUnsigned16 (in, false);
-        final int objectSize = StreamUtils.readUnsigned32 (in, false);
+        final int objectSize = (int) StreamUtils.readUnsigned32 (in, false);
         final byte [] objectData = in.readNBytes (objectSize);
         final ByteArrayInputStream objectInputStream = new ByteArrayInputStream (objectData);
 
@@ -80,10 +80,10 @@ public class PresetChunk
      */
     public void readArray (final InputStream in, final int objectSize, final boolean hasReference) throws IOException
     {
-        final int arrayLength = StreamUtils.readUnsigned32 (in, false);
+        final int arrayLength = (int) StreamUtils.readUnsigned32 (in, false);
         for (int index = 0; index < arrayLength; index++)
         {
-            final int reference = hasReference ? StreamUtils.readUnsigned32 (in, false) : 0;
+            final int reference = hasReference ? (int) StreamUtils.readUnsigned32 (in, false) : 0;
 
             final PresetChunk arrayObject = new PresetChunk ();
             arrayObject.readStructure (in, objectSize);
@@ -114,13 +114,13 @@ public class PresetChunk
 
         this.version = StreamUtils.readUnsigned16 (in, false);
 
-        final int privateDataSize = StreamUtils.readUnsigned32 (in, false);
+        final int privateDataSize = (int) StreamUtils.readUnsigned32 (in, false);
         this.privateData = in.readNBytes (privateDataSize);
 
-        final int publicDataSize = StreamUtils.readUnsigned32 (in, false);
+        final int publicDataSize = (int) StreamUtils.readUnsigned32 (in, false);
         this.publicData = in.readNBytes (publicDataSize);
 
-        final int sizeChildren = StreamUtils.readUnsigned32 (in, false);
+        final int sizeChildren = (int) StreamUtils.readUnsigned32 (in, false);
         final byte [] childrenData = in.readNBytes (sizeChildren);
 
         final ByteArrayInputStream inChildren = new ByteArrayInputStream (childrenData);

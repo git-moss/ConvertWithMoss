@@ -198,7 +198,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         programElement.appendChild (document.createElement (MPCKeygroupTag.PROGRAM_PADS + MPCKeygroupConstants.APP_VERSION));
 
         // Pitchbend 2 semitones up/down
-        final List<IGroup> layers = multisampleSource.getNonEmptyLayers (false);
+        final List<IGroup> layers = multisampleSource.getNonEmptyGroups (false);
         if (!layers.isEmpty ())
         {
             final int bendUp = Math.abs (layers.get (0).getSampleMetadata ().get (0).getBendUp ());

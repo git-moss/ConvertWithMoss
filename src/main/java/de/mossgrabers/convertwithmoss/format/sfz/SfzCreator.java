@@ -10,10 +10,11 @@ import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -118,13 +119,14 @@ public class SfzCreator extends AbstractCreator
         // Metadata (category, creator, keywords) is currently not available in the
         // specification but has a suggestion: https://github.com/sfz/opcode-suggestions/issues/19
         // until then add it as a comment
-        final String creator = multisampleSource.getCreator ();
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        final String creator = metadata.getCreator ();
         if (creator != null && !creator.isBlank ())
             sb.append (COMMENT_PREFIX).append ("Creator : ").append (creator).append (LINE_FEED);
-        final String category = multisampleSource.getCategory ();
+        final String category = metadata.getCategory ();
         if (category != null && !category.isBlank ())
             sb.append (COMMENT_PREFIX).append ("Category: ").append (category).append (LINE_FEED);
-        final String description = multisampleSource.getDescription ();
+        final String description = metadata.getDescription ();
         if (description != null && !description.isBlank ())
             sb.append (COMMENT_PREFIX).append (description.replace ("\n", "\n" + COMMENT_PREFIX)).append (LINE_FEED);
         sb.append (LINE_FEED);
@@ -135,9 +137,9 @@ public class SfzCreator extends AbstractCreator
         if (name != null && !name.isBlank ())
             addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
 
-        for (final IGroup layer: multisampleSource.getGroups ())
+        for (final IGroup group: multisampleSource.getGroups ())
         {
-            final List<ISampleMetadata> sampleMetadata = layer.getSampleMetadata ();
+            final List<ISampleMetadata> sampleMetadata = group.getSampleMetadata ();
             if (sampleMetadata.isEmpty ())
                 continue;
 
@@ -150,13 +152,13 @@ public class SfzCreator extends AbstractCreator
             }
 
             sb.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
-            final String layerName = layer.getName ();
-            if (layerName != null && !layerName.isBlank ())
-                addAttribute (sb, SfzOpcode.GROUP_LABEL, layerName, true);
+            final String groupName = group.getName ();
+            if (groupName != null && !groupName.isBlank ())
+                addAttribute (sb, SfzOpcode.GROUP_LABEL, groupName, true);
             if (sequence > 0)
                 addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, sequence, true);
 
-            final TriggerType trigger = layer.getTrigger ();
+            final TriggerType trigger = group.getTrigger ();
             if (trigger != null && trigger != TriggerType.ATTACK)
                 addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
 

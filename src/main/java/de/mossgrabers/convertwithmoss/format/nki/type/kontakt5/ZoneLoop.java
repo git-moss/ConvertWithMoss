@@ -45,13 +45,13 @@ public class ZoneLoop
      */
     public void parse (final ByteArrayInputStream in) throws IOException
     {
-        this.mode = StreamUtils.readUnsigned32 (in, false);
-        this.loopStart = StreamUtils.readUnsigned32 (in, false);
-        this.loopLength = StreamUtils.readUnsigned32 (in, false);
-        this.loopCount = StreamUtils.readUnsigned32 (in, false);
+        this.mode = StreamUtils.readSigned32 (in, false);
+        this.loopStart = (int) StreamUtils.readUnsigned32 (in, false);
+        this.loopLength = (int) StreamUtils.readUnsigned32 (in, false);
+        this.loopCount = (int) StreamUtils.readUnsigned32 (in, false);
         this.alternatingLoop = in.read ();
         this.loopTuning = StreamUtils.readFloatLE (in);
-        this.xFadeLength = StreamUtils.readUnsigned32 (in, false);
+        this.xFadeLength = (int) StreamUtils.readUnsigned32 (in, false);
     }
 
 

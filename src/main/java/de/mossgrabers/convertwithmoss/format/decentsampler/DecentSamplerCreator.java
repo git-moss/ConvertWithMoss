@@ -9,9 +9,9 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -224,7 +224,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // No metadata at all
 
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
-        final List<IGroup> groups = multisampleSource.getNonEmptyLayers (false);
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
         boolean hasRoundRobin = false;
 
@@ -242,9 +242,9 @@ public class DecentSamplerCreator extends AbstractCreator
         }
         this.createUI (document, multisampleElement, amplitudeEnvelope);
 
-        // Add all layers
+        // Add all groups
 
-        for (final IGroup layer: groups)
+        for (final IGroup group: groups)
         {
             final Element groupElement = XMLUtils.addElement (document, groupsElement, DecentSamplerTag.GROUP);
 
@@ -254,15 +254,15 @@ public class DecentSamplerCreator extends AbstractCreator
                 this.seqPosition++;
             }
 
-            final String name = layer.getName ();
+            final String name = group.getName ();
             if (name != null && !name.isBlank ())
                 groupElement.setAttribute ("name", name);
 
-            final TriggerType triggerType = layer.getTrigger ();
+            final TriggerType triggerType = group.getTrigger ();
             if (triggerType != TriggerType.ATTACK)
                 groupElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
-            for (final ISampleMetadata sample: layer.getSampleMetadata ())
+            for (final ISampleMetadata sample: group.getSampleMetadata ())
                 createSample (document, folderName, groupElement, sample);
         }
 

@@ -7,9 +7,10 @@ package de.mossgrabers.convertwithmoss.format.korgmultisample;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -47,7 +48,7 @@ public class KorgmultisampleCreator extends AbstractCreator
     {
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
-        // Create a sub-folder for the metadata (might be multiple for each layer) and all samples
+        // Create a sub-folder for the metadata (might be multiple for each group) and all samples
         final File subFolder = new File (destinationFolder, sampleName);
         if (!subFolder.exists () && !subFolder.mkdirs ())
         {
@@ -55,16 +56,16 @@ public class KorgmultisampleCreator extends AbstractCreator
             return;
         }
 
-        // Korg multisample format supports only 1 multi sample layer. Therefore create 1 output
-        // file for each layer
-        final List<IGroup> layers = multisampleSource.getNonEmptyLayers (true);
-        final int size = layers.size ();
+        // Korg multisample format supports only 1 multi sample group. Therefore create 1 output
+        // file for each group
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
+        final int size = groups.size ();
         for (int i = 0; i < size; i++)
         {
-            final IGroup layer = layers.get (i);
-            final ISampleMetadata sampleMetadata = layer.getSampleMetadata ().get (0);
-            final String layerName = size > 1 ? String.format ("%s %03d-%03d", sampleName, Integer.valueOf (sampleMetadata.getVelocityLow ()), Integer.valueOf (sampleMetadata.getVelocityHigh ())) : sampleName;
-            final File multiFile = new File (subFolder, layerName + ".korgmultisample");
+            final IGroup group = groups.get (i);
+            final ISampleMetadata sampleMetadata = group.getSampleMetadata ().get (0);
+            final String groupName = size > 1 ? String.format ("%s %03d-%03d", sampleName, Integer.valueOf (sampleMetadata.getVelocityLow ()), Integer.valueOf (sampleMetadata.getVelocityHigh ())) : sampleName;
+            final File multiFile = new File (subFolder, groupName + ".korgmultisample");
             if (multiFile.exists ())
             {
                 this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
@@ -72,7 +73,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             }
 
             this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
-            storeMultisample (multisampleSource, multiFile, layerName, layer);
+            storeMultisample (multisampleSource, multiFile, groupName, group);
         }
 
         this.writeSamples (subFolder, multisampleSource);
@@ -86,11 +87,11 @@ public class KorgmultisampleCreator extends AbstractCreator
      *
      * @param multisampleSource The multi sample to store in the library
      * @param multiFile The file of the korgmultisample
-     * @param layerName The name to use for the layer
-     * @param layer The layer to store
+     * @param groupName The name to use for the group
+     * @param group The group to store
      * @throws IOException Could not store the file
      */
-    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final String layerName, final IGroup layer) throws IOException
+    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final String groupName, final IGroup group) throws IOException
     {
         try (final OutputStream out = new FileOutputStream (multiFile))
         {
@@ -100,30 +101,32 @@ public class KorgmultisampleCreator extends AbstractCreator
             final byte [] byteArray;
             try (final ByteArrayOutputStream multisampleOutput = new ByteArrayOutputStream ())
             {
-                writeAscii (multisampleOutput, layerName, true);
+                writeAscii (multisampleOutput, groupName, true);
 
-                final String creator = multisampleSource.getCreator ();
+                final IMetadata metadata = multisampleSource.getMetadata ();
+
+                final String creator = metadata.getCreator ();
                 if (creator != null && !creator.isBlank ())
                 {
                     multisampleOutput.write (KorgmultisampleTag.ID_AUTHOR);
                     writeAscii (multisampleOutput, creator, false);
                 }
 
-                final String category = multisampleSource.getCategory ();
+                final String category = metadata.getCategory ();
                 if (category != null && !category.isBlank ())
                 {
                     multisampleOutput.write (KorgmultisampleTag.ID_CATEGORY);
                     writeAscii (multisampleOutput, category, false);
                 }
 
-                final String description = multisampleSource.getDescription ();
+                final String description = metadata.getDescription ();
                 if (description != null && !description.isBlank ())
                 {
                     multisampleOutput.write (KorgmultisampleTag.ID_COMMENT);
                     writeAscii (multisampleOutput, description, false);
                 }
 
-                writeSample (multisampleOutput, layer);
+                writeSample (multisampleOutput, group);
                 writeUUID (multisampleOutput);
 
                 byteArray = multisampleOutput.toByteArray ();
@@ -135,10 +138,10 @@ public class KorgmultisampleCreator extends AbstractCreator
     }
 
 
-    private static void writeSample (final ByteArrayOutputStream multisampleOutput, final IGroup layer) throws IOException
+    private static void writeSample (final ByteArrayOutputStream multisampleOutput, final IGroup group) throws IOException
     {
         // Create one sample block for each sample
-        for (final ISampleMetadata sample: layer.getSampleMetadata ())
+        for (final ISampleMetadata sample: group.getSampleMetadata ())
         {
             final byte [] sbByteArray;
             try (final ByteArrayOutputStream sampleBlockOutput = new ByteArrayOutputStream ())

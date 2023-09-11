@@ -2,10 +2,14 @@
 
 ## 6.4.0 (unreleased)
 
+* '(Velocity) Layers' have been renamed to 'Groups' in the user interface.
 * Native Instruments NKI files - Reading
   * New: A basic conversion of Kontakt 4.2 - 7 files is now implemented: metadata, zones and loops do work. So far, no support for groups, envelopes, filters, monoliths or NCW files.
 * Native Instruments NKI files - Writing
   * Fixed: Created Kontakt 1 files could be opened with Kontakt but not saved again due to the use of forward slashes for sample paths. Backward slashes are used now.
+* Sf2 - Reading
+  * Fixed: Panorama setting was not corrected when mono files were combined to stereo.
+  * Fixed: If left and right sample had different lengths, the shorter sample had data from the following sample added.
 
 ## 6.3.0
 

@@ -41,7 +41,7 @@ public class KMPCreator extends AbstractCreator
     {
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
-        // Create a sub-folder for the KMP files (one for each layer) and all samples
+        // Create a sub-folder for the KMP files (one for each group) and all samples
         final File subFolder = new File (destinationFolder, createDOSFileName (sampleName));
         if (!subFolder.exists () && !subFolder.mkdirs ())
         {
@@ -49,30 +49,29 @@ public class KMPCreator extends AbstractCreator
             return;
         }
 
-        // Korg KMP format supports only 1 group. Therefore, create 1 output
-        // file for each group
-        final List<IGroup> layers = multisampleSource.getNonEmptyLayers (true);
-        final int size = layers.size ();
+        // Korg KMP format supports only 1 group. Therefore, create 1 output file for each group
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
+        final int size = groups.size ();
         final boolean needsSubDir = size > 1;
         for (int i = 0; i < size; i++)
         {
-            final IGroup layer = layers.get (i);
-            final ISampleMetadata sampleMetadata = layer.getSampleMetadata ().get (0);
-            final String layerName = size > 1 ? String.format ("%d-%s", Integer.valueOf (sampleMetadata.getVelocityHigh ()), sampleName) : sampleName;
-            final String dosFileName = createDOSFileName (layerName) + ".KMP";
-            final File layerSubFolder;
+            final IGroup group = groups.get (i);
+            final ISampleMetadata sampleMetadata = group.getSampleMetadata ().get (0);
+            final String groupName = size > 1 ? String.format ("%d-%s", Integer.valueOf (sampleMetadata.getVelocityHigh ()), sampleName) : sampleName;
+            final String dosFileName = createDOSFileName (groupName) + ".KMP";
+            final File groupSubFolder;
             if (needsSubDir)
             {
-                layerSubFolder = new File (subFolder, dosFileName);
-                if (!layerSubFolder.exists () && !layerSubFolder.mkdirs ())
+                groupSubFolder = new File (subFolder, dosFileName);
+                if (!groupSubFolder.exists () && !groupSubFolder.mkdirs ())
                 {
-                    this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", layerSubFolder.getAbsolutePath ());
+                    this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", groupSubFolder.getAbsolutePath ());
                     return;
                 }
             }
             else
-                layerSubFolder = subFolder;
-            final File multiFile = new File (layerSubFolder, dosFileName);
+                groupSubFolder = subFolder;
+            final File multiFile = new File (groupSubFolder, dosFileName);
             if (multiFile.exists ())
             {
                 this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
@@ -80,7 +79,7 @@ public class KMPCreator extends AbstractCreator
             }
 
             this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
-            this.storeMultisample (multiFile, dosFileName, layerName, layer);
+            this.storeMultisample (multiFile, dosFileName, groupName, group);
 
             this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
         }
@@ -92,15 +91,15 @@ public class KMPCreator extends AbstractCreator
      *
      * @param multiFile The file of the korgmultisample
      * @param dosFilename Classic 8.3 file name
-     * @param layerName The name to use for the layer
-     * @param layer The layer to store
+     * @param groupName The name to use for the group
+     * @param group The group to store
      * @throws IOException Could not store the file
      */
-    private void storeMultisample (final File multiFile, final String dosFilename, final String layerName, final IGroup layer) throws IOException
+    private void storeMultisample (final File multiFile, final String dosFilename, final String groupName, final IGroup group) throws IOException
     {
         try (final OutputStream out = new FileOutputStream (multiFile))
         {
-            final KMPFile kmpFile = new KMPFile (this.notifier, dosFilename, layerName, layer);
+            final KMPFile kmpFile = new KMPFile (this.notifier, dosFilename, groupName, group);
             kmpFile.write (multiFile.getParentFile (), out);
         }
     }
