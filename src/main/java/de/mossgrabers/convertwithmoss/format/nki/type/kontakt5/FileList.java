@@ -159,6 +159,11 @@ public class FileList
         final int segmentType = in.read ();
         switch (segmentType)
         {
+            case 0:
+                final String driveOld = StreamUtils.readASCII (in, 2).trim ();
+                sb.append (driveOld).append (":/");
+                break;
+
             // Drive letter
             case 1:
                 final String drive = StreamUtils.readWithLengthUTF16 (in);
