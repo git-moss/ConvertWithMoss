@@ -155,7 +155,8 @@ public class TagDetector
             CATEGORY_BELL,
             "Musical Box",
             "Music Box",
-            "Tubular"
+            "Tubular",
+            "Carillon"
         });
         CATEGORIES.put (CATEGORY_BRASS, new String []
         {

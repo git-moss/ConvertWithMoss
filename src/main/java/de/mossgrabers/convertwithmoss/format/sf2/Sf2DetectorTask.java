@@ -101,8 +101,14 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         {
             final Sf2Preset preset = presets.get (i);
 
-            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + preset.getName ();
-            final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, preset.getName (), mappingName);
+            String presetName = preset.getName ();
+
+            // Little workaround for not set names...
+            if ("NewInstr".equals (presetName))
+                presetName = parts[0];
+
+            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + presetName;
+            final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName, mappingName);
             final IMetadata metadata = source.getMetadata ();
             metadata.detectMetadata (this.metadataConfig, parts);
             metadata.setCreator (sf2File.getSoundDesigner ());

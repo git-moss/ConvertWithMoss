@@ -112,16 +112,7 @@ public class StreamUtils
      */
     public static void writeUnsigned16 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
     {
-        if (isBigEndian)
-        {
-            out.write (value >> 8 & 0xFF);
-            out.write (value & 0xFF);
-        }
-        else
-        {
-            out.write (value & 0xFF);
-            out.write (value >> 8 & 0xFF);
-        }
+        writeUnsigned (out, value, 16, isBigEndian);
     }
 
 
@@ -137,18 +128,7 @@ public class StreamUtils
      */
     public static void writeUnsigned24 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
     {
-        if (isBigEndian)
-        {
-            out.write (value >> 16 & 0xFF);
-            out.write (value >> 8 & 0xFF);
-            out.write (value & 0xFF);
-        }
-        else
-        {
-            out.write (value & 0xFF);
-            out.write (value >> 8 & 0xFF);
-            out.write (value >> 16 & 0xFF);
-        }
+        writeUnsigned (out, value, 24, isBigEndian);
     }
 
 
@@ -165,7 +145,7 @@ public class StreamUtils
     {
         final ByteBuffer buffer = ByteBuffer.wrap (in.readNBytes (4));
         buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
-        return buffer.getShort ();
+        return buffer.getInt ();
     }
 
 
@@ -199,19 +179,32 @@ public class StreamUtils
      */
     public static void writeUnsigned32 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
     {
+        writeUnsigned (out, value, 32, isBigEndian);
+    }
+
+
+    /**
+     * Writes an integer as N bits, where N can be 8, 16, 24 or 32.
+     *
+     * @param out The output stream
+     * @param value The value to write
+     * @param numBits The number of bits to write
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian (least
+     *            significant bytes first)
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static void writeUnsigned (final OutputStream out, final int value, final int numBits, final boolean isBigEndian) throws IOException
+    {
         if (isBigEndian)
         {
-            out.write (value >> 24 & 0xFF);
-            out.write (value >> 16 & 0xFF);
-            out.write (value >> 8 & 0xFF);
-            out.write (value & 0xFF);
+            for (int offset = numBits - 8; offset >= 0; offset -= 8)
+                out.write (value >> offset & 0xFF);
         }
         else
         {
-            out.write (value & 0xFF);
-            out.write (value >> 8 & 0xFF);
-            out.write (value >> 16 & 0xFF);
-            out.write (value >> 24 & 0xFF);
+            for (int offset = 0; offset < numBits; offset += 8)
+                out.write (value >> offset & 0xFF);
         }
     }
 
@@ -229,7 +222,7 @@ public class StreamUtils
     {
         final ByteBuffer buffer = ByteBuffer.wrap (readNBytes (fileAccess, 4));
         buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
-        return buffer.getShort ();
+        return buffer.getInt ();
     }
 
 
@@ -303,7 +296,7 @@ public class StreamUtils
     {
         final long blockSize = readUnsigned64 (in, isBigEndian);
         if (blockSize > Integer.MAX_VALUE)
-            throw new IOException ("Data is larger than 4GB and cannot be read.");
+            throw new IOException (Functions.getMessage ("IDS_ERR_DATA_TOO_LARGE"));
         return in.readNBytes ((int) blockSize - 8);
     }
 

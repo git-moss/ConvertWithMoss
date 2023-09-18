@@ -9,12 +9,14 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwSampleMetadata;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
@@ -277,7 +279,7 @@ public class Program
             final DefaultGroup defaultGroup = groupPair.getKey ();
             final Group group = groupPair.getValue ();
 
-            final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (this.getFilename (source, zone));
+            final ISampleMetadata sampleMetadata = this.getFilename (source, zone);
             defaultGroup.addSampleMetadata (sampleMetadata);
 
             sampleMetadata.setStart (zone.getSampleStart ());
@@ -356,17 +358,15 @@ public class Program
     }
 
 
-    private File getFilename (final DefaultMultisampleSource source, final Zone zone) throws IOException
+    private ISampleMetadata getFilename (final DefaultMultisampleSource source, final Zone zone) throws IOException
     {
         final int filenameId = zone.getFilenameId ();
         if (filenameId < 0 || filenameId >= this.filePaths.size ())
-            throw new IOException (Functions.getMessage ("IDS_NKI5_NO_WRONG_FILE_INDEX", Integer.toString (filenameId)));
+            throw new IOException (Functions.getMessage ("IDS_NKI5_WRONG_FILE_INDEX", Integer.toString (filenameId)));
 
         final String filename = this.filePaths.get (filenameId);
-        if (filename.endsWith (".ncw"))
-            throw new IOException (Functions.getMessage ("IDS_NKI5_COMPRESSED_SAMPLES_NOT_SUPPORTED"));
-
-        return new File (source.getSourceFile ().getParent (), filename);
+        final File sampleFile = new File (source.getSourceFile ().getParent (), filename);
+        return filename.toLowerCase ().endsWith (".ncw") ? new NcwSampleMetadata (sampleFile) : new DefaultSampleMetadata (sampleFile);
     }
 
 
