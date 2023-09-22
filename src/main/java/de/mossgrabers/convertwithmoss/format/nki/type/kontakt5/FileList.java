@@ -20,7 +20,14 @@ import java.util.List;
  */
 public class FileList
 {
-    private final List<String> filePaths = new ArrayList<> ();
+    private final List<String> sampleFilePaths = new ArrayList<> ();
+    private String             absoluteSourcePath;
+    private String             absoluteMonolithSourcePath;
+    private String             resourceFile;
+    private String             nkiFilename;
+    private String             wallpaperFilename;
+    private String             impulseResponseSampleFilename;
+    private String             resourceFolder;
 
 
     /**
@@ -44,75 +51,112 @@ public class FileList
             if (version != 2)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_EX_VERSION", Integer.toString (version)));
 
-            // The file category: 1 = File or Folder, 2 = NKR file
-            StreamUtils.readUnsigned32 (in, false);
-
-            while (true)
-            {
-                in.mark (4);
-                final long type = StreamUtils.readUnsigned32 (in, false);
-                if (type == 0)
-                    break;
-                in.reset ();
-                readFile (in);
-            }
+            this.readSpecialFiles (in);
         }
         else
         {
             final long version = StreamUtils.readUnsigned32 (in, false);
-            if (version != 0)
+            if (version < 0 || version > 1)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_VERSION", Long.toString (version)));
+
+            if (version == 1)
+                this.absoluteMonolithSourcePath = readFile (in);
         }
 
         this.readFiles (in);
-        this.readMetadata (in);
+        this.readMetadata (in, chunkID);
     }
 
 
-    private void readMetadata (final ByteArrayInputStream in) throws IOException
+    private void readSpecialFiles (final ByteArrayInputStream in) throws IOException
     {
-        if (in.available () > 2)
+        while (in.available () > 0)
         {
-            // Last changed date of files
-            final int numFiles = this.filePaths.size ();
-            for (int i = 0; i < numFiles; i++)
+            final int type = StreamUtils.readSigned32 (in, false);
+            switch (type)
             {
-                // The last update date of the file
-                StreamUtils.readTimestamp (in, false);
-                // Padding - always zero
-                StreamUtils.readUnsigned32 (in, false);
-            }
+                case 0:
+                    this.absoluteSourcePath = readFile (in);
+                    return;
 
-            // Padding
+                // Original absolute folder path only set for monolith
+                case 1:
+                    this.absoluteMonolithSourcePath = readFile (in);
+                    return;
+
+                // NKR resource file
+                case 2:
+                    this.resourceFile = readFile (in);
+                    this.resourceFolder = readFile (in);
+                    return;
+
+                // NKR resource file
+                case 3:
+                    this.resourceFile = readFile (in);
+                    break;
+
+                default:
+                    throw new IOException ("Unknown special file type");
+            }
+        }
+    }
+
+
+    private void readMetadata (final ByteArrayInputStream in, final int chunkID) throws IOException
+    {
+        // Last changed date of files
+        final int numFiles = this.sampleFilePaths.size ();
+        for (int i = 0; i < numFiles; i++)
+        {
+            // The last update date of the file
+            StreamUtils.readTimestamp (in, false);
+            // Padding - always zero
             StreamUtils.readUnsigned32 (in, false);
-
-            if (in.available () > 2)
-            {
-                // Unknown but there is 1 integer for each file
-                for (int i = 0; i < numFiles; i++)
-                {
-                    // The file at the last index is set to 0, 1, 2 or 3. All others seem to be
-                    // always 0.
-                    StreamUtils.readUnsigned32 (in, false);
-                }
-
-                if (in.available () > 2)
-                {
-                    // The full path of the NKI file
-                    readFile (in);
-                }
-            }
-
-            // There is more data for reverb samples (and maybe wallpaper)
-            final int rest = in.available ();
-            if (rest == 0)
-                return;
-
-            in.readNBytes (rest - 2);
         }
 
-        // Always 1?
-        StreamUtils.readUnsigned16 (in, false);
+        if (chunkID == PresetChunkID.FILENAME_LIST_EX)
+        {
+            // Unknown but there is 1 integer for each file
+            for (int i = 0; i < numFiles; i++)
+                StreamUtils.readUnsigned32 (in, false);
+
+            // Reverb samples (and maybe wallpaper)
+            while (in.available () > 0)
+            {
+                final int type = StreamUtils.readSigned32 (in, false);
+                switch (type)
+                {
+                    // There are no additional files at all
+                    case 0:
+                        return;
+
+                    // No more files
+                    case 1:
+                        return;
+
+                    case 2:
+                        this.nkiFilename = readFile (in);
+                        break;
+
+                    case 3:
+                        this.nkiFilename = readFile (in);
+                        this.wallpaperFilename = readFile (in);
+                        break;
+
+                    case 7:
+                        this.impulseResponseSampleFilename = readFileShort (in);
+                        break;
+
+                    default:
+                        throw new IOException (Functions.getMessage ("IDS_NKI5_UNKNOWN_FILE_TYPE", Integer.toString (type)));
+                }
+            }
+        }
+        else
+        {
+            // Final padding
+            StreamUtils.readUnsigned32 (in, false);
+        }
     }
 
 
@@ -126,7 +170,7 @@ public class FileList
     {
         final long fileCount = StreamUtils.readUnsigned32 (in, false);
         for (long i = 0; i < fileCount; i++)
-            this.filePaths.add (readFile (in));
+            this.sampleFilePaths.add (readFile (in));
     }
 
 
@@ -148,6 +192,23 @@ public class FileList
 
 
     /**
+     * Read one file name with it's path. The segment count is only 1 byte.
+     *
+     * @param in The data to parse
+     * @return The read file
+     * @throws IOException Could not read the data
+     */
+    private static String readFileShort (final ByteArrayInputStream in) throws IOException
+    {
+        final StringBuilder sb = new StringBuilder ();
+        final int segmentCount = in.read ();
+        for (int s = 0; s < segmentCount; s++)
+            readSegment (in, sb);
+        return sb.toString ();
+    }
+
+
+    /**
      * Reads a segment of a file path.
      *
      * @param in Where to read the segment from
@@ -159,21 +220,32 @@ public class FileList
         final int segmentType = in.read ();
         switch (segmentType)
         {
+            // Drive letter ASCII
             case 0:
                 final String driveOld = StreamUtils.readASCII (in, 2).trim ();
-                sb.append (driveOld).append (":/");
+                if (driveOld.isEmpty ())
+                    sb.append ("/");
+                else
+                    sb.append (driveOld).append (":/");
                 break;
 
-            // Drive letter
+            // Drive letter UTF-16
             case 1:
                 final String drive = StreamUtils.readWithLengthUTF16 (in);
-                sb.append (drive).append (":/");
+                if (drive.isEmpty ())
+                    sb.append ("/");
+                else
+                    sb.append (drive).append (":/");
                 break;
 
             // Path segment
             case 2:
                 final String pathSegment = StreamUtils.readWithLengthUTF16 (in);
                 sb.append (pathSegment).append ('/');
+                break;
+
+            // A flag but unknown for what, only seen so far with NCW files but not all of them
+            case 3:
                 break;
 
             // File name
@@ -189,12 +261,89 @@ public class FileList
 
 
     /**
-     * Get the file paths.
+     * Get the sample file paths.
      *
      * @return The file paths
      */
-    public List<String> getFilePaths ()
+    public List<String> getSampleFiles ()
     {
-        return this.filePaths;
+        return this.sampleFilePaths;
+    }
+
+
+    /**
+     * Get the absolute path of the samples.
+     *
+     * @return The absolute sample path
+     */
+    public String getAbsoluteSourcePath ()
+    {
+        return this.absoluteSourcePath;
+    }
+
+
+    /**
+     * Get the absolute monolith source path
+     *
+     * @return The absolute monolith source path
+     */
+    public String getAbsoluteMonolithSourcePath ()
+    {
+        return this.absoluteMonolithSourcePath;
+    }
+
+
+    /**
+     * Get the resource file.
+     *
+     * @return The resource file
+     */
+    public String getResourceFile ()
+    {
+        return this.resourceFile;
+    }
+
+
+    /**
+     * Get the NKI filename.
+     *
+     * @return The NKI filename
+     */
+    public String getNkiFilename ()
+    {
+        return this.nkiFilename;
+    }
+
+
+    /**
+     * Get the wallpaper file name.
+     *
+     * @return The wallpaper file name
+     */
+    public String getWallpaperFilename ()
+    {
+        return this.wallpaperFilename;
+    }
+
+
+    /**
+     * Get the file name of the impulse response.
+     *
+     * @return The file name of the impulse response
+     */
+    public String getImpulseResponseSampleFilename ()
+    {
+        return this.impulseResponseSampleFilename;
+    }
+
+
+    /**
+     * Get the folder which contain the resources.
+     *
+     * @return The resource folder
+     */
+    public String getResourceFolder ()
+    {
+        return this.resourceFolder;
     }
 }

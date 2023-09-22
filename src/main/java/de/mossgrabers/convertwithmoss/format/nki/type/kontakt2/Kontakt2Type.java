@@ -9,12 +9,10 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.FastLZ;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.SoundinfoDocument;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
@@ -117,13 +115,12 @@ public class Kontakt2Type extends AbstractKontaktType
     /**
      * Constructor.
      *
-     * @param metadataConfig Default metadata
      * @param notifier Where to report errors
      * @param isBigEndian Larger bytes are first, other wise smaller bytes are first (little-endian)
      */
-    public Kontakt2Type (final IMetadataConfig metadataConfig, final INotifier notifier, final boolean isBigEndian)
+    public Kontakt2Type (final INotifier notifier, final boolean isBigEndian)
     {
-        super (metadataConfig, notifier);
+        super (notifier);
 
         this.isBigEndian = isBigEndian;
         this.handler = new K2MetadataFileHandler (notifier);
@@ -133,7 +130,7 @@ public class Kontakt2Type extends AbstractKontaktType
 
     /** {@inheritDoc} */
     @Override
-    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess) throws IOException
+    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
         // The size of the ZLIB block, we do not need the info
         final int zlibLength = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
@@ -188,9 +185,9 @@ public class Kontakt2Type extends AbstractKontaktType
 
         final List<IMultisampleSource> multiSamples;
         if (isFourDotTwo)
-            multiSamples = this.handleFastLZ (sourceFolder, sourceFile, fileAccess, zlibLength, decompressedLength);
+            multiSamples = this.handleFastLZ (sourceFolder, sourceFile, fileAccess, zlibLength, decompressedLength, metadataConfig);
         else
-            multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples);
+            multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples, metadataConfig);
 
         this.handleSoundinfo (sourceFile, fileAccess, multiSamples, metadata);
         return multiSamples;
@@ -280,10 +277,11 @@ public class Kontakt2Type extends AbstractKontaktType
      * @param fileAccess The random access file to read from
      * @param compressedDataSize The size of the compressed data
      * @param uncompressedSize The size of the uncompressed data size
+     * @param metadataConfig Default metadata
      * @return All parsed multi-samples
      * @throws IOException
      */
-    private List<IMultisampleSource> handleFastLZ (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final int compressedDataSize, int uncompressedSize) throws IOException
+    private List<IMultisampleSource> handleFastLZ (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final int compressedDataSize, final int uncompressedSize, final IMetadataConfig metadataConfig) throws IOException
     {
         final byte [] compressedData = new byte [compressedDataSize];
         fileAccess.readFully (compressedData);
@@ -295,7 +293,7 @@ public class Kontakt2Type extends AbstractKontaktType
             return Collections.emptyList ();
         }
 
-        final String n = this.metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+        final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
         optionalProgram.get ().fillInto (multisampleSource);
@@ -310,16 +308,17 @@ public class Kontakt2Type extends AbstractKontaktType
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
+     * @param metadataConfig Default metadata
      * @return All parsed multi-samples
      * @throws IOException
      */
-    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
+    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, WavSampleMetadata> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
     {
         final String xmlCode = CompressionUtils.readZLIB (fileAccess);
 
         try
         {
-            return this.handler.parse (sourceFolder, sourceFile, xmlCode, this.metadataConfig, monolithSamples);
+            return this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, monolithSamples);
         }
         catch (final UnsupportedEncodingException ex)
         {
@@ -513,24 +512,12 @@ public class Kontakt2Type extends AbstractKontaktType
         final Map<String, WavSampleMetadata> sampleMetadataMap = new HashMap<> (numSamples);
         for (int i = 0; i < numSamples; i++)
         {
-            final long position = positions.get (i).longValue ();
             // Move to start and skip header
-            fileAccess.seek (31 + position);
+            fileAccess.seek (31 + positions.get (i).longValue ());
 
-            final WaveFile wavFile = new WaveFile ();
             final InputStream is = Channels.newInputStream (fileAccess.getChannel ());
-            try
-            {
-                wavFile.read (is, true);
-            }
-            catch (final ParseException ex)
-            {
-                throw new IOException (ex);
-            }
-            final WavSampleMetadata wavSampleMetadata = new WavSampleMetadata (wavFile);
             final String sampleFilename = sampleFilenames.get (i);
-            wavSampleMetadata.setCombinedName (sampleFilename);
-            sampleMetadataMap.put (sampleFilename, wavSampleMetadata);
+            sampleMetadataMap.put (sampleFilename, new WavSampleMetadata (sampleFilename, is));
         }
 
         return sampleMetadataMap;
@@ -598,17 +585,17 @@ public class Kontakt2Type extends AbstractKontaktType
      *
      * @param multiSamples The multi samples to update
      * @param headerMetadata The metadata found in the header
-     * @param soundinfo The sound info
+     * @param soundInfo The sound info
      */
-    private static void updateMetadata (final List<IMultisampleSource> multiSamples, final IMetadata headerMetadata, final Optional<SoundinfoDocument> soundinfo)
+    private static void updateMetadata (final List<IMultisampleSource> multiSamples, final IMetadata headerMetadata, final Optional<SoundinfoDocument> soundInfo)
     {
         final Set<String> categories;
-        if (soundinfo.isPresent ())
+        if (soundInfo.isPresent ())
         {
-            final SoundinfoDocument soundinfoDocument = soundinfo.get ();
+            final SoundinfoDocument soundinfoDocument = soundInfo.get ();
 
             categories = soundinfoDocument.getCategories ();
-            if (categories.isEmpty ())
+            if (!categories.isEmpty ())
                 headerMetadata.setCategory (categories.iterator ().next ());
 
             final String soundAuthor = soundinfoDocument.getAuthor ();

@@ -13,7 +13,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -55,6 +54,18 @@ public class NcwFile
         {
             this.read (stream);
         }
+    }
+
+
+    /**
+     * Constructor. Reads the given NCW file.
+     *
+     * @param inputStream The stream from which to read the NCW file
+     * @throws IOException Could not read the file
+     */
+    public NcwFile (final InputStream inputStream) throws IOException
+    {
+        this.read (inputStream);
     }
 
 
@@ -186,6 +197,10 @@ public class NcwFile
      */
     private void parseBlock (final ByteArrayInputStream inputStream, final int blockIndex) throws IOException
     {
+        boolean isMidSide = false;
+        int offset = 0;
+        int length = 0;
+
         for (int channel = 0; channel < this.channels; channel++)
         {
             final int blockMagic = (int) StreamUtils.readUnsigned32 (inputStream, false);
@@ -196,7 +211,7 @@ public class NcwFile
             final int bits = StreamUtils.readSigned16 (inputStream, false);
             final int flags = StreamUtils.readUnsigned16 (inputStream, false);
             if (flags > 0)
-                throw new IOException (Functions.getMessage ("IDS_NCW_MID_SIDE_NOT_SUPPORTED"));
+                isMidSide = true;
 
             // Padding
             inputStream.skipNBytes (4);
@@ -226,9 +241,23 @@ public class NcwFile
                 }
             }
 
-            final int offset = blockIndex * NUM_SAMPLES;
-            final int length = Math.min (NUM_SAMPLES, this.numberOfSamples - offset);
+            offset = blockIndex * NUM_SAMPLES;
+            length = Math.min (NUM_SAMPLES, this.numberOfSamples - offset);
             System.arraycopy (samples, 0, this.channelData[channel], offset, length);
+        }
+
+        if (isMidSide)
+        {
+            if (this.channels != 2)
+                throw new IOException (Functions.getMessage ("IDS_NCW_MID_SIDE_ONLY_SUPPORTED_FOR_STEREO"));
+
+            for (int i = 0; i < length; i++)
+            {
+                final int mid = this.channelData[0][offset + i];
+                final int side = this.channelData[1][offset + i];
+                this.channelData[0][offset + i] = (mid + side) / 2;
+                this.channelData[1][offset + i] = (mid - side) / 2;
+            }
         }
     }
 
@@ -325,34 +354,5 @@ public class NcwFile
         }
 
         return samples;
-    }
-
-
-    // TODO remove
-    public static void main (final String [] attributes)
-    {
-        // Stereo 16bit
-        // String pathname = "C:/Privat/Programming/ConvertWithMoss/Testdateien/Kontakt/Kontakt
-        // Container Format/6.8.0 - Compressed/T3 Aeroglide Samples/Aeroglid A4.ncw";
-
-        // Mono 16bit
-        // final String pathname =
-        // "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\NCW\\16-bit.ncw";
-
-        // Stereo 24bit
-        final String pathname = "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\NCW\\24-bit.ncw";
-
-        final File testNCW = new File (pathname);
-
-        try (final FileOutputStream out = new FileOutputStream ("C:/Users/mos/Desktop/test.wav"))
-        {
-            final NcwFile ncwFile = new NcwFile (testNCW);
-            ncwFile.writeWAV (out);
-        }
-        catch (final IOException ex)
-        {
-            // TODO Auto-generated catch block
-            ex.printStackTrace ();
-        }
     }
 }

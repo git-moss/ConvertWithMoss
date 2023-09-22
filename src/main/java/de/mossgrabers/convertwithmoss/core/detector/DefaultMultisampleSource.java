@@ -26,12 +26,12 @@ import java.util.Optional;
  */
 public class DefaultMultisampleSource implements IMultisampleSource
 {
-    private File         sourceFile;
-    private String []    subPath;
-    private String       name;
-    private final String mappingName;
-    private List<IGroup> groups   = Collections.emptyList ();
-    private IMetadata    metadata = new DefaultMetadata ();
+    private File            sourceFile;
+    private String []       subPath;
+    private String          name;
+    private final String    mappingName;
+    private List<IGroup>    groups   = Collections.emptyList ();
+    private final IMetadata metadata = new DefaultMetadata ();
 
 
     /**

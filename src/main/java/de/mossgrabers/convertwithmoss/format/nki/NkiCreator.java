@@ -9,8 +9,9 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktType;
-import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
+import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktFormat;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt1.Kontakt1Type;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.Kontakt2Type;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 
@@ -37,7 +38,6 @@ public class NkiCreator extends AbstractCreator
     private static final String NKI_OUTPUT_FORMAT = "NkiOutputFormat";
     private static final String FOLDER_POSTFIX    = " Samples";
 
-    private final KontaktTypes  kontaktTypes;
     private ToggleGroup         outputFormatGroup;
 
 
@@ -49,8 +49,6 @@ public class NkiCreator extends AbstractCreator
     public NkiCreator (final INotifier notifier)
     {
         super ("Kontakt NKI", notifier);
-
-        this.kontaktTypes = new KontaktTypes (notifier, null);
     }
 
 
@@ -103,8 +101,8 @@ public class NkiCreator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final Integer kontaktID = this.outputFormatGroup.getToggles ().get (0).isSelected () ? KontaktTypes.ID_KONTAKT1_INSTRUMENT : KontaktTypes.ID_KONTAKT2_BIG_ENDIAN;
-        final IKontaktType kontaktType = this.kontaktTypes.getType (kontaktID);
+        final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
+        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier) : new Kontakt2Type (this.notifier, true);
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
         final File multiFile = new File (destinationFolder, sampleName + ".nki");

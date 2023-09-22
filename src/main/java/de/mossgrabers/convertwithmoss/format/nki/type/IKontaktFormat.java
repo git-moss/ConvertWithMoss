@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.nki.type;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,11 +15,11 @@ import java.util.List;
 
 
 /**
- * Interface to a specific Kontakt format type.
+ * Interface to read/write a specific Kontakt format.
  *
  * @author Jürgen Moßgraber
  */
-public interface IKontaktType
+public interface IKontaktFormat
 {
     /**
      * Read and parse a file which uses this format type from the given random access file.
@@ -27,9 +28,10 @@ public interface IKontaktType
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
      * @return The parsed multisample sources
+     * @param metadataConfig Default metadata
      * @throws IOException Error reading the file
      */
-    List<IMultisampleSource> readNKI (File sourceFolder, File sourceFile, RandomAccessFile fileAccess) throws IOException;
+    List<IMultisampleSource> readNKI (File sourceFolder, File sourceFile, RandomAccessFile fileAccess, IMetadataConfig metadataConfig) throws IOException;
 
 
     /**

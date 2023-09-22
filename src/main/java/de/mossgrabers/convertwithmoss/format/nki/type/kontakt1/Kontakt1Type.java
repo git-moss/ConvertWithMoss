@@ -8,8 +8,8 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.nki.Magic;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
-import de.mossgrabers.convertwithmoss.format.nki.type.KontaktTypes;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -36,12 +36,11 @@ public class Kontakt1Type extends AbstractKontaktType
     /**
      * Constructor.
      *
-     * @param metadataConfig Default metadata
      * @param notifier Where to report errors
      */
-    public Kontakt1Type (final IMetadataConfig metadataConfig, final INotifier notifier)
+    public Kontakt1Type (final INotifier notifier)
     {
-        super (metadataConfig, notifier);
+        super (notifier);
 
         this.handler = new NiSSMetadataFileHandler (notifier);
     }
@@ -49,7 +48,7 @@ public class Kontakt1Type extends AbstractKontaktType
 
     /** {@inheritDoc} */
     @Override
-    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess) throws IOException
+    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
         this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE_1");
 
@@ -61,7 +60,7 @@ public class Kontakt1Type extends AbstractKontaktType
         try
         {
             final String xmlCode = CompressionUtils.readZLIB (fileAccess);
-            return this.handler.parse (sourceFolder, sourceFile, xmlCode, this.metadataConfig, null);
+            return this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, null);
         }
         catch (final UnsupportedEncodingException ex)
         {
@@ -81,7 +80,7 @@ public class Kontakt1Type extends AbstractKontaktType
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
         // Kontakt 1 NKI File ID
-        StreamUtils.writeUnsigned32 (out, KontaktTypes.ID_KONTAKT1_INSTRUMENT.intValue (), true);
+        StreamUtils.writeUnsigned32 (out, Magic.KONTAKT1_INSTRUMENT, true);
 
         // The number of bytes in the file where the ZLIB starts. Always 0x24.
         StreamUtils.writeUnsigned32 (out, 0x24, false);
