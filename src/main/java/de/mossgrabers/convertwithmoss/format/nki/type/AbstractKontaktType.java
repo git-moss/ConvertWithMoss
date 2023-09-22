@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.format.nki.type;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 
 /**
@@ -13,21 +12,18 @@ import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
  *
  * @author Jürgen Moßgraber
  */
-public abstract class AbstractKontaktType implements IKontaktType
+public abstract class AbstractKontaktType implements IKontaktFormat
 {
-    protected final IMetadataConfig metadataConfig;
-    protected final INotifier       notifier;
+    protected final INotifier notifier;
 
 
     /**
      * Constructor.
      *
-     * @param metadataConfig Default metadata
      * @param notifier Where to report errors
      */
-    protected AbstractKontaktType (final IMetadataConfig metadataConfig, final INotifier notifier)
+    protected AbstractKontaktType (final INotifier notifier)
     {
-        this.metadataConfig = metadataConfig;
         this.notifier = notifier;
     }
 }

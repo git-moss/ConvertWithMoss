@@ -115,7 +115,7 @@ public class PresetChunkData extends AbstractChunkData
 
         final FileList fileList = new FileList ();
         fileList.parse (filelistChunk.get ());
-        final List<String> filePaths = fileList.getFilePaths ();
+        final List<String> filePaths = fileList.getSampleFiles ();
 
         final Optional<PresetChunk> programChunk = this.getTopChunk (PresetChunkID.PROGRAM);
         if (programChunk.isEmpty ())

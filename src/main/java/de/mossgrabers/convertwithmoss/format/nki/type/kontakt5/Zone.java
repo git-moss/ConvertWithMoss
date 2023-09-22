@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class Zone
 {
-    private int                  groupIndex;
+    private final int            groupIndex;
     private int                  sampleStart;
     private int                  sampleEnd;
     private int                  lowVelocity;
@@ -132,7 +132,7 @@ public class Zone
 
     /**
      * Get the group index.
-     * 
+     *
      * @return The group index
      */
     public int getGroupIndex ()

@@ -9,6 +9,7 @@ import de.mossgrabers.tools.ui.Functions;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 
@@ -19,7 +20,7 @@ import java.io.OutputStream;
  */
 public class NcwSampleMetadata extends DefaultSampleMetadata
 {
-    private final NcwFile ncwFile;
+    private NcwFile ncwFile;
 
 
     /**
@@ -32,7 +33,29 @@ public class NcwSampleMetadata extends DefaultSampleMetadata
     {
         super (file);
 
-        this.ncwFile = new NcwFile (file);
+        // Ignore non-existing files since it might be in a monolith
+        if (file.exists ())
+            this.handleNcwFile (new NcwFile (file));
+    }
+
+
+    /**
+     * Constructor.
+     * 
+     * @param filename The name of the file
+     * @param inputStream The stream from which the file content can be read
+     * @throws IOException Could not read the file
+     */
+    public NcwSampleMetadata (final String filename, final InputStream inputStream) throws IOException
+    {
+        this.setFilename (filename);
+        this.handleNcwFile (new NcwFile (inputStream));
+    }
+
+
+    private void handleNcwFile (final NcwFile ncwFile) throws IOException
+    {
+        this.ncwFile = ncwFile;
 
         final int channels = this.ncwFile.getChannels ();
         if (channels > 2)

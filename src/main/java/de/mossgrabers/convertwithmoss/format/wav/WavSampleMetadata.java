@@ -42,9 +42,34 @@ public class WavSampleMetadata extends DefaultSampleMetadata
      * @param waveFile An already read wave file
      * @throws IOException Could not read the file
      */
-    public WavSampleMetadata (final WaveFile waveFile) throws IOException
+    private WavSampleMetadata (final WaveFile waveFile) throws IOException
     {
         this.waveFile = waveFile;
+        this.readFromChunks ();
+    }
+
+
+    /**
+     * Constructor.
+     * 
+     * @param filename The name of the file
+     * @param inputStream The stream from which the file content can be read
+     * @throws IOException Could not read the file
+     */
+    public WavSampleMetadata (final String filename, final InputStream inputStream) throws IOException
+    {
+        this.setFilename (filename);
+
+        this.waveFile = new WaveFile ();
+        try
+        {
+            this.waveFile.read (inputStream, true);
+        }
+        catch (final ParseException ex)
+        {
+            throw new IOException (ex);
+        }
+
         this.readFromChunks ();
     }
 
@@ -178,9 +203,16 @@ public class WavSampleMetadata extends DefaultSampleMetadata
     public void writeSample (final OutputStream outputStream) throws IOException
     {
         if (this.getCombinedName ().isEmpty ())
-            Files.copy (this.getFile ().toPath (), outputStream);
-        else
-            this.waveFile.write (outputStream);
+        {
+            final File file = this.getFile ();
+            if (file != null)
+            {
+                Files.copy (file.toPath (), outputStream);
+                return;
+            }
+        }
+
+        this.waveFile.write (outputStream);
     }
 
 

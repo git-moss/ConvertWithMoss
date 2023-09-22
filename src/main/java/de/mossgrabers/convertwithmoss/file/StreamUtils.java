@@ -60,8 +60,8 @@ public class StreamUtils
     {
         final byte [] bytes = in.readNBytes (2);
         if (isBigEndian)
-            return (bytes[1] & 0xFF) | ((bytes[0] & 0xFF) << 8);
-        return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8);
+            return bytes[1] & 0xFF | (bytes[0] & 0xFF) << 8;
+        return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8;
     }
 
 
@@ -95,8 +95,8 @@ public class StreamUtils
     {
         final byte [] bytes = readNBytes (fileAccess, 2);
         if (isBigEndian)
-            return (bytes[1] & 0xFF) | ((bytes[0] & 0xFF) << 8);
-        return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8);
+            return bytes[1] & 0xFF | (bytes[0] & 0xFF) << 8;
+        return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8;
     }
 
 
@@ -162,8 +162,8 @@ public class StreamUtils
     {
         final byte [] bytes = in.readNBytes (4);
         if (isBigEndian)
-            return (bytes[3] & 0xFF) | ((bytes[2] & 0xFF) << 8) | ((bytes[1] & 0xFF) << 16) | ((long) (bytes[0] & 0xFF) << 24);
-        return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8) | ((bytes[2] & 0xFF) << 16) | ((long) (bytes[3] & 0xFF) << 24);
+            return bytes[3] & 0xFF | (bytes[2] & 0xFF) << 8 | (bytes[1] & 0xFF) << 16 | (long) (bytes[0] & 0xFF) << 24;
+        return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (long) (bytes[3] & 0xFF) << 24;
     }
 
 
@@ -239,8 +239,8 @@ public class StreamUtils
     {
         final byte [] bytes = readNBytes (fileAccess, 4);
         if (isBigEndian)
-            return (bytes[3] & 0xFF) | ((bytes[2] & 0xFF) << 8) | ((bytes[1] & 0xFF) << 16) | ((long) (bytes[0] & 0xFF) << 24);
-        return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8) | ((bytes[2] & 0xFF) << 16) | ((long) (bytes[3] & 0xFF) << 24);
+            return bytes[3] & 0xFF | (bytes[2] & 0xFF) << 8 | (bytes[1] & 0xFF) << 16 | (long) (bytes[0] & 0xFF) << 24;
+        return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (long) (bytes[3] & 0xFF) << 24;
     }
 
 
