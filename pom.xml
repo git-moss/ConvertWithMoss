@@ -152,8 +152,7 @@
 					<mainClass>${main.class}</mainClass>
 					<appVersion>${project.version}</appVersion>
 					<copyright>(c) 2021-2023 by ${project.organization.name}</copyright>
-					<description>A tool for converting multi-sample from one format to
-						another.</description>
+					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
 					<licenseFile>LICENSE</licenseFile>
 				</configuration>
