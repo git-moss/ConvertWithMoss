@@ -51,7 +51,7 @@ public class WavSampleMetadata extends DefaultSampleMetadata
 
     /**
      * Constructor.
-     * 
+     *
      * @param filename The name of the file
      * @param inputStream The stream from which the file content can be read
      * @throws IOException Could not read the file
@@ -86,7 +86,7 @@ public class WavSampleMetadata extends DefaultSampleMetadata
 
         try
         {
-            this.waveFile = new WaveFile (file, false);
+            this.waveFile = new WaveFile (file, true);
         }
         catch (final IOException | ParseException ex)
         {

@@ -1,10 +1,13 @@
 # Changes
 
-## 6.4.0 (unreleased)
+## 7.0.0
 
 * '(Velocity) Layers' have been renamed to 'Groups' in the user interface.
+* Fixed: Some issues with reading WAV files.
+* MPC keygroups
+  * Improved: Loop information is written to the WAV file which seems to be used by the MPC.
 * Native Instruments NKI files - Reading
-  * New: Conversion of Kontakt 4.2 - 7 files: metadata, zones, loops, NCW files work but no support for envelopes, filters and monoliths files.
+  * New: Conversion of Kontakt 4.2 - 7 files: metadata, zones, loops, NCW and monoliths files work but no support for envelopes and filters.
 * Native Instruments NKI files - Writing
   * Fixed: Created Kontakt 1 files could be opened with Kontakt but not saved again due to the use of forward slashes for sample paths. Backward slashes are used now.
 * Sf2 - Reading

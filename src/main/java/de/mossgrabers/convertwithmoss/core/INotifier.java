@@ -47,6 +47,15 @@ public interface INotifier
 
 
     /**
+     * Log the message to the notifier.
+     *
+     * @param throwable A throwable
+     * @param logExceptionStack Log the exception stack if true
+     */
+    void logError (Throwable throwable, boolean logExceptionStack);
+
+
+    /**
      * Log the text to the notifier. Only use for development or debugging.
      *
      * @param text The text to log

@@ -141,6 +141,7 @@ public class Kontakt5Type extends AbstractKontaktType
 
         this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
         return Optional.empty ();
+
     }
 
 

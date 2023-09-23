@@ -191,4 +191,30 @@ public class NIContainerItem
 
         return null;
     }
+
+
+    /**
+     * Find all chunks which matches the given type. First searches the data of the item, then
+     * recursively searches in the child elements.
+     *
+     * @param type The type of the chunk to look for
+     * @param foundChunks Where to add the found chunks
+     */
+    public void findAll (final NIContainerChunkType type, final List<NIContainerChunk> foundChunks)
+    {
+        NIContainerChunk chunk = this.dataChunk;
+        while (chunk != null)
+        {
+            if (chunk.getChunkType () == type)
+                foundChunks.add (chunk);
+
+            if (chunk.getData () instanceof final SubTreeItemChunkData subTree)
+                subTree.getSubTree ().findAll (type, foundChunks);
+
+            chunk = chunk.getNextChunk ();
+        }
+
+        for (final NIContainerChildItem childItem: this.children)
+            childItem.getItem ().findAll (type, foundChunks);
+    }
 }

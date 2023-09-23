@@ -100,7 +100,8 @@ public final class AudioFileUtils
 
         try
         {
-            checkSampleFile (wavFile.getAbsolutePath (), new WaveFile (wavFile, true), notifier);
+            final WaveFile waveFile = new WaveFile (wavFile, true);
+            checkSampleFile (wavFile.getAbsolutePath (), waveFile, notifier);
         }
         catch (final IOException | ParseException ex)
         {

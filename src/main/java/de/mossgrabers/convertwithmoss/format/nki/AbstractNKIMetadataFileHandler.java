@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
 import de.mossgrabers.convertwithmoss.file.AiffSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
 import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -497,8 +498,9 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param sourcePath The canonical path which contains the NKI file
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return the groups created (empty list is returned if nothing was created)
+     * @throws IOException Could not get sample file(s)
      */
-    private List<IGroup> getGroups (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
+    private List<IGroup> getGroups (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
     {
         if (groupElements == null || zoneElements == null)
             return Collections.emptyList ();
@@ -524,8 +526,9 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param sourcePath The canonical path which contains the NKI file
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return The group created from the zone element (null, if there is no group element)
+     * @throws IOException Could not get sample file(s)
      */
-    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples)
+    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
     {
         if (groupElement == null)
             return null;
@@ -557,8 +560,9 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param filter The filter or null if none is applied
      * @return A list of sample metadata object. If nothing can be created, an empty list is
      *         returned.
+     * @throws IOException Could not get sample file
      */
-    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples, final IFilter filter)
+    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples, final IFilter filter) throws IOException
     {
         if (groupElement == null || groupZones == null)
             return Collections.emptyList ();
@@ -837,8 +841,9 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param sourcePath The canonical path which contains the NKI file
      * @param isMonolith True if samples are contained in the NKI as well
      * @return The sample file. Null is returned if file cannot be retrieved successfully.
+     * @throws IOException Could not get the file
      */
-    private File getZoneSampleFile (final Element zoneElement, final String sourcePath, final boolean isMonolith)
+    private File getZoneSampleFile (final Element zoneElement, final String sourcePath, final boolean isMonolith) throws IOException
     {
         final Element sampleElement = XMLUtils.getChildElementByName (zoneElement, this.tags.zoneSample ());
         if (sampleElement == null)
@@ -863,22 +868,18 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param sourcePath The canonical path which contains the NKI file
      * @param isMonolith True if samples are contained in the NKI as well
      * @return The File if it can be found, null else
+     * @throws IOException Could not decode file name
      */
-    protected File getFileFromEncodedSampleFileName (final String encodedSampleFileName, final String sourcePath, final boolean isMonolith)
+    protected File getFileFromEncodedSampleFileName (final String encodedSampleFileName, final String sourcePath, final boolean isMonolith) throws IOException
     {
         final StringBuilder path = new StringBuilder ();
-        try
-        {
-            final String relativePath = this.decodeEncodedSampleFileName (encodedSampleFileName);
-            if (isMonolith)
-                return new File (relativePath);
-            path.append (sourcePath).append ('/').append (relativePath);
-        }
-        catch (final IOException ex)
-        {
-            this.notifier.logError ("IDS_NKI_ERR_CANNOT_FIND_PATH", ex.getMessage ());
-            return null;
-        }
+        final DecodedPath decodedPath = this.decodeEncodedSampleFileName (encodedSampleFileName);
+        if (decodedPath.getLibrary () != null)
+            throw new IOException (Functions.getMessage ("IDS_NKI_SAMPLES_IN_LIBRARY_NOT_SUPPORTED"));
+        final String relativePath = decodedPath.getRelativePath ();
+        if (isMonolith)
+            return new File (relativePath);
+        path.append (sourcePath).append ('/').append (relativePath);
 
         final File sampleFile = new File (path.toString ());
         if (sampleFile.exists () && sampleFile.canRead ())
@@ -896,7 +897,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The decoded path
      * @throws IOException Could not decode the file name/path
      */
-    protected abstract String decodeEncodedSampleFileName (final String encodedSampleFileName) throws IOException;
+    protected abstract DecodedPath decodeEncodedSampleFileName (final String encodedSampleFileName) throws IOException;
 
 
     /**

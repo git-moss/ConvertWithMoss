@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt1;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
+import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Element;
@@ -115,9 +116,9 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected String decodeEncodedSampleFileName (final String encodedSampleFileName)
+    protected DecodedPath decodeEncodedSampleFileName (final String encodedSampleFileName)
     {
-        return encodedSampleFileName.replace ('\\', '/');
+        return new DecodedPath (encodedSampleFileName.replace ('\\', '/'));
     }
 
 
