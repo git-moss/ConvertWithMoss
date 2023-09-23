@@ -165,29 +165,34 @@ public class Kontakt2Type extends AbstractKontaktType
             kontaktVersion = kontaktVersion.substring (0, kontaktVersion.length () - 1) + Integer.toString (patchLevel);
 
         int decompressedLength = 0;
+
+        final List<IMultisampleSource> multiSamples;
+
         if (isFourDotTwo)
         {
+            this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "4.2", kontaktVersion, "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
+
             // Unknown
             StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
 
             decompressedLength = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
 
-            // Padding?
+            // Padding
             StreamUtils.skipNBytes (fileAccess, 32);
-        }
 
-        // Is it a monolith?
-        final int type = fileAccess.read ();
-        final boolean isMonolith = type != 0x78 && !isFourDotTwo || type != 0x0A && isFourDotTwo;
-        fileAccess.seek (fileAccess.getFilePointer () - 1);
-        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", isFourDotTwo ? "4.2" : "2", kontaktVersion, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
-        final Map<String, WavSampleMetadata> monolithSamples = isMonolith ? this.readMonolith (fileAccess) : null;
-
-        final List<IMultisampleSource> multiSamples;
-        if (isFourDotTwo)
             multiSamples = this.handleFastLZ (sourceFolder, sourceFile, fileAccess, zlibLength, decompressedLength, metadataConfig);
+        }
         else
+        {
+            final int type = fileAccess.read ();
+            fileAccess.seek (fileAccess.getFilePointer () - 1);
+
+            final boolean isMonolith = type != 0x78;
+            this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "2", kontaktVersion, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
+
+            final Map<String, WavSampleMetadata> monolithSamples = isMonolith ? this.readMonolith (fileAccess) : null;
             multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples, metadataConfig);
+        }
 
         this.handleSoundinfo (sourceFile, fileAccess, multiSamples, metadata);
         return multiSamples;
@@ -215,16 +220,13 @@ public class Kontakt2Type extends AbstractKontaktType
 
         final int iconID = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
         final String iconName = KontaktIcon.getName (iconID);
-        if (iconName == null)
-            this.notifier.logError ("IDS_NKI_UNKNOWN_ICON_ID", Integer.toString (iconID));
-        metadata.setCategory (iconName);
+        if (iconName != null)
+            metadata.setCategory (iconName);
         // 8 characters, null terminated
         metadata.setCreator (StreamUtils.readASCII (fileAccess, 9, StandardCharsets.ISO_8859_1).trim ());
 
-        // No idea yet about these 2 bytes... Found once in monolith with IR Samples and Wallpaper
-        final int unknown = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
-        if (unknown != 0)
-            this.notifier.logError ("IDS_NKI_UNKNOWN_NOT_NULL", Integer.toString (unknown));
+        // No idea yet about these 2 bytes
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
 
         final String website = StreamUtils.readASCII (fileAccess, 87).trim ();
 
@@ -315,7 +317,6 @@ public class Kontakt2Type extends AbstractKontaktType
     private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, WavSampleMetadata> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
     {
         final String xmlCode = CompressionUtils.readZLIB (fileAccess);
-
         try
         {
             return this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, monolithSamples);
@@ -324,11 +325,6 @@ public class Kontakt2Type extends AbstractKontaktType
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
         }
-        catch (final IOException ex)
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
-        }
-
         return Collections.emptyList ();
     }
 

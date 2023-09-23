@@ -96,7 +96,7 @@ public class FileList
                     break;
 
                 default:
-                    throw new IOException ("Unknown special file type");
+                    throw new IOException (Functions.getMessage ("IDS_NKI5_UNKNOWN_FILE_TYPE", Integer.toString (type)));
             }
         }
     }

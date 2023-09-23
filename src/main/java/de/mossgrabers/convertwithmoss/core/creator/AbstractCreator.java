@@ -94,7 +94,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected static String createSafeFilename (final String filename)
     {
-        return filename.replaceAll ("[\\\\/:*?\"<>|&\\.]", "_");
+        return filename.replaceAll ("[\\\\/:*?\"<>|&\\.]", "_").trim ();
     }
 
 

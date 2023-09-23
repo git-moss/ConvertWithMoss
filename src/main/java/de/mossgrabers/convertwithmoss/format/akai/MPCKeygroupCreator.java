@@ -16,6 +16,10 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
+import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -104,7 +108,8 @@ public class MPCKeygroupCreator extends AbstractCreator
                 // Ensure upper case WAV ending, which seems to be required
                 if (fn.endsWith (".wav"))
                     fn = fn.substring (0, fn.length () - 4) + ".WAV";
-                try (final FileOutputStream fos = new FileOutputStream (new File (sampleFolder, fn)))
+                final File sampleFile = new File (sampleFolder, fn);
+                try (final FileOutputStream fos = new FileOutputStream (sampleFile))
                 {
                     this.notifier.log ("IDS_NOTIFY_PROGRESS");
                     outputCount++;
@@ -113,6 +118,8 @@ public class MPCKeygroupCreator extends AbstractCreator
 
                     info.writeSample (fos);
                 }
+
+                fixSampleChunk (sampleFile, info);
             }
         }
 
@@ -487,5 +494,54 @@ public class MPCKeygroupCreator extends AbstractCreator
         final double v = value < 0 ? defaultValue : value;
         final double normalizedValue = logarithmic ? normalizeLogarithmicEnvTimeValue (v, minimum, maximum) : normalizeValue (v, minimum, maximum);
         XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.6f", Double.valueOf (normalizedValue)));
+    }
+
+
+    /**
+     * Rewrite the WAV file and update/add the sample chunk.
+     *
+     * @param sampleFile The file to update
+     * @param info The info about the loops
+     * @throws IOException Could not read/write the file
+     */
+    private static void fixSampleChunk (final File sampleFile, final ISampleMetadata info) throws IOException
+    {
+        final WaveFile waveFile;
+        try
+        {
+            waveFile = new WaveFile (sampleFile, true);
+        }
+        catch (final ParseException ex)
+        {
+            throw new IOException (ex);
+        }
+
+        final List<ISampleLoop> loops = info.getLoops ();
+        final SampleChunk sampleChunk = new SampleChunk (loops.size ());
+        sampleChunk.setSamplePeriod ((int) (1000000000.0 / waveFile.getFormatChunk ().getSampleRate ()));
+
+        final List<SampleChunkLoop> chunkLoops = sampleChunk.getLoops ();
+        for (int i = 0; i < loops.size (); i++)
+        {
+            final ISampleLoop sampleLoop = loops.get (i);
+            final SampleChunkLoop sampleChunkLoop = chunkLoops.get (i);
+            switch (sampleLoop.getType ())
+            {
+                case FORWARD:
+                    sampleChunkLoop.setType (0);
+                    break;
+                case ALTERNATING:
+                    sampleChunkLoop.setType (1);
+                    break;
+                case BACKWARDS:
+                    sampleChunkLoop.setType (2);
+                    break;
+            }
+            sampleChunkLoop.setStart (sampleLoop.getStart ());
+            sampleChunkLoop.setEnd (sampleLoop.getEnd ());
+        }
+
+        waveFile.setSampleChunk (sampleChunk);
+        waveFile.write (sampleFile);
     }
 }

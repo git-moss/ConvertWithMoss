@@ -211,7 +211,12 @@ public class NcwFile
             final int bits = StreamUtils.readSigned16 (inputStream, false);
             final int flags = StreamUtils.readUnsigned16 (inputStream, false);
             if (flags > 0)
-                isMidSide = true;
+            {
+                if (flags == 1)
+                    isMidSide = true;
+                else
+                    throw new IOException (Functions.getMessage ("IDS_NCW_UNSUPPORTED_FLAGS", Integer.toString (flags)));
+            }
 
             // Padding
             inputStream.skipNBytes (4);

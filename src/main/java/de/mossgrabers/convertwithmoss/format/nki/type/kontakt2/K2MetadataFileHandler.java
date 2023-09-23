@@ -7,12 +7,14 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
+import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 import org.w3c.dom.Element;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,17 +29,6 @@ import java.util.Map;
  */
 public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
 {
-    private enum SmpFNameParsingState
-    {
-        NEUTRAL,
-        DIR_UP,
-        DIR_SUB_LEN,
-        DIR_SUB,
-        UNKNOWN_FRACTION,
-        FILENAME
-    }
-
-
     /**
      * Constructor.
      *
@@ -162,90 +153,74 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected String decodeEncodedSampleFileName (final String encodedSampleFileName) throws IOException
+    protected DecodedPath decodeEncodedSampleFileName (final String encodedSampleFileName) throws IOException
     {
-        SmpFNameParsingState state = SmpFNameParsingState.NEUTRAL;
-        int counter = 0;
-
-        final StringBuilder decodedPath = new StringBuilder ();
-        StringBuilder lenSB = new StringBuilder ();
-        for (int index = 0; index < encodedSampleFileName.length (); index++)
+        final DecodedPath decodedPath = new DecodedPath ();
+        final StringBuilder relativePath = new StringBuilder ();
+        final char [] fractionBuffer = new char [11];
+        final StringReader reader = new StringReader (encodedSampleFileName);
+        int id;
+        while ((id = reader.read ()) != -1)
         {
-            final char ch = encodedSampleFileName.charAt (index);
-            switch (state)
+            switch (id)
             {
-                case NEUTRAL:
-                    switch (ch)
-                    {
-                        case '@':
-                            state = SmpFNameParsingState.DIR_UP;
-                            break;
-
-                        case 'd':
-                            state = SmpFNameParsingState.DIR_SUB_LEN;
-                            counter = 3;
-                            break;
-
-                        case 'F':
-                            counter = 11;
-                            state = SmpFNameParsingState.UNKNOWN_FRACTION;
-                            break;
-
-                        default:
-                            throw new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_STATE", encodedSampleFileName));
-                    }
+                // Indicator for relative path
+                case '@':
                     break;
 
-                case DIR_SUB_LEN:
-                    counter--;
-                    lenSB.append (ch);
-                    if (counter == 0)
-                    {
-                        counter = Integer.parseInt (lenSB.toString ());
-                        lenSB = new StringBuilder ();
-                        state = SmpFNameParsingState.DIR_SUB;
-                    }
+                case 'b':
+                    relativePath.append ("../");
                     break;
 
-                case DIR_SUB:
-                    counter--;
-                    decodedPath.append (ch);
-                    if (counter == 0)
-                    {
-                        state = SmpFNameParsingState.NEUTRAL;
-                        decodedPath.append ('/');
-                    }
+                // A directory
+                case 'd':
+                    relativePath.append (readFolder (reader, encodedSampleFileName)).append ('/');
                     break;
 
-                case DIR_UP:
-                    switch (ch)
-                    {
-                        case 'b':
-                            decodedPath.append ("../");
-                            break;
+                // The sample's file name
+                case 'F':
+                    if (reader.read (fractionBuffer) != fractionBuffer.length)
+                        error (encodedSampleFileName);
+                    int c;
+                    while ((c = reader.read ()) != -1)
+                        relativePath.append ((char) c);
+                    decodedPath.setRelativePath (relativePath.toString ());
+                    return decodedPath;
 
-                        case 'd':
-                            state = SmpFNameParsingState.DIR_SUB_LEN;
-                            counter = 3;
-                            break;
-
-                        default:
-                            throw new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_STATE", encodedSampleFileName));
-                    }
+                // A NKS library
+                case 'm':
+                    relativePath.append (readFolder (reader, encodedSampleFileName));
+                    decodedPath.setLibrary (relativePath.toString ());
+                    relativePath.setLength (0);
                     break;
 
-                case UNKNOWN_FRACTION:
-                    counter--;
-                    if (counter == 0)
-                        state = SmpFNameParsingState.FILENAME;
-                    break;
-
-                case FILENAME:
-                    decodedPath.append (ch);
-                    break;
+                default:
+                    error (encodedSampleFileName);
             }
         }
-        return decodedPath.toString ();
+
+        error (encodedSampleFileName);
+        // Never reached
+        return null;
+    }
+
+
+    private static void error (final String encodedSampleFileName) throws IOException
+    {
+        throw new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_STATE", encodedSampleFileName));
+    }
+
+
+    private static String readFolder (final StringReader reader, final String encodedSampleFileName) throws IOException
+    {
+        final char [] lengthBuffer = new char [3];
+        if (reader.read (lengthBuffer) != lengthBuffer.length)
+            error (encodedSampleFileName);
+        final int length = Integer.parseInt (new String (lengthBuffer));
+        final char [] folder = new char [length];
+        if (reader.read (folder) != length)
+            error (encodedSampleFileName);
+        return new String (folder);
     }
 
 

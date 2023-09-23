@@ -92,7 +92,8 @@ public class WaveFile
      */
     public void read (final InputStream inputStream, final boolean ignoreChunkErrors) throws IOException, ParseException
     {
-        new RIFFParser ().parse (inputStream, new Visitor (), ignoreChunkErrors);
+        final RIFFParser riffParser = new RIFFParser ();
+        riffParser.parse (inputStream, new Visitor (), ignoreChunkErrors);
 
         if (ignoreChunkErrors)
             return;
@@ -115,13 +116,24 @@ public class WaveFile
 
 
     /**
-     * Get the sample chunk if present in the wav file.
+     * Get the sample chunk if present in the WAV file.
      *
      * @return The sample chunk or null if not present
      */
     public SampleChunk getSampleChunk ()
     {
         return this.sampleChunk;
+    }
+
+
+    /**
+     * Set the sample chunk.
+     *
+     * @param sampleChunk The sample chunk or null if not present
+     */
+    public void setSampleChunk (final SampleChunk sampleChunk)
+    {
+        this.sampleChunk = sampleChunk;
     }
 
 

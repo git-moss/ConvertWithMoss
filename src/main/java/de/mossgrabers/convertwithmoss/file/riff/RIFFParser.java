@@ -82,7 +82,7 @@ public class RIFFParser
         switch (riffID)
         {
             case RIFF_ID:
-                this.parseFORM (null);
+                this.parseFORM (ignoreUnknownChunks, null);
                 break;
 
             case JUNK_ID:
@@ -116,12 +116,13 @@ public class RIFFParser
 
     /**
      * Parses a FORM group.
-     *
-     * @param props
+     * 
+     * @param ignoreUnknownChunks Ignores unknown chunks if true otherwise raises an exception
+     * @param props The property chunks
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseFORM (final Map<Integer, RIFFChunk> props) throws ParseException, IOException
+    private void parseFORM (final boolean ignoreUnknownChunks, final Map<Integer, RIFFChunk> props) throws ParseException, IOException
     {
         final long size = this.in.readUDWORD ();
         final long offset = this.getPosition (this.in);
@@ -149,16 +150,24 @@ public class RIFFParser
                 final int id = this.in.readFourCC ();
 
                 if (id == RiffID.RIFF_ID.getId ())
-                    this.parseFORM (props);
+                    this.parseFORM (ignoreUnknownChunks, props);
                 else if (id == RiffID.LIST_ID.getId ())
                     this.parseLIST (props);
                 else if (isLocalChunkID (id))
                     this.parseLocalChunk (chunk, id);
                 else
                 {
-                    final ParseException pex = new ParseException ("Invalid Chunk: \"" + RiffID.toASCII (id) + "\" (" + id + ") at offset:" + idscan);
-                    chunk.setParserMessage (pex.getMessage ());
-                    throw pex;
+                    if (ignoreUnknownChunks)
+                    {
+                        final long longSize = this.in.readUDWORD ();
+                        this.in.skipFully (longSize);
+                    }
+                    else
+                    {
+                        final ParseException pex = new ParseException ("Invalid Chunk: \"" + RiffID.toASCII (id) + "\" (" + id + ") at offset:" + idscan);
+                        chunk.setParserMessage (pex.getMessage ());
+                        throw pex;
+                    }
                 }
 
                 this.in.align ();
@@ -251,7 +260,6 @@ public class RIFFParser
     private void parseLocalChunk (final RIFFChunk parent, final int id) throws ParseException, IOException
     {
         final long longSize = this.in.readUDWORD ();
-        this.getPosition (this.in);
         final RIFFChunk chunk = new RIFFChunk (parent == null ? 0 : parent.getType (), id, longSize);
 
         if (longSize < Integer.MAX_VALUE)

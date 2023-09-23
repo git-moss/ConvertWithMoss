@@ -27,15 +27,18 @@ public class SampleChunk extends WavChunk
 
     /**
      * Constructor. Creates an empty sample chunk.
+     * 
+     * @param numSampleLoops The number of loops for which to reserve data
      */
-    public SampleChunk ()
+    public SampleChunk (final int numSampleLoops)
     {
         super (RiffID.SMPL_ID, new RIFFChunk (0, RiffID.SMPL_ID.getId (), CHUNK_SIZE));
 
-        this.chunk.setData (new byte [CHUNK_SIZE + LOOP_SIZE]);
+        this.chunk.setData (new byte [CHUNK_SIZE + numSampleLoops * LOOP_SIZE]);
 
-        this.loops = new ArrayList<> (1);
-        this.loops.add (new SampleChunkLoop (CHUNK_SIZE));
+        this.loops = new ArrayList<> (numSampleLoops);
+        for (int i = 0; i < numSampleLoops; i++)
+            this.loops.add (new SampleChunkLoop (CHUNK_SIZE + i * LOOP_SIZE));
     }
 
 
@@ -100,6 +103,17 @@ public class SampleChunk extends WavChunk
     public int getSamplePeriod ()
     {
         return this.chunk.fourBytesAsInt (0x08);
+    }
+
+
+    /**
+     * Set the sample period. This is 1000000000 / sample frequency (in Hertz).
+     *
+     * @param samplePeriod The sample period
+     */
+    public void setSamplePeriod (final int samplePeriod)
+    {
+        this.chunk.intAsFourBytes (0x08, samplePeriod);
     }
 
 
@@ -260,6 +274,17 @@ public class SampleChunk extends WavChunk
 
 
         /**
+         * Set the loop type.
+         *
+         * @param type The type
+         */
+        public void setType (final int type)
+        {
+            SampleChunk.this.chunk.intAsFourBytes (this.offset + 0x04, type);
+        }
+
+
+        /**
          * The start value specifies the byte offset into the waveform data of the first sample to
          * be played in the loop.
          *
@@ -272,6 +297,17 @@ public class SampleChunk extends WavChunk
 
 
         /**
+         * Set the start.
+         *
+         * @param start The start
+         */
+        public void setStart (final int start)
+        {
+            SampleChunk.this.chunk.intAsFourBytes (this.offset + 0x0C, start);
+        }
+
+
+        /**
          * The end value specifies the byte offset into the waveform data of the last sample to be
          * played in the loop.
          *
@@ -280,6 +316,17 @@ public class SampleChunk extends WavChunk
         public int getEnd ()
         {
             return SampleChunk.this.chunk.fourBytesAsInt (this.offset + 0x0C);
+        }
+
+
+        /**
+         * Set the end.
+         *
+         * @param end The end
+         */
+        public void setEnd (final int end)
+        {
+            SampleChunk.this.chunk.intAsFourBytes (this.offset + 0x0C, end);
         }
 
 
@@ -310,6 +357,17 @@ public class SampleChunk extends WavChunk
         public int getPlayCount ()
         {
             return SampleChunk.this.chunk.fourBytesAsInt (this.offset + 0x14);
+        }
+
+
+        /**
+         * Set the play count.
+         *
+         * @param playCount The play count
+         */
+        public void setPlayCount (final int playCount)
+        {
+            SampleChunk.this.chunk.intAsFourBytes (this.offset + 0x14, playCount);
         }
 
 

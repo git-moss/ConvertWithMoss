@@ -229,7 +229,7 @@ public class RIFFPrimitivesInputStream extends FilterInputStream
         {
             final int result = this.in.read (b, offset + count, length - count);
             if (result == -1)
-                break;
+                return -1;
             count += result;
         }
         this.position += count;

@@ -179,8 +179,6 @@ public class Program
         in.readNBytes (2);
 
         // Note: 8 (v5.3+), 20 (5.4+), or 24 (v7) more bytes available
-        // TODO resource_container_filename: reader.read_i32_le()?,
-        // TODO wallpaper_filename: reader.read_i32_le()?,
     }
 
 

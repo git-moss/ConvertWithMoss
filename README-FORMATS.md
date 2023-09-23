@@ -59,11 +59,11 @@ However, the format changed many times across the different Kontakt versions. So
 |:----------------|:----------|:-------------------|
 | 1               | Yes       | No                 |
 | 2 - 4.1.x       | Yes       | Yes                |
-| 4.2.2+          | No        | No                 |
-| 5 - 7           | No        | No                 |
+| 4.2.2+          | Yes       | No                 |
+| 5 - 7           | Yes       | Yes                |
 
-A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters
-as well as pitchbend.
+A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters as well as pitchbend (except metadata currently only for Kontakt 1, 2).
+(Most) NCW encoded sample files can be read as well.
 
 ## SFZ
 

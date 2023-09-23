@@ -27,6 +27,7 @@ public class ChunkDataFactory
         TEMPLATES.put (NIContainerChunkType.AUTHORING_APPLICATION, AuthoringApplicationChunkData.class);
         TEMPLATES.put (NIContainerChunkType.SUB_TREE_ITEM, SubTreeItemChunkData.class);
         TEMPLATES.put (NIContainerChunkType.PRESET_CHUNK_ITEM, PresetChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.AUTHORIZATION, AuthorizationChunkData.class);
 
         // Not used
         TEMPLATES.put (NIContainerChunkType.BNI_SOUND_PRESET, UnusedChunkData.class);
@@ -35,7 +36,6 @@ public class ChunkDataFactory
         TEMPLATES.put (NIContainerChunkType.BANK_CONTAINER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.PRESET_CONTAINER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BINARY_CHUNK_ITEM, UnusedChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.AUTHORIZATION, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.EXTERNAL_FILE_REFERENCE, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.RESOURCES, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.AUDIO_SAMPLE_ITEM, UnusedChunkData.class);

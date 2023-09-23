@@ -62,7 +62,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
         }
         catch (final IOException ex)
         {
-            this.notifier.logError (ex);
+            this.notifier.logError (ex, false);
         }
         return Collections.emptyList ();
     }
