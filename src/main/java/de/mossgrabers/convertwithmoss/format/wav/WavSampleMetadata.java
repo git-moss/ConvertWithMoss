@@ -4,7 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
@@ -107,6 +109,8 @@ public class WavSampleMetadata extends DefaultSampleMetadata
     {
         super (zipFile, zipEntry);
 
+        this.waveFile = new WaveFile ();
+
         try (final ZipFile zf = new ZipFile (this.zipFile))
         {
             final String path = this.zipEntry.getPath ().replace ('\\', '/');
@@ -115,7 +119,6 @@ public class WavSampleMetadata extends DefaultSampleMetadata
                 throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
             try (final InputStream in = zf.getInputStream (entry))
             {
-                this.waveFile = new WaveFile ();
                 this.waveFile.read (in, true);
             }
             catch (final ParseException ex)
@@ -130,13 +133,13 @@ public class WavSampleMetadata extends DefaultSampleMetadata
 
     private void readFromChunks () throws IOException
     {
-        if (this.waveFile == null)
-            return;
-
         final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
+
+        this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels () == 1, formatChunk.getSampleRate (), formatChunk.getSignicantBitsPerSample ());
+
         final DataChunk dataChunk = this.waveFile.getDataChunk ();
 
-        if (formatChunk != null && dataChunk != null)
+        if (dataChunk != null)
         {
             final int numberOfChannels = formatChunk.getNumberOfChannels ();
             if (numberOfChannels > 2)
@@ -221,5 +224,13 @@ public class WavSampleMetadata extends DefaultSampleMetadata
     public void addMissingInfoFromWaveFile (final boolean addRootKey, final boolean addLoops) throws IOException
     {
         super.addMissingInfoFromWaveFile (new WavSampleMetadata (this.waveFile), addRootKey, addLoops);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IAudioMetadata getAudioMetadata ()
+    {
+        return this.audioMetadata;
     }
 }

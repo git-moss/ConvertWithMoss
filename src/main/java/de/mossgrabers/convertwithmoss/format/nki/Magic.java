@@ -11,15 +11,35 @@ package de.mossgrabers.convertwithmoss.format.nki;
  */
 public class Magic
 {
-    /** ID for Kontakt 1 NKI files. */
-    public static final int     KONTAKT1_INSTRUMENT              = 0x5EE56EB3;
-    /** ID for Kontakt 1 NKM files. */
-    public static final int     KONTAKT1_MULTI                   = 0x5AE5D6A4;
-    /** ID for Kontakt 2 NKI files (little-endian). */
-    public static final int     KONTAKT2_LITTLE_ENDIAN           = 0x1290A87F;
-    /** ID for Kontakt 2 NKI files (big-endian). */
-    public static final int     KONTAKT2_BIG_ENDIAN              = 0x7FA89012;
-    /** ID for a Kontakt 5 NKI monolith file. */
+    /** ID for Kontakt 1 NKI files (little-endian). */
+    public static final int     KONTAKT1_INSTRUMENT_LE           = 0x5EE56EB3;
+    /** ID for Kontakt 1 NKI files (big-endian). */
+    public static final int     KONTAKT1_INSTRUMENT_BE           = 0xB36EE55E;
+    /** ID for Kontakt 1 NKM files (little-endian). */
+    public static final int     KONTAKT1_MULTI_LE                = 0x5AE5D6A4;
+    /** ID for Kontakt 1 NKM files (big-endian). */
+    public static final int     KONTAKT1_MULTI_BE                = 0xA4D6E55A;
+    /** ID for Kontakt 2 as well as 1.5 NKI files (little-endian). */
+    public static final int     KONTAKT2_INSTRUMENT_LE           = 0x1290A87F;
+    /** ID for Kontakt 2 as well as 1.5 NKI files (big-endian). */
+    public static final int     KONTAKT2_INSTRUMENT_BE           = 0x7FA89012;
+    /** ID for Kontakt 2 as well as 1.5 NKM files (little-endian). */
+    public static final int     KONTAKT2__MULTI_LE               = 0x01EF85AB;
+    /** ID for Kontakt 2 as well as 1.5 NKM files (big-endian). */
+    public static final int     KONTAKT2__MULTI_BE               = 0xAB85EF01;
+
+    /** The resource header in a Kontakt monolith. */
+    public static final int     KONTAKT2_NKR_HEADER_ID           = 0x5E70AC54;
+    /** The wallpaper header in a Kontakt monolith. */
+    public static final int     KONTAKT2_NKR_WALLPAPER_ID        = 0x2AE905FA;
+    /** The NKI header in a Kontakt monolith. */
+    public static final int     KONTAKT2_NKR_NKI_ID              = 0x4916E63C;
+    /** The sample header in a Kontakt monolith. */
+    public static final int     KONTAKT2_NKR_SAMPLE_ID           = 0x16CCF80A;
+    /** The sample header in a Kontakt monolith. */
+    public static final int     KONTAKT2_NKR_SAMPLE_RAW_ID       = 0x0040179F;
+
+    /** ID for a Kontakt 5 NKI monolith file (always little-endian). */
     public static final int     KONTAKT5_MONOLITH                = 0x2F5C204E;
 
     /** File container magic tag. */

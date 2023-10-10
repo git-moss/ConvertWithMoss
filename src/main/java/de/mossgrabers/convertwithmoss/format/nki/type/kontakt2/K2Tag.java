@@ -16,49 +16,52 @@ import de.mossgrabers.convertwithmoss.format.nki.AbstractTagsAndAttributes;
 public class K2Tag extends AbstractTagsAndAttributes
 {
     /** The bank element. */
-    public static final String K2_BANK_ELEMENT          = "K2_Bank";
+    public static final String K2_BANK_ELEMENT             = "K2_Bank";
 
     /** The root element. */
-    public static final String K2_ROOT_CONTAINER        = "K2_Container";
+    public static final String K2_ROOT_CONTAINER           = "K2_Container";
 
     /** The programs element. */
-    public static final String K2_PROGRAMS              = "Programs";
+    public static final String K2_PROGRAMS                 = "Programs";
 
     /** The program element. */
-    public static final String K2_PROGRAM               = "K2_Program";
+    public static final String K2_PROGRAM                  = "K2_Program";
 
     /** A K2 Group element of a program. */
-    public static final String K2_GROUP                 = "K2_Group";
+    public static final String K2_GROUP                    = "K2_Group";
 
     /** A K2 Zone element of a program. */
-    public static final String K2_ZONE                  = "K2_Zone";
+    public static final String K2_ZONE                     = "K2_Zone";
 
     /** The release trigger parameter */
-    public static final String K2_RELEASE_TRIGGER_PARAM = "releaseTrigger";
+    public static final String K2_RELEASE_TRIGGER_PARAM    = "releaseTrigger";
 
     /** The sample file attribute. */
-    public static final String K2_SAMPLE_FILE_ATTRIBUTE = "file_ex2";
+    public static final String K2_SAMPLE_FILE_ATTRIBUTE    = "file_ex2";
+
+    /** The extended sample file attribute. */
+    public static final String K2_SAMPLE_FILE_EX_ATTRIBUTE = "file_ex2";
 
     /** The program volume parameter. */
-    public static final String K2_PROG_VOL_PARAM        = "volume";
+    public static final String K2_PROG_VOL_PARAM           = "volume";
 
     /** The program pan parameter. */
-    public static final String K2_PROG_PAN_PARAM        = "pan";
+    public static final String K2_PROG_PAN_PARAM           = "pan";
 
     /** The program tune parameter. */
-    public static final String K2_PROG_TUNE_PARAM       = "tune";
+    public static final String K2_PROG_TUNE_PARAM          = "tune";
 
     /** The internal modulator element. */
-    public static final String K2_INT_MODULATOR_ELEMENT = "K2_IntMod";
+    public static final String K2_INT_MODULATOR_ELEMENT    = "K2_IntMod";
 
     /** The external modulator element. */
-    public static final String K2_EXT_MODULATOR_ELEMENT = "K2_ExtMod";
+    public static final String K2_EXT_MODULATOR_ELEMENT    = "K2_ExtMod";
 
     /** The targets element. */
-    public static final String K2_TARGETS_ELEMENT       = "Targets";
+    public static final String K2_TARGETS_ELEMENT          = "Targets";
 
     /** The target element. */
-    public static final String K2_TARGET_ELEMENT        = "Target";
+    public static final String K2_TARGET_ELEMENT           = "Target";
 
 
     /** {@inheritDoc} */
@@ -106,6 +109,14 @@ public class K2Tag extends AbstractTagsAndAttributes
     public String sampleFileAttribute ()
     {
         return K2_SAMPLE_FILE_ATTRIBUTE;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String sampleFileExAttribute ()
+    {
+        return K2_SAMPLE_FILE_EX_ATTRIBUTE;
     }
 
 

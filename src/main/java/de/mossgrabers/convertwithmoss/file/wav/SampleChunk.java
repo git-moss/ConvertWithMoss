@@ -27,7 +27,7 @@ public class SampleChunk extends WavChunk
 
     /**
      * Constructor. Creates an empty sample chunk.
-     * 
+     *
      * @param numSampleLoops The number of loops for which to reserve data
      */
     public SampleChunk (final int numSampleLoops)

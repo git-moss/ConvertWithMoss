@@ -26,9 +26,9 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMet
 import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
 import de.mossgrabers.convertwithmoss.file.AiffSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwSampleMetadata;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
-import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -46,6 +46,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -109,7 +111,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The parsed multisample source
      * @throws IOException An error occurred parsing the XML document
      */
-    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadata, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
+    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadata, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
     {
         try
         {
@@ -389,7 +391,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return True if successful
      * @throws IOException Could not create path for samples
      */
-    private boolean parseProgram (final Element programElement, final DefaultMultisampleSource multisampleSource, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
+    private boolean parseProgram (final Element programElement, final DefaultMultisampleSource multisampleSource, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
     {
         final String programName = this.tags.programName ();
         if (!programElement.hasAttribute (programName))
@@ -500,7 +502,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return the groups created (empty list is returned if nothing was created)
      * @throws IOException Could not get sample file(s)
      */
-    private List<IGroup> getGroups (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
+    private List<IGroup> getGroups (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
     {
         if (groupElements == null || zoneElements == null)
             return Collections.emptyList ();
@@ -528,7 +530,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The group created from the zone element (null, if there is no group element)
      * @throws IOException Could not get sample file(s)
      */
-    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples) throws IOException
+    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
     {
         if (groupElement == null)
             return null;
@@ -562,7 +564,7 @@ public abstract class AbstractNKIMetadataFileHandler
      *         returned.
      * @throws IOException Could not get sample file
      */
-    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, WavSampleMetadata> monolithSamples, final IFilter filter) throws IOException
+    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, DefaultSampleMetadata> monolithSamples, final IFilter filter) throws IOException
     {
         if (groupElement == null || groupZones == null)
             return Collections.emptyList ();
@@ -575,34 +577,7 @@ public abstract class AbstractNKIMetadataFileHandler
             if (sampleFile == null)
                 continue;
 
-            DefaultSampleMetadata sampleMetadata = null;
-            if (monolithSamples != null)
-                sampleMetadata = monolithSamples.get (sampleFile.getName ());
-            else
-            {
-                // Check the type of the source sample for compatibility and handle them
-                // accordingly
-                try
-                {
-                    final AudioFileFormat.Type type = AudioSystem.getAudioFileFormat (sampleFile).getType ();
-                    if (AudioFileFormat.Type.WAVE.equals (type))
-                    {
-                        if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                            sampleMetadata = new DefaultSampleMetadata (sampleFile);
-                    }
-                    else if (AudioFileFormat.Type.AIFF.equals (type))
-                    {
-                        this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
-                        sampleMetadata = new AiffSampleMetadata (sampleFile);
-                    }
-                    else
-                        this.notifier.logError (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
-                }
-                catch (final UnsupportedAudioFileException | IOException ex)
-                {
-                    this.notifier.logError (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", ex));
-                }
-            }
+            final DefaultSampleMetadata sampleMetadata = this.getSampleMetadata (sampleFile, monolithSamples);
             if (sampleMetadata != null)
             {
                 if (filter != null)
@@ -612,6 +587,40 @@ public abstract class AbstractNKIMetadataFileHandler
         }
 
         return sampleMetadataList;
+    }
+
+
+    private DefaultSampleMetadata getSampleMetadata (final File sampleFile, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
+    {
+        if (monolithSamples != null)
+            return monolithSamples.get (sampleFile.getName ());
+
+        if (sampleFile.getName ().toLowerCase ().endsWith (".ncw"))
+            return new NcwSampleMetadata (sampleFile);
+
+        // Check the type of the source sample for compatibility and handle them
+        // accordingly
+        try
+        {
+            final AudioFileFormat.Type type = AudioSystem.getAudioFileFormat (sampleFile).getType ();
+            if (AudioFileFormat.Type.WAVE.equals (type))
+            {
+                if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                    return new DefaultSampleMetadata (sampleFile);
+            }
+            else if (AudioFileFormat.Type.AIFF.equals (type))
+            {
+                this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
+                return new AiffSampleMetadata (sampleFile);
+            }
+
+            this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ());
+        }
+        catch (final UnsupportedAudioFileException | IOException ex)
+        {
+            this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ());
+        }
+        return null;
     }
 
 
@@ -850,7 +859,9 @@ public abstract class AbstractNKIMetadataFileHandler
             return null;
 
         final Map<String, String> sampleParameters = this.readValueMap (sampleElement);
-        final String encodedSampleFileName = sampleParameters.get (this.tags.sampleFileAttribute ());
+        String encodedSampleFileName = sampleParameters.get (this.tags.sampleFileAttribute ());
+        if (encodedSampleFileName == null)
+            encodedSampleFileName = sampleParameters.get (this.tags.sampleFileExAttribute ());
         if (encodedSampleFileName == null)
         {
             this.notifier.logError ("IDS_NKI_SAMPLE_FILE_ATTRIBUTE_MISSING");
@@ -872,19 +883,39 @@ public abstract class AbstractNKIMetadataFileHandler
      */
     protected File getFileFromEncodedSampleFileName (final String encodedSampleFileName, final String sourcePath, final boolean isMonolith) throws IOException
     {
-        final StringBuilder path = new StringBuilder ();
         final DecodedPath decodedPath = this.decodeEncodedSampleFileName (encodedSampleFileName);
         if (decodedPath.getLibrary () != null)
             throw new IOException (Functions.getMessage ("IDS_NKI_SAMPLES_IN_LIBRARY_NOT_SUPPORTED"));
-        final String relativePath = decodedPath.getRelativePath ();
-        if (isMonolith)
-            return new File (relativePath);
-        path.append (sourcePath).append ('/').append (relativePath);
 
-        final File sampleFile = new File (path.toString ());
+        final String samplePath = decodedPath.getPath ();
+        if (isMonolith)
+            return new File (samplePath);
+
+        final File parentFolder = new File (sourcePath);
+
+        if (decodedPath.isAbsolute ())
+        {
+            // If it is an absolute path, try to find the sample file in all possible sub-paths from
+            // the current folder
+            final Path path = Paths.get (samplePath);
+
+            File subFolder = null;
+            for (int i = path.getNameCount () - 1; i > 0; i--)
+            {
+                final String folder = path.getName (i).toString ();
+                subFolder = subFolder == null ? new File (folder) : new File (folder, subFolder.getPath ());
+                final File sampleFile = new File (parentFolder, subFolder.getPath ());
+                if (sampleFile.exists () && sampleFile.canRead ())
+                    return sampleFile;
+            }
+
+            this.notifier.logError ("IDS_NKI_SAMPLE_FILE_DOES_NOT_EXIST", samplePath);
+            return null;
+        }
+
+        final File sampleFile = new File (parentFolder, samplePath);
         if (sampleFile.exists () && sampleFile.canRead ())
             return sampleFile;
-
         this.notifier.logError ("IDS_NKI_SAMPLE_FILE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
         return null;
     }
@@ -897,7 +928,68 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The decoded path
      * @throws IOException Could not decode the file name/path
      */
-    protected abstract DecodedPath decodeEncodedSampleFileName (final String encodedSampleFileName) throws IOException;
+    protected DecodedPath decodeEncodedSampleFileName (final String encodedSampleFileName) throws IOException
+    {
+        final DecodedPath decodedPath = new DecodedPath ();
+        final StringReader reader = new StringReader (encodedSampleFileName);
+
+        // Indicator for extended path?
+        if ((char) reader.read () != '@')
+        {
+            decodedPath.setPath (encodedSampleFileName.replace ('\\', '/'));
+            return decodedPath;
+        }
+
+        final StringBuilder path = new StringBuilder ();
+        int id;
+        while ((id = reader.read ()) != -1)
+        {
+            switch (id)
+            {
+                case 'v':
+                    final String disc = readFolder (reader, encodedSampleFileName);
+                    if (!disc.contains (":"))
+                        path.append ('/');
+                    path.append (disc).append ('/');
+                    decodedPath.setAbsolute (true);
+                    break;
+
+                case 'b':
+                    path.append ("../");
+                    break;
+
+                // A directory
+                case 'd':
+                    path.append (readFolder (reader, encodedSampleFileName)).append ('/');
+                    break;
+
+                // The sample's file name
+                case 'F', 'f':
+                    final char [] fractionBuffer = new char [id == 'f' ? 6 : 11];
+                    if (reader.read (fractionBuffer) != fractionBuffer.length)
+                        error (encodedSampleFileName);
+                    int c;
+                    while ((c = reader.read ()) != -1)
+                        path.append ((char) c);
+                    decodedPath.setPath (path.toString ());
+                    return decodedPath;
+
+                // A NKS library
+                case 'm':
+                    path.append (readFolder (reader, encodedSampleFileName));
+                    decodedPath.setLibrary (path.toString ());
+                    path.setLength (0);
+                    break;
+
+                default:
+                    error (encodedSampleFileName);
+            }
+        }
+
+        error (encodedSampleFileName);
+        // Never reached
+        return null;
+    }
 
 
     /**
@@ -1273,5 +1365,24 @@ public abstract class AbstractNKIMetadataFileHandler
     private static String formatDouble (final double value)
     {
         return String.format (Locale.US, "%.6f", Double.valueOf (value));
+    }
+
+
+    private static void error (final String encodedSampleFileName) throws IOException
+    {
+        throw new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_STATE", encodedSampleFileName));
+    }
+
+
+    private static String readFolder (final StringReader reader, final String encodedSampleFileName) throws IOException
+    {
+        final char [] lengthBuffer = new char [3];
+        if (reader.read (lengthBuffer) != lengthBuffer.length)
+            error (encodedSampleFileName);
+        final int length = Integer.parseInt (new String (lengthBuffer));
+        final char [] folder = new char [length];
+        if (reader.read (folder) != length)
+            error (encodedSampleFileName);
+        return new String (folder);
     }
 }

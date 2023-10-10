@@ -7,14 +7,10 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
-import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
 import de.mossgrabers.tools.XMLUtils;
-import de.mossgrabers.tools.ui.Functions;
 
 import org.w3c.dom.Element;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -148,79 +144,6 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
     {
         final String releaseTrigParam = groupParameters.get (K2Tag.K2_RELEASE_TRIGGER_PARAM);
         return releaseTrigParam != null && releaseTrigParam.equals (this.tags.yes ()) ? TriggerType.RELEASE : TriggerType.ATTACK;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    protected DecodedPath decodeEncodedSampleFileName (final String encodedSampleFileName) throws IOException
-    {
-        final DecodedPath decodedPath = new DecodedPath ();
-        final StringBuilder relativePath = new StringBuilder ();
-        final char [] fractionBuffer = new char [11];
-        final StringReader reader = new StringReader (encodedSampleFileName);
-        int id;
-        while ((id = reader.read ()) != -1)
-        {
-            switch (id)
-            {
-                // Indicator for relative path
-                case '@':
-                    break;
-
-                case 'b':
-                    relativePath.append ("../");
-                    break;
-
-                // A directory
-                case 'd':
-                    relativePath.append (readFolder (reader, encodedSampleFileName)).append ('/');
-                    break;
-
-                // The sample's file name
-                case 'F':
-                    if (reader.read (fractionBuffer) != fractionBuffer.length)
-                        error (encodedSampleFileName);
-                    int c;
-                    while ((c = reader.read ()) != -1)
-                        relativePath.append ((char) c);
-                    decodedPath.setRelativePath (relativePath.toString ());
-                    return decodedPath;
-
-                // A NKS library
-                case 'm':
-                    relativePath.append (readFolder (reader, encodedSampleFileName));
-                    decodedPath.setLibrary (relativePath.toString ());
-                    relativePath.setLength (0);
-                    break;
-
-                default:
-                    error (encodedSampleFileName);
-            }
-        }
-
-        error (encodedSampleFileName);
-        // Never reached
-        return null;
-    }
-
-
-    private static void error (final String encodedSampleFileName) throws IOException
-    {
-        throw new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_STATE", encodedSampleFileName));
-    }
-
-
-    private static String readFolder (final StringReader reader, final String encodedSampleFileName) throws IOException
-    {
-        final char [] lengthBuffer = new char [3];
-        if (reader.read (lengthBuffer) != lengthBuffer.length)
-            error (encodedSampleFileName);
-        final int length = Integer.parseInt (new String (lengthBuffer));
-        final char [] folder = new char [length];
-        if (reader.read (folder) != length)
-            error (encodedSampleFileName);
-        return new String (folder);
     }
 
 

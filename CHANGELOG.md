@@ -1,5 +1,19 @@
 # Changes
 
+## 7.1.0
+
+* Fixed: Loops could be incorrect if sample rate was not 44.1kHz and audio file metadata could be wrong as well in that case.
+* Korg KMP/KSF
+  * New: Convert source samples to support bit resolutions (8, 16) and maximum sample rate of 48kHz.
+  * Fixed: Improved check for duplicated DOS file names and unique ones are now created.
+* Kontakt - Reading
+  * New: Kontakt 2-4 monoliths in big-endian encoding are now supported.
+  * New: Added support for alternative Kontakt 1 file-ex sample path reference.
+  * New: Added support for Kontakt 1.5 files.
+  * Improved: Finding samples when absolute sample file paths are used.
+  * Fixed: Fixed several issues with Kontakt 2-4 monoliths.
+  * Fixed: NCW files with mid/side encoding were not handled correctly.
+
 ## 7.0.0
 
 * '(Velocity) Layers' have been renamed to 'Groups' in the user interface.

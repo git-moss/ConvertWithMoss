@@ -11,8 +11,9 @@ package de.mossgrabers.convertwithmoss.format.nki.type;
  */
 public class DecodedPath
 {
-    private String relativePath;
-    private String library;
+    private boolean isAbsolute = false;
+    private String  path;
+    private String  library;
 
 
     /**
@@ -31,30 +32,29 @@ public class DecodedPath
      */
     public DecodedPath (final String relativePath)
     {
-        this.relativePath = relativePath;
+        this.path = relativePath;
     }
 
 
     /**
-     * Get the relative path to the sample. The path might also be point to a sample in a NKS
-     * library.
+     * Get the path to the sample. The path might also be point to a sample in a NKS library.
      *
-     * @return The relative path
+     * @return The path
      */
-    public String getRelativePath ()
+    public String getPath ()
     {
-        return this.relativePath;
+        return this.path;
     }
 
 
     /**
-     * Set the relative path to the sample.
+     * Set the path to the sample.
      *
-     * @param relativePath The relative path to set
+     * @param path The path to set
      */
-    public void setRelativePath (final String relativePath)
+    public void setPath (final String path)
     {
-        this.relativePath = relativePath;
+        this.path = path;
     }
 
 
@@ -77,5 +77,27 @@ public class DecodedPath
     public void setLibrary (final String library)
     {
         this.library = library;
+    }
+
+
+    /**
+     * Check if the path is an absolute path.
+     *
+     * @return True if it is an absolute path
+     */
+    public boolean isAbsolute ()
+    {
+        return this.isAbsolute;
+    }
+
+
+    /**
+     * Set if it is an absolute path.
+     *
+     * @param isAbsolute True to set to absolute otherwise relative
+     */
+    public void setAbsolute (final boolean isAbsolute)
+    {
+        this.isAbsolute = isAbsolute;
     }
 }

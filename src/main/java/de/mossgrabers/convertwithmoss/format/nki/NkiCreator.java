@@ -102,7 +102,7 @@ public class NkiCreator extends AbstractCreator
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
-        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier) : new Kontakt2Type (this.notifier, true);
+        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt2Type (this.notifier, false);
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
         final File multiFile = new File (destinationFolder, sampleName + ".nki");

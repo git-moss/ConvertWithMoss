@@ -14,7 +14,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -42,7 +44,8 @@ public class KMPCreator extends AbstractCreator
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
         // Create a sub-folder for the KMP files (one for each group) and all samples
-        final File subFolder = new File (destinationFolder, createDOSFileName (sampleName));
+        final Set<String> createdKMPNames = new HashSet<> ();
+        final File subFolder = new File (destinationFolder, createDOSFileName (sampleName, createdKMPNames));
         if (!subFolder.exists () && !subFolder.mkdirs ())
         {
             this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
@@ -53,12 +56,13 @@ public class KMPCreator extends AbstractCreator
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
         final int size = groups.size ();
         final boolean needsSubDir = size > 1;
+        final Set<String> createdKSFNames = new HashSet<> (size);
         for (int i = 0; i < size; i++)
         {
             final IGroup group = groups.get (i);
             final ISampleMetadata sampleMetadata = group.getSampleMetadata ().get (0);
             final String groupName = size > 1 ? String.format ("%d-%s", Integer.valueOf (sampleMetadata.getVelocityHigh ()), sampleName) : sampleName;
-            final String dosFileName = createDOSFileName (groupName) + ".KMP";
+            final String dosFileName = createDOSFileName (groupName, createdKSFNames) + ".KMP";
             final File groupSubFolder;
             if (needsSubDir)
             {
@@ -105,11 +109,22 @@ public class KMPCreator extends AbstractCreator
     }
 
 
-    private static String createDOSFileName (final String filename)
+    private static String createDOSFileName (final String filename, final Set<String> createdNames)
     {
         String dosFilename = filename.toUpperCase ().replace (' ', '_');
         if (dosFilename.length () > 8)
             dosFilename = dosFilename.substring (0, 8);
+
+        int counter = 1;
+        while (createdNames.contains (dosFilename))
+        {
+            counter++;
+            final String counterStr = Integer.toString (counter);
+            dosFilename = dosFilename.substring (0, 8 - counterStr.length ()) + counterStr;
+        }
+
+        createdNames.add (dosFilename);
+
         return dosFilename;
     }
 }

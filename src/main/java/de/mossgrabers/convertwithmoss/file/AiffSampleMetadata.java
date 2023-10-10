@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.file;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -53,8 +55,8 @@ public class AiffSampleMetadata extends DefaultSampleMetadata
             throw new IOException (ex);
         }
 
-        final AudioFormat audioFormat = audioInputStream.getFormat ();
-        final int channels = audioFormat.getChannels ();
+        final AudioFormat format = audioInputStream.getFormat ();
+        final int channels = format.getChannels ();
         if (channels > 2)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (channels), this.sampleFile.getAbsolutePath ()));
         this.isMonoFile = channels == 1;
@@ -63,6 +65,8 @@ public class AiffSampleMetadata extends DefaultSampleMetadata
 
         // Change filename ending from AIFF to WAV
         this.setCombinedName (this.filename.replace (".aiff", ".wav").replace (".aif", ".wav").replace (".AIFF", ".wav").replace (".AIF", ".wav"));
+
+        this.audioMetadata = new DefaultAudioMetadata (format.getChannels () == 1, (int) format.getSampleRate (), format.getSampleSizeInBits ());
     }
 
 
@@ -94,5 +98,13 @@ public class AiffSampleMetadata extends DefaultSampleMetadata
     public void addMissingInfoFromWaveFile (final boolean addRootKey, final boolean addLoops) throws IOException
     {
         // Info not available in AIFF
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IAudioMetadata getAudioMetadata ()
+    {
+        return this.audioMetadata;
     }
 }

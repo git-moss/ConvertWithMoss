@@ -9,6 +9,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.FastLZ;
@@ -17,12 +18,9 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.SoundinfoDocument;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.Dictionary;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItem;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.DictionaryItemReferenceType;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.Kontakt2Monolith;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
-import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -33,18 +31,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
-import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -74,7 +68,7 @@ public class Kontakt2Type extends AbstractKontaktType
         KNOWN_BLOCK_IDS.add ("ElPi"); // Elektrik Piano from Kontakt 3 Library
     }
 
-    private static final byte []        FILE_HEADER_ID        =
+    private static final byte []        FILE_HEADER_ID      =
     {
         (byte) 0x12,
         (byte) 0x90,
@@ -82,15 +76,7 @@ public class Kontakt2Type extends AbstractKontaktType
         (byte) 0x7F
     };
 
-    private static final byte []        SAMPLE_DATA_HEADER_ID =
-    {
-        (byte) 0x0A,
-        (byte) 0xF8,
-        (byte) 0xCC,
-        (byte) 0x16
-    };
-
-    private static final byte []        SOUNDINFO_HEADER      =
+    private static final byte []        SOUNDINFO_HEADER    =
     {
         (byte) 0xAE,
         (byte) 0xE1,
@@ -106,10 +92,9 @@ public class Kontakt2Type extends AbstractKontaktType
         (byte) 0x00
     };
 
-    private final SimpleDateFormat      simpleDateFormatter   = new SimpleDateFormat ("dd.MM.yyyy HH:mm:ss", Locale.GERMAN);
-    private final boolean               isBigEndian;
+    private final SimpleDateFormat      simpleDateFormatter = new SimpleDateFormat ("dd.MM.yyyy HH:mm:ss", Locale.GERMAN);
     private final K2MetadataFileHandler handler;
-    private final PresetChunkData       kontakt5Preset        = new PresetChunkData ();
+    private final PresetChunkData       kontakt5Preset      = new PresetChunkData ();
 
 
     /**
@@ -132,8 +117,8 @@ public class Kontakt2Type extends AbstractKontaktType
     @Override
     public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
-        // The size of the ZLIB block, we do not need the info
-        final int zlibLength = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+        // The size of the compressed block (ZLIB/FastLZ)
+        final int compressedLength = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
 
         // 0x100 = Kontakt 2, 0x110 = Kontakt 4.2
         final int headerVersion = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
@@ -180,7 +165,7 @@ public class Kontakt2Type extends AbstractKontaktType
             // Padding
             StreamUtils.skipNBytes (fileAccess, 32);
 
-            multiSamples = this.handleFastLZ (sourceFolder, sourceFile, fileAccess, zlibLength, decompressedLength, metadataConfig);
+            multiSamples = this.handleFastLZ (sourceFolder, sourceFile, fileAccess, compressedLength, decompressedLength, metadataConfig);
         }
         else
         {
@@ -190,7 +175,7 @@ public class Kontakt2Type extends AbstractKontaktType
             final boolean isMonolith = type != 0x78;
             this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "2", kontaktVersion, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
 
-            final Map<String, WavSampleMetadata> monolithSamples = isMonolith ? this.readMonolith (fileAccess) : null;
+            final Map<String, DefaultSampleMetadata> monolithSamples = isMonolith ? new Kontakt2Monolith (fileAccess, this.isBigEndian).mapSamples () : null;
             multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples, metadataConfig);
         }
 
@@ -314,7 +299,7 @@ public class Kontakt2Type extends AbstractKontaktType
      * @return All parsed multi-samples
      * @throws IOException
      */
-    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, WavSampleMetadata> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
+    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, DefaultSampleMetadata> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
     {
         final String xmlCode = CompressionUtils.readZLIB (fileAccess);
         try
@@ -381,171 +366,6 @@ public class Kontakt2Type extends AbstractKontaktType
             }
         }
         return Optional.empty ();
-    }
-
-
-    /**
-     * Reads and parses the monolith block.
-     *
-     * @param fileAccess The random access file to read from
-     * @return All sample descriptors of the sample block
-     * @throws IOException Error reading the block
-     */
-    private Map<String, WavSampleMetadata> readMonolith (final RandomAccessFile fileAccess) throws IOException
-    {
-        final Dictionary dictionary = new Dictionary (fileAccess, this.isBigEndian);
-        final int nkiPointer = getNKIPointer (dictionary);
-        if (nkiPointer == -1)
-            throw new IOException (Functions.getMessage ("IDS_NKI_DICT_NKI_NOT_FOUND"));
-
-        final Dictionary samplesDictionary = getSamplesDictionary (dictionary);
-        final Map<String, WavSampleMetadata> result = this.handleSampleDictionary (fileAccess, samplesDictionary, nkiPointer);
-
-        // Move to the beginning of the ZLIB block
-        fileAccess.seek (nkiPointer + 27L + 170L);
-        return result;
-    }
-
-
-    /**
-     * Lookup the pointer to the beginning of the NKI block.
-     *
-     * @param dictionary The dictionary
-     * @return The pointer position or -1 if not found
-     */
-    private static int getNKIPointer (final Dictionary dictionary)
-    {
-        for (final DictionaryItem item: dictionary.getItems ())
-        {
-            if (item.getReferenceType () == DictionaryItemReferenceType.NKI)
-                return item.getPointer ();
-        }
-        return -1;
-    }
-
-
-    /**
-     * Get the (sub-) dictionary with the samples information.
-     *
-     * @param dictionary The top dictionary
-     * @return The samples dictionary
-     * @throws IOException Found an unexpected dictionary
-     */
-    private static Dictionary getSamplesDictionary (final Dictionary dictionary) throws IOException
-    {
-        for (final DictionaryItem item: dictionary.getItems ())
-        {
-            if (item.getReferenceType () == DictionaryItemReferenceType.DICTIONARY)
-            {
-                if (!"Samples".equals (item.asWideString ()))
-                    throw new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_DICT_ITEM", item.asWideString ()));
-                return item.getDictionary ();
-            }
-        }
-        throw new IOException (Functions.getMessage ("IDS_NKI_DICT_SAMPLES_NOT_FOUND"));
-    }
-
-
-    /**
-     * Reads all sample file names from the sample dictionary. After that all samples are extracted
-     * as well.
-     *
-     * @param fileAccess The file
-     * @param dictionary The Sample dictionary
-     * @param nkiPointer The start of the NKI section
-     * @return The found samples
-     * @throws IOException
-     */
-    private Map<String, WavSampleMetadata> handleSampleDictionary (final RandomAccessFile fileAccess, final Dictionary dictionary, final int nkiPointer) throws IOException
-    {
-        final List<String> sampleFilenames = new ArrayList<> ();
-
-        for (final DictionaryItem item: dictionary.getItems ())
-        {
-            final DictionaryItemReferenceType referenceType = item.getReferenceType ();
-            switch (referenceType)
-            {
-                case DICTIONARY:
-                    this.notifier.log ("IDS_NKI_DICT_IGNORED", item.asWideString ());
-                    break;
-
-                case SAMPLE:
-                    final String sampleFilename = item.asWideString ();
-                    sampleFilenames.add (sampleFilename);
-                    break;
-
-                case END:
-                    // Ignore
-                    break;
-
-                default:
-                    throw new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_DICT_ITEM", referenceType.toString ()));
-            }
-        }
-
-        return readSamples (fileAccess, nkiPointer, sampleFilenames);
-    }
-
-
-    /**
-     * Reads all sample files from the monolith. Note: this is a brute force attempt which scans for
-     * the sample headers backwards in the file since we still have no idea how to read the sample
-     * positions from the file. AIFF is not supported.
-     *
-     * @param fileAccess The random access file to read from
-     * @param nkiPointer The pointer where NKI starts
-     * @param sampleFilenames The names of all samples
-     * @return The read and parsed WAV files
-     * @throws IOException An error occurred
-     */
-    private static Map<String, WavSampleMetadata> readSamples (final RandomAccessFile fileAccess, final int nkiPointer, final List<String> sampleFilenames) throws IOException
-    {
-        final int numSamples = sampleFilenames.size ();
-        final List<Long> positions = collectSampleHeaders (fileAccess, nkiPointer, SAMPLE_DATA_HEADER_ID, numSamples);
-        if (numSamples != positions.size ())
-            throw new IOException (Functions.getMessage ("IDS_NKI_NUMBER_OF_SAMPLES_NOT_MATCHING"));
-
-        final Map<String, WavSampleMetadata> sampleMetadataMap = new HashMap<> (numSamples);
-        for (int i = 0; i < numSamples; i++)
-        {
-            // Move to start and skip header
-            fileAccess.seek (31 + positions.get (i).longValue ());
-
-            final InputStream is = Channels.newInputStream (fileAccess.getChannel ());
-            final String sampleFilename = sampleFilenames.get (i);
-            sampleMetadataMap.put (sampleFilename, new WavSampleMetadata (sampleFilename, is));
-        }
-
-        return sampleMetadataMap;
-    }
-
-
-    /**
-     * Finds all occurrences of the given array in the file up to the given limit. Search starts at
-     * the end of the file.
-     *
-     * @param fileAccess The file in which to search
-     * @param startPointer The start position of the search + 1
-     * @param searchBytes The array to look for
-     * @param numOccurrences Stops after this number of occurrences has been found
-     * @return A list with all occurrences starting with the lowest position
-     * @throws IOException An error occurred
-     */
-    private static List<Long> collectSampleHeaders (final RandomAccessFile fileAccess, final long startPointer, final byte [] searchBytes, final int numOccurrences) throws IOException
-    {
-        final List<Long> bytePositions = new ArrayList<> ();
-        for (long i = startPointer - searchBytes.length; i >= 0 && bytePositions.size () < numOccurrences; i--)
-        {
-            fileAccess.seek (i);
-            final byte [] bytesToCompare = new byte [searchBytes.length];
-            fileAccess.read (bytesToCompare);
-            if (Arrays.equals (bytesToCompare, searchBytes))
-                bytePositions.add (Long.valueOf (i));
-        }
-
-        // Reverse the byte positions list to put them in order
-        Collections.reverse (bytePositions);
-        return bytePositions;
     }
 
 

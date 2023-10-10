@@ -22,6 +22,15 @@ import java.util.Optional;
 public interface ISampleMetadata
 {
     /**
+     * Get information abut the audio file.
+     *
+     * @return The information
+     * @throws IOException Could not read the audio metadata
+     */
+    IAudioMetadata getAudioMetadata () throws IOException;
+
+
+    /**
      * Get the file where the sample is stored.
      *
      * @return The file where the sample is stored
@@ -383,22 +392,6 @@ public interface ISampleMetadata
      * @return The updated name
      */
     Optional<String> getUpdatedFilename ();
-
-
-    /**
-     * Returns true if the sample is mono (otherwise stereo).
-     *
-     * @return True if mono
-     */
-    boolean isMono ();
-
-
-    /**
-     * The number of sample slices per second. This value is unaffected by the number of channels.
-     *
-     * @return The four bytes converted to an integer
-     */
-    int getSampleRate ();
 
 
     /**

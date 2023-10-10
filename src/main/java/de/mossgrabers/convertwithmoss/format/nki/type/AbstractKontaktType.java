@@ -15,6 +15,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 public abstract class AbstractKontaktType implements IKontaktFormat
 {
     protected final INotifier notifier;
+    protected boolean         isBigEndian;
 
 
     /**

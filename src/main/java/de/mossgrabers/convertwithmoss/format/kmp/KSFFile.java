@@ -4,17 +4,22 @@
 
 package de.mossgrabers.convertwithmoss.format.kmp;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
+
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -57,8 +62,8 @@ public class KSFFile extends DefaultSampleMetadata
     private static final int    KSF_SAMPLE_FILENAME_SIZE    = 12;
 
     private int                 sampleNumber;
-
     private int                 channels;
+    private int                 sampleRate;
     private int                 sampleResolution;
     private int                 numberOfSamples;
     private byte []             sampleData;
@@ -66,8 +71,10 @@ public class KSFFile extends DefaultSampleMetadata
 
     /**
      * Constructor.
+     *
+     * @throws IOException Cannot happen
      */
-    public KSFFile ()
+    public KSFFile () throws IOException
     {
         // Intentionally empty
     }
@@ -160,6 +167,8 @@ public class KSFFile extends DefaultSampleMetadata
             if (in.available () == 0)
                 break;
         }
+
+        this.audioMetadata = new DefaultAudioMetadata (this.channels == 1, this.sampleRate, this.sampleResolution);
     }
 
 
@@ -206,18 +215,17 @@ public class KSFFile extends DefaultSampleMetadata
         out.write (pad (name, 16).getBytes ());
 
         out.writeInt (sample.getStart ());
+        out.writeInt (sample.getStart ());
 
         final List<ISampleLoop> loops = sample.getLoops ();
         if (loops.isEmpty ())
         {
-            out.writeInt (sample.getStart ());
             out.writeInt (0);
             out.writeInt (sample.getStop ());
         }
         else
         {
             final ISampleLoop loop = loops.get (0);
-            out.writeInt (loop.getStart ());
             out.writeInt (loop.getStart ());
             out.writeInt (loop.getEnd ());
         }
@@ -236,9 +244,22 @@ public class KSFFile extends DefaultSampleMetadata
 
         final ByteArrayOutputStream dataOut = new ByteArrayOutputStream ();
         sample.writeSample (dataOut);
-        final ByteArrayInputStream dataIn = new ByteArrayInputStream (dataOut.toByteArray ());
+
+        // Convert the file to be a 16 bit WAV file
         final WaveFile waveFile = new WaveFile ();
-        waveFile.read (dataIn, true);
+        try
+        {
+            // Convert the input sample to match the support bit resolutions and maximum sample rate
+            waveFile.read (new ByteArrayInputStream (AudioFileUtils.convertToFormat (dataOut.toByteArray (), new int []
+            {
+                8,
+                16
+            }, 44100)), true);
+        }
+        catch (final UnsupportedAudioFileException ex)
+        {
+            throw new IOException (ex);
+        }
 
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
         final DataChunk dataChunk = waveFile.getDataChunk ();
@@ -289,6 +310,14 @@ public class KSFFile extends DefaultSampleMetadata
         out.writeInt (KSF_SAMPLE_NAME_SIZE);
 
         out.write (pad (name, 24).getBytes ());
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IAudioMetadata getAudioMetadata ()
+    {
+        return this.audioMetadata;
     }
 
 

@@ -78,28 +78,34 @@ public class NkiDetectorTask extends AbstractDetectorTask
      */
     private IKontaktFormat detectFormat (final RandomAccessFile fileAccess) throws IOException
     {
+        final int typeID = fileAccess.readInt ();
+
         // Is this Kontakt 5+ container format?
         fileAccess.seek (12);
         final String id = StreamUtils.readASCII (fileAccess, 4);
-        fileAccess.seek (0);
         if ("hsin".equals (id))
             return new Kontakt5Type (this.notifier);
 
-        final int typeID = fileAccess.readInt ();
+        fileAccess.seek (4);
+
         switch (typeID)
         {
+            case Magic.KONTAKT1_INSTRUMENT_LE, Magic.KONTAKT1_MULTI_LE:
+                return new Kontakt1Type (this.notifier, false);
+
+            case Magic.KONTAKT1_INSTRUMENT_BE, Magic.KONTAKT1_MULTI_BE:
+                return new Kontakt1Type (this.notifier, true);
+
+            // Note: these magic bytes are also used in NKI 1.5.x files
+            case Magic.KONTAKT2_INSTRUMENT_LE, Magic.KONTAKT2_INSTRUMENT_BE, Magic.KONTAKT2__MULTI_LE, Magic.KONTAKT2__MULTI_BE:
+                final boolean isBigEndian = typeID == Magic.KONTAKT2_INSTRUMENT_BE || typeID == Magic.KONTAKT2__MULTI_BE;
+                final boolean version1 = StreamUtils.readUnsigned32 (fileAccess, isBigEndian) == 0x24;
+                fileAccess.seek (4);
+                return version1 ? new Kontakt1Type (this.notifier, isBigEndian) : new Kontakt2Type (this.notifier, isBigEndian);
+
             case Magic.KONTAKT5_MONOLITH:
                 fileAccess.seek (0);
                 return new Kontakt5MonolithType (this.notifier);
-
-            case Magic.KONTAKT1_INSTRUMENT, Magic.KONTAKT1_MULTI:
-                return new Kontakt1Type (this.notifier);
-
-            case Magic.KONTAKT2_LITTLE_ENDIAN:
-                return new Kontakt2Type (this.notifier, false);
-
-            case Magic.KONTAKT2_BIG_ENDIAN:
-                return new Kontakt2Type (this.notifier, true);
 
             default:
                 throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_FILE_ID", Integer.toHexString (typeID).toUpperCase ()));

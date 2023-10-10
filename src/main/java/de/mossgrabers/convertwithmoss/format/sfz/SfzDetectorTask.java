@@ -525,10 +525,17 @@ public class SfzDetectorTask extends AbstractDetectorTask
             final int loopLength = loop.getStart () - loop.getEnd ();
             if (loopLength > 0)
             {
-                final double loopLengthInSeconds = loopLength / (double) sampleMetadata.getSampleRate ();
-                final double crossfade = crossfadeInSeconds / loopLengthInSeconds;
-                if (crossfade > 0 && crossfade <= 1)
-                    loop.setCrossfade (crossfade);
+                try
+                {
+                    final double loopLengthInSeconds = loopLength / (double) sampleMetadata.getAudioMetadata ().getSampleRate ();
+                    final double crossfade = crossfadeInSeconds / loopLengthInSeconds;
+                    if (crossfade > 0 && crossfade <= 1)
+                        loop.setCrossfade (crossfade);
+                }
+                catch (final IOException ex)
+                {
+                    this.notifier.logError (ex);
+                }
             }
         }
 

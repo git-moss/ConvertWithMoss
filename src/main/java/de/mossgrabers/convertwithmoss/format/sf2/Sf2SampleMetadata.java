@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.sf2;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
@@ -29,14 +31,22 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
      * Constructor.
      *
      * @param sample The name of the file where the sample is stored
+     * @throws IOException Cannot happen
      */
-    public Sf2SampleMetadata (final Sf2SampleDescriptor sample)
+    public Sf2SampleMetadata (final Sf2SampleDescriptor sample) throws IOException
     {
         super (sample.getName (), null, null, null);
 
         this.sample = sample;
         this.rightSample = sample;
-        this.sampleRate = (int) sample.getSampleRate ();
+
+        // For 24 bit the data must be present and the length must match
+        final byte [] leftSampleData = this.sample.getSampleData ();
+        final byte [] leftSample24Data = this.sample.getSample24Data ();
+        final byte [] rightSampleData = this.rightSample.getSampleData ();
+        final byte [] rightSample24Data = this.rightSample.getSample24Data ();
+        final boolean is24 = leftSample24Data != null && rightSample24Data != null && leftSample24Data.length * 2 == leftSampleData.length && rightSample24Data.length * 2 == rightSampleData.length;
+        this.audioMetadata = new DefaultAudioMetadata (false, (int) sample.getSampleRate (), is24 ? 16 : 24);
     }
 
 
@@ -56,7 +66,6 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
 
 
     /** {@inheritDoc} */
-    @SuppressWarnings("null")
     @Override
     public void writeSample (final OutputStream outputStream) throws IOException
     {
@@ -70,19 +79,17 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
         final long rightLengthInSamples = this.rightSample.getEnd () - this.rightSample.getStart ();
         final long lengthInSamples = Math.max (leftLengthInSamples, rightLengthInSamples);
 
-        // For 24 bit the data must be present and the length must match
-        final boolean is24 = leftSample24Data != null && rightSample24Data != null && leftSample24Data.length * 2 == leftSampleData.length && rightSample24Data.length * 2 == rightSampleData.length;
-        final int bitsPerSample = is24 ? 24 : 16;
+        final int bitsPerSample = this.audioMetadata.getBitResolution ();
 
         // Create an empty wave file with the required resolution and calculated data length
-        final WaveFile wavFile = new WaveFile (2, this.sampleRate, bitsPerSample, (int) lengthInSamples);
+        final WaveFile wavFile = new WaveFile (2, this.audioMetadata.getSampleRate (), bitsPerSample, (int) lengthInSamples);
         final DataChunk dataChunk = wavFile.getDataChunk ();
         final byte [] data = dataChunk.getData ();
 
         // Fill in the data
         final int leftStart = (int) this.sample.getStart ();
         final int rightStart = (int) this.rightSample.getStart ();
-        if (is24)
+        if (bitsPerSample == 24)
         {
             // Convert to stereo interleaved format
             for (int i = 0; i < lengthInSamples; i++)
@@ -143,6 +150,14 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
     public Sf2SampleDescriptor getSample ()
     {
         return this.sample;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IAudioMetadata getAudioMetadata ()
+    {
+        return this.audioMetadata;
     }
 
 

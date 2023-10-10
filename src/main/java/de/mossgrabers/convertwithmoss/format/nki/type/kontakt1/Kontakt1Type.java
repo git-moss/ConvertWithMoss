@@ -37,11 +37,13 @@ public class Kontakt1Type extends AbstractKontaktType
      * Constructor.
      *
      * @param notifier Where to report errors
+     * @param isBigEndian Larger bytes are first, other wise smaller bytes are first (little-endian)
      */
-    public Kontakt1Type (final INotifier notifier)
+    public Kontakt1Type (final INotifier notifier, final boolean isBigEndian)
     {
         super (notifier);
 
+        this.isBigEndian = isBigEndian;
         this.handler = new NiSSMetadataFileHandler (notifier);
     }
 
@@ -53,7 +55,7 @@ public class Kontakt1Type extends AbstractKontaktType
         this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE_1");
 
         // Read the offset to the ZLIB part, 8 bytes have already been read
-        final int offset = (int) StreamUtils.readUnsigned32 (fileAccess, false) - 8;
+        final int offset = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian) - 8;
         if (fileAccess.skipBytes (offset) != offset)
             throw new IOException (Functions.getMessage ("IDS_ERR_FILE_CORRUPTED"));
 
@@ -80,12 +82,12 @@ public class Kontakt1Type extends AbstractKontaktType
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
         // Kontakt 1 NKI File ID
-        StreamUtils.writeUnsigned32 (out, Magic.KONTAKT1_INSTRUMENT, true);
+        StreamUtils.writeUnsigned32 (out, Magic.KONTAKT1_INSTRUMENT_BE, false);
 
         // The number of bytes in the file where the ZLIB starts. Always 0x24.
         StreamUtils.writeUnsigned32 (out, 0x24, false);
 
-        // Unknown. Always 0x50.
+        // Header version. Always 0x50.
         StreamUtils.writeUnsigned16 (out, 0x50, false);
 
         // Unknown. Always 0x01 or 0x02.
