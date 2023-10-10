@@ -87,7 +87,7 @@ public class SfzCreator extends AbstractCreator
         }
 
         final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
-        final String metadata = createMetadata (safeSampleFolderName, multisampleSource);
+        final String metadata = this.createMetadata (safeSampleFolderName, multisampleSource);
 
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
@@ -112,7 +112,7 @@ public class SfzCreator extends AbstractCreator
      * @param multisampleSource The multi-sample
      * @return The XML structure
      */
-    private static String createMetadata (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
+    private String createMetadata (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
     {
         final StringBuilder sb = new StringBuilder (SFZ_HEADER);
 
@@ -165,7 +165,7 @@ public class SfzCreator extends AbstractCreator
             sequence = 1;
             for (final ISampleMetadata info: sampleMetadata)
             {
-                createSample (safeSampleFolderName, sb, info, sequence);
+                this.createSample (safeSampleFolderName, sb, info, sequence);
                 if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                     sequence++;
             }
@@ -183,7 +183,7 @@ public class SfzCreator extends AbstractCreator
      * @param info Where to get the sample info from
      * @param sequenceNumber The number in the sequence for round-robin playback
      */
-    private static void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
+    private void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
     {
         sb.append ("\n<").append (SfzHeader.REGION).append (">\n");
         final Optional<String> filename = info.getUpdatedFilename ();
@@ -312,7 +312,7 @@ public class SfzCreator extends AbstractCreator
         ////////////////////////////////////////////////////////////
         // Sample Loop
 
-        createLoops (sb, info);
+        this.createLoops (sb, info);
 
         ////////////////////////////////////////////////////////////
         // Filter
@@ -327,7 +327,7 @@ public class SfzCreator extends AbstractCreator
      * @param sb Where to add the XML code
      * @param info Where to get the sample info from
      */
-    private static void createLoops (final StringBuilder sb, final ISampleMetadata info)
+    private void createLoops (final StringBuilder sb, final ISampleMetadata info)
     {
         final List<ISampleLoop> loops = info.getLoops ();
         if (loops.isEmpty ())
@@ -353,10 +353,17 @@ public class SfzCreator extends AbstractCreator
                 final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
                 if (loopLength > 0)
                 {
-                    final double loopLengthInSeconds = loopLength / (double) info.getSampleRate ();
-
-                    final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
-                    sb.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
+                    double loopLengthInSeconds;
+                    try
+                    {
+                        loopLengthInSeconds = loopLength / (double) info.getAudioMetadata ().getSampleRate ();
+                        final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
+                        sb.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
+                    }
+                    catch (final IOException ex)
+                    {
+                        this.notifier.logError (ex);
+                    }
                 }
             }
         }

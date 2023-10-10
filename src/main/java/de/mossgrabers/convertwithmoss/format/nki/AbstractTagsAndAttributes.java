@@ -614,6 +614,14 @@ public abstract class AbstractTagsAndAttributes
 
 
     /**
+     * Get the extended sample file tag.
+     *
+     * @return The tag
+     */
+    public abstract String sampleFileExAttribute ();
+
+
+    /**
      * Get the key tracking tag.
      *
      * @return The tag

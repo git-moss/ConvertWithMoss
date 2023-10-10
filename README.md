@@ -54,7 +54,7 @@ After that you can start the application ConvertWithMoss.
 
 Ensure to have the required `JVM`, `JRE`, `JavaFX` and `Maven` dependencies
 preinstalled and set the `JAVA_HOME` environment variable to specify which Java
-version to use; the minimum required version is `16`.
+version to use; the minimum required version is `17`.
 Then use `mvn install` command to start the build.
 
 See also the various build scripts in this directory as references on how to

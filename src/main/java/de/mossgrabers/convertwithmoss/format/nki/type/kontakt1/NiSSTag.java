@@ -16,34 +16,37 @@ import de.mossgrabers.convertwithmoss.format.nki.AbstractTagsAndAttributes;
 public class NiSSTag extends AbstractTagsAndAttributes
 {
     /** The optional root element. */
-    public static final String NISS_ROOT_CONTAINER        = "NiSS_Bank";
+    public static final String NISS_ROOT_CONTAINER           = "NiSS_Bank";
 
     /** The program element. */
-    public static final String NISS_PROGRAM               = "NiSS_Program";
+    public static final String NISS_PROGRAM                  = "NiSS_Program";
 
     /** A NiSS_Group element of a program. */
-    public static final String NISS_GROUP                 = "NiSS_Group";
+    public static final String NISS_GROUP                    = "NiSS_Group";
 
     /** A NiSS_Zone element of a program. */
-    public static final String NISS_ZONE                  = "NiSS_Zone";
+    public static final String NISS_ZONE                     = "NiSS_Zone";
 
     /** The internal modulator element. */
-    public static final String NISS_INT_MODULATOR_ELEMENT = "NiSS_IntMod";
+    public static final String NISS_INT_MODULATOR_ELEMENT    = "NiSS_IntMod";
 
     /** The external modulator element. */
-    public static final String NISS_EXT_MODULATOR_ELEMENT = "NiSS_ExtMod";
+    public static final String NISS_EXT_MODULATOR_ELEMENT    = "NiSS_ExtMod";
 
     /** The sample file attribute. */
-    public static final String NISS_SAMPLE_FILE_ATTRIBUTE = "file";
+    public static final String NISS_SAMPLE_FILE_ATTRIBUTE    = "file";
+
+    /** The extended sample file attribute. */
+    public static final String NISS_SAMPLE_FILE_EX_ATTRIBUTE = "file_ex";
 
     /** The program volume parameter. */
-    public static final String NISS_PROG_VOL_PARAM        = "masterVolume";
+    public static final String NISS_PROG_VOL_PARAM           = "masterVolume";
 
     /** The program tune parameter. */
-    public static final String NISS_PROG_TUNE_PARAM       = "masterTune";
+    public static final String NISS_PROG_TUNE_PARAM          = "masterTune";
 
     /** The program pan parameter. */
-    public static final String NISS_PROG_PAN_PARAM        = "masterPan";
+    public static final String NISS_PROG_PAN_PARAM           = "masterPan";
 
 
     /** {@inheritDoc} */
@@ -91,6 +94,14 @@ public class NiSSTag extends AbstractTagsAndAttributes
     public String sampleFileAttribute ()
     {
         return NISS_SAMPLE_FILE_ATTRIBUTE;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String sampleFileExAttribute ()
+    {
+        return NISS_SAMPLE_FILE_EX_ATTRIBUTE;
     }
 
 

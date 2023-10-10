@@ -31,7 +31,9 @@ public class NcwFile
     private static final int FILE_MAGIC  = 0xD69EA801;
     private static final int BLOCK_MAGIC = 0x3E9A0C16;
 
-    // private static final int VERSION1 = 0x130; // ???
+    // Kontakt 4
+    private static final int VERSION1    = 0x130;
+    // KOntakt 5
     private static final int VERSION2    = 0x131;
 
     private int              channels;
@@ -88,6 +90,28 @@ public class NcwFile
     public int getNumberOfSamples ()
     {
         return this.numberOfSamples;
+    }
+
+
+    /**
+     * Get the bits per sample.
+     *
+     * @return Bits per sample
+     */
+    public int getBitsPerSample ()
+    {
+        return this.bitsPerSample;
+    }
+
+
+    /**
+     * Get the sample rate.
+     *
+     * @return The sample rate
+     */
+    public int getSampleRate ()
+    {
+        return this.sampleRate;
     }
 
 
@@ -166,7 +190,7 @@ public class NcwFile
             throw new IOException (Functions.getMessage ("IDS_NCW_NOT_A_NCW_FILE"));
 
         final int version = (int) StreamUtils.readUnsigned32 (inputStream, false);
-        if (/* version != VERSION1 && */ version != VERSION2)
+        if (version != VERSION1 && version != VERSION2)
             throw new IOException (Functions.getMessage ("IDS_NCW_UNKNOWN_VERSION", Integer.toHexString (version).toUpperCase ()));
 
         this.channels = StreamUtils.readUnsigned16 (inputStream, false);
@@ -260,8 +284,8 @@ public class NcwFile
             {
                 final int mid = this.channelData[0][offset + i];
                 final int side = this.channelData[1][offset + i];
-                this.channelData[0][offset + i] = (mid + side) / 2;
-                this.channelData[1][offset + i] = (mid - side) / 2;
+                this.channelData[0][offset + i] = mid + side;
+                this.channelData[1][offset + i] = mid - side;
             }
         }
     }

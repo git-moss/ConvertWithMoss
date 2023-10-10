@@ -5,16 +5,16 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith;
 
 /**
- * A reference type in a Kontakt 2 Monolith dictionary.
+ * The type of a Kontakt 2 Monolith directory entry.
  *
  * @author Jürgen Moßgraber
  */
-public enum DictionaryItemReferenceType
+public enum DirectoryEntryType
 {
     /** The end. */
     END,
     /** References another sub-directory. */
-    DICTIONARY,
+    DIRECTORY,
     /** References a sample. */
     SAMPLE,
     /** References the NKI section. */

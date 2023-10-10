@@ -4,12 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -38,7 +40,6 @@ public class DefaultSampleMetadata implements ISampleMetadata
     protected final File        zipFile;
     protected final File        zipEntry;
 
-    protected int               sampleRate              = 44100;
     protected boolean           isMonoFile              = false;
 
     protected Optional<String>  combinedFilename        = Optional.empty ();
@@ -70,6 +71,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     protected IFilter           filter                  = null;
 
     protected List<ISampleLoop> loops                   = new ArrayList<> (1);
+    protected IAudioMetadata    audioMetadata;
 
 
     /**
@@ -157,14 +159,6 @@ public class DefaultSampleMetadata implements ISampleMetadata
     public String getFilename ()
     {
         return this.filename;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public int getSampleRate ()
-    {
-        return this.sampleRate;
     }
 
 
@@ -562,14 +556,6 @@ public class DefaultSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public boolean isMono ()
-    {
-        return this.isMonoFile;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     public void setFilenameWithoutGroup (final String nameWithoutLayer)
     {
         this.filenameWithoutLayer = Optional.ofNullable (nameWithoutLayer);
@@ -612,6 +598,35 @@ public class DefaultSampleMetadata implements ISampleMetadata
                 in.transferTo (outputStream);
             }
         }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IAudioMetadata getAudioMetadata () throws IOException
+    {
+        if (this.audioMetadata == null)
+        {
+            if (this.sampleFile != null)
+                this.audioMetadata = AudioFileUtils.getMetadata (this.sampleFile);
+
+            if (this.zipFile != null)
+            {
+                try (final ZipFile zf = new ZipFile (this.zipFile))
+                {
+                    final String path = this.zipEntry.getPath ().replace ('\\', '/');
+                    final ZipEntry entry = zf.getEntry (path);
+                    if (entry == null)
+                        throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
+
+                    try (final InputStream in = zf.getInputStream (entry))
+                    {
+                        this.audioMetadata = AudioFileUtils.getMetadata (in);
+                    }
+                }
+            }
+        }
+        return this.audioMetadata;
     }
 
 

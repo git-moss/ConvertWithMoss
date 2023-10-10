@@ -17,13 +17,15 @@ public class PresetChunkID
 {
     /** Parameter Modulation. */
     public static final int                   PAR_MOD_BASE       = 0x00;
+    /** A bank of several programs. */
+    public static final int                   BANK               = 0x03;
     /** Scripting. */
     public static final int                   PAR_SCRIPT         = 0x06;
     /** Send levels. */
     public static final int                   PAR_FX_SEND_LEVELS = 0x17;
     /** FX. */
     public static final int                   PAR_FX             = 0x25;
-    /** A Kontakt program. */
+    /** A program. */
     public static final int                   PROGRAM            = 0x28;
     /** The list with all voice groups. */
     public static final int                   VOICE_GROUPS       = 0x32;
@@ -157,6 +159,7 @@ public class PresetChunkID
     static
     {
         CHUNK_NAMES.put (Integer.valueOf (PAR_SCRIPT), "PAR_SCRIPT");
+        CHUNK_NAMES.put (Integer.valueOf (BANK), "BANK");
         CHUNK_NAMES.put (Integer.valueOf (PAR_FX_SEND_LEVELS), "PAR_FX_SEND_LEVELS");
         CHUNK_NAMES.put (Integer.valueOf (PAR_FX), "PAR_FX");
         CHUNK_NAMES.put (Integer.valueOf (PROGRAM), "PROGRAM");

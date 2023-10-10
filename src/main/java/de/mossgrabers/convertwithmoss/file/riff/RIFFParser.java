@@ -116,7 +116,7 @@ public class RIFFParser
 
     /**
      * Parses a FORM group.
-     * 
+     *
      * @param ignoreUnknownChunks Ignores unknown chunks if true otherwise raises an exception
      * @param props The property chunks
      * @throws ParseException Indicates a parsing error

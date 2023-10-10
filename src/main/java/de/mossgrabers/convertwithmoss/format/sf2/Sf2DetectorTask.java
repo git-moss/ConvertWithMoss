@@ -385,118 +385,127 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      */
     private static Sf2SampleMetadata createSampleMetadata (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
     {
-        final Sf2SampleMetadata sampleMetadata = new Sf2SampleMetadata (sample);
-
-        final Integer panorama = generators.getSignedValue (Generator.PANORAMA);
-        if (panorama != null)
-            sampleMetadata.setPanorama (panorama.intValue () / 500.0);
-
-        // Set the pitch
-        final int overridingRootKey = generators.getUnsignedValue (Generator.OVERRIDING_ROOT_KEY).intValue ();
-        final int originalPitch = sample.getOriginalPitch ();
-        int pitch = overridingRootKey < 0 ? originalPitch : overridingRootKey;
-        pitch += generators.getSignedValue (Generator.COARSE_TUNE).intValue ();
-        sampleMetadata.setKeyRoot (pitch);
-        final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
-        final int pitchCorrection = sample.getPitchCorrection ();
-        final double tune = Math.min (1, Math.max (-1, (pitchCorrection + (double) fineTune) / 100));
-        sampleMetadata.setTune (tune);
-        final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
-        sampleMetadata.setKeyTracking (Math.min (100, Math.max (0, scaleTuning)) / 100.0);
-
-        // Set the key range
-        final Pair<Integer, Integer> keyRangeValue = generators.getRangeValue (Generator.KEY_RANGE);
-        sampleMetadata.setKeyLow (keyRangeValue.getKey ().intValue ());
-        sampleMetadata.setKeyHigh (keyRangeValue.getValue ().intValue ());
-
-        // Set the velocity range
-        final Pair<Integer, Integer> velRangeValue = generators.getRangeValue (Generator.VELOCITY_RANGE);
-        sampleMetadata.setVelocityLow (velRangeValue.getKey ().intValue ());
-        sampleMetadata.setVelocityHigh (velRangeValue.getValue ().intValue ());
-
-        // Set play range
-        sampleMetadata.setStart (0);
-        final long sampleStart = sample.getStart ();
-        sampleMetadata.setStop ((int) (sample.getEnd () - sampleStart));
-
-        // Set loop, if any
-        if ((generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue () & 1) > 0)
+        try
         {
-            final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
-            sampleLoop.setStart ((int) (sample.getStartloop () - sampleStart));
-            sampleLoop.setEnd ((int) (sample.getEndloop () - sampleStart));
-            sampleMetadata.addLoop (sampleLoop);
-        }
+            final Sf2SampleMetadata sampleMetadata = new Sf2SampleMetadata (sample);
 
-        // Gain
-        final int initialAttenuation = generators.getSignedValue (Generator.INITIAL_ATTENUATION).intValue ();
-        if (initialAttenuation > 0)
-            sampleMetadata.setGain (-initialAttenuation / 10.0);
+            final Integer panorama = generators.getSignedValue (Generator.PANORAMA);
+            if (panorama != null)
+                sampleMetadata.setPanorama (panorama.intValue () / 500.0);
 
-        // Volume envelope
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
-        amplitudeEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DELAY)));
-        amplitudeEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_ATTACK)));
-        amplitudeEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_HOLD)));
-        amplitudeEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DECAY)));
-        amplitudeEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_RELEASE)));
-        amplitudeEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.VOL_ENV_SUSTAIN)));
+            // Set the pitch
+            final int overridingRootKey = generators.getUnsignedValue (Generator.OVERRIDING_ROOT_KEY).intValue ();
+            final int originalPitch = sample.getOriginalPitch ();
+            int pitch = overridingRootKey < 0 ? originalPitch : overridingRootKey;
+            pitch += generators.getSignedValue (Generator.COARSE_TUNE).intValue ();
+            sampleMetadata.setKeyRoot (pitch);
+            final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
+            final int pitchCorrection = sample.getPitchCorrection ();
+            final double tune = Math.min (1, Math.max (-1, (pitchCorrection + (double) fineTune) / 100));
+            sampleMetadata.setTune (tune);
+            final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
+            sampleMetadata.setKeyTracking (Math.min (100, Math.max (0, scaleTuning)) / 100.0);
 
-        // Filter settings
-        final Integer initialCutoffValue = generators.getSignedValue (Generator.INITIAL_FILTER_CUTOFF);
-        if (initialCutoffValue != null)
-        {
-            final int initialCutoff = initialCutoffValue.intValue ();
-            if (initialCutoff >= 1500 && initialCutoff < 13500)
+            // Set the key range
+            final Pair<Integer, Integer> keyRangeValue = generators.getRangeValue (Generator.KEY_RANGE);
+            sampleMetadata.setKeyLow (keyRangeValue.getKey ().intValue ());
+            sampleMetadata.setKeyHigh (keyRangeValue.getValue ().intValue ());
+
+            // Set the velocity range
+            final Pair<Integer, Integer> velRangeValue = generators.getRangeValue (Generator.VELOCITY_RANGE);
+            sampleMetadata.setVelocityLow (velRangeValue.getKey ().intValue ());
+            sampleMetadata.setVelocityHigh (velRangeValue.getValue ().intValue ());
+
+            // Set play range
+            sampleMetadata.setStart (0);
+            final long sampleStart = sample.getStart ();
+            sampleMetadata.setStop ((int) (sample.getEnd () - sampleStart));
+
+            // Set loop, if any
+            if ((generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue () & 1) > 0)
             {
-                // Convert cents to Hertz: f2 is the minimum supported frequency, cents is always a
-                // relation of two frequencies, 1200 cents are one octave:
-                // cents = 1200 * log2 (f1 / f2), f2 = 8.176 => f1 = f2 * 2^(cents / 1200)
-                final double frequency = 8.176 * Math.pow (2, initialCutoff / 1200.0);
+                final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
+                sampleLoop.setStart ((int) (sample.getStartloop () - sampleStart));
+                sampleLoop.setEnd ((int) (sample.getEndloop () - sampleStart));
+                sampleMetadata.addLoop (sampleLoop);
+            }
 
-                double resonance = 0;
-                final Integer initialResonanceValue = generators.getSignedValue (Generator.INITIAL_FILTER_RESONANCE);
-                if (initialResonanceValue != null)
+            // Gain
+            final int initialAttenuation = generators.getSignedValue (Generator.INITIAL_ATTENUATION).intValue ();
+            if (initialAttenuation > 0)
+                sampleMetadata.setGain (-initialAttenuation / 10.0);
+
+            // Volume envelope
+            final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+            amplitudeEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DELAY)));
+            amplitudeEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_ATTACK)));
+            amplitudeEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_HOLD)));
+            amplitudeEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DECAY)));
+            amplitudeEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_RELEASE)));
+            amplitudeEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.VOL_ENV_SUSTAIN)));
+
+            // Filter settings
+            final Integer initialCutoffValue = generators.getSignedValue (Generator.INITIAL_FILTER_CUTOFF);
+            if (initialCutoffValue != null)
+            {
+                final int initialCutoff = initialCutoffValue.intValue ();
+                if (initialCutoff >= 1500 && initialCutoff < 13500)
                 {
-                    final int initialResonance = initialResonanceValue.intValue ();
-                    if (initialResonance > 0 && initialResonance < 960)
-                        resonance = initialResonance / 100.0;
-                }
+                    // Convert cents to Hertz: f2 is the minimum supported frequency, cents is
+                    // always a
+                    // relation of two frequencies, 1200 cents are one octave:
+                    // cents = 1200 * log2 (f1 / f2), f2 = 8.176 => f1 = f2 * 2^(cents / 1200)
+                    final double frequency = 8.176 * Math.pow (2, initialCutoff / 1200.0);
 
-                final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance);
-                final IModulator cutoffModulator = filter.getCutoffModulator ();
-                final int cutoffModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_FILTER_CUTOFF).intValue ();
-                cutoffModulator.setDepth (cutoffModDepth);
-                if (cutoffModDepth != 0)
-                {
-                    final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                    filterEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
-                    filterEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
-                    filterEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
-                    filterEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
-                    filterEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
-                    filterEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
-                }
+                    double resonance = 0;
+                    final Integer initialResonanceValue = generators.getSignedValue (Generator.INITIAL_FILTER_RESONANCE);
+                    if (initialResonanceValue != null)
+                    {
+                        final int initialResonance = initialResonanceValue.intValue ();
+                        if (initialResonance > 0 && initialResonance < 960)
+                            resonance = initialResonance / 100.0;
+                    }
 
-                sampleMetadata.setFilter (filter);
+                    final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance);
+                    final IModulator cutoffModulator = filter.getCutoffModulator ();
+                    final int cutoffModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_FILTER_CUTOFF).intValue ();
+                    cutoffModulator.setDepth (cutoffModDepth);
+                    if (cutoffModDepth != 0)
+                    {
+                        final IEnvelope filterEnvelope = cutoffModulator.getSource ();
+                        filterEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
+                        filterEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
+                        filterEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
+                        filterEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
+                        filterEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
+                        filterEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                    }
 
-                final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
-                final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
-                pitchModulator.setDepth (pitchModDepth);
-                if (pitchModDepth != 0)
-                {
-                    final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-                    pitchEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
-                    pitchEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
-                    pitchEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
-                    pitchEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
-                    pitchEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
-                    pitchEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                    sampleMetadata.setFilter (filter);
+
+                    final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+                    final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
+                    pitchModulator.setDepth (pitchModDepth);
+                    if (pitchModDepth != 0)
+                    {
+                        final IEnvelope pitchEnvelope = pitchModulator.getSource ();
+                        pitchEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
+                        pitchEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
+                        pitchEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
+                        pitchEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
+                        pitchEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
+                        pitchEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                    }
                 }
             }
-        }
 
-        return sampleMetadata;
+            return sampleMetadata;
+        }
+        catch (final IOException ex)
+        {
+            // Can never happen
+            return null;
+        }
     }
 
 

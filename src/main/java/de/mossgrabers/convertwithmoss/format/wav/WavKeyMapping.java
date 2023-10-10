@@ -12,6 +12,7 @@ import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;
 import de.mossgrabers.tools.ui.Functions;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -289,8 +290,15 @@ public class WavKeyMapping
                 {
                     for (final ISampleMetadata sm: samples)
                     {
-                        if (!sm.isMono ())
-                            throw new MultisampleException (Functions.getMessage ("IDS_WAV_FILES_MUST_BE_MONO"), entry);
+                        try
+                        {
+                            if (!sm.getAudioMetadata ().isMono ())
+                                throw new MultisampleException (Functions.getMessage ("IDS_WAV_FILES_MUST_BE_MONO"), entry);
+                        }
+                        catch (final IOException ex)
+                        {
+                            throw new MultisampleException (ex.getMessage (), entry);
+                        }
                     }
 
                 }

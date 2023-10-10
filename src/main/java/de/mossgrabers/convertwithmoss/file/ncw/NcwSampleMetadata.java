@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.file.ncw;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -66,6 +68,8 @@ public class NcwSampleMetadata extends DefaultSampleMetadata
 
         // Change filename ending from NCW to WAV
         this.setCombinedName (this.filename.replace (".ncw", ".wav").replace (".NCW", ".wav"));
+
+        this.audioMetadata = new DefaultAudioMetadata (this.isMonoFile, this.ncwFile.getSampleRate (), this.ncwFile.getBitsPerSample ());
     }
 
 
@@ -82,5 +86,13 @@ public class NcwSampleMetadata extends DefaultSampleMetadata
     public void addMissingInfoFromWaveFile (final boolean addRootKey, final boolean addLoops) throws IOException
     {
         // Info not available in AIFF
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IAudioMetadata getAudioMetadata ()
+    {
+        return this.audioMetadata;
     }
 }

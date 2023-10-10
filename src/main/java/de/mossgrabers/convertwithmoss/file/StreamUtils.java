@@ -247,6 +247,23 @@ public class StreamUtils
     /**
      * Reads and converts 8 bytes to an unsigned integer.
      *
+     * @param fileAccess The random access file to read from
+     * @param isBigEndian True if bytes are stored big-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static long readUnsigned64 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    {
+        final ByteBuffer buffer = ByteBuffer.wrap (StreamUtils.readNBytes (fileAccess, 8));
+        buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        return buffer.getLong () & 0xFFFFFFFFFFFFFFFFL;
+    }
+
+
+    /**
+     * Reads and converts 8 bytes to an unsigned integer.
+     *
      * @param in The input stream
      * @param isBigEndian True if bytes are stored big-endian
      * @return The converted integer
@@ -295,7 +312,7 @@ public class StreamUtils
     public static byte [] readBlock64 (final InputStream in, final boolean isBigEndian) throws IOException
     {
         final long blockSize = readUnsigned64 (in, isBigEndian);
-        if (blockSize > Integer.MAX_VALUE)
+        if (blockSize < 8 || blockSize > Integer.MAX_VALUE)
             throw new IOException (Functions.getMessage ("IDS_ERR_DATA_TOO_LARGE"));
         return in.readNBytes ((int) blockSize - 8);
     }
@@ -520,19 +537,25 @@ public class StreamUtils
     /**
      * Reads an UTF-16 string.
      *
-     * @param fileAccess The random access file to read from
+     * @param data An array containing the 2-byte characters
      * @return The read string
-     * @throws IOException Could not read the string
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
      */
-    public static String readUTF16 (final RandomAccessFile fileAccess) throws IOException
+    public static String readUTF16 (final byte [] data, final boolean isBigEndian)
     {
-        final StringBuilder sb = new StringBuilder ();
-        final byte [] buffer = new byte [2];
-        while (fileAccess.read (buffer) == 2)
+        final StringBuilder sb = new StringBuilder (data.length / 2);
+
+        for (int i = 0; i < data.length; i += 2)
         {
-            if (buffer[0] == 0)
+            final byte first = isBigEndian ? data[i + 1] : data[i];
+            final byte second = isBigEndian ? data[i] : data[i + 1];
+            if (first == 0)
                 break;
-            sb.append (new String (buffer, StandardCharsets.UTF_16LE));
+            sb.append (new String (new byte []
+            {
+                first,
+                second
+            }, StandardCharsets.UTF_16LE));
         }
         return sb.toString ();
     }

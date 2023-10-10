@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.FileList;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Multi;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.PresetChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.PresetChunkID;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
@@ -118,12 +119,25 @@ public class PresetChunkData extends AbstractChunkData
         final List<String> filePaths = fileList.getSampleFiles ();
 
         final Optional<PresetChunk> programChunk = this.getTopChunk (PresetChunkID.PROGRAM);
-        if (programChunk.isEmpty ())
-            return Optional.empty ();
+        if (programChunk.isPresent ())
+        {
+            final Program program = new Program (filePaths);
+            program.parse (programChunk.get (), filePaths);
+            return Optional.of (program);
+        }
 
-        final Program program = new Program (filePaths);
-        program.parse (programChunk.get (), filePaths);
-        return Optional.of (program);
+        final Optional<PresetChunk> multiChunk = this.getTopChunk (PresetChunkID.BANK);
+        if (multiChunk.isPresent ())
+        {
+            final Multi multi = new Multi (filePaths);
+            multi.parse (multiChunk.get (), filePaths);
+
+            throw new IOException (Functions.getMessage ("IDS_NKI5_MULTIS_NOT_SUPPORTED"));
+
+            // TODO return programs
+        }
+
+        return Optional.empty ();
     }
 
 
