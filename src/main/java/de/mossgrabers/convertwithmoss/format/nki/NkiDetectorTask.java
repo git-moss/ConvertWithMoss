@@ -84,7 +84,10 @@ public class NkiDetectorTask extends AbstractDetectorTask
         fileAccess.seek (12);
         final String id = StreamUtils.readASCII (fileAccess, 4);
         if ("hsin".equals (id))
+        {
+            fileAccess.seek (0);
             return new Kontakt5Type (this.notifier);
+        }
 
         fileAccess.seek (4);
 

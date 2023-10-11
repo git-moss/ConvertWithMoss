@@ -301,9 +301,10 @@ public class Kontakt2Type extends AbstractKontaktType
      */
     private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, DefaultSampleMetadata> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
     {
-        final String xmlCode = CompressionUtils.readZLIB (fileAccess);
+        String xmlCode = CompressionUtils.readZLIB (fileAccess);
         try
         {
+            xmlCode = xmlCode.trim ();
             return this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, monolithSamples);
         }
         catch (final UnsupportedEncodingException ex)

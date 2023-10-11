@@ -10,6 +10,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMet
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -77,6 +78,8 @@ public class NcwSampleMetadata extends DefaultSampleMetadata
     @Override
     public void writeSample (final OutputStream outputStream) throws IOException
     {
+        if (this.ncwFile == null)
+            throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", this.sampleFile.getAbsolutePath ()));
         this.ncwFile.writeWAV (outputStream);
     }
 

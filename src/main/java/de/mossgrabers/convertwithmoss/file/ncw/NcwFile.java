@@ -6,13 +6,16 @@ package de.mossgrabers.convertwithmoss.file.ncw;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,14 +30,17 @@ import java.nio.ByteOrder;
  */
 public class NcwFile
 {
-    private static final int NUM_SAMPLES = 512;
-    private static final int FILE_MAGIC  = 0xD69EA801;
-    private static final int BLOCK_MAGIC = 0x3E9A0C16;
+    private static final int NUM_SAMPLES     = 512;
+    private static final int FILE_MAGIC      = 0xD69EA801;
+    private static final int BLOCK_MAGIC     = 0x3E9A0C16;
+
+    private static final int FLAG_MID_SIDE   = 1;
+    private static final int FLAG_IEEE_FLOAT = 2;
 
     // Kontakt 4
-    private static final int VERSION1    = 0x130;
+    private static final int VERSION1        = 0x130;
     // KOntakt 5
-    private static final int VERSION2    = 0x131;
+    private static final int VERSION2        = 0x131;
 
     private int              channels;
     private int              bitsPerSample;
@@ -42,6 +48,7 @@ public class NcwFile
     private int              numberOfSamples;
 
     private int [] []        channelData;
+    private float [] []      channelDataFloat;
 
 
     /**
@@ -123,20 +130,33 @@ public class NcwFile
      */
     public void writeWAV (final OutputStream outputStream) throws IOException
     {
-        final WaveFile wavFile = new WaveFile (this.channels, this.sampleRate, this.bitsPerSample, this.numberOfSamples);
-        final DataChunk dataChunk = wavFile.getDataChunk ();
-        final ByteArrayOutputStream out = new ByteArrayOutputStream (this.channels * (this.bitsPerSample / 8) * this.numberOfSamples);
+        final boolean isFloat = this.channelDataFloat != null;
 
-        for (int i = 0; i < this.numberOfSamples; i++)
+        final WaveFile wavFile = new WaveFile (this.channels, this.sampleRate, this.bitsPerSample, this.numberOfSamples);
+        if (isFloat)
+            wavFile.getFormatChunk ().setCompressionCode (FormatChunk.WAVE_FORMAT_IEEE_FLOAT);
+        final DataChunk dataChunk = wavFile.getDataChunk ();
+
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream (this.channels * (this.bitsPerSample / 8) * this.numberOfSamples);
+        if (isFloat)
         {
-            for (int channel = 0; channel < this.channels; channel++)
+            final DataOutputStream out = new DataOutputStream (bout);
+            for (int i = 0; i < this.numberOfSamples; i++)
             {
-                final int [] cd = this.channelData[channel];
-                StreamUtils.writeUnsigned (out, cd[i], this.bitsPerSample, false);
+                for (int channel = 0; channel < this.channels; channel++)
+                    out.writeFloat (this.channelDataFloat[channel][i]);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < this.numberOfSamples; i++)
+            {
+                for (int channel = 0; channel < this.channels; channel++)
+                    StreamUtils.writeUnsigned (bout, this.channelData[channel][i], this.bitsPerSample, false);
             }
         }
 
-        dataChunk.setData (out.toByteArray ());
+        dataChunk.setData (bout.toByteArray ());
         wavFile.write (outputStream);
     }
 
@@ -222,6 +242,7 @@ public class NcwFile
     private void parseBlock (final ByteArrayInputStream inputStream, final int blockIndex) throws IOException
     {
         boolean isMidSide = false;
+        boolean isFloat = false;
         int offset = 0;
         int length = 0;
 
@@ -234,13 +255,12 @@ public class NcwFile
             final int baseValue = StreamUtils.readSigned32 (inputStream, false);
             final int bits = StreamUtils.readSigned16 (inputStream, false);
             final int flags = StreamUtils.readUnsigned16 (inputStream, false);
-            if (flags > 0)
-            {
-                if (flags == 1)
-                    isMidSide = true;
-                else
-                    throw new IOException (Functions.getMessage ("IDS_NCW_UNSUPPORTED_FLAGS", Integer.toString (flags)));
-            }
+            if (flags > 3)
+                throw new IOException (Functions.getMessage ("IDS_NCW_UNSUPPORTED_FLAGS", Integer.toString (flags)));
+            if ((flags & FLAG_MID_SIDE) > 0)
+                isMidSide = true;
+            if ((flags & FLAG_IEEE_FLOAT) > 0)
+                isFloat = true;
 
             // Padding
             inputStream.skipNBytes (4);
@@ -275,6 +295,21 @@ public class NcwFile
             System.arraycopy (samples, 0, this.channelData[channel], offset, length);
         }
 
+        // Re-interpret read integer values as IEEE 754 float values
+        if (isFloat)
+        {
+            if (this.channelDataFloat == null)
+                this.channelDataFloat = new float [this.channels] [];
+
+            for (int channel = 0; channel < this.channels; channel++)
+            {
+                this.channelDataFloat[channel] = new float [this.numberOfSamples];
+                for (int i = 0; i < length; i++)
+                    this.channelDataFloat[channel][offset + i] = Float.intBitsToFloat (Integer.reverse (this.channelData[channel][offset + i]));
+            }
+        }
+
+        // Convert mid/side sample data into left/right sample data
         if (isMidSide)
         {
             if (this.channels != 2)
@@ -282,10 +317,20 @@ public class NcwFile
 
             for (int i = 0; i < length; i++)
             {
-                final int mid = this.channelData[0][offset + i];
-                final int side = this.channelData[1][offset + i];
-                this.channelData[0][offset + i] = mid + side;
-                this.channelData[1][offset + i] = mid - side;
+                if (isFloat)
+                {
+                    final float mid = this.channelDataFloat[0][offset + i];
+                    final float side = this.channelDataFloat[1][offset + i];
+                    this.channelDataFloat[0][offset + i] = mid + side;
+                    this.channelDataFloat[1][offset + i] = mid - side;
+                }
+                else
+                {
+                    final int mid = this.channelData[0][offset + i];
+                    final int side = this.channelData[1][offset + i];
+                    this.channelData[0][offset + i] = mid + side;
+                    this.channelData[1][offset + i] = mid - side;
+                }
             }
         }
     }
@@ -383,5 +428,34 @@ public class NcwFile
         }
 
         return samples;
+    }
+
+
+    // TODO remove
+    public static void main (final String [] attributes)
+    {
+        // Stereo 16bit
+        // String pathname = "C:/Privat/Programming/ConvertWithMoss/Testdateien/Kontakt/Kontakt
+        // Container Format/6.8.0 - Compressed/T3 Aeroglide Samples/Aeroglid A4.ncw";
+
+        // Mono 16bit
+        // final String pathname =
+        // "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\NCW\\16-bit.ncw";
+
+        // Stereo 24bit
+        final String pathname = "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\NCW\\32-bit-float.ncw";
+
+        final File testNCW = new File (pathname);
+
+        try (final FileOutputStream out = new FileOutputStream ("C:/Users/mos/Desktop/test.wav"))
+        {
+            final NcwFile ncwFile = new NcwFile (testNCW);
+            ncwFile.writeWAV (out);
+        }
+        catch (final IOException ex)
+        {
+            // TODO Auto-generated catch block
+            ex.printStackTrace ();
+        }
     }
 }
