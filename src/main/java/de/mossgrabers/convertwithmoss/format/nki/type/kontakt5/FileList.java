@@ -244,8 +244,9 @@ public class FileList
                 sb.append (pathSegment).append ('/');
                 break;
 
-            // A flag but unknown for what, only seen so far with NCW files but not all of them
+            // Parent directory
             case 3:
+                sb.append ("../");
                 break;
 
             // File name

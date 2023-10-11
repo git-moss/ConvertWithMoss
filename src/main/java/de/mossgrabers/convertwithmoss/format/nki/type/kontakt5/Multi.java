@@ -7,7 +7,6 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,10 +90,11 @@ public class Multi
         this.name = StreamUtils.readWithLengthUTF16 (in);
 
         // TODO
-        try (FileOutputStream out = new FileOutputStream ("C:\\Users\\mos\\Desktop\\BankChunk-rest2.bin"))
-        {
-            out.write (in.readAllBytes ());
-        }
+        // try (FileOutputStream out = new FileOutputStream
+        // ("C:\\Users\\mos\\Desktop\\BankChunk-rest2.bin"))
+        // {
+        // out.write (in.readAllBytes ());
+        // }
 
     }
 }

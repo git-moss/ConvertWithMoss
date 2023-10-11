@@ -1,5 +1,12 @@
 # Changes
 
+## 7.1.1
+
+* Kontakt - Reading
+  * Fixed: Regression from 7.1.0 - Kontakt 5-7 files could not be read at all.
+  * Fixed: Kontakt 5-7 relative paths can contain redirections to parent directories which were not added.
+  * Fixed: Support for Kontakt 2 files which contain an XML document with a leading UTF-BOM.
+
 ## 7.1.0
 
 * Fixed: Loops could be incorrect if sample rate was not 44.1kHz and audio file metadata could be wrong as well in that case.

@@ -57,7 +57,7 @@ public class SoundinfoDocument
      */
     public SoundinfoDocument (final String content) throws SAXException
     {
-        final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
+        final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content.trim ())));
         final Element top = document.getDocumentElement ();
 
         // Read the properties
