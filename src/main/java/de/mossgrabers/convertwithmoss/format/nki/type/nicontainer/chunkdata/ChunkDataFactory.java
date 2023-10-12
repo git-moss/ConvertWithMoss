@@ -21,16 +21,16 @@ public class ChunkDataFactory
     private static final Map<NIContainerChunkType, Class<? extends IChunkData>> TEMPLATES = new EnumMap<> (NIContainerChunkType.class);
     static
     {
-        TEMPLATES.put (NIContainerChunkType.TERMINATOR, TerminatorChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.CONTAINER_ROOT, RootChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.SOUNDINFO_ITEM, SoundinfoChunkData.class);
         TEMPLATES.put (NIContainerChunkType.AUTHORING_APPLICATION, AuthoringApplicationChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.SUB_TREE_ITEM, SubTreeItemChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.PRESET_CHUNK_ITEM, PresetChunkData.class);
         TEMPLATES.put (NIContainerChunkType.AUTHORIZATION, AuthorizationChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.BNI_SOUND_PRESET, BNIPresetChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.CONTAINER_ROOT, RootChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.PRESET_CHUNK_ITEM, PresetChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.SOUNDINFO_ITEM, SoundinfoChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.SUB_TREE_ITEM, SubTreeItemChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.TERMINATOR, TerminatorChunkData.class);
 
         // Not used
-        TEMPLATES.put (NIContainerChunkType.BNI_SOUND_PRESET, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BNI_SOUND_HEADER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BANK, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BANK_CONTAINER, UnusedChunkData.class);

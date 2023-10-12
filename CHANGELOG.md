@@ -1,5 +1,10 @@
 # Changes
 
+## 7.1.2 (unreleased)
+
+* Kontakt - Reading
+  * Fixed: Improved Kontakt 5-7 file path reading.
+
 ## 7.1.1
 
 * Kontakt - Reading

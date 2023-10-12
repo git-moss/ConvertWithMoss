@@ -34,7 +34,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 
 /**
@@ -92,14 +91,13 @@ public class Kontakt5Type extends AbstractKontaktType
     {
         this.sourceFolder = sourceFolder;
 
-        final Optional<IMultisampleSource> source = this.readNIContainer (inputStream, sourceFile, metadataConfig, monolithSamples != null);
-        if (source.isEmpty ())
-            return Collections.emptyList ();
-
-        final IMultisampleSource multisampleSource = source.get ();
-        if (monolithSamples != null)
-            replaceSamples (multisampleSource, monolithSamples);
-        return Collections.singletonList (multisampleSource);
+        final List<IMultisampleSource> sources = this.readNIContainer (inputStream, sourceFile, metadataConfig, monolithSamples != null);
+        for (final IMultisampleSource multisampleSource: sources)
+        {
+            if (monolithSamples != null)
+                replaceSamples (multisampleSource, monolithSamples);
+        }
+        return sources;
     }
 
 
@@ -110,10 +108,10 @@ public class Kontakt5Type extends AbstractKontaktType
      * @param sourceFile The source file to convert
      * @param metadataConfig Default metadata
      * @param isMonolith True if the NKI is inside a monolith
-     * @return The parsed multi-sample, if any
+     * @return The parsed multi-samples, if any
      * @throws IOException Could not read the container
      */
-    private Optional<IMultisampleSource> readNIContainer (final InputStream inputStream, final File sourceFile, final IMetadataConfig metadataConfig, final boolean isMonolith) throws IOException
+    private List<IMultisampleSource> readNIContainer (final InputStream inputStream, final File sourceFile, final IMetadataConfig metadataConfig, final boolean isMonolith) throws IOException
     {
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (inputStream);
@@ -130,17 +128,15 @@ public class Kontakt5Type extends AbstractKontaktType
             final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
             if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
             {
-                final Optional<IMultisampleSource> sources = this.convertProgram (presetChunkData, sourceFile, metadataConfig);
-                if (sources.isPresent ())
-                {
-                    updateMetadata (niContainerItem, sources.get ());
-                    return sources;
-                }
+                final List<IMultisampleSource> sources = this.convertPrograms (presetChunkData, sourceFile, metadataConfig);
+                for (final IMultisampleSource multisampleSource: sources)
+                    updateMetadata (niContainerItem, multisampleSource);
+                return sources;
             }
         }
 
         this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
-        return Optional.empty ();
+        return Collections.emptyList ();
 
     }
 
@@ -168,26 +164,27 @@ public class Kontakt5Type extends AbstractKontaktType
 
 
     /**
-     * Convert the program object into a multisample source.
+     * Convert the program object into one or more multisample sources.
      *
      * @param presetChunkData The preset chunk data which contains the preset information
      * @param sourceFile The source file to convert
      * @param metadataConfig Default metadata
-     * @return The multisample source
+     * @return The multisample sources
      * @throws IOException Could not convert the program
      */
-    private Optional<IMultisampleSource> convertProgram (final PresetChunkData presetChunkData, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
+    private List<IMultisampleSource> convertPrograms (final PresetChunkData presetChunkData, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
     {
         final String n = metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
 
-        final Optional<Program> optionalProgram = presetChunkData.parseProgram ();
-        if (optionalProgram.isEmpty ())
-            return Optional.empty ();
-
-        optionalProgram.get ().fillInto (multisampleSource);
-        return Optional.of (multisampleSource);
+        final List<IMultisampleSource> results = new ArrayList<> ();
+        for (final Program program: presetChunkData.parsePrograms ())
+        {
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+            program.fillInto (multisampleSource);
+            results.add (multisampleSource);
+        }
+        return results;
     }
 
 
