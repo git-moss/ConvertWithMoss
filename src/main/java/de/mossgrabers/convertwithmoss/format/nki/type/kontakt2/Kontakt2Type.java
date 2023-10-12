@@ -273,8 +273,8 @@ public class Kontakt2Type extends AbstractKontaktType
         final byte [] compressedData = new byte [compressedDataSize];
         fileAccess.readFully (compressedData);
         final byte [] uncompressedData = FastLZ.uncompress (compressedData, uncompressedSize);
-        final Optional<Program> optionalProgram = this.kontakt5Preset.parse (uncompressedData);
-        if (optionalProgram.isEmpty ())
+        final List<Program> programs = this.kontakt5Preset.parse (uncompressedData);
+        if (programs.isEmpty ())
         {
             this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
             return Collections.emptyList ();
@@ -282,9 +282,15 @@ public class Kontakt2Type extends AbstractKontaktType
 
         final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
-        optionalProgram.get ().fillInto (multisampleSource);
-        return Collections.singletonList (multisampleSource);
+
+        final List<IMultisampleSource> results = new ArrayList<> ();
+        for (final Program program: programs)
+        {
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+            program.fillInto (multisampleSource);
+            results.add (multisampleSource);
+        }
+        return results;
     }
 
 

@@ -63,8 +63,12 @@ public class Multi
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
         final int magic = (int) StreamUtils.readUnsigned32 (in, false);
-        if (magic != 0xA3007101)
+        if (magic != 0xA3007101 && magic != 0x3007301)
             throw new IOException ("Not a bank chunk!");
+
+        // No idea about this one yet
+        if (magic == 0x3007301)
+            return;
 
         final int numberOfInstruments = (int) StreamUtils.readUnsigned32 (in, false);
 
@@ -84,8 +88,9 @@ public class Multi
         // Skip unknown
         final byte [] readNBytes = in.readNBytes ((int) (maxInstruments * 2));
 
-        // Unknown, size info about the following block?!
-        in.skipNBytes (12);
+        float masterVolume = StreamUtils.readFloatLE (in);
+        float masterTune = StreamUtils.readFloatLE (in);
+        final int masterTempo = (int) StreamUtils.readUnsigned32 (in, false);
 
         this.name = StreamUtils.readWithLengthUTF16 (in);
 

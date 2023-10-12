@@ -35,14 +35,14 @@ public class Zone
     private float                zoneVolume;
     private float                zonePan;
     private float                zoneTune;
-    private int                  filenameId;
+    private int                  filenameId = -1;
     private int                  sampleDataType;
     private int                  sampleRate;
     private int                  numChannels;
     private int                  numFrames;
     private int                  rootNote;
     private float                tuning;
-    private final List<ZoneLoop> loops = new ArrayList<> ();
+    private final List<ZoneLoop> loops      = new ArrayList<> ();
 
 
     /**
@@ -103,6 +103,10 @@ public class Zone
             in.read ();
             in.read ();
             StreamUtils.readUnsigned32 (in, false);
+
+            // Found in a NKI which only contains a script
+            if (in.available () == 0)
+                return;
         }
 
         this.filenameId = (int) StreamUtils.readUnsigned32 (in, false);

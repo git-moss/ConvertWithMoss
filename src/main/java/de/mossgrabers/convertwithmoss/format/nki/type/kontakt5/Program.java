@@ -269,6 +269,10 @@ public class Program
 
         for (final Zone zone: this.zones)
         {
+            // Zones without a sample file might be present
+            if (zone.getFilenameId () < 0)
+                continue;
+
             final Integer groupIndex = Integer.valueOf (zone.getGroupIndex ());
             final Pair<DefaultGroup, Group> groupPair = indexedGroups.get (groupIndex);
             if (groupPair == null)

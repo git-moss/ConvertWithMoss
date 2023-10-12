@@ -29,23 +29,17 @@ public class SubTreeItemChunkData extends AbstractChunkData
     {
         this.readVersion (in);
 
-        final boolean isCompressed = in.read () > 0;
+        this.subTreeItem = new NIContainerItem ();
 
-        final int sizeUncompressed = (int) StreamUtils.readUnsigned32 (in, false);
-        final int sizeCompressed = (int) StreamUtils.readUnsigned32 (in, false);
-
-        final byte [] uncompressedData;
-        if (isCompressed)
+        // Compressed?
+        if (in.read () > 0)
         {
-            final byte [] compressedData = in.readNBytes (sizeCompressed);
-            uncompressedData = FastLZ.uncompress (compressedData, sizeUncompressed);
+            final int sizeUncompressed = (int) StreamUtils.readUnsigned32 (in, false);
+            final int sizeCompressed = (int) StreamUtils.readUnsigned32 (in, false);
+            this.subTreeItem.read (new ByteArrayInputStream (FastLZ.uncompress (in.readNBytes (sizeCompressed), sizeUncompressed)));
         }
         else
-            uncompressedData = in.readNBytes (sizeUncompressed);
-
-        this.subTreeItem = new NIContainerItem ();
-        final ByteArrayInputStream childBin = new ByteArrayInputStream (uncompressedData);
-        this.subTreeItem.read (childBin);
+            this.subTreeItem.read (in);
     }
 
 

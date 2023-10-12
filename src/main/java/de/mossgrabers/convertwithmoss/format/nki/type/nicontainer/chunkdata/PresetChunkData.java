@@ -68,10 +68,10 @@ public class PresetChunkData extends AbstractChunkData
      * @return The program if any
      * @throws IOException Could not parse the data
      */
-    public Optional<Program> parse (final byte [] data) throws IOException
+    public List<Program> parse (final byte [] data) throws IOException
     {
         this.parsePresetChunks (data);
-        return this.parseProgram ();
+        return this.parsePrograms ();
     }
 
 
@@ -96,13 +96,15 @@ public class PresetChunkData extends AbstractChunkData
 
 
     /**
-     * Parse a program from the already parsed program chunk structure.
+     * Parse all programs from the already parsed program chunk structure.
      *
-     * @return The program if any
+     * @return The programs if any
      * @throws IOException Could not parse the program
      */
-    public Optional<Program> parseProgram () throws IOException
+    public List<Program> parsePrograms () throws IOException
     {
+        final List<Program> programs = new ArrayList<> ();
+
         Optional<PresetChunk> filelistChunk = this.getTopChunk (PresetChunkID.FILENAME_LIST);
         if (filelistChunk.isEmpty ())
         {
@@ -110,20 +112,18 @@ public class PresetChunkData extends AbstractChunkData
             if (filelistChunk.isEmpty ())
             {
                 // No files?
-                return Optional.empty ();
+                return programs;
             }
         }
-
         final FileList fileList = new FileList ();
         fileList.parse (filelistChunk.get ());
         final List<String> filePaths = fileList.getSampleFiles ();
 
-        final Optional<PresetChunk> programChunk = this.getTopChunk (PresetChunkID.PROGRAM);
-        if (programChunk.isPresent ())
+        for (final PresetChunk programChunk: this.getTopChunks (PresetChunkID.PROGRAM))
         {
             final Program program = new Program (filePaths);
-            program.parse (programChunk.get (), filePaths);
-            return Optional.of (program);
+            program.parse (programChunk, filePaths);
+            programs.add (program);
         }
 
         final Optional<PresetChunk> multiChunk = this.getTopChunk (PresetChunkID.BANK);
@@ -137,7 +137,7 @@ public class PresetChunkData extends AbstractChunkData
             // TODO return programs
         }
 
-        return Optional.empty ();
+        return programs;
     }
 
 
@@ -155,5 +155,23 @@ public class PresetChunkData extends AbstractChunkData
                 return Optional.of (chunk);
         }
         return Optional.empty ();
+    }
+
+
+    /**
+     * Get one of the top preset chunks.
+     *
+     * @param presetChunkID One of the IDs in PresetChunkID
+     * @return The chunk if available
+     */
+    private List<PresetChunk> getTopChunks (final int presetChunkID)
+    {
+        final List<PresetChunk> results = new ArrayList<> ();
+        for (final PresetChunk chunk: this.chunks)
+        {
+            if (chunk.getId () == presetChunkID)
+                results.add (chunk);
+        }
+        return results;
     }
 }
