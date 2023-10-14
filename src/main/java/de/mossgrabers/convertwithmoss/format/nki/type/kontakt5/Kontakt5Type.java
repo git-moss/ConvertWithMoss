@@ -17,6 +17,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChu
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerItem;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplication;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplicationChunkData;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthorizationChunkData;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.SoundinfoChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
@@ -135,9 +136,14 @@ public class Kontakt5Type extends AbstractKontaktType
             }
         }
 
-        this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
-        return Collections.emptyList ();
+        // Check for encrypted sections
+        for (final NIContainerChunk autorizationChunk: niContainerItem.findAll (NIContainerChunkType.AUTHORIZATION))
+        {
+            if (autorizationChunk.getData () instanceof AuthorizationChunkData authorization && !authorization.getSerialNumberPIDs ().isEmpty ())
+                this.notifier.logError ("IDS_NKI5_CONTAINS_ENCRYPTED_SUB_TREE");
+        }
 
+        return Collections.emptyList ();
     }
 
 

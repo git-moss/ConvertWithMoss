@@ -67,12 +67,12 @@ public class Program
      * Parse the program data from a Program preset chunk.
      *
      * @param chunk The chunk from which to read the program data
-     * @param filePaths The list with all referenced files
      * @throws IOException Could not read the program
      */
-    public void parse (final PresetChunk chunk, final List<String> filePaths) throws IOException
+    public void parse (final PresetChunk chunk) throws IOException
     {
-        if (chunk.getId () != PresetChunkID.PROGRAM)
+        final int chunkId = chunk.getId ();
+        if (chunkId != PresetChunkID.PROGRAM && chunkId != 0)
             throw new IOException ("Not a program chunk!");
 
         this.readProgramData (chunk.getPublicData ());
@@ -366,8 +366,16 @@ public class Program
         if (filenameId < 0 || filenameId >= this.filePaths.size ())
             throw new IOException (Functions.getMessage ("IDS_NKI5_WRONG_FILE_INDEX", Integer.toString (filenameId)));
 
+        // Check if it is an absolute path, try to find the sample file...
         final String filename = this.filePaths.get (filenameId);
-        final File sampleFile = new File (source.getSourceFile ().getParent (), filename);
+        File sampleFile = new File (filename);
+        if (sampleFile.isAbsolute ())
+        {
+            if (!sampleFile.exists ())
+                sampleFile = new File (source.getSourceFile ().getParent (), sampleFile.getName ());
+        }
+        else
+            sampleFile = new File (source.getSourceFile ().getParent (), filename);
         return filename.toLowerCase ().endsWith (".ncw") ? new NcwSampleMetadata (sampleFile) : new DefaultSampleMetadata (sampleFile);
     }
 

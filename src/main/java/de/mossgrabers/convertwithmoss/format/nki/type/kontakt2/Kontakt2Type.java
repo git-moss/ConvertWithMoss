@@ -275,10 +275,7 @@ public class Kontakt2Type extends AbstractKontaktType
         final byte [] uncompressedData = FastLZ.uncompress (compressedData, uncompressedSize);
         final List<Program> programs = this.kontakt5Preset.parse (uncompressedData);
         if (programs.isEmpty ())
-        {
-            this.notifier.logError ("IDS_NKI5_NO_PROGRAM_FOUND");
             return Collections.emptyList ();
-        }
 
         final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);

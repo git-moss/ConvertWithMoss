@@ -145,7 +145,10 @@ public class NIContainerChunk
         if (this.data instanceof final SubTreeItemChunkData subTree)
         {
             sb.append (StringUtils.padLeftSpaces ("Sub Tree:\n", level * 4));
-            sb.append (subTree.getSubTree ().dump (level + 1));
+            if (subTree.isEncrypted ())
+                sb.append (StringUtils.padLeftSpaces ("Encrypted.\n", (level + 1) * 4));
+            else
+                sb.append (subTree.getSubTree ().dump (level + 1));
         }
         if (this.nextChunk != null)
             sb.append (this.nextChunk.dump (level));

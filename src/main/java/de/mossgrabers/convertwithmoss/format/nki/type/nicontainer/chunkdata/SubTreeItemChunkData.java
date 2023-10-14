@@ -21,6 +21,7 @@ import java.io.InputStream;
 public class SubTreeItemChunkData extends AbstractChunkData
 {
     private NIContainerItem subTreeItem;
+    private boolean         isEncrypted = false;
 
 
     /** {@inheritDoc} */
@@ -36,7 +37,18 @@ public class SubTreeItemChunkData extends AbstractChunkData
         {
             final int sizeUncompressed = (int) StreamUtils.readUnsigned32 (in, false);
             final int sizeCompressed = (int) StreamUtils.readUnsigned32 (in, false);
-            this.subTreeItem.read (new ByteArrayInputStream (FastLZ.uncompress (in.readNBytes (sizeCompressed), sizeUncompressed)));
+            final byte [] data = in.readNBytes (sizeCompressed);
+            byte [] uncompressedData;
+            try
+            {
+                uncompressedData = FastLZ.uncompress (data, sizeUncompressed);
+            }
+            catch (final IOException ex)
+            {
+                this.isEncrypted = true;
+                return;
+            }
+            this.subTreeItem.read (new ByteArrayInputStream (uncompressedData));
         }
         else
             this.subTreeItem.read (in);
@@ -51,5 +63,17 @@ public class SubTreeItemChunkData extends AbstractChunkData
     public NIContainerItem getSubTree ()
     {
         return this.subTreeItem;
+    }
+
+
+    /**
+     * The sub tree is compressed and could not be extracted, therefore it is assumed that it is
+     * encrypted.
+     * 
+     * @return True if encrypted
+     */
+    public boolean isEncrypted ()
+    {
+        return this.isEncrypted;
     }
 }
