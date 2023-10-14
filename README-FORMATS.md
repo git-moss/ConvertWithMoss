@@ -47,23 +47,27 @@ The korgmultisample format is currently used by the Korg wavestate and modwave k
 
 Since the format is pretty simple all data stored in the file is available for the conversion.
 
-## Native Instruments Kontakt
+## Native Instruments Kontakt NKI/NKM
 
 Kontakt is a sampler from Native Instruments which uses a plethora of file formats which all are sadly proprietary
 and therefore no documentation is publicly available. Nevertheless, several people analyzed the format and by now
 sufficient information is available to provide the support as the source.
 
-However, the format changed many times across the different Kontakt versions. So far, the following formats are known:
+However, the format changed many times across the different Kontakt versions. So far, the following formats are known and supported:
 
-| Kontakt Version | Supported | Monolith supported |
-|:----------------|:----------|:-------------------|
-| 1               | Yes       | No                 |
-| 2 - 4.1.x       | Yes       | Yes                |
-| 4.2.2+          | Yes       | No                 |
-| 5 - 7           | Yes       | Yes                |
+| Kontakt Version |
+|:----------------|
+| 1               |
+| 1.5             |
+| 2 - 4.1.x       |
+| 4.2.2+          |
+| 5 - 7           |
 
 A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters as well as pitchbend (except metadata currently only for Kontakt 1, 2).
 (Most) NCW encoded sample files can be read as well.
+A NKM file contains up to 64 instruments.
+
+Encrypted files are not supported.
 
 ## SFZ
 
