@@ -140,9 +140,9 @@ public class NIContainerItem
         final StringBuilder sb = new StringBuilder ();
         sb.append (StringUtils.padLeftSpaces ("Item: hsin\n", length));
 
-        final int childLevel = level + 1;
+        final int childLevel = level + 2;
 
-        sb.append (StringUtils.padLeftSpaces ("Data:\n", length + 4)).append (this.dataChunk.dump (childLevel + 1));
+        sb.append (StringUtils.padLeftSpaces ("Data:\n", length + 4)).append (this.dataChunk.dump (childLevel));
 
         if (this.children.isEmpty ())
             sb.append (StringUtils.padLeftSpaces ("Children: None\n", length + 4));
@@ -172,7 +172,7 @@ public class NIContainerItem
             if (chunk.getChunkType () == type)
                 return chunk;
 
-            if (chunk.getData () instanceof final SubTreeItemChunkData subTree)
+            if (chunk.getData () instanceof final SubTreeItemChunkData subTree && !subTree.isEncrypted ())
             {
                 final NIContainerChunk found = subTree.getSubTree ().find (type);
                 if (found != null)
@@ -198,9 +198,24 @@ public class NIContainerItem
      * recursively searches in the child elements.
      *
      * @param type The type of the chunk to look for
+     * @return The found chunks
+     */
+    public List<NIContainerChunk> findAll (final NIContainerChunkType type)
+    {
+        final List<NIContainerChunk> foundChunks = new ArrayList<> ();
+        findAll (type, foundChunks);
+        return foundChunks;
+    }
+
+
+    /**
+     * Find all chunks which matches the given type. First searches the data of the item, then
+     * recursively searches in the child elements.
+     *
+     * @param type The type of the chunk to look for
      * @param foundChunks Where to add the found chunks
      */
-    public void findAll (final NIContainerChunkType type, final List<NIContainerChunk> foundChunks)
+    private void findAll (final NIContainerChunkType type, final List<NIContainerChunk> foundChunks)
     {
         NIContainerChunk chunk = this.dataChunk;
         while (chunk != null)
@@ -208,7 +223,7 @@ public class NIContainerItem
             if (chunk.getChunkType () == type)
                 foundChunks.add (chunk);
 
-            if (chunk.getData () instanceof final SubTreeItemChunkData subTree)
+            if (chunk.getData () instanceof final SubTreeItemChunkData subTree && !subTree.isEncrypted ())
                 subTree.getSubTree ().findAll (type, foundChunks);
 
             chunk = chunk.getNextChunk ();

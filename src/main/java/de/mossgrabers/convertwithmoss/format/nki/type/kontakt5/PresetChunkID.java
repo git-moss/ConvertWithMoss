@@ -27,12 +27,18 @@ public class PresetChunkID
     public static final int                   PAR_FX             = 0x25;
     /** A program. */
     public static final int                   PROGRAM            = 0x28;
+    /** A program container. */
+    public static final int                   PROGRAM_CONTAINER  = 0x29;
     /** The list with all voice groups. */
     public static final int                   VOICE_GROUPS       = 0x32;
     /** The list with all groups. */
     public static final int                   GROUP_LIST         = 0x33;
     /** The list with all zones. */
     public static final int                   ZONE_LIST          = 0x34;
+    /** The list of programs in a slot. */
+    public static final int                   PROGRAM_LIST       = 0x36;
+    /** The list of slots in a bank. */
+    public static final int                   SLOT_LIST          = 0x37;
     /** An array with up to 8 Loops. */
     public static final int                   LOOP_ARRAY         = 0x39;
     /** A parameter array with 8 entries. */
@@ -163,6 +169,8 @@ public class PresetChunkID
         CHUNK_NAMES.put (Integer.valueOf (PAR_FX_SEND_LEVELS), "PAR_FX_SEND_LEVELS");
         CHUNK_NAMES.put (Integer.valueOf (PAR_FX), "PAR_FX");
         CHUNK_NAMES.put (Integer.valueOf (PROGRAM), "PROGRAM");
+        CHUNK_NAMES.put (Integer.valueOf (PROGRAM_CONTAINER), "PROGRAM_CONTAINER");
+        CHUNK_NAMES.put (Integer.valueOf (PROGRAM_LIST), "PROGRAM_LIST");
         CHUNK_NAMES.put (Integer.valueOf (VOICE_GROUPS), "VOICE_GROUPS");
         CHUNK_NAMES.put (Integer.valueOf (GROUP_LIST), "GROUP_LIST");
         CHUNK_NAMES.put (Integer.valueOf (ZONE_LIST), "ZONE_LIST");
@@ -175,6 +183,7 @@ public class PresetChunkID
         CHUNK_NAMES.put (Integer.valueOf (FILENAME_LIST_EX), "FILENAME_LIST_EX");
         CHUNK_NAMES.put (Integer.valueOf (QUICK_BROWSE_DATA), "QUICK_BROWSE_DATA");
         CHUNK_NAMES.put (Integer.valueOf (LOOP_ARRAY), "LOOP_ARRAY");
+        CHUNK_NAMES.put (Integer.valueOf (SLOT_LIST), "SLOT_LIST");
     }
 
 

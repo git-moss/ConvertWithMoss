@@ -31,8 +31,8 @@ public class ChunkDataFactory
         TEMPLATES.put (NIContainerChunkType.TERMINATOR, TerminatorChunkData.class);
 
         // Not used
-        TEMPLATES.put (NIContainerChunkType.BNI_SOUND_HEADER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BANK, UnusedChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.BNI_SOUND_HEADER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BANK_CONTAINER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.PRESET_CONTAINER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BINARY_CHUNK_ITEM, UnusedChunkData.class);

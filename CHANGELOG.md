@@ -1,9 +1,11 @@
 # Changes
 
-## 7.1.2 (unreleased)
+## 7.2.0
 
 * Kontakt - Reading
-  * Fixed: Improved Kontakt 5-7 file path reading.
+  * New: Support for Kontakt 4.2 and 5-7 NKMs.
+  * Improved: Detection of encryption.
+  * Fixed: Improved Kontakt 5-7 file path reading and handling.
 
 ## 7.1.1
 

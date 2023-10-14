@@ -45,22 +45,18 @@ public class PresetChunk
         switch (this.id)
         {
             case PresetChunkID.GROUP_LIST:
-            {
                 this.readArray (objectInputStream, objectSize, false);
                 break;
-            }
 
             case PresetChunkID.ZONE_LIST:
-            {
                 this.readArray (objectInputStream, objectSize, true);
                 break;
-            }
 
-            case PresetChunkID.PROGRAM, PresetChunkID.PAR_SCRIPT, PresetChunkID.PAR_FX_SEND_LEVELS, PresetChunkID.VOICE_GROUPS, PresetChunkID.PARAMETER_ARRAY_8, PresetChunkID.INSERT_BUS, PresetChunkID.SAVE_SETTINGS, PresetChunkID.QUICK_BROWSE_DATA:
+            case PresetChunkID.BANK, PresetChunkID.PROGRAM_CONTAINER, PresetChunkID.PROGRAM, PresetChunkID.PAR_SCRIPT, PresetChunkID.PAR_FX_SEND_LEVELS, PresetChunkID.VOICE_GROUPS, PresetChunkID.PARAMETER_ARRAY_8, PresetChunkID.INSERT_BUS, PresetChunkID.SAVE_SETTINGS, PresetChunkID.QUICK_BROWSE_DATA:
                 this.readStructure (objectInputStream, objectSize);
                 break;
 
-            case PresetChunkID.PAR_FX, PresetChunkID.FILENAME_LIST_EX, PresetChunkID.FILENAME_LIST, PresetChunkID.PARAMETER_ARRAY_16:
+            case PresetChunkID.SLOT_LIST, PresetChunkID.PAR_FX, PresetChunkID.FILENAME_LIST_EX, PresetChunkID.FILENAME_LIST, PresetChunkID.PARAMETER_ARRAY_16:
             default:
                 this.publicData = objectInputStream.readNBytes (objectSize);
                 return;
