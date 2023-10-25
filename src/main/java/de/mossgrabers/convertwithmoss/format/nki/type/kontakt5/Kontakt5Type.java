@@ -216,6 +216,7 @@ public class Kontakt5Type extends AbstractKontaktType
                 final ISampleMetadata memoryFile = sampleFileMap.get (filename);
                 if (memoryFile == null)
                     throw new IOException (Functions.getMessage ("IDS_NKI5_NO_MATCHING_IN_MEMORY_FILE", filename));
+                memoryFile.fillMetadata (sampleMetadata);
                 newGroupSamples.add (memoryFile);
             }
             group.setSampleMetadata (newGroupSamples);

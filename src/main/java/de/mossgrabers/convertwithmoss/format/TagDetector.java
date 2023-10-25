@@ -303,17 +303,18 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_PERCUSSION, new String []
         {
             CATEGORY_PERCUSSION,
-            "Conga",
-            "Bongo",
-            "Cowbell",
-            "Shaker",
-            "Timpani",
             "Agogo",
+            "Bongo",
             "Chimes",
+            "Conga",
+            "Cowbell",
+            "Cuica",
             "Djembe",
+            "Shaker",
             "Tabla",
             "Tambourine",
             "Timbale",
+            "Timpani",
             "Triangle",
             "Woodblock"
         });
@@ -327,12 +328,12 @@ public class TagDetector
             "Digital Piano",
             "Klavier",
             "Clav",
-            "EP",
             "Suitcase",
             "Whirly",
             "Wurlitz",
             "Mark I",
-            "Rhodes"
+            "Rhodes",
+            "EP"
         });
         CATEGORIES.put (CATEGORY_PIPE, new String []
         {

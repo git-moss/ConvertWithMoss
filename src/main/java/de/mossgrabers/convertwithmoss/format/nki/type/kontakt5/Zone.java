@@ -124,6 +124,7 @@ public class Zone
             StreamUtils.readUnsigned32 (in, false);
         }
 
+        // Not sure what this is actually doing, some time 0, 60 or identical to rootKey
         this.rootNote = (int) StreamUtils.readUnsigned32 (in, false);
         // Seems never to be set to anything but 1.0, no idea where this might be set in Kontakt
         this.tuning = StreamUtils.readFloatLE (in);

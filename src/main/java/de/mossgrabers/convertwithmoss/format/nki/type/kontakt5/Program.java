@@ -65,6 +65,17 @@ public class Program
 
     /**
      * Parse the program data from a Program preset chunk.
+     * 
+     * Known versions (chunk.getVersion()):
+     * <ul>
+     * <li>0x80: 4.2.x
+     * <li>0xA5: 5.3.0
+     * <li>0xA8: 5.4.3 - 5.5.2
+     * <li>0xAB: 5.6.8 - 5.8.1
+     * <li>0xAE: 6.5.2 - 6.8.0
+     * <li>0xAF: 7.1.3 - 7.5.1
+     * <li>0xB1: 7.6.0 - 7.6.1
+     * </ul>
      *
      * @param chunk The chunk from which to read the program data
      * @throws IOException Could not read the program
@@ -73,7 +84,7 @@ public class Program
     {
         final int chunkId = chunk.getId ();
         if (chunkId != PresetChunkID.PROGRAM && chunkId != 0)
-            throw new IOException ("Not a program chunk!");
+            throw new IOException (Functions.getMessage ("IDS_NKI5_NOT_A_PROGRAM_CHUNK"));
 
         this.readProgramData (chunk.getPublicData ());
 
@@ -99,20 +110,9 @@ public class Program
                     break;
 
                 default:
-                    throw new IOException ("Unsupported child ID: " + id);
+                    throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_CHILD_ID", Integer.toString (id)));
             }
         }
-
-        // Known versions:
-        // 0x80: 4.2.x
-        // 0xA5: 5.3.0
-        // 0xA8: 5.4.3 - 5.5.2
-        // 0xAB: 5.6.8 - 5.8.1
-        // 0xAE: 6.5.2 - 6.8.0
-        // 0xAF: 7.1.3
-        final int version = chunk.getVersion ();
-        if (version > 0xAF)
-            throw new IOException ("Unsupported Program Version: " + Integer.toHexString (version).toUpperCase ());
     }
 
 
@@ -296,10 +296,7 @@ public class Program
             sampleMetadata.setGain (Utils.valueToDb (volume));
             sampleMetadata.setPanorama (Utils.clamp (this.instrumentPan + zone.getZonePan (), -1, 1));
 
-            final int rootNote = zone.getRootNote ();
-            final int offset = rootNote == 0 ? 0 : (rootNote - rootKey) * 100;
-
-            sampleMetadata.setTune ((offset + calculateTune (zone.getZoneTune (), group.getTune (), this.instrumentTune)) / 1000);
+            sampleMetadata.setTune ((calculateTune (zone.getZoneTune (), group.getTune (), this.instrumentTune)) / 1000);
 
             sampleMetadata.setVelocityLow (zone.getLowVelocity ());
             sampleMetadata.setVelocityHigh (zone.getHighVelocity ());
