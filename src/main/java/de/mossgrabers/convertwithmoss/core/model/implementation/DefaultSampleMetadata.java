@@ -40,37 +40,37 @@ public class DefaultSampleMetadata implements ISampleMetadata
     protected final File        zipFile;
     protected final File        zipEntry;
 
-    protected boolean           isMonoFile              = false;
+    protected boolean           isMonoFile            = false;
 
-    protected Optional<String>  combinedFilename        = Optional.empty ();
-    protected Optional<String>  filenameWithoutLayer    = Optional.empty ();
+    protected Optional<String>  combinedFilename      = Optional.empty ();
+    protected Optional<String>  filenameWithoutLayer  = Optional.empty ();
 
-    protected PlayLogic         playLogic               = PlayLogic.ALWAYS;
-    protected TriggerType       triggerType             = TriggerType.ATTACK;
-    protected int               start                   = -1;
-    protected int               stop                    = -1;
-    protected int               keyRoot                 = -1;
-    protected int               keyLow                  = 0;
-    protected int               keyHigh                 = 127;
-    protected int               crossfadeNotesLow       = 0;
-    protected int               crossfadeNotesHigh      = 0;
-    protected int               velocityLow             = 1;
-    protected int               velocityHigh            = 127;
-    protected int               crossfadeVelocitiesLow  = 0;
-    protected int               crossfadeVelocitiesHigh = 0;
+    protected PlayLogic         playLogic             = PlayLogic.ALWAYS;
+    protected TriggerType       triggerType           = TriggerType.ATTACK;
+    protected int               start                 = -1;
+    protected int               stop                  = -1;
+    protected int               keyRoot               = -1;
+    protected int               keyLow                = 0;
+    protected int               keyHigh               = 127;
+    protected int               noteCrossfadeLow      = 0;
+    protected int               noteCrossfadeHigh     = 0;
+    protected int               velocityLow           = 1;
+    protected int               velocityHigh          = 127;
+    protected int               velocityCrossfadeLow  = 0;
+    protected int               velocityCrossfadeHigh = 0;
 
-    protected double            gain                    = 0;
-    protected double            panorama                = 0;
-    protected double            tune                    = 0;
-    protected double            keyTracking             = 1.0;
-    protected int               bendUp                  = 0;
-    protected int               bendDown                = 0;
-    protected boolean           isReversed              = false;
-    protected IModulator        amplitudeModulator      = new DefaultModulator ();
-    protected IModulator        pitchModulator          = new DefaultModulator ();
-    protected IFilter           filter                  = null;
+    protected double            gain                  = 0;
+    protected double            panorama              = 0;
+    protected double            tune                  = 0;
+    protected double            keyTracking           = 1.0;
+    protected int               bendUp                = 0;
+    protected int               bendDown              = 0;
+    protected boolean           isReversed            = false;
+    protected IModulator        amplitudeModulator    = new DefaultModulator ();
+    protected IModulator        pitchModulator        = new DefaultModulator ();
+    protected IFilter           filter                = null;
 
-    protected List<ISampleLoop> loops                   = new ArrayList<> (1);
+    protected List<ISampleLoop> loops                 = new ArrayList<> (1);
     protected IAudioMetadata    audioMetadata;
 
 
@@ -294,7 +294,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     @Override
     public int getNoteCrossfadeLow ()
     {
-        return this.crossfadeNotesLow;
+        return this.noteCrossfadeLow;
     }
 
 
@@ -302,7 +302,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     @Override
     public void setNoteCrossfadeLow (final int crossfadeLow)
     {
-        this.crossfadeNotesLow = crossfadeLow;
+        this.noteCrossfadeLow = crossfadeLow;
     }
 
 
@@ -310,7 +310,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     @Override
     public int getNoteCrossfadeHigh ()
     {
-        return this.crossfadeNotesHigh;
+        return this.noteCrossfadeHigh;
     }
 
 
@@ -318,7 +318,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     @Override
     public void setNoteCrossfadeHigh (final int crossfadeHigh)
     {
-        this.crossfadeNotesHigh = crossfadeHigh;
+        this.noteCrossfadeHigh = crossfadeHigh;
     }
 
 
@@ -358,7 +358,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     @Override
     public int getVelocityCrossfadeLow ()
     {
-        return this.crossfadeVelocitiesLow;
+        return this.velocityCrossfadeLow;
     }
 
 
@@ -366,7 +366,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     @Override
     public void setVelocityCrossfadeLow (final int crossfadeLow)
     {
-        this.crossfadeVelocitiesLow = crossfadeLow;
+        this.velocityCrossfadeLow = crossfadeLow;
     }
 
 
@@ -374,7 +374,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     @Override
     public int getVelocityCrossfadeHigh ()
     {
-        return this.crossfadeVelocitiesHigh;
+        return this.velocityCrossfadeHigh;
     }
 
 
@@ -382,7 +382,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
     @Override
     public void setVelocityCrossfadeHigh (final int crossfadeHigh)
     {
-        this.crossfadeVelocitiesHigh = crossfadeHigh;
+        this.velocityCrossfadeHigh = crossfadeHigh;
     }
 
 
@@ -684,5 +684,39 @@ public class DefaultSampleMetadata implements ISampleMetadata
         // Check for loops if not already present
         if (addLoops && this.loops.isEmpty ())
             this.loops.addAll (wavSampleMetadata.getLoops ());
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void fillMetadata (final ISampleMetadata other)
+    {
+        this.playLogic = other.getPlayLogic ();
+        this.triggerType = other.getTrigger ();
+        this.start = other.getStart ();
+        this.stop = other.getStop ();
+        this.keyRoot = other.getKeyRoot ();
+        this.keyLow = other.getKeyLow ();
+        this.keyHigh = other.getKeyHigh ();
+        this.noteCrossfadeLow = other.getNoteCrossfadeLow ();
+        this.noteCrossfadeHigh = other.getNoteCrossfadeHigh ();
+        this.velocityLow = other.getVelocityLow ();
+        this.velocityHigh = other.getVelocityHigh ();
+        this.velocityCrossfadeLow = other.getVelocityCrossfadeLow ();
+        this.velocityCrossfadeHigh = other.getVelocityCrossfadeHigh ();
+        this.gain = other.getGain ();
+        this.panorama = other.getPanorama ();
+        this.tune = other.getTune ();
+        this.keyTracking = other.getKeyTracking ();
+        this.bendUp = other.getBendUp ();
+        this.bendDown = other.getBendDown ();
+        this.isReversed = other.isReversed ();
+        this.amplitudeModulator = other.getAmplitudeModulator ();
+        this.pitchModulator = other.getPitchModulator ();
+        final Optional<IFilter> filterOpt = other.getFilter ();
+        this.filter = filterOpt.isPresent () ? filterOpt.get () : null;
+
+        this.loops.clear ();
+        this.loops.addAll (other.getLoops ());
     }
 }

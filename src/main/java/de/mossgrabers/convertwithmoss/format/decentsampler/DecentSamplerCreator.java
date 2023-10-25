@@ -318,8 +318,7 @@ public class DecentSamplerCreator extends AbstractCreator
         final int stop = info.getStop ();
         if (stop >= 0)
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.END, stop, 3);
-        // Convert cent to semitones
-        final double tune = info.getTune () / 100;
+        final double tune = info.getTune ();
         if (tune != 0)
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, tune, 2);
 

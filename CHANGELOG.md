@@ -1,5 +1,14 @@
 # Changes
 
+## 7.2.1
+
+* DecentSampler - Writing
+  * Fixed: Tuning was not set correctly
+* Kontakt - Reading
+  * New: Support for Kontakt 7.6.
+  * Fixed: Kontakt 5-7: Sample zones from monolith files did miss all settings.
+  * Fixed: Kontakt 5-7: Pitch was not handled correctly.
+
 ## 7.2.0
 
 * Kontakt - Reading

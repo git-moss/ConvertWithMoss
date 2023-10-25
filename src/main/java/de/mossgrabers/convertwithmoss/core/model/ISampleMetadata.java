@@ -466,4 +466,13 @@ public interface ISampleMetadata
      * @param filter The filter to set
      */
     void setFilter (IFilter filter);
+
+
+    /**
+     * Fill in the data from another sample metadata object. The includes all data except the file
+     * names and file data.
+     *
+     * @param sampleMetadata The data source
+     */
+    void fillMetadata (ISampleMetadata sampleMetadata);
 }
