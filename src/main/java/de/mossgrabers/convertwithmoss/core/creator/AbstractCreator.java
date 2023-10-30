@@ -86,6 +86,12 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     }
 
 
+    protected static double denormalizeValue (final double value, final double minimum, final double maximum)
+    {
+        return Utils.clamp (value * maximum, minimum, maximum);
+    }
+
+
     /**
      * Removes illegal characters from file names.
      *

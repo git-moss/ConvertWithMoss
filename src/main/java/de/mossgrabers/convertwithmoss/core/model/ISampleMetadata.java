@@ -321,7 +321,8 @@ public interface ISampleMetadata
     /**
      * Get the key tracking of the sample.
      *
-     * @return The tuning in the range of [-1 .. 1] representing [-100 .. 100] cent
+     * @return The tuning positive or negative semitones, which means that 0.01 represents 1 cent (1
+     *         semitone is 100 cent)
      */
     double getTune ();
 
@@ -329,7 +330,8 @@ public interface ISampleMetadata
     /**
      * Set the fine tuning of the sample.
      *
-     * @param tune The tuning in the range of [-1 .. 1] representing [-100..100] cent
+     * @param tune The tuning positive or negative semitones, which means that 0.01 represents 1
+     *            cent (1 semitone is 100 cent)
      */
     void setTune (double tune);
 

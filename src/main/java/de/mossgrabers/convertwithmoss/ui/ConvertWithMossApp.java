@@ -28,6 +28,8 @@ import de.mossgrabers.convertwithmoss.format.nki.NkiDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
+import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
+import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.wav.WavDetector;
 import de.mossgrabers.tools.ui.AbstractFrame;
@@ -139,6 +141,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new KorgmultisampleDetector (this),
             new SfzDetector (this),
             new Sf2Detector (this),
+            new TALSamplerDetector (this),
             new WavDetector (this)
         };
 
@@ -151,6 +154,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new KMPCreator (this),
             new KorgmultisampleCreator (this),
             new SfzCreator (this),
+            new TALSamplerCreator (this),
             new WavCreator (this)
         };
     }
