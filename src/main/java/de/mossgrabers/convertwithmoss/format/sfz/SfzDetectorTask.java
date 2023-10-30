@@ -213,12 +213,16 @@ public class SfzDetectorTask extends AbstractDetectorTask
                         continue;
 
                     final File sampleFile = this.createCanonicalFile (sampleBaseFolder, sampleName.get ());
-                    if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                    try
                     {
-                        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (sampleFile);
+                        final DefaultSampleMetadata sampleMetadata = this.createSampleMetadata (sampleFile);
                         this.parseRegion (sampleMetadata);
                         this.readMissingValues (sampleMetadata);
                         group.addSampleMetadata (sampleMetadata);
+                    }
+                    catch (final IOException ex)
+                    {
+                        this.notifier.logError (ex);
                     }
                     break;
 

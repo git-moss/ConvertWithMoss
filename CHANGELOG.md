@@ -1,5 +1,11 @@
 # Changes
 
+## 7.3.0 (unreleased)
+
+* Added support for TAL Sampler format (reading + writing).
+* SFZ
+  * New: AIFF files can be used as input.
+
 ## 7.2.1
 
 * DecentSampler - Writing

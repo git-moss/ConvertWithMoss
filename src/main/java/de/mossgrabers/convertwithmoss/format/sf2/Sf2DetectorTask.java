@@ -525,7 +525,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         if (value == null)
             return -1;
 
-        // Attenuation is in centibel (dB / 10), so 0 is maximum volume, about 1000 is off
+        // Attenuation is in centi-bel (dB / 10), so 0 is maximum volume, about 1000 is off
         final int v = Math.min (1000, value.intValue ());
         if (v <= 0)
             return -1;

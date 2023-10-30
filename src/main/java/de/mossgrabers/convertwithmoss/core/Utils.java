@@ -42,7 +42,7 @@ public class Utils
      * @param maximum The maximum value
      * @return The value clamped to the minimum/maximum range
      */
-    public static double clamp (final int value, final int minimum, final int maximum)
+    public static int clamp (final int value, final int minimum, final int maximum)
     {
         return Math.max (minimum, Math.min (value, maximum));
     }

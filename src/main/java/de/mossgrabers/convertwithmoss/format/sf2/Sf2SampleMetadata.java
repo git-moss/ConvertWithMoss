@@ -46,7 +46,7 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
         final byte [] rightSampleData = this.rightSample.getSampleData ();
         final byte [] rightSample24Data = this.rightSample.getSample24Data ();
         final boolean is24 = leftSample24Data != null && rightSample24Data != null && leftSample24Data.length * 2 == leftSampleData.length && rightSample24Data.length * 2 == rightSampleData.length;
-        this.audioMetadata = new DefaultAudioMetadata (false, (int) sample.getSampleRate (), is24 ? 16 : 24);
+        this.audioMetadata = new DefaultAudioMetadata (false, (int) sample.getSampleRate (), is24 ? 24 : 16);
     }
 
 
