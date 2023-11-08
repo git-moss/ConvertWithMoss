@@ -6,9 +6,13 @@ package de.mossgrabers.convertwithmoss.format.tal;
 
 import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -111,7 +115,7 @@ public class TALSamplerConstants
      * <li>All Pass:
      * <li>BW 6P : 1.0
      * </ul>
-     * 
+     *
      * @param value The filter type value
      * @return The filter on which to set the values
      */
@@ -135,6 +139,34 @@ public class TALSamplerConstants
             default:
                 return Optional.empty ();
         }
+    }
+
+
+    /**
+     * Each part of a TAL Sampler envelope can be as long as the sample (value = 1). Since the multi
+     * sample source has several samples of different lengths, this function calculates the medium
+     * length of all samples and converts it to seconds depending on the sample rate.
+     *
+     * @param groups The multi groups which contains the samples
+     * @return The medium sample length in seconds
+     * @throws IOException
+     */
+    public static double getMediumSampleLength (final List<IGroup> groups) throws IOException
+    {
+        int numSamples = 0;
+        int lengths = 0;
+        int sampleRate = -1;
+        for (final IGroup group: groups)
+        {
+            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
+            {
+                lengths += sampleMetadata.getStop ();
+                numSamples++;
+                if (sampleRate < 0)
+                    sampleRate = sampleMetadata.getSampleData ().getAudioMetadata ().getSampleRate ();
+            }
+        }
+        return lengths == 0 ? 0.001 : Math.max (0.001, lengths / (double) numSamples / sampleRate);
     }
 
 

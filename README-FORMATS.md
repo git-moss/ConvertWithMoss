@@ -86,6 +86,10 @@ The sample data contained in the file is in mono or split stereo with 16 or 24 b
 
 The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
 
+## TAL Sampler
+
+TAL-Sampler is an analog modeled synthesizer with a sampler engine as the sound source, including a modulation matrix and self-oscillating filters. Most of the presets in it's library store the sample files in an encrypted format (*.wavsmpl), this format is not supported. Only presets using plain WAV or AIFF files are supported.
+
 ## WAV files
 
 This is not a multisample format but a clever algorithm tries to detect the necessary information from each multisample file. It uses metadata found int the WAV file or from its' name.
@@ -161,12 +165,17 @@ Since the format supports only one group of a multisample, multiple files are cr
 
 ## Native Instruments Kontakt
 
-Writes a NKI file (see above) and puts all samples in a sub-folder with the same name. Currently, only the Kontakt 1 format
-is supported which does not contain any metadata information.
+Writes a NKI file (see above) and puts all samples in a sub-folder with the same name. Currently, only the Kontakt 1 format is supported which does not contain any metadata information.
 
 ### SFZ
 
 Writes a SFZ file (see above) and puts all samples in a sub-folder with the same name.
+
+## TAL Sampler
+
+Writes a TAL Sampler file (see above) and puts all samples in a sub-folder with the same name.
+
+The implementation distributes the samples of the source groups across the 4 layers of TAL Sampler in such a way that the key and velocity splits do not overlap. This is a workaround for the fact that TAL Sampler does not support overlapping samples. Since groups have only the name and trigger type as attributes, which are not supported in TAL Sampler anyway, this should work in most cases. If there are still overlapping samples a warning is displayed.
 
 ### WAV files
 

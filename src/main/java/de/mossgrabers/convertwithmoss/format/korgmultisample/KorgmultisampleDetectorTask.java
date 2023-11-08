@@ -10,13 +10,15 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 
 import java.io.BufferedInputStream;
@@ -202,7 +204,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
      * @throws IOException Could not read from the file
      * @throws FormatException Found unexpected format of the file
      */
-    private ISampleMetadata readSample (final InputStream in) throws IOException, FormatException
+    private ISampleZone readSample (final InputStream in) throws IOException, FormatException
     {
         // Size of the sample block
         final int [] size = StreamUtils.read7bitNumberLE (in);
@@ -214,7 +216,8 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         checkAscii (in);
         final String sampleFileName = readAscii (in);
         final File sampleFile = this.createCanonicalFile (this.sourceFolder, sampleFileName);
-        final ISampleMetadata sample = new DefaultSampleMetadata (sampleFile);
+        final ISampleData sampleData = new WavFileSampleData (sampleFile);
+        final ISampleZone sample = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
         int rest = blockLength - 3 - sampleFileName.length () - 1;
         rest = parseSampleParameters (sample, in, rest);
@@ -234,7 +237,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
      * @throws IOException Could not read from the file
      * @throws FormatException FOund unexpected format of the file
      */
-    private static int parseSampleParameters (final ISampleMetadata sample, final InputStream in, final int rest) throws IOException, FormatException
+    private static int parseSampleParameters (final ISampleZone sample, final InputStream in, final int rest) throws IOException, FormatException
     {
         int lastID = 0;
         int r = rest;
@@ -315,7 +318,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
      * @throws IOException Could not read from the file
      * @throws FormatException FOund unexpected format of the file
      */
-    private static void parseKeyZoneParameters (final ISampleMetadata sample, final InputStream in, final int rest) throws IOException, FormatException
+    private static void parseKeyZoneParameters (final ISampleZone sample, final InputStream in, final int rest) throws IOException, FormatException
     {
         int lastID = 0;
         int r = rest;

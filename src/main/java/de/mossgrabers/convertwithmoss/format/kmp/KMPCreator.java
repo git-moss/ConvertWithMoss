@@ -8,7 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,7 +60,7 @@ public class KMPCreator extends AbstractCreator
         for (int i = 0; i < size; i++)
         {
             final IGroup group = groups.get (i);
-            final ISampleMetadata sampleMetadata = group.getSampleMetadata ().get (0);
+            final ISampleZone sampleMetadata = group.getSampleMetadata ().get (0);
             final String groupName = size > 1 ? String.format ("%d-%s", Integer.valueOf (sampleMetadata.getVelocityHigh ()), sampleName) : sampleName;
             final String dosFileName = createDOSFileName (groupName, createdKSFNames) + ".KMP";
             final File groupSubFolder;

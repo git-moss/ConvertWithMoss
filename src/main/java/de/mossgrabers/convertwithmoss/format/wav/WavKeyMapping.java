@@ -5,16 +5,18 @@
 package de.mossgrabers.convertwithmoss.format.wav;
 
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -144,7 +146,7 @@ public class WavKeyMapping
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    public WavKeyMapping (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    public WavKeyMapping (final WavFileSampleData [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
         this.orderedSampleMetadata = this.createGroups (sampleInfos, isAscending, crossfadeNotes, groupPatterns, leftChannelPatterns);
         this.name = this.calculateCommonName (this.findShortestFilename ());
@@ -163,12 +165,12 @@ public class WavKeyMapping
                 velHigh = 127;
             final int crossfadeHigh = velHigh == 127 ? 0 : Math.min (velHigh - low, crossfadeVel);
 
-            for (final ISampleMetadata info: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleMetadata ())
             {
-                info.setVelocityLow (low);
-                info.setVelocityCrossfadeLow (0);
-                info.setVelocityHigh (velHigh);
-                info.setVelocityCrossfadeHigh (crossfadeHigh);
+                zone.setVelocityLow (low);
+                zone.setVelocityCrossfadeLow (0);
+                zone.setVelocityHigh (velHigh);
+                zone.setVelocityCrossfadeHigh (crossfadeHigh);
             }
 
             low = high + 1;
@@ -212,16 +214,16 @@ public class WavKeyMapping
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    private List<IGroup> createGroups (final WavSampleMetadata [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    private List<IGroup> createGroups (final WavFileSampleData [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
-        final Map<Integer, List<WavSampleMetadata>> sampleMetadata = new TreeMap<> ();
-        final Map<Integer, List<WavSampleMetadata>> groups = detectGroups (sampleInfos, groupPatterns);
+        final Map<Integer, List<ISampleZone>> sampleMetadata = new TreeMap<> ();
+        final Map<Integer, List<ISampleZone>> groups = detectGroups (sampleInfos, groupPatterns);
 
-        for (final Entry<Integer, List<WavSampleMetadata>> entry: groups.entrySet ())
+        for (final Entry<Integer, List<ISampleZone>> entry: groups.entrySet ())
         {
-            final List<WavSampleMetadata> group = entry.getValue ();
-            final Map<Integer, List<WavSampleMetadata>> noteMap = this.detectNotes (group);
-            final Map<Integer, WavSampleMetadata> groupNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
+            final List<ISampleZone> group = entry.getValue ();
+            final Map<Integer, List<ISampleZone>> noteMap = this.detectNotes (group);
+            final Map<Integer, ISampleZone> groupNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
             sampleMetadata.put (entry.getKey (), createKeyMaps (groupNoteMap));
 
             if (crossfadeNotes > 0 && crossfadeNotes < 128)
@@ -235,30 +237,30 @@ public class WavKeyMapping
     /**
      * Get the sample metadata ordered by their root notes.
      *
-     * @param sampleMetadata The groups to sort
+     * @param groupMapping The groups to sort
      * @param isAscending Sort ascending otherwise descending
      * @return The sample metadata list by group
      */
-    private static List<IGroup> orderGroups (final Map<Integer, List<WavSampleMetadata>> sampleMetadata, final boolean isAscending)
+    private static List<IGroup> orderGroups (final Map<Integer, List<ISampleZone>> groupMapping, final boolean isAscending)
     {
-        final Collection<List<WavSampleMetadata>> groups = sampleMetadata.values ();
-        final List<IGroup> reorderedSampleMetadata = new ArrayList<> (groups.size ());
+        final Collection<List<ISampleZone>> groups = groupMapping.values ();
+        final List<IGroup> orderedGroups = new ArrayList<> (groups.size ());
 
-        // Reorder descending
+        // Order descending
         groups.forEach (groupSampleMetadata -> {
 
             final IGroup group = new DefaultGroup (new ArrayList<> (groupSampleMetadata));
             if (isAscending)
-                reorderedSampleMetadata.add (group);
+                orderedGroups.add (group);
             else
-                reorderedSampleMetadata.add (0, group);
+                orderedGroups.add (0, group);
 
         });
 
-        for (int i = 0; i < reorderedSampleMetadata.size (); i++)
-            reorderedSampleMetadata.get (i).setName ("Group " + (i + 1));
+        for (int i = 0; i < orderedGroups.size (); i++)
+            orderedGroups.get (i).setName ("Group " + (i + 1));
 
-        return reorderedSampleMetadata;
+        return orderedGroups;
     }
 
 
@@ -267,32 +269,32 @@ public class WavKeyMapping
      * there are two, try to combine the mono files into a stereo file. If there are more than 2
      * throw an exception.
      *
-     * @param noteMap The assigned samples
+     * @param noteMap The assigned sample zones
      * @param leftChannelPatterns The left channel detection patterns
      * @return The result
      * @throws MultisampleException If there are more than 2 samples assigned to a note
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    private static Map<Integer, WavSampleMetadata> convertSplitStereo (final Map<Integer, List<WavSampleMetadata>> noteMap, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    private static Map<Integer, ISampleZone> convertSplitStereo (final Map<Integer, List<ISampleZone>> noteMap, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
         // Check if each note has assigned 1 or 2 files all other cases give an exception
         int noOfAssignedSamples = -1;
-        for (final Entry<Integer, List<WavSampleMetadata>> entry: noteMap.entrySet ())
+        for (final Entry<Integer, List<ISampleZone>> entry: noteMap.entrySet ())
         {
-            final List<WavSampleMetadata> samples = entry.getValue ();
+            final List<ISampleZone> zones = entry.getValue ();
 
-            final int size = samples.size ();
+            final int size = zones.size ();
             if (noOfAssignedSamples == -1)
             {
                 if (size > 2)
                     throw new MultisampleException (Functions.getMessage ("IDS_WAV_MORE_THAN_2_FILES"), entry);
                 if (size == 2)
                 {
-                    for (final ISampleMetadata sm: samples)
+                    for (final ISampleZone zone: zones)
                     {
                         try
                         {
-                            if (!sm.getAudioMetadata ().isMono ())
+                            if (!zone.getSampleData ().getAudioMetadata ().isMono ())
                                 throw new MultisampleException (Functions.getMessage ("IDS_WAV_FILES_MUST_BE_MONO"), entry);
                         }
                         catch (final IOException ex)
@@ -310,8 +312,8 @@ public class WavKeyMapping
 
         if (noOfAssignedSamples == 1)
         {
-            final Map<Integer, WavSampleMetadata> result = new TreeMap<> ();
-            for (final Entry<Integer, List<WavSampleMetadata>> entry: noteMap.entrySet ())
+            final Map<Integer, ISampleZone> result = new TreeMap<> ();
+            for (final Entry<Integer, List<ISampleZone>> entry: noteMap.entrySet ())
                 result.put (entry.getKey (), entry.getValue ().get (0));
             return result;
         }
@@ -327,12 +329,12 @@ public class WavKeyMapping
      * @return The combined samples assigned to notes
      * @throws CombinationNotPossibleException Could not combine the samples
      */
-    private static Map<Integer, WavSampleMetadata> combineAllMonoToStereo (final Map<Integer, List<WavSampleMetadata>> noteMap, final String [] leftChannelPatterns) throws CombinationNotPossibleException
+    private static Map<Integer, ISampleZone> combineAllMonoToStereo (final Map<Integer, List<ISampleZone>> noteMap, final String [] leftChannelPatterns) throws CombinationNotPossibleException
     {
-        final Map<Integer, WavSampleMetadata> result = new TreeMap<> ();
-        for (final Entry<Integer, List<WavSampleMetadata>> entry: noteMap.entrySet ())
+        final Map<Integer, ISampleZone> result = new TreeMap<> ();
+        for (final Entry<Integer, List<ISampleZone>> entry: noteMap.entrySet ())
         {
-            final List<WavSampleMetadata> samples = entry.getValue ();
+            final List<ISampleZone> samples = entry.getValue ();
             result.put (entry.getKey (), combineMonoToStereo (samples.get (0), samples.get (1), leftChannelPatterns));
         }
         return result;
@@ -342,16 +344,16 @@ public class WavKeyMapping
     /**
      * Combines a left/right channel into a stereo file.
      *
-     * @param first The first sample
-     * @param second The second sample
+     * @param first The first sample zone
+     * @param second The second sample zone
      * @param leftChannelPatterns Detection patterns for the left channel, e.g. "_L"
      * @return First item is the left channel, second is the right channel
      * @throws CombinationNotPossibleException Could not detect the left channel
      */
-    private static WavSampleMetadata combineMonoToStereo (final WavSampleMetadata first, final WavSampleMetadata second, final String [] leftChannelPatterns) throws CombinationNotPossibleException
+    private static ISampleZone combineMonoToStereo (final ISampleZone first, final ISampleZone second, final String [] leftChannelPatterns) throws CombinationNotPossibleException
     {
-        final String firstFilename = first.getFilename ();
-        final String secondFilename = second.getFilename ();
+        final String firstFilename = first.getName ();
+        final String secondFilename = second.getName ();
 
         // First try a safer detection at the end of the name
         for (final String pattern: leftChannelPatterns)
@@ -376,47 +378,55 @@ public class WavKeyMapping
 
 
     /**
-     * Combines the left and right channel into one wave file.
+     * Combines the left and right channel zones into one sample zone with a stereo wave file.
      *
-     * @param leftChannel The left channel
-     * @param rightChannel The right channel
+     * @param leftChannelZone The left channel zone
+     * @param rightChannelZone The right channel zone
      * @param pattern The matched pattern for the left channel
-     * @return The combined sample
+     * @return The combined sample zone
      * @throws CombinationNotPossibleException The files are not mono files or have different sample
      *             or loop lengths
      */
-    private static WavSampleMetadata combineLeftRight (final WavSampleMetadata leftChannel, final WavSampleMetadata rightChannel, final String pattern) throws CombinationNotPossibleException
+    private static ISampleZone combineLeftRight (final ISampleZone leftChannelZone, final ISampleZone rightChannelZone, final String pattern) throws CombinationNotPossibleException
     {
-        leftChannel.combine (rightChannel);
-        leftChannel.setCombinedName (leftChannel.getFilename ().replace (pattern, ""));
-        return leftChannel;
+        // Always true
+        if (leftChannelZone.getSampleData () instanceof final WavFileSampleData leftChannel && rightChannelZone.getSampleData () instanceof final WavFileSampleData rightChannel)
+        {
+            leftChannel.combine (rightChannel);
+            leftChannelZone.setName (leftChannel.getFilename ().replace (pattern, ""));
+            return leftChannelZone;
+        }
+        throw new CombinationNotPossibleException (Functions.getMessage ("IDS_WAV_COMBINATION_NOT_POSSIBLE"));
     }
 
 
     /**
      * Detect groups.
      *
-     * @param sampleInfos Info about all available samples
+     * @param wavFileSampleData Info about all available samples
      * @param groupPatterns The patterns to match for groups
      * @return The detected groups
      * @throws MultisampleException There was a pattern detected but (or more) of the samples could
      *             not be matched
      */
-    private static Map<Integer, List<WavSampleMetadata>> detectGroups (final WavSampleMetadata [] sampleInfos, final String [] groupPatterns) throws MultisampleException
+    private static Map<Integer, List<ISampleZone>> detectGroups (final WavFileSampleData [] wavFileSampleData, final String [] groupPatterns) throws MultisampleException
     {
-        final Map<Integer, List<WavSampleMetadata>> groups = new TreeMap<> ();
+        final Map<Integer, List<ISampleZone>> groups = new TreeMap<> ();
 
         // If no groups are detected create one group which contains all samples
-        final Optional<Pattern> patternResult = getGroupPattern (sampleInfos, groupPatterns);
+        final Optional<Pattern> patternResult = getGroupPattern (wavFileSampleData, groupPatterns);
         if (patternResult.isEmpty ())
         {
-            groups.put (Integer.valueOf (0), new ArrayList<> (Arrays.asList (sampleInfos)));
+            final List<ISampleZone> zones = new ArrayList<> (wavFileSampleData.length);
+            for (final WavFileSampleData si: wavFileSampleData)
+                zones.add (new DefaultSampleZone (FileUtils.getNameWithoutType (new File (si.getFilename ())), si));
+            groups.put (Integer.valueOf (0), zones);
             return groups;
         }
 
         // Now match all sample names with the detected group pattern
         final Pattern pattern = patternResult.get ();
-        for (final WavSampleMetadata si: sampleInfos)
+        for (final WavFileSampleData si: wavFileSampleData)
         {
             final String filename = si.getFilename ();
             final Matcher matcher = pattern.matcher (filename);
@@ -428,8 +438,8 @@ public class WavKeyMapping
                 final Integer id = Integer.valueOf (number);
                 final String prefix = matcher.group ("prefix");
                 final String postfix = matcher.group ("postfix");
-                si.setFilenameWithoutGroup (prefix + postfix);
-                groups.computeIfAbsent (id, key -> new ArrayList<> ()).add (si);
+                final ISampleZone zone = new DefaultSampleZone (prefix + postfix, si);
+                groups.computeIfAbsent (id, key -> new ArrayList<> ()).add (zone);
             }
             catch (final NumberFormatException ex)
             {
@@ -444,16 +454,16 @@ public class WavKeyMapping
     /**
      * Check if one of the group patterns matches.
      *
-     * @param sampleInfos The sample metadata
+     * @param wavFileSampleData The WAV sample data
      * @param groupPatterns The patterns to detect groups
      * @return The matching pattern or null
      * @throws MultisampleException If a pattern could not be parsed
      */
-    private static Optional<Pattern> getGroupPattern (final ISampleMetadata [] sampleInfos, final String [] groupPatterns) throws MultisampleException
+    private static Optional<Pattern> getGroupPattern (final WavFileSampleData [] wavFileSampleData, final String [] groupPatterns) throws MultisampleException
     {
-        if (groupPatterns.length == 0 || sampleInfos.length == 0)
+        if (groupPatterns.length == 0 || wavFileSampleData.length == 0)
             return Optional.empty ();
-        final String filename = sampleInfos[0].getFilename ();
+        final String filename = wavFileSampleData[0].getFilename ();
         for (final String groupPattern: groupPatterns)
         {
             final String [] parts = groupPattern.split ("\\*");
@@ -487,28 +497,26 @@ public class WavKeyMapping
      * Try to read the MIDI note from the SMPL chunk and order the filenames by ascending MIDI
      * notes.
      *
-     * @param samples The samples to process
+     * @param zones The sample zones to process
      * @return The map with note and sample metadata pairs ordered by the note
      * @throws NoteNotDetectedException NOte could not be detected from filename
      */
-    private Map<Integer, List<WavSampleMetadata>> createNoteMap (final List<WavSampleMetadata> samples) throws NoteNotDetectedException
+    private Map<Integer, List<ISampleZone>> createNoteMap (final List<ISampleZone> zones) throws NoteNotDetectedException
     {
-        final Map<Integer, List<WavSampleMetadata>> orderedNotes = new TreeMap<> ();
-        for (final WavSampleMetadata sample: samples)
+        final Map<Integer, List<ISampleZone>> orderedNotes = new TreeMap<> ();
+        for (final ISampleZone zone: zones)
         {
-            final Optional<String> filename = sample.getUpdatedFilename ();
-            if (filename.isEmpty ())
-                continue;
-            this.extractedNames.add (filename.get ());
-            final int midiNote = sample.getKeyRoot ();
+            final String filename = zone.getName ();
+            this.extractedNames.add (filename);
+            final int midiNote = zone.getKeyRoot ();
             if (midiNote <= 0)
-                throw new NoteNotDetectedException (filename.get ());
-            orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (sample);
+                throw new NoteNotDetectedException (filename);
+            orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (zone);
         }
 
         // All samples are mapped to the same note, seems the metadata does not contain meaningful
         // information...
-        if (orderedNotes.size () == 1 && samples.size () > 1)
+        if (orderedNotes.size () == 1 && zones.size () > 1)
             throw new NoteNotDetectedException (Functions.getMessage ("IDS_WAV_ONLY_ONE_NOTE"));
 
         return orderedNotes;
@@ -518,15 +526,15 @@ public class WavKeyMapping
     /**
      * Parse the MIDI note from each filename and order the filenames by ascending MIDI notes.
      *
-     * @param samples The samples to process
+     * @param zones The sample zones to process
      * @return The map with note and sample metadata pairs ordered by the note
      * @throws NoteNotDetectedException NOte could not be detected from filename
      */
-    private Map<Integer, List<WavSampleMetadata>> createNoteMapFromNames (final List<WavSampleMetadata> samples) throws NoteNotDetectedException
+    private Map<Integer, List<ISampleZone>> createNoteMapFromNames (final List<ISampleZone> zones) throws NoteNotDetectedException
     {
         this.extractedNames.clear ();
 
-        if (samples.isEmpty ())
+        if (zones.isEmpty ())
             return new TreeMap<> ();
 
         // Collect all potential key maps which match all sample names
@@ -536,9 +544,9 @@ public class WavKeyMapping
         {
             final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex);
             int midiNote = -1;
-            for (final WavSampleMetadata sample: samples)
+            for (final ISampleZone zone: zones)
             {
-                filename = sample.getFilenameWithoutGroup ();
+                filename = zone.getName ();
                 midiNote = this.lookupMidiNote (keyMap, filename);
                 if (midiNote < 0)
                     break;
@@ -554,19 +562,19 @@ public class WavKeyMapping
 
         // Use the matching key maps to parse the notes, the one with the most results is
         // the winner
-        Map<Integer, List<WavSampleMetadata>> result = null;
+        Map<Integer, List<ISampleZone>> result = null;
         for (final Integer keyMapIndex: potentialKeyMaps)
         {
-            final Map<Integer, List<WavSampleMetadata>> orderedNotes = new TreeMap<> ();
+            final Map<Integer, List<ISampleZone>> orderedByNote = new TreeMap<> ();
             final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex.intValue ());
-            for (final WavSampleMetadata sample: samples)
+            for (final ISampleZone zone: zones)
             {
-                final int midiNote = this.lookupMidiNote (keyMap, sample.getFilenameWithoutGroup ());
-                orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (sample);
+                final int midiNote = this.lookupMidiNote (keyMap, zone.getName ());
+                orderedByNote.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (zone);
             }
 
-            if (result == null || orderedNotes.size () > result.size ())
-                result = orderedNotes;
+            if (result == null || orderedByNote.size () > result.size ())
+                result = orderedByNote;
         }
 
         // Can never happen
@@ -574,10 +582,10 @@ public class WavKeyMapping
             throw new NoteNotDetectedException (filename);
 
         // Finally, set the root keys
-        for (final Map.Entry<Integer, List<WavSampleMetadata>> e: result.entrySet ())
+        for (final Map.Entry<Integer, List<ISampleZone>> e: result.entrySet ())
         {
-            for (final WavSampleMetadata sample: e.getValue ())
-                sample.setKeyRoot (e.getKey ().intValue ());
+            for (final ISampleZone zone: e.getValue ())
+                zone.setKeyRoot (e.getKey ().intValue ());
         }
 
         return result;
@@ -588,23 +596,23 @@ public class WavKeyMapping
      * First try to read the notes from the sample chunk. If that fails try different key detections
      * from the filename.
      *
-     * @param samples The samples to process
+     * @param zones The samples to process
      * @return The key map
      * @throws MultisampleException Could not detect a note map
      */
-    private Map<Integer, List<WavSampleMetadata>> detectNotes (final List<WavSampleMetadata> samples) throws MultisampleException
+    private Map<Integer, List<ISampleZone>> detectNotes (final List<ISampleZone> zones) throws MultisampleException
     {
         // First try to detect the notes from the sample chunk
         try
         {
-            return this.createNoteMap (samples);
+            return this.createNoteMap (zones);
         }
         catch (final NoteNotDetectedException ex)
         {
             // Second try to parse the note from the filename in different variations
             try
             {
-                return this.createNoteMapFromNames (samples);
+                return this.createNoteMapFromNames (zones);
             }
             catch (final NoteNotDetectedException ex2)
             {
@@ -617,17 +625,17 @@ public class WavKeyMapping
     /**
      * Create the key ranges and store them in the sample metadata.
      *
-     * @param orderedNotes The sample metadata ordered by their MIDI root note
-     * @return The ordered samples
+     * @param orderedByNote The sample zones ordered by their MIDI root note
+     * @return The ordered sample zones
      */
-    private static List<WavSampleMetadata> createKeyMaps (final Map<Integer, WavSampleMetadata> orderedNotes)
+    private static List<ISampleZone> createKeyMaps (final Map<Integer, ISampleZone> orderedByNote)
     {
-        final List<WavSampleMetadata> ordered = new ArrayList<> ();
+        final List<ISampleZone> ordered = new ArrayList<> ();
 
-        WavSampleMetadata previous = null;
-        for (final Map.Entry<Integer, WavSampleMetadata> e: orderedNotes.entrySet ())
+        ISampleZone previous = null;
+        for (final Map.Entry<Integer, ISampleZone> e: orderedByNote.entrySet ())
         {
-            final WavSampleMetadata current = e.getValue ();
+            final ISampleZone current = e.getValue ();
             if (previous == null)
                 current.setKeyLow (0);
             else
@@ -697,25 +705,25 @@ public class WavKeyMapping
      * @param noteMap The note map ordered by notes ascending
      * @param crossfadeNotes The number of notes to crossfade
      */
-    private static void createCrossfades (final Map<Integer, WavSampleMetadata> noteMap, final int crossfadeNotes)
+    private static void createCrossfades (final Map<Integer, ISampleZone> noteMap, final int crossfadeNotes)
     {
-        WavSampleMetadata previousSampleMetadata = null;
-        for (final WavSampleMetadata sampleMetadata: noteMap.values ())
+        ISampleZone previousZone = null;
+        for (final ISampleZone zone: noteMap.values ())
         {
-            if (previousSampleMetadata != null)
+            if (previousZone != null)
             {
-                final int diff = sampleMetadata.getKeyRoot () - previousSampleMetadata.getKeyRoot () - 1;
+                final int diff = zone.getKeyRoot () - previousZone.getKeyRoot () - 1;
                 final int range = Math.min (diff, crossfadeNotes);
                 final int crossfadeLow = range / 2;
                 final int crossfadeHigh = crossfadeLow + range % 2;
 
-                previousSampleMetadata.setNoteCrossfadeHigh (range);
-                sampleMetadata.setNoteCrossfadeLow (range);
+                previousZone.setNoteCrossfadeHigh (range);
+                zone.setNoteCrossfadeLow (range);
 
-                sampleMetadata.setKeyLow (sampleMetadata.getKeyLow () - crossfadeLow - 1);
-                previousSampleMetadata.setKeyHigh (previousSampleMetadata.getKeyHigh () + crossfadeHigh - 1);
+                zone.setKeyLow (zone.getKeyLow () - crossfadeLow - 1);
+                previousZone.setKeyHigh (previousZone.getKeyHigh () + crossfadeHigh - 1);
             }
-            previousSampleMetadata = sampleMetadata;
+            previousZone = zone;
         }
     }
 

@@ -12,6 +12,14 @@ package de.mossgrabers.convertwithmoss.core.model;
 public interface IAudioMetadata
 {
     /**
+     * Get the number of channels.
+     *
+     * @return The number of channels.
+     */
+    int getChannels ();
+
+
+    /**
      * Returns true if the sample is mono (otherwise stereo).
      *
      * @return True if mono
@@ -33,4 +41,12 @@ public interface IAudioMetadata
      * @return The bit resolution
      */
     int getBitResolution ();
+
+
+    /**
+     * Get the number of samples of 1 channel.
+     *
+     * @return The number of samples
+     */
+    int getNumberOfSamples ();
 }

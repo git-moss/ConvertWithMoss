@@ -6,7 +6,8 @@ package de.mossgrabers.convertwithmoss.format.kmp;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.tools.FileUtils;
@@ -21,7 +22,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -63,8 +63,7 @@ public class KMPFile
     private int                 numSamples;
     private String              nameLong;
 
-    private final List<KSFFile> ksfFiles        = new ArrayList<> ();
-    private IGroup              group;
+    private final IGroup        group;
 
 
     /**
@@ -94,20 +93,18 @@ public class KMPFile
      *
      * @param notifier For logging errors
      * @param kmpFile The KMP file
+     * @param group The group where to add the KSF zones
      * @throws IOException Could not read the file
      * @throws ParseException Error parsing the chunks
      */
-    public KMPFile (final INotifier notifier, final File kmpFile) throws IOException, ParseException
+    public KMPFile (final INotifier notifier, final File kmpFile, final IGroup group) throws IOException, ParseException
     {
         this.notifier = notifier;
 
         this.sampleFolder1 = kmpFile.getParentFile ();
         this.sampleFolder2 = new File (this.sampleFolder1, FileUtils.getNameWithoutType (kmpFile));
 
-        try (final FileInputStream stream = new FileInputStream (kmpFile))
-        {
-            this.read (stream);
-        }
+        this.group = group;
     }
 
 
@@ -123,24 +120,13 @@ public class KMPFile
 
 
     /**
-     * Get the sample files.
-     *
-     * @return The KSF files
-     */
-    public List<KSFFile> getKsfFiles ()
-    {
-        return this.ksfFiles;
-    }
-
-
-    /**
      * Read and parse a KMP file.
      *
      * @param inputStream Where to read the file from
      * @throws IOException Could not read the file
      * @throws ParseException Error during parsing
      */
-    private void read (final InputStream inputStream) throws IOException, ParseException
+    public void read (final InputStream inputStream) throws IOException, ParseException
     {
         final DataInputStream in = new DataInputStream (inputStream);
 
@@ -163,7 +149,7 @@ public class KMPFile
 
                 case KMP_NUMBER_ID:
                     assertSize (id, dataSize, KMP_NUMBER_SIZE);
-                    // The sample number in the bank
+                    // The sample number in the bank, not used
                     in.readInt ();
                     break;
 
@@ -191,28 +177,6 @@ public class KMPFile
             if (in.available () == 0)
                 break;
         }
-
-        this.readKSFFiles ();
-    }
-
-
-    private void readKSFFiles () throws IOException, ParseException
-    {
-        for (final KSFFile ksf: this.ksfFiles)
-        {
-            File ksfFile = new File (this.sampleFolder1, ksf.getFilename ());
-            if (!ksfFile.exists ())
-            {
-                ksfFile = new File (this.sampleFolder2, ksf.getFilename ());
-                if (!ksfFile.exists ())
-                    throw new IOException (Functions.getMessage ("IDS_KMP_ERR_KSF_NOT_FOUND", ksfFile.getAbsolutePath ()));
-            }
-
-            try (final FileInputStream stream = new FileInputStream (ksfFile))
-            {
-                ksf.read (stream);
-            }
-        }
     }
 
 
@@ -221,28 +185,28 @@ public class KMPFile
         this.name = new String (in.readNBytes (16)).trim ();
         this.numSamples = in.read ();
 
-        // useSecondStart not sure what to do with it
+        // useSecondStart, not sure what to do with it
         in.read ();
 
         for (int i = 0; i < this.numSamples; i++)
-            this.ksfFiles.add (new KSFFile ());
+            this.group.addSampleMetadata (new DefaultSampleZone ());
     }
 
 
-    private void readParameterChunk1 (final DataInputStream in) throws IOException
+    private void readParameterChunk1 (final DataInputStream in) throws IOException, ParseException
     {
         int lowerKey = 0;
-        for (final KSFFile ksfFile: this.ksfFiles)
+        for (final ISampleZone zone: this.group.getSampleMetadata ())
         {
             final int originalKey = in.read ();
 
-            ksfFile.setKeyTracking ((originalKey & 0x80) > 0 ? 1 : 0);
-            ksfFile.setKeyRoot (originalKey & 0x7F);
-            ksfFile.setKeyLow (lowerKey);
-            ksfFile.setKeyHigh (in.read ());
-            lowerKey = ksfFile.getKeyHigh () + 1;
-            ksfFile.setTune (in.readByte () / 100.0);
-            ksfFile.setGain (in.readByte () / 100.0 * 12.0);
+            zone.setKeyTracking ((originalKey & 0x80) > 0 ? 1 : 0);
+            zone.setKeyRoot (originalKey & 0x7F);
+            zone.setKeyLow (lowerKey);
+            zone.setKeyHigh (in.read ());
+            lowerKey = zone.getKeyHigh () + 1;
+            zone.setTune (in.readByte () / 100.0);
+            zone.setGain (in.readByte () / 100.0 * 12.0);
 
             // Panorama - unused in KMP itself, 64 is center
             in.read ();
@@ -267,14 +231,14 @@ public class KMPFile
                 }
             }
 
-            ksfFile.setFilename (sampleFilename);
+            this.readKSFZone (zone, sampleFilename);
         }
     }
 
 
     private void readParameterChunk2 (final DataInputStream in) throws IOException
     {
-        for (int i = 0; i < this.ksfFiles.size (); i++)
+        for (int i = 0; i < this.group.getSampleMetadata ().size (); i++)
         {
             // Transpose
             in.readByte ();
@@ -282,6 +246,23 @@ public class KMPFile
             in.readByte ();
             in.readByte ();
             in.readByte ();
+        }
+    }
+
+
+    private void readKSFZone (final ISampleZone zone, final String filename) throws IOException, ParseException
+    {
+        File ksfFile = new File (this.sampleFolder1, filename);
+        if (!ksfFile.exists ())
+        {
+            ksfFile = new File (this.sampleFolder2, filename);
+            if (!ksfFile.exists ())
+                throw new IOException (Functions.getMessage ("IDS_KMP_ERR_KSF_NOT_FOUND", ksfFile.getAbsolutePath ()));
+        }
+
+        try (final FileInputStream stream = new FileInputStream (ksfFile))
+        {
+            KSFFile.read (stream, zone);
         }
     }
 
@@ -311,7 +292,7 @@ public class KMPFile
         this.writeNameChunk (out);
         this.writeParameterChunk3 (out);
 
-        this.writeKSFFiles (folder);
+        this.writeksfZones (folder);
     }
 
 
@@ -351,10 +332,10 @@ public class KMPFile
         out.write (KMP_REL1_ID.getBytes ());
         out.writeInt (this.numSamples * KMP_REL1_SIZE);
 
-        final List<ISampleMetadata> sampleMetadata = this.group.getSampleMetadata ();
+        final List<ISampleZone> sampleMetadata = this.group.getSampleMetadata ();
         for (int i = 0; i < sampleMetadata.size (); i++)
         {
-            final ISampleMetadata sample = sampleMetadata.get (i);
+            final ISampleZone sample = sampleMetadata.get (i);
 
             int originalKey = sample.getKeyRoot ();
             if (sample.getKeyTracking () == 0)
@@ -418,17 +399,16 @@ public class KMPFile
     }
 
 
-    private void writeKSFFiles (final File folder) throws IOException
+    private void writeksfZones (final File folder) throws IOException
     {
-        final List<ISampleMetadata> sampleMetadata = this.group.getSampleMetadata ();
+        final List<ISampleZone> sampleMetadata = this.group.getSampleMetadata ();
         for (int i = 0; i < sampleMetadata.size (); i++)
         {
-            final ISampleMetadata sample = sampleMetadata.get (i);
+            final ISampleZone zone = sampleMetadata.get (i);
             final String filename = String.format ("MS%06d.KSF", Integer.valueOf (i));
             try (final OutputStream out = new FileOutputStream (new File (folder, filename)))
             {
-                KSFFile.write (sample, i, out);
-
+                KSFFile.write (zone, i, out);
                 this.notifier.log ("IDS_NOTIFY_PROGRESS");
                 if (i > 0 && i % 80 == 0)
                     this.notifier.log ("IDS_NOTIFY_LINE_FEED");

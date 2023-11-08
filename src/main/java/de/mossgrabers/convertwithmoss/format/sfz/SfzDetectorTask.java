@@ -15,7 +15,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -23,7 +23,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -215,7 +215,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     final File sampleFile = this.createCanonicalFile (sampleBaseFolder, sampleName.get ());
                     try
                     {
-                        final DefaultSampleMetadata sampleMetadata = this.createSampleMetadata (sampleFile);
+                        final DefaultSampleZone sampleMetadata = this.createSampleMetadata (sampleFile);
                         this.parseRegion (sampleMetadata);
                         this.readMissingValues (sampleMetadata);
                         group.addSampleMetadata (sampleMetadata);
@@ -294,7 +294,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      *
      * @param sampleMetadata Where to store the parsed information
      */
-    private void parseRegion (final ISampleMetadata sampleMetadata)
+    private void parseRegion (final ISampleZone sampleMetadata)
     {
         final TriggerType triggerType = this.getTriggerType (this.getAttribute (SfzOpcode.TRIGGER));
         if (triggerType != TriggerType.ATTACK)
@@ -432,7 +432,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
     }
 
 
-    private void parseFilter (final ISampleMetadata sampleMetadata)
+    private void parseFilter (final ISampleZone sampleMetadata)
     {
         double cutoff = this.getDoubleValue (SfzOpcode.CUTOFF, -1);
         if (cutoff < 0)
@@ -489,7 +489,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      *
      * @param sampleMetadata Where to store the data
      */
-    private void parseLoop (final ISampleMetadata sampleMetadata)
+    private void parseLoop (final ISampleZone sampleMetadata)
     {
         final DefaultSampleLoop loop = new DefaultSampleLoop ();
 
@@ -531,7 +531,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
             {
                 try
                 {
-                    final double loopLengthInSeconds = loopLength / (double) sampleMetadata.getAudioMetadata ().getSampleRate ();
+                    final double loopLengthInSeconds = loopLength / (double) sampleMetadata.getSampleData ().getAudioMetadata ().getSampleRate ();
                     final double crossfade = crossfadeInSeconds / loopLengthInSeconds;
                     if (crossfade > 0 && crossfade <= 1)
                         loop.setCrossfade (crossfade);
@@ -554,7 +554,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      *
      * @param sampleMetadata Where to store the data
      */
-    private void parseVolume (final ISampleMetadata sampleMetadata)
+    private void parseVolume (final ISampleZone sampleMetadata)
     {
         final double volume = this.getDoubleValue (SfzOpcode.VOLUME, 0);
         sampleMetadata.setGain (Utils.clamp (volume, -12, 12));
@@ -575,14 +575,14 @@ public class SfzDetectorTask extends AbstractDetectorTask
     }
 
 
-    private void readMissingValues (final DefaultSampleMetadata sampleMetadata)
+    private void readMissingValues (final DefaultSampleZone zone)
     {
         try
         {
             // Read loop and root key if necessary. If loop was not explicitly
             // deactivated, there is a loop present, which might need to read the
             // parameters from the WAV file
-            List<ISampleLoop> loops = sampleMetadata.getLoops ();
+            List<ISampleLoop> loops = zone.getLoops ();
             boolean readLoops = false;
             ISampleLoop oldLoop = null;
             if (!loops.isEmpty ())
@@ -591,12 +591,12 @@ public class SfzDetectorTask extends AbstractDetectorTask
                 readLoops = oldLoop.getStart () < 0 || oldLoop.getEnd () < 0;
             }
 
-            sampleMetadata.addMissingInfoFromWaveFile (true, readLoops);
+            zone.getSampleData ().addMetadata (zone, true, readLoops);
 
             // If start or end was already set overwrite it here
             if (readLoops)
             {
-                loops = sampleMetadata.getLoops ();
+                loops = zone.getLoops ();
                 // The null check is not necessary but otherwise we get an Eclipse warning
                 if (oldLoop != null && !loops.isEmpty ())
                 {

@@ -6,12 +6,14 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.ncw.NcwSampleMetadata;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.nki.Magic;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
-import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -102,7 +104,7 @@ public class Kontakt5MonolithType extends AbstractKontaktType
             throw new IOException (Functions.getMessage ("IDS_NKI5_NO_NKI_IN_CONTAINER"));
 
         readFiles (inputStream, monolithFiles);
-        final Map<Long, ISampleMetadata> monolithSamples = createSamples (monolithFiles);
+        final Map<Long, ISampleZone> monolithSamples = createSamples (monolithFiles);
 
         final InputStream dataInputStream = new ByteArrayInputStream (nkiFile.data);
         return this.kontakt5Type.readNKI (this.sourceFolder, sourceFile, dataInputStream, metadataConfig, monolithSamples);
@@ -221,9 +223,9 @@ public class Kontakt5MonolithType extends AbstractKontaktType
      * @return The converted files
      * @throws IOException Could not convert the files
      */
-    private static Map<Long, ISampleMetadata> createSamples (final Map<Long, MonolithFile> monolithFiles) throws IOException
+    private static Map<Long, ISampleZone> createSamples (final Map<Long, MonolithFile> monolithFiles) throws IOException
     {
-        final Map<Long, ISampleMetadata> samples = new HashMap<> ();
+        final Map<Long, ISampleZone> samples = new HashMap<> ();
 
         for (final Map.Entry<Long, MonolithFile> entry: monolithFiles.entrySet ())
         {
@@ -231,10 +233,14 @@ public class Kontakt5MonolithType extends AbstractKontaktType
             final ByteArrayInputStream in = new ByteArrayInputStream (value.data);
 
             final String filename = value.name.toLowerCase ();
+            final ISampleData sampleData;
             if (filename.endsWith (".wav"))
-                samples.put (entry.getKey (), new WavSampleMetadata (value.name, in));
+                sampleData = new WavFileSampleData (in);
             else if (filename.endsWith (".ncw"))
-                samples.put (entry.getKey (), new NcwSampleMetadata (value.name, in));
+                sampleData = new NcwFileSampleData (in);
+            else
+                continue;
+            samples.put (entry.getKey (), new DefaultSampleZone (value.name, sampleData));
         }
 
         return samples;

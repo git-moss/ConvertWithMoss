@@ -94,7 +94,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             return Collections.emptyList ();
 
         // Analyze all WAV files
-        final WavSampleMetadata [] sampleFiles = new WavSampleMetadata [wavFiles.length];
+        final WavFileSampleData [] sampleFileData = new WavFileSampleData [wavFiles.length];
         for (int i = 0; i < wavFiles.length; i++)
         {
             // Check for task cancellation
@@ -103,7 +103,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
 
             try
             {
-                sampleFiles[i] = new WavSampleMetadata (wavFiles[i]);
+                sampleFileData[i] = new WavFileSampleData (wavFiles[i]);
             }
             catch (final IOException ex)
             {
@@ -112,7 +112,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             }
         }
 
-        return this.createMultisample (folder, sampleFiles);
+        return this.createMultisample (folder, sampleFileData);
     }
 
 
@@ -123,7 +123,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
      * @param sampleFileMetadata The detected sample files
      * @return The multi-sample
      */
-    private List<IMultisampleSource> createMultisample (final File folder, final WavSampleMetadata [] sampleFileMetadata)
+    private List<IMultisampleSource> createMultisample (final File folder, final WavFileSampleData [] sampleFileMetadata)
     {
         try
         {

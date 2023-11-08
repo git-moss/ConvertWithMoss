@@ -69,7 +69,7 @@ public class SubTreeItemChunkData extends AbstractChunkData
     /**
      * The sub tree is compressed and could not be extracted, therefore it is assumed that it is
      * encrypted.
-     * 
+     *
      * @return True if encrypted
      */
     public boolean isEncrypted ()

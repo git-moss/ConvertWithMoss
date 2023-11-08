@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
@@ -41,6 +42,17 @@ public class WaveFile
     /**
      * Constructor. Creates a new file in memory.
      *
+     * @param audioMetadata The format of the audio
+     */
+    public WaveFile (final IAudioMetadata audioMetadata)
+    {
+        this (audioMetadata.getChannels (), audioMetadata.getSampleRate (), audioMetadata.getBitResolution (), audioMetadata.getNumberOfSamples ());
+    }
+
+
+    /**
+     * Constructor. Creates a new file in memory.
+     *
      * @param numberOfChannels The number of channels of the sample
      * @param sampleRate The sample rate (in Hz)
      * @param bitsPerSample The resolution the sample in bits
@@ -49,9 +61,7 @@ public class WaveFile
     public WaveFile (final int numberOfChannels, final int sampleRate, final int bitsPerSample, final int lengthInSamples)
     {
         this.instrumentChunk = new InstrumentChunk ();
-
         this.formatChunk = new FormatChunk (numberOfChannels, sampleRate, bitsPerSample, true);
-
         this.dataChunk = new DataChunk (this.formatChunk, lengthInSamples);
     }
 

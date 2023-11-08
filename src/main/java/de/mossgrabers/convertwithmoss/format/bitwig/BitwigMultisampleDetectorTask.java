@@ -14,8 +14,10 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -274,38 +276,49 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             return;
         }
 
-        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (zipFile, new File (filename));
+        final File file = new File (filename);
+        final WavFileSampleData sampleData;
+        try
+        {
+            sampleData = new WavFileSampleData (zipFile, file);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
+            return;
+        }
+        final DefaultSampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (file), sampleData);
 
-        sampleMetadata.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-start", -1)));
-        sampleMetadata.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-stop", -1)));
-        sampleMetadata.setGain (XMLUtils.getDoubleAttribute (sampleElement, "gain", 0));
-        sampleMetadata.setReversed (XMLUtils.getBooleanAttribute (sampleElement, "reverse", false));
+        zone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-start", -1)));
+        zone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-stop", -1)));
+        zone.setGain (XMLUtils.getDoubleAttribute (sampleElement, "gain", 0));
+        zone.setReversed (XMLUtils.getBooleanAttribute (sampleElement, "reverse", false));
 
         final String zoneLogic = sampleElement.getAttribute ("zone-logic");
-        sampleMetadata.setPlayLogic (zoneLogic != null && "round-robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
+        zone.setPlayLogic (zoneLogic != null && "round-robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
 
         final Element keyElement = XMLUtils.getChildElementByName (sampleElement, BitwigMultisampleTag.KEY);
         if (keyElement != null)
         {
             this.checkAttributes (BitwigMultisampleTag.KEY, keyElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.KEY));
 
-            sampleMetadata.setKeyRoot (XMLUtils.getIntegerAttribute (keyElement, "root", -1));
-            sampleMetadata.setKeyLow (XMLUtils.getIntegerAttribute (keyElement, "low", -1));
-            sampleMetadata.setKeyHigh (XMLUtils.getIntegerAttribute (keyElement, "high", -1));
-            sampleMetadata.setNoteCrossfadeLow (XMLUtils.getIntegerAttribute (keyElement, "low-fade", -1));
-            sampleMetadata.setNoteCrossfadeHigh (XMLUtils.getIntegerAttribute (keyElement, "high-fade", -1));
-            sampleMetadata.setTune (XMLUtils.getDoubleAttribute (keyElement, "tune", 0));
+            zone.setKeyRoot (XMLUtils.getIntegerAttribute (keyElement, "root", -1));
+            zone.setKeyLow (XMLUtils.getIntegerAttribute (keyElement, "low", -1));
+            zone.setKeyHigh (XMLUtils.getIntegerAttribute (keyElement, "high", -1));
+            zone.setNoteCrossfadeLow (XMLUtils.getIntegerAttribute (keyElement, "low-fade", -1));
+            zone.setNoteCrossfadeHigh (XMLUtils.getIntegerAttribute (keyElement, "high-fade", -1));
+            zone.setTune (XMLUtils.getDoubleAttribute (keyElement, "tune", 0));
 
             // Older multisample files use true/false
             final String attribute = keyElement.getAttribute ("track");
             if (attribute != null)
             {
                 if ("true".equals (attribute))
-                    sampleMetadata.setKeyTracking (1.0);
+                    zone.setKeyTracking (1.0);
                 else if ("false".equals (attribute))
-                    sampleMetadata.setKeyTracking (0);
+                    zone.setKeyTracking (0);
                 else
-                    sampleMetadata.setKeyTracking (XMLUtils.getDoubleAttribute (keyElement, "track", 0));
+                    zone.setKeyTracking (XMLUtils.getDoubleAttribute (keyElement, "track", 0));
             }
         }
 
@@ -314,10 +327,10 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         {
             this.checkAttributes (BitwigMultisampleTag.VELOCITY, velocityElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.VELOCITY));
 
-            sampleMetadata.setVelocityLow (XMLUtils.getIntegerAttribute (velocityElement, "low", -1));
-            sampleMetadata.setVelocityHigh (XMLUtils.getIntegerAttribute (velocityElement, "high", -1));
-            sampleMetadata.setVelocityCrossfadeLow (XMLUtils.getIntegerAttribute (velocityElement, "low-fade", -1));
-            sampleMetadata.setVelocityCrossfadeHigh (XMLUtils.getIntegerAttribute (velocityElement, "high-fade", -1));
+            zone.setVelocityLow (XMLUtils.getIntegerAttribute (velocityElement, "low", -1));
+            zone.setVelocityHigh (XMLUtils.getIntegerAttribute (velocityElement, "high", -1));
+            zone.setVelocityCrossfadeLow (XMLUtils.getIntegerAttribute (velocityElement, "low-fade", -1));
+            zone.setVelocityCrossfadeHigh (XMLUtils.getIntegerAttribute (velocityElement, "high-fade", -1));
         }
 
         final Element loopElement = XMLUtils.getChildElementByName (sampleElement, BitwigMultisampleTag.LOOP);
@@ -342,12 +355,19 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 loop.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (loopElement, "start", -1)));
                 loop.setEnd ((int) Math.round (XMLUtils.getDoubleAttribute (loopElement, "stop", -1)));
                 loop.setCrossfade (XMLUtils.getDoubleAttribute (loopElement, "fade", 0));
-                sampleMetadata.addLoop (loop);
+                zone.addLoop (loop);
             }
         }
 
-        this.loadMissingValues (sampleMetadata);
+        try
+        {
+            zone.getSampleData ().addMetadata (zone, false, false);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ex);
+        }
 
-        group.addSampleMetadata (sampleMetadata);
+        group.addSampleMetadata (zone);
     }
 }

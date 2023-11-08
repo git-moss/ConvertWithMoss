@@ -7,59 +7,47 @@ package de.mossgrabers.convertwithmoss.core.model;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 import java.util.Optional;
 
 
 /**
- * Metadata for a sample.
+ * The settings of a zone (key and velocity range) including the reference to the sample data.
  *
  * @author Jürgen Moßgraber
  */
-public interface ISampleMetadata
+public interface ISampleZone
 {
     /**
-     * Get information abut the audio file.
+     * Get the name of the zone or the referenced sample if there is no zone name.
      *
-     * @return The information
-     * @throws IOException Could not read the audio metadata
+     * @return The name
      */
-    IAudioMetadata getAudioMetadata () throws IOException;
+    String getName ();
 
 
     /**
-     * Get the file where the sample is stored.
+     * Set the name of the zone.
      *
-     * @return The file where the sample is stored
+     * @param name The name
      */
-    File getFile ();
+    void setName (String name);
 
 
     /**
-     * Get the filename.
+     * Get the referenced sample data.
      *
-     * @return The name of the file
+     * @return The referenced sample data
      */
-    String getFilename ();
+    ISampleData getSampleData ();
 
 
     /**
-     * Get the name without the group text.
+     * Set the referenced sample data.
      *
-     * @return The name without the group text
+     * @param sampleData The sample data to reference
      */
-    String getFilenameWithoutGroup ();
-
-
-    /**
-     * Set the name without the group text.
-     *
-     * @param nameWithoutGroup The name without the group text
-     */
-    void setFilenameWithoutGroup (String nameWithoutGroup);
+    void setSampleData (final ISampleData sampleData);
 
 
     /**
@@ -371,32 +359,6 @@ public interface ISampleMetadata
 
 
     /**
-     * If the encapsulated wave file got combined with another one, it is not stored yet. This sets
-     * the new name and indicates that it is not stored yet.
-     *
-     * @param combinedName The name to use for the new combined file
-     */
-    void setCombinedName (String combinedName);
-
-
-    /**
-     * Get the combined file name.
-     *
-     * @return The name
-     */
-    Optional<String> getCombinedName ();
-
-
-    /**
-     * Get the filename resulting from combining two mono file or the original filename if not
-     * combination did happen.
-     *
-     * @return The updated name
-     */
-    Optional<String> getUpdatedFilename ();
-
-
-    /**
      * Get the amplitude modulator.
      *
      * @return The modulator, never null
@@ -410,16 +372,6 @@ public interface ISampleMetadata
      * @return The modulator, never null
      */
     IModulator getPitchModulator ();
-
-
-    /**
-     * Write the data of the sample to the given output stream. The implementation must write a
-     * fully well-formed WAV file.
-     *
-     * @param outputStream The stream to where to write the data
-     * @throws IOException Could not write the data
-     */
-    void writeSample (OutputStream outputStream) throws IOException;
 
 
     /**
@@ -476,5 +428,5 @@ public interface ISampleMetadata
      *
      * @param sampleMetadata The data source
      */
-    void fillMetadata (ISampleMetadata sampleMetadata);
+    void fillMetadata (ISampleZone sampleMetadata);
 }

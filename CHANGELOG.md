@@ -3,8 +3,13 @@
 ## 7.3.0 (unreleased)
 
 * Added support for TAL Sampler format (reading + writing).
+* Sf2
+  * Fixed: 24 and 16 bit detection were flipped and produces an exception.
 * SFZ
   * New: AIFF files can be used as input.
+* Kontakt - Reading
+  * Fixed: Zone tuning was not set correctly.
+  * Fixed: If a file was referenced more than once in a monolith, all of them had the same zone settings.
 
 ## 7.2.1
 

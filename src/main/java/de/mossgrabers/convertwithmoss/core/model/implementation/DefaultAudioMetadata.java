@@ -14,23 +14,34 @@ import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
  */
 public class DefaultAudioMetadata implements IAudioMetadata
 {
-    private final boolean isMono;
-    private final int     sampleRate;
-    private final int     bitResolution;
+    private final int channels;
+    private final int sampleRate;
+    private final int sampleResolution;
+    private final int numberOfSamples;
 
 
     /**
      * Constructor.
      *
-     * @param isMono True if the sample is mono (otherwise stereo)
-     * @param sampleRate The number of sample slices per second.
-     * @param bitResolution The number of bits used by 1 sample.
+     * @param channels The number of audio channels
+     * @param sampleRate The number of samples per second in Hertz, e.g. 44100
+     * @param sampleResolution The number of bits used by 1 sample, e.g. 16
+     * @param numberOfSamples The number of samples of 1 channel
      */
-    public DefaultAudioMetadata (final boolean isMono, final int sampleRate, final int bitResolution)
+    public DefaultAudioMetadata (final int channels, final int sampleRate, final int sampleResolution, final int numberOfSamples)
     {
-        this.isMono = isMono;
+        this.channels = channels;
         this.sampleRate = sampleRate;
-        this.bitResolution = bitResolution;
+        this.sampleResolution = sampleResolution;
+        this.numberOfSamples = numberOfSamples;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getChannels ()
+    {
+        return this.channels;
     }
 
 
@@ -38,7 +49,7 @@ public class DefaultAudioMetadata implements IAudioMetadata
     @Override
     public boolean isMono ()
     {
-        return this.isMono;
+        return this.channels == 1;
     }
 
 
@@ -54,6 +65,14 @@ public class DefaultAudioMetadata implements IAudioMetadata
     @Override
     public int getBitResolution ()
     {
-        return this.bitResolution;
+        return this.sampleResolution;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getNumberOfSamples ()
+    {
+        return this.numberOfSamples;
     }
 }

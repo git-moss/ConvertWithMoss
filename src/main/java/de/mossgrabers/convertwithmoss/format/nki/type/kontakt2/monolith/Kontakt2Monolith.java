@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith;
 
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.ncw.NcwSampleMetadata;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.nki.Magic;
-import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.ByteArrayInputStream;
@@ -48,16 +48,16 @@ public class Kontakt2Monolith
     /**
      * Read and check the samples from the monolith.
      *
-     * @return The sample metadata objects
+     * @return The sample data objects
      * @throws IOException Could not read the samples
      */
-    public Map<String, DefaultSampleMetadata> mapSamples () throws IOException
+    public Map<String, ISampleData> mapSamples () throws IOException
     {
         final List<DirectoryEntry> sampleItems = new ArrayList<> ();
         final Directory topDirectory = this.directories.entrySet ().iterator ().next ().getValue ();
         this.findItems (topDirectory, DirectoryEntryType.SAMPLE, sampleItems);
 
-        final Map<String, DefaultSampleMetadata> multiSamples = new HashMap<> ();
+        final Map<String, ISampleData> multiSamples = new HashMap<> ();
 
         for (int i = 0; i < sampleItems.size (); i++)
         {
@@ -67,9 +67,9 @@ public class Kontakt2Monolith
                 final DirectoryEntry directoryEntry = sampleItems.get (i);
                 final String filename = directoryEntry.asWideString ();
                 if (filename.toLowerCase ().endsWith (".ncw"))
-                    multiSamples.put (filename, new NcwSampleMetadata (filename, in));
+                    multiSamples.put (filename, new NcwFileSampleData (in));
                 else
-                    multiSamples.put (filename, new WavSampleMetadata (filename, in));
+                    multiSamples.put (filename, new WavFileSampleData (in));
             }
         }
 

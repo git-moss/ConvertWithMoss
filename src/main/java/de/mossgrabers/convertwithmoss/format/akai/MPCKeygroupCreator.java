@@ -13,7 +13,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
@@ -99,16 +99,10 @@ public class MPCKeygroupCreator extends AbstractCreator
         int outputCount = 0;
         for (final IGroup layer: multisampleSource.getGroups ())
         {
-            for (final ISampleMetadata info: layer.getSampleMetadata ())
+            for (final ISampleZone zone: layer.getSampleMetadata ())
             {
-                final Optional<String> filename = info.getUpdatedFilename ();
-                if (filename.isEmpty ())
-                    continue;
-                String fn = filename.get ();
-                // Ensure upper case WAV ending, which seems to be required
-                if (fn.endsWith (".wav"))
-                    fn = fn.substring (0, fn.length () - 4) + ".WAV";
-                final File sampleFile = new File (sampleFolder, fn);
+                // WAV ending needs to be upper case!
+                final File sampleFile = new File (sampleFolder, zone.getName () + ".WAV");
                 try (final FileOutputStream fos = new FileOutputStream (sampleFile))
                 {
                     this.notifier.log ("IDS_NOTIFY_PROGRESS");
@@ -116,10 +110,10 @@ public class MPCKeygroupCreator extends AbstractCreator
                     if (outputCount % 80 == 0)
                         this.notifier.log ("IDS_NOTIFY_LINE_FEED");
 
-                    info.writeSample (fos);
+                    zone.getSampleData ().writeSample (fos);
                 }
 
-                fixSampleChunk (sampleFile, info);
+                fixSampleChunk (sampleFile, zone);
             }
         }
 
@@ -159,7 +153,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         {
             final TriggerType trigger = group.getTrigger ();
 
-            for (final ISampleMetadata sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
             {
                 final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger, multisampleSource.getGlobalFilter ());
                 if (keygroupOpt.isEmpty ())
@@ -224,22 +218,22 @@ public class MPCKeygroupCreator extends AbstractCreator
      *
      * @param document The XML document
      * @param layerIndex The index of the layer
-     * @param sampleMetadata The sample metadata
+     * @param zone The sample metadata
      * @param sampleName The name of the sample
      * @return The created layer
      */
-    private static Element createLayerElement (final Document document, final int layerIndex, final ISampleMetadata sampleMetadata, final String sampleName)
+    private static Element createLayerElement (final Document document, final int layerIndex, final ISampleZone zone, final String sampleName)
     {
         final Element layerElement = document.createElement ("Layer");
         layerElement.setAttribute ("number", Integer.toString (layerIndex + 1));
 
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ACTIVE, MPCKeygroupTag.TRUE);
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (sampleMetadata.getGain ())));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (zone.getGain ())));
 
-        final double pan = (Utils.clamp (sampleMetadata.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
+        final double pan = (Utils.clamp (zone.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, String.format (Locale.US, "%.6f", Double.valueOf (pan)));
 
-        final double tuneCent = sampleMetadata.getTune ();
+        final double tuneCent = zone.getTune ();
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH, Double.toString (tuneCent));
         // Values need to be identical to the pitch element!
         final int tuneCentInteger = (int) tuneCent;
@@ -247,23 +241,17 @@ public class MPCKeygroupCreator extends AbstractCreator
         // First multiply with 100 to prevent rounding error!
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_FINE_TUNE, Integer.toString ((int) (tuneCent * 100.0 - tuneCentInteger * 100.0)));
 
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (sampleMetadata.getVelocityLow ()));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_END, Integer.toString (sampleMetadata.getVelocityHigh ()));
-
-        final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
-        if (filename.isEmpty ())
-            return layerElement;
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (zone.getVelocityLow ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_END, Integer.toString (zone.getVelocityHigh ()));
 
         // Add the name of the multisample to the wave file to make it 'more unique' if
         // necessary
-        String fn = filename.get ();
-        if (!fn.startsWith (sampleName))
+        String zoneName = zone.getName ();
+        if (!zoneName.startsWith (sampleName))
         {
-            fn = sampleName + "_" + fn;
-            sampleMetadata.setCombinedName (fn);
+            zoneName = sampleName + "_" + zoneName;
+            zone.setName (zoneName);
         }
-        if (fn.toLowerCase (Locale.US).endsWith (".wav"))
-            fn = fn.substring (0, fn.length () - 4);
 
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_START, "0");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_END, "0");
@@ -272,9 +260,9 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_CROSSFADE, "0");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_TUNE, "0");
         // The root note is strangely one more then the lower upper keys!
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ROOT_NOTE, Integer.toString (sampleMetadata.getKeyRoot () + 1));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ROOT_NOTE, Integer.toString (zone.getKeyRoot () + 1));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_KEY_TRACK, MPCKeygroupTag.TRUE);
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME, fn);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME, zoneName);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
@@ -283,12 +271,12 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_INDEX, "129");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_DIRECTION, "0");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_OFFSET, "0");
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_START, Integer.toString (sampleMetadata.getStart ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_START, Integer.toString (zone.getStart ()));
 
-        final List<ISampleLoop> loops = sampleMetadata.getLoops ();
+        final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
         {
-            XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleMetadata.getStop ()));
+            XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (zone.getStop ()));
             XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, "0");
             return layerElement;
         }
@@ -297,7 +285,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         final ISampleLoop sampleLoop = loops.get (0);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START, Integer.toString (sampleLoop.getStart ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleLoop.getEnd ()));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, sampleMetadata.isReversed () ? "3" : "1");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, zone.isReversed () ? "3" : "1");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, Double.toString (sampleLoop.getCrossfade ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_POSITION, "0.500000");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_LENGTH, MPCKeygroupConstants.DOUBLE_ZERO);
@@ -318,7 +306,7 @@ public class MPCKeygroupCreator extends AbstractCreator
     }
 
 
-    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleMetadata sampleMetadata, final Document document, final Element instrumentsElement, final TriggerType trigger, final Optional<IFilter> optFilter)
+    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleZone sampleMetadata, final Document document, final Element instrumentsElement, final TriggerType trigger, final Optional<IFilter> optFilter)
     {
         final int keyLow = sampleMetadata.getKeyLow ();
         final int keyHigh = sampleMetadata.getKeyHigh ();
@@ -504,7 +492,7 @@ public class MPCKeygroupCreator extends AbstractCreator
      * @param info The info about the loops
      * @throws IOException Could not read/write the file
      */
-    private static void fixSampleChunk (final File sampleFile, final ISampleMetadata info) throws IOException
+    private static void fixSampleChunk (final File sampleFile, final ISampleZone info) throws IOException
     {
         final WaveFile waveFile;
         try

@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class AuthorizationChunkData extends AbstractChunkData
 {
-    private List<String> serialNumberPIDs = new ArrayList<> ();
+    private final List<String> serialNumberPIDs = new ArrayList<> ();
 
 
     /** {@inheritDoc} */
@@ -32,7 +32,7 @@ public class AuthorizationChunkData extends AbstractChunkData
         }
 
         // Unknown - number of license blocks ?!
-        long numLicenseBlock = StreamUtils.readUnsigned32 (in, false);
+        final long numLicenseBlock = StreamUtils.readUnsigned32 (in, false);
         if (numLicenseBlock != 1)
             throw new IOException ("license block != 1");
 

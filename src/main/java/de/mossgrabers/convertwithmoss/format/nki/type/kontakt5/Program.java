@@ -8,16 +8,19 @@ import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.ncw.NcwSampleMetadata;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -65,7 +68,7 @@ public class Program
 
     /**
      * Parse the program data from a Program preset chunk.
-     * 
+     *
      * Known versions (chunk.getVersion()):
      * <ul>
      * <li>0x80: 4.2.x
@@ -267,13 +270,13 @@ public class Program
 
         final Map<Integer, Pair<DefaultGroup, Group>> indexedGroups = this.createGroups ();
 
-        for (final Zone zone: this.zones)
+        for (final Zone kontaktZone: this.zones)
         {
             // Zones without a sample file might be present
-            if (zone.getFilenameId () < 0)
+            if (kontaktZone.getFilenameId () < 0)
                 continue;
 
-            final Integer groupIndex = Integer.valueOf (zone.getGroupIndex ());
+            final Integer groupIndex = Integer.valueOf (kontaktZone.getGroupIndex ());
             final Pair<DefaultGroup, Group> groupPair = indexedGroups.get (groupIndex);
             if (groupPair == null)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_MISSING_GROUP", groupIndex.toString ()));
@@ -281,33 +284,33 @@ public class Program
             final DefaultGroup defaultGroup = groupPair.getKey ();
             final Group group = groupPair.getValue ();
 
-            final ISampleMetadata sampleMetadata = this.getFilename (source, zone);
-            defaultGroup.addSampleMetadata (sampleMetadata);
+            final ISampleZone zone = this.createZone (source, kontaktZone);
+            defaultGroup.addSampleMetadata (zone);
 
-            sampleMetadata.setStart (zone.getSampleStart ());
-            sampleMetadata.setStop (zone.getNumFrames () - zone.getSampleEnd ());
+            zone.setStart (kontaktZone.getSampleStart ());
+            zone.setStop (kontaktZone.getNumFrames () - kontaktZone.getSampleEnd ());
 
-            sampleMetadata.setKeyLow (zone.getLowKey ());
-            sampleMetadata.setKeyHigh (zone.getHighKey ());
-            final int rootKey = zone.getRootKey ();
-            sampleMetadata.setKeyRoot (rootKey);
+            zone.setKeyLow (kontaktZone.getLowKey ());
+            zone.setKeyHigh (kontaktZone.getHighKey ());
+            final int rootKey = kontaktZone.getRootKey ();
+            zone.setKeyRoot (rootKey);
 
-            final float volume = this.instrumentVolume + zone.getZoneVolume ();
-            sampleMetadata.setGain (Utils.valueToDb (volume));
-            sampleMetadata.setPanorama (Utils.clamp (this.instrumentPan + zone.getZonePan (), -1, 1));
+            final float volume = this.instrumentVolume + kontaktZone.getZoneVolume ();
+            zone.setGain (Utils.valueToDb (volume));
+            zone.setPanorama (Utils.clamp (this.instrumentPan + kontaktZone.getZonePan (), -1, 1));
 
-            sampleMetadata.setTune ((calculateTune (zone.getZoneTune (), group.getTune (), this.instrumentTune)) / 1000);
+            zone.setTune (calculateTune (kontaktZone.getZoneTune (), group.getTune (), this.instrumentTune));
 
-            sampleMetadata.setVelocityLow (zone.getLowVelocity ());
-            sampleMetadata.setVelocityHigh (zone.getHighVelocity ());
+            zone.setVelocityLow (kontaktZone.getLowVelocity ());
+            zone.setVelocityHigh (kontaktZone.getHighVelocity ());
 
-            sampleMetadata.setNoteCrossfadeLow (zone.getFadeLowKey ());
-            sampleMetadata.setNoteCrossfadeHigh (zone.getFadeHighKey ());
-            sampleMetadata.setVelocityCrossfadeLow (zone.getFadeLowKey ());
-            sampleMetadata.setVelocityCrossfadeHigh (zone.getFadeHighVelocity ());
+            zone.setNoteCrossfadeLow (kontaktZone.getFadeLowKey ());
+            zone.setNoteCrossfadeHigh (kontaktZone.getFadeHighKey ());
+            zone.setVelocityCrossfadeLow (kontaktZone.getFadeLowKey ());
+            zone.setVelocityCrossfadeHigh (kontaktZone.getFadeHighVelocity ());
 
             // Only on a group level...
-            sampleMetadata.setReversed (group.isReverse ());
+            zone.setReversed (group.isReverse ());
 
             // TODO fill missing info
             // sampleMetadata.setBendUp ();
@@ -316,7 +319,7 @@ public class Program
             // sampleMetadata.getAmplitudeModulator ()
             // sampleMetadata.getPitchModulator ()
 
-            for (final ZoneLoop zoneLoop: zone.getLoops ())
+            for (final ZoneLoop zoneLoop: kontaktZone.getLoops ())
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
                 if (zoneLoop.getAlternatingLoop () > 0)
@@ -325,7 +328,7 @@ public class Program
                 final int loopLength = zoneLoop.getLoopLength ();
                 loop.setEnd (zoneLoop.getLoopStart () + loopLength);
                 loop.setCrossfade (zoneLoop.getCrossfadeLength () / (double) loopLength);
-                sampleMetadata.addLoop (loop);
+                zone.addLoop (loop);
             }
         }
 
@@ -357,7 +360,7 @@ public class Program
     }
 
 
-    private ISampleMetadata getFilename (final DefaultMultisampleSource source, final Zone zone) throws IOException
+    private ISampleZone createZone (final DefaultMultisampleSource source, final Zone zone) throws IOException
     {
         final int filenameId = zone.getFilenameId ();
         if (filenameId < 0 || filenameId >= this.filePaths.size ())
@@ -373,7 +376,16 @@ public class Program
         }
         else
             sampleFile = new File (source.getSourceFile ().getParent (), filename);
-        return filename.toLowerCase ().endsWith (".ncw") ? new NcwSampleMetadata (sampleFile) : new DefaultSampleMetadata (sampleFile);
+
+        final ISampleData sampleData;
+        // Ignore non-existing files since it might be in a monolith
+        if (!sampleFile.exists ())
+            sampleData = null;
+        else if (filename.toLowerCase ().endsWith (".ncw"))
+            sampleData = new NcwFileSampleData (sampleFile);
+        else
+            sampleData = new WavFileSampleData (sampleFile);
+        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
     }
 
 
@@ -394,6 +406,7 @@ public class Program
     private static double calculateTune (final double zoneTune, final double groupTune, final double progTune)
     {
         // All three tune values are stored logarithmically
-        return 0.12d * Math.log (zoneTune * groupTune * progTune) / Math.log (2);
+        final double value = 12.0 * Math.log (zoneTune * groupTune * progTune) / Math.log (2);
+        return Math.round (value * 100000) / 100000.0;
     }
 }

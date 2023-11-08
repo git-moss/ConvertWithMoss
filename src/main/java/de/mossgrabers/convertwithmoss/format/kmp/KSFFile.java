@@ -6,17 +6,16 @@ package de.mossgrabers.convertwithmoss.format.kmp;
 
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -25,12 +24,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -38,7 +35,7 @@ import java.util.Optional;
  *
  * @author Jürgen Moßgraber
  */
-public class KSFFile extends DefaultSampleMetadata
+public class KSFFile
 {
     /** ID for KSF Sample parameter chunk. */
     private static final String KSF_SAMPLE_PARAM_ID         = "SMP1";
@@ -61,20 +58,11 @@ public class KSFFile extends DefaultSampleMetadata
     private static final int    KSF_SAMPLE_NAME_SIZE        = 24;
     private static final int    KSF_SAMPLE_FILENAME_SIZE    = 12;
 
-    private int                 sampleNumber;
-    private int                 channels;
-    private int                 sampleRate;
-    private int                 sampleResolution;
-    private int                 numberOfSamples;
-    private byte []             sampleData;
-
 
     /**
      * Constructor.
-     *
-     * @throws IOException Cannot happen
      */
-    public KSFFile () throws IOException
+    private KSFFile ()
     {
         // Intentionally empty
     }
@@ -84,12 +72,20 @@ public class KSFFile extends DefaultSampleMetadata
      * Read and parse a KSF file.
      *
      * @param inputStream Where to read the file from
+     * @param zone The zone to which to add the KSF data
      * @throws IOException Could not read the file
      * @throws ParseException Error during parsing
      */
-    public void read (final InputStream inputStream) throws IOException, ParseException
+    public static void read (final InputStream inputStream, final ISampleZone zone) throws IOException, ParseException
     {
         final DataInputStream in = new DataInputStream (inputStream);
+
+        int channels = -1;
+        int sampleRate = -1;
+        int sampleResolution = -1;
+        int numberOfSamples = -1;
+        byte [] data = null;
+        String combinedName = "";
 
         while (true)
         {
@@ -101,11 +97,11 @@ public class KSFFile extends DefaultSampleMetadata
                 case KSF_SAMPLE_PARAM_ID:
                     assertSize (id, dataSize, KSF_SAMPLE_PARAM_SIZE);
 
-                    this.setCombinedName (new String (in.readNBytes (16)).trim () + ".wav");
+                    combinedName = new String (in.readNBytes (16));
                     final int s = in.readInt ();
                     // Originally in the Triton the start is only 3 bytes! The first byte is the
                     // 'default bank' (0–3) but documented as 4 byte start in the later workstations
-                    this.setStart (s & 0xFFF);
+                    zone.setStart (s & 0xFFF);
 
                     // No idea what 'second start' is, seems to be identical to loop start
                     in.readInt ();
@@ -113,7 +109,7 @@ public class KSFFile extends DefaultSampleMetadata
                     final DefaultSampleLoop loop = new DefaultSampleLoop ();
                     loop.setStart (in.readInt ());
                     loop.setEnd (in.readInt ());
-                    this.getLoops ().add (loop);
+                    zone.getLoops ().add (loop);
                     break;
 
                 case KSF_SAMPLE_DATA_ID:
@@ -122,35 +118,38 @@ public class KSFFile extends DefaultSampleMetadata
 
                     final int sampleDataLength = dataSize - KSF_SAMPLE_DATA_SIZE;
 
-                    this.sampleRate = in.readInt ();
+                    sampleRate = in.readInt ();
 
                     // Attributes byte combines several settings
                     final int attributes = in.read ();
                     if ((attributes & 0x10) > 0)
                         throw new ParseException (Functions.getMessage ("IDS_KMP_COMPRESSED_DATA_NOT_SUPPORTED"));
                     // Not used: attributes & 0x20 = 1: Not Use 2nd Start 0: Use It
-                    this.setReversed ((attributes & 0x40) == 1);
+                    zone.setReversed ((attributes & 0x40) == 1);
                     if ((attributes & 0x80) > 0)
-                        this.getLoops ().clear ();
+                        zone.getLoops ().clear ();
 
                     // loopTune (–99…+99 cents) not supported
                     in.readByte ();
 
-                    this.channels = in.read ();
+                    channels = in.read ();
                     // 8/16
-                    this.sampleResolution = in.read ();
-                    this.numberOfSamples = in.readInt ();
-                    this.sampleData = in.readNBytes (sampleDataLength);
+                    sampleResolution = in.read ();
+                    numberOfSamples = in.readInt ();
+                    data = in.readNBytes (sampleDataLength);
+                    if (sampleResolution == 16)
+                        flipBytes (data);
                     break;
 
                 case KSF_SAMPLE_NUMBER_ID:
                     assertSize (id, dataSize, KSF_SAMPLE_NUMBER_SIZE);
-                    this.sampleNumber = in.readInt ();
+                    // The sample number, not used
+                    in.readInt ();
                     break;
 
                 case KSF_SAMPLE_NAME_ID:
                     assertSize (id, dataSize, KSF_SAMPLE_NAME_SIZE);
-                    this.setCombinedName (new String (in.readNBytes (24)).trim () + ".wav");
+                    combinedName = new String (in.readNBytes (24));
                     break;
 
                 case KSF_SAMPLE_FILENAME_ID:
@@ -168,60 +167,41 @@ public class KSFFile extends DefaultSampleMetadata
                 break;
         }
 
-        this.audioMetadata = new DefaultAudioMetadata (this.channels == 1, this.sampleRate, this.sampleResolution);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void writeSample (final OutputStream outputStream) throws IOException
-    {
-        final WaveFile wavFile = new WaveFile (this.channels, this.sampleRate, this.sampleResolution, this.numberOfSamples);
-        final DataChunk dataChunk = wavFile.getDataChunk ();
-
-        // Flip MSB / LSB
-        final byte [] destination = dataChunk.getData ();
-        for (int i = 0; i < destination.length; i += 2)
-        {
-            destination[i] = this.sampleData[i + 1];
-            destination[i + 1] = this.sampleData[i];
-        }
-
-        wavFile.write (outputStream);
+        final IAudioMetadata audioMetadata = new DefaultAudioMetadata (channels, sampleRate, sampleResolution, numberOfSamples);
+        final InMemorySampleData sampleData = new InMemorySampleData (audioMetadata, data);
+        zone.setName (combinedName.trim ());
+        zone.setSampleData (sampleData);
     }
 
 
     /**
      * Write a KSF file.
      *
-     * @param sample The sample to store in a KSF file
+     * @param sampleZone The zone which contains the sample to store in a KSF file
      * @param sampleIndex The index of the sample
      * @param outputStream Where to write the file to
      * @throws IOException Could not write the file
      * @throws ParseException If source wave files are broken
      * @throws CompressionNotSupportedException If source wave files are compressed
      */
-    public static void write (final ISampleMetadata sample, final int sampleIndex, final OutputStream outputStream) throws IOException, ParseException, CompressionNotSupportedException
+    public static void write (final ISampleZone sampleZone, final int sampleIndex, final OutputStream outputStream) throws IOException, ParseException, CompressionNotSupportedException
     {
         final DataOutputStream out = new DataOutputStream (outputStream);
 
         out.write (KSF_SAMPLE_PARAM_ID.getBytes ());
         out.writeInt (KSF_SAMPLE_PARAM_SIZE);
 
-        final Optional<String> filename = sample.getUpdatedFilename ();
-        if (filename.isEmpty ())
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_FILENAME", "null"));
-        final String name = FileUtils.getNameWithoutType (new File (filename.get ()));
+        final String name = sampleZone.getName ();
         out.write (pad (name, 16).getBytes ());
 
-        out.writeInt (sample.getStart ());
-        out.writeInt (sample.getStart ());
+        out.writeInt (sampleZone.getStart ());
+        out.writeInt (sampleZone.getStart ());
 
-        final List<ISampleLoop> loops = sample.getLoops ();
+        final List<ISampleLoop> loops = sampleZone.getLoops ();
         if (loops.isEmpty ())
         {
             out.writeInt (0);
-            out.writeInt (sample.getStop ());
+            out.writeInt (sampleZone.getStop ());
         }
         else
         {
@@ -243,7 +223,7 @@ public class KSFFile extends DefaultSampleMetadata
         out.write (KSF_SAMPLE_DATA_ID.getBytes ());
 
         final ByteArrayOutputStream dataOut = new ByteArrayOutputStream ();
-        sample.writeSample (dataOut);
+        sampleZone.getSampleData ().writeSample (dataOut);
 
         // Convert the file to be a 16 bit WAV file
         final WaveFile waveFile = new WaveFile ();
@@ -273,7 +253,7 @@ public class KSFFile extends DefaultSampleMetadata
         int attributes = 0;
         // Not used: attributes & 0x20 = 1: Not Use 2nd Start 0: Use It
         attributes |= 0x20;
-        if (sample.isReversed ())
+        if (sampleZone.isReversed ())
             attributes |= 0x40;
         if (loops.isEmpty ())
             attributes |= 0x80;
@@ -313,14 +293,6 @@ public class KSFFile extends DefaultSampleMetadata
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public IAudioMetadata getAudioMetadata ()
-    {
-        return this.audioMetadata;
-    }
-
-
     private static void assertSize (final String chunk, final int dataSize, final int expectedSize) throws ParseException
     {
         if (dataSize != expectedSize)
@@ -334,30 +306,14 @@ public class KSFFile extends DefaultSampleMetadata
     }
 
 
-    /**
-     * Format all parameters into a string.
-     *
-     * @return The formatted string
-     */
-    public String printInfo ()
+    // Flip MSB / LSB
+    private static void flipBytes (final byte [] data)
     {
-        final StringBuilder sb = new StringBuilder ();
-        sb.append (" - Sample ").append (this.sampleNumber).append (":\n");
-        sb.append (" - Samplename: ").append (this.getUpdatedFilename ()).append ("\n");
-        sb.append (" - Frequency: ").append (this.sampleRate).append ("\n");
-        sb.append (" - Channels: ").append (this.channels).append ("\n");
-        sb.append (" - Resolution: ").append (this.sampleResolution).append (" Bit\n");
-        sb.append (" - Samples: ").append (this.numberOfSamples).append ("\n");
-        sb.append (" - Reversed: ").append (this.isReversed () ? "Yes" : "No").append ("\n");
-        sb.append (" - Start: ").append (this.getStart ()).append ("\n");
-        sb.append (" - Key Range (low/root/high): ").append (this.getKeyLow ()).append ("/").append (this.getKeyRoot ()).append ("/").append (this.getKeyHigh ()).append ("\n");
-
-        sb.append (" - Loop: ");
-        if (this.loops.isEmpty ())
-            sb.append ("Off\n");
-        else
-            sb.append (this.loops.get (0).getStart ()).append (" - ").append (this.loops.get (0).getEnd ()).append ("\n");
-
-        return sb.toString ();
+        for (int i = 0; i < data.length; i += 2)
+        {
+            final byte temp = data[i];
+            data[i] = data[i + 1];
+            data[i + 1] = temp;
+        }
     }
 }

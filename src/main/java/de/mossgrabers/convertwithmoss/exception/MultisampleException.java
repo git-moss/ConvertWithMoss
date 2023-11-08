@@ -4,11 +4,10 @@
 
 package de.mossgrabers.convertwithmoss.exception;
 
-import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Optional;
 
 
 /**
@@ -38,20 +37,20 @@ public class MultisampleException extends Exception
      * @param message The message
      * @param keySamples The samples assigned to a key which caused the problem
      */
-    public MultisampleException (final String message, final Entry<Integer, List<WavSampleMetadata>> keySamples)
+    public MultisampleException (final String message, final Entry<Integer, List<ISampleZone>> keySamples)
     {
         super (format (message, keySamples));
     }
 
 
-    private static String format (final String message, final Entry<Integer, List<WavSampleMetadata>> keySamples)
+    private static String format (final String message, final Entry<Integer, List<ISampleZone>> keySamples)
     {
         final StringBuilder sb = new StringBuilder (message).append ("\nKey: ").append (keySamples.getKey ()).append ('\n');
-        final List<WavSampleMetadata> samples = keySamples.getValue ();
+        final List<ISampleZone> samples = keySamples.getValue ();
         for (int i = 0; i < samples.size (); i++)
         {
-            final Optional<String> filename = samples.get (i).getUpdatedFilename ();
-            sb.append ("* Sample ").append (i + 1).append (": ").append (filename.isPresent () ? filename.get () : "").append ('\n');
+            final String name = samples.get (i).getName ();
+            sb.append ("* Sample ").append (i + 1).append (": ").append (name).append ('\n');
         }
         return sb.toString ();
     }

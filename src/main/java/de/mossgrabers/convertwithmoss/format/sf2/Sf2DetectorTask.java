@@ -14,11 +14,12 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
@@ -120,15 +121,15 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             final List<IGroup> groups = new ArrayList<> ();
             for (int presetZoneIndex = 0; presetZoneIndex < preset.getZoneCount (); presetZoneIndex++)
             {
-                final Sf2PresetZone zone = preset.getZone (presetZoneIndex);
-                if (zone.isGlobal ())
+                final Sf2PresetZone presetZone = preset.getZone (presetZoneIndex);
+                if (presetZone.isGlobal ())
                 {
-                    generators.setPresetZoneGlobalGenerators (zone.getGenerators ());
+                    generators.setPresetZoneGlobalGenerators (presetZone.getGenerators ());
                     continue;
                 }
-                generators.setPresetZoneGenerators (zone.getGenerators ());
+                generators.setPresetZoneGenerators (presetZone.getGenerators ());
 
-                final Sf2Instrument instrument = zone.getInstrument ();
+                final Sf2Instrument instrument = presetZone.getInstrument ();
                 final DefaultGroup group = new DefaultGroup (instrument.getName ());
 
                 for (int instrumentZoneIndex = 0; instrumentZoneIndex < instrument.getZoneCount (); instrumentZoneIndex++)
@@ -140,9 +141,9 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         continue;
                     }
                     generators.setInstrumentZoneGenerators (instrZone.getGenerators ());
-                    final Sf2SampleMetadata sampleMetadata = createSampleMetadata (instrZone.getSample (), generators);
-                    parseModulators (sampleMetadata, zone, instrZone);
-                    group.addSampleMetadata (sampleMetadata);
+                    final ISampleZone zone = createSampleMetadata (instrZone.getSample (), generators);
+                    parseModulators (zone, presetZone, instrZone);
+                    group.addSampleMetadata (zone);
                 }
 
                 groups.add (group);
@@ -159,7 +160,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
     }
 
 
-    private static void parseModulators (final Sf2SampleMetadata sampleMetadata, final Sf2PresetZone zone, final Sf2InstrumentZone instrZone)
+    private static void parseModulators (final ISampleZone sampleMetadata, final Sf2PresetZone zone, final Sf2InstrumentZone instrZone)
     {
         Optional<Sf2Modulator> modulator = instrZone.getModulator (Sf2Modulator.MODULATOR_PITCH_BEND);
         if (modulator.isEmpty ())
@@ -188,40 +189,40 @@ public class Sf2DetectorTask extends AbstractDetectorTask
     {
         for (final IGroup group: groups)
         {
-            final List<ISampleMetadata> sampleMetadataOfGroup = group.getSampleMetadata ();
+            final List<ISampleZone> sampleMetadataOfGroup = group.getSampleMetadata ();
 
             final int initialCapacity = sampleMetadataOfGroup.size () / 2;
-            final List<ISampleMetadata> resultSamples = new ArrayList<> (initialCapacity);
-            final List<Sf2SampleMetadata> leftSamples = new ArrayList<> (initialCapacity);
-            final List<Sf2SampleMetadata> rightSamples = new ArrayList<> (initialCapacity);
-            final List<Sf2SampleMetadata> panLeftSamples = new ArrayList<> (initialCapacity);
-            final List<Sf2SampleMetadata> panRightSamples = new ArrayList<> (initialCapacity);
+            final List<ISampleZone> resultSamples = new ArrayList<> (initialCapacity);
+            final List<ISampleZone> leftSamples = new ArrayList<> (initialCapacity);
+            final List<ISampleZone> rightSamples = new ArrayList<> (initialCapacity);
+            final List<ISampleZone> panLeftSamples = new ArrayList<> (initialCapacity);
+            final List<ISampleZone> panRightSamples = new ArrayList<> (initialCapacity);
 
-            for (final ISampleMetadata sampleMetadata: sampleMetadataOfGroup)
+            for (final ISampleZone zone: sampleMetadataOfGroup)
             {
-                final Sf2SampleMetadata sf2SampleMetadata = (Sf2SampleMetadata) sampleMetadata;
-                final Sf2SampleDescriptor sample = sf2SampleMetadata.getSample ();
+                final Sf2SampleData sf2SampleData = (Sf2SampleData) zone.getSampleData ();
+                final Sf2SampleDescriptor sample = sf2SampleData.getSample ();
 
                 // Store left and right samples in different lists first
                 switch (sample.getSampleType ())
                 {
                     case Sf2SampleDescriptor.LEFT:
-                        leftSamples.add (sf2SampleMetadata);
+                        leftSamples.add (zone);
                         break;
 
                     case Sf2SampleDescriptor.RIGHT:
-                        rightSamples.add (sf2SampleMetadata);
+                        rightSamples.add (zone);
                         break;
 
                     default:
                     case Sf2SampleDescriptor.MONO:
-                        final double panorama = sf2SampleMetadata.getPanorama ();
+                        final double panorama = zone.getPanorama ();
                         if (panorama == 0)
-                            resultSamples.add (sampleMetadata);
+                            resultSamples.add (zone);
                         else if (panorama < 0)
-                            panLeftSamples.add (sf2SampleMetadata);
+                            panLeftSamples.add (zone);
                         else
-                            panRightSamples.add (sf2SampleMetadata);
+                            panRightSamples.add (zone);
                         break;
                 }
             }
@@ -243,47 +244,51 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * Match the left and right hand side samples. The left hand side is linked to the right hand
      * side via an index.
      *
-     * @param leftSamples The left hand side mono samples
-     * @param rightSamples The right hand side mono samples
+     * @param leftSampleZones The left hand side mono samples
+     * @param rightSampleZones The right hand side mono samples
      * @return The stereo combined result samples
      */
-    private List<ISampleMetadata> combineLinkedSamples (final List<Sf2SampleMetadata> leftSamples, final List<Sf2SampleMetadata> rightSamples)
+    private List<ISampleZone> combineLinkedSamples (final List<ISampleZone> leftSampleZones, final List<ISampleZone> rightSampleZones)
     {
-        final List<ISampleMetadata> resultSamples = new ArrayList<> ();
+        final List<ISampleZone> resultSamples = new ArrayList<> ();
 
-        for (final Sf2SampleMetadata leftSample: leftSamples)
+        for (final ISampleZone leftSampleZone: leftSampleZones)
         {
-            final int rightSampleIndex = leftSample.getSample ().getLinkedSample ();
+            final Sf2SampleData leftSampleData = (Sf2SampleData) leftSampleZone.getSampleData ();
+            final int rightSampleIndex = leftSampleData.getSample ().getLinkedSample ();
 
-            Sf2SampleMetadata rightSample;
+            ISampleZone rightSampleZone;
             boolean found = false;
-            for (int i = 0; i < rightSamples.size (); i++)
+            for (int i = 0; i < rightSampleZones.size (); i++)
             {
-                rightSample = rightSamples.get (i);
-                final Sf2SampleDescriptor sample = rightSample.getSample ();
+                rightSampleZone = rightSampleZones.get (i);
+                final Sf2SampleData rightSampleData = (Sf2SampleData) rightSampleZone.getSampleData ();
+                final Sf2SampleDescriptor sample = rightSampleData.getSample ();
                 // Match via the linked index
                 if (sample.getSampleIndex () == rightSampleIndex)
                 {
-                    if (this.compareSampleFormat (leftSample, rightSample))
+                    if (this.compareSampleFormat (leftSampleZone, rightSampleZone))
                     {
                         // Store the matching right side sample with the left side one
-                        leftSample.setRightSample (sample);
-                        leftSample.setPanorama (Utils.clamp (leftSample.getPanorama () + rightSample.getPanorama (), -1.0, 1.0));
-                        resultSamples.add (leftSample);
-                        rightSamples.remove (i);
+                        leftSampleData.setRightSample (sample);
+                        updateFilename (leftSampleZone, rightSampleZone);
+                        leftSampleZone.setPanorama (Utils.clamp (leftSampleZone.getPanorama () + rightSampleZone.getPanorama (), -1.0, 1.0));
+                        resultSamples.add (leftSampleZone);
+                        rightSampleZones.remove (i);
                         found = true;
                     }
                     break;
                 }
             }
+
             // No match found, keep the left sample
             if (!found)
-                resultSamples.add (leftSample);
+                resultSamples.add (leftSampleZone);
         }
 
         // Add all unmatched right samples
-        if (!rightSamples.isEmpty ())
-            resultSamples.addAll (rightSamples);
+        if (!rightSampleZones.isEmpty ())
+            resultSamples.addAll (rightSampleZones);
 
         return resultSamples;
     }
@@ -297,31 +302,33 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * @param panRightSamples The right hand side mono samples
      * @return The stereo combined result samples
      */
-    private List<ISampleMetadata> combinePanoramaSamples (final List<Sf2SampleMetadata> panLeftSamples, final List<Sf2SampleMetadata> panRightSamples)
+    private List<ISampleZone> combinePanoramaSamples (final List<ISampleZone> panLeftSamples, final List<ISampleZone> panRightSamples)
     {
-        final List<ISampleMetadata> resultSamples = new ArrayList<> ();
+        final List<ISampleZone> resultSamples = new ArrayList<> ();
 
-        for (final Sf2SampleMetadata panLeftSample: panLeftSamples)
+        for (final ISampleZone panLeftSampleZone: panLeftSamples)
         {
-            final int keyLow = panLeftSample.getKeyLow ();
-            final int keyHigh = panLeftSample.getKeyHigh ();
-            final int velocityLow = panLeftSample.getVelocityLow ();
-            final int velocityHigh = panLeftSample.getVelocityHigh ();
+            final int keyLow = panLeftSampleZone.getKeyLow ();
+            final int keyHigh = panLeftSampleZone.getKeyHigh ();
+            final int velocityLow = panLeftSampleZone.getVelocityLow ();
+            final int velocityHigh = panLeftSampleZone.getVelocityHigh ();
 
-            Sf2SampleMetadata panRightSample;
+            ISampleZone panRightSampleZone;
             boolean found = false;
             for (int i = 0; i < panRightSamples.size (); i++)
             {
-                panRightSample = panRightSamples.get (i);
+                panRightSampleZone = panRightSamples.get (i);
                 // Match by the key and velocity range
-                if (keyLow == panRightSample.getKeyLow () && keyHigh == panRightSample.getKeyHigh () && velocityLow == panRightSample.getVelocityLow () && velocityHigh == panRightSample.getVelocityHigh ())
+                if (keyLow == panRightSampleZone.getKeyLow () && keyHigh == panRightSampleZone.getKeyHigh () && velocityLow == panRightSampleZone.getVelocityLow () && velocityHigh == panRightSampleZone.getVelocityHigh ())
                 {
-                    if (this.compareSampleFormat (panLeftSample, panRightSample))
+                    if (this.compareSampleFormat (panLeftSampleZone, panRightSampleZone))
                     {
                         // Store the matching right side sample with the left side one
-                        panLeftSample.setRightSample (panRightSample.getSample ());
-                        panLeftSample.setPanorama (Utils.clamp (panLeftSample.getPanorama () + panRightSample.getPanorama (), -1.0, 1.0));
-                        resultSamples.add (panLeftSample);
+                        final Sf2SampleData leftSampleData = (Sf2SampleData) panLeftSampleZone.getSampleData ();
+                        updateFilename (panLeftSampleZone, panRightSampleZone);
+                        leftSampleData.setRightSample (((Sf2SampleData) panRightSampleZone.getSampleData ()).getSample ());
+                        panLeftSampleZone.setPanorama (Utils.clamp (panLeftSampleZone.getPanorama () + panRightSampleZone.getPanorama (), -1.0, 1.0));
+                        resultSamples.add (panLeftSampleZone);
                         panRightSamples.remove (i);
                         found = true;
                     }
@@ -330,7 +337,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             }
             // No match found, keep the left sample
             if (!found)
-                resultSamples.add (panLeftSample);
+                resultSamples.add (panLeftSampleZone);
         }
 
         // Add all unmatched right samples
@@ -341,10 +348,10 @@ public class Sf2DetectorTask extends AbstractDetectorTask
     }
 
 
-    private boolean compareSampleFormat (final Sf2SampleMetadata leftSample, final Sf2SampleMetadata rightSample)
+    private boolean compareSampleFormat (final ISampleZone leftSampleZone, final ISampleZone rightSampleZone)
     {
-        final Sf2SampleDescriptor left = leftSample.getSample ();
-        final Sf2SampleDescriptor right = rightSample.getSample ();
+        final Sf2SampleDescriptor left = ((Sf2SampleData) leftSampleZone.getSampleData ()).getSample ();
+        final Sf2SampleDescriptor right = ((Sf2SampleData) rightSampleZone.getSampleData ()).getSample ();
 
         if (left.getOriginalPitch () != right.getOriginalPitch () || left.getPitchCorrection () != right.getPitchCorrection ())
         {
@@ -363,7 +370,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         final long rightStart = right.getStartloop () - right.getStart ();
         final long leftLoopLength = left.getEndloop () - left.getStartloop ();
         final long rightLoopLength = right.getEndloop () - right.getStartloop ();
-        if (!leftSample.getLoops ().isEmpty () && (leftStart != rightStart || leftLoopLength != rightLoopLength))
+        if (!leftSampleZone.getLoops ().isEmpty () && (leftStart != rightStart || leftLoopLength != rightLoopLength))
             this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_LOOP_LENGTH", left.getName (), right.getName (), Long.toString (leftStart), Long.toString (leftLoopLength), Long.toString (rightStart), Long.toString (rightLoopLength));
 
         // Only show the warning if there is no loop
@@ -383,43 +390,44 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * @param generators All hierarchical generator values
      * @return The sample metadata
      */
-    private static Sf2SampleMetadata createSampleMetadata (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
+    private static ISampleZone createSampleMetadata (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
     {
         try
         {
-            final Sf2SampleMetadata sampleMetadata = new Sf2SampleMetadata (sample);
+            final Sf2SampleData sampleData = new Sf2SampleData (sample);
+            final DefaultSampleZone zone = new DefaultSampleZone (sample.getName (), sampleData);
 
             final Integer panorama = generators.getSignedValue (Generator.PANORAMA);
             if (panorama != null)
-                sampleMetadata.setPanorama (panorama.intValue () / 500.0);
+                zone.setPanorama (panorama.intValue () / 500.0);
 
             // Set the pitch
             final int overridingRootKey = generators.getUnsignedValue (Generator.OVERRIDING_ROOT_KEY).intValue ();
             final int originalPitch = sample.getOriginalPitch ();
             int pitch = overridingRootKey < 0 ? originalPitch : overridingRootKey;
             pitch += generators.getSignedValue (Generator.COARSE_TUNE).intValue ();
-            sampleMetadata.setKeyRoot (pitch);
+            zone.setKeyRoot (pitch);
             final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
             final int pitchCorrection = sample.getPitchCorrection ();
             final double tune = Math.min (1, Math.max (-1, (pitchCorrection + (double) fineTune) / 100));
-            sampleMetadata.setTune (tune);
+            zone.setTune (tune);
             final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
-            sampleMetadata.setKeyTracking (Math.min (100, Math.max (0, scaleTuning)) / 100.0);
+            zone.setKeyTracking (Math.min (100, Math.max (0, scaleTuning)) / 100.0);
 
             // Set the key range
             final Pair<Integer, Integer> keyRangeValue = generators.getRangeValue (Generator.KEY_RANGE);
-            sampleMetadata.setKeyLow (keyRangeValue.getKey ().intValue ());
-            sampleMetadata.setKeyHigh (keyRangeValue.getValue ().intValue ());
+            zone.setKeyLow (keyRangeValue.getKey ().intValue ());
+            zone.setKeyHigh (keyRangeValue.getValue ().intValue ());
 
             // Set the velocity range
             final Pair<Integer, Integer> velRangeValue = generators.getRangeValue (Generator.VELOCITY_RANGE);
-            sampleMetadata.setVelocityLow (velRangeValue.getKey ().intValue ());
-            sampleMetadata.setVelocityHigh (velRangeValue.getValue ().intValue ());
+            zone.setVelocityLow (velRangeValue.getKey ().intValue ());
+            zone.setVelocityHigh (velRangeValue.getValue ().intValue ());
 
             // Set play range
-            sampleMetadata.setStart (0);
+            zone.setStart (0);
             final long sampleStart = sample.getStart ();
-            sampleMetadata.setStop ((int) (sample.getEnd () - sampleStart));
+            zone.setStop ((int) (sample.getEnd () - sampleStart));
 
             // Set loop, if any
             if ((generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue () & 1) > 0)
@@ -427,16 +435,16 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
                 sampleLoop.setStart ((int) (sample.getStartloop () - sampleStart));
                 sampleLoop.setEnd ((int) (sample.getEndloop () - sampleStart));
-                sampleMetadata.addLoop (sampleLoop);
+                zone.addLoop (sampleLoop);
             }
 
             // Gain
             final int initialAttenuation = generators.getSignedValue (Generator.INITIAL_ATTENUATION).intValue ();
             if (initialAttenuation > 0)
-                sampleMetadata.setGain (-initialAttenuation / 10.0);
+                zone.setGain (-initialAttenuation / 10.0);
 
             // Volume envelope
-            final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+            final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
             amplitudeEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DELAY)));
             amplitudeEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_ATTACK)));
             amplitudeEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_HOLD)));
@@ -481,9 +489,9 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         filterEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
                     }
 
-                    sampleMetadata.setFilter (filter);
+                    zone.setFilter (filter);
 
-                    final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+                    final IModulator pitchModulator = zone.getPitchModulator ();
                     final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
                     pitchModulator.setDepth (pitchModDepth);
                     if (pitchModDepth != 0)
@@ -499,7 +507,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 }
             }
 
-            return sampleMetadata;
+            return zone;
         }
         catch (final IOException ex)
         {
@@ -579,5 +587,26 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
         if (!sb.isEmpty ())
             this.notifier.logError ("IDS_NOTIFY_UNSUPPORTED_GENERATORS", sb.toString ());
+    }
+
+
+    private static void updateFilename (final ISampleZone leftSampleZone, final ISampleZone rightSampleZone)
+    {
+        String commonPrefix = commonPrefix (leftSampleZone.getName (), rightSampleZone.getName ()).trim ();
+        if (commonPrefix.endsWith ("_") || commonPrefix.endsWith ("("))
+            commonPrefix = commonPrefix.substring (0, commonPrefix.length () - 1);
+        leftSampleZone.setName (commonPrefix);
+    }
+
+
+    private static String commonPrefix (final String a, final String b)
+    {
+        final int minLength = Math.min (a.length (), b.length ());
+        for (int i = 0; i < minLength; i++)
+        {
+            if (a.charAt (i) != b.charAt (i))
+                return a.substring (0, i);
+        }
+        return a.substring (0, minLength);
     }
 }

@@ -9,7 +9,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -42,6 +42,9 @@ import java.util.zip.ZipOutputStream;
  */
 public abstract class AbstractCreator extends AbstractCoreTask implements ICreator
 {
+    private static final String FORWARD_SLASH = "/";
+
+
     /**
      * Constructor.
      *
@@ -170,88 +173,88 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     /**
      * Adds an UTF-8 text file to the compressed ZIP output stream.
      *
-     * @param zos The compressed ZIP output stream
+     * @param zipOutputStream The compressed ZIP output stream
      * @param fileName The name to use for the file when added
      * @param content The text content of the file to add
      * @throws IOException Could not add the file
      */
-    protected void zipTextFile (final ZipOutputStream zos, final String fileName, final String content) throws IOException
+    protected void zipTextFile (final ZipOutputStream zipOutputStream, final String fileName, final String content) throws IOException
     {
-        this.zipDataFile (zos, fileName, content.getBytes (StandardCharsets.UTF_8));
+        this.zipDataFile (zipOutputStream, fileName, content.getBytes (StandardCharsets.UTF_8));
     }
 
 
     /**
      * Adds a file (in form of an array of bytes) to a compressed ZIP output stream.
      *
-     * @param zos The compressed ZIP output stream
+     * @param zipOutputStream The compressed ZIP output stream
      * @param fileName The name to use for the file when added
      * @param data The content of the file to add
      * @throws IOException Could not add the file
      */
-    protected void zipDataFile (final ZipOutputStream zos, final String fileName, final byte [] data) throws IOException
+    protected void zipDataFile (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data) throws IOException
     {
-        zos.putNextEntry (new ZipEntry (fileName));
-        zos.write (data);
-        zos.flush ();
-        zos.closeEntry ();
+        zipOutputStream.putNextEntry (new ZipEntry (fileName));
+        zipOutputStream.write (data);
+        zipOutputStream.flush ();
+        zipOutputStream.closeEntry ();
     }
 
 
     /**
      * Adds an UTF-8 text file to the uncompressed ZIP output stream.
      *
-     * @param zos The uncompressed ZIP output stream
+     * @param zipOutputStream The uncompressed ZIP output stream
      * @param fileName The name to use for the file when added
      * @param content The text content of the file to add
      * @throws IOException Could not add the file
      */
-    protected void storeTextFile (final ZipOutputStream zos, final String fileName, final String content) throws IOException
+    protected void storeTextFile (final ZipOutputStream zipOutputStream, final String fileName, final String content) throws IOException
     {
-        this.storeDataFile (zos, fileName, content.getBytes (StandardCharsets.UTF_8));
+        this.storeDataFile (zipOutputStream, fileName, content.getBytes (StandardCharsets.UTF_8));
     }
 
 
     /**
      * Adds a file (in form of an array of bytes) to an uncompressed ZIP output stream.
      *
-     * @param zos The uncompressed ZIP output stream
+     * @param zipOutputStream The uncompressed ZIP output stream
      * @param fileName The name to use for the file when added
      * @param data The content of the file to add
      * @throws IOException Could not add the file
      */
-    protected void storeDataFile (final ZipOutputStream zos, final String fileName, final byte [] data) throws IOException
+    protected void storeDataFile (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data) throws IOException
     {
         // The checksum needs to be calculated in advance before the data is written to the output
         // stream!
         final CRC32 crc = new CRC32 ();
         crc.update (data);
-        putUncompressedEntry (zos, fileName, data, crc);
+        putUncompressedEntry (zipOutputStream, fileName, data, crc);
     }
 
 
     /**
      * Add all samples from all groups in the given compressed ZIP output stream.
      *
-     * @param zos The ZIP output stream to which to add the samples
+     * @param zipOutputStream The ZIP output stream to which to add the samples
      * @param relativeFolderName The relative folder under which to store the file in the ZIP
      * @param multisampleSource The multisample
      * @throws IOException Could not store the samples
      */
-    protected void zipSampleFiles (final ZipOutputStream zos, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
+    protected void zipSampleFiles (final ZipOutputStream zipOutputStream, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
     {
         int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleMetadata info: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleMetadata ())
             {
-                this.notifier.log ("IDS_NOTIFY_PROGRESS");
+                this.notifyProgress ();
                 outputCount++;
                 if (outputCount % 80 == 0)
-                    this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+                    this.notifyNewline ();
 
-                zipSamplefile (alreadyStored, zos, info, relativeFolderName);
+                zipSamplefile (alreadyStored, zipOutputStream, zone, relativeFolderName);
             }
         }
     }
@@ -261,13 +264,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Adds a sample file to the compressed ZIP output stream.
      *
      * @param alreadyStored Set with the already files to prevent trying to add duplicated files
-     * @param zos The ZIP output stream
-     * @param info The file to add
+     * @param zipOutputStream The ZIP output stream
+     * @param zone The zone to add
      * @throws IOException Could not read the file
      */
-    protected static void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zos, final ISampleMetadata info) throws IOException
+    protected static void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone) throws IOException
     {
-        zipSamplefile (alreadyStored, zos, info, null);
+        zipSamplefile (alreadyStored, zipOutputStream, zone, null);
     }
 
 
@@ -275,46 +278,46 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Adds a sample file to the compressed ZIP output stream.
      *
      * @param alreadyStored Set with the already files to prevent trying to add duplicated files
-     * @param zos The ZIP output stream
-     * @param info The file to add
+     * @param zipOutputStream The ZIP output stream
+     * @param zone The zone to add
      * @param path Optional path (may be null), must not end with a slash
      * @throws IOException Could not read the file
      */
-    protected static void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zos, final ISampleMetadata info, final String path) throws IOException
+    protected static void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final String path) throws IOException
     {
-        final String name = checkSampleName (alreadyStored, info, path);
+        final String name = checkSampleName (alreadyStored, zone, path);
         if (name == null)
             return;
 
         final ZipEntry entry = new ZipEntry (name);
-        zos.putNextEntry (entry);
-        info.writeSample (zos);
-        zos.closeEntry ();
+        zipOutputStream.putNextEntry (entry);
+        zone.getSampleData ().writeSample (zipOutputStream);
+        zipOutputStream.closeEntry ();
     }
 
 
     /**
      * Add all samples from all groups in the given uncompressed ZIP output stream.
      *
-     * @param zos The ZIP output stream to which to add the samples
+     * @param zipOutputStream The ZIP output stream to which to add the samples
      * @param relativeFolderName The relative folder under which to store the file in the ZIP
      * @param multisampleSource The multisample
      * @throws IOException Could not store the samples
      */
-    protected void storeSampleFiles (final ZipOutputStream zos, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
+    protected void storeSampleFiles (final ZipOutputStream zipOutputStream, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
     {
         int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleMetadata info: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleMetadata ())
             {
-                this.notifier.log ("IDS_NOTIFY_PROGRESS");
+                this.notifyProgress ();
                 outputCount++;
                 if (outputCount % 80 == 0)
-                    this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+                    this.notifyNewline ();
 
-                storeSamplefile (alreadyStored, zos, info, relativeFolderName);
+                storeSamplefile (alreadyStored, zipOutputStream, zone, relativeFolderName);
             }
         }
     }
@@ -324,13 +327,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Adds a sample file to an uncompressed ZIP output stream.
      *
      * @param alreadyStored Set with the already files to prevent trying to add duplicated files
-     * @param zos The ZIP output stream
-     * @param info The file to add
+     * @param zipOutputStream The ZIP output stream
+     * @param zone The zone to add
      * @throws IOException Could not read the file
      */
-    protected static void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zos, final ISampleMetadata info) throws IOException
+    protected static void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone) throws IOException
     {
-        storeSamplefile (alreadyStored, zos, info, null);
+        storeSamplefile (alreadyStored, zipOutputStream, zone, null);
     }
 
 
@@ -338,28 +341,28 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Adds a sample file to the uncompressed ZIP output stream.
      *
      * @param alreadyStored Set with the already files to prevent trying to add duplicated files
-     * @param zos The ZIP output stream
-     * @param info The file to add
+     * @param zipOutputStream The ZIP output stream
+     * @param zone The zone to add
      * @param path Optional path (may be null), must not end with a slash
      * @throws IOException Could not read the file
      */
-    protected static void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zos, final ISampleMetadata info, final String path) throws IOException
+    protected static void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final String path) throws IOException
     {
-        final String name = checkSampleName (alreadyStored, info, path);
+        final String name = checkSampleName (alreadyStored, zone, path);
         if (name == null)
             return;
 
         final CRC32 crc = new CRC32 ();
         try (final ByteArrayOutputStream bout = new ByteArrayOutputStream (); final OutputStream checkedOut = new CheckedOutputStream (bout, crc))
         {
-            info.writeSample (checkedOut);
-            putUncompressedEntry (zos, name, bout.toByteArray (), crc);
+            zone.getSampleData ().writeSample (checkedOut);
+            putUncompressedEntry (zipOutputStream, name, bout.toByteArray (), crc);
         }
     }
 
 
     /**
-     * Writes all samples from all groups in the given folder.
+     * Writes all samples in WAV format from all groups into the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multisample
@@ -373,20 +376,18 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleMetadata info: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleMetadata ())
             {
-                final Optional<String> filename = info.getUpdatedFilename ();
-                if (filename.isEmpty ())
-                    continue;
-                final File file = new File (sampleFolder, filename.get ());
+                final String filename = zone.getName () + ".wav";
+                final File file = new File (sampleFolder, filename);
                 try (final FileOutputStream fos = new FileOutputStream (file))
                 {
-                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
+                    this.notifyProgress ();
                     outputCount++;
                     if (outputCount % 80 == 0)
-                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+                        this.notifyNewline ();
 
-                    info.writeSample (fos);
+                    zone.getSampleData ().writeSample (fos);
                 }
                 writtenFiles.add (file);
             }
@@ -400,44 +401,53 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Creates full path from the sample name and relative path and adding the prefix path.
      *
      * @param alreadyStored All paths already added to the ZIP file
-     * @param info The sample to check
+     * @param zone The sample zone to check
      * @param path The prefix path
      * @return The full path or null if already added to the ZIP
      */
-    private static String checkSampleName (final Set<String> alreadyStored, final ISampleMetadata info, final String path)
+    private static String checkSampleName (final Set<String> alreadyStored, final ISampleZone zone, final String path)
     {
-        final Optional<String> filename = info.getUpdatedFilename ();
-        if (filename.isEmpty ())
-            return null;
-        String name = filename.get ();
+        String filename = zone.getName () + ".wav";
         if (path != null)
-            name = path + "/" + name;
-        if (alreadyStored.contains (name))
+            filename = path + FORWARD_SLASH + filename;
+        if (alreadyStored.contains (filename))
             return null;
-        alreadyStored.add (name);
-        return name;
+        alreadyStored.add (filename);
+        return filename;
     }
 
 
     /**
      * Adds a new entry to an uncompressed ZIP output stream.
      *
-     * @param zos The uncompressed ZIP output stream
+     * @param zipOutputStream The uncompressed ZIP output stream
      * @param fileName The name to use for the file when added
      * @param data The content of the file to add
-     * @param crc The checksum
+     * @param checksum The checksum
      * @throws IOException Could not add the file
      */
-    private static void putUncompressedEntry (final ZipOutputStream zos, final String fileName, final byte [] data, final CRC32 crc) throws IOException
+    private static void putUncompressedEntry (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data, final CRC32 checksum) throws IOException
     {
         final ZipEntry entry = new ZipEntry (fileName);
         entry.setSize (data.length);
         entry.setCompressedSize (data.length);
-        entry.setCrc (crc.getValue ());
+        entry.setCrc (checksum.getValue ());
         entry.setMethod (ZipOutputStream.STORED);
 
-        zos.putNextEntry (entry);
-        zos.write (data);
-        zos.closeEntry ();
+        zipOutputStream.putNextEntry (entry);
+        zipOutputStream.write (data);
+        zipOutputStream.closeEntry ();
+    }
+
+
+    private void notifyProgress ()
+    {
+        this.notifier.log ("IDS_NOTIFY_PROGRESS");
+    }
+
+
+    private void notifyNewline ()
+    {
+        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
     }
 }

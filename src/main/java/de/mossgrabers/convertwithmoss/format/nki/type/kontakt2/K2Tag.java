@@ -158,6 +158,7 @@ public class K2Tag extends AbstractTagsAndAttributes
     {
         // Only the zone tune is stored logarithmically. Group and program tune are simply in the
         // range of [-3..3], 1 equals a full octave.
-        return 0.12d * (Math.log (zoneTune) / Math.log (2) + groupTune + progTune);
+        final double value = 12.0 * (Math.log (zoneTune) / Math.log (2) + groupTune + progTune);
+        return Math.round (value * 100000) / 100000.0;
     }
 }

@@ -13,8 +13,9 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -105,8 +107,9 @@ public class TALSamplerCreator extends AbstractCreator
      * @param folderName The name to use for the sample folder
      * @param multisampleSource The multi-sample
      * @return The XML structure
+     * @throws IOException Could not create the metadata
      */
-    private Optional<String> createMetadata (final String folderName, final IMultisampleSource multisampleSource)
+    private Optional<String> createMetadata (final String folderName, final IMultisampleSource multisampleSource) throws IOException
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -126,14 +129,11 @@ public class TALSamplerCreator extends AbstractCreator
         programElement.setAttribute (TALSamplerTag.PROGRAM_NAME, multisampleSource.getName ());
         programElement.setAttribute (TALSamplerTag.PROGRAM_NUM_VOICES, "1.0");
 
-        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
+        final List<IGroup> groups = this.optimizeGroups (multisampleSource.getNonEmptyGroups (true));
         addModulationAttributes (document, groups, programElement, multisampleSource.getGlobalFilter ());
 
-        // Add all groups
-
-        // TODO maximum of 4 -> split up in programs ?!
+        // Add up to 4 groups
         int groupCounter = 0;
-
         for (final IGroup group: groups)
         {
             final Element groupElement = XMLUtils.addElement (document, programElement, TALSamplerTag.SAMPLE_LAYER + groupCounter);
@@ -143,7 +143,7 @@ public class TALSamplerCreator extends AbstractCreator
 
             // No group name and trigger types
 
-            for (final ISampleMetadata sample: group.getSampleMetadata ())
+            for (final ISampleZone sample: group.getSampleMetadata ())
                 createSample (document, folderName, programElement, groupCounter, multisamplesElement, sample);
 
             groupCounter++;
@@ -171,40 +171,38 @@ public class TALSamplerCreator extends AbstractCreator
      * @param programElement The program element
      * @param groupCounter The index of the group
      * @param groupElement The element where to add the sample information
-     * @param info Where to get the sample info from
+     * @param zone Where to get the sample info from
      */
-    private static void createSample (final Document document, final String folderName, final Element programElement, final int groupCounter, final Element groupElement, final ISampleMetadata info)
+    private static void createSample (final Document document, final String folderName, final Element programElement, final int groupCounter, final Element groupElement, final ISampleZone zone)
     {
         /////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, groupElement, TALSamplerTag.MULTISAMPLE);
-        final Optional<String> filename = info.getUpdatedFilename ();
-        if (filename.isPresent ())
-            sampleElement.setAttribute (TALSamplerTag.MULTISAMPLE_URL, AbstractCreator.formatFileName (folderName, filename.get ()));
+        sampleElement.setAttribute (TALSamplerTag.MULTISAMPLE_URL, AbstractCreator.formatFileName (folderName, zone.getName () + ".wav"));
 
-        final double gain = info.getGain ();
+        final double gain = zone.getGain ();
         if (gain != 0)
         {
             // Not sure if this is correct or if proper dB conversion would need to be applied...
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, convertGain (gain), 6);
         }
-        XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.PANORAMA, (info.getPanorama () + 1.0) / 2.0, 2);
+        XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.PANORAMA, (zone.getPanorama () + 1.0) / 2.0, 2);
 
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.START_SAMPLE, Math.max (0, info.getStart ()));
-        final int stop = info.getStop ();
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.START_SAMPLE, Math.max (0, zone.getStart ()));
+        final int stop = zone.getStop ();
         if (stop >= 0)
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.END_SAMPLE, stop);
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.REVERSE, info.isReversed () ? 1 : 0);
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.REVERSE, zone.isReversed () ? 1 : 0);
 
         // transpose // tune in semitones = floor((48.0f * transpose + 0.5f) - 24.0f)
-        final double tune = info.getTune ();
+        final double tune = zone.getTune ();
         if (tune != 0)
         {
             // transpose and de-tune are both +-24 semitones, fine tuning is set on the program with
             // +-100 cent
 
-            int transpose = (int) tune;
+            final int transpose = (int) tune;
             final double fine = tune - transpose;
             int detune = 0;
             if (transpose > 24 || transpose < -24)
@@ -214,23 +212,23 @@ public class TALSamplerCreator extends AbstractCreator
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], (fine + 1.0) / 2.0, 4);
         }
 
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.PITCH_KEY_TRACK, info.getKeyTracking () > 0 ? 1 : 0);
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.PITCH_KEY_TRACK, zone.getKeyTracking () > 0 ? 1 : 0);
 
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
 
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, info.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, check (info.getKeyLow (), 0));
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, check (info.getKeyHigh (), 127));
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, check (info.getVelocityLow (), 0));
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, check (info.getVelocityHigh (), 127));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, zone.getKeyRoot ());
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, check (zone.getKeyLow (), 0));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, check (zone.getKeyHigh (), 127));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, check (zone.getVelocityLow (), 0));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, check (zone.getVelocityHigh (), 127));
 
         // No note and velocity crossfades
 
         /////////////////////////////////////////////////////
         // Loops
 
-        final List<ISampleLoop> loops = info.getLoops ();
+        final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ENABLED, 0);
         else
@@ -258,26 +256,27 @@ public class TALSamplerCreator extends AbstractCreator
     }
 
 
-    private static void addModulationAttributes (final Document document, final List<IGroup> groups, final Element programElement, final Optional<IFilter> optFilter)
+    private static void addModulationAttributes (final Document document, final List<IGroup> groups, final Element programElement, final Optional<IFilter> optFilter) throws IOException
     {
         if (groups.isEmpty ())
             return;
 
-        final ISampleMetadata sampleMetadata = groups.get (0).getSampleMetadata ().get (0);
+        final ISampleZone sampleMetadata = groups.get (0).getSampleMetadata ().get (0);
 
         // Pitchbend 2 semitones up/down
         final int bendUp = Math.abs (sampleMetadata.getBendUp ());
         final double bendUpValue = bendUp == 0 ? 0.16 : Utils.clamp (bendUp / 1200.0, 0, 1.0);
         XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, bendUpValue, 3);
 
+        final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (groups);
+
         // Add amplitude envelope
-        // TODO maximum values are likely not correct
         final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttack (), 0, 10);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHold (), 0, 10);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecay (), 0, 8);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttack (), 0, maxEnvelopeTime);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHold (), 0, maxEnvelopeTime);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecay (), 0, maxEnvelopeTime);
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getRelease (), 0, 8);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getRelease (), 0, maxEnvelopeTime);
 
         // Add filter settings
         if (optFilter.isPresent ())
@@ -290,9 +289,8 @@ public class TALSamplerCreator extends AbstractCreator
 
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_MODE, TALSamplerConstants.getFilterValue (filter), 16);
 
-            // TODO values are likely not correct
-            final double cutoff = filter.getCutoff () / IFilter.MAX_FREQUENCY;
-            final double resonance = Math.min (40.0, filter.getResonance ()) / 40.0;
+            final double cutoff = normalizeCutoff (filter.getCutoff ());
+            final double resonance = Utils.clamp (filter.getResonance (), 0, 40.0) / 40.0;
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, cutoff, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, resonance, 4);
 
@@ -300,13 +298,12 @@ public class TALSamplerCreator extends AbstractCreator
             final double filterModDepth = cutoffModulator.getDepth ();
             if (filterModDepth > 0)
             {
-                // TODO maximum values are likely not correct
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, filterEnvelope.getAttack (), 0, 10);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, filterEnvelope.getHold (), 0, 10);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, filterEnvelope.getDecay (), 0, 8);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, filterEnvelope.getAttack (), 0, maxEnvelopeTime);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, filterEnvelope.getHold (), 0, maxEnvelopeTime);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, filterEnvelope.getDecay (), 0, maxEnvelopeTime);
                 setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, filterEnvelope.getSustain (), 0, 1);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, filterEnvelope.getRelease (), 0, 8);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, filterEnvelope.getRelease (), 0, maxEnvelopeTime);
 
                 XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, filterModDepth / IFilter.MAX_ENVELOPE_DEPTH, 4);
 
@@ -320,11 +317,11 @@ public class TALSamplerCreator extends AbstractCreator
         if (pitchModDepth > 0)
         {
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, pitchEnvelope.getAttack (), 0, 10);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, pitchEnvelope.getHold (), 0, 10);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, pitchEnvelope.getDecay (), 0, 8);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, pitchEnvelope.getAttack (), 0, maxEnvelopeTime);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, pitchEnvelope.getHold (), 0, maxEnvelopeTime);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, pitchEnvelope.getDecay (), 0, maxEnvelopeTime);
             setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, pitchEnvelope.getSustain (), 0, 1);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, pitchEnvelope.getRelease (), 0, 8);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, pitchEnvelope.getRelease (), 0, maxEnvelopeTime);
 
             // Envelope 3 needs to be set to modulate the global pitch
             final Element modMatrixElement = XMLUtils.addElement (document, programElement, "modmatrix");
@@ -362,5 +359,96 @@ public class TALSamplerCreator extends AbstractCreator
         final double v = 12 + (volumeDB > 6 ? 6 : volumeDB);
         final double result = TALSamplerConstants.VALUE_RANGE * v / 18.0;
         return TALSamplerConstants.MINUS_12_DB + result;
+    }
+
+
+    private static double normalizeCutoff (final double cutoffInHertz)
+    {
+        return Utils.clamp ((log2 (cutoffInHertz / (2 * 440.0)) * 12.0 + 57) / 140.0, 0, 1);
+    }
+
+
+    private static double log2 (final double n)
+    {
+        return Math.log (n) / Math.log (2);
+    }
+
+
+    /**
+     * Tries to integrate the given groups with their samples into up to 4 groups and distribute the
+     * samples across the groups in such a way that the key and velocity splits do not overlap due
+     * to the limitations of TAL Sampler. Groups have only the name and trigger type as attributes
+     * which are not supported in TAL Sampler anyway.
+     *
+     * @param groups The groups to optimize
+     * @return The optimized groups
+     */
+    private List<IGroup> optimizeGroups (final List<IGroup> groups)
+    {
+        final List<IGroup> optimizedGroups = new ArrayList<> ();
+        for (final IGroup group: groups)
+        {
+            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
+                this.findMatchingGroup (optimizedGroups, sampleMetadata).addSampleMetadata (sampleMetadata);
+        }
+        return optimizedGroups;
+    }
+
+
+    /**
+     * Check if there is a group among the optimized groups to which the sample can be added. If
+     * none can be found and there are less than 4 groups a new group is created and added otherwise
+     * the 1st group is returned and a warning is logged.
+     *
+     * @param optimizedGroups The optimized groups
+     * @param zone The sample zone to test for
+     * @return The group to which the sample should be added
+     */
+    private IGroup findMatchingGroup (final List<IGroup> optimizedGroups, final ISampleZone zone)
+    {
+        for (final IGroup optGroup: optimizedGroups)
+        {
+            if (!hasOverlappingSample (optGroup, zone))
+                return optGroup;
+        }
+        if (optimizedGroups.size () < 4)
+        {
+            final IGroup group = new DefaultGroup ();
+            optimizedGroups.add (group);
+            return group;
+        }
+        this.notifier.logError ("IDS_TAL_OVERLAPPING_SAMPLES", zone.getName ());
+        return optimizedGroups.get (0);
+    }
+
+
+    /**
+     * Test if the samples of the given group has an overlapping key/velocity range with the given
+     * sample.
+     *
+     * @param group The group which contains the samples to test
+     * @param sampleMetadata The sample to test with
+     * @return True if it has an overlapping sample
+     */
+    private static boolean hasOverlappingSample (final IGroup group, final ISampleZone sampleMetadata)
+    {
+        final int keyLow = sampleMetadata.getKeyLow ();
+        final int keyHigh = sampleMetadata.getKeyHigh ();
+        final int velLow = sampleMetadata.getVelocityLow ();
+        final int velHigh = sampleMetadata.getVelocityHigh ();
+
+        for (final ISampleZone otherSampleMetadata: group.getSampleMetadata ())
+        {
+            final int keyLow2 = otherSampleMetadata.getKeyLow ();
+            final int keyHigh2 = otherSampleMetadata.getKeyHigh ();
+            if (keyLow2 >= keyLow && keyLow2 <= keyHigh || keyHigh2 >= keyLow && keyHigh2 <= keyHigh)
+            {
+                final int velLow2 = otherSampleMetadata.getVelocityLow ();
+                final int velHigh2 = otherSampleMetadata.getVelocityHigh ();
+                if (velLow2 >= velLow && velLow2 <= velHigh || velHigh2 >= velLow && velHigh2 <= velHigh)
+                    return true;
+            }
+        }
+        return false;
     }
 }

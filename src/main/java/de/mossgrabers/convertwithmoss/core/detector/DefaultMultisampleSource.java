@@ -8,7 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
 
@@ -115,14 +115,14 @@ public class DefaultMultisampleSource implements IMultisampleSource
         final List<IGroup> cleanedGroups = new ArrayList<> ();
         for (final IGroup group: this.groups)
         {
-            final List<ISampleMetadata> sampleMetadata = group.getSampleMetadata ();
+            final List<ISampleZone> sampleMetadata = group.getSampleMetadata ();
             if (sampleMetadata.isEmpty ())
                 continue;
 
             if (filterReleaseTriggers)
             {
                 // There needs to be at least one sample with a normal attack trigger
-                for (final ISampleMetadata sample: sampleMetadata)
+                for (final ISampleZone sample: sampleMetadata)
                 {
                     if (sample.getTrigger () != TriggerType.RELEASE)
                     {
@@ -177,7 +177,7 @@ public class DefaultMultisampleSource implements IMultisampleSource
         IFilter globalFilter = null;
         for (final IGroup group: this.groups)
         {
-            for (final ISampleMetadata sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
             {
                 final Optional<IFilter> optFilter = sampleMetadata.getFilter ();
                 if (optFilter.isEmpty ())
@@ -200,7 +200,7 @@ public class DefaultMultisampleSource implements IMultisampleSource
     {
         for (final IGroup group: this.groups)
         {
-            for (final ISampleMetadata sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
                 sampleMetadata.setFilter (filter);
         }
     }

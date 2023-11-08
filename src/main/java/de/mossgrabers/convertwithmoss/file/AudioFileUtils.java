@@ -10,6 +10,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMeta
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.ui.Functions;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
@@ -58,12 +59,11 @@ public final class AudioFileUtils
     {
         try
         {
-            final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (audioFile);
-            return getLength (audioFileFormat);
+            return getLength (AudioSystem.getAudioFileFormat (audioFile));
         }
         catch (final UnsupportedAudioFileException ex)
         {
-            throw new IOException ("Could not retrieve audio file format.", ex);
+            throw new IOException (getErrorMessage (), ex);
         }
     }
 
@@ -83,7 +83,7 @@ public final class AudioFileUtils
         }
         catch (final UnsupportedAudioFileException ex)
         {
-            throw new IOException ("Could not retrieve audio file format.", ex);
+            throw new IOException (getErrorMessage (), ex);
         }
     }
 
@@ -103,7 +103,7 @@ public final class AudioFileUtils
         }
         catch (final UnsupportedAudioFileException ex)
         {
-            throw new IOException ("Could not retrieve audio file format.", ex);
+            throw new IOException (getErrorMessage (), ex);
         }
     }
 
@@ -111,7 +111,7 @@ public final class AudioFileUtils
     private static IAudioMetadata getMetadata (final AudioFileFormat audioFileFormat)
     {
         final AudioFormat format = audioFileFormat.getFormat ();
-        return new DefaultAudioMetadata (format.getChannels () == 1, (int) format.getSampleRate (), format.getSampleSizeInBits ());
+        return new DefaultAudioMetadata (format.getChannels (), (int) format.getSampleRate (), format.getSampleSizeInBits (), audioFileFormat.getFrameLength ());
     }
 
 
@@ -303,5 +303,11 @@ public final class AudioFileUtils
                 maxBitResolution = bitResolution2;
         }
         return maxBitResolution;
+    }
+
+
+    private static String getErrorMessage ()
+    {
+        return Functions.getMessage ("IDS_NOTIFY_ERR_COULD_NOT_RETRIEVE_FILE_FORMAT");
     }
 }

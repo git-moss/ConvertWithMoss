@@ -78,7 +78,7 @@ public class DataChunk extends WavChunk
      * @param chunk The format chunk, necessary for the calculation (sample size and number of
      *            channels
      * @param data The data
-     * @return The length of the sample in samples
+     * @return The length of the sample in samples (frames) of 1 channel
      */
     private static int calculateLength (final FormatChunk chunk, final byte [] data)
     {
