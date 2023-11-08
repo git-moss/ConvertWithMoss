@@ -4,47 +4,27 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
-import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.wav.WavSampleMetadata;
-import de.mossgrabers.tools.ui.Functions;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 
 /**
- * Base class for a samples' metadata.
+ * Default implementation of a sample zone.
  *
  * @author Jürgen Moßgraber
  */
-public class DefaultSampleMetadata implements ISampleMetadata
+public class DefaultSampleZone implements ISampleZone
 {
-    protected String            filename;
-    protected File              sampleFile;
-    protected final File        zipFile;
-    protected final File        zipEntry;
-
-    protected boolean           isMonoFile            = false;
-
-    protected Optional<String>  combinedFilename      = Optional.empty ();
-    protected Optional<String>  filenameWithoutLayer  = Optional.empty ();
-
+    protected String            name;
     protected PlayLogic         playLogic             = PlayLogic.ALWAYS;
     protected TriggerType       triggerType           = TriggerType.ATTACK;
     protected int               start                 = -1;
@@ -71,94 +51,61 @@ public class DefaultSampleMetadata implements ISampleMetadata
     protected IFilter           filter                = null;
 
     protected List<ISampleLoop> loops                 = new ArrayList<> (1);
-    protected IAudioMetadata    audioMetadata;
 
-
-    /**
-     * Constructor for a sample stored in the file system.
-     *
-     * @param sampleFile The file where the sample is stored
-     */
-    public DefaultSampleMetadata (final File sampleFile)
-    {
-        this (sampleFile.getName (), sampleFile, null, null);
-    }
-
-
-    /**
-     * Constructor for a sample stored in the file system.
-     *
-     * @param filename The name of the file where the sample is stored (must not contain any paths!)
-     * @param sampleFile The file where the sample is stored
-     */
-    public DefaultSampleMetadata (final String filename, final File sampleFile)
-    {
-        this (filename, sampleFile, null, null);
-    }
-
-
-    /**
-     * Constructor for a sample stored in a ZIP file.
-     *
-     * @param zipFile The ZIP file which contains the WAV files
-     * @param zipEntry The relative path in the ZIP where the file is stored
-     */
-    public DefaultSampleMetadata (final File zipFile, final File zipEntry)
-    {
-        this (zipEntry.getName (), null, zipFile, zipEntry);
-    }
-
-
-    /**
-     * Constructor for a sample stored in the file system.
-     */
-    protected DefaultSampleMetadata ()
-    {
-        this (null, null, null, null);
-    }
+    private ISampleData         sampleData;
 
 
     /**
      * Constructor.
      *
-     * @param filename The name of the file where the sample is stored (must not contain any paths!)
-     * @param sampleFile The file where the sample is stored
-     * @param zipFile The ZIP file which contains the WAV files
-     * @param zipEntry The relative path in the ZIP where the file is stored
+     * @param name The name of the zone
+     * @param sampleData The sample data which is referenced by the zone
      */
-    protected DefaultSampleMetadata (final String filename, final File sampleFile, final File zipFile, final File zipEntry)
+    public DefaultSampleZone (final String name, final ISampleData sampleData)
     {
-        this.filename = filename;
-        this.sampleFile = sampleFile;
-        this.zipFile = zipFile;
-        this.zipEntry = zipEntry;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public File getFile ()
-    {
-        return this.sampleFile;
+        this.name = name;
+        this.setSampleData (sampleData);
     }
 
 
     /**
-     * Set the filename.
-     *
-     * @param filename The filename
+     * Constructor for setting the sample data later.
      */
-    public void setFilename (final String filename)
+    public DefaultSampleZone ()
     {
-        this.filename = filename;
+        // Intentionally empty
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public String getFilename ()
+    public String getName ()
     {
-        return this.filename;
+        return this.name;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setName (final String name)
+    {
+        this.name = name;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public ISampleData getSampleData ()
+    {
+        return this.sampleData;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSampleData (final ISampleData sampleData)
+    {
+        this.sampleData = sampleData;
     }
 
 
@@ -532,164 +479,7 @@ public class DefaultSampleMetadata implements ISampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public void setCombinedName (final String combinedName)
-    {
-        this.combinedFilename = Optional.ofNullable (combinedName);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Optional<String> getCombinedName ()
-    {
-        return this.combinedFilename;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Optional<String> getUpdatedFilename ()
-    {
-        return this.combinedFilename.isEmpty () ? Optional.ofNullable (this.getFilename ()) : this.combinedFilename;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setFilenameWithoutGroup (final String nameWithoutLayer)
-    {
-        this.filenameWithoutLayer = Optional.ofNullable (nameWithoutLayer);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String getFilenameWithoutGroup ()
-    {
-        return this.filenameWithoutLayer.isEmpty () ? this.getFilename () : this.filenameWithoutLayer.get ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void writeSample (final OutputStream outputStream) throws IOException
-    {
-        if (this.sampleFile != null)
-        {
-            try (final InputStream in = new FileInputStream (this.sampleFile))
-            {
-                in.transferTo (outputStream);
-            }
-            return;
-        }
-
-        if (this.zipFile == null)
-            return;
-
-        try (final ZipFile zf = new ZipFile (this.zipFile))
-        {
-            final String path = this.zipEntry.getPath ().replace ('\\', '/');
-            final ZipEntry entry = zf.getEntry (path);
-            if (entry == null)
-                throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
-
-            try (final InputStream in = zf.getInputStream (entry))
-            {
-                in.transferTo (outputStream);
-            }
-        }
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public IAudioMetadata getAudioMetadata () throws IOException
-    {
-        if (this.audioMetadata == null)
-        {
-            if (this.sampleFile != null)
-                this.audioMetadata = AudioFileUtils.getMetadata (this.sampleFile);
-
-            if (this.zipFile != null)
-            {
-                try (final ZipFile zf = new ZipFile (this.zipFile))
-                {
-                    final String path = this.zipEntry.getPath ().replace ('\\', '/');
-                    final ZipEntry entry = zf.getEntry (path);
-                    if (entry == null)
-                        throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
-
-                    try (final InputStream in = zf.getInputStream (entry))
-                    {
-                        this.audioMetadata = AudioFileUtils.getMetadata (in);
-                    }
-                }
-            }
-        }
-        return this.audioMetadata;
-    }
-
-
-    /**
-     * Check if the sample start / stop and the sample rate is set, if not read them from the sample
-     * file.
-     *
-     * @param addRootKey If true, set the root key
-     * @param addLoops If true, found loops are added
-     * @throws IOException Could not read or parse the wave file
-     */
-    public void addMissingInfoFromWaveFile (final boolean addRootKey, final boolean addLoops) throws IOException
-    {
-        final WavSampleMetadata wavSampleMetadata;
-        if (this.sampleFile != null)
-            wavSampleMetadata = new WavSampleMetadata (this.sampleFile);
-        else
-            wavSampleMetadata = new WavSampleMetadata (this.zipFile, this.zipEntry);
-
-        if (this.start < 0)
-            this.start = 0;
-        if (this.stop <= 0)
-            this.stop = wavSampleMetadata.getStop ();
-
-        // Read the this.keyRoot if not set...
-        if (addRootKey && this.keyRoot == -1)
-            this.keyRoot = wavSampleMetadata.getKeyRoot ();
-
-        // Check for loops if not already present
-        if (addLoops && this.loops.isEmpty ())
-            this.loops.addAll (wavSampleMetadata.getLoops ());
-    }
-
-
-    /**
-     * Check if the sample start / stop and the sample rate is set, if not read them from the given
-     * metadata.
-     *
-     * @param wavSampleMetadata The metadata to use as source
-     * @param addRootKey If true, set the root key
-     * @param addLoops If true, found loops are added
-     * @throws IOException Could not read or parse the wave file
-     */
-    public void addMissingInfoFromWaveFile (final WavSampleMetadata wavSampleMetadata, final boolean addRootKey, final boolean addLoops) throws IOException
-    {
-        if (this.start < 0)
-            this.start = 0;
-        if (this.stop <= 0)
-            this.stop = wavSampleMetadata.getStop ();
-
-        // Read the this.keyRoot if not set...
-        if (addRootKey && this.keyRoot == -1)
-            this.keyRoot = wavSampleMetadata.getKeyRoot ();
-
-        // Check for loops if not already present
-        if (addLoops && this.loops.isEmpty ())
-            this.loops.addAll (wavSampleMetadata.getLoops ());
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void fillMetadata (final ISampleMetadata other)
+    public void fillMetadata (final ISampleZone other)
     {
         this.playLogic = other.getPlayLogic ();
         this.triggerType = other.getTrigger ();

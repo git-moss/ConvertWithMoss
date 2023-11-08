@@ -35,17 +35,17 @@ public interface ICoreTask
     /**
      * Save the settings of the detector.
      *
-     * @param config Where to store to
+     * @param configuration Where to store to
      */
-    void saveSettings (BasicConfig config);
+    void saveSettings (BasicConfig configuration);
 
 
     /**
      * Load the settings of the detector.
      *
-     * @param config Where to load from
+     * @param configuration Where to load from
      */
-    void loadSettings (BasicConfig config);
+    void loadSettings (BasicConfig configuration);
 
 
     /**

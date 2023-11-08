@@ -12,15 +12,17 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -339,16 +341,26 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 return;
             }
 
-            final DefaultSampleMetadata sampleMetadata;
             final File sampleFile = new File (basePath, sampleName);
-            if (libraryFile == null)
+            final String zoneName = FileUtils.getNameWithoutType (sampleFile);
+            final ISampleData sampleData;
+            try
             {
-                if (!AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                    return;
-                sampleMetadata = new DefaultSampleMetadata (sampleFile);
+                if (libraryFile == null)
+                {
+                    if (!AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                        return;
+                    sampleData = new WavFileSampleData (sampleFile);
+                }
+                else
+                    sampleData = new WavFileSampleData (libraryFile, sampleFile);
             }
-            else
-                sampleMetadata = new DefaultSampleMetadata (libraryFile, sampleFile);
+            catch (final IOException ex)
+            {
+                this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
+                return;
+            }
+            final DefaultSampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
 
             String triggerAttribute = sampleElement.getAttribute (DecentSamplerTag.TRIGGER);
             if (triggerAttribute == null || triggerAttribute.isBlank ())
@@ -357,7 +369,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             {
                 try
                 {
-                    sampleMetadata.setTrigger (TriggerType.valueOf (triggerAttribute.toUpperCase (Locale.ENGLISH)));
+                    sampleZone.setTrigger (TriggerType.valueOf (triggerAttribute.toUpperCase (Locale.ENGLISH)));
                 }
                 catch (final IllegalArgumentException ex)
                 {
@@ -365,25 +377,25 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 }
             }
 
-            sampleMetadata.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
-            sampleMetadata.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
-            sampleMetadata.setGain (groupVolumeOffset + parseVolume (sampleElement, DecentSamplerTag.VOLUME));
-            sampleMetadata.setTune (tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0));
+            sampleZone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
+            sampleZone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
+            sampleZone.setGain (groupVolumeOffset + parseVolume (sampleElement, DecentSamplerTag.VOLUME));
+            sampleZone.setTune (tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0));
 
             final String zoneLogic = this.currentGroupsElement.getAttribute (DecentSamplerTag.SEQ_MODE);
-            sampleMetadata.setPlayLogic (zoneLogic != null && "round_robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
+            sampleZone.setPlayLogic (zoneLogic != null && "round_robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
 
-            sampleMetadata.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, 1));
-            sampleMetadata.setKeyRoot (getNoteAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE));
-            sampleMetadata.setKeyLow (getNoteAttribute (sampleElement, DecentSamplerTag.LO_NOTE));
-            sampleMetadata.setKeyHigh (getNoteAttribute (sampleElement, DecentSamplerTag.HI_NOTE));
+            sampleZone.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, 1));
+            sampleZone.setKeyRoot (getNoteAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE));
+            sampleZone.setKeyLow (getNoteAttribute (sampleElement, DecentSamplerTag.LO_NOTE));
+            sampleZone.setKeyHigh (getNoteAttribute (sampleElement, DecentSamplerTag.HI_NOTE));
 
             final int velLow = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LO_VEL, -1);
             final int velHigh = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, -1);
             if (velLow > 0)
-                sampleMetadata.setVelocityLow (velLow);
+                sampleZone.setVelocityLow (velLow);
             if (velHigh > 0)
-                sampleMetadata.setVelocityHigh (velHigh);
+                sampleZone.setVelocityHigh (velHigh);
 
             /////////////////////////////////////////////////////
             // Loops
@@ -400,21 +412,28 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 final int loopLength = loopEnd - loopStart;
                 if (loopLength > 0)
                     loop.setCrossfade (loopCrossfade / loopLength);
-                sampleMetadata.addLoop (loop);
+                sampleZone.addLoop (loop);
             }
 
-            this.loadMissingValues (sampleMetadata);
+            try
+            {
+                sampleZone.getSampleData ().addMetadata (sampleZone, false, false);
+            }
+            catch (final IOException ex)
+            {
+                this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
+            }
 
             /////////////////////////////////////////////////////
             // Volume envelope
 
-            final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+            final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeModulator ().getSource ();
             amplitudeEnvelope.setAttack (this.getDoubleValue (DecentSamplerTag.AMP_ENV_ATTACK, -1));
             amplitudeEnvelope.setDecay (this.getDoubleValue (DecentSamplerTag.AMP_ENV_DECAY, -1));
             amplitudeEnvelope.setSustain (this.getDoubleValue (DecentSamplerTag.AMP_ENV_SUSTAIN, -1));
             amplitudeEnvelope.setRelease (this.getDoubleValue (DecentSamplerTag.AMP_ENV_RELEASE, -1));
 
-            group.addSampleMetadata (sampleMetadata);
+            group.addSampleMetadata (sampleZone);
         }
     }
 

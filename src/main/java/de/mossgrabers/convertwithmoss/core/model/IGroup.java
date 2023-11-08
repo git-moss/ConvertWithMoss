@@ -53,7 +53,7 @@ public interface IGroup
      *
      * @return The descriptions in an ordered map
      */
-    List<ISampleMetadata> getSampleMetadata ();
+    List<ISampleZone> getSampleMetadata ();
 
 
     /**
@@ -61,7 +61,7 @@ public interface IGroup
      *
      * @param samples The sample descriptions
      */
-    void setSampleMetadata (List<ISampleMetadata> samples);
+    void setSampleMetadata (List<ISampleZone> samples);
 
 
     /**
@@ -69,5 +69,5 @@ public interface IGroup
      *
      * @param sample The sample description
      */
-    void addSampleMetadata (ISampleMetadata sample);
+    void addSampleMetadata (ISampleZone sample);
 }

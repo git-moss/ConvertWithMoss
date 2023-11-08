@@ -11,7 +11,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -231,7 +231,7 @@ public class DecentSamplerCreator extends AbstractCreator
         IEnvelope amplitudeEnvelope = null;
         if (!groups.isEmpty ())
         {
-            final ISampleMetadata sampleMetadata = groups.get (0).getSampleMetadata ().get (0);
+            final ISampleZone sampleMetadata = groups.get (0).getSampleMetadata ().get (0);
             amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
             addVolumeEnvelope (amplitudeEnvelope, groupsElement);
 
@@ -262,7 +262,7 @@ public class DecentSamplerCreator extends AbstractCreator
             if (triggerType != TriggerType.ATTACK)
                 groupElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
-            for (final ISampleMetadata sample: group.getSampleMetadata ())
+            for (final ISampleZone sample: group.getSampleMetadata ())
                 createSample (document, folderName, groupElement, sample);
         }
 
@@ -299,30 +299,29 @@ public class DecentSamplerCreator extends AbstractCreator
      * @param document The XML document
      * @param folderName The name to use for the sample folder
      * @param groupElement The element where to add the sample information
-     * @param info Where to get the sample info from
+     * @param zone Where to get the sample info from
      */
-    private static void createSample (final Document document, final String folderName, final Element groupElement, final ISampleMetadata info)
+    private static void createSample (final Document document, final String folderName, final Element groupElement, final ISampleZone zone)
     {
         /////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.SAMPLE);
-        final Optional<String> filename = info.getUpdatedFilename ();
-        if (filename.isPresent ())
-            sampleElement.setAttribute (DecentSamplerTag.PATH, AbstractCreator.formatFileName (folderName, filename.get ()));
+        final String filename = zone.getName () + ".wav";
+        sampleElement.setAttribute (DecentSamplerTag.PATH, AbstractCreator.formatFileName (folderName, filename));
 
-        final double gain = info.getGain ();
+        final double gain = zone.getGain ();
         if (gain != 0)
             sampleElement.setAttribute (DecentSamplerTag.VOLUME, gain + "dB");
-        XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.START, Math.max (0, info.getStart ()), 3);
-        final int stop = info.getStop ();
+        XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.START, Math.max (0, zone.getStart ()), 3);
+        final int stop = zone.getStop ();
         if (stop >= 0)
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.END, stop, 3);
-        final double tune = info.getTune ();
+        final double tune = zone.getTune ();
         if (tune != 0)
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, tune, 2);
 
-        final TriggerType triggerType = info.getTrigger ();
+        final TriggerType triggerType = zone.getTrigger ();
         if (triggerType != TriggerType.ATTACK)
             sampleElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
@@ -331,21 +330,21 @@ public class DecentSamplerCreator extends AbstractCreator
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
 
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_NOTE, check (info.getKeyLow (), 0));
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_NOTE, check (zone.getKeyLow (), 0));
         // No fades info.getNoteCrossfadeLow ()
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE, info.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_NOTE, check (info.getKeyHigh (), 127));
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE, zone.getKeyRoot ());
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_NOTE, check (zone.getKeyHigh (), 127));
         // No fades info.getNoteCrossfadeHigh ()
-        XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, info.getKeyTracking (), 4);
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_VEL, check (info.getVelocityLow (), 0));
+        XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, zone.getKeyTracking (), 4);
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_VEL, check (zone.getVelocityLow (), 0));
         // No fades info.getVelocityCrossfadeLow ()
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, check (info.getVelocityHigh (), 127));
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, check (zone.getVelocityHigh (), 127));
         // No fades info.getVelocityCrossfadeHigh ()
 
         /////////////////////////////////////////////////////
         // Loops
 
-        final List<ISampleLoop> loops = info.getLoops ();
+        final List<ISampleLoop> loops = zone.getLoops ();
         if (!loops.isEmpty ())
         {
 

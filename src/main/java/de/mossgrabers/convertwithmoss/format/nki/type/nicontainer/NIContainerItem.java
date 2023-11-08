@@ -203,7 +203,7 @@ public class NIContainerItem
     public List<NIContainerChunk> findAll (final NIContainerChunkType type)
     {
         final List<NIContainerChunk> foundChunks = new ArrayList<> ();
-        findAll (type, foundChunks);
+        this.findAll (type, foundChunks);
         return foundChunks;
     }
 

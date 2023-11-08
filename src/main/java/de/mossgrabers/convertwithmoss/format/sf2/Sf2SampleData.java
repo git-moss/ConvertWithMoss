@@ -4,27 +4,30 @@
 
 package de.mossgrabers.convertwithmoss.format.sf2;
 
-import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Optional;
 
 
 /**
- * Metadata for a Sf2 sample.
+ * Data for a Sf2 sample.
  *
  * @author Jürgen Moßgraber
  */
-public class Sf2SampleMetadata extends DefaultSampleMetadata
+public class Sf2SampleData extends AbstractSampleData
 {
     private final Sf2SampleDescriptor sample;
     private Sf2SampleDescriptor       rightSample;
+    private final boolean             is24;
+    private final long                lengthInSamples;
+    private final long                leftLengthInSamples;
+    private final long                rightLengthInSamples;
 
 
     /**
@@ -33,10 +36,8 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
      * @param sample The name of the file where the sample is stored
      * @throws IOException Cannot happen
      */
-    public Sf2SampleMetadata (final Sf2SampleDescriptor sample) throws IOException
+    public Sf2SampleData (final Sf2SampleDescriptor sample) throws IOException
     {
-        super (sample.getName (), null, null, null);
-
         this.sample = sample;
         this.rightSample = sample;
 
@@ -45,23 +46,11 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
         final byte [] leftSample24Data = this.sample.getSample24Data ();
         final byte [] rightSampleData = this.rightSample.getSampleData ();
         final byte [] rightSample24Data = this.rightSample.getSample24Data ();
-        final boolean is24 = leftSample24Data != null && rightSample24Data != null && leftSample24Data.length * 2 == leftSampleData.length && rightSample24Data.length * 2 == rightSampleData.length;
-        this.audioMetadata = new DefaultAudioMetadata (false, (int) sample.getSampleRate (), is24 ? 24 : 16);
-    }
+        this.is24 = leftSample24Data != null && rightSample24Data != null && leftSample24Data.length * 2 == leftSampleData.length && rightSample24Data.length * 2 == rightSampleData.length;
 
-
-    /** {@inheritDoc} */
-    @Override
-    public Optional<String> getUpdatedFilename ()
-    {
-        if (this.combinedFilename.isEmpty ())
-        {
-            String commonPrefix = commonPrefix (this.sample.getName (), this.rightSample.getName ()).trim ();
-            if (commonPrefix.endsWith ("_") || commonPrefix.endsWith ("("))
-                commonPrefix = commonPrefix.substring (0, commonPrefix.length () - 1);
-            this.combinedFilename = Optional.of (commonPrefix + ".wav");
-        }
-        return this.combinedFilename;
+        this.leftLengthInSamples = this.sample.getEnd () - this.sample.getStart ();
+        this.rightLengthInSamples = this.rightSample.getEnd () - this.rightSample.getStart ();
+        this.lengthInSamples = Math.max (this.leftLengthInSamples, this.rightLengthInSamples);
     }
 
 
@@ -75,14 +64,10 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
         final byte [] rightSampleData = this.rightSample.getSampleData ();
         final byte [] rightSample24Data = this.rightSample.getSample24Data ();
 
-        final long leftLengthInSamples = this.sample.getEnd () - this.sample.getStart ();
-        final long rightLengthInSamples = this.rightSample.getEnd () - this.rightSample.getStart ();
-        final long lengthInSamples = Math.max (leftLengthInSamples, rightLengthInSamples);
-
         final int bitsPerSample = this.audioMetadata.getBitResolution ();
 
         // Create an empty wave file with the required resolution and calculated data length
-        final WaveFile wavFile = new WaveFile (2, this.audioMetadata.getSampleRate (), bitsPerSample, (int) lengthInSamples);
+        final WaveFile wavFile = new WaveFile (2, this.audioMetadata.getSampleRate (), bitsPerSample, (int) this.lengthInSamples);
         final DataChunk dataChunk = wavFile.getDataChunk ();
         final byte [] data = dataChunk.getData ();
 
@@ -92,7 +77,7 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
         if (bitsPerSample == 24)
         {
             // Convert to stereo interleaved format
-            for (int i = 0; i < lengthInSamples; i++)
+            for (int i = 0; i < this.lengthInSamples; i++)
             {
                 final int dataOffset = 6 * i;
                 final int sampleOffset = 2 * i;
@@ -100,13 +85,13 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
                 final int rightOffset = 2 * rightStart + sampleOffset;
 
                 // Support for different lengths of left/right mono file
-                if (i < leftLengthInSamples && leftOffset < leftSampleData.length)
+                if (i < this.leftLengthInSamples && leftOffset < leftSampleData.length)
                 {
                     data[dataOffset] = leftSampleData[leftOffset];
                     data[dataOffset + 1] = leftSampleData[leftOffset + 1];
                     data[dataOffset + 2] = leftSample24Data[leftStart + i];
                 }
-                if (i < rightLengthInSamples && rightOffset < rightSampleData.length)
+                if (i < this.rightLengthInSamples && rightOffset < rightSampleData.length)
                 {
                     data[dataOffset + 3] = rightSampleData[rightOffset];
                     data[dataOffset + 4] = rightSampleData[rightOffset + 1];
@@ -116,19 +101,19 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
         }
         else
         {
-            for (int i = 0; i < lengthInSamples; i++)
+            for (int i = 0; i < this.lengthInSamples; i++)
             {
                 final int dataOffset = 4 * i;
                 final int sampleOffset = 2 * i;
                 final int leftOffset = 2 * leftStart + sampleOffset;
                 final int rightOffset = 2 * rightStart + sampleOffset;
 
-                if (i < leftLengthInSamples && leftOffset < leftSampleData.length)
+                if (i < this.leftLengthInSamples && leftOffset < leftSampleData.length)
                 {
                     data[dataOffset] = leftSampleData[leftOffset];
                     data[dataOffset + 1] = leftSampleData[leftOffset + 1];
                 }
-                if (i < rightLengthInSamples && rightOffset < rightSampleData.length)
+                if (i < this.rightLengthInSamples && rightOffset < rightSampleData.length)
                 {
                     data[dataOffset + 2] = rightSampleData[rightOffset];
                     data[dataOffset + 3] = rightSampleData[rightOffset + 1];
@@ -153,14 +138,6 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public IAudioMetadata getAudioMetadata ()
-    {
-        return this.audioMetadata;
-    }
-
-
     /**
      * Set the right side for the left side mono sample.
      *
@@ -172,14 +149,18 @@ public class Sf2SampleMetadata extends DefaultSampleMetadata
     }
 
 
-    private static String commonPrefix (final String a, final String b)
+    /** {@inheritDoc} */
+    @Override
+    public void addMetadata (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        final int minLength = Math.min (a.length (), b.length ());
-        for (int i = 0; i < minLength; i++)
-        {
-            if (a.charAt (i) != b.charAt (i))
-                return a.substring (0, i);
-        }
-        return a.substring (0, minLength);
+        // No further metadata available
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void createAudioMetadata () throws IOException
+    {
+        this.audioMetadata = new DefaultAudioMetadata (2, (int) this.sample.getSampleRate (), this.is24 ? 24 : 16, (int) this.lengthInSamples);
     }
 }

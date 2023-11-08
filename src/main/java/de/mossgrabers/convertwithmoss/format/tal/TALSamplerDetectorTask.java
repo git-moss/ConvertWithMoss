@@ -13,12 +13,12 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -166,7 +166,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                         {
                             for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, TALSamplerTag.MULTISAMPLE, false))
                             {
-                                final DefaultSampleMetadata sampleMetadata = this.parseSample (parentFolder, programElement, groupCounter, sampleElement);
+                                final DefaultSampleZone sampleMetadata = this.parseSample (parentFolder, programElement, groupCounter, sampleElement);
                                 if (sampleMetadata != null)
                                     group.addSampleMetadata (sampleMetadata);
                             }
@@ -191,7 +191,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
 
     /**
      * Parse the sample information.
-     * 
+     *
      * @param parentFolder The parent folder which contains the sample
      * @param programElement The program element
      * @param groupCounter The index of the group
@@ -199,7 +199,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
      * @return The created sample metadata
      * @throws IOException Could not create the sample metadata
      */
-    private DefaultSampleMetadata parseSample (final File parentFolder, final Element programElement, final int groupCounter, final Element sampleElement) throws IOException
+    private DefaultSampleZone parseSample (final File parentFolder, final Element programElement, final int groupCounter, final Element sampleElement) throws IOException
     {
         final String filename = sampleElement.getAttribute (TALSamplerTag.MULTISAMPLE_URL);
         if (filename == null || filename.isBlank ())
@@ -215,28 +215,28 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.IS_ROM_SAMPLE, 0) == 1)
             throw new IOException (Functions.getMessage ("IDS_TAL_ROM_SAMPLES_NOT_SUPPORTED", filename));
 
-        final DefaultSampleMetadata sampleMetadata = this.createSampleMetadata (new File (parentFolder, filename));
+        final DefaultSampleZone zone = this.createSampleMetadata (new File (parentFolder, filename));
 
-        sampleMetadata.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
-        sampleMetadata.setPanorama (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANORAMA, 0.5) * 2.0 - 1.0);
+        zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
+        zone.setPanorama (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANORAMA, 0.5) * 2.0 - 1.0);
 
-        sampleMetadata.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.START_SAMPLE, -1)));
-        sampleMetadata.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.END_SAMPLE, -1)));
-        sampleMetadata.setReversed (XMLUtils.getBooleanAttribute (sampleElement, TALSamplerTag.REVERSE, false));
+        zone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.START_SAMPLE, -1)));
+        zone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.END_SAMPLE, -1)));
+        zone.setReversed (XMLUtils.getBooleanAttribute (sampleElement, TALSamplerTag.REVERSE, false));
 
-        double layerTranspose = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_TRANSPOSE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 48.0 - 24.0);
-        double sampleTune = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 48.0 - 24.0);
-        double sampleFine = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 2.0 - 1.0;
-        double transpose = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, 0.5) * 48.0 - 24.0);
-        double detune = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, 0.5) * 48.0 - 24.0);
-        sampleMetadata.setTune (layerTranspose + sampleTune + transpose + detune + sampleFine);
-        sampleMetadata.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PITCH_KEY_TRACK, 1));
+        final double layerTranspose = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_TRANSPOSE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 48.0 - 24.0);
+        final double sampleTune = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 48.0 - 24.0);
+        final double sampleFine = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 2.0 - 1.0;
+        final double transpose = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, 0.5) * 48.0 - 24.0);
+        final double detune = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, 0.5) * 48.0 - 24.0);
+        zone.setTune (layerTranspose + sampleTune + transpose + detune + sampleFine);
+        zone.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PITCH_KEY_TRACK, 1));
 
-        sampleMetadata.setKeyRoot (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, -1));
-        sampleMetadata.setKeyLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, -1));
-        sampleMetadata.setKeyHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, -1));
-        sampleMetadata.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, -1));
-        sampleMetadata.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, -1));
+        zone.setKeyRoot (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, -1));
+        zone.setKeyLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, -1));
+        zone.setKeyHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, -1));
+        zone.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, -1));
+        zone.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, -1));
 
         // No note and velocity crossfades
 
@@ -247,26 +247,27 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                 loop.setType (LoopType.ALTERNATING);
             loop.setStart (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_START, -1));
             loop.setEnd (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_END, -1));
-            sampleMetadata.addLoop (loop);
+            zone.addLoop (loop);
         }
 
-        this.loadMissingValues (sampleMetadata);
-        return sampleMetadata;
+        zone.getSampleData ().addMetadata (zone, false, false);
+        return zone;
     }
 
 
-    private static Optional<IFilter> parseModulationAttributes (final Element programElement, final DefaultMultisampleSource multisampleSource)
+    private static Optional<IFilter> parseModulationAttributes (final Element programElement, final DefaultMultisampleSource multisampleSource) throws IOException
     {
         // Pitchbend
         final int bend = (int) Utils.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, 1.0) * 1200.0, 0.0, 1200.0);
 
+        final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (multisampleSource.getGroups ());
+
         // Add amplitude envelope
-        // TODO maximum values are likely not correct
-        final double ampAttach = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, 0, 10, 0);
-        final double ampHold = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, 0, 10, 0);
-        final double ampDecay = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, 0, 8, 0);
+        final double ampAttach = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, 0, maxEnvelopeTime, 0);
+        final double ampHold = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, 0, maxEnvelopeTime, 0);
+        final double ampDecay = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, 0, maxEnvelopeTime, 0);
         final double ampSustain = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, 0, 1, 1);
-        final double ampRelease = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, 0, 8, 0);
+        final double ampRelease = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, 0, maxEnvelopeTime, 0);
 
         // Get filter settings
         // We only have a global filter, therefore take only values from the 1st layer
@@ -278,8 +279,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
             {
                 final IFilter baseFilter = filterType.get ();
 
-                // TODO values are likely not correct
-                final double cutoff = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, 1.0) * IFilter.MAX_FREQUENCY;
+                final double cutoff = cutoffToHertz (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, 1.0));
                 final double resonance = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, 0) * 40.0;
                 final IFilter filter = new DefaultFilter (baseFilter.getType (), baseFilter.getPoles (), cutoff, resonance);
                 optFilter = Optional.of (filter);
@@ -290,30 +290,29 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                     final IModulator cutoffModulator = filter.getCutoffModulator ();
                     cutoffModulator.setDepth (filterModDepth);
 
-                    // TODO maximum values are likely not correct
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                    filterEnvelope.setAttack (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, 0, 10, 0));
-                    filterEnvelope.setHold (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, 0, 10, 0));
-                    filterEnvelope.setDecay (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, 0, 8, 0));
+                    filterEnvelope.setAttack (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, 0, maxEnvelopeTime, 0));
+                    filterEnvelope.setHold (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, 0, maxEnvelopeTime, 0));
+                    filterEnvelope.setDecay (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, 0, maxEnvelopeTime, 0));
                     filterEnvelope.setSustain (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, 0, 1, 1));
-                    filterEnvelope.setRelease (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, 0, 8, 0));
+                    filterEnvelope.setRelease (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, 0, maxEnvelopeTime, 0));
                 }
             }
         }
 
         // Get pitch (modulation) envelope
-        final double pitchAttack = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, 0, 10, 0);
-        final double pitchHold = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, 0, 10, 0);
-        final double pitchDecay = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, 0, 8, 0);
+        final double pitchAttack = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, 0, maxEnvelopeTime, 0);
+        final double pitchHold = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, 0, maxEnvelopeTime, 0);
+        final double pitchDecay = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, 0, maxEnvelopeTime, 0);
         final double pitchSustain = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, 0, 1, 1);
-        final double pitchRelease = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, 0, 8, 0);
+        final double pitchRelease = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, 0, maxEnvelopeTime, 0);
 
         // Envelope 3 needs to be set to modulate the global pitch
         final Element modMatrixElement = XMLUtils.getChildElementByName (programElement, "modmatrix");
         double globalPitchEnvelopeDepth = -1;
         if (modMatrixElement != null)
         {
-            for (Element entryElement: XMLUtils.getChildElementsByName (modMatrixElement, "entry", false))
+            for (final Element entryElement: XMLUtils.getChildElementsByName (modMatrixElement, "entry", false))
             {
                 if (XMLUtils.getIntegerAttribute (entryElement, "parameterid", -1) == 164 && XMLUtils.getIntegerAttribute (entryElement, "modmatrixsourceid", -1) == 2)
                 {
@@ -325,7 +324,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
 
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleMetadata sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
             {
                 sampleMetadata.setBendUp (bend);
                 sampleMetadata.setBendDown (bend);
@@ -374,5 +373,11 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
     {
         final double result = volume - TALSamplerConstants.MINUS_12_DB;
         return result * 18.0 / TALSamplerConstants.VALUE_RANGE - 12;
+    }
+
+
+    private static double cutoffToHertz (final double normalizedValue)
+    {
+        return Utils.clamp (2.0 * 440.0 * Math.pow (2, (normalizedValue * 140.0 - 57.0) / 12.0), 32.7, 106300);
     }
 }

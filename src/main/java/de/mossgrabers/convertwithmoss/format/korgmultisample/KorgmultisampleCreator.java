@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -20,7 +20,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 
@@ -63,7 +62,7 @@ public class KorgmultisampleCreator extends AbstractCreator
         for (int i = 0; i < size; i++)
         {
             final IGroup group = groups.get (i);
-            final ISampleMetadata sampleMetadata = group.getSampleMetadata ().get (0);
+            final ISampleZone sampleMetadata = group.getSampleMetadata ().get (0);
             final String groupName = size > 1 ? String.format ("%s %03d-%03d", sampleName, Integer.valueOf (sampleMetadata.getVelocityLow ()), Integer.valueOf (sampleMetadata.getVelocityHigh ())) : sampleName;
             final File multiFile = new File (subFolder, groupName + ".korgmultisample");
             if (multiFile.exists ())
@@ -141,15 +140,12 @@ public class KorgmultisampleCreator extends AbstractCreator
     private static void writeSample (final ByteArrayOutputStream multisampleOutput, final IGroup group) throws IOException
     {
         // Create one sample block for each sample
-        for (final ISampleMetadata sample: group.getSampleMetadata ())
+        for (final ISampleZone sample: group.getSampleMetadata ())
         {
             final byte [] sbByteArray;
             try (final ByteArrayOutputStream sampleBlockOutput = new ByteArrayOutputStream ())
             {
-                final Optional<String> updatedFilename = sample.getUpdatedFilename ();
-                if (updatedFilename.isEmpty ())
-                    throw new IOException ("Sample file without a name?!");
-                final String filename = updatedFilename.get ();
+                final String filename = sample.getName () + ".wav";
 
                 final byte [] sampleByteArray;
                 final int offset;
@@ -181,7 +177,7 @@ public class KorgmultisampleCreator extends AbstractCreator
     }
 
 
-    private static void writeSampleParameters (final ByteArrayOutputStream sampleOutput, final ISampleMetadata sample) throws IOException
+    private static void writeSampleParameters (final ByteArrayOutputStream sampleOutput, final ISampleZone sample) throws IOException
     {
         final int start = sample.getStart ();
         if (start > 0)
@@ -220,7 +216,7 @@ public class KorgmultisampleCreator extends AbstractCreator
     }
 
 
-    private static void writeKeyZoneParameters (final ByteArrayOutputStream sampleOutput, final ISampleMetadata sample) throws IOException
+    private static void writeKeyZoneParameters (final ByteArrayOutputStream sampleOutput, final ISampleZone sample) throws IOException
     {
         final int keyLow = sample.getKeyLow ();
         if (keyLow > 0)

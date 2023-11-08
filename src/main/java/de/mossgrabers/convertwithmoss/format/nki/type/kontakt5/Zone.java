@@ -303,8 +303,8 @@ public class Zone
     /**
      * Get the zone tuning.
      *
-     * @return The tune setting in the range of [-32..32] semitones which is returned as 2^octave
-     *         which maps to the range [0.125, 8.0], 2^(-32/12) = 0.125
+     * @return The tune setting in the range of [-36..36] semitones which is returned as 2^octave
+     *         which maps to the range [0.125, 8.0], 2^(-36/12) = 0.125
      */
     public float getZoneTune ()
     {

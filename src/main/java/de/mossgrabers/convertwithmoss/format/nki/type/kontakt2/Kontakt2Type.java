@@ -8,8 +8,8 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.FastLZ;
@@ -175,7 +175,7 @@ public class Kontakt2Type extends AbstractKontaktType
             final boolean isMonolith = type != 0x78;
             this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "2", kontaktVersion, isMonolith ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
 
-            final Map<String, DefaultSampleMetadata> monolithSamples = isMonolith ? new Kontakt2Monolith (fileAccess, this.isBigEndian).mapSamples () : null;
+            final Map<String, ISampleData> monolithSamples = isMonolith ? new Kontakt2Monolith (fileAccess, this.isBigEndian).mapSamples () : null;
             multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples, metadataConfig);
         }
 
@@ -302,7 +302,7 @@ public class Kontakt2Type extends AbstractKontaktType
      * @return All parsed multi-samples
      * @throws IOException
      */
-    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, DefaultSampleMetadata> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
+    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, ISampleData> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
     {
         String xmlCode = CompressionUtils.readZLIB (fileAccess);
         try

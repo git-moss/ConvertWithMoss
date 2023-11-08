@@ -83,4 +83,12 @@ public class DefaultSampleLoop implements ISampleLoop
     {
         this.crossfade = crossfade;
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Object clone () throws CloneNotSupportedException
+    {
+        return super.clone ();
+    }
 }

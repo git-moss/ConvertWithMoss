@@ -4,9 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.file.ncw;
 
-import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.tools.ui.Functions;
 
 import java.io.File;
@@ -17,11 +17,11 @@ import java.io.OutputStream;
 
 
 /**
- * Metadata for a NCW compressed sample. Converts the output to a WAV file when writing!
+ * The data of a NCW compressed sample. Converts the output to a WAV file when writing.
  *
  * @author Jürgen Moßgraber
  */
-public class NcwSampleMetadata extends DefaultSampleMetadata
+public class NcwFileSampleData extends AbstractFileSampleData
 {
     private NcwFile ncwFile;
 
@@ -32,26 +32,22 @@ public class NcwSampleMetadata extends DefaultSampleMetadata
      * @param file The file where the sample is stored
      * @throws IOException Could not read the file
      */
-    public NcwSampleMetadata (final File file) throws IOException
+    public NcwFileSampleData (final File file) throws IOException
     {
         super (file);
 
-        // Ignore non-existing files since it might be in a monolith
-        if (file.exists ())
-            this.handleNcwFile (new NcwFile (file));
+        this.handleNcwFile (new NcwFile (file));
     }
 
 
     /**
      * Constructor.
      *
-     * @param filename The name of the file
      * @param inputStream The stream from which the file content can be read
      * @throws IOException Could not read the file
      */
-    public NcwSampleMetadata (final String filename, final InputStream inputStream) throws IOException
+    public NcwFileSampleData (final InputStream inputStream) throws IOException
     {
-        this.setFilename (filename);
         this.handleNcwFile (new NcwFile (inputStream));
     }
 
@@ -63,14 +59,8 @@ public class NcwSampleMetadata extends DefaultSampleMetadata
         final int channels = this.ncwFile.getChannels ();
         if (channels > 2)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (channels), this.sampleFile.getAbsolutePath ()));
-        this.isMonoFile = channels == 1;
-        this.start = 0;
-        this.stop = this.ncwFile.getNumberOfSamples ();
 
-        // Change filename ending from NCW to WAV
-        this.setCombinedName (this.filename.replace (".ncw", ".wav").replace (".NCW", ".wav"));
-
-        this.audioMetadata = new DefaultAudioMetadata (this.isMonoFile, this.ncwFile.getSampleRate (), this.ncwFile.getBitsPerSample ());
+        this.audioMetadata = new DefaultAudioMetadata (channels, this.ncwFile.getSampleRate (), this.ncwFile.getBitsPerSample (), this.ncwFile.getNumberOfSamples ());
     }
 
 
@@ -86,16 +76,13 @@ public class NcwSampleMetadata extends DefaultSampleMetadata
 
     /** {@inheritDoc} */
     @Override
-    public void addMissingInfoFromWaveFile (final boolean addRootKey, final boolean addLoops) throws IOException
+    public void addMetadata (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        // Info not available in AIFF
-    }
+        if (zone.getStart () < 0)
+            zone.setStart (0);
+        if (zone.getStop () <= 0)
+            zone.setStop (this.ncwFile.getNumberOfSamples ());
 
-
-    /** {@inheritDoc} */
-    @Override
-    public IAudioMetadata getAudioMetadata ()
-    {
-        return this.audioMetadata;
+        // More info not available in NCW
     }
 }

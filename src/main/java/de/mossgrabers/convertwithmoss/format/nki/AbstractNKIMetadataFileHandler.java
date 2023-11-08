@@ -13,8 +13,9 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -22,13 +23,14 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
-import de.mossgrabers.convertwithmoss.file.AiffSampleMetadata;
+import de.mossgrabers.convertwithmoss.file.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.file.ncw.NcwSampleMetadata;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -111,7 +113,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The parsed multisample source
      * @throws IOException An error occurred parsing the XML document
      */
-    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadata, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
+    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadata, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         try
         {
@@ -224,8 +226,8 @@ public abstract class AbstractNKIMetadataFileHandler
                 name = "Group " + (groupCount + 1);
             String groupContent = groupTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%GROUP_NAME%", name);
 
-            final List<ISampleMetadata> sampleMetadataList = group.getSampleMetadata ();
-            for (final ISampleMetadata sampleMetadata: sampleMetadataList)
+            final List<ISampleZone> sampleMetadataList = group.getSampleMetadata ();
+            for (final ISampleZone sampleMetadata: sampleMetadataList)
             {
                 String zoneContent = this.addZoneData (sampleMetadata, safeSampleFolderName, zoneTemplate, sampleCount, groupCount);
 
@@ -249,7 +251,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
             // These parameters can only be set on the group. This implementation uses the first
             // found
-            final ISampleMetadata sampleMetadata = sampleMetadataList.isEmpty () ? null : sampleMetadataList.get (0);
+            final ISampleZone sampleMetadata = sampleMetadataList.isEmpty () ? null : sampleMetadataList.get (0);
             final double pitchBendUp = sampleMetadata == null ? 0 : sampleMetadata.getBendUp ();
             final boolean keyTracking = sampleMetadata == null || sampleMetadata.getKeyTracking () > 0;
             final boolean isReleaseTrigger = sampleMetadata != null && sampleMetadata.getTrigger () == TriggerType.RELEASE;
@@ -265,32 +267,29 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private String addZoneData (final ISampleMetadata sampleMetadata, final String safeSampleFolderName, final String zoneTemplate, final int sampleCount, final int groupCount)
+    private String addZoneData (final ISampleZone zone, final String safeSampleFolderName, final String zoneTemplate, final int sampleCount, final int groupCount)
     {
         String zoneContent = zoneTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%ZONE_INDEX%", Integer.toString (sampleCount));
-        final Optional<String> filename = sampleMetadata.getUpdatedFilename ();
+        final String zoneName = zone.getName ();
 
-        zoneContent = zoneContent.replace ("%ZONE_SAMPLE_START%", Integer.toString (sampleMetadata.getStart ()));
-        zoneContent = zoneContent.replace ("%ZONE_SAMPLE_END%", Integer.toString (sampleMetadata.getStop ()));
-        zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (limitToDefault (sampleMetadata.getVelocityLow (), 0)));
-        zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getVelocityHigh (), 127)));
-        zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (limitToDefault (sampleMetadata.getKeyLow (), 0)));
-        zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getKeyHigh (), 127)));
-        zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (limitToDefault (sampleMetadata.getVelocityCrossfadeLow (), 0)));
-        zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getVelocityCrossfadeLow (), 0)));
-        zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (limitToDefault (sampleMetadata.getNoteCrossfadeLow (), 0)));
-        zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (sampleMetadata.getNoteCrossfadeHigh (), 0)));
-        zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (sampleMetadata.getKeyRoot ()));
-        zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, sampleMetadata.getGain () / 20.0d)));
-        zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (sampleMetadata.getTune () / 0.12d * Math.log (2))));
-        zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (sampleMetadata.getPanorama ())));
+        zoneContent = zoneContent.replace ("%ZONE_SAMPLE_START%", Integer.toString (zone.getStart ()));
+        zoneContent = zoneContent.replace ("%ZONE_SAMPLE_END%", Integer.toString (zone.getStop ()));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (limitToDefault (zone.getVelocityLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (limitToDefault (zone.getVelocityHigh (), 127)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (limitToDefault (zone.getKeyLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (limitToDefault (zone.getKeyHigh (), 127)));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (limitToDefault (zone.getVelocityCrossfadeLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getVelocityCrossfadeLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (limitToDefault (zone.getNoteCrossfadeLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getNoteCrossfadeHigh (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (zone.getKeyRoot ()));
+        zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, zone.getGain () / 20.0d)));
+        zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (zone.getTune () / 0.12d * Math.log (2))));
+        zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (zone.getPanorama ())));
 
         // Note: we need to use backward slashes otherwise Kontakt can read but not save the file
         // again!
-        String formattedFilename = "";
-        if (filename.isPresent ())
-            formattedFilename = new StringBuilder ().append (safeSampleFolderName).append ('\\').append (filename.get ()).toString ().replace ('/', '\\');
-
+        final String formattedFilename = new StringBuilder (safeSampleFolderName).append ('\\').append (zoneName).append (".wav").toString ().replace ('/', '\\');
         return zoneContent.replace ("%ZONE_SAMPLE_NAME%", formattedFilename);
     }
 
@@ -308,7 +307,7 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private static String addModulators (final ISampleMetadata sampleMetadata, final String groupContentTemplate)
+    private static String addModulators (final ISampleZone sampleMetadata, final String groupContentTemplate)
     {
         final IModulator amplitudeModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getAmplitudeModulator ();
         final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
@@ -391,7 +390,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return True if successful
      * @throws IOException Could not create path for samples
      */
-    private boolean parseProgram (final Element programElement, final DefaultMultisampleSource multisampleSource, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
+    private boolean parseProgram (final Element programElement, final DefaultMultisampleSource multisampleSource, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         final String programName = this.tags.programName ();
         if (!programElement.hasAttribute (programName))
@@ -502,7 +501,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return the groups created (empty list is returned if nothing was created)
      * @throws IOException Could not get sample file(s)
      */
-    private List<IGroup> getGroups (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
+    private List<IGroup> getGroups (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         if (groupElements == null || zoneElements == null)
             return Collections.emptyList ();
@@ -530,7 +529,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The group created from the zone element (null, if there is no group element)
      * @throws IOException Could not get sample file(s)
      */
-    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
+    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         if (groupElement == null)
             return null;
@@ -564,12 +563,12 @@ public abstract class AbstractNKIMetadataFileHandler
      *         returned.
      * @throws IOException Could not get sample file
      */
-    private List<ISampleMetadata> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, DefaultSampleMetadata> monolithSamples, final IFilter filter) throws IOException
+    private List<ISampleZone> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, ISampleData> monolithSamples, final IFilter filter) throws IOException
     {
         if (groupElement == null || groupZones == null)
             return Collections.emptyList ();
 
-        final LinkedList<ISampleMetadata> sampleMetadataList = new LinkedList<> ();
+        final LinkedList<ISampleZone> sampleMetadataList = new LinkedList<> ();
 
         for (final Element zoneElement: groupZones)
         {
@@ -577,12 +576,13 @@ public abstract class AbstractNKIMetadataFileHandler
             if (sampleFile == null)
                 continue;
 
-            final DefaultSampleMetadata sampleMetadata = this.getSampleMetadata (sampleFile, monolithSamples);
-            if (sampleMetadata != null)
+            final ISampleData sampleData = this.getSampleMetadata (sampleFile, monolithSamples);
+            if (sampleData != null)
             {
+                final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
                 if (filter != null)
-                    sampleMetadata.setFilter (filter);
-                this.readMetadata (programParameters, groupParameters, groupModulators, pitchBend, sampleMetadataList, zoneElement, sampleMetadata);
+                    zone.setFilter (filter);
+                this.readMetadata (programParameters, groupParameters, groupModulators, pitchBend, sampleMetadataList, zoneElement, zone);
             }
         }
 
@@ -590,13 +590,13 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private DefaultSampleMetadata getSampleMetadata (final File sampleFile, final Map<String, DefaultSampleMetadata> monolithSamples) throws IOException
+    private ISampleData getSampleMetadata (final File sampleFile, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         if (monolithSamples != null)
             return monolithSamples.get (sampleFile.getName ());
 
         if (sampleFile.getName ().toLowerCase ().endsWith (".ncw"))
-            return new NcwSampleMetadata (sampleFile);
+            return new NcwFileSampleData (sampleFile);
 
         // Check the type of the source sample for compatibility and handle them
         // accordingly
@@ -606,12 +606,12 @@ public abstract class AbstractNKIMetadataFileHandler
             if (AudioFileFormat.Type.WAVE.equals (type))
             {
                 if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                    return new DefaultSampleMetadata (sampleFile);
+                    return new WavFileSampleData (sampleFile);
             }
             else if (AudioFileFormat.Type.AIFF.equals (type))
             {
                 this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
-                return new AiffSampleMetadata (sampleFile);
+                return new AiffFileSampleData (sampleFile);
             }
 
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ());
@@ -624,11 +624,11 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private void readMetadata (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final int pitchBend, final LinkedList<ISampleMetadata> sampleMetadataList, final Element zoneElement, final DefaultSampleMetadata sampleMetadata)
+    private void readMetadata (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final int pitchBend, final LinkedList<ISampleZone> sampleMetadataList, final Element zoneElement, final ISampleZone zone)
     {
         try
         {
-            sampleMetadata.addMissingInfoFromWaveFile (true, true);
+            zone.getSampleData ().addMetadata (zone, true, true);
         }
         catch (final IOException ex)
         {
@@ -639,44 +639,44 @@ public abstract class AbstractNKIMetadataFileHandler
         final Map<String, String> zoneParameters = this.readParameters (zoneElement);
         try
         {
-            sampleMetadata.setKeyRoot (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.rootKeyParam ()));
-            sampleMetadata.setKeyLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.lowKeyParam ()));
-            sampleMetadata.setKeyHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.highKeyParam ()));
-            sampleMetadata.setVelocityLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.lowVelocityParam ()));
-            sampleMetadata.setVelocityHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.highVelocityParam ()));
-            sampleMetadata.setNoteCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeLowParam ()));
-            sampleMetadata.setNoteCrossfadeHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighParam ()));
-            sampleMetadata.setVelocityCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeLowVelParam ()));
-            sampleMetadata.setVelocityCrossfadeHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighVelParam ()));
+            zone.setKeyRoot (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.rootKeyParam ()));
+            zone.setKeyLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.lowKeyParam ()));
+            zone.setKeyHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.highKeyParam ()));
+            zone.setVelocityLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.lowVelocityParam ()));
+            zone.setVelocityHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.highVelocityParam ()));
+            zone.setNoteCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeLowParam ()));
+            zone.setNoteCrossfadeHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighParam ()));
+            zone.setVelocityCrossfadeLow (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeLowVelParam ()));
+            zone.setVelocityCrossfadeHigh (AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.fadeHighVelParam ()));
 
             final int sampleStart = AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.sampleStartParam ());
             final int sampleEnd = AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.sampleEndParam ());
 
             if (sampleEnd > sampleStart)
             {
-                sampleMetadata.setStart (sampleStart);
-                sampleMetadata.setStop (sampleEnd);
+                zone.setStart (sampleStart);
+                zone.setStop (sampleEnd);
             }
 
             final String keyTracking = AbstractNKIMetadataFileHandler.getString (groupParameters, this.tags.keyTrackingParam ());
             final double keyTrackingValue = keyTracking.equals (this.tags.yes ()) ? 1.0d : 0.0d;
-            sampleMetadata.setKeyTracking (keyTrackingValue);
+            zone.setKeyTracking (keyTrackingValue);
 
             final double zoneVol = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneVolParam ());
             final double groupVol = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupVolParam ());
             final double progVol = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progVolParam ());
-            sampleMetadata.setGain (20.0d * Math.log10 (zoneVol * groupVol * progVol));
+            zone.setGain (20.0d * Math.log10 (zoneVol * groupVol * progVol));
 
             final double zoneTune = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneTuneParam ());
             final double groupTune = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ());
             final double progTune = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progTuneParam ());
-            sampleMetadata.setTune (this.tags.calculateTune (zoneTune, groupTune, progTune));
+            zone.setTune (this.tags.calculateTune (zoneTune, groupTune, progTune));
 
             final double zonePan = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zonePanParam ());
             final double groupPan = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ());
             final double progPan = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progPanParam ());
             final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
-            sampleMetadata.setPanorama (Utils.clamp (totalPan, -1.0d, 1.0d));
+            zone.setPanorama (Utils.clamp (totalPan, -1.0d, 1.0d));
         }
         catch (final ValueNotAvailableException e)
         {
@@ -684,27 +684,27 @@ public abstract class AbstractNKIMetadataFileHandler
             return;
         }
 
-        this.setModulators (groupModulators, sampleMetadata);
+        this.setModulators (groupModulators, zone);
 
         if (groupParameters.containsKey (this.tags.reverseParam ()))
         {
             final String reversed = groupParameters.get (this.tags.reverseParam ());
-            sampleMetadata.setReversed (reversed.equals (this.tags.yes ()));
+            zone.setReversed (reversed.equals (this.tags.yes ()));
         }
 
-        this.readLoopInformation (zoneElement, sampleMetadata);
+        this.readLoopInformation (zoneElement, zone);
 
-        sampleMetadataList.add (sampleMetadata);
+        sampleMetadataList.add (zone);
 
         if (pitchBend >= 0)
         {
-            sampleMetadata.setBendUp (pitchBend);
-            sampleMetadata.setBendDown (pitchBend);
+            zone.setBendUp (pitchBend);
+            zone.setBendDown (pitchBend);
         }
     }
 
 
-    private void setModulators (final Map<String, IModulator> groupEnvelopes, final ISampleMetadata sampleMetadata)
+    private void setModulators (final Map<String, IModulator> groupEnvelopes, final ISampleZone sampleMetadata)
     {
         final IModulator groupAmpModulator = groupEnvelopes.get (this.tags.targetVolValue ());
         if (groupAmpModulator != null)
@@ -786,7 +786,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param zoneElement The zone element
      * @param sampleMetadata The ISampleMetadata object
      */
-    private void readLoopInformation (final Element zoneElement, final DefaultSampleMetadata sampleMetadata)
+    private void readLoopInformation (final Element zoneElement, final ISampleZone sampleMetadata)
     {
         final Element loopsElement = XMLUtils.getChildElementByName (zoneElement, this.tags.loopsElement ());
         if (loopsElement == null)

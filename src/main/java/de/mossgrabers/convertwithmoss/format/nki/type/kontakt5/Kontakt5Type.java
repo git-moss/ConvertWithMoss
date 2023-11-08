@@ -9,7 +9,8 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunk;
@@ -88,7 +89,7 @@ public class Kontakt5Type extends AbstractKontaktType
      * @param metadataConfig Default metadata
      * @throws IOException Error reading the file
      */
-    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final InputStream inputStream, final IMetadataConfig metadataConfig, final Map<Long, ISampleMetadata> monolithSamples) throws IOException
+    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final InputStream inputStream, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples) throws IOException
     {
         this.sourceFolder = sourceFolder;
 
@@ -139,7 +140,7 @@ public class Kontakt5Type extends AbstractKontaktType
         // Check for encrypted sections
         for (final NIContainerChunk autorizationChunk: niContainerItem.findAll (NIContainerChunkType.AUTHORIZATION))
         {
-            if (autorizationChunk.getData () instanceof AuthorizationChunkData authorization && !authorization.getSerialNumberPIDs ().isEmpty ())
+            if (autorizationChunk.getData () instanceof final AuthorizationChunkData authorization && !authorization.getSerialNumberPIDs ().isEmpty ())
                 this.notifier.logError ("IDS_NKI5_CONTAINS_ENCRYPTED_SUB_TREE");
         }
 
@@ -201,25 +202,29 @@ public class Kontakt5Type extends AbstractKontaktType
      * @param monolithSamples The in-memory monolith samples
      * @throws IOException Could not find a file
      */
-    private static void replaceSamples (final IMultisampleSource multisampleSource, final Map<Long, ISampleMetadata> monolithSamples) throws IOException
+    private static void replaceSamples (final IMultisampleSource multisampleSource, final Map<Long, ISampleZone> monolithSamples) throws IOException
     {
-        final Map<String, ISampleMetadata> sampleFileMap = new HashMap<> ();
-        for (final ISampleMetadata ms: monolithSamples.values ())
-            sampleFileMap.put (ms.getFilename (), ms);
+        final Map<String, ISampleData> sampleFileMap = new HashMap<> ();
+        for (final ISampleZone zone: monolithSamples.values ())
+        {
+            final ISampleData sampleData = zone.getSampleData ();
+            sampleFileMap.put (zone.getName (), sampleData);
+        }
 
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            final List<ISampleMetadata> newGroupSamples = new ArrayList<> ();
-            for (final ISampleMetadata sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleMetadata ())
             {
-                final String filename = sampleMetadata.getFilename ();
-                final ISampleMetadata memoryFile = sampleFileMap.get (filename);
+                final String zoneName = zone.getName ();
+                ISampleData memoryFile = sampleFileMap.get (zoneName + ".wav");
                 if (memoryFile == null)
-                    throw new IOException (Functions.getMessage ("IDS_NKI5_NO_MATCHING_IN_MEMORY_FILE", filename));
-                memoryFile.fillMetadata (sampleMetadata);
-                newGroupSamples.add (memoryFile);
+                {
+                    memoryFile = sampleFileMap.get (zoneName + ".ncw");
+                    if (memoryFile == null)
+                        throw new IOException (Functions.getMessage ("IDS_NKI5_NO_MATCHING_IN_MEMORY_FILE", zoneName));
+                }
+                zone.setSampleData (memoryFile);
             }
-            group.setSampleMetadata (newGroupSamples);
         }
     }
 }

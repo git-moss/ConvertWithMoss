@@ -7,10 +7,13 @@ package de.mossgrabers.convertwithmoss.core.detector;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.Utils;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
-import de.mossgrabers.convertwithmoss.file.AiffSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.file.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 import org.w3c.dom.Element;
@@ -187,25 +190,6 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
 
     /**
-     * Check if the sample start / stop and the sample rate is set, if not read them from the sample
-     * file.
-     *
-     * @param sampleMetadata The sample metadata
-     */
-    protected void loadMissingValues (final DefaultSampleMetadata sampleMetadata)
-    {
-        try
-        {
-            sampleMetadata.addMissingInfoFromWaveFile (false, false);
-        }
-        catch (final IOException ex)
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
-        }
-    }
-
-
-    /**
      * Check for unsupported child tags of a tag.
      *
      * @param tagName The name of the tag to check for its' attributes
@@ -350,29 +334,31 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
     /**
      * Check the type of the source sample for compatibility and handle them accordingly.
-     * 
+     *
      * @param sampleFile The sample file for which to create sample metadata
      * @return The matching sample metadata, support is WAV and AIFF
      * @throws IOException
      */
-    protected DefaultSampleMetadata createSampleMetadata (final File sampleFile) throws IOException
+    protected DefaultSampleZone createSampleMetadata (final File sampleFile) throws IOException
     {
         try
         {
+            ISampleData sampleData = null;
             final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
             final AudioFileFormat.Type type = audioFileFormat.getType ();
             if (AudioFileFormat.Type.WAVE.equals (type))
             {
                 if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                    return new DefaultSampleMetadata (sampleFile);
+                    sampleData = new WavFileSampleData (sampleFile);
             }
             else if (AudioFileFormat.Type.AIFF.equals (type))
             {
                 this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
-                return new AiffSampleMetadata (sampleFile);
+                sampleData = new AiffFileSampleData (sampleFile);
             }
-
-            throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
+            if (sampleData == null)
+                throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
+            return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
         }
         catch (final UnsupportedAudioFileException | IOException ex)
         {

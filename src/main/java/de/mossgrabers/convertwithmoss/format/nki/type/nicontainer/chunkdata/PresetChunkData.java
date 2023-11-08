@@ -105,7 +105,7 @@ public class PresetChunkData extends AbstractChunkData
      */
     public List<Program> parsePrograms () throws IOException
     {
-        final List<String> filePaths = getFilePaths ();
+        final List<String> filePaths = this.getFilePaths ();
         final List<Program> programs = new ArrayList<> ();
 
         // Read all top level programs
@@ -177,7 +177,7 @@ public class PresetChunkData extends AbstractChunkData
 
     /**
      * Find all chunks of the given type.
-     * 
+     *
      * @param topChunks The chunks to search in
      * @param presetChunkID One of the IDs in PresetChunkID
      * @return The chunk if available

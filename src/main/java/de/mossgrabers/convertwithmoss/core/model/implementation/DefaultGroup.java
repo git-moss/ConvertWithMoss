@@ -5,7 +5,7 @@
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 import java.util.ArrayList;
@@ -19,9 +19,9 @@ import java.util.List;
  */
 public class DefaultGroup implements IGroup
 {
-    private List<ISampleMetadata> samples     = new ArrayList<> ();
-    private String                name;
-    protected TriggerType         triggerType = TriggerType.ATTACK;
+    private List<ISampleZone> samples     = new ArrayList<> ();
+    private String            name;
+    protected TriggerType     triggerType = TriggerType.ATTACK;
 
 
     /**
@@ -49,7 +49,7 @@ public class DefaultGroup implements IGroup
      *
      * @param samples The group's samples
      */
-    public DefaultGroup (final List<ISampleMetadata> samples)
+    public DefaultGroup (final List<ISampleZone> samples)
     {
         this.samples = samples;
     }
@@ -73,7 +73,7 @@ public class DefaultGroup implements IGroup
 
     /** {@inheritDoc} */
     @Override
-    public List<ISampleMetadata> getSampleMetadata ()
+    public List<ISampleZone> getSampleMetadata ()
     {
         return this.samples;
     }
@@ -81,7 +81,7 @@ public class DefaultGroup implements IGroup
 
     /** {@inheritDoc} */
     @Override
-    public void setSampleMetadata (final List<ISampleMetadata> samples)
+    public void setSampleMetadata (final List<ISampleZone> samples)
     {
         this.samples = samples;
     }
@@ -89,7 +89,7 @@ public class DefaultGroup implements IGroup
 
     /** {@inheritDoc} */
     @Override
-    public void addSampleMetadata (final ISampleMetadata sample)
+    public void addSampleMetadata (final ISampleZone sample)
     {
         this.samples.add (sample);
     }

@@ -4,17 +4,17 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
-import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
+import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -23,45 +23,30 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 
 /**
- * Metadata for a WAV sample.
+ * The data of a WAV sample file.
  *
  * @author Jürgen Moßgraber
  */
-public class WavSampleMetadata extends DefaultSampleMetadata
+public class WavFileSampleData extends AbstractFileSampleData
 {
     private final WaveFile waveFile;
+    private boolean        hasWavSourceFile = true;
 
 
     /**
      * Constructor.
      *
-     * @param waveFile An already read wave file
-     * @throws IOException Could not read the file
-     */
-    private WavSampleMetadata (final WaveFile waveFile) throws IOException
-    {
-        this.waveFile = waveFile;
-        this.readFromChunks ();
-    }
-
-
-    /**
-     * Constructor.
-     *
-     * @param filename The name of the file
      * @param inputStream The stream from which the file content can be read
      * @throws IOException Could not read the file
      */
-    public WavSampleMetadata (final String filename, final InputStream inputStream) throws IOException
+    public WavFileSampleData (final InputStream inputStream) throws IOException
     {
-        this.setFilename (filename);
-
         this.waveFile = new WaveFile ();
         try
         {
@@ -72,7 +57,7 @@ public class WavSampleMetadata extends DefaultSampleMetadata
             throw new IOException (ex);
         }
 
-        this.readFromChunks ();
+        this.hasWavSourceFile = false;
     }
 
 
@@ -82,7 +67,7 @@ public class WavSampleMetadata extends DefaultSampleMetadata
      * @param file The file where the sample is stored
      * @throws IOException Could not read the file
      */
-    public WavSampleMetadata (final File file) throws IOException
+    public WavFileSampleData (final File file) throws IOException
     {
         super (file);
 
@@ -94,7 +79,6 @@ public class WavSampleMetadata extends DefaultSampleMetadata
         {
             throw new IOException (ex);
         }
-        this.readFromChunks ();
     }
 
 
@@ -105,7 +89,7 @@ public class WavSampleMetadata extends DefaultSampleMetadata
      * @param zipEntry The relative path in the ZIP where the file is stored
      * @throws IOException Could not read the file
      */
-    public WavSampleMetadata (final File zipFile, final File zipEntry) throws IOException
+    public WavFileSampleData (final File zipFile, final File zipEntry) throws IOException
     {
         super (zipFile, zipEntry);
 
@@ -126,48 +110,79 @@ public class WavSampleMetadata extends DefaultSampleMetadata
                 throw new IOException (ex);
             }
         }
-
-        this.readFromChunks ();
     }
 
 
-    private void readFromChunks () throws IOException
+    /** {@inheritDoc} */
+    @Override
+    public void writeSample (final OutputStream outputStream) throws IOException
+    {
+        // Use the original WAV file if possible
+        if (this.hasWavSourceFile)
+            super.writeSample (outputStream);
+        else
+            this.waveFile.write (outputStream);
+    }
+
+
+    /**
+     * Combines two mono files into a stereo file. Format and sample chunks must be identical.
+     *
+     * @param sample The other sample to include
+     * @throws CombinationNotPossibleException Could not combine the wave files
+     */
+    public void combine (final WavFileSampleData sample) throws CombinationNotPossibleException
+    {
+        this.waveFile.combine (sample.waveFile);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void addMetadata (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
         final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
+        final int numberOfChannels = formatChunk.getNumberOfChannels ();
+        if (numberOfChannels > 2)
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), this.sampleFile.getAbsolutePath ()));
 
-        this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels () == 1, formatChunk.getSampleRate (), formatChunk.getSignicantBitsPerSample ());
-
-        final DataChunk dataChunk = this.waveFile.getDataChunk ();
-
-        if (dataChunk != null)
+        if (zone.getStart () < 0)
+            zone.setStart (0);
+        try
         {
-            final int numberOfChannels = formatChunk.getNumberOfChannels ();
-            if (numberOfChannels > 2)
-                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), this.sampleFile.getAbsolutePath ()));
-            this.isMonoFile = numberOfChannels == 1;
-
-            this.start = 0;
-            try
-            {
-                this.stop = dataChunk.calculateLength (formatChunk);
-            }
-            catch (final CompressionNotSupportedException ex)
-            {
-                throw new IOException (ex);
-            }
+            if (zone.getStop () <= 0)
+                zone.setStop (this.waveFile.getDataChunk ().calculateLength (formatChunk));
+        }
+        catch (final CompressionNotSupportedException ex)
+        {
+            throw new IOException (ex);
         }
 
         final SampleChunk sampleChunk = this.waveFile.getSampleChunk ();
         if (sampleChunk == null)
             return;
 
-        this.keyRoot = sampleChunk.getMIDIUnityNote ();
+        // Read the this.keyRoot if not set...
+        if (addRootKey && zone.getKeyRoot () == -1)
+            zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
 
         final int midiPitchFraction = sampleChunk.getMIDIPitchFraction ();
-        // 0x0 (= 0 cent) to 0x80000000 (= 50 cent), tune is [-1..1], which is [-100..100] cent
-        this.tune = Math.max (0, Math.min (1, midiPitchFraction * 0.5 / 0x80000000));
+        if (zone.getTune () == 0)
+            zone.setTune (Math.max (0, Math.min (0.5, midiPitchFraction * 0.5 / 0x80000000)));
 
-        sampleChunk.getLoops ().forEach (sampleLoop -> {
+        if (addLoops)
+            addLoops (sampleChunk, zone.getLoops ());
+    }
+
+
+    private static void addLoops (final SampleChunk sampleChunk, final List<ISampleLoop> loops)
+    {
+        // Check if are already present
+        if (!loops.isEmpty ())
+            return;
+
+        for (final SampleChunkLoop sampleLoop: sampleChunk.getLoops ())
+        {
             final DefaultSampleLoop loop = new DefaultSampleLoop ();
             switch (sampleLoop.getType ())
             {
@@ -184,53 +199,7 @@ public class WavSampleMetadata extends DefaultSampleMetadata
             }
             loop.setStart (sampleLoop.getStart ());
             loop.setEnd (sampleLoop.getEnd ());
-            this.loops.add (loop);
-        });
-    }
-
-
-    /**
-     * Combines two mono files into a stereo file. Format and sample chunks must be identical.
-     *
-     * @param sample The other sample to include
-     * @throws CombinationNotPossibleException Could not combine the wave files
-     */
-    public void combine (final WavSampleMetadata sample) throws CombinationNotPossibleException
-    {
-        this.waveFile.combine (sample.waveFile);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void writeSample (final OutputStream outputStream) throws IOException
-    {
-        if (this.getCombinedName ().isEmpty ())
-        {
-            final File file = this.getFile ();
-            if (file != null)
-            {
-                Files.copy (file.toPath (), outputStream);
-                return;
-            }
+            loops.add (loop);
         }
-
-        this.waveFile.write (outputStream);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void addMissingInfoFromWaveFile (final boolean addRootKey, final boolean addLoops) throws IOException
-    {
-        super.addMissingInfoFromWaveFile (new WavSampleMetadata (this.waveFile), addRootKey, addLoops);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public IAudioMetadata getAudioMetadata ()
-    {
-        return this.audioMetadata;
     }
 }

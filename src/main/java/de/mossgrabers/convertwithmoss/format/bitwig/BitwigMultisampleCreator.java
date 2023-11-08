@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -122,7 +122,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
             final String name = group.getName ();
             final int idx = name == null || name.isBlank () ? -1 : index;
 
-            for (final ISampleMetadata sample: group.getSampleMetadata ())
+            for (final ISampleZone sample: group.getSampleMetadata ())
             {
                 if (sample.getTrigger () != TriggerType.RELEASE)
                     createSample (document, multisampleElement, idx, sample);
@@ -161,27 +161,26 @@ public class BitwigMultisampleCreator extends AbstractCreator
      * @param document The XML document
      * @param multisampleElement The element where to add the sample information
      * @param groupIndex The index of the group to which this sample belongs
-     * @param info Where to get the sample info from
+     * @param zone Where to get the sample zone info from
      */
-    private static void createSample (final Document document, final Element multisampleElement, final int groupIndex, final ISampleMetadata info)
+    private static void createSample (final Document document, final Element multisampleElement, final int groupIndex, final ISampleZone zone)
     {
         /////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, multisampleElement, "sample");
-        final Optional<String> filename = info.getUpdatedFilename ();
-        sampleElement.setAttribute ("file", filename.isPresent () ? filename.get () : "");
+        sampleElement.setAttribute ("file", zone.getName () + ".wav");
         if (groupIndex >= 0)
             sampleElement.setAttribute ("group", Integer.toString (groupIndex));
-        final double gain = info.getGain ();
+        final double gain = zone.getGain ();
         if (gain != 0)
             XMLUtils.setDoubleAttribute (sampleElement, "gain", gain, 2);
-        XMLUtils.setDoubleAttribute (sampleElement, "sample-start", Math.max (0, info.getStart ()), 3);
-        final int stop = info.getStop ();
+        XMLUtils.setDoubleAttribute (sampleElement, "sample-start", Math.max (0, zone.getStart ()), 3);
+        final int stop = zone.getStop ();
         if (stop >= 0)
             XMLUtils.setDoubleAttribute (sampleElement, "sample-stop", stop, 3);
-        XMLUtils.setBooleanAttribute (sampleElement, "reverse", info.isReversed ());
-        final PlayLogic playLogic = info.getPlayLogic ();
+        XMLUtils.setBooleanAttribute (sampleElement, "reverse", zone.isReversed ());
+        final PlayLogic playLogic = zone.getPlayLogic ();
         if (playLogic != PlayLogic.ALWAYS)
             sampleElement.setAttribute ("zone-logic", "round-robin");
 
@@ -189,13 +188,13 @@ public class BitwigMultisampleCreator extends AbstractCreator
         // Key element and attributes
 
         final Element keyElement = XMLUtils.addElement (document, sampleElement, "key");
-        XMLUtils.setIntegerAttribute (keyElement, "low", check (info.getKeyLow (), 0));
-        XMLUtils.setIntegerAttribute (keyElement, "low-fade", check (info.getNoteCrossfadeLow (), 0));
-        XMLUtils.setIntegerAttribute (keyElement, "root", info.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (keyElement, "high", check (info.getKeyHigh (), 127));
-        XMLUtils.setIntegerAttribute (keyElement, "high-fade", check (info.getNoteCrossfadeHigh (), 0));
-        XMLUtils.setDoubleAttribute (keyElement, "track", info.getKeyTracking (), 4);
-        final double tune = info.getTune ();
+        XMLUtils.setIntegerAttribute (keyElement, "low", check (zone.getKeyLow (), 0));
+        XMLUtils.setIntegerAttribute (keyElement, "low-fade", check (zone.getNoteCrossfadeLow (), 0));
+        XMLUtils.setIntegerAttribute (keyElement, "root", zone.getKeyRoot ());
+        XMLUtils.setIntegerAttribute (keyElement, "high", check (zone.getKeyHigh (), 127));
+        XMLUtils.setIntegerAttribute (keyElement, "high-fade", check (zone.getNoteCrossfadeHigh (), 0));
+        XMLUtils.setDoubleAttribute (keyElement, "track", zone.getKeyTracking (), 4);
+        final double tune = zone.getTune ();
         if (tune != 0)
             XMLUtils.setDoubleAttribute (keyElement, "tune", tune, 2);
 
@@ -203,15 +202,15 @@ public class BitwigMultisampleCreator extends AbstractCreator
         // Key element and attributes
 
         final Element velocityElement = XMLUtils.addElement (document, sampleElement, "velocity");
-        XMLUtils.setIntegerAttribute (velocityElement, "low", check (info.getVelocityLow (), 0));
-        XMLUtils.setIntegerAttribute (velocityElement, "low-fade", check (info.getVelocityCrossfadeLow (), 0));
-        XMLUtils.setIntegerAttribute (velocityElement, "high", check (info.getVelocityHigh (), 127));
-        XMLUtils.setIntegerAttribute (velocityElement, "high-fade", check (info.getVelocityCrossfadeHigh (), 0));
+        XMLUtils.setIntegerAttribute (velocityElement, "low", check (zone.getVelocityLow (), 0));
+        XMLUtils.setIntegerAttribute (velocityElement, "low-fade", check (zone.getVelocityCrossfadeLow (), 0));
+        XMLUtils.setIntegerAttribute (velocityElement, "high", check (zone.getVelocityHigh (), 127));
+        XMLUtils.setIntegerAttribute (velocityElement, "high-fade", check (zone.getVelocityCrossfadeHigh (), 0));
 
         /////////////////////////////////////////////////////
         // Loops
 
-        final List<ISampleLoop> loops = info.getLoops ();
+        final List<ISampleLoop> loops = zone.getLoops ();
         if (!loops.isEmpty ())
         {
             final ISampleLoop sampleLoop = loops.get (0);

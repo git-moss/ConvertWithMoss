@@ -14,7 +14,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -139,13 +139,13 @@ public class SfzCreator extends AbstractCreator
 
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            final List<ISampleMetadata> sampleMetadata = group.getSampleMetadata ();
+            final List<ISampleZone> sampleMetadata = group.getSampleMetadata ();
             if (sampleMetadata.isEmpty ())
                 continue;
 
             // Check for any sample which play round-robin
             int sequence = 0;
-            for (final ISampleMetadata info: sampleMetadata)
+            for (final ISampleZone info: sampleMetadata)
             {
                 if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                     sequence++;
@@ -163,7 +163,7 @@ public class SfzCreator extends AbstractCreator
                 addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
 
             sequence = 1;
-            for (final ISampleMetadata info: sampleMetadata)
+            for (final ISampleZone info: sampleMetadata)
             {
                 this.createSample (safeSampleFolderName, sb, info, sequence);
                 if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
@@ -183,12 +183,10 @@ public class SfzCreator extends AbstractCreator
      * @param info Where to get the sample info from
      * @param sequenceNumber The number in the sequence for round-robin playback
      */
-    private void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleMetadata info, final int sequenceNumber)
+    private void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleZone info, final int sequenceNumber)
     {
         sb.append ("\n<").append (SfzHeader.REGION).append (">\n");
-        final Optional<String> filename = info.getUpdatedFilename ();
-        if (filename.isPresent ())
-            addAttribute (sb, SfzOpcode.SAMPLE, AbstractCreator.formatFileName (safeSampleFolderName, filename.get ()), true);
+        addAttribute (sb, SfzOpcode.SAMPLE, AbstractCreator.formatFileName (safeSampleFolderName, info.getName () + ".wav"), true);
 
         // Default is 'attack' and does not need to be added
         final TriggerType trigger = info.getTrigger ();
@@ -324,27 +322,27 @@ public class SfzCreator extends AbstractCreator
     /**
      * Create the loop info.
      *
-     * @param sb Where to add the XML code
-     * @param info Where to get the sample info from
+     * @param buffer Where to add the XML code
+     * @param zone Where to get the sample info from
      */
-    private void createLoops (final StringBuilder sb, final ISampleMetadata info)
+    private void createLoops (final StringBuilder buffer, final ISampleZone zone)
     {
-        final List<ISampleLoop> loops = info.getLoops ();
+        final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
         {
-            addAttribute (sb, SfzOpcode.LOOP_MODE, "no_loop", false);
+            addAttribute (buffer, SfzOpcode.LOOP_MODE, "no_loop", false);
         }
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);
             // SFZ currently only supports forward looping
-            addAttribute (sb, SfzOpcode.LOOP_MODE, "loop_continuous", false);
+            addAttribute (buffer, SfzOpcode.LOOP_MODE, "loop_continuous", false);
             final String type = LOOP_TYPE_MAP.get (sampleLoop.getType ());
             // No need to write the default value
             if (!"forward".equals (type))
-                addAttribute (sb, SfzOpcode.LOOP_TYPE, type, false);
-            addIntegerAttribute (sb, SfzOpcode.LOOP_START, sampleLoop.getStart (), false);
-            sb.append (SfzOpcode.LOOP_END).append ('=').append (sampleLoop.getEnd ());
+                addAttribute (buffer, SfzOpcode.LOOP_TYPE, type, false);
+            addIntegerAttribute (buffer, SfzOpcode.LOOP_START, sampleLoop.getStart (), false);
+            buffer.append (SfzOpcode.LOOP_END).append ('=').append (sampleLoop.getEnd ());
 
             // Calculate the crossfade in seconds from a percentage of the loop length
             final double crossfade = sampleLoop.getCrossfade ();
@@ -356,9 +354,9 @@ public class SfzCreator extends AbstractCreator
                     double loopLengthInSeconds;
                     try
                     {
-                        loopLengthInSeconds = loopLength / (double) info.getAudioMetadata ().getSampleRate ();
+                        loopLengthInSeconds = loopLength / (double) zone.getSampleData ().getAudioMetadata ().getSampleRate ();
                         final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
-                        sb.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
+                        buffer.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
                     }
                     catch (final IOException ex)
                     {
@@ -367,7 +365,7 @@ public class SfzCreator extends AbstractCreator
                 }
             }
         }
-        sb.append (LINE_FEED);
+        buffer.append (LINE_FEED);
     }
 
 
@@ -377,7 +375,7 @@ public class SfzCreator extends AbstractCreator
      * @param sb Where to add the created text
      * @param sampleMetadata The data source
      */
-    private static void createVolume (final StringBuilder sb, final ISampleMetadata sampleMetadata)
+    private static void createVolume (final StringBuilder sb, final ISampleZone sampleMetadata)
     {
         final double volume = sampleMetadata.getGain ();
         if (volume != 0)
@@ -410,7 +408,7 @@ public class SfzCreator extends AbstractCreator
      * @param sb Where to add the XML code
      * @param info Where to get the sample info from
      */
-    private static void createFilter (final StringBuilder sb, final ISampleMetadata info)
+    private static void createFilter (final StringBuilder sb, final ISampleZone info)
     {
         final Optional<IFilter> optFilter = info.getFilter ();
         if (optFilter.isEmpty ())

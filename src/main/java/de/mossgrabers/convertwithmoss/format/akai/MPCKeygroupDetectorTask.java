@@ -13,14 +13,16 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
-import de.mossgrabers.convertwithmoss.core.model.ISampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -178,7 +180,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             final int pitchBend = (int) Math.round (pitchBendRange * 1200.0);
             for (final IGroup group: groups)
             {
-                for (final ISampleMetadata sample: group.getSampleMetadata ())
+                for (final ISampleZone sample: group.getSampleMetadata ())
                 {
                     sample.setBendUp (pitchBend);
                     sample.setBendDown (-pitchBend);
@@ -202,7 +204,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      */
     private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final Element [] instrumentsElements, final boolean isDrum) throws FileNotFoundException
     {
-        final List<DefaultSampleMetadata> samples = new ArrayList<> ();
+        final List<DefaultSampleZone> samples = new ArrayList<> ();
 
         for (final Element instrumentElement: instrumentsElements)
         {
@@ -270,7 +272,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                     final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
                     final int velEnd = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_END, 0);
 
-                    final DefaultSampleMetadata sampleMetadata = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
+                    final DefaultSampleZone sampleMetadata = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
                     if (sampleMetadata == null)
                         continue;
                     samples.add (sampleMetadata);
@@ -345,7 +347,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      * @param triggerType The trigger type
      * @return The sample metadata or null
      */
-    private DefaultSampleMetadata parseSampleData (final Element layerElement, final File basePath, final int keyLow, final int keyHigh, final int velStart, final int velEnd, final PlayLogic zonePlay, final boolean ignoreBaseNote, final TriggerType triggerType)
+    private DefaultSampleZone parseSampleData (final Element layerElement, final File basePath, final int keyLow, final int keyHigh, final int velStart, final int velEnd, final PlayLogic zonePlay, final boolean ignoreBaseNote, final TriggerType triggerType)
     {
         final Element sampleNameElement = XMLUtils.getChildElementByName (layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME);
         if (sampleNameElement == null)
@@ -356,7 +358,17 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (sampleName.isBlank ())
             return null;
 
-        final DefaultSampleMetadata sampleMetadata = new DefaultSampleMetadata (sampleName + ".wav", new File (basePath, sampleName + ".WAV"));
+        final ISampleData sampleData;
+        try
+        {
+            sampleData = new WavFileSampleData (new File (basePath, sampleName + ".WAV"));
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY");
+            return null;
+        }
+        final DefaultSampleZone sampleMetadata = new DefaultSampleZone (sampleName, sampleData);
 
         sampleMetadata.setKeyLow (keyLow);
         sampleMetadata.setKeyHigh (keyHigh);
@@ -421,16 +433,16 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      *
      * @param isDrum True if it is a Drum patch
      * @param isOneShot If it is a one shot there is no need to read loop data
-     * @param sampleMetadata Where to store the data
+     * @param zone Where to store the data
      * @throws FileNotFoundException The WAV file does not exist
      */
-    private void readMissingData (final boolean isDrum, final boolean isOneShot, final DefaultSampleMetadata sampleMetadata) throws FileNotFoundException
+    private void readMissingData (final boolean isDrum, final boolean isOneShot, final DefaultSampleZone zone) throws FileNotFoundException
     {
-        if (sampleMetadata.getStop () <= 0 || sampleMetadata.getKeyRoot () < 0 || !isOneShot && sampleMetadata.getLoops ().isEmpty ())
+        if (zone.getStop () <= 0 || zone.getKeyRoot () < 0 || !isOneShot && zone.getLoops ().isEmpty ())
         {
             try
             {
-                sampleMetadata.addMissingInfoFromWaveFile (!isDrum, !isDrum && !isOneShot);
+                zone.getSampleData ().addMetadata (zone, !isDrum, !isDrum && !isOneShot);
             }
             catch (final FileNotFoundException ex)
             {
@@ -450,7 +462,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      * @param layerElement THe layer element
      * @param sampleMetadata Where to store the data
      */
-    private static void parseLoop (final Element layerElement, final DefaultSampleMetadata sampleMetadata)
+    private static void parseLoop (final Element layerElement, final DefaultSampleZone sampleMetadata)
     {
         // There might be no loop, forward or reverse
         final int sliceLoop = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, -1);
@@ -478,13 +490,13 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      * @param samples The samples to group into groups
      * @return The layers
      */
-    private static List<IGroup> groupIntoLayers (final List<DefaultSampleMetadata> samples)
+    private static List<IGroup> groupIntoLayers (final List<DefaultSampleZone> samples)
     {
         final Map<String, IGroup> layerMap = new HashMap<> ();
 
         int count = 1;
 
-        for (final DefaultSampleMetadata sampleMetadata: samples)
+        for (final DefaultSampleZone sampleMetadata: samples)
         {
             final String id = sampleMetadata.getVelocityLow () + "-" + sampleMetadata.getVelocityHigh ();
             final IGroup group = layerMap.computeIfAbsent (id, key -> new DefaultGroup ());
@@ -531,7 +543,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         for (final IGroup layer: groups)
         {
-            for (final ISampleMetadata sampleMetadata: layer.getSampleMetadata ())
+            for (final ISampleZone sampleMetadata: layer.getSampleMetadata ())
             {
                 final Integer noteNumber = padNoteMap.get (Integer.valueOf (sampleMetadata.getKeyLow ()));
                 if (noteNumber == null)
