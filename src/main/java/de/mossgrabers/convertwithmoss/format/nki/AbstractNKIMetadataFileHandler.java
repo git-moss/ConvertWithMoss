@@ -226,13 +226,13 @@ public abstract class AbstractNKIMetadataFileHandler
                 name = "Group " + (groupCount + 1);
             String groupContent = groupTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%GROUP_NAME%", name);
 
-            final List<ISampleZone> sampleMetadataList = group.getSampleMetadata ();
-            for (final ISampleZone sampleMetadata: sampleMetadataList)
+            final List<ISampleZone> zones = group.getSampleZones ();
+            for (final ISampleZone zone: zones)
             {
-                String zoneContent = this.addZoneData (sampleMetadata, safeSampleFolderName, zoneTemplate, sampleCount, groupCount);
+                String zoneContent = this.addZoneData (zone, safeSampleFolderName, zoneTemplate, sampleCount, groupCount);
 
                 final StringBuilder loopsContent = new StringBuilder ();
-                final List<ISampleLoop> loops = sampleMetadata.getLoops ();
+                final List<ISampleLoop> loops = zone.getLoops ();
                 for (int loopIndex = 0; loopIndex < loops.size (); loopIndex++)
                 {
                     final ISampleLoop loop = loops.get (loopIndex);
@@ -251,7 +251,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
             // These parameters can only be set on the group. This implementation uses the first
             // found
-            final ISampleZone sampleMetadata = sampleMetadataList.isEmpty () ? null : sampleMetadataList.get (0);
+            final ISampleZone sampleMetadata = zones.isEmpty () ? null : zones.get (0);
             final double pitchBendUp = sampleMetadata == null ? 0 : sampleMetadata.getBendUp ();
             final boolean keyTracking = sampleMetadata == null || sampleMetadata.getKeyTracking () > 0;
             final boolean isReleaseTrigger = sampleMetadata != null && sampleMetadata.getTrigger () == TriggerType.RELEASE;
@@ -542,7 +542,7 @@ public abstract class AbstractNKIMetadataFileHandler
         final int pitchBend = this.readGroupPitchBend (groupElement);
         group.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-        group.setSampleMetadata (this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, sourcePath, monolithSamples, filter));
+        group.setSampleZones (this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, sourcePath, monolithSamples, filter));
         return group;
     }
 

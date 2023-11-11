@@ -73,7 +73,7 @@ public class DefaultGroup implements IGroup
 
     /** {@inheritDoc} */
     @Override
-    public List<ISampleZone> getSampleMetadata ()
+    public List<ISampleZone> getSampleZones ()
     {
         return this.samples;
     }
@@ -81,7 +81,7 @@ public class DefaultGroup implements IGroup
 
     /** {@inheritDoc} */
     @Override
-    public void setSampleMetadata (final List<ISampleZone> samples)
+    public void setSampleZones (final List<ISampleZone> samples)
     {
         this.samples = samples;
     }

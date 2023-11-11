@@ -115,7 +115,7 @@ public class DefaultMultisampleSource implements IMultisampleSource
         final List<IGroup> cleanedGroups = new ArrayList<> ();
         for (final IGroup group: this.groups)
         {
-            final List<ISampleZone> sampleMetadata = group.getSampleMetadata ();
+            final List<ISampleZone> sampleMetadata = group.getSampleZones ();
             if (sampleMetadata.isEmpty ())
                 continue;
 
@@ -177,7 +177,7 @@ public class DefaultMultisampleSource implements IMultisampleSource
         IFilter globalFilter = null;
         for (final IGroup group: this.groups)
         {
-            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone sampleMetadata: group.getSampleZones ())
             {
                 final Optional<IFilter> optFilter = sampleMetadata.getFilter ();
                 if (optFilter.isEmpty ())
@@ -200,8 +200,8 @@ public class DefaultMultisampleSource implements IMultisampleSource
     {
         for (final IGroup group: this.groups)
         {
-            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
-                sampleMetadata.setFilter (filter);
+            for (final ISampleZone zone: group.getSampleZones ())
+                zone.setFilter (filter);
         }
     }
 }

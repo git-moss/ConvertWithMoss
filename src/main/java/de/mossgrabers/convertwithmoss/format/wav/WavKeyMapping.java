@@ -165,7 +165,7 @@ public class WavKeyMapping
                 velHigh = 127;
             final int crossfadeHigh = velHigh == 127 ? 0 : Math.min (velHigh - low, crossfadeVel);
 
-            for (final ISampleZone zone: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setVelocityLow (low);
                 zone.setVelocityCrossfadeLow (0);

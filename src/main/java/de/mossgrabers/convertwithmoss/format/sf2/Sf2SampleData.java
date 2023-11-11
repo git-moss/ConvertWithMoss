@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.sf2;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
@@ -64,10 +65,11 @@ public class Sf2SampleData extends AbstractSampleData
         final byte [] rightSampleData = this.rightSample.getSampleData ();
         final byte [] rightSample24Data = this.rightSample.getSample24Data ();
 
-        final int bitsPerSample = this.audioMetadata.getBitResolution ();
+        final IAudioMetadata am = getAudioMetadata ();
+        final int bitsPerSample = am.getBitResolution ();
 
         // Create an empty wave file with the required resolution and calculated data length
-        final WaveFile wavFile = new WaveFile (2, this.audioMetadata.getSampleRate (), bitsPerSample, (int) this.lengthInSamples);
+        final WaveFile wavFile = new WaveFile (2, am.getSampleRate (), bitsPerSample, (int) this.lengthInSamples);
         final DataChunk dataChunk = wavFile.getDataChunk ();
         final byte [] data = dataChunk.getData ();
 
@@ -161,6 +163,7 @@ public class Sf2SampleData extends AbstractSampleData
     @Override
     protected void createAudioMetadata () throws IOException
     {
-        this.audioMetadata = new DefaultAudioMetadata (2, (int) this.sample.getSampleRate (), this.is24 ? 24 : 16, (int) this.lengthInSamples);
+        if (this.audioMetadata == null)
+            this.audioMetadata = new DefaultAudioMetadata (2, (int) this.sample.getSampleRate (), this.is24 ? 24 : 16, (int) this.lengthInSamples);
     }
 }

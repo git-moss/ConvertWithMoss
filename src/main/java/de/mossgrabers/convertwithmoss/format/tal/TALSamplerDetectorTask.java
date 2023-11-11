@@ -324,12 +324,12 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
 
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
-                sampleMetadata.setBendUp (bend);
-                sampleMetadata.setBendDown (bend);
+                zone.setBendUp (bend);
+                zone.setBendDown (bend);
 
-                final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+                final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
                 amplitudeEnvelope.setAttack (ampAttach);
                 amplitudeEnvelope.setHold (ampHold);
                 amplitudeEnvelope.setDecay (ampDecay);
@@ -338,7 +338,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
 
                 if (globalPitchEnvelopeDepth > 0)
                 {
-                    final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+                    final IModulator pitchModulator = zone.getPitchModulator ();
                     pitchModulator.setDepth (globalPitchEnvelopeDepth);
 
                     final IEnvelope pitchEnvelope = pitchModulator.getSource ();

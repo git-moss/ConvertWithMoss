@@ -62,8 +62,8 @@ public class KorgmultisampleCreator extends AbstractCreator
         for (int i = 0; i < size; i++)
         {
             final IGroup group = groups.get (i);
-            final ISampleZone sampleMetadata = group.getSampleMetadata ().get (0);
-            final String groupName = size > 1 ? String.format ("%s %03d-%03d", sampleName, Integer.valueOf (sampleMetadata.getVelocityLow ()), Integer.valueOf (sampleMetadata.getVelocityHigh ())) : sampleName;
+            final ISampleZone zone = group.getSampleZones ().get (0);
+            final String groupName = size > 1 ? String.format ("%s %03d-%03d", sampleName, Integer.valueOf (zone.getVelocityLow ()), Integer.valueOf (zone.getVelocityHigh ())) : sampleName;
             final File multiFile = new File (subFolder, groupName + ".korgmultisample");
             if (multiFile.exists ())
             {
@@ -140,23 +140,23 @@ public class KorgmultisampleCreator extends AbstractCreator
     private static void writeSample (final ByteArrayOutputStream multisampleOutput, final IGroup group) throws IOException
     {
         // Create one sample block for each sample
-        for (final ISampleZone sample: group.getSampleMetadata ())
+        for (final ISampleZone zone: group.getSampleZones ())
         {
             final byte [] sbByteArray;
             try (final ByteArrayOutputStream sampleBlockOutput = new ByteArrayOutputStream ())
             {
-                final String filename = sample.getName () + ".wav";
+                final String filename = zone.getName () + ".wav";
 
                 final byte [] sampleByteArray;
                 final int offset;
                 try (final ByteArrayOutputStream sampleOutput = new ByteArrayOutputStream ())
                 {
-                    writeSampleParameters (sampleOutput, sample);
+                    writeSampleParameters (sampleOutput, zone);
 
                     // Offset to key zone data
                     offset = sampleOutput.size () + 2;
 
-                    writeKeyZoneParameters (sampleOutput, sample);
+                    writeKeyZoneParameters (sampleOutput, zone);
 
                     sampleByteArray = sampleOutput.toByteArray ();
                 }

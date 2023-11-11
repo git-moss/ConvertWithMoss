@@ -14,21 +14,36 @@
 	-fx-vgap: 10.0;
 }
 
-.tab-pane:top *.tab-header-area {
-    -fx-padding: 0.0 0.0 0.0 0.0;
-}
-
-.tab-pane .tab-header-background {
-	-fx-opacity: 0.0;
-}
-
-.tab-pane > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
-	-fx-background-color: green;
-	-fx-opacity: 0.1;
-}
-
 .tab-pane .tab-content-area {
 	-fx-border-color: -fx-box-border;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.horizontal-tab-pane *.tab {
+	/* Determines the tab height */
+	-fx-pref-width: 50px; 
+	/* Everything else is just aesthetics */
+	-fx-padding: 20px;
+	-fx-background-insets: 2 -1 -1 -1;
+	-fx-border-width: 1 0 1 1;
+	-fx-border-color: rgb(55, 55, 56) black black black;
+}
+
+/** Remove the focus border which interlapped the text. */
+.tab-pane > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-insets: 0 0 0 0, 0 1 0 0, 1 2 0 1;
+}
+
+.horizontal-tab-pane *.tab:selected {
+	-fx-border-width: 4px 0px 1px 1px;
+	-fx-border-color: rgb(200, 0, 0) black rgb(45, 45, 46) black;
 }
 
 .titled-pane>*.content {

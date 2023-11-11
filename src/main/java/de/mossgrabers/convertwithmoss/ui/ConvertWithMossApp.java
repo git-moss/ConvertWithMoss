@@ -47,8 +47,11 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
@@ -129,7 +132,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
      */
     public ConvertWithMossApp () throws EndApplicationException
     {
-        super ("de/mossgrabers/convertwithmoss", 1000, 800);
+        super ("de/mossgrabers/convertwithmoss", 1280, 840);
 
         this.detectors = new IDetector []
         {
@@ -201,7 +204,6 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         sourceUpperPart.addComponent (new BorderPane (this.sourcePathField, null, sourceFolderSelectButton, null, null));
 
         this.sourceTabPane.getStyleClass ().add ("paddingLeftBottomRight");
-
         final ObservableList<Tab> tabs = this.sourceTabPane.getTabs ();
         for (final IDetector detector: this.detectors)
         {
@@ -209,6 +211,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             tab.setClosable (false);
             tabs.add (tab);
         }
+        setTabPaneLeftTabsHorizontal (this.sourceTabPane);
 
         // Rename CSV file section
         final BoxPanel srcRenamingCheckboxPanel = new BoxPanel (Orientation.HORIZONTAL, false);
@@ -257,6 +260,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             tab.setClosable (false);
             destinationTabs.add (tab);
         }
+        setTabPaneLeftTabsHorizontal (this.destinationTabPane);
 
         final BoxPanel bottomLeft = new BoxPanel (Orientation.HORIZONTAL);
         this.createFolderStructure = bottomLeft.createCheckBox ("@IDS_MAIN_CREATE_FOLDERS", "@IDS_MAIN_CREATE_FOLDERS_TOOLTIP");
@@ -565,9 +569,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         boolean wasSet = false;
         for (final IGroup layer: multisampleSource.getGroups ())
         {
-            for (final ISampleZone sample: layer.getSampleMetadata ())
+            for (final ISampleZone zone: layer.getSampleZones ())
             {
-                final IEnvelope volumeEnvelope = sample.getAmplitudeModulator ().getSource ();
+                final IEnvelope volumeEnvelope = zone.getAmplitudeModulator ().getSource ();
                 if (!volumeEnvelope.isSet ())
                 {
                     volumeEnvelope.set (DefaultEnvelope.getDefaultEnvelope (category));
@@ -699,5 +703,36 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         button.alignmentProperty ().set (Pos.CENTER_LEFT);
         button.graphicTextGapProperty ().set (12);
         return button;
+    }
+
+
+    private static void setTabPaneLeftTabsHorizontal (final TabPane tabPane)
+    {
+        tabPane.setSide (Side.LEFT);
+        tabPane.setRotateGraphic (true);
+        tabPane.setTabMinHeight (160); // Determines tab width. I know, its odd.
+        tabPane.setTabMaxHeight (200);
+        tabPane.getStyleClass ().add ("horizontal-tab-pane");
+
+        for (final Tab tab: tabPane.getTabs ())
+        {
+            final Label l = new Label ("xxxx");
+            l.setVisible (false);
+            l.setMaxHeight (0);
+            l.setPrefHeight (0);
+            tab.setGraphic (l);
+
+            Platform.runLater ( () -> {
+                // Get the "tab-container" node. This is what we want to rotate/shift for easy
+                // left-alignment.
+                // You can omit the last "getParent()" with a few tweaks for centered labels
+                Parent tabContainer = tab.getGraphic ().getParent ().getParent ();
+                tabContainer.setRotate (90);
+                // By default the display will originate from the center.
+                // Applying a negative Y transformation will move it left.
+                // Should be the 'TabMinHeight/2'
+                tabContainer.setTranslateY (-80);
+            });
+        }
     }
 }

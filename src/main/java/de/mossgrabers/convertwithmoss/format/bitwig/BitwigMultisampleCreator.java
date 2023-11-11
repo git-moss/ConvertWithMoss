@@ -122,10 +122,10 @@ public class BitwigMultisampleCreator extends AbstractCreator
             final String name = group.getName ();
             final int idx = name == null || name.isBlank () ? -1 : index;
 
-            for (final ISampleZone sample: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
-                if (sample.getTrigger () != TriggerType.RELEASE)
-                    createSample (document, multisampleElement, idx, sample);
+                if (zone.getTrigger () != TriggerType.RELEASE)
+                    createSample (document, multisampleElement, idx, zone);
             }
 
             index++;
