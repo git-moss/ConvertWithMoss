@@ -45,6 +45,11 @@
     -fx-base: -fx-accent ;
 } 
 
+.horizontal-tab-pane *.tab:selected {
+	-fx-background-color: rgb(45, 45, 46);
+	-fx-border-color: rgb(75, 125, 200) black rgb(45, 45, 46) black;
+}
+
 .table-view {
     -fx-selection-bar-non-focused: derive(-fx-base, 50%);
 }

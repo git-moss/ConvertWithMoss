@@ -99,7 +99,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         int outputCount = 0;
         for (final IGroup layer: multisampleSource.getGroups ())
         {
-            for (final ISampleZone zone: layer.getSampleMetadata ())
+            for (final ISampleZone zone: layer.getSampleZones ())
             {
                 // WAV ending needs to be upper case!
                 final File sampleFile = new File (sampleFolder, zone.getName () + ".WAV");
@@ -153,7 +153,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         {
             final TriggerType trigger = group.getTrigger ();
 
-            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone sampleMetadata: group.getSampleZones ())
             {
                 final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger, multisampleSource.getGlobalFilter ());
                 if (keygroupOpt.isEmpty ())
@@ -202,7 +202,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         final List<IGroup> layers = multisampleSource.getNonEmptyGroups (false);
         if (!layers.isEmpty ())
         {
-            final int bendUp = Math.abs (layers.get (0).getSampleMetadata ().get (0).getBendUp ());
+            final int bendUp = Math.abs (layers.get (0).getSampleZones ().get (0).getBendUp ());
             final double bendUpValue = bendUp == 0 ? 0.16 : bendUp / 1200.0;
             XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, formatDouble (bendUpValue, 3));
         }

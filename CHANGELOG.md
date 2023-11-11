@@ -1,15 +1,18 @@
 # Changes
 
-## 7.3.0 (unreleased)
+## 7.3.0
 
 * Added support for TAL Sampler format (reading + writing).
-* Sf2
+* Improved user interface.
+* Sf2 - Reading
   * Fixed: 24 and 16 bit detection were flipped and produces an exception.
-* SFZ
+* SFZ - Reading
   * New: AIFF files can be used as input.
 * Kontakt - Reading
   * Fixed: Zone tuning was not set correctly.
   * Fixed: If a file was referenced more than once in a monolith, all of them had the same zone settings.
+* Korg KMP - Reading
+  * Fixed: Pitch tracking was inverted.
 
 ## 7.2.1
 

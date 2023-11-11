@@ -186,7 +186,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     break;
 
                 case SfzHeader.GROUP:
-                    if (!group.getSampleMetadata ().isEmpty ())
+                    if (!group.getSampleZones ().isEmpty ())
                         groups.add (group);
                     group = new DefaultGroup ();
 
@@ -233,7 +233,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         }
 
         // Don't forget to add the last group
-        if (!group.getSampleMetadata ().isEmpty ())
+        if (!group.getSampleZones ().isEmpty ())
             groups.add (group);
 
         this.printUnsupportedOpcodes (this.diffOpcodes ());

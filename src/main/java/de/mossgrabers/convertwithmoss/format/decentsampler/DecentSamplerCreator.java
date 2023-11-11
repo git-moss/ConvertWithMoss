@@ -231,11 +231,11 @@ public class DecentSamplerCreator extends AbstractCreator
         IEnvelope amplitudeEnvelope = null;
         if (!groups.isEmpty ())
         {
-            final ISampleZone sampleMetadata = groups.get (0).getSampleMetadata ().get (0);
-            amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+            final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
+            amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
             addVolumeEnvelope (amplitudeEnvelope, groupsElement);
 
-            final PlayLogic playLogic = sampleMetadata.getPlayLogic ();
+            final PlayLogic playLogic = zone.getPlayLogic ();
             hasRoundRobin = playLogic != PlayLogic.ALWAYS;
             if (hasRoundRobin)
                 groupsElement.setAttribute (DecentSamplerTag.SEQ_MODE, "round_robin");
@@ -262,7 +262,7 @@ public class DecentSamplerCreator extends AbstractCreator
             if (triggerType != TriggerType.ATTACK)
                 groupElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
-            for (final ISampleZone sample: group.getSampleMetadata ())
+            for (final ISampleZone sample: group.getSampleZones ())
                 createSample (document, folderName, groupElement, sample);
         }
 

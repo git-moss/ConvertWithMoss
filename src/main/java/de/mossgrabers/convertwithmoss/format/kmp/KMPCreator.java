@@ -60,8 +60,8 @@ public class KMPCreator extends AbstractCreator
         for (int i = 0; i < size; i++)
         {
             final IGroup group = groups.get (i);
-            final ISampleZone sampleMetadata = group.getSampleMetadata ().get (0);
-            final String groupName = size > 1 ? String.format ("%d-%s", Integer.valueOf (sampleMetadata.getVelocityHigh ()), sampleName) : sampleName;
+            final ISampleZone zone = group.getSampleZones ().get (0);
+            final String groupName = size > 1 ? String.format ("%d-%s", Integer.valueOf (zone.getVelocityHigh ()), sampleName) : sampleName;
             final String dosFileName = createDOSFileName (groupName, createdKSFNames) + ".KMP";
             final File groupSubFolder;
             if (needsSubDir)

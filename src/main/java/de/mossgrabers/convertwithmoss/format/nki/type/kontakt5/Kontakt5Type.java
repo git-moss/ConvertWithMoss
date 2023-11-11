@@ -213,7 +213,7 @@ public class Kontakt5Type extends AbstractKontaktType
 
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleZone zone: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
                 final String zoneName = zone.getName ();
                 ISampleData memoryFile = sampleFileMap.get (zoneName + ".wav");

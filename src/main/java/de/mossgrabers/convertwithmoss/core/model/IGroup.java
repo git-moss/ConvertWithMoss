@@ -49,19 +49,19 @@ public interface IGroup
 
 
     /**
-     * Get the description of the samples which belong to the group.
+     * Get the description of the samples zones which belong to the group.
      *
-     * @return The descriptions in an ordered map
+     * @return The zones in an ordered map
      */
-    List<ISampleZone> getSampleMetadata ();
+    List<ISampleZone> getSampleZones ();
 
 
     /**
-     * Set the description of the samples which belong to the group.
+     * Set the description of the sample zones which belong to the group.
      *
-     * @param samples The sample descriptions
+     * @param zones The sample zones
      */
-    void setSampleMetadata (List<ISampleZone> samples);
+    void setSampleZones (List<ISampleZone> zones);
 
 
     /**

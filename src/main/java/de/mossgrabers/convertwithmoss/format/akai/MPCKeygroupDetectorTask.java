@@ -180,10 +180,10 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             final int pitchBend = (int) Math.round (pitchBendRange * 1200.0);
             for (final IGroup group: groups)
             {
-                for (final ISampleZone sample: group.getSampleMetadata ())
+                for (final ISampleZone zone: group.getSampleZones ())
                 {
-                    sample.setBendUp (pitchBend);
-                    sample.setBendDown (-pitchBend);
+                    zone.setBendUp (pitchBend);
+                    zone.setBendDown (-pitchBend);
                 }
             }
         }
@@ -543,7 +543,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         for (final IGroup layer: groups)
         {
-            for (final ISampleZone sampleMetadata: layer.getSampleMetadata ())
+            for (final ISampleZone sampleMetadata: layer.getSampleZones ())
             {
                 final Integer noteNumber = padNoteMap.get (Integer.valueOf (sampleMetadata.getKeyLow ()));
                 if (noteNumber == null)

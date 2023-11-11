@@ -247,7 +247,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         final Set<String> alreadyStored = new HashSet<> ();
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleZone zone: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.notifyProgress ();
                 outputCount++;
@@ -310,7 +310,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         final Set<String> alreadyStored = new HashSet<> ();
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleZone zone: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.notifyProgress ();
                 outputCount++;
@@ -376,7 +376,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            for (final ISampleZone zone: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
                 final String filename = zone.getName () + ".wav";
                 final File file = new File (sampleFolder, filename);

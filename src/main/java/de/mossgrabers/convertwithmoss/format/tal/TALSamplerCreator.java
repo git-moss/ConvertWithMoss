@@ -143,7 +143,7 @@ public class TALSamplerCreator extends AbstractCreator
 
             // No group name and trigger types
 
-            for (final ISampleZone sample: group.getSampleMetadata ())
+            for (final ISampleZone sample: group.getSampleZones ())
                 createSample (document, folderName, programElement, groupCounter, multisamplesElement, sample);
 
             groupCounter++;
@@ -261,7 +261,7 @@ public class TALSamplerCreator extends AbstractCreator
         if (groups.isEmpty ())
             return;
 
-        final ISampleZone sampleMetadata = groups.get (0).getSampleMetadata ().get (0);
+        final ISampleZone sampleMetadata = groups.get (0).getSampleZones ().get (0);
 
         // Pitchbend 2 semitones up/down
         final int bendUp = Math.abs (sampleMetadata.getBendUp ());
@@ -388,8 +388,8 @@ public class TALSamplerCreator extends AbstractCreator
         final List<IGroup> optimizedGroups = new ArrayList<> ();
         for (final IGroup group: groups)
         {
-            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
-                this.findMatchingGroup (optimizedGroups, sampleMetadata).addSampleMetadata (sampleMetadata);
+            for (final ISampleZone zone: group.getSampleZones ())
+                this.findMatchingGroup (optimizedGroups, zone).addSampleMetadata (zone);
         }
         return optimizedGroups;
     }
@@ -437,7 +437,7 @@ public class TALSamplerCreator extends AbstractCreator
         final int velLow = sampleMetadata.getVelocityLow ();
         final int velHigh = sampleMetadata.getVelocityHigh ();
 
-        for (final ISampleZone otherSampleMetadata: group.getSampleMetadata ())
+        for (final ISampleZone otherSampleMetadata: group.getSampleZones ())
         {
             final int keyLow2 = otherSampleMetadata.getKeyLow ();
             final int keyHigh2 = otherSampleMetadata.getKeyHigh ();

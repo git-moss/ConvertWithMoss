@@ -36,7 +36,7 @@ public class SoundinfoDocument
 
 
     /**
-     * Constructor. Creates an empty sound info.
+     * Constructor. Creates an empty sound info document.
      *
      * @param author The author of the 'sound'
      * @param categories The category of the 'sound'

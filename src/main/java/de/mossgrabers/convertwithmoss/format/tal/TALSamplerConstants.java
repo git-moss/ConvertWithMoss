@@ -158,12 +158,12 @@ public class TALSamplerConstants
         int sampleRate = -1;
         for (final IGroup group: groups)
         {
-            for (final ISampleZone sampleMetadata: group.getSampleMetadata ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
-                lengths += sampleMetadata.getStop ();
+                lengths += zone.getStop ();
                 numSamples++;
                 if (sampleRate < 0)
-                    sampleRate = sampleMetadata.getSampleData ().getAudioMetadata ().getSampleRate ();
+                    sampleRate = zone.getSampleData ().getAudioMetadata ().getSampleRate ();
             }
         }
         return lengths == 0 ? 0.001 : Math.max (0.001, lengths / (double) numSamples / sampleRate);

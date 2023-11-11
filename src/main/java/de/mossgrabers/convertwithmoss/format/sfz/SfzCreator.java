@@ -139,15 +139,15 @@ public class SfzCreator extends AbstractCreator
 
         for (final IGroup group: multisampleSource.getGroups ())
         {
-            final List<ISampleZone> sampleMetadata = group.getSampleMetadata ();
-            if (sampleMetadata.isEmpty ())
+            final List<ISampleZone> zones = group.getSampleZones ();
+            if (zones.isEmpty ())
                 continue;
 
             // Check for any sample which play round-robin
             int sequence = 0;
-            for (final ISampleZone info: sampleMetadata)
+            for (final ISampleZone zone: zones)
             {
-                if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                     sequence++;
             }
 
@@ -163,10 +163,10 @@ public class SfzCreator extends AbstractCreator
                 addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
 
             sequence = 1;
-            for (final ISampleZone info: sampleMetadata)
+            for (final ISampleZone zone: zones)
             {
-                this.createSample (safeSampleFolderName, sb, info, sequence);
-                if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                this.createSample (safeSampleFolderName, sb, zone, sequence);
+                if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                     sequence++;
             }
         }
@@ -179,118 +179,118 @@ public class SfzCreator extends AbstractCreator
      * Creates the metadata for one sample.
      *
      * @param safeSampleFolderName The safe sample folder name
-     * @param sb Where to add the XML code
-     * @param info Where to get the sample info from
+     * @param buffer Where to add the XML code
+     * @param zone The sample zone
      * @param sequenceNumber The number in the sequence for round-robin playback
      */
-    private void createSample (final String safeSampleFolderName, final StringBuilder sb, final ISampleZone info, final int sequenceNumber)
+    private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone, final int sequenceNumber)
     {
-        sb.append ("\n<").append (SfzHeader.REGION).append (">\n");
-        addAttribute (sb, SfzOpcode.SAMPLE, AbstractCreator.formatFileName (safeSampleFolderName, info.getName () + ".wav"), true);
+        buffer.append ("\n<").append (SfzHeader.REGION).append (">\n");
+        addAttribute (buffer, SfzOpcode.SAMPLE, AbstractCreator.formatFileName (safeSampleFolderName, zone.getName () + ".wav"), true);
 
         // Default is 'attack' and does not need to be added
-        final TriggerType trigger = info.getTrigger ();
+        final TriggerType trigger = zone.getTrigger ();
         if (trigger != TriggerType.ATTACK)
-            addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
+            addAttribute (buffer, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
 
-        if (info.isReversed ())
-            addAttribute (sb, SfzOpcode.DIRECTION, "reverse", true);
-        if (info.getPlayLogic () == PlayLogic.ROUND_ROBIN)
-            addIntegerAttribute (sb, SfzOpcode.SEQ_POSITION, sequenceNumber, true);
+        if (zone.isReversed ())
+            addAttribute (buffer, SfzOpcode.DIRECTION, "reverse", true);
+        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+            addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, sequenceNumber, true);
 
         ////////////////////////////////////////////////////////////
         // Key range
 
-        final int keyRoot = info.getKeyRoot ();
-        final int keyLow = info.getKeyLow ();
-        final int keyHigh = info.getKeyHigh ();
+        final int keyRoot = zone.getKeyRoot ();
+        final int keyLow = zone.getKeyLow ();
+        final int keyHigh = zone.getKeyHigh ();
         if (keyRoot == keyLow && keyLow == keyHigh)
         {
             // Pitch and range are the same, use single key attribute
-            addIntegerAttribute (sb, SfzOpcode.KEY, keyRoot, true);
+            addIntegerAttribute (buffer, SfzOpcode.KEY, keyRoot, true);
         }
         else
         {
-            addIntegerAttribute (sb, SfzOpcode.PITCH_KEY_CENTER, keyRoot, true);
-            addIntegerAttribute (sb, SfzOpcode.LO_KEY, check (keyLow, 0), false);
-            addIntegerAttribute (sb, SfzOpcode.HI_KEY, check (keyHigh, 127), true);
+            addIntegerAttribute (buffer, SfzOpcode.PITCH_KEY_CENTER, keyRoot, true);
+            addIntegerAttribute (buffer, SfzOpcode.LO_KEY, check (keyLow, 0), false);
+            addIntegerAttribute (buffer, SfzOpcode.HI_KEY, check (keyHigh, 127), true);
         }
 
-        final int crossfadeLow = info.getNoteCrossfadeLow ();
+        final int crossfadeLow = zone.getNoteCrossfadeLow ();
         if (crossfadeLow > 0)
         {
-            addIntegerAttribute (sb, SfzOpcode.XF_IN_LO_KEY, Math.max (0, keyLow - crossfadeLow), false);
-            addIntegerAttribute (sb, SfzOpcode.XF_IN_HI_KEY, keyLow, true);
+            addIntegerAttribute (buffer, SfzOpcode.XF_IN_LO_KEY, Math.max (0, keyLow - crossfadeLow), false);
+            addIntegerAttribute (buffer, SfzOpcode.XF_IN_HI_KEY, keyLow, true);
         }
-        final int crossfadeHigh = info.getNoteCrossfadeHigh ();
+        final int crossfadeHigh = zone.getNoteCrossfadeHigh ();
         if (crossfadeHigh > 0)
         {
-            addIntegerAttribute (sb, SfzOpcode.XF_OUT_LO_KEY, keyHigh, false);
-            addIntegerAttribute (sb, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
+            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_LO_KEY, keyHigh, false);
+            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
         }
 
         ////////////////////////////////////////////////////////////
         // Velocity
 
-        final int velocityLow = info.getVelocityLow ();
-        final int velocityHigh = info.getVelocityHigh ();
+        final int velocityLow = zone.getVelocityLow ();
+        final int velocityHigh = zone.getVelocityHigh ();
         if (velocityLow > 1)
-            addIntegerAttribute (sb, SfzOpcode.LO_VEL, velocityLow, velocityHigh == 127);
+            addIntegerAttribute (buffer, SfzOpcode.LO_VEL, velocityLow, velocityHigh == 127);
         if (velocityHigh > 0 && velocityHigh < 127)
-            addIntegerAttribute (sb, SfzOpcode.HI_VEL, velocityHigh, true);
+            addIntegerAttribute (buffer, SfzOpcode.HI_VEL, velocityHigh, true);
 
-        final int crossfadeVelocityLow = info.getVelocityCrossfadeLow ();
+        final int crossfadeVelocityLow = zone.getVelocityCrossfadeLow ();
         if (crossfadeVelocityLow > 0)
         {
-            addIntegerAttribute (sb, SfzOpcode.XF_IN_LO_VEL, Math.max (0, velocityLow - crossfadeVelocityLow), false);
-            addIntegerAttribute (sb, SfzOpcode.XF_IN_HI_VEL, velocityLow, true);
+            addIntegerAttribute (buffer, SfzOpcode.XF_IN_LO_VEL, Math.max (0, velocityLow - crossfadeVelocityLow), false);
+            addIntegerAttribute (buffer, SfzOpcode.XF_IN_HI_VEL, velocityLow, true);
         }
 
-        final int crossfadeVelocityHigh = info.getVelocityCrossfadeHigh ();
+        final int crossfadeVelocityHigh = zone.getVelocityCrossfadeHigh ();
         if (crossfadeVelocityHigh > 0)
         {
-            addIntegerAttribute (sb, SfzOpcode.XF_OUT_LO_VEL, velocityHigh, false);
-            addIntegerAttribute (sb, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
+            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_LO_VEL, velocityHigh, false);
+            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
         }
 
         ////////////////////////////////////////////////////////////
         // Start, end, tune, volume
 
-        final int start = info.getStart ();
+        final int start = zone.getStart ();
         if (start >= 0)
 
-            addIntegerAttribute (sb, SfzOpcode.OFFSET, start, false);
-        final int end = info.getStop ();
+            addIntegerAttribute (buffer, SfzOpcode.OFFSET, start, false);
+        final int end = zone.getStop ();
         if (end >= 0)
-            addIntegerAttribute (sb, SfzOpcode.END, end, true);
+            addIntegerAttribute (buffer, SfzOpcode.END, end, true);
 
-        final double tune = info.getTune ();
+        final double tune = zone.getTune ();
         if (tune != 0)
-            addIntegerAttribute (sb, SfzOpcode.TUNE, (int) Math.round (tune * 100), true);
+            addIntegerAttribute (buffer, SfzOpcode.TUNE, (int) Math.round (tune * 100), true);
 
-        final int keyTracking = (int) Math.round (info.getKeyTracking () * 100.0);
+        final int keyTracking = (int) Math.round (zone.getKeyTracking () * 100.0);
         if (keyTracking != 100)
-            addIntegerAttribute (sb, SfzOpcode.PITCH_KEYTRACK, keyTracking, true);
+            addIntegerAttribute (buffer, SfzOpcode.PITCH_KEYTRACK, keyTracking, true);
 
-        createVolume (sb, info);
+        createVolume (buffer, zone);
 
         ////////////////////////////////////////////////////////////
         // Pitch Bend / Envelope
 
-        final int bendUp = info.getBendUp ();
+        final int bendUp = zone.getBendUp ();
         if (bendUp != 0)
-            addIntegerAttribute (sb, SfzOpcode.BEND_UP, bendUp, true);
-        final int bendDown = info.getBendDown ();
+            addIntegerAttribute (buffer, SfzOpcode.BEND_UP, bendUp, true);
+        final int bendDown = zone.getBendDown ();
         if (bendDown != 0)
-            addIntegerAttribute (sb, SfzOpcode.BEND_DOWN, bendDown, true);
+            addIntegerAttribute (buffer, SfzOpcode.BEND_DOWN, bendDown, true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final IModulator pitchModulator = info.getPitchModulator ();
+        final IModulator pitchModulator = zone.getPitchModulator ();
         final double envelopeDepth = pitchModulator.getDepth ();
         if (envelopeDepth > 0)
         {
-            sb.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) envelopeDepth).append (LINE_FEED);
+            buffer.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) envelopeDepth).append (LINE_FEED);
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
 
@@ -304,18 +304,18 @@ public class SfzCreator extends AbstractCreator
             addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_SUSTAIN, pitchEnvelope.getSustain () * 100.0);
 
             if (envelopeStr.length () > 0)
-                sb.append (envelopeStr).append (LINE_FEED);
+                buffer.append (envelopeStr).append (LINE_FEED);
         }
 
         ////////////////////////////////////////////////////////////
         // Sample Loop
 
-        this.createLoops (sb, info);
+        this.createLoops (buffer, zone);
 
         ////////////////////////////////////////////////////////////
         // Filter
 
-        createFilter (sb, info);
+        createFilter (buffer, zone);
     }
 
 
@@ -323,7 +323,7 @@ public class SfzCreator extends AbstractCreator
      * Create the loop info.
      *
      * @param buffer Where to add the XML code
-     * @param zone Where to get the sample info from
+     * @param zone The sample zone
      */
     private void createLoops (final StringBuilder buffer, final ISampleZone zone)
     {
@@ -372,21 +372,21 @@ public class SfzCreator extends AbstractCreator
     /**
      * Create the volume and amplitude envelope parameters.
      *
-     * @param sb Where to add the created text
-     * @param sampleMetadata The data source
+     * @param buffer Where to add the created text
+     * @param zone The sample zone
      */
-    private static void createVolume (final StringBuilder sb, final ISampleZone sampleMetadata)
+    private static void createVolume (final StringBuilder buffer, final ISampleZone zone)
     {
-        final double volume = sampleMetadata.getGain ();
+        final double volume = zone.getGain ();
         if (volume != 0)
-            addAttribute (sb, SfzOpcode.VOLUME, formatDouble (volume, 2), true);
-        final double pan = sampleMetadata.getPanorama ();
+            addAttribute (buffer, SfzOpcode.VOLUME, formatDouble (volume, 2), true);
+        final double pan = zone.getPanorama ();
         if (pan != 0)
-            addAttribute (sb, SfzOpcode.PANORAMA, Integer.toString ((int) Math.round (pan * 100)), true);
+            addAttribute (buffer, SfzOpcode.PANORAMA, Integer.toString ((int) Math.round (pan * 100)), true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+        final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
 
         addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DELAY, amplitudeEnvelope.getDelay ());
         addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK, amplitudeEnvelope.getAttack ());
@@ -398,27 +398,27 @@ public class SfzCreator extends AbstractCreator
         addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_SUSTAIN, amplitudeEnvelope.getSustain () * 100.0);
 
         if (envelopeStr.length () > 0)
-            sb.append (envelopeStr).append (LINE_FEED);
+            buffer.append (envelopeStr).append (LINE_FEED);
     }
 
 
     /**
      * Create the filter info.
      *
-     * @param sb Where to add the XML code
-     * @param info Where to get the sample info from
+     * @param buffer Where to add the XML code
+     * @param zone The sample zone
      */
-    private static void createFilter (final StringBuilder sb, final ISampleZone info)
+    private static void createFilter (final StringBuilder buffer, final ISampleZone zone)
     {
-        final Optional<IFilter> optFilter = info.getFilter ();
+        final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isEmpty ())
             return;
 
         final IFilter filter = optFilter.get ();
         final String type = FILTER_TYPE_MAP.get (filter.getType ());
-        addAttribute (sb, SfzOpcode.FILTER_TYPE, type + "_" + Utils.clamp (filter.getPoles (), 1, 4) + "p", false);
-        addAttribute (sb, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
-        addAttribute (sb, SfzOpcode.RESONANCE, formatDouble (Math.min (40, filter.getResonance ()), 2), true);
+        addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + Utils.clamp (filter.getPoles (), 1, 4) + "p", false);
+        addAttribute (buffer, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
+        addAttribute (buffer, SfzOpcode.RESONANCE, formatDouble (Math.min (40, filter.getResonance ()), 2), true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
@@ -426,7 +426,7 @@ public class SfzCreator extends AbstractCreator
         final double envelopeDepth = cutoffModulator.getDepth ();
         if (envelopeDepth > 0)
         {
-            sb.append (SfzOpcode.FILEG_DEPTH).append ('=').append ((int) envelopeDepth).append (LINE_FEED);
+            buffer.append (SfzOpcode.FILEG_DEPTH).append ('=').append ((int) envelopeDepth).append (LINE_FEED);
 
             final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 
@@ -440,7 +440,7 @@ public class SfzCreator extends AbstractCreator
             addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_SUSTAIN, filterEnvelope.getSustain () * 100.0);
 
             if (envelopeStr.length () > 0)
-                sb.append (envelopeStr).append (LINE_FEED);
+                buffer.append (envelopeStr).append (LINE_FEED);
         }
     }
 

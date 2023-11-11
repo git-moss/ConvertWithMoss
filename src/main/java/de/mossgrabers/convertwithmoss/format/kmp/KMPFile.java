@@ -81,7 +81,7 @@ public class KMPFile
         this.sampleFolder2 = null;
 
         this.group = group;
-        this.numSamples = this.group.getSampleMetadata ().size ();
+        this.numSamples = this.group.getSampleZones ().size ();
 
         this.name = dosFilename;
         this.nameLong = groupName;
@@ -196,11 +196,11 @@ public class KMPFile
     private void readParameterChunk1 (final DataInputStream in) throws IOException, ParseException
     {
         int lowerKey = 0;
-        for (final ISampleZone zone: this.group.getSampleMetadata ())
+        for (final ISampleZone zone: this.group.getSampleZones ())
         {
             final int originalKey = in.read ();
 
-            zone.setKeyTracking ((originalKey & 0x80) > 0 ? 1 : 0);
+            zone.setKeyTracking ((originalKey & 0x80) > 0 ? 0 : 1);
             zone.setKeyRoot (originalKey & 0x7F);
             zone.setKeyLow (lowerKey);
             zone.setKeyHigh (in.read ());
@@ -238,7 +238,7 @@ public class KMPFile
 
     private void readParameterChunk2 (final DataInputStream in) throws IOException
     {
-        for (int i = 0; i < this.group.getSampleMetadata ().size (); i++)
+        for (int i = 0; i < this.group.getSampleZones ().size (); i++)
         {
             // Transpose
             in.readByte ();
@@ -332,19 +332,19 @@ public class KMPFile
         out.write (KMP_REL1_ID.getBytes ());
         out.writeInt (this.numSamples * KMP_REL1_SIZE);
 
-        final List<ISampleZone> sampleMetadata = this.group.getSampleMetadata ();
-        for (int i = 0; i < sampleMetadata.size (); i++)
+        final List<ISampleZone> zones = this.group.getSampleZones ();
+        for (int i = 0; i < zones.size (); i++)
         {
-            final ISampleZone sample = sampleMetadata.get (i);
+            final ISampleZone zone = zones.get (i);
 
-            int originalKey = sample.getKeyRoot ();
-            if (sample.getKeyTracking () == 0)
+            int originalKey = zone.getKeyRoot ();
+            if (zone.getKeyTracking () == 0)
                 originalKey |= 0x80;
             out.write (originalKey);
 
-            out.write (sample.getKeyHigh ());
-            out.writeByte ((byte) Math.round (sample.getTune () * 100.0));
-            out.writeByte ((byte) Math.round (sample.getGain () * 100.0 / 12.0));
+            out.write (zone.getKeyHigh ());
+            out.writeByte ((byte) Math.round (zone.getTune () * 100.0));
+            out.writeByte ((byte) Math.round (zone.getGain () * 100.0 / 12.0));
 
             // Panorama - unused in KMP itself, 64 is center
             out.write (64);
@@ -401,7 +401,7 @@ public class KMPFile
 
     private void writeksfZones (final File folder) throws IOException
     {
-        final List<ISampleZone> sampleMetadata = this.group.getSampleMetadata ();
+        final List<ISampleZone> sampleMetadata = this.group.getSampleZones ();
         for (int i = 0; i < sampleMetadata.size (); i++)
         {
             final ISampleZone zone = sampleMetadata.get (i);

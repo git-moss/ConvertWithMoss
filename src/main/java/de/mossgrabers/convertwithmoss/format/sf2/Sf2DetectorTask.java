@@ -189,16 +189,16 @@ public class Sf2DetectorTask extends AbstractDetectorTask
     {
         for (final IGroup group: groups)
         {
-            final List<ISampleZone> sampleMetadataOfGroup = group.getSampleMetadata ();
+            final List<ISampleZone> zones = group.getSampleZones ();
 
-            final int initialCapacity = sampleMetadataOfGroup.size () / 2;
+            final int initialCapacity = zones.size () / 2;
             final List<ISampleZone> resultSamples = new ArrayList<> (initialCapacity);
             final List<ISampleZone> leftSamples = new ArrayList<> (initialCapacity);
             final List<ISampleZone> rightSamples = new ArrayList<> (initialCapacity);
             final List<ISampleZone> panLeftSamples = new ArrayList<> (initialCapacity);
             final List<ISampleZone> panRightSamples = new ArrayList<> (initialCapacity);
 
-            for (final ISampleZone zone: sampleMetadataOfGroup)
+            for (final ISampleZone zone: zones)
             {
                 final Sf2SampleData sf2SampleData = (Sf2SampleData) zone.getSampleData ();
                 final Sf2SampleDescriptor sample = sf2SampleData.getSample ();
@@ -233,7 +233,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             resultSamples.addAll (this.combineLinkedSamples (leftSamples, rightSamples));
             resultSamples.addAll (this.combinePanoramaSamples (panLeftSamples, panRightSamples));
 
-            group.setSampleMetadata (resultSamples);
+            group.setSampleZones (resultSamples);
         }
 
         return groups;

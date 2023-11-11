@@ -217,27 +217,27 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         final String sampleFileName = readAscii (in);
         final File sampleFile = this.createCanonicalFile (this.sourceFolder, sampleFileName);
         final ISampleData sampleData = new WavFileSampleData (sampleFile);
-        final ISampleZone sample = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
+        final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
         int rest = blockLength - 3 - sampleFileName.length () - 1;
-        rest = parseSampleParameters (sample, in, rest);
-        parseKeyZoneParameters (sample, in, rest);
+        rest = parseSampleParameters (zone, in, rest);
+        parseKeyZoneParameters (zone, in, rest);
 
-        return sample;
+        return zone;
     }
 
 
     /**
      * Parses the data related to the samples' playback configuration.
      *
-     * @param sample The sample metadata in which to stored the data
+     * @param zone The sample metadata in which to stored the data
      * @param in The input stream to read from
      * @param rest The number of bytes available to read
      * @return The number of bytes not read
      * @throws IOException Could not read from the file
      * @throws FormatException FOund unexpected format of the file
      */
-    private static int parseSampleParameters (final ISampleZone sample, final InputStream in, final int rest) throws IOException, FormatException
+    private static int parseSampleParameters (final ISampleZone zone, final InputStream in, final int rest) throws IOException, FormatException
     {
         int lastID = 0;
         int r = rest;
@@ -263,7 +263,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                 case KorgmultisampleTag.ID_START:
                     final int [] startNumber = StreamUtils.read7bitNumberLE (in);
                     r -= startNumber[1];
-                    sample.setStart (startNumber[0]);
+                    zone.setStart (startNumber[0]);
                     break;
                 case KorgmultisampleTag.ID_LOOP_START:
                     final int [] loopStartNumber = StreamUtils.read7bitNumberLE (in);
@@ -273,7 +273,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                 case KorgmultisampleTag.ID_END:
                     final int [] endNumber = StreamUtils.read7bitNumberLE (in);
                     r -= endNumber[1];
-                    sample.setStop (endNumber[0]);
+                    zone.setStop (endNumber[0]);
                     break;
                 case KorgmultisampleTag.ID_LOOP_TUNE:
                     r -= 4;
@@ -288,7 +288,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                 case KorgmultisampleTag.ID_BOOST_12DB:
                     r -= 1;
                     if (in.readNBytes (1)[0] > 0)
-                        sample.setGain (12);
+                        zone.setGain (12);
                     break;
                 default:
                     throw new FormatException (Integer.toHexString (currentID));
@@ -301,8 +301,8 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         {
             final DefaultSampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
-            loop.setEnd (sample.getStop ());
-            sample.addLoop (loop);
+            loop.setEnd (zone.getStop ());
+            zone.addLoop (loop);
         }
 
         return r;
@@ -312,13 +312,13 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
     /**
      * Parses the data related to the samples' key zone configuration.
      *
-     * @param sample The sample metadata in which to stored the data
+     * @param zone The sample zone in which to store the data
      * @param in The input stream to read from
      * @param rest The number of bytes left to read
      * @throws IOException Could not read from the file
      * @throws FormatException FOund unexpected format of the file
      */
-    private static void parseKeyZoneParameters (final ISampleZone sample, final InputStream in, final int rest) throws IOException, FormatException
+    private static void parseKeyZoneParameters (final ISampleZone zone, final InputStream in, final int rest) throws IOException, FormatException
     {
         int lastID = 0;
         int r = rest;
@@ -341,25 +341,25 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
             {
                 case KorgmultisampleTag.ID_KEY_BOTTOM:
                     r -= 1;
-                    sample.setKeyLow (in.readNBytes (1)[0]);
+                    zone.setKeyLow (in.readNBytes (1)[0]);
                     break;
                 case KorgmultisampleTag.ID_KEY_TOP:
                     r -= 1;
-                    sample.setKeyHigh (in.readNBytes (1)[0]);
+                    zone.setKeyHigh (in.readNBytes (1)[0]);
                     break;
                 case KorgmultisampleTag.ID_KEY_ORIGINAL:
                     r -= 1;
-                    sample.setKeyRoot (in.readNBytes (1)[0]);
+                    zone.setKeyRoot (in.readNBytes (1)[0]);
                     break;
                 case KorgmultisampleTag.ID_FIXED_PITCH:
                     r -= 1;
                     if (in.readNBytes (1)[0] > 0)
-                        sample.setKeyTracking (0);
+                        zone.setKeyTracking (0);
                     break;
                 case KorgmultisampleTag.ID_TUNE:
                     r -= 4;
                     // Read value is in the range of [-999..999]
-                    sample.setTune (StreamUtils.readFloatLE (in.readNBytes (4)) / 1000.0);
+                    zone.setTune (StreamUtils.readFloatLE (in.readNBytes (4)) / 1000.0);
                     break;
                 case KorgmultisampleTag.ID_LEVEL_LEFT:
                     r -= 4;
@@ -367,7 +367,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                     final float levelLeftValue = StreamUtils.readFloatLE (in.readNBytes (4));
                     // This is not fully correct but since it is not documented what the percentages
                     // (-100..100%) mean in dB this is better than nothing...
-                    sample.setGain (levelLeftValue / 100.0 * 12.0);
+                    zone.setGain (levelLeftValue / 100.0 * 12.0);
                     break;
                 case KorgmultisampleTag.ID_LEVEL_RIGHT:
                     r -= 4;
