@@ -1,5 +1,9 @@
 # Changes
 
+## 7.3.1 (unreleased)
+
+* Fixed: Tab labels were not visible.
+
 ## 7.3.0
 
 * Added support for TAL Sampler format (reading + writing).
