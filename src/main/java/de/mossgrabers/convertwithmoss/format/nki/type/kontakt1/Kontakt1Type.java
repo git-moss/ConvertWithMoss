@@ -62,7 +62,7 @@ public class Kontakt1Type extends AbstractKontaktType
         try
         {
             final String xmlCode = CompressionUtils.readZLIB (fileAccess);
-            return this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, null);
+            return this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, Collections.emptyMap ());
         }
         catch (final UnsupportedEncodingException ex)
         {

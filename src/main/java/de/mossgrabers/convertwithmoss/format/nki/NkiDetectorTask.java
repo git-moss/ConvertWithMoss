@@ -100,8 +100,8 @@ public class NkiDetectorTask extends AbstractDetectorTask
                 return new Kontakt1Type (this.notifier, true);
 
             // Note: these magic bytes are also used in NKI 1.5.x files
-            case Magic.KONTAKT2_INSTRUMENT_LE, Magic.KONTAKT2_INSTRUMENT_BE, Magic.KONTAKT2__MULTI_LE, Magic.KONTAKT2__MULTI_BE:
-                final boolean isBigEndian = typeID == Magic.KONTAKT2_INSTRUMENT_BE || typeID == Magic.KONTAKT2__MULTI_BE;
+            case Magic.KONTAKT2_INSTRUMENT_LE, Magic.KONTAKT2_INSTRUMENT_BE, Magic.KONTAKT2_MULTI_LE, Magic.KONTAKT2_MULTI_BE:
+                final boolean isBigEndian = typeID == Magic.KONTAKT2_INSTRUMENT_BE || typeID == Magic.KONTAKT2_MULTI_BE;
                 final boolean version1 = StreamUtils.readUnsigned32 (fileAccess, isBigEndian) == 0x24;
                 fileAccess.seek (4);
                 return version1 ? new Kontakt1Type (this.notifier, isBigEndian) : new Kontakt2Type (this.notifier, isBigEndian);

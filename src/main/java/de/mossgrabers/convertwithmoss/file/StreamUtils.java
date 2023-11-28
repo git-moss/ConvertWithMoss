@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Date;
 
 
@@ -428,7 +429,7 @@ public class StreamUtils
      *
      * @param in The stream to read from
      * @return The read text
-     * @throws IOException
+     * @throws IOException Could not read
      */
     public static String readUTF8 (final InputStream in) throws IOException
     {
@@ -442,7 +443,7 @@ public class StreamUtils
      * @param in The stream to read from
      * @param length The length of the text
      * @return The read text
-     * @throws IOException
+     * @throws IOException Could not read
      */
     public static String readASCII (final InputStream in, final int length) throws IOException
     {
@@ -460,7 +461,7 @@ public class StreamUtils
      * @param in The stream to read from
      * @param length The length of the text
      * @return The read text
-     * @throws IOException
+     * @throws IOException Could not read
      */
     public static String readASCII (final DataInput in, final int length) throws IOException
     {
@@ -475,7 +476,7 @@ public class StreamUtils
      * @param length The length of the text
      * @param reverse Reverses the text if true
      * @return The read text
-     * @throws IOException
+     * @throws IOException Could not read
      */
     public static String readASCII (final DataInput in, final int length, final boolean reverse) throws IOException
     {
@@ -490,7 +491,7 @@ public class StreamUtils
      * @param length The length of the text
      * @param charset The character set to use
      * @return The read text
-     * @throws IOException
+     * @throws IOException Could not read
      */
     public static String readASCII (final DataInput in, final int length, final Charset charset) throws IOException
     {
@@ -506,7 +507,7 @@ public class StreamUtils
      * @param charset The character set to use
      * @param reverse Reverses the text if true
      * @return The read text
-     * @throws IOException
+     * @throws IOException Could not read
      */
     public static String readASCII (final DataInput in, final int length, final Charset charset, final boolean reverse) throws IOException
     {
@@ -515,6 +516,43 @@ public class StreamUtils
         if (reverse)
             reverseArray (buffer);
         return new String (buffer, charset);
+    }
+
+
+    /**
+     * Writes an ASCII text to an output stream. If it is shorter than the given length it is
+     * appended with zeroes.
+     *
+     * @param out The stream to write to
+     * @param text The text to write
+     * @param length The length of the text
+     * @throws IOException Could not write
+     */
+    public static void writeASCII (final OutputStream out, final String text, final int length) throws IOException
+    {
+        writeASCII (out, text, length, false);
+    }
+
+
+    /**
+     * Writes an ASCII text to an output stream. If it is shorter than the given length it is
+     * appended with zeroes.
+     *
+     * @param out The stream to write to
+     * @param text The text to write
+     * @param length The length of the text
+     * @param reverse Reverses the text if true
+     * @throws IOException Could not write
+     */
+    public static void writeASCII (final OutputStream out, final String text, final int length, final boolean reverse) throws IOException
+    {
+        final byte [] textData = text.getBytes (StandardCharsets.US_ASCII);
+        final byte [] buffer = new byte [length];
+        Arrays.fill (buffer, (byte) 0);
+        System.arraycopy (textData, 0, buffer, 0, Math.min (textData.length, length));
+        if (reverse)
+            reverseArray (buffer);
+        out.write (buffer);
     }
 
 
@@ -584,7 +622,7 @@ public class StreamUtils
      * @param in The stream to read from
      * @param isBigEndian True if bytes are stored big-endian
      * @return The timestamp as a date
-     * @throws IOException
+     * @throws IOException Could not read
      */
     public static Date readTimestamp (final InputStream in, final boolean isBigEndian) throws IOException
     {
@@ -604,6 +642,21 @@ public class StreamUtils
     public static Date readTimestamp (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
         return new Date (readUnsigned32 (fileAccess, isBigEndian) * 1000L);
+    }
+
+
+    /**
+     * Writes a 4 byte (LSB) Unix timestamp UTC+1, e.g. "0B 0B 64 4D" is 1298402059 is "22.02.2011
+     * 20:14:19".
+     *
+     * @param out The stream to write to
+     * @param timestamp The timestamp as a date
+     * @param isBigEndian True if bytes are stored big-endian
+     * @throws IOException Could not read
+     */
+    public static void writeTimestamp (final OutputStream out, final Date timestamp, final boolean isBigEndian) throws IOException
+    {
+        writeUnsigned32 (out, (int) (timestamp.getTime () / 1000L), isBigEndian);
     }
 
 
@@ -645,7 +698,7 @@ public class StreamUtils
      * @param numBytes The number of bytes to read
      * @param error An error text to include into the exception text in case of an error
      * @return The read bytes
-     * @throws IOException
+     * @throws IOException Could not read
      */
     public static byte [] peek (final RandomAccessFile fileAccess, final int numBytes, final String error) throws IOException
     {
