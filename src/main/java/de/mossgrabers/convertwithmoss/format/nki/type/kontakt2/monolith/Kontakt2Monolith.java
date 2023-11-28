@@ -136,7 +136,7 @@ public class Kontakt2Monolith
                     break;
 
                 default:
-                    throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_MAGiC_ID", String.format ("%X", Long.valueOf (magicID))));
+                    throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_MAGIC_ID", String.format ("%X", Long.valueOf (magicID))));
             }
         }
     }

@@ -725,12 +725,10 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             Platform.runLater ( () -> {
                 // Get the "tab-container" node. This is what we want to rotate/shift for easy
                 // left-alignment.
-                // You can omit the last "getParent()" with a few tweaks for centered labels
-                Parent tabContainer = tab.getGraphic ().getParent ().getParent ();
+                final Parent tabContainer = tab.getGraphic ().getParent ().getParent ();
                 tabContainer.setRotate (90);
-                // By default the display will originate from the center.
-                // Applying a negative Y transformation will move it left.
-                // Should be the 'TabMinHeight/2'
+                // By default the display will originate from the center. Applying a negative Y
+                // transformation will move it left. Should be the 'TabMinHeight/2'
                 tabContainer.setTranslateY (-80);
             });
         }

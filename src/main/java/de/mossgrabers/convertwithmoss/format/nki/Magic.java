@@ -24,9 +24,18 @@ public class Magic
     /** ID for Kontakt 2 as well as 1.5 NKI files (big-endian). */
     public static final int     KONTAKT2_INSTRUMENT_BE           = 0x7FA89012;
     /** ID for Kontakt 2 as well as 1.5 NKM files (little-endian). */
-    public static final int     KONTAKT2__MULTI_LE               = 0x01EF85AB;
+    public static final int     KONTAKT2_MULTI_LE                = 0x01EF85AB;
     /** ID for Kontakt 2 as well as 1.5 NKM files (big-endian). */
-    public static final int     KONTAKT2__MULTI_BE               = 0xAB85EF01;
+    public static final int     KONTAKT2_MULTI_BE                = 0xAB85EF01;
+
+    /** ID for Kontakt 2 header (little-endian). */
+    public static final int     KONTAKT2_INSTRUMENT_HEADER_LE    = 0x722A013E;
+    /** ID for Kontakt 2 header (big-endian). */
+    public static final int     KONTAKT2_INSTRUMENT_HEADER_BE    = 0x3E012A72;
+    /** ID for Kontakt 2 header (little-endian). */
+    public static final int     KONTAKT42_INSTRUMENT_HEADER_LE   = 0x1A6337EA;
+    /** ID for Kontakt 2 header (big-endian). */
+    public static final int     KONTAKT42_INSTRUMENT_HEADER_BE   = 0xEA37631A;
 
     /** The resource header in a Kontakt monolith. */
     public static final int     KONTAKT2_NKR_HEADER_ID           = 0x5E70AC54;
@@ -38,6 +47,11 @@ public class Magic
     public static final int     KONTAKT2_NKR_SAMPLE_ID           = 0x16CCF80A;
     /** The sample header in a Kontakt monolith. */
     public static final int     KONTAKT2_NKR_SAMPLE_RAW_ID       = 0x0040179F;
+
+    /** The header of a sound info XML structure. */
+    public static final int     SOUNDINFO_HEADER_LE              = 0xB00EE1AE;
+    /** The only known version of the sound info header. */
+    public static final int     SOUNDINFO_HEADER_VERSION_LE      = 0x000C0101;
 
     /** ID for a Kontakt 5 NKI monolith file (always little-endian). */
     public static final int     KONTAKT5_MONOLITH                = 0x2F5C204E;

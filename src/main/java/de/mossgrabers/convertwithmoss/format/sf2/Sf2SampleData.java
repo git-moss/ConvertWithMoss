@@ -65,7 +65,7 @@ public class Sf2SampleData extends AbstractSampleData
         final byte [] rightSampleData = this.rightSample.getSampleData ();
         final byte [] rightSample24Data = this.rightSample.getSample24Data ();
 
-        final IAudioMetadata am = getAudioMetadata ();
+        final IAudioMetadata am = this.getAudioMetadata ();
         final int bitsPerSample = am.getBitResolution ();
 
         // Create an empty wave file with the required resolution and calculated data length

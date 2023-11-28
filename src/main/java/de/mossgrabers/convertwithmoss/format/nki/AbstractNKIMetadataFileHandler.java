@@ -572,7 +572,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
         for (final Element zoneElement: groupZones)
         {
-            final File sampleFile = this.getZoneSampleFile (zoneElement, sourcePath, monolithSamples != null);
+            final File sampleFile = this.getZoneSampleFile (zoneElement, sourcePath, !monolithSamples.isEmpty ());
             if (sampleFile == null)
                 continue;
 
@@ -592,7 +592,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
     private ISampleData getSampleMetadata (final File sampleFile, final Map<String, ISampleData> monolithSamples) throws IOException
     {
-        if (monolithSamples != null)
+        if (!monolithSamples.isEmpty ())
             return monolithSamples.get (sampleFile.getName ());
 
         if (sampleFile.getName ().toLowerCase ().endsWith (".ncw"))

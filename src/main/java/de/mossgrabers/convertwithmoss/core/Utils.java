@@ -4,6 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.core;
 
+import java.util.zip.CRC32;
+
+
 /**
  * Some helper functions.
  *
@@ -59,5 +62,19 @@ public class Utils
         if (x < 0.0000000298023223876953125)
             return -150;
         return Math.max (-150.0, Math.log (x) * 8.6858896380650365530225783783321);
+    }
+
+
+    /**
+     * Calculate a CRC-32 of the given data.
+     *
+     * @param data The data to hash
+     * @return The CRC-32 value
+     */
+    public static long calcCRC32 (final byte [] data)
+    {
+        final CRC32 crc32 = new CRC32 ();
+        crc32.update (data);
+        return crc32.getValue ();
     }
 }
