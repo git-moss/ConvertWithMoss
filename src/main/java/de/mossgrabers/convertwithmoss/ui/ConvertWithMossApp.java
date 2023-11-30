@@ -113,7 +113,6 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private final CSVRenameFile csvRenameFile                       = new CSVRenameFile ();
     private final LoggerBox     loggingArea                         = new LoggerBox ();
 
-
     /**
      * Main-method.
      *
@@ -722,15 +721,25 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             l.setPrefHeight (0);
             tab.setGraphic (l);
 
-            Platform.runLater ( () -> {
-                // Get the "tab-container" node. This is what we want to rotate/shift for easy
-                // left-alignment.
-                final Parent tabContainer = tab.getGraphic ().getParent ().getParent ();
-                tabContainer.setRotate (90);
-                // By default the display will originate from the center. Applying a negative Y
-                // transformation will move it left. Should be the 'TabMinHeight/2'
-                tabContainer.setTranslateY (-80);
-            });
+            Platform.runLater ( () -> rotateTabLabels (tab));
         }
+    }
+
+
+    private static void rotateTabLabels (final Tab tab)
+    {
+        // Get the "tab-container" node. This is what we want to rotate/shift for easy
+        // left-alignment.
+        final Parent parent = tab.getGraphic ().getParent ();
+        if (parent == null)
+        {
+            Platform.runLater ( () -> rotateTabLabels (tab));
+            return;
+        }
+        final Parent tabContainer = parent.getParent ();
+        tabContainer.setRotate (90);
+        // By default the display will originate from the center.
+        // Applying a negative Y transformation will move it left.
+        tabContainer.setTranslateY (-80);
     }
 }
