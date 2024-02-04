@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.riff;
@@ -54,6 +54,8 @@ public class RIFFWriter
         final byte [] data = chunk.getData ();
         this.writeFour (data.length);
         this.out.write (data);
+        if (data.length % 2 == 1)
+            this.out.write (0);
     }
 
 

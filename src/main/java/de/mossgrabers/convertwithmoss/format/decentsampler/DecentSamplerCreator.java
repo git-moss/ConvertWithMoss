@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.decentsampler;
@@ -27,8 +27,6 @@ import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
-
-import javax.xml.transform.TransformerException;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -85,6 +83,8 @@ public class DecentSamplerCreator extends AbstractCreator
     public Node getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+
+        panel.createSeparator ("@IDS_DS_OUTPUT_FORMAT");
 
         this.outputFormatGroup = new ToggleGroup ();
         final RadioButton order1 = panel.createRadioButton ("@IDS_DS_PRESET");
@@ -268,16 +268,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
         this.makeMonophonic (document, multisampleElement, groupsElement);
         this.createEffects (document, multisampleElement, multisampleSource);
-
-        try
-        {
-            return Optional.of (XMLUtils.toString (document));
-        }
-        catch (final TransformerException ex)
-        {
-            this.notifier.logError (ex);
-            return Optional.empty ();
-        }
+        return this.createXMLString (document);
     }
 
 

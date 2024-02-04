@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.wav;
@@ -124,11 +124,8 @@ public class InstrumentChunk extends WavChunk
     }
 
 
-    /**
-     * Format all values as a string for dumping it out.
-     *
-     * @return The formatted string
-     */
+    /** {@inheritDoc} */
+    @Override
     public String infoText ()
     {
         final StringBuilder sb = new StringBuilder ();

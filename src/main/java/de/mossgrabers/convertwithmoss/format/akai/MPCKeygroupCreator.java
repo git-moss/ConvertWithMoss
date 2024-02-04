@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.akai;
@@ -24,8 +24,6 @@ import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import javax.xml.transform.TransformerException;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -172,15 +170,7 @@ public class MPCKeygroupCreator extends AbstractCreator
             this.notifier.logError ("IDS_MPC_MORE_THAN_128_KEYGROUPS", Integer.toString (size));
         XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, Integer.toString (size));
 
-        try
-        {
-            return Optional.of (XMLUtils.toString (document));
-        }
-        catch (final TransformerException ex)
-        {
-            this.notifier.logError (ex);
-            return Optional.empty ();
-        }
+        return this.createXMLString (document);
     }
 
 

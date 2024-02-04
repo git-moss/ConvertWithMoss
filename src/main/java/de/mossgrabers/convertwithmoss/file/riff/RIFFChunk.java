@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.riff;
@@ -272,6 +272,21 @@ public class RIFFChunk implements IChunk
      */
     public String getNullTerminatedString (final int offset, final String defaultValue)
     {
+        return this.getNullTerminatedString (offset, -1, defaultValue);
+    }
+
+
+    /**
+     * Read a null terminated string from the data chunk.
+     *
+     * @param offset The offset into the data array
+     * @param maxLength Reads up to this number of bytes if the null termination is optional if all
+     *            bytes are filled
+     * @param defaultValue The value to return if no string is found
+     * @return The string
+     */
+    public String getNullTerminatedString (final int offset, final int maxLength, final String defaultValue)
+    {
         final StringBuilder sb = new StringBuilder ();
 
         int counter = offset;
@@ -282,6 +297,8 @@ public class RIFFChunk implements IChunk
                 return sb.toString ();
             sb.append (Character.valueOf ((char) d[counter]));
             counter++;
+            if (maxLength > 0 && counter - offset == maxLength)
+                return sb.toString ();
         }
 
         // No null terminator detected, return the default value
@@ -373,5 +390,13 @@ public class RIFFChunk implements IChunk
     public void markTooLarge ()
     {
         this.tooLarge = true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String infoText ()
+    {
+        return RiffID.toASCII (this.getType ()) + " -> " + RiffID.toASCII (this.getId ());
     }
 }

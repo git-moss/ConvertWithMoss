@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.bitwig;
@@ -18,8 +18,6 @@ import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import javax.xml.transform.TransformerException;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -131,27 +129,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
             index++;
         }
 
-        return this.prepareResult (document);
-    }
-
-
-    /**
-     * Create the XML document and return it on success.
-     *
-     * @param document The document to convert to a XML text
-     * @return The optional value
-     */
-    private Optional<String> prepareResult (final Document document)
-    {
-        try
-        {
-            return Optional.of (XMLUtils.toString (document));
-        }
-        catch (final TransformerException ex)
-        {
-            this.notifier.logError (ex);
-            return Optional.empty ();
-        }
+        return this.createXMLString (document);
     }
 
 

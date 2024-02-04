@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.riff;
@@ -93,7 +93,7 @@ public class RIFFParser
                 // Ignore
                 break;
 
-            case UNKNOWN:
+            case UNSUPPORTED:
             default:
                 if (!ignoreUnknownChunks)
                     this.raiseRiffParseError (id, riffID);
@@ -395,8 +395,8 @@ public class RIFFParser
     /**
      * Checks whether the ID of the chunk has been declared as a group chunk.
      *
-     * @param chunk Chunk to be verified.
-     * @return True when the visitor is interested in this is a group chunk.
+     * @param chunk Chunk to be verified
+     * @return True when the visitor is interested in this
      */
     protected boolean isGroupChunk (final RIFFChunk chunk)
     {
@@ -550,7 +550,7 @@ public class RIFFParser
     private void raiseRiffParseError (final int id, final RiffID riffID) throws ParseException
     {
         final StringBuilder sb = new StringBuilder ();
-        if (riffID == RiffID.UNKNOWN)
+        if (riffID == RiffID.UNSUPPORTED)
             sb.append ("Unknown top level RIFF file ID: \"").append (RiffID.toASCII (id));
         else
             sb.append ("Unexpected top level RIFF file ID: \"").append (riffID.asASCII ());
