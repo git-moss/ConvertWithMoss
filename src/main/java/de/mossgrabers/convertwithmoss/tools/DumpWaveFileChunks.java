@@ -1,15 +1,15 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.file.wav;
+package de.mossgrabers.convertwithmoss.tools;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -72,55 +72,29 @@ public class DumpWaveFileChunks
             log ("Not a valid folder: " + folder.getAbsolutePath ());
             return;
         }
-        Arrays.asList (files).forEach (file -> {
+
+        for (final File file: Arrays.asList (files))
+        {
             if (file.isDirectory ())
             {
                 detect (file);
-                return;
+                continue;
             }
 
-            if (!file.getName ().toLowerCase (Locale.US).endsWith (".wav"))
-                return;
-
-            try
+            if (file.getName ().toLowerCase (Locale.US).endsWith (".wav"))
             {
-                final WaveFile sampleFile = new WaveFile (file, true);
-                log ("\n" + file.getAbsolutePath ());
-
-                final FormatChunk formatChunk = sampleFile.getFormatChunk ();
-                if (formatChunk != null)
+                try
                 {
-                    log ("Format chunk:");
-                    log ("  " + formatChunk.infoText ().replace ("\n", "\n  "));
+                    final WaveFile sampleFile = new WaveFile (file, true);
+                    log ("\n" + file.getAbsolutePath ());
+                    log (sampleFile.infoText ());
                 }
-
-                final InstrumentChunk instrumentChunk = sampleFile.getInstrumentChunk ();
-                if (instrumentChunk != null)
+                catch (final IOException | ParseException ex)
                 {
-                    log ("Instrument chunk:");
-                    log ("  " + instrumentChunk.infoText ().replace ("\n", "\n  "));
-                }
-
-                final SampleChunk sampleChunk = sampleFile.getSampleChunk ();
-                if (sampleChunk != null)
-                {
-                    log ("Sample chunk:");
-                    log ("  " + sampleChunk.infoText ().replace ("\n", "\n  "));
-                }
-
-                final List<String> unhandledChunks = sampleFile.getUnhandledChunks ();
-                if (!unhandledChunks.isEmpty ())
-                {
-                    log ("Unhandled chunks:");
-                    for (final String riffID: unhandledChunks)
-                        log ("  * " + riffID);
+                    log (ex.getMessage ());
                 }
             }
-            catch (IOException | ParseException ex)
-            {
-                log (ex.getMessage ());
-            }
-        });
+        }
     }
 
 

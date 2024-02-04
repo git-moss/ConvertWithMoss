@@ -2,6 +2,9 @@
 
 ## 7.3.1 (unreleased)
 
+* New: WAV files metadata chunks are kept when read/written.
+* Fixed: WAV files INSTRUMENT chunk was not read and not written.
+* Fixed: WAV file chunks were not aligned to multiples of 2.
 * Fixed: Tab labels were not visible on Linux.
 
 ## 7.3.0

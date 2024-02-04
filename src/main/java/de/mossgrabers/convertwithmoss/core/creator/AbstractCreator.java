@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.creator;
@@ -16,6 +16,7 @@ import de.mossgrabers.tools.ui.Functions;
 import org.w3c.dom.Document;
 
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -394,6 +395,26 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         }
 
         return writtenFiles;
+    }
+
+
+    /**
+     * Creates an optional string from the XML document.
+     *
+     * @param document The XML document
+     * @return The optional string; empty if an error occurs
+     */
+    protected Optional<String> createXMLString (final Document document)
+    {
+        try
+        {
+            return Optional.of (XMLUtils.toString (document));
+        }
+        catch (final TransformerException ex)
+        {
+            this.notifier.logError (ex);
+            return Optional.empty ();
+        }
     }
 
 

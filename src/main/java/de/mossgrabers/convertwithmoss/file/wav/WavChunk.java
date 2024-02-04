@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.wav;
@@ -66,5 +66,13 @@ public class WavChunk implements IChunk
     public byte [] getData ()
     {
         return this.chunk.getData ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String infoText ()
+    {
+        return "Date Size: " + this.getData ().length + " Bytes";
     }
 }

@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.ui;
@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010Creator;
 import de.mossgrabers.convertwithmoss.format.nki.NkiCreator;
 import de.mossgrabers.convertwithmoss.format.nki.NkiDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -113,6 +114,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private final CSVRenameFile csvRenameFile                       = new CSVRenameFile ();
     private final LoggerBox     loggingArea                         = new LoggerBox ();
 
+
     /**
      * Main-method.
      *
@@ -149,6 +151,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.creators = new ICreator []
         {
+            new Music1010Creator (this),
             new MPCKeygroupCreator (this),
             new BitwigMultisampleCreator (this),
             new DecentSamplerCreator (this),

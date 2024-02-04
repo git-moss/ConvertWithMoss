@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.wav;
@@ -7,9 +7,9 @@ package de.mossgrabers.convertwithmoss.file.wav;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFVisitor;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFVisitor;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFWriter;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
@@ -29,14 +29,16 @@ import java.util.List;
  *
  * @author Jürgen Moßgraber
  */
-public class WaveFile
+public class WaveFile extends AbstractRIFFVisitor
 {
-    InstrumentChunk            instrumentChunk;
-    SampleChunk                sampleChunk;
-    FormatChunk                formatChunk;
-    DataChunk                  dataChunk;
+    FormatChunk                  formatChunk;
+    DataChunk                    dataChunk;
+    BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = null;
+    ListInfoChunk                listInfoChunk                = null;
+    InstrumentChunk              instrumentChunk              = null;
+    SampleChunk                  sampleChunk                  = null;
 
-    private final List<String> unhandledChunks = new ArrayList<> ();
+    private final List<WavChunk> chunkStack                   = new ArrayList<> ();
 
 
     /**
@@ -60,7 +62,6 @@ public class WaveFile
      */
     public WaveFile (final int numberOfChannels, final int sampleRate, final int bitsPerSample, final int lengthInSamples)
     {
-        this.instrumentChunk = new InstrumentChunk ();
         this.formatChunk = new FormatChunk (numberOfChannels, sampleRate, bitsPerSample, true);
         this.dataChunk = new DataChunk (this.formatChunk, lengthInSamples);
     }
@@ -103,7 +104,8 @@ public class WaveFile
     public void read (final InputStream inputStream, final boolean ignoreChunkErrors) throws IOException, ParseException
     {
         final RIFFParser riffParser = new RIFFParser ();
-        riffParser.parse (inputStream, new Visitor (), ignoreChunkErrors);
+        riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
+        riffParser.parse (inputStream, this, ignoreChunkErrors);
 
         if (ignoreChunkErrors)
             return;
@@ -111,6 +113,17 @@ public class WaveFile
             throw new ParseException ("No format chunk found in WAV file.");
         if (this.dataChunk == null)
             throw new ParseException ("No data chunk found in WAV file.");
+    }
+
+
+    /**
+     * Get the broadcast audio extension chunk if present in the WAV file.
+     *
+     * @return The broadcast audio extension chunk or null if not present
+     */
+    public BroadcastAudioExtensionChunk getBroadcastAudioExtensionChunk ()
+    {
+        return this.broadcastAudioExtensionChunk;
     }
 
 
@@ -170,17 +183,6 @@ public class WaveFile
 
 
     /**
-     * Get the IDs of the not handled chunks.
-     *
-     * @return The chunks
-     */
-    public List<String> getUnhandledChunks ()
-    {
-        return this.unhandledChunks;
-    }
-
-
-    /**
      * Write the wave to a new file.
      *
      * @param file The file to write to
@@ -203,19 +205,53 @@ public class WaveFile
      */
     public void write (final OutputStream out) throws IOException
     {
-        int fullSize = 4;
-        fullSize += 8 + this.formatChunk.getData ().length;
-        fullSize += 8 + this.dataChunk.getData ().length;
-        if (this.sampleChunk != null)
-            fullSize += 8 + this.sampleChunk.getData ().length;
+        this.fillChunkStack ();
 
         final RIFFWriter writer = new RIFFWriter (out);
-        writer.writeHeader (fullSize);
+        writer.writeHeader (this.calculateFileSize ());
         writer.writeFourCC (RiffID.WAVE_ID.getId ());
-        writer.write (this.formatChunk);
-        writer.write (this.dataChunk);
+        for (final WavChunk chunk: this.chunkStack)
+            writer.write (chunk);
+    }
+
+
+    /**
+     * Calculate the file size from all chunks on the chunk stack.
+     *
+     * @return The size of the whole WAV file
+     */
+    private int calculateFileSize ()
+    {
+        int fullSize = 4;
+        for (final WavChunk chunk: this.chunkStack)
+        {
+            final int length = chunk.getData ().length;
+            fullSize += 8 + length;
+            if (length % 2 == 1)
+                fullSize++;
+        }
+        return fullSize;
+    }
+
+
+    /**
+     * Check if the chunk stack is already filled from reading the WAV file. Fill it if empty.
+     */
+    private void fillChunkStack ()
+    {
+        if (!this.chunkStack.isEmpty ())
+            return;
+
+        this.chunkStack.add (this.formatChunk);
+        if (this.broadcastAudioExtensionChunk != null)
+            this.chunkStack.add (this.broadcastAudioExtensionChunk);
+        if (this.listInfoChunk != null)
+            this.chunkStack.add (this.listInfoChunk);
+        this.chunkStack.add (this.dataChunk);
+        if (this.instrumentChunk != null)
+            this.chunkStack.add (this.instrumentChunk);
         if (this.sampleChunk != null)
-            writer.write (this.sampleChunk);
+            this.chunkStack.add (this.sampleChunk);
     }
 
 
@@ -269,62 +305,77 @@ public class WaveFile
     }
 
 
-    /** Visitor for traversing all chunks. */
-    class Visitor implements RIFFVisitor
+    /** {@inheritDoc} */
+    @Override
+    public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
     {
-        /** {@inheritDoc} */
-        @Override
-        public boolean enteringGroup (final RIFFChunk group)
+        if (group.getType () == RiffID.INFO_ID.getId () && group.getId () == RiffID.LIST_ID.getId ())
         {
-            // Wave file format has only flat chunks
-            return false;
-        }
-
-
-        /** {@inheritDoc} */
-        @Override
-        public void enterGroup (final RIFFChunk group) throws ParseException
-        {
-            // Intentionally empty
-        }
-
-
-        /** {@inheritDoc} */
-        @Override
-        public void leaveGroup (final RIFFChunk group) throws ParseException
-        {
-            // Intentionally empty
-        }
-
-
-        /** {@inheritDoc} */
-        @Override
-        public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
-        {
-            final RiffID riffID = RiffID.fromId (chunk.getId ());
-            switch (riffID)
+            if (chunk.getType () == RiffID.INFO_ID.getId ())
             {
-                case INST_ID:
-                    WaveFile.this.instrumentChunk = new InstrumentChunk (chunk);
-                    break;
-
-                case FMT_ID:
-                    WaveFile.this.formatChunk = new FormatChunk (chunk);
-                    break;
-
-                case DATA_ID:
-                    WaveFile.this.dataChunk = new DataChunk (chunk);
-                    break;
-
-                case SMPL_ID:
-                    WaveFile.this.sampleChunk = new SampleChunk (chunk);
-                    break;
-
-                default:
-                    // Ignore other chunks
-                    WaveFile.this.unhandledChunks.add (RiffID.toASCII (chunk.getType ()) + "," + RiffID.toASCII (chunk.getId ()));
-                    break;
+                if (this.listInfoChunk == null)
+                {
+                    this.listInfoChunk = new ListInfoChunk (group);
+                    this.chunkStack.add (this.listInfoChunk);
+                }
+                this.listInfoChunk.add (chunk);
             }
+            return;
         }
+
+        final RiffID riffID = RiffID.fromId (chunk.getId ());
+        switch (riffID)
+        {
+            case BEXT_ID:
+                this.broadcastAudioExtensionChunk = new BroadcastAudioExtensionChunk (chunk);
+                this.chunkStack.add (this.broadcastAudioExtensionChunk);
+                break;
+
+            case INST_ID:
+                this.instrumentChunk = new InstrumentChunk (chunk);
+                this.chunkStack.add (this.instrumentChunk);
+                break;
+
+            case FMT_ID:
+                this.formatChunk = new FormatChunk (chunk);
+                this.chunkStack.add (this.formatChunk);
+                break;
+
+            case DATA_ID:
+                this.dataChunk = new DataChunk (chunk);
+                this.chunkStack.add (this.dataChunk);
+                break;
+
+            case SMPL_ID:
+                this.sampleChunk = new SampleChunk (chunk);
+                this.chunkStack.add (this.sampleChunk);
+                break;
+
+            // Can safely be ignored
+            case FILLER_ID:
+            default:
+                this.chunkStack.add (new UnknownChunk (riffID, chunk));
+                break;
+        }
+    }
+
+
+    /**
+     * Format all values as a string for dumping it out.
+     *
+     * @return The formatted string
+     */
+    public String infoText ()
+    {
+        this.fillChunkStack ();
+
+        final StringBuilder sb = new StringBuilder ();
+        for (final WavChunk chunk: this.chunkStack)
+        {
+            final int id = chunk.getId ();
+            sb.append ("* ").append (RiffID.fromId (id).getName ()).append (" ('").append (RiffID.toASCII (id)).append ("')\n");
+            sb.append ("    " + chunk.infoText ().replace ("\n", "\n    ")).append ('\n');
+        }
+        return sb.toString ();
     }
 }

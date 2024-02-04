@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.riff;
@@ -26,8 +26,8 @@ public enum RiffID
     NULL_NUL_ID("Null Nul", "\0\0\0\0"),
     /** ID for JUNK chunk. */
     JUNK_ID("Junk", "JUNK"),
-    /** Unknown ID. */
-    UNKNOWN("Unknown", null),
+    /** Unsupported ID. */
+    UNSUPPORTED("Unsupported", null),
 
     ////////////////////////////////////////////////////
     // Wave RIFF IDs
@@ -43,13 +43,29 @@ public enum RiffID
     /** ID for "data" chunk. */
     DATA_ID("Data", "data"),
 
+    /** ID for INFO chunk. */
+    INFO_ID("Info", "INFO"),
+
+    /**
+     * Apple software often creates WAVE files with a non-standard (but RIFF specification conform)
+     * "FLLR" sub-chunk after the format sub-chunk and before the data sub-chunk. "FLLR" stands for
+     * "filler", and the purpose of the sub-chunk is to enable some sort of data alignment
+     * optimization. The sub-chunk is usually about 4000 bytes long, but its actual length can vary
+     * depending on the length of the data preceding it.
+     */
+    FILLER_ID("Apple Filler", "FLLR"),
+
+    /** Broadcast Audio Extension Chunk. **/
+    BEXT_ID("Broadcast Audio Extension", "bext"),
+
     ////////////////////////////////////////////////////
     // SoundFont 2 RIFF IDs
 
     /** ID for SoundFont 2 chunk. */
     SF_SFBK_ID("SoundFont 2", "sfbk"),
-    /** ID for INFO chunk. */
-    SF_INFO_ID("Info", "INFO"),
+
+    /** ID for INFO chunk: SF_INFO_ID("Info", "INFO"). Already defined above. */
+
     /** ID for IFIL chunk. */
     SF_IFIL_ID("SoundFont Specification Version Level", "ifil"),
     /** ID for ISNG chunk. */
@@ -88,8 +104,12 @@ public enum RiffID
     SF_PGEN_ID("Preset Zone Generators", "pgen"),
     /** ID for preset Zone Generator chunk. */
     SF_PMOD_ID("Preset Zone Modulators", "pmod"),
-    /** ID for instrument chunk. */
-    SF_INST_ID("Instrument", "inst"),
+
+    /**
+     * ID for instrument chunk SF_INST_ID("Instrument", "inst"). Don't add this to prevent a
+     * confusing duplication with WAV inst.
+     */
+
     /** ID for instrument zones chunk. */
     SF_IBAG_ID("Instrument Zones", "ibag"),
     /** ID for instrument zone modulators chunk. */
@@ -182,7 +202,7 @@ public enum RiffID
     public static RiffID fromId (final int id)
     {
         final RiffID riffID = ID_LOOKUP.get (Integer.valueOf (id));
-        return riffID == null ? UNKNOWN : riffID;
+        return riffID == null ? UNSUPPORTED : riffID;
     }
 
 

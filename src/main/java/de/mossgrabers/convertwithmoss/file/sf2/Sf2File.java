@@ -1,13 +1,13 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2023
+// (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.sf2;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFVisitor;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFVisitor;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -30,7 +30,7 @@ import java.util.Set;
  *
  * @author Jürgen Moßgraber
  */
-public class Sf2File
+public class Sf2File extends AbstractRIFFVisitor
 {
     private static final String       SOUND_ENGINE_DEFAULT = "EMU8000";
 
@@ -269,11 +269,11 @@ public class Sf2File
     {
         final RIFFParser riffParser = new RIFFParser ();
         riffParser.declareGroupChunk (RiffID.SF_SFBK_ID.getId (), RiffID.RIFF_ID.getId ());
-        riffParser.declareGroupChunk (RiffID.SF_INFO_ID.getId (), RiffID.LIST_ID.getId ());
+        riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
         riffParser.declareGroupChunk (RiffID.SF_DATA_ID.getId (), RiffID.LIST_ID.getId ());
         riffParser.declareGroupChunk (RiffID.SF_PDTA_ID.getId (), RiffID.LIST_ID.getId ());
 
-        riffParser.parse (inputStream, new Visitor (), true);
+        riffParser.parse (inputStream, this, true);
 
         // Check mandatory fields
         if (this.version < 0)
@@ -286,496 +286,466 @@ public class Sf2File
     }
 
 
-    /** Visitor for traversing all chunks. */
-    class Visitor implements RIFFVisitor
+    /** {@inheritDoc} */
+    @Override
+    public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
     {
-        /** {@inheritDoc} */
-        @Override
-        public boolean enteringGroup (final RIFFChunk group)
+        final RiffID fromId = RiffID.fromId (chunk.getId ());
+        switch (fromId)
         {
-            // SoundFont 2 chunks use many groups...
-            return true;
-        }
+            ////////////////////////////////////////////
+            // Info chunk and its' sub-chunks
 
+            case INFO_ID:
+                // Intentionally empty
+                break;
+            case SF_IFIL_ID:
+                Sf2File.this.version = chunk.twoBytesAsInt (0) + chunk.twoBytesAsInt (2) / 100.0;
+                break;
+            case SF_ISNG_ID:
+                Sf2File.this.soundEngine = chunk.getNullTerminatedString (0, SOUND_ENGINE_DEFAULT).trim ();
+                break;
+            case SF_INAM_ID:
+                Sf2File.this.compatibleBank = chunk.getNullTerminatedString (0, "").trim ();
+                break;
+            case SF_IROM_ID:
+                Sf2File.this.soundDataROM = chunk.getNullTerminatedString (0, "").trim ();
+                break;
+            case SF_IVER_ID:
+                Sf2File.this.romRevision = chunk.twoBytesAsInt (0) + chunk.twoBytesAsInt (2) / 100.0;
+                break;
+            case SF_ICRD_ID:
+                Sf2File.this.creationDate = chunk.getNullTerminatedString (0, "").trim ();
+                break;
+            case SF_IENG_ID:
+                Sf2File.this.soundDesigner = chunk.getNullTerminatedString (0, "").trim ();
+                break;
+            case SF_IPRD_ID:
+                Sf2File.this.intendedProduct = chunk.getNullTerminatedString (0, "").trim ();
+                break;
+            case SF_ICOP_ID:
+                Sf2File.this.copyright = chunk.getNullTerminatedString (0, "").trim ();
+                break;
+            case SF_ICMT_ID:
+                Sf2File.this.comment = chunk.getNullTerminatedString (0, "").trim ();
+                break;
+            case SF_ISFT_ID:
+                Sf2File.this.creationTool = chunk.getNullTerminatedString (0, "").trim ();
+                break;
 
-        /** {@inheritDoc} */
-        @Override
-        public void enterGroup (final RIFFChunk group) throws ParseException
-        {
-            // Intentionally empty
-        }
+            ////////////////////////////////////////////
+            // Data chunk and its' sub-chunks
 
+            case SF_DATA_ID:
+                // Intentionally empty
+                break;
+            case SMPL_ID:
+                Sf2File.this.sampleData = chunk.getData ();
+                break;
+            case SF_SM24_ID:
+                Sf2File.this.sample24Data = chunk.getData ();
+                break;
 
-        /** {@inheritDoc} */
-        @Override
-        public void leaveGroup (final RIFFChunk group) throws ParseException
-        {
-            // Intentionally empty
-        }
+            ////////////////////////////////////////////
+            // Articulation chunk and its' sub-chunks
 
-
-        /** {@inheritDoc} */
-        @Override
-        public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
-        {
-            final RiffID fromId = RiffID.fromId (chunk.getId ());
-            switch (fromId)
-            {
-                ////////////////////////////////////////////
-                // Info chunk and its' sub-chunks
-
-                case SF_INFO_ID:
-                    // Intentionally empty
-                    break;
-                case SF_IFIL_ID:
-                    Sf2File.this.version = chunk.twoBytesAsInt (0) + chunk.twoBytesAsInt (2) / 100.0;
-                    break;
-                case SF_ISNG_ID:
-                    Sf2File.this.soundEngine = chunk.getNullTerminatedString (0, SOUND_ENGINE_DEFAULT).trim ();
-                    break;
-                case SF_INAM_ID:
-                    Sf2File.this.compatibleBank = chunk.getNullTerminatedString (0, "").trim ();
-                    break;
-                case SF_IROM_ID:
-                    Sf2File.this.soundDataROM = chunk.getNullTerminatedString (0, "").trim ();
-                    break;
-                case SF_IVER_ID:
-                    Sf2File.this.romRevision = chunk.twoBytesAsInt (0) + chunk.twoBytesAsInt (2) / 100.0;
-                    break;
-                case SF_ICRD_ID:
-                    Sf2File.this.creationDate = chunk.getNullTerminatedString (0, "").trim ();
-                    break;
-                case SF_IENG_ID:
-                    Sf2File.this.soundDesigner = chunk.getNullTerminatedString (0, "").trim ();
-                    break;
-                case SF_IPRD_ID:
-                    Sf2File.this.intendedProduct = chunk.getNullTerminatedString (0, "").trim ();
-                    break;
-                case SF_ICOP_ID:
-                    Sf2File.this.copyright = chunk.getNullTerminatedString (0, "").trim ();
-                    break;
-                case SF_ICMT_ID:
-                    Sf2File.this.comment = chunk.getNullTerminatedString (0, "").trim ();
-                    break;
-                case SF_ISFT_ID:
-                    Sf2File.this.creationTool = chunk.getNullTerminatedString (0, "").trim ();
-                    break;
-
-                ////////////////////////////////////////////
-                // Data chunk and its' sub-chunks
-
-                case SF_DATA_ID:
-                    // Intentionally empty
-                    break;
-                case SMPL_ID:
-                    Sf2File.this.sampleData = chunk.getData ();
-                    break;
-                case SF_SM24_ID:
-                    Sf2File.this.sample24Data = chunk.getData ();
-                    break;
-
-                ////////////////////////////////////////////
-                // Articulation chunk and its' sub-chunks
-
-                case SF_PDTA_ID:
-                    // Intentionally empty
-                    break;
-                case SF_PHDR_ID:
-                    final long length = chunk.getSize ();
-                    if (length % Sf2Preset.LENGTH_PRESET_HEADER > 0)
-                        throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET"));
-                    final long presetCount = length / Sf2Preset.LENGTH_PRESET_HEADER;
-                    for (int i = 0; i < presetCount; i++)
-                    {
-                        final Sf2Preset preset = new Sf2Preset ();
-                        preset.readHeader (i * Sf2Preset.LENGTH_PRESET_HEADER, chunk);
-                        Sf2File.this.presets.add (preset);
-                    }
-                    break;
-                case SF_PBAG_ID:
-                    this.parsePresetZones (chunk);
-                    break;
-                case SF_PGEN_ID:
-                    this.parsePresetGenerators (chunk);
-                    break;
-                case SF_PMOD_ID:
-                    this.parsePresetModulators (chunk);
-                    break;
-                case SF_INST_ID:
-                    this.parseInstruments (chunk);
-                    break;
-                case SF_IBAG_ID:
-                    this.parseInstrumentZones (chunk);
-                    break;
-                case SF_IMOD_ID:
-                    this.parseInstrumentModulators (chunk);
-                    break;
-                case SF_IGEN_ID:
-                    this.parseInstrumentGenerators (chunk);
-                    break;
-                case SF_SHDR_ID:
-                    this.parseSampleHeader (chunk);
-                    break;
-
-                default:
-                    // Ignore other chunks
-                    Sf2File.this.ignoredChunks.add (RiffID.toASCII (chunk.getId ()));
-                    break;
-            }
-        }
-
-
-        /**
-         * Parse the preset zones chunk (PBAG) and assign the parsed zones to their preset.
-         *
-         * @param chunk The chunk to parse
-         * @throws ParseException Error if the chunk is unsound
-         */
-        private void parsePresetZones (final RIFFChunk chunk) throws ParseException
-        {
-            final long len = chunk.getSize ();
-            if (len % LENGTH_PBAG > 0)
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_ZONE"));
-
-            try
-            {
-                for (int i = 0; i < Sf2File.this.presets.size () - 1; i++)
+            case SF_PDTA_ID:
+                // Intentionally empty
+                break;
+            case SF_PHDR_ID:
+                final long length = chunk.getSize ();
+                if (length % Sf2Preset.LENGTH_PRESET_HEADER > 0)
+                    throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET"));
+                final long presetCount = length / Sf2Preset.LENGTH_PRESET_HEADER;
+                for (int i = 0; i < presetCount; i++)
                 {
-                    final Sf2Preset preset = Sf2File.this.presets.get (i);
-                    final Sf2Preset nextPreset = Sf2File.this.presets.get (i + 1);
-
-                    // Get the pointer into the PGEN structure
-                    final int firstZoneIndex = preset.getFirstZoneIndex ();
-                    final int numberOfZones = nextPreset.getFirstZoneIndex () - firstZoneIndex;
-
-                    for (int zoneCounter = 0; zoneCounter < numberOfZones; zoneCounter++)
-                    {
-                        final int offset = (firstZoneIndex + zoneCounter) * LENGTH_PBAG;
-                        final int generatorIndex = chunk.twoBytesAsInt (offset);
-                        final int modulatorIndex = chunk.twoBytesAsInt (offset + 2);
-                        final int nextGeneratorIndex = chunk.twoBytesAsInt (offset + LENGTH_PBAG);
-                        final int nextModulatorIndex = chunk.twoBytesAsInt (offset + LENGTH_PBAG + 2);
-                        preset.addZone (new Sf2PresetZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
-                    }
+                    final Sf2Preset preset = new Sf2Preset ();
+                    preset.readHeader (i * Sf2Preset.LENGTH_PRESET_HEADER, chunk);
+                    Sf2File.this.presets.add (preset);
                 }
-            }
-            catch (final RuntimeException ex)
-            {
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_ZONE"), ex);
-            }
+                break;
+            case SF_PBAG_ID:
+                this.parsePresetZones (chunk);
+                break;
+            case SF_PGEN_ID:
+                this.parsePresetGenerators (chunk);
+                break;
+            case SF_PMOD_ID:
+                this.parsePresetModulators (chunk);
+                break;
+            // Is actually SF_INST_ID
+            case INST_ID:
+                this.parseInstruments (chunk);
+                break;
+            case SF_IBAG_ID:
+                this.parseInstrumentZones (chunk);
+                break;
+            case SF_IMOD_ID:
+                this.parseInstrumentModulators (chunk);
+                break;
+            case SF_IGEN_ID:
+                this.parseInstrumentGenerators (chunk);
+                break;
+            case SF_SHDR_ID:
+                this.parseSampleHeader (chunk);
+                break;
+
+            default:
+                // Ignore other chunks
+                Sf2File.this.ignoredChunks.add (RiffID.toASCII (chunk.getId ()));
+                break;
         }
+    }
 
 
-        /**
-         * Parse the preset modulators chunk (PMOD) and assign the parsed modulators to their
-         * preset.
-         *
-         * @param chunk The chunk to parse
-         * @throws ParseException Error if the chunk is unsound
-         */
-        private void parsePresetModulators (final RIFFChunk chunk) throws ParseException
+    /**
+     * Parse the preset zones chunk (PBAG) and assign the parsed zones to their preset.
+     *
+     * @param chunk The chunk to parse
+     * @throws ParseException Error if the chunk is unsound
+     */
+    private void parsePresetZones (final RIFFChunk chunk) throws ParseException
+    {
+        final long len = chunk.getSize ();
+        if (len % LENGTH_PBAG > 0)
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_ZONE"));
+
+        try
         {
-            // Check for sound PMOD structure
-            final long size = chunk.getSize ();
-            if (size % LENGTH_PMOD > 0)
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_MODULATORS"));
-
             for (int i = 0; i < Sf2File.this.presets.size () - 1; i++)
             {
                 final Sf2Preset preset = Sf2File.this.presets.get (i);
-                for (int zoneIndex = 0; zoneIndex < preset.getZoneCount (); zoneIndex++)
-                    this.parsePresetZoneModulators (chunk, preset.getZone (zoneIndex));
-            }
-        }
+                final Sf2Preset nextPreset = Sf2File.this.presets.get (i + 1);
 
+                // Get the pointer into the PGEN structure
+                final int firstZoneIndex = preset.getFirstZoneIndex ();
+                final int numberOfZones = nextPreset.getFirstZoneIndex () - firstZoneIndex;
 
-        /**
-         * Parse all modulators of a preset zone.
-         *
-         * @param chunk The chunk to parse
-         * @param zone The zone
-         */
-        private void parsePresetZoneModulators (final RIFFChunk chunk, final Sf2PresetZone zone)
-        {
-            final int firstModulator = zone.getFirstModulator ();
-            final int numberOfModulators = zone.getNumberOfModulators ();
-
-            for (int index = 0; index < numberOfModulators; index++)
-            {
-                final int offset = (firstModulator + index) * LENGTH_PMOD;
-                final int sourceModulator = chunk.twoBytesAsInt (offset);
-                final int destinationGenerator = chunk.twoBytesAsInt (offset + 2);
-                final int modAmount = chunk.twoBytesAsInt (offset + 4);
-                final int amountSourceOperand = chunk.twoBytesAsInt (offset + 6);
-                final int transformOperand = chunk.twoBytesAsInt (offset + 8);
-                zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
-            }
-        }
-
-
-        /**
-         * Parse the preset generators chunk (PGEN) and assign the parsed generators to their
-         * preset.
-         *
-         * @param chunk The chunk to parse
-         * @throws ParseException Error if the chunk is unsound
-         */
-        private void parsePresetGenerators (final RIFFChunk chunk) throws ParseException
-        {
-            // Check for sound PGEN structure
-            final long size = chunk.getSize ();
-            if (size % LENGTH_PGEN > 0)
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_GENERATORS"));
-
-            for (int i = 0; i < Sf2File.this.presets.size () - 1; i++)
-            {
-                final Sf2Preset preset = Sf2File.this.presets.get (i);
-                for (int zoneIndex = 0; zoneIndex < preset.getZoneCount (); zoneIndex++)
-                    this.parsePresetZoneGenerators (chunk, preset.getZone (zoneIndex));
-            }
-        }
-
-
-        /**
-         * Parse all generators of a preset zone.
-         *
-         * @param chunk The chunk to parse
-         * @param zone The zone
-         */
-        private void parsePresetZoneGenerators (final RIFFChunk chunk, final Sf2PresetZone zone)
-        {
-            final int firstGenerator = zone.getFirstGenerator ();
-            final int numberOfGenerators = zone.getNumberOfGenerators ();
-
-            for (int index = 0; index < numberOfGenerators; index++)
-            {
-                final int offset = (firstGenerator + index) * LENGTH_PGEN;
-                final int generator = chunk.twoBytesAsInt (offset);
-                final int value = chunk.twoBytesAsInt (offset + 2);
-                zone.addGenerator (generator, value);
-            }
-
-            // The first zone might be global. In that case it does not end with an instrument
-            // generator
-            if (!zone.hasGenerator (Generator.INSTRUMENT))
-                zone.setGlobal (true);
-        }
-
-
-        /**
-         * Parse the instrument chunk (INST) and assign the parsed instruments to their preset.
-         *
-         * @param chunk The chunk to parse
-         * @throws ParseException Error if the chunk is unsound
-         */
-        private void parseInstruments (final RIFFChunk chunk) throws ParseException
-        {
-            final long leng = chunk.getSize ();
-            if (leng % LENGTH_INST > 0)
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INST"));
-
-            // Parse all instruments
-            final long instrumentCount = leng / LENGTH_INST;
-            for (int i = 0; i < instrumentCount; i++)
-            {
-                final int offset = LENGTH_INST * i;
-                final Sf2Instrument instrument = new Sf2Instrument ();
-                instrument.readHeader (offset, chunk);
-                Sf2File.this.instruments.add (instrument);
-            }
-
-            // Assign the instruments to the preset zones
-            for (int i = 0; i < Sf2File.this.presets.size () - 1; i++)
-            {
-                final Sf2Preset preset = Sf2File.this.presets.get (i);
-                for (int zoneIndex = 0; zoneIndex < preset.getZoneCount (); zoneIndex++)
+                for (int zoneCounter = 0; zoneCounter < numberOfZones; zoneCounter++)
                 {
-                    final Sf2PresetZone zone = preset.getZone (zoneIndex);
-                    zone.applyInstrument (Sf2File.this.instruments);
+                    final int offset = (firstZoneIndex + zoneCounter) * LENGTH_PBAG;
+                    final int generatorIndex = chunk.twoBytesAsInt (offset);
+                    final int modulatorIndex = chunk.twoBytesAsInt (offset + 2);
+                    final int nextGeneratorIndex = chunk.twoBytesAsInt (offset + LENGTH_PBAG);
+                    final int nextModulatorIndex = chunk.twoBytesAsInt (offset + LENGTH_PBAG + 2);
+                    preset.addZone (new Sf2PresetZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
                 }
             }
         }
-
-
-        /**
-         * Parse the instrument zones chunk (IBAG) and assign the parsed zones to their instrument.
-         *
-         * @param chunk The chunk to parse
-         * @throws ParseException Error if the chunk is unsound
-         */
-        private void parseInstrumentZones (final RIFFChunk chunk) throws ParseException
+        catch (final RuntimeException ex)
         {
-            final long length = chunk.getSize ();
-            if (length % LENGTH_IBAG > 0)
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_ZONE"));
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_ZONE"), ex);
+        }
+    }
 
-            try
+
+    /**
+     * Parse the preset modulators chunk (PMOD) and assign the parsed modulators to their preset.
+     *
+     * @param chunk The chunk to parse
+     * @throws ParseException Error if the chunk is unsound
+     */
+    private void parsePresetModulators (final RIFFChunk chunk) throws ParseException
+    {
+        // Check for sound PMOD structure
+        final long size = chunk.getSize ();
+        if (size % LENGTH_PMOD > 0)
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_MODULATORS"));
+
+        for (int i = 0; i < Sf2File.this.presets.size () - 1; i++)
+        {
+            final Sf2Preset preset = Sf2File.this.presets.get (i);
+            for (int zoneIndex = 0; zoneIndex < preset.getZoneCount (); zoneIndex++)
+                parsePresetZoneModulators (chunk, preset.getZone (zoneIndex));
+        }
+    }
+
+
+    /**
+     * Parse all modulators of a preset zone.
+     *
+     * @param chunk The chunk to parse
+     * @param zone The zone
+     */
+    private static void parsePresetZoneModulators (final RIFFChunk chunk, final Sf2PresetZone zone)
+    {
+        final int firstModulator = zone.getFirstModulator ();
+        final int numberOfModulators = zone.getNumberOfModulators ();
+
+        for (int index = 0; index < numberOfModulators; index++)
+        {
+            final int offset = (firstModulator + index) * LENGTH_PMOD;
+            final int sourceModulator = chunk.twoBytesAsInt (offset);
+            final int destinationGenerator = chunk.twoBytesAsInt (offset + 2);
+            final int modAmount = chunk.twoBytesAsInt (offset + 4);
+            final int amountSourceOperand = chunk.twoBytesAsInt (offset + 6);
+            final int transformOperand = chunk.twoBytesAsInt (offset + 8);
+            zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
+        }
+    }
+
+
+    /**
+     * Parse the preset generators chunk (PGEN) and assign the parsed generators to their preset.
+     *
+     * @param chunk The chunk to parse
+     * @throws ParseException Error if the chunk is unsound
+     */
+    private void parsePresetGenerators (final RIFFChunk chunk) throws ParseException
+    {
+        // Check for sound PGEN structure
+        final long size = chunk.getSize ();
+        if (size % LENGTH_PGEN > 0)
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_PRESET_GENERATORS"));
+
+        for (int i = 0; i < Sf2File.this.presets.size () - 1; i++)
+        {
+            final Sf2Preset preset = Sf2File.this.presets.get (i);
+            for (int zoneIndex = 0; zoneIndex < preset.getZoneCount (); zoneIndex++)
+                parsePresetZoneGenerators (chunk, preset.getZone (zoneIndex));
+        }
+    }
+
+
+    /**
+     * Parse all generators of a preset zone.
+     *
+     * @param chunk The chunk to parse
+     * @param zone The zone
+     */
+    private static void parsePresetZoneGenerators (final RIFFChunk chunk, final Sf2PresetZone zone)
+    {
+        final int firstGenerator = zone.getFirstGenerator ();
+        final int numberOfGenerators = zone.getNumberOfGenerators ();
+
+        for (int index = 0; index < numberOfGenerators; index++)
+        {
+            final int offset = (firstGenerator + index) * LENGTH_PGEN;
+            final int generator = chunk.twoBytesAsInt (offset);
+            final int value = chunk.twoBytesAsInt (offset + 2);
+            zone.addGenerator (generator, value);
+        }
+
+        // The first zone might be global. In that case it does not end with an instrument
+        // generator
+        if (!zone.hasGenerator (Generator.INSTRUMENT))
+            zone.setGlobal (true);
+    }
+
+
+    /**
+     * Parse the instrument chunk (INST) and assign the parsed instruments to their preset.
+     *
+     * @param chunk The chunk to parse
+     * @throws ParseException Error if the chunk is unsound
+     */
+    private void parseInstruments (final RIFFChunk chunk) throws ParseException
+    {
+        final long leng = chunk.getSize ();
+        if (leng % LENGTH_INST > 0)
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INST"));
+
+        // Parse all instruments
+        final long instrumentCount = leng / LENGTH_INST;
+        for (int i = 0; i < instrumentCount; i++)
+        {
+            final int offset = LENGTH_INST * i;
+            final Sf2Instrument instrument = new Sf2Instrument ();
+            instrument.readHeader (offset, chunk);
+            Sf2File.this.instruments.add (instrument);
+        }
+
+        // Assign the instruments to the preset zones
+        for (int i = 0; i < Sf2File.this.presets.size () - 1; i++)
+        {
+            final Sf2Preset preset = Sf2File.this.presets.get (i);
+            for (int zoneIndex = 0; zoneIndex < preset.getZoneCount (); zoneIndex++)
             {
-                for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
+                final Sf2PresetZone zone = preset.getZone (zoneIndex);
+                zone.applyInstrument (Sf2File.this.instruments);
+            }
+        }
+    }
+
+
+    /**
+     * Parse the instrument zones chunk (IBAG) and assign the parsed zones to their instrument.
+     *
+     * @param chunk The chunk to parse
+     * @throws ParseException Error if the chunk is unsound
+     */
+    private void parseInstrumentZones (final RIFFChunk chunk) throws ParseException
+    {
+        final long length = chunk.getSize ();
+        if (length % LENGTH_IBAG > 0)
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_ZONE"));
+
+        try
+        {
+            for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
+            {
+                final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
+                final Sf2Instrument nextInstrument = Sf2File.this.instruments.get (i + 1);
+
+                // Get the pointer into the IGEN structure
+                final int firstZoneIndex = instrument.getFirstZoneIndex ();
+                final int numberOfZones = nextInstrument.getFirstZoneIndex () - firstZoneIndex;
+
+                for (int zoneCounter = 0; zoneCounter < numberOfZones; zoneCounter++)
                 {
-                    final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
-                    final Sf2Instrument nextInstrument = Sf2File.this.instruments.get (i + 1);
-
-                    // Get the pointer into the IGEN structure
-                    final int firstZoneIndex = instrument.getFirstZoneIndex ();
-                    final int numberOfZones = nextInstrument.getFirstZoneIndex () - firstZoneIndex;
-
-                    for (int zoneCounter = 0; zoneCounter < numberOfZones; zoneCounter++)
-                    {
-                        final int offset = (firstZoneIndex + zoneCounter) * LENGTH_IBAG;
-                        final int generatorIndex = chunk.twoBytesAsInt (offset);
-                        final int modulatorIndex = chunk.twoBytesAsInt (offset + 2);
-                        final int nextGeneratorIndex = chunk.twoBytesAsInt (offset + LENGTH_IBAG);
-                        final int nextModulatorIndex = chunk.twoBytesAsInt (offset + LENGTH_IBAG + 2);
-                        instrument.addZone (new Sf2InstrumentZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
-                    }
+                    final int offset = (firstZoneIndex + zoneCounter) * LENGTH_IBAG;
+                    final int generatorIndex = chunk.twoBytesAsInt (offset);
+                    final int modulatorIndex = chunk.twoBytesAsInt (offset + 2);
+                    final int nextGeneratorIndex = chunk.twoBytesAsInt (offset + LENGTH_IBAG);
+                    final int nextModulatorIndex = chunk.twoBytesAsInt (offset + LENGTH_IBAG + 2);
+                    instrument.addZone (new Sf2InstrumentZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
                 }
             }
-            catch (final RuntimeException ex)
-            {
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_ZONE"), ex);
-            }
+        }
+        catch (final RuntimeException ex)
+        {
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_ZONE"), ex);
+        }
+    }
+
+
+    /**
+     * Parse the instrument modulators chunk (IMOD) and assign the parsed modulators to their
+     * instrument.
+     *
+     * @param chunk The chunk to parse
+     * @throws ParseException Error if the chunk is unsound
+     */
+    private void parseInstrumentModulators (final RIFFChunk chunk) throws ParseException
+    {
+        // Check for sound PMOD structure
+        final long size = chunk.getSize ();
+        if (size % LENGTH_IMOD > 0)
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_MODULATORS"));
+
+        for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
+        {
+            final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
+            for (int zoneIndex = 0; zoneIndex < instrument.getZoneCount (); zoneIndex++)
+                parseInstrumentZoneModulators (chunk, instrument.getZone (zoneIndex));
+        }
+    }
+
+
+    /**
+     * Parse all modulators of a instrument zone.
+     *
+     * @param chunk The chunk to parse
+     * @param zone The zone
+     */
+    private static void parseInstrumentZoneModulators (final RIFFChunk chunk, final Sf2InstrumentZone zone)
+    {
+        final int firstModulator = zone.getFirstModulator ();
+        final int numberOfModulators = zone.getNumberOfModulators ();
+
+        for (int index = 0; index < numberOfModulators; index++)
+        {
+            final int offset = (firstModulator + index) * LENGTH_IMOD;
+            final int sourceModulator = chunk.twoBytesAsInt (offset);
+            final int destinationGenerator = chunk.twoBytesAsInt (offset + 2);
+            final int modAmount = chunk.twoBytesAsInt (offset + 4);
+            final int amountSourceOperand = chunk.twoBytesAsInt (offset + 6);
+            final int transformOperand = chunk.twoBytesAsInt (offset + 8);
+            zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
+        }
+    }
+
+
+    /**
+     * Parse the instrument generators chunk (IGEN) and assign the parsed generators to their
+     * instrument.
+     *
+     * @param chunk The chunk to parse
+     * @throws ParseException Error if the chunk is unsound
+     */
+    private void parseInstrumentGenerators (final RIFFChunk chunk) throws ParseException
+    {
+        // Check for sound IGEN structure
+        final long size = chunk.getSize ();
+        if (size % LENGTH_IGEN > 0)
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_GENERATORS"));
+
+        for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
+        {
+            final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
+            for (int zoneIndex = 0; zoneIndex < instrument.getZoneCount (); zoneIndex++)
+                parseInstrumentZoneGenerators (chunk, instrument.getZone (zoneIndex));
+        }
+    }
+
+
+    /**
+     * Parse all generators of an instrument zone.
+     *
+     * @param chunk The chunk to parse
+     * @param zone The zone
+     */
+    private static void parseInstrumentZoneGenerators (final RIFFChunk chunk, final Sf2InstrumentZone zone)
+    {
+        final int firstGenerator = zone.getFirstGenerator ();
+        final int numberOfGenerators = zone.getNumberOfGenerators ();
+
+        for (int index = 0; index < numberOfGenerators; index++)
+        {
+            final int offset = (firstGenerator + index) * LENGTH_IGEN;
+            final int generator = chunk.twoBytesAsInt (offset);
+            final int value = chunk.twoBytesAsInt (offset + 2);
+            zone.addGenerator (generator, value);
         }
 
+        // The first zone might be global. In that case it does not end with a sample ID
+        // generator
+        if (!zone.hasGenerator (Generator.SAMPLE_ID))
+            zone.setGlobal (true);
+    }
 
-        /**
-         * Parse the instrument modulators chunk (IMOD) and assign the parsed modulators to their
-         * instrument.
-         *
-         * @param chunk The chunk to parse
-         * @throws ParseException Error if the chunk is unsound
-         */
-        private void parseInstrumentModulators (final RIFFChunk chunk) throws ParseException
+
+    /**
+     * Parse all sample descriptors.
+     *
+     * @param chunk The chunk to parse
+     * @throws ParseException Could not parse the sample headers chunk
+     */
+    private void parseSampleHeader (final RIFFChunk chunk) throws ParseException
+    {
+        // Check for sound IGEN structure
+        final long size = chunk.getSize ();
+        if (size % LENGTH_SHDR > 0)
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_SAMPLE_HEADER"));
+
+        // Read all sample headers
+        final List<Sf2SampleDescriptor> samples = new ArrayList<> ();
+        for (int i = 0; i < size / LENGTH_SHDR; i++)
         {
-            // Check for sound PMOD structure
-            final long size = chunk.getSize ();
-            if (size % LENGTH_IMOD > 0)
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_MODULATORS"));
-
-            for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
-            {
-                final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
-                for (int zoneIndex = 0; zoneIndex < instrument.getZoneCount (); zoneIndex++)
-                    this.parseInstrumentZoneModulators (chunk, instrument.getZone (zoneIndex));
-            }
+            final Sf2SampleDescriptor sampleDescriptor = new Sf2SampleDescriptor (i, Sf2File.this.sampleData, Sf2File.this.sample24Data);
+            sampleDescriptor.readHeader (i * LENGTH_SHDR, chunk);
+            samples.add (sampleDescriptor);
         }
 
-
-        /**
-         * Parse all modulators of a instrument zone.
-         *
-         * @param chunk The chunk to parse
-         * @param zone The zone
-         */
-        private void parseInstrumentZoneModulators (final RIFFChunk chunk, final Sf2InstrumentZone zone)
+        // Assign samples to instrument zones
+        for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
         {
-            final int firstModulator = zone.getFirstModulator ();
-            final int numberOfModulators = zone.getNumberOfModulators ();
-
-            for (int index = 0; index < numberOfModulators; index++)
+            final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
+            for (int zoneIndex = 0; zoneIndex < instrument.getZoneCount (); zoneIndex++)
             {
-                final int offset = (firstModulator + index) * LENGTH_IMOD;
-                final int sourceModulator = chunk.twoBytesAsInt (offset);
-                final int destinationGenerator = chunk.twoBytesAsInt (offset + 2);
-                final int modAmount = chunk.twoBytesAsInt (offset + 4);
-                final int amountSourceOperand = chunk.twoBytesAsInt (offset + 6);
-                final int transformOperand = chunk.twoBytesAsInt (offset + 8);
-                zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
-            }
-        }
-
-
-        /**
-         * Parse the instrument generators chunk (IGEN) and assign the parsed generators to their
-         * instrument.
-         *
-         * @param chunk The chunk to parse
-         * @throws ParseException Error if the chunk is unsound
-         */
-        private void parseInstrumentGenerators (final RIFFChunk chunk) throws ParseException
-        {
-            // Check for sound IGEN structure
-            final long size = chunk.getSize ();
-            if (size % LENGTH_IGEN > 0)
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_INSTRUMENT_GENERATORS"));
-
-            for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
-            {
-                final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
-                for (int zoneIndex = 0; zoneIndex < instrument.getZoneCount (); zoneIndex++)
-                    this.parseInstrumentZoneGenerators (chunk, instrument.getZone (zoneIndex));
-            }
-        }
-
-
-        /**
-         * Parse all generators of an instrument zone.
-         *
-         * @param chunk The chunk to parse
-         * @param zone The zone
-         */
-        private void parseInstrumentZoneGenerators (final RIFFChunk chunk, final Sf2InstrumentZone zone)
-        {
-            final int firstGenerator = zone.getFirstGenerator ();
-            final int numberOfGenerators = zone.getNumberOfGenerators ();
-
-            for (int index = 0; index < numberOfGenerators; index++)
-            {
-                final int offset = (firstGenerator + index) * LENGTH_IGEN;
-                final int generator = chunk.twoBytesAsInt (offset);
-                final int value = chunk.twoBytesAsInt (offset + 2);
-                zone.addGenerator (generator, value);
-            }
-
-            // The first zone might be global. In that case it does not end with a sample ID
-            // generator
-            if (!zone.hasGenerator (Generator.SAMPLE_ID))
-                zone.setGlobal (true);
-        }
-
-
-        /**
-         * Parse all sample descriptors.
-         *
-         * @param chunk The chunk to parse
-         * @throws ParseException Could not parse the sample headers chunk
-         */
-        private void parseSampleHeader (final RIFFChunk chunk) throws ParseException
-        {
-            // Check for sound IGEN structure
-            final long size = chunk.getSize ();
-            if (size % LENGTH_SHDR > 0)
-                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_SAMPLE_HEADER"));
-
-            // Read all sample headers
-            final List<Sf2SampleDescriptor> samples = new ArrayList<> ();
-            for (int i = 0; i < size / LENGTH_SHDR; i++)
-            {
-                final Sf2SampleDescriptor sampleDescriptor = new Sf2SampleDescriptor (i, Sf2File.this.sampleData, Sf2File.this.sample24Data);
-                sampleDescriptor.readHeader (i * LENGTH_SHDR, chunk);
-                samples.add (sampleDescriptor);
-            }
-
-            // Assign samples to instrument zones
-            for (int i = 0; i < Sf2File.this.instruments.size () - 1; i++)
-            {
-                final Sf2Instrument instrument = Sf2File.this.instruments.get (i);
-                for (int zoneIndex = 0; zoneIndex < instrument.getZoneCount (); zoneIndex++)
+                final Sf2InstrumentZone zone = instrument.getZone (zoneIndex);
+                final Integer value = zone.getGeneratorValue (Generator.SAMPLE_ID);
+                if (value == null)
                 {
-                    final Sf2InstrumentZone zone = instrument.getZone (zoneIndex);
-                    final Integer value = zone.getGeneratorValue (Generator.SAMPLE_ID);
-                    if (value == null)
-                    {
-                        if (zone.isGlobal ())
-                            continue;
-                        throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_SAMPLE_GENERATOR"));
-                    }
-                    final int sampleIndex = value.intValue ();
-                    if (sampleIndex >= samples.size ())
-                        throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_SAMPLE_HEADER"));
-                    final Sf2SampleDescriptor sampleDescriptor = samples.get (sampleIndex);
-                    zone.setSample (sampleDescriptor);
+                    if (zone.isGlobal ())
+                        continue;
+                    throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_SAMPLE_GENERATOR"));
                 }
+                final int sampleIndex = value.intValue ();
+                if (sampleIndex >= samples.size ())
+                    throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_BROKEN_SAMPLE_HEADER"));
+                final Sf2SampleDescriptor sampleDescriptor = samples.get (sampleIndex);
+                zone.setSample (sampleDescriptor);
             }
         }
     }
