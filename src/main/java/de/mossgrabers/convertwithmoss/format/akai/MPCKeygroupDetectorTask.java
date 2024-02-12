@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.akai;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -158,7 +158,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, n);
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
-        multisampleSource.getMetadata ().detectMetadata (this.metadataConfig, parts, isDrum ? "Drums" : null);
 
         final Element instrumentsElement = XMLUtils.getChildElementByName (programElement, MPCKeygroupTag.PROGRAM_INSTRUMENTS);
         if (instrumentsElement == null)
@@ -173,6 +172,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             this.applyPadNoteMap (programElement, groups);
 
         multisampleSource.setGroups (groups);
+        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, isDrum ? "Drums" : null);
 
         final double pitchBendRange = XMLUtils.getChildElementDoubleContent (programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, 0);
         if (pitchBendRange != 0)
@@ -396,7 +396,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         final String panStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PAN);
         if (panStr != null && !panStr.isBlank ())
-            sampleMetadata.setPanorama (Utils.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
+            sampleMetadata.setPanorama (MathUtils.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
 
         final String pitchStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PITCH);
         if (pitchStr != null && !pitchStr.isBlank ())
@@ -599,6 +599,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
     private static double denormalizeLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
     {
-        return minimum * Math.exp (Utils.clamp (value, 0, 1) * Math.log (maximum / minimum));
+        return minimum * Math.exp (MathUtils.clamp (value, 0, 1) * Math.log (maximum / minimum));
     }
 }

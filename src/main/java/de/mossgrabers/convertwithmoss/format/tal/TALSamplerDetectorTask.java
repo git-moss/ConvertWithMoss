@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.tal;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -148,7 +148,6 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, name);
 
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
-            // No metadata available
 
             // Parse all groups
             final List<IGroup> groups = new ArrayList<> (4);
@@ -176,6 +175,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                 }
             }
 
+            this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts);
             multisampleSource.setGroups (groups);
 
             final Optional<IFilter> optFilter = parseModulationAttributes (programElement, multisampleSource);
@@ -258,7 +258,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
     private static Optional<IFilter> parseModulationAttributes (final Element programElement, final DefaultMultisampleSource multisampleSource) throws IOException
     {
         // Pitchbend
-        final int bend = (int) Utils.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, 1.0) * 1200.0, 0.0, 1200.0);
+        final int bend = (int) MathUtils.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, 1.0) * 1200.0, 0.0, 1200.0);
 
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (multisampleSource.getGroups ());
 
@@ -279,7 +279,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
             {
                 final IFilter baseFilter = filterType.get ();
 
-                final double cutoff = cutoffToHertz (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, 1.0));
+                final double cutoff = MathUtils.denormalizeCutoff (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, 1.0));
                 final double resonance = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, 0) * 40.0;
                 final IFilter filter = new DefaultFilter (baseFilter.getType (), baseFilter.getPoles (), cutoff, resonance);
                 optFilter = Optional.of (filter);
@@ -373,11 +373,5 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
     {
         final double result = volume - TALSamplerConstants.MINUS_12_DB;
         return result * 18.0 / TALSamplerConstants.VALUE_RANGE - 12;
-    }
-
-
-    private static double cutoffToHertz (final double normalizedValue)
-    {
-        return Utils.clamp (2.0 * 440.0 * Math.pow (2, (normalizedValue * 140.0 - 57.0) / 12.0), 32.7, 106300);
     }
 }

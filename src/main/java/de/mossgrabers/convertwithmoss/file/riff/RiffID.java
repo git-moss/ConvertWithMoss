@@ -25,7 +25,9 @@ public enum RiffID
     /** ID for NULL chunk. */
     NULL_NUL_ID("Null Nul", "\0\0\0\0"),
     /** ID for JUNK chunk. */
-    JUNK_ID("Junk", "JUNK"),
+    JUNK_ID("JUNK", "JUNK"),
+    /** ID for junk chunk. */
+    JUNK2_ID("junk", "junk"),
     /** Unsupported ID. */
     UNSUPPORTED("Unsupported", null),
 
@@ -54,6 +56,9 @@ public enum RiffID
      * depending on the length of the data preceding it.
      */
     FILLER_ID("Apple Filler", "FLLR"),
+
+    /** MD5 checksum. */
+    MD5_ID("MD5 Checksum", "MD5 "),
 
     /** Broadcast Audio Extension Chunk. **/
     BEXT_ID("Broadcast Audio Extension", "bext"),

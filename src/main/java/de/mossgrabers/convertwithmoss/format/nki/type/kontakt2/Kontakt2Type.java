@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -79,7 +79,7 @@ public class Kontakt2Type extends AbstractKontaktType
         header.read (fileAccess);
         this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", header.isFourDotTwo () ? "4.2" : "2", header.getKontaktVersion (), header.isMonolith () ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
 
-        fillMetadata (header);
+        this.fillMetadata (header);
 
         final List<IMultisampleSource> multiSamples;
         if (header.isFourDotTwo ())
@@ -153,7 +153,7 @@ public class Kontakt2Type extends AbstractKontaktType
         final byte [] compressedData = new byte [compressedDataSize];
         fileAccess.readFully (compressedData);
 
-        if (Utils.calcCRC32 (compressedData) != crc32Hash)
+        if (MathUtils.calcCRC32 (compressedData) != crc32Hash)
             this.notifier.logError ("IDS_NKI_CRC32_MISMATCH");
 
         final byte [] uncompressedData = FastLZ.uncompress (compressedData, uncompressedSize);
@@ -248,6 +248,7 @@ public class Kontakt2Type extends AbstractKontaktType
         if (iconName != null)
             this.metadata.setCategory (iconName);
         this.metadata.setCreator (header.getAuthor ());
+        this.metadata.setCreationTime (header.getCreation ());
 
         final String category1Name = header.getCategory1Name ();
         if (!Kontakt2Header.CATEGORY_OTHER.equals (category1Name))
@@ -263,7 +264,7 @@ public class Kontakt2Type extends AbstractKontaktType
         if (!keywords.isEmpty ())
             this.metadata.setKeywords (keywords.toArray (new String [keywords.size ()]));
 
-        String additionalInfo = "Creation: " + header.getFormattedCreation ();
+        String additionalInfo = "";
         final String website = header.getWebsite ();
         if (!website.isBlank ())
             additionalInfo += "\nWebsite : " + website;

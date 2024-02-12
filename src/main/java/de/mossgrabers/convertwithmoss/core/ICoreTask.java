@@ -33,7 +33,7 @@ public interface ICoreTask
 
 
     /**
-     * Save the settings of the detector.
+     * Save the settings of the task.
      *
      * @param configuration Where to store to
      */
@@ -41,7 +41,7 @@ public interface ICoreTask
 
 
     /**
-     * Load the settings of the detector.
+     * Load the settings of the task.
      *
      * @param configuration Where to load from
      */

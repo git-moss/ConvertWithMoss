@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -676,7 +676,7 @@ public abstract class AbstractNKIMetadataFileHandler
             final double groupPan = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ());
             final double progPan = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progPanParam ());
             final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
-            zone.setPanorama (Utils.clamp (totalPan, -1.0d, 1.0d));
+            zone.setPanorama (MathUtils.clamp (totalPan, -1.0d, 1.0d));
         }
         catch (final ValueNotAvailableException e)
         {

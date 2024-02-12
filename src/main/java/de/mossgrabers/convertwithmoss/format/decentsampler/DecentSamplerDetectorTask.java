@@ -228,9 +228,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
-
-        // Use same guessing on the filename...
-        multisampleSource.getMetadata ().detectMetadata (this.metadataConfig, parts);
+        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts);
 
         multisampleSource.setGroups (groups);
 

@@ -6,9 +6,13 @@ package de.mossgrabers.convertwithmoss.format.music1010;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -28,9 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 
 
 /**
@@ -47,99 +49,101 @@ public class Music1010Creator extends AbstractCreator
     private ToggleGroup                      interpolationQualityGroup;
     private boolean                          isInterpolationQualityHigh;
 
-    private static final Map<String, String> DEFAULT_PARAM_ATTRIBUTES         = new HashMap<> ();
-    private static final Map<String, String> PARAM_ATTRIBUTES                 = new HashMap<> ();
+    private static final Map<String, String> EMPTY_PARAM_ATTRIBUTES           = new HashMap<> ();
+    private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES     = new HashMap<> ();
     static
     {
-        DEFAULT_PARAM_ATTRIBUTES.put ("gaindb", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("loopmode", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("loopmodes", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("reverse", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("cellmode", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("envattack", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("envdecay", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("envsus", "1000");
-        DEFAULT_PARAM_ATTRIBUTES.put ("envrel", "200");
-        DEFAULT_PARAM_ATTRIBUTES.put ("velamount", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("samstart", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("samlen", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("loopstart", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("loopend", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("quantsize", "3");
-        DEFAULT_PARAM_ATTRIBUTES.put ("synctype", "5");
-        DEFAULT_PARAM_ATTRIBUTES.put ("slicersync", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("slicestepmode", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("beatcount", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("fx1send", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("fx2send", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("playthru", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("slicerquantsize", "13");
-        DEFAULT_PARAM_ATTRIBUTES.put ("deftemplate", "1");
-        DEFAULT_PARAM_ATTRIBUTES.put ("recpresetlen", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("recquant", "3");
-        DEFAULT_PARAM_ATTRIBUTES.put ("recinput", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("recusethres", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("recthresh", "-20000");
-        DEFAULT_PARAM_ATTRIBUTES.put ("recmonoutbus", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("mute", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("pitch", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("dualfilcutoff", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("res", "500");
-        DEFAULT_PARAM_ATTRIBUTES.put ("panpos", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("samtrigtype", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("polymode", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("polymodeslice", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("okegrp", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("midimode", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("padnote", "0");
-        DEFAULT_PARAM_ATTRIBUTES.put ("rootnote", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("gaindb", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("reverse", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("cellmode", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("envattack", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("envdecay", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("envsus", "1000");
+        EMPTY_PARAM_ATTRIBUTES.put ("envrel", "200");
+        EMPTY_PARAM_ATTRIBUTES.put ("velamount", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("samstart", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("samlen", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("quantsize", "3");
+        EMPTY_PARAM_ATTRIBUTES.put ("synctype", "5");
+        EMPTY_PARAM_ATTRIBUTES.put ("slicersync", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("slicestepmode", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("beatcount", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("fx1send", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("fx2send", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("playthru", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("slicerquantsize", "13");
+        EMPTY_PARAM_ATTRIBUTES.put ("deftemplate", "1");
+        EMPTY_PARAM_ATTRIBUTES.put ("recpresetlen", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("recquant", "3");
+        EMPTY_PARAM_ATTRIBUTES.put ("recinput", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("recusethres", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("recthresh", "-20000");
+        EMPTY_PARAM_ATTRIBUTES.put ("recmonoutbus", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("mute", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("pitch", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("dualfilcutoff", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("res", "500");
+        EMPTY_PARAM_ATTRIBUTES.put ("panpos", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("samtrigtype", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("polymode", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("polymodeslice", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("okegrp", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("midimode", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("padnote", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("rootnote", "0");
 
-        PARAM_ATTRIBUTES.put ("gaindb", "0");
-        PARAM_ATTRIBUTES.put ("pitch", "0");
-        PARAM_ATTRIBUTES.put ("panpos", "0");
-        PARAM_ATTRIBUTES.put ("samtrigtype", "1");
-        PARAM_ATTRIBUTES.put ("loopmode", "0");
-        PARAM_ATTRIBUTES.put ("loopmodes", "0");
-        PARAM_ATTRIBUTES.put ("midimode", "1");
-        PARAM_ATTRIBUTES.put ("midioutchan", "0");
-        PARAM_ATTRIBUTES.put ("reverse", "0");
-        PARAM_ATTRIBUTES.put ("cellmode", "0");
-        PARAM_ATTRIBUTES.put ("envattack", "0");
-        PARAM_ATTRIBUTES.put ("envdecay", "0");
-        PARAM_ATTRIBUTES.put ("envsus", "1000");
-        PARAM_ATTRIBUTES.put ("envrel", "103");
-        PARAM_ATTRIBUTES.put ("samstart", "0");
-        PARAM_ATTRIBUTES.put ("samlen", "1425505");
-        PARAM_ATTRIBUTES.put ("loopstart", "0");
-        PARAM_ATTRIBUTES.put ("loopend", "1425505");
-        PARAM_ATTRIBUTES.put ("quantsize", "3");
-        PARAM_ATTRIBUTES.put ("synctype", "5");
-        PARAM_ATTRIBUTES.put ("actslice", "1");
-        PARAM_ATTRIBUTES.put ("outputbus", "0");
-        PARAM_ATTRIBUTES.put ("polymode", "5");
-        PARAM_ATTRIBUTES.put ("slicestepmode", "0");
-        PARAM_ATTRIBUTES.put ("chokegrp", "0");
-        PARAM_ATTRIBUTES.put ("dualfilcutoff", "0");
-        PARAM_ATTRIBUTES.put ("rootnote", "0");
-        PARAM_ATTRIBUTES.put ("beatcount", "0");
-        PARAM_ATTRIBUTES.put ("fx1send", "0");
-        PARAM_ATTRIBUTES.put ("fx2send", "0");
-        PARAM_ATTRIBUTES.put ("multisammode", "1");
-        PARAM_ATTRIBUTES.put ("playthru", "0");
-        PARAM_ATTRIBUTES.put ("slicerquantsize", "13");
-        PARAM_ATTRIBUTES.put ("slicersync", "0");
-        PARAM_ATTRIBUTES.put ("padnote", "0");
-        PARAM_ATTRIBUTES.put ("loopfadeamt", "0");
-        PARAM_ATTRIBUTES.put ("grainsize", "0");
-        PARAM_ATTRIBUTES.put ("graincount", "3");
-        PARAM_ATTRIBUTES.put ("gainspreadten", "0");
-        PARAM_ATTRIBUTES.put ("grainreadspeed", "1000");
-        PARAM_ATTRIBUTES.put ("recpresetlen", "0");
-        PARAM_ATTRIBUTES.put ("recquant", "3");
-        PARAM_ATTRIBUTES.put ("recinput", "0");
-        PARAM_ATTRIBUTES.put ("recusethres", "0");
-        PARAM_ATTRIBUTES.put ("recthresh", "-20000");
-        PARAM_ATTRIBUTES.put ("recmonoutbus", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("gaindb", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("pitch", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("panpos", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("samtrigtype", "1");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("loopmode", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("loopmodes", "0");
+        // Setup for modulation wheel!
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfowave", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("lforate", "845");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfoamount", "0");
+
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("midimode", "1");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("midioutchan", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("reverse", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("cellmode", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("envattack", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("envdecay", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("envsus", "1000");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("envrel", "103");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("samstart", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("samlen", "1425505");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("loopstart", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("loopend", "1425505");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("quantsize", "3");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("synctype", "5");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("actslice", "1");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("outputbus", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("polymode", "5");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("slicestepmode", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("chokegrp", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("dualfilcutoff", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("rootnote", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("beatcount", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("fx1send", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("fx2send", "0");
+        // Set this to 0 if one-shots should be supported in the future
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("multisammode", "1");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("playthru", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("slicerquantsize", "13");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("slicersync", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("padnote", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("loopfadeamt", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("grainsize", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("graincount", "3");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("gainspreadten", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("grainreadspeed", "1000");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("recpresetlen", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("recquant", "3");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("recinput", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("recusethres", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("recthresh", "-20000");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("recmonoutbus", "0");
     }
 
 
@@ -150,7 +154,7 @@ public class Music1010Creator extends AbstractCreator
      */
     public Music1010Creator (final INotifier notifier)
     {
-        super ("1010 Music", notifier);
+        super ("1010music", notifier);
     }
 
 
@@ -168,6 +172,8 @@ public class Music1010Creator extends AbstractCreator
         final RadioButton order2 = panel.createRadioButton ("@IDS_1010_MUSIC_INTERPOLATION_QUALITY_HIGH");
         order2.setToggleGroup (this.interpolationQualityGroup);
 
+        this.addWavChunkOptions (panel);
+
         return panel.getPane ();
     }
 
@@ -177,6 +183,8 @@ public class Music1010Creator extends AbstractCreator
     public void loadSettings (final BasicConfig config)
     {
         this.interpolationQualityGroup.selectToggle (this.interpolationQualityGroup.getToggles ().get (config.getBoolean (MUSIC_1010_INTERPOLATION_QUALITY, false) ? 1 : 0));
+
+        this.loadWavChunkSettings (config, "Music1010");
     }
 
 
@@ -185,6 +193,8 @@ public class Music1010Creator extends AbstractCreator
     public void saveSettings (final BasicConfig config)
     {
         config.setBoolean (MUSIC_1010_INTERPOLATION_QUALITY, this.isHighInterpolationQuality ());
+
+        this.saveWavChunkSettings (config, "Music1010");
     }
 
 
@@ -219,12 +229,12 @@ public class Music1010Creator extends AbstractCreator
 
 
     /**
-     * Create a dspreset file.
+     * Create a preset file.
      *
      * @param destinationFolder Where to store the preset file
      * @param multisampleSource The multi sample to store in the library
-     * @param multiFile The file of the dslibrary
-     * @param metadata The dspreset metadata description file
+     * @param multiFile The file to store the preset
+     * @param metadata The preset metadata description file
      * @throws IOException Could not store the file
      */
     private void storePreset (final File destinationFolder, final IMultisampleSource multisampleSource, final File multiFile, final String metadata) throws IOException
@@ -235,7 +245,7 @@ public class Music1010Creator extends AbstractCreator
         }
 
         // Store all samples
-        this.writeSamples (destinationFolder, multisampleSource);
+        this.writeSamples (destinationFolder, multisampleSource, this.shouldWriteBroadcastAudioChunk (), this.shouldWriteInstrumentChunk (), this.shouldWriteSampleChunk (), this.shouldRemoveJunkChunks ());
     }
 
 
@@ -257,10 +267,9 @@ public class Music1010Creator extends AbstractCreator
         final Element rootElement = document.createElement (Music1010Tag.ROOT);
         document.appendChild (rootElement);
         final Element sessionElement = XMLUtils.addElement (document, rootElement, Music1010Tag.SESSION);
-        rootElement.appendChild (sessionElement);
         sessionElement.setAttribute (Music1010Tag.ATTR_VERSION, "2");
 
-        // No metadata at all
+        // No metadata at all -> can optionally be written to BEXT chunk
 
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
@@ -269,22 +278,57 @@ public class Music1010Creator extends AbstractCreator
         final String presetPath = "\\Presets\\" + multisampleSource.getName ();
         firstSlot.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath);
 
+        createModulationWheel (document, firstSlot);
+
         // Add all groups
         int sampleIndex = 0;
         for (final IGroup group: groups)
         {
             // No group support
 
-            for (final ISampleZone sample: group.getSampleZones ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
-                createSample (document, folderName, presetPath, sessionElement, sample, sampleIndex);
+                createSample (document, folderName, presetPath, sessionElement, zone, sampleIndex);
                 sampleIndex++;
             }
         }
 
-        this.createEffects (document, rootElement, multisampleSource);
+        final Element paramsElement = XMLUtils.getChildElementByName (firstSlot, Music1010Tag.PARAMS);
+
+        // Add amplitude envelope
+        if (!groups.isEmpty ())
+        {
+            final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
+            final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
+
+            final double sustainVal = amplitudeEnvelope.getSustain ();
+            final int sustain = sustainVal < 0 ? 1000 : (int) Math.round (sustainVal * 1000.0);
+
+            paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_ATTACK, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getAttack (), 9.0));
+            paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_DECAY, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getDecay (), 38.0));
+            paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_RELEASE, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getRelease (), 38.0));
+            paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_SUSTAIN, Integer.toString (sustain));
+        }
+
+        createEffects (document, paramsElement, multisampleSource);
 
         return this.createXMLString (document);
+    }
+
+
+    private static void createModulationWheel (final Document document, final Element firstSlot)
+    {
+        final Element modSource1Element = XMLUtils.addElement (document, firstSlot, Music1010Tag.MOD_SOURCE);
+        modSource1Element.setAttribute (Music1010Tag.ATTR_MOD_DESTINATION, "pitch");
+        modSource1Element.setAttribute (Music1010Tag.ATTR_MOD_SOURCE, "lfo1");
+        modSource1Element.setAttribute (Music1010Tag.ATTR_MOD_SLOT, "0");
+        modSource1Element.setAttribute (Music1010Tag.ATTR_MOD_AMOUNT, "128");
+
+        final Element modSource2Element = XMLUtils.addElement (document, firstSlot, Music1010Tag.MOD_SOURCE);
+        modSource2Element.setAttribute (Music1010Tag.ATTR_MOD_DESTINATION, "lfoamount");
+        modSource2Element.setAttribute (Music1010Tag.ATTR_MOD_SOURCE, "modwheel");
+        modSource2Element.setAttribute (Music1010Tag.ATTR_MOD_SLOT, "0");
+        modSource2Element.setAttribute (Music1010Tag.ATTR_MOD_AMOUNT, "328");
     }
 
 
@@ -305,25 +349,16 @@ public class Music1010Creator extends AbstractCreator
                 final boolean isFirst = row == 0 && column == 0;
 
                 final Element cellElement = XMLUtils.addElement (document, sessionElement, Music1010Tag.CELL);
+                if (isFirst)
+                    firstElement = cellElement;
                 cellElement.setAttribute (Music1010Tag.ATTR_ROW, Integer.toString (row));
                 cellElement.setAttribute (Music1010Tag.ATTR_COLUMN, Integer.toString (column));
                 cellElement.setAttribute (Music1010Tag.ATTR_LAYER, Integer.toString (0));
                 cellElement.setAttribute (Music1010Tag.ATTR_FILENAME, "");
 
                 final Element paramsElement = XMLUtils.addElement (document, cellElement, Music1010Tag.PARAMS);
-                final Set<Entry<String, String>> entrySet;
-                if (isFirst)
-                {
-                    firstElement = cellElement;
-                    cellElement.setAttribute (Music1010Tag.ATTR_TYPE, "sample");
-                    entrySet = PARAM_ATTRIBUTES.entrySet ();
-                }
-                else
-                {
-                    cellElement.setAttribute (Music1010Tag.ATTR_TYPE, "samtempl");
-                    entrySet = DEFAULT_PARAM_ATTRIBUTES.entrySet ();
-                }
-                for (final Map.Entry<String, String> entry: entrySet)
+                cellElement.setAttribute (Music1010Tag.ATTR_TYPE, isFirst ? "sample" : "samtempl");
+                for (final Map.Entry<String, String> entry: isFirst ? MULTISAMPLE_PARAM_ATTRIBUTES.entrySet () : EMPTY_PARAM_ATTRIBUTES.entrySet ())
                     paramsElement.setAttribute (entry.getKey (), entry.getValue ());
 
                 paramsElement.setAttribute (Music1010Tag.ATTR_INTERPOLATION_QUALITY, this.isInterpolationQualityHigh ? "1" : "0");
@@ -358,52 +393,30 @@ public class Music1010Creator extends AbstractCreator
         paramsElement.setAttribute (Music1010Tag.ATTR_ASSET_SOURCE_ROW, "0");
         paramsElement.setAttribute (Music1010Tag.ATTR_ASSET_SOURCE_COLUMN, "0");
 
-        // No zone.getGain ();
-        // No zone.getStop ();
-        // No zone.getTune ();
+        // Stored in WAV file: zone.getGain (), zone.getTune ()
+        // No zone.getStart ()
+        // No zone.getStop (),
         // No zone.getTrigger ();
         // No info.isReversed ()
 
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
 
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_NOTE, check (zone.getKeyLow (), 0));
-        // No fades info.getNoteCrossfadeLow ()
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_ROOT_NOTE, zone.getKeyRoot ());
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_NOTE, check (zone.getKeyLow (), 0));
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_HI_NOTE, check (zone.getKeyHigh (), 127));
+        // No fades info.getNoteCrossfadeLow ()
         // No fades info.getNoteCrossfadeHigh ()
         // No zone.getKeyTracking ()
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_VEL, check (zone.getVelocityLow (), 0));
-        // No fades info.getVelocityCrossfadeLow ()
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_HI_VEL, check (zone.getVelocityHigh (), 127));
+        // No fades info.getVelocityCrossfadeLow ()
         // No fades info.getVelocityCrossfadeHigh ()
 
         /////////////////////////////////////////////////////
         // Loops
 
-        // TODO Clarify with 1010music
-
-        // final List<ISampleLoop> loops = zone.getLoops ();
-        // if (!loops.isEmpty ())
-        // {
-        //
-        // final ISampleLoop sampleLoop = loops.get (0);
-        // paramsElement.setAttribute (Music1010Tag.LOOP_ENABLED, "true");
-        // XMLUtils.setDoubleAttribute (paramsElement, Music1010Tag.LOOP_START, check
-        // (sampleLoop.getStart (), 0), 3);
-        // XMLUtils.setDoubleAttribute (paramsElement, Music1010Tag.LOOP_END, check
-        // (sampleLoop.getEnd (), stop), 3);
-        //
-        // // Calculate the crossfade in frames/samples from a percentage of the loop length
-        // final double crossfade = sampleLoop.getCrossfade ();
-        // if (crossfade > 0)
-        // {
-        // final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
-        // if (loopLength > 0)
-        // XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.LOOP_CROSSFADE, (int)
-        // Math.round (loopLength * crossfade));
-        // }
-        // }
+        // ... are stored in the WAV files
     }
 
 
@@ -430,70 +443,35 @@ public class Music1010Creator extends AbstractCreator
 
 
     /**
-     * Creates the filter and reverb effect elements.
+     * Creates the filter effect elements.
      *
      * @param document The XML document
-     * @param rootElement Where to add the effect elements
+     * @param paramsElement Where to add the effect elements
      * @param multisampleSource The multi-sample
      */
-    private void createEffects (final Document document, final Element rootElement, final IMultisampleSource multisampleSource)
+    private static void createEffects (final Document document, final Element paramsElement, final IMultisampleSource multisampleSource)
     {
-        // TODO set filter
+        final Optional<IFilter> optFilter = multisampleSource.getGlobalFilter ();
+        if (optFilter.isEmpty ())
+            return;
 
-        // <cell row="0" layer="3" type="delay">
-        // <params delaymustime="6" feedback="400" dealybeatsync="1" delay="400"/>
-        // </cell>
-        // <cell row="1" layer="3" type="reverb">
-        // <params decay="600" predelay="40" damping="500"/>
-        // </cell>
-        // <cell row="2" layer="3" type="filter">
-        // <params cutoff="600" res="400" filtertype="0" fxtrigmode="0"/>
-        // </cell>
-        // <cell row="3" layer="3" type="bitcrusher">
-        // <params/>
-        // </cell>
+        final IFilter filter = optFilter.get ();
+        final FilterType type = filter.getType ();
+        if (type != FilterType.LOW_PASS && type != FilterType.HIGH_PASS)
+            return;
 
-        // final Optional<IFilter> optFilter = multisampleSource.getGlobalFilter ();
-        //
-        // final boolean lowPassFilterIsPresent = optFilter.isPresent () && optFilter.get ().getType
-        // () == FilterType.LOW_PASS;
-        // final boolean hasFilter = this.addFilterBox.isSelected () || lowPassFilterIsPresent;
-        // final boolean hasReverb = this.addReverbBox.isSelected ();
-        //
-        // if (hasFilter || hasReverb)
-        // {
-        // final Element effectsElement = XMLUtils.addElement (document, rootElement,
-        // Music1010Tag.EFFECTS);
-        //
-        // if (hasFilter)
-        // {
-        // final Element filterElement = XMLUtils.addElement (document, effectsElement,
-        // Music1010Tag.EFFECTS_EFFECT);
-        // filterElement.setAttribute ("type", "lowpass_4pl");
-        // if (lowPassFilterIsPresent)
-        // {
-        // // Note: this might not be a 4 pole low-pass but better than no filter...
-        // final IFilter filter = optFilter.get ();
-        // // Note: Resonance is in the range [0..1] but it is not documented what value 1
-        // // represents. Therefore, we assume 40dB maximum and a linear range (could also
-        // // be logarithmic).
-        // final double resonance = Math.min (40, filter.getResonance ());
-        // filterElement.setAttribute ("resonance", formatDouble (resonance / 40.0, 3));
-        // filterElement.setAttribute ("frequency", formatDouble (filter.getCutoff (), 2));
-        // }
-        // else
-        // {
-        // filterElement.setAttribute ("resonance", "0.5");
-        // filterElement.setAttribute ("frequency", "22000");
-        // }
-        // }
-        //
-        // if (hasReverb)
-        // {
-        // final Element reverbElement = XMLUtils.addElement (document, effectsElement,
-        // Music1010Tag.EFFECTS_EFFECT);
-        // reverbElement.setAttribute ("type", "reverb");
-        // }
-        // }
+        // Negative values for frequency represent a low-pass filter, positive values a high-pass.
+        // Note: no poles supported
+        final double normalizedFrequency = MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY);
+        int frequency = (int) (normalizedFrequency * 1000.0);
+        if (type == FilterType.LOW_PASS)
+            frequency -= 1000;
+        paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_CUTOFF, Integer.toString (frequency));
+
+        // Note: Resonance is in the range [0..1] but it is not documented what value 1
+        // represents. Therefore, we assume 40dB maximum and a linear range (could also
+        // be logarithmic).
+        final int resonance = (int) (MathUtils.normalize (filter.getResonance (), 0, 40) * 1000.0);
+        paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_RESONANCE, Integer.toString (resonance));
     }
 }

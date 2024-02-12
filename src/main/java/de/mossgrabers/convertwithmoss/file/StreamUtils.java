@@ -328,12 +328,36 @@ public class StreamUtils
      * @param data The data of the block to write
      * @param isBigEndian True if bytes of the size number are stored big-endian otherwise
      *            little-endian (least significant bytes first)
-     * @throws IOException Data could not be read
+     * @throws IOException Data could not be written
      */
     public static void writeBlock64 (final OutputStream out, final byte [] data, final boolean isBigEndian) throws IOException
     {
         writeUnsigned64 (out, data.length + 8L, isBigEndian);
         out.write (data);
+    }
+
+
+    /**
+     * Write an LSB 7 bit of a flexible number of bytes.
+     *
+     * @param out The output stream to write to
+     * @param value The value to write
+     * @throws IOException Data could not be written
+     */
+    public static void write7bitNumberLSB (final OutputStream out, final int value) throws IOException
+    {
+        int number = value;
+
+        while (number > 0)
+        {
+            int val = number & 0x7F;
+            number = number >> 7;
+
+            if (number != 0)
+                val |= 0x80;
+
+            out.write (val);
+        }
     }
 
 
@@ -433,7 +457,11 @@ public class StreamUtils
      */
     public static String readUTF8 (final InputStream in) throws IOException
     {
-        return new String (in.readAllBytes (), StandardCharsets.UTF_8);
+        String content = new String (in.readAllBytes (), StandardCharsets.UTF_8);
+        // Remove UTF-8 BOM
+        if (content.startsWith ("\uFEFF"))
+            content = content.substring (1);
+        return content;
     }
 
 

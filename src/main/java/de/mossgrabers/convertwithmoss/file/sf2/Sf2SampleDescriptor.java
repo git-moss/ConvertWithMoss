@@ -82,19 +82,19 @@ public class Sf2SampleDescriptor
             pos++;
         this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
 
-        this.start = chunk.fourBytesAsInt (offset + 20);
-        this.end = chunk.fourBytesAsInt (offset + 24);
-        this.startloop = chunk.fourBytesAsInt (offset + 28);
-        this.endloop = chunk.fourBytesAsInt (offset + 32);
+        this.start = chunk.getFourBytesAsInt (offset + 20);
+        this.end = chunk.getFourBytesAsInt (offset + 24);
+        this.startloop = chunk.getFourBytesAsInt (offset + 28);
+        this.endloop = chunk.getFourBytesAsInt (offset + 32);
 
-        this.sampleRate = chunk.fourBytesAsInt (offset + 36);
+        this.sampleRate = chunk.getFourBytesAsInt (offset + 36);
 
-        this.originalPitch = chunk.byteAsUnsignedInt (offset + 40);
-        this.pitchCorrection = chunk.byteAsSignedInt (offset + 41);
+        this.originalPitch = chunk.getByteAsUnsignedInt (offset + 40);
+        this.pitchCorrection = chunk.getByteAsSignedInt (offset + 41);
 
-        this.sampleLink = chunk.byteAsUnsignedInt (offset + 42);
+        this.sampleLink = chunk.getByteAsUnsignedInt (offset + 42);
 
-        this.sampleType = chunk.twoBytesAsInt (offset + 44);
+        this.sampleType = chunk.getTwoBytesAsInt (offset + 44);
         if (this.sampleType >= LINKED)
             throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_UNSUPPORTED_SAMPLE_TYPE"));
     }

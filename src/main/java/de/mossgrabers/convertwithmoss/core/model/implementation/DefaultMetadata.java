@@ -8,6 +8,8 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
+import java.util.Date;
+
 
 /**
  * Holds the data of the metadata for a multi-sample source.
@@ -16,10 +18,11 @@ import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
  */
 public class DefaultMetadata implements IMetadata
 {
-    private String    description = "";
-    private String    creator     = "";
-    private String    category    = "";
-    private String [] keywords    = new String [0];
+    private String    description  = "";
+    private String    creator      = "";
+    private Date      creationTime = new Date ();
+    private String    category     = "";
+    private String [] keywords     = new String [0];
 
 
     /** {@inheritDoc} */
@@ -35,6 +38,14 @@ public class DefaultMetadata implements IMetadata
     public String getCreator ()
     {
         return this.creator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Date getCreationTime ()
+    {
+        return this.creationTime;
     }
 
 
@@ -68,6 +79,15 @@ public class DefaultMetadata implements IMetadata
     {
         if (creator != null)
             this.creator = creator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setCreationTime (final Date time)
+    {
+        if (time != null)
+            this.creationTime = time;
     }
 
 

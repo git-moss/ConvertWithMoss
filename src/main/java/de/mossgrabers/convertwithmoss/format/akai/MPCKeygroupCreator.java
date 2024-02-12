@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.akai;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -16,17 +16,12 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
-import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.XMLUtils;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -93,27 +88,8 @@ public class MPCKeygroupCreator extends AbstractCreator
             writer.write (metadata.get ());
         }
 
-        // Store all samples
-        int outputCount = 0;
-        for (final IGroup layer: multisampleSource.getGroups ())
-        {
-            for (final ISampleZone zone: layer.getSampleZones ())
-            {
-                // WAV ending needs to be upper case!
-                final File sampleFile = new File (sampleFolder, zone.getName () + ".WAV");
-                try (final FileOutputStream fos = new FileOutputStream (sampleFile))
-                {
-                    this.notifier.log ("IDS_NOTIFY_PROGRESS");
-                    outputCount++;
-                    if (outputCount % 80 == 0)
-                        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-
-                    zone.getSampleData ().writeSample (fos);
-                }
-
-                fixSampleChunk (sampleFile, zone);
-            }
-        }
+        // Store all samples - WAV ending needs to be upper case!
+        this.writeSamples (sampleFolder, multisampleSource, true, false, true, true, ".WAV");
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -220,7 +196,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ACTIVE, MPCKeygroupTag.TRUE);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (zone.getGain ())));
 
-        final double pan = (Utils.clamp (zone.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
+        final double pan = (MathUtils.clamp (zone.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, String.format (Locale.US, "%.6f", Double.valueOf (pan)));
 
         final double tuneCent = zone.getTune ();
@@ -334,7 +310,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         {
             final IFilter filter = optFilter.get ();
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_TYPE, Integer.toString (MPCFilter.getFilterIndex (filter)));
-            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, formatDouble (normalizeFrequency (filter.getCutoff ()), 2));
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, formatDouble (MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY), 2));
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RESONANCE, formatDouble (Math.min (40, filter.getResonance ()) / 40.0, 2));
 
             final IModulator cutoffModulator = filter.getCutoffModulator ();
@@ -369,7 +345,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         // Only positive modulation values are supported with MPC
         if (pitchDepth > 0)
         {
-            final double mpcPitchDepth = Utils.clamp (pitchDepth, -3600, 3600) / 3600.0 / 2.0 + 0.5;
+            final double mpcPitchDepth = MathUtils.clamp (pitchDepth, -3600, 3600) / 3600.0 / 2.0 + 0.5;
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, formatDouble (mpcPitchDepth, 2));
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
@@ -402,19 +378,6 @@ public class MPCKeygroupCreator extends AbstractCreator
             keygroup = new Keygroup (layersElement);
         keygroups.add (keygroup);
         return Optional.of (keygroup);
-    }
-
-
-    private static double normalizeFrequency (final double cutoff)
-    {
-        final double val = log2 (cutoff) / log2 (IFilter.MAX_FREQUENCY);
-        return Math.min (1, Math.max (0, val));
-    }
-
-
-    private static double log2 (final double value)
-    {
-        return Math.log (value) / Math.log (2);
     }
 
 
@@ -457,7 +420,7 @@ public class MPCKeygroupCreator extends AbstractCreator
      */
     private static double normalizeLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
     {
-        return Math.log (Utils.clamp (value, minimum, maximum) / minimum) / Math.log (maximum / minimum);
+        return Math.log (MathUtils.clamp (value, minimum, maximum) / minimum) / Math.log (maximum / minimum);
     }
 
 
@@ -470,56 +433,7 @@ public class MPCKeygroupCreator extends AbstractCreator
     private static void setEnvelopeAttribute (final Document document, final Element element, final String attribute, final double value, final double minimum, final double maximum, final double defaultValue, final boolean logarithmic)
     {
         final double v = value < 0 ? defaultValue : value;
-        final double normalizedValue = logarithmic ? normalizeLogarithmicEnvTimeValue (v, minimum, maximum) : normalizeValue (v, minimum, maximum);
+        final double normalizedValue = logarithmic ? normalizeLogarithmicEnvTimeValue (v, minimum, maximum) : MathUtils.normalize (v, minimum, maximum);
         XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.6f", Double.valueOf (normalizedValue)));
-    }
-
-
-    /**
-     * Rewrite the WAV file and update/add the sample chunk.
-     *
-     * @param sampleFile The file to update
-     * @param info The info about the loops
-     * @throws IOException Could not read/write the file
-     */
-    private static void fixSampleChunk (final File sampleFile, final ISampleZone info) throws IOException
-    {
-        final WaveFile waveFile;
-        try
-        {
-            waveFile = new WaveFile (sampleFile, true);
-        }
-        catch (final ParseException ex)
-        {
-            throw new IOException (ex);
-        }
-
-        final List<ISampleLoop> loops = info.getLoops ();
-        final SampleChunk sampleChunk = new SampleChunk (loops.size ());
-        sampleChunk.setSamplePeriod ((int) (1000000000.0 / waveFile.getFormatChunk ().getSampleRate ()));
-
-        final List<SampleChunkLoop> chunkLoops = sampleChunk.getLoops ();
-        for (int i = 0; i < loops.size (); i++)
-        {
-            final ISampleLoop sampleLoop = loops.get (i);
-            final SampleChunkLoop sampleChunkLoop = chunkLoops.get (i);
-            switch (sampleLoop.getType ())
-            {
-                case FORWARD:
-                    sampleChunkLoop.setType (0);
-                    break;
-                case ALTERNATING:
-                    sampleChunkLoop.setType (1);
-                    break;
-                case BACKWARDS:
-                    sampleChunkLoop.setType (2);
-                    break;
-            }
-            sampleChunkLoop.setStart (sampleLoop.getStart ());
-            sampleChunkLoop.setEnd (sampleLoop.getEnd ());
-        }
-
-        waveFile.setSampleChunk (sampleChunk);
-        waveFile.write (sampleFile);
     }
 }

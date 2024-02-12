@@ -15,9 +15,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 
@@ -81,6 +84,27 @@ public class Sf2File extends AbstractRIFFVisitor
     private final List<Sf2Preset>     presets              = new ArrayList<> ();
     private final List<Sf2Instrument> instruments          = new ArrayList<> ();
     private final Set<String>         ignoredChunks        = new HashSet<> ();
+
+    private final SimpleDateFormat [] creationDateParsers  = new SimpleDateFormat []
+    {
+        // 'Month Day, Year' where Month is initially capitalized and is the conventional full
+        // English spelling of the month, Day is the date in decimal followed by a comma, and Year
+        // is the full decimal year.
+        new SimpleDateFormat ("MMMM d, yyyy", Locale.ENGLISH),
+        // Other variations found which do not comply to the specification
+        new SimpleDateFormat ("dd'st' MMMM yyyy", Locale.ENGLISH),
+        new SimpleDateFormat ("dd'nd' MMMM yyyy", Locale.ENGLISH),
+        new SimpleDateFormat ("dd'rd' MMMM yyyy", Locale.ENGLISH),
+        new SimpleDateFormat ("dd'th' MMMM yyyy", Locale.ENGLISH),
+        new SimpleDateFormat ("dd MMMM yyyy", Locale.ENGLISH),
+        new SimpleDateFormat ("MM/dd/yyyy h:mm:ss a"),
+        new SimpleDateFormat ("MM/dd/yyyy hh:mm:ss"),
+        new SimpleDateFormat ("MM/dd/yyyy"),
+        new SimpleDateFormat ("yyyy-MM-dd h:mm:ss a"),
+        new SimpleDateFormat ("yyyy-MM-dd hh:mm:ss"),
+        new SimpleDateFormat ("yyyy-MM-dd"),
+        new SimpleDateFormat ("EEEE d MMMM yyyy, HH:mm:ss", Locale.ENGLISH)
+    };
 
 
     /**
@@ -176,6 +200,31 @@ public class Sf2File extends AbstractRIFFVisitor
     public String getCreationDate ()
     {
         return this.creationDate;
+    }
+
+
+    /**
+     * Get the creation date as a date object.
+     *
+     * @return The date object
+     */
+    public Date getParsedCreationDate ()
+    {
+        if (this.creationDate != null)
+        {
+            for (final SimpleDateFormat parser: this.creationDateParsers)
+            {
+                try
+                {
+                    return parser.parse (this.creationDate);
+                }
+                catch (final java.text.ParseException ex)
+                {
+                    // Ignore
+                }
+            }
+        }
+        return new Date ();
     }
 
 
@@ -300,7 +349,7 @@ public class Sf2File extends AbstractRIFFVisitor
                 // Intentionally empty
                 break;
             case SF_IFIL_ID:
-                Sf2File.this.version = chunk.twoBytesAsInt (0) + chunk.twoBytesAsInt (2) / 100.0;
+                Sf2File.this.version = chunk.getTwoBytesAsInt (0) + chunk.getTwoBytesAsInt (2) / 100.0;
                 break;
             case SF_ISNG_ID:
                 Sf2File.this.soundEngine = chunk.getNullTerminatedString (0, SOUND_ENGINE_DEFAULT).trim ();
@@ -312,7 +361,7 @@ public class Sf2File extends AbstractRIFFVisitor
                 Sf2File.this.soundDataROM = chunk.getNullTerminatedString (0, "").trim ();
                 break;
             case SF_IVER_ID:
-                Sf2File.this.romRevision = chunk.twoBytesAsInt (0) + chunk.twoBytesAsInt (2) / 100.0;
+                Sf2File.this.romRevision = chunk.getTwoBytesAsInt (0) + chunk.getTwoBytesAsInt (2) / 100.0;
                 break;
             case SF_ICRD_ID:
                 Sf2File.this.creationDate = chunk.getNullTerminatedString (0, "").trim ();
@@ -424,10 +473,10 @@ public class Sf2File extends AbstractRIFFVisitor
                 for (int zoneCounter = 0; zoneCounter < numberOfZones; zoneCounter++)
                 {
                     final int offset = (firstZoneIndex + zoneCounter) * LENGTH_PBAG;
-                    final int generatorIndex = chunk.twoBytesAsInt (offset);
-                    final int modulatorIndex = chunk.twoBytesAsInt (offset + 2);
-                    final int nextGeneratorIndex = chunk.twoBytesAsInt (offset + LENGTH_PBAG);
-                    final int nextModulatorIndex = chunk.twoBytesAsInt (offset + LENGTH_PBAG + 2);
+                    final int generatorIndex = chunk.getTwoBytesAsInt (offset);
+                    final int modulatorIndex = chunk.getTwoBytesAsInt (offset + 2);
+                    final int nextGeneratorIndex = chunk.getTwoBytesAsInt (offset + LENGTH_PBAG);
+                    final int nextModulatorIndex = chunk.getTwoBytesAsInt (offset + LENGTH_PBAG + 2);
                     preset.addZone (new Sf2PresetZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
                 }
             }
@@ -475,11 +524,11 @@ public class Sf2File extends AbstractRIFFVisitor
         for (int index = 0; index < numberOfModulators; index++)
         {
             final int offset = (firstModulator + index) * LENGTH_PMOD;
-            final int sourceModulator = chunk.twoBytesAsInt (offset);
-            final int destinationGenerator = chunk.twoBytesAsInt (offset + 2);
-            final int modAmount = chunk.twoBytesAsInt (offset + 4);
-            final int amountSourceOperand = chunk.twoBytesAsInt (offset + 6);
-            final int transformOperand = chunk.twoBytesAsInt (offset + 8);
+            final int sourceModulator = chunk.getTwoBytesAsInt (offset);
+            final int destinationGenerator = chunk.getTwoBytesAsInt (offset + 2);
+            final int modAmount = chunk.getTwoBytesAsInt (offset + 4);
+            final int amountSourceOperand = chunk.getTwoBytesAsInt (offset + 6);
+            final int transformOperand = chunk.getTwoBytesAsInt (offset + 8);
             zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
         }
     }
@@ -521,8 +570,8 @@ public class Sf2File extends AbstractRIFFVisitor
         for (int index = 0; index < numberOfGenerators; index++)
         {
             final int offset = (firstGenerator + index) * LENGTH_PGEN;
-            final int generator = chunk.twoBytesAsInt (offset);
-            final int value = chunk.twoBytesAsInt (offset + 2);
+            final int generator = chunk.getTwoBytesAsInt (offset);
+            final int value = chunk.getTwoBytesAsInt (offset + 2);
             zone.addGenerator (generator, value);
         }
 
@@ -594,10 +643,10 @@ public class Sf2File extends AbstractRIFFVisitor
                 for (int zoneCounter = 0; zoneCounter < numberOfZones; zoneCounter++)
                 {
                     final int offset = (firstZoneIndex + zoneCounter) * LENGTH_IBAG;
-                    final int generatorIndex = chunk.twoBytesAsInt (offset);
-                    final int modulatorIndex = chunk.twoBytesAsInt (offset + 2);
-                    final int nextGeneratorIndex = chunk.twoBytesAsInt (offset + LENGTH_IBAG);
-                    final int nextModulatorIndex = chunk.twoBytesAsInt (offset + LENGTH_IBAG + 2);
+                    final int generatorIndex = chunk.getTwoBytesAsInt (offset);
+                    final int modulatorIndex = chunk.getTwoBytesAsInt (offset + 2);
+                    final int nextGeneratorIndex = chunk.getTwoBytesAsInt (offset + LENGTH_IBAG);
+                    final int nextModulatorIndex = chunk.getTwoBytesAsInt (offset + LENGTH_IBAG + 2);
                     instrument.addZone (new Sf2InstrumentZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
                 }
             }
@@ -646,11 +695,11 @@ public class Sf2File extends AbstractRIFFVisitor
         for (int index = 0; index < numberOfModulators; index++)
         {
             final int offset = (firstModulator + index) * LENGTH_IMOD;
-            final int sourceModulator = chunk.twoBytesAsInt (offset);
-            final int destinationGenerator = chunk.twoBytesAsInt (offset + 2);
-            final int modAmount = chunk.twoBytesAsInt (offset + 4);
-            final int amountSourceOperand = chunk.twoBytesAsInt (offset + 6);
-            final int transformOperand = chunk.twoBytesAsInt (offset + 8);
+            final int sourceModulator = chunk.getTwoBytesAsInt (offset);
+            final int destinationGenerator = chunk.getTwoBytesAsInt (offset + 2);
+            final int modAmount = chunk.getTwoBytesAsInt (offset + 4);
+            final int amountSourceOperand = chunk.getTwoBytesAsInt (offset + 6);
+            final int transformOperand = chunk.getTwoBytesAsInt (offset + 8);
             zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
         }
     }
@@ -693,8 +742,8 @@ public class Sf2File extends AbstractRIFFVisitor
         for (int index = 0; index < numberOfGenerators; index++)
         {
             final int offset = (firstGenerator + index) * LENGTH_IGEN;
-            final int generator = chunk.twoBytesAsInt (offset);
-            final int value = chunk.twoBytesAsInt (offset + 2);
+            final int generator = chunk.getTwoBytesAsInt (offset);
+            final int value = chunk.getTwoBytesAsInt (offset + 2);
             zone.addGenerator (generator, value);
         }
 

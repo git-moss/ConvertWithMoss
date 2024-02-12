@@ -21,7 +21,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -128,6 +130,21 @@ public class WaveFile extends AbstractRIFFVisitor
 
 
     /**
+     * Set the broadcast audio extension chunk.
+     *
+     * @param broadcastAudioExtensionChunk The instrument chunk
+     */
+    public void setBroadcastAudioExtensionChunk (final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk)
+    {
+        if (this.broadcastAudioExtensionChunk != null)
+            this.chunkStack.remove (this.broadcastAudioExtensionChunk);
+        this.broadcastAudioExtensionChunk = broadcastAudioExtensionChunk;
+        if (this.broadcastAudioExtensionChunk != null)
+            this.chunkStack.add (this.broadcastAudioExtensionChunk);
+    }
+
+
+    /**
      * Get the instrument chunk if present in the WAV file.
      *
      * @return The instrument chunk or null if not present
@@ -135,6 +152,21 @@ public class WaveFile extends AbstractRIFFVisitor
     public InstrumentChunk getInstrumentChunk ()
     {
         return this.instrumentChunk;
+    }
+
+
+    /**
+     * Set the instrument chunk.
+     *
+     * @param instrumentChunk The instrument chunk
+     */
+    public void setInstrumentChunk (final InstrumentChunk instrumentChunk)
+    {
+        if (this.instrumentChunk != null)
+            this.chunkStack.remove (this.instrumentChunk);
+        this.instrumentChunk = instrumentChunk;
+        if (this.instrumentChunk != null)
+            this.chunkStack.add (this.instrumentChunk);
     }
 
 
@@ -152,11 +184,15 @@ public class WaveFile extends AbstractRIFFVisitor
     /**
      * Set the sample chunk.
      *
-     * @param sampleChunk The sample chunk or null if not present
+     * @param sampleChunk The sample chunk
      */
     public void setSampleChunk (final SampleChunk sampleChunk)
     {
+        if (this.sampleChunk != null)
+            this.chunkStack.remove (this.sampleChunk);
         this.sampleChunk = sampleChunk;
+        if (this.sampleChunk != null)
+            this.chunkStack.add (this.sampleChunk);
     }
 
 
@@ -179,6 +215,29 @@ public class WaveFile extends AbstractRIFFVisitor
     public DataChunk getDataChunk ()
     {
         return this.dataChunk;
+    }
+
+
+    /**
+     * Remove all chunks which match one of the given IDs.
+     *
+     * @param identifiers Some IDs
+     */
+    public void removeChunks (final RiffID... identifiers)
+    {
+        final Set<Integer> ignore = new HashSet<> ();
+        for (final RiffID riffID: identifiers)
+            ignore.add (Integer.valueOf (riffID.getId ()));
+
+        final List<WavChunk> newChunkStack = new ArrayList<> ();
+        for (final WavChunk chunk: this.chunkStack)
+        {
+            if (!ignore.contains (Integer.valueOf (chunk.getId ())))
+                newChunkStack.add (chunk);
+        }
+
+        this.chunkStack.clear ();
+        this.chunkStack.addAll (newChunkStack);
     }
 
 

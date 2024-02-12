@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -99,7 +99,7 @@ public class SfzCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource);
+        this.writeSamples (sampleFolder, multisampleSource, true, false, false, false);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -416,7 +416,7 @@ public class SfzCreator extends AbstractCreator
 
         final IFilter filter = optFilter.get ();
         final String type = FILTER_TYPE_MAP.get (filter.getType ());
-        addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + Utils.clamp (filter.getPoles (), 1, 4) + "p", false);
+        addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + MathUtils.clamp (filter.getPoles (), 1, 4) + "p", false);
         addAttribute (buffer, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
         addAttribute (buffer, SfzOpcode.RESONANCE, formatDouble (Math.min (40, filter.getResonance ()), 2), true);
 
@@ -463,6 +463,6 @@ public class SfzCreator extends AbstractCreator
             return;
         if (sb.length () > 0)
             sb.append (' ');
-        sb.append (opcode).append ('=').append (Utils.clamp (value, 0.0, 100.0));
+        sb.append (opcode).append ('=').append (MathUtils.clamp (value, 0.0, 100.0));
     }
 }

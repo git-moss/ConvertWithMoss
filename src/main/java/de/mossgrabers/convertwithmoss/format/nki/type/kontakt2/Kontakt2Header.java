@@ -122,7 +122,7 @@ public class Kontakt2Header
     private boolean                isFourDotTwo;
     private int                    patchType;
     private String                 kontaktVersion;
-    private byte []                kontaktVersionBuffer      = new byte [4];
+    private final byte []                kontaktVersionBuffer      = new byte [4];
     private Date                   creation;
     private String                 libraryID;
     private int                    zones;
@@ -131,7 +131,7 @@ public class Kontakt2Header
     private int                    sampleSize;
     private boolean                isMonolith;
     private String                 minSupportedVersion;
-    private byte []                minSupportedVersionBuffer = new byte [4];
+    private final byte []                minSupportedVersionBuffer = new byte [4];
     private int                    iconID;
     private String                 author                    = "";
     private int                    category1;
@@ -172,7 +172,7 @@ public class Kontakt2Header
         this.headerVersion = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
         this.isFourDotTwo = this.headerVersion == HEADER_KONTAKT_42;
 
-        int magic = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+        final int magic = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
         if (magic != Magic.KONTAKT2_INSTRUMENT_HEADER_LE && magic != Magic.KONTAKT2_INSTRUMENT_HEADER_BE && magic != Magic.KONTAKT42_INSTRUMENT_HEADER_LE && magic != Magic.KONTAKT42_INSTRUMENT_HEADER_BE)
             this.notifier.logError ("IDS_NKI_UNKNOWN_HEADER_MAGIC", Integer.toHexString (magic));
 
@@ -332,7 +332,7 @@ public class Kontakt2Header
 
     /**
      * Get the length of the compressed data block (ZLIB or FastLZ for Kontakt 4).
-     * 
+     *
      * @return The compressed length
      */
     public int getCompressedLength ()
@@ -343,7 +343,7 @@ public class Kontakt2Header
 
     /**
      * Get the version of the header.
-     * 
+     *
      * @return Kontakt 2 returns 0x100, Kontakt 4.2 returns 0x101
      */
     public int getHeaderVersion ()
@@ -354,7 +354,7 @@ public class Kontakt2Header
 
     /**
      * Is this a Kontakt 4.2 file?
-     * 
+     *
      * @return True if 4.2
      */
     public boolean isFourDotTwo ()
@@ -365,7 +365,7 @@ public class Kontakt2Header
 
     /**
      * Get the type of the patch.
-     * 
+     *
      * @return Returns 0=NKM, 1=NKI, 2=NKB, 3=NKP, 4=NKG, 5=NKZ
      */
     public int getPatchType ()
@@ -376,7 +376,7 @@ public class Kontakt2Header
 
     /**
      * This combines the Kontakt version with the patch level.
-     * 
+     *
      * @return E.g. 2.0.1.002 or 4.0.0.2475
      */
     public String getKontaktVersion ()
@@ -389,7 +389,7 @@ public class Kontakt2Header
 
     /**
      * Get the date and time when the instrument was created.
-     * 
+     *
      * @return The creation date/time
      */
     public Date getCreation ()
@@ -410,8 +410,19 @@ public class Kontakt2Header
 
 
     /**
+     * Set the date and time when the instrument was created.
+     *
+     * @param creation The creation date/time
+     */
+    public void setCreation (final Date creation)
+    {
+        this.creation = creation;
+    }
+
+
+    /**
      * Get the library ID, e.g. 'Kon4'.
-     * 
+     *
      * @return The library ID
      */
     public String getLibraryID ()
@@ -422,7 +433,7 @@ public class Kontakt2Header
 
     /**
      * Set the library ID, e.g. 'Kon4'.
-     * 
+     *
      * @param libraryID The library ID
      */
     public void setLibraryID (final String libraryID)
@@ -433,7 +444,7 @@ public class Kontakt2Header
 
     /**
      * Get the number of zones in the instrument.
-     * 
+     *
      * @return The number of zones
      */
     public int getZones ()
@@ -444,7 +455,7 @@ public class Kontakt2Header
 
     /**
      * Get the number of groups in the instrument.
-     * 
+     *
      * @return The number of the groups
      */
     public int getGroups ()
@@ -455,7 +466,7 @@ public class Kontakt2Header
 
     /**
      * Get the number of instruments in the file (in a NKM Multi).
-     * 
+     *
      * @return The number of instruments
      */
     public int getInstruments ()
@@ -467,7 +478,7 @@ public class Kontakt2Header
     /**
      * The sum of the size of all used samples (only the content data block of a WAV without any
      * headers).
-     * 
+     *
      * @return The PCM size
      */
     public long getSampleSize ()
@@ -479,7 +490,7 @@ public class Kontakt2Header
     /**
      * True if it is a monolith, which is a fully self contained file with all samples and
      * resources.
-     * 
+     *
      * @return True if it is a monolith
      */
     public boolean isMonolith ()
@@ -490,7 +501,7 @@ public class Kontakt2Header
 
     /**
      * Get the minimum Kontakt version required to open this file.
-     * 
+     *
      * @return The minimum Kontakt version
      */
     public String getMinSupportedVersion ()
@@ -501,7 +512,7 @@ public class Kontakt2Header
 
     /**
      * Get the ID of the icon.
-     * 
+     *
      * @return The ID of the icon
      */
     public int getIconID ()
@@ -512,7 +523,7 @@ public class Kontakt2Header
 
     /**
      * Get the author of the file.
-     * 
+     *
      * @return The author
      */
     public String getAuthor ()
@@ -523,7 +534,7 @@ public class Kontakt2Header
 
     /**
      * Set the author of the file.
-     * 
+     *
      * @param author The author
      */
     public void setAuthor (final String author)
@@ -534,7 +545,7 @@ public class Kontakt2Header
 
     /**
      * Get the index of category 1.
-     * 
+     *
      * @return The index
      */
     public int getCategory1 ()
@@ -545,7 +556,7 @@ public class Kontakt2Header
 
     /**
      * Get the index of category 2.
-     * 
+     *
      * @return The index
      */
     public int getCategory2 ()
@@ -556,7 +567,7 @@ public class Kontakt2Header
 
     /**
      * Get the index of category 3.
-     * 
+     *
      * @return The index
      */
     public int getCategory3 ()
@@ -567,7 +578,7 @@ public class Kontakt2Header
 
     /**
      * Get the name of category 1.
-     * 
+     *
      * @return The name
      */
     public String getCategory1Name ()
@@ -578,7 +589,7 @@ public class Kontakt2Header
 
     /**
      * Get the name of category 2.
-     * 
+     *
      * @return The name
      */
     public String getCategory2Name ()
@@ -589,7 +600,7 @@ public class Kontakt2Header
 
     /**
      * Get the name of category 3.
-     * 
+     *
      * @return The name
      */
     public String getCategory3Name ()
@@ -600,7 +611,7 @@ public class Kontakt2Header
 
     /**
      * A URL to the web site of the creator.
-     * 
+     *
      * @return The URL
      */
     public String getWebsite ()
@@ -611,7 +622,7 @@ public class Kontakt2Header
 
     /**
      * The patch level of the Kontakt version.
-     * 
+     *
      * @return The patch level
      */
     public int getPatchLevel ()
@@ -622,7 +633,7 @@ public class Kontakt2Header
 
     /**
      * Get the checksum of the header.
-     * 
+     *
      * @return The checksum, 4 byte for Kontakt 2-4.1, 16 bytes for 4.2
      */
     public byte [] getChecksum ()

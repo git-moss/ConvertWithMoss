@@ -50,20 +50,45 @@ public class InstrumentChunk extends WavChunk
      */
     public int getUnshiftedNote ()
     {
-        return this.chunk.byteAsUnsignedInt (0x00);
+        return this.chunk.getByteAsUnsignedInt (0x00);
     }
 
 
     /**
-     * The pitch shift adjustment in cents (or 100ths of a semitone) needed to hit UnshiftedNote
-     * value exactly. chFineTune can be used to compensate for tuning errors in the sampling
-     * process. Valid values range from -50 to 50.
+     * Sets the MIDI note number that corresponds to the unshifted pitch of the sample. Valid values
+     * range from 0 to 127.
      *
-     * @return The MIDI note number
+     * @param unshiftedNote The MIDI note number
+     */
+    public void setUnshiftedNote (final int unshiftedNote)
+    {
+        this.chunk.setUnsignedIntAsByte (0x00, unshiftedNote);
+    }
+
+
+    /**
+     * The pitch shift adjustment in cents (100ths of a semitone) needed to hit UnshiftedNote value
+     * exactly. chFineTune can be used to compensate for tuning errors in the sampling process.
+     * Valid values .
+     *
+     * @return The adjustment value in cents in the range from -50 to 50
      */
     public int getFineTune ()
     {
-        return this.chunk.byteAsSignedInt (0x01);
+        return this.chunk.getByteAsSignedInt (0x01);
+    }
+
+
+    /**
+     * Set the pitch shift adjustment in cents (100ths of a semitone) needed to hit UnshiftedNote
+     * value exactly. Fine tune can be used to compensate for tuning errors in the sampling process.
+     * Valid values range from -50 to 50.
+     *
+     * @param fineTune The adjustment value in cents in the range from -50 to 50
+     */
+    public void setFineTune (final int fineTune)
+    {
+        this.chunk.setSignedIntAsByte (0x01, fineTune);
     }
 
 
@@ -76,51 +101,108 @@ public class InstrumentChunk extends WavChunk
      */
     public int getGain ()
     {
-        return this.chunk.byteAsSignedInt (0x02);
+        return this.chunk.getByteAsSignedInt (0x02);
     }
 
 
     /**
-     * The suggested usable MIDI note number range of the sample. Valid values range from 0 to 127.
+     * Set the volume setting for the sample in decibels. A value of zero decibels suggests no
+     * change in the volume. A value of -6 decibels suggests reducing the amplitude of the sample by
+     * two.
+     *
+     * @param gain The gain
+     */
+    public void setGain (final int gain)
+    {
+        this.chunk.setSignedIntAsByte (0x02, gain);
+    }
+
+
+    /**
+     * The low MIDI note number range of the sample. Valid values range from 0 to 127.
      *
      * @return The low range MIDI note number
      */
     public int getLowNote ()
     {
-        return this.chunk.byteAsUnsignedInt (0x03);
+        return this.chunk.getByteAsUnsignedInt (0x03);
     }
 
 
     /**
-     * The suggested usable MIDI note number range of the sample. Valid values range from 0 to 127.
+     * Sets the low MIDI note number range of the sample.
+     *
+     * @param lowNote The MIDI note number
+     */
+    public void setLowNote (final int lowNote)
+    {
+        this.chunk.setUnsignedIntAsByte (0x03, lowNote);
+    }
+
+
+    /**
+     * The high MIDI note number range of the sample. Valid values range from 0 to 127.
      *
      * @return The high range MIDI note number
      */
     public int getHighNote ()
     {
-        return this.chunk.byteAsUnsignedInt (0x04);
+        return this.chunk.getByteAsUnsignedInt (0x04);
     }
 
 
     /**
-     * The suggested usable MIDI velocity range of the sample. Valid values range from 0 to 127.
+     * Sets the high MIDI note number range of the sample.
+     *
+     * @param highNote The MIDI note number
+     */
+    public void setHighNote (final int highNote)
+    {
+        this.chunk.setUnsignedIntAsByte (0x04, highNote);
+    }
+
+
+    /**
+     * The low MIDI velocity range of the sample. Valid values range from 0 to 127.
      *
      * @return The low range MIDI note number
      */
     public int getLowVelocity ()
     {
-        return this.chunk.byteAsUnsignedInt (0x05);
+        return this.chunk.getByteAsUnsignedInt (0x05);
     }
 
 
     /**
-     * The suggested usable MIDI velocity range of the sample. Valid values range from 0 to 127.
+     * Sets the low velocity range of the sample.
+     *
+     * @param lowVelocity The velocity number
+     */
+    public void setLowVelocity (final int lowVelocity)
+    {
+        this.chunk.setUnsignedIntAsByte (0x05, lowVelocity);
+    }
+
+
+    /**
+     * The high MIDI velocity range of the sample. Valid values range from 0 to 127.
      *
      * @return The high range MIDI note number
      */
     public int getHighVelocity ()
     {
-        return this.chunk.byteAsUnsignedInt (0x06);
+        return this.chunk.getByteAsUnsignedInt (0x06);
+    }
+
+
+    /**
+     * Sets the high velocity range of the sample.
+     *
+     * @param highVelocity The velocity number
+     */
+    public void setHighVelocity (final int highVelocity)
+    {
+        this.chunk.setUnsignedIntAsByte (0x06, highVelocity);
     }
 
 

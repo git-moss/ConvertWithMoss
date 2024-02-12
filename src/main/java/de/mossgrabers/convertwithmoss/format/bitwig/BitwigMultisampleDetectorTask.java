@@ -29,8 +29,12 @@ import org.xml.sax.SAXException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -143,7 +147,22 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
 
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
-        this.parseMetadata (top, multisampleSource.getMetadata ());
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        this.parseMetadata (top, metadata);
+
+        try
+        {
+            final BasicFileAttributes attrs = Files.readAttributes (multiSampleFile.toPath (), BasicFileAttributes.class);
+            final FileTime creationTime = attrs.creationTime ();
+            final FileTime modifiedTime = attrs.lastModifiedTime ();
+            final long creationTimeMillis = creationTime.toMillis ();
+            final long modifiedTimeMillis = modifiedTime.toMillis ();
+            metadata.setCreationTime (new Date (creationTimeMillis < modifiedTimeMillis ? creationTimeMillis : modifiedTimeMillis));
+        }
+        catch (final IOException ex)
+        {
+            metadata.setCreationTime (new Date ());
+        }
 
         // Parse all groups
         final Map<Integer, IGroup> indexedGroups = new TreeMap<> ();

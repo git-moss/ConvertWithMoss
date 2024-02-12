@@ -11,6 +11,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -94,15 +96,15 @@ public class KorgmultisampleCreator extends AbstractCreator
     {
         try (final OutputStream out = new FileOutputStream (multiFile))
         {
+            final IMetadata metadata = multisampleSource.getMetadata ();
+
             writeHeader (out);
-            writeTime (out);
+            writeTime (out, metadata.getCreationTime ());
 
             final byte [] byteArray;
             try (final ByteArrayOutputStream multisampleOutput = new ByteArrayOutputStream ())
             {
                 writeAscii (multisampleOutput, groupName, true);
-
-                final IMetadata metadata = multisampleSource.getMetadata ();
 
                 final String creator = metadata.getCreator ();
                 if (creator != null && !creator.isBlank ())
@@ -183,7 +185,7 @@ public class KorgmultisampleCreator extends AbstractCreator
         if (start > 0)
         {
             sampleOutput.write (KorgmultisampleTag.ID_START);
-            write7bitNumberLSB (sampleOutput, start);
+            StreamUtils.write7bitNumberLSB (sampleOutput, start);
         }
 
         final List<ISampleLoop> loops = sample.getLoops ();
@@ -193,7 +195,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             if (loopStart > 0)
             {
                 sampleOutput.write (KorgmultisampleTag.ID_LOOP_START);
-                write7bitNumberLSB (sampleOutput, loopStart);
+                StreamUtils.write7bitNumberLSB (sampleOutput, loopStart);
             }
         }
 
@@ -201,7 +203,7 @@ public class KorgmultisampleCreator extends AbstractCreator
         if (end > 0)
         {
             sampleOutput.write (KorgmultisampleTag.ID_END);
-            write7bitNumberLSB (sampleOutput, end);
+            StreamUtils.write7bitNumberLSB (sampleOutput, end);
         }
 
         // No loop tune support - ID_LOOP_TUNE
@@ -344,11 +346,11 @@ public class KorgmultisampleCreator extends AbstractCreator
     }
 
 
-    private static void writeTime (final OutputStream out) throws IOException
+    private static void writeTime (final OutputStream out, final Date dateTime) throws IOException
     {
         out.write (KorgmultisampleTag.ID_TIME);
 
-        final int time = (int) (System.currentTimeMillis () / 1000);
+        final int time = (int) (dateTime.getTime () / 1000);
         out.write (toBytesLSB (time, 8));
     }
 
@@ -362,29 +364,5 @@ public class KorgmultisampleCreator extends AbstractCreator
             out.write (0x0A);
         out.write (length);
         out.write (bytes, 0, length);
-    }
-
-
-    /**
-     * Write an LSB 7 bit of a flexible number of bytes.
-     *
-     * @param out The output stream to write to
-     * @param value The value to write
-     * @throws IOException
-     */
-    protected static void write7bitNumberLSB (final OutputStream out, final int value) throws IOException
-    {
-        int number = value;
-
-        while (number > 0)
-        {
-            int val = number & 0x7F;
-            number = number >> 7;
-
-            if (number != 0)
-                val |= 0x80;
-
-            out.write (val);
-        }
     }
 }

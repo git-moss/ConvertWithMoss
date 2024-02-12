@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.tal;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -95,7 +95,7 @@ public class TALSamplerCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeFolderName);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource);
+        this.writeSamples (sampleFolder, multisampleSource, true, false, false, false);
     }
 
 
@@ -196,7 +196,7 @@ public class TALSamplerCreator extends AbstractCreator
             final double fine = tune - transpose;
             int detune = 0;
             if (transpose > 24 || transpose < -24)
-                detune = Utils.clamp (transpose > 24 ? transpose - 24 : transpose + 24, -24, 24);
+                detune = MathUtils.clamp (transpose > 24 ? transpose - 24 : transpose + 24, -24, 24);
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, (transpose + 24.0) / 48.0, 4);
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, (detune + 24.0) / 48.0, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], (fine + 1.0) / 2.0, 4);
@@ -255,7 +255,7 @@ public class TALSamplerCreator extends AbstractCreator
 
         // Pitchbend 2 semitones up/down
         final int bendUp = Math.abs (sampleMetadata.getBendUp ());
-        final double bendUpValue = bendUp == 0 ? 0.16 : Utils.clamp (bendUp / 1200.0, 0, 1.0);
+        final double bendUpValue = bendUp == 0 ? 0.16 : MathUtils.clamp (bendUp / 1200.0, 0, 1.0);
         XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, bendUpValue, 3);
 
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (groups);
@@ -279,8 +279,8 @@ public class TALSamplerCreator extends AbstractCreator
 
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_MODE, TALSamplerConstants.getFilterValue (filter), 16);
 
-            final double cutoff = normalizeCutoff (filter.getCutoff ());
-            final double resonance = Utils.clamp (filter.getResonance (), 0, 40.0) / 40.0;
+            final double cutoff = MathUtils.normalizeCutoff (filter.getCutoff ());
+            final double resonance = MathUtils.normalize (filter.getResonance (), 40.0);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, cutoff, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, resonance, 4);
 
@@ -333,7 +333,7 @@ public class TALSamplerCreator extends AbstractCreator
     private static void setEnvelopeAttribute (final Element element, final String attribute, final double value, final double minimum, final double maximum)
     {
         if (value >= 0)
-            XMLUtils.setDoubleAttribute (element, attribute, normalizeValue (value, minimum, maximum), 3);
+            XMLUtils.setDoubleAttribute (element, attribute, MathUtils.normalize (value, minimum, maximum), 3);
     }
 
 
@@ -349,18 +349,6 @@ public class TALSamplerCreator extends AbstractCreator
         final double v = 12 + (volumeDB > 6 ? 6 : volumeDB);
         final double result = TALSamplerConstants.VALUE_RANGE * v / 18.0;
         return TALSamplerConstants.MINUS_12_DB + result;
-    }
-
-
-    private static double normalizeCutoff (final double cutoffInHertz)
-    {
-        return Utils.clamp ((log2 (cutoffInHertz / (2 * 440.0)) * 12.0 + 57) / 140.0, 0, 1);
-    }
-
-
-    private static double log2 (final double n)
-    {
-        return Math.log (n) / Math.log (2);
     }
 
 

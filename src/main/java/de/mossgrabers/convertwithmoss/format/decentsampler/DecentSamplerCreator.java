@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.decentsampler;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -179,7 +180,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeFolderName);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource);
+        this.writeSamples (sampleFolder, multisampleSource, true, false, false, false);
     }
 
 
@@ -530,13 +531,13 @@ public class DecentSamplerCreator extends AbstractCreator
 
     private static double getEnvelopeAttribute (final double value, final double minimum, final double maximum, final double defaultValue)
     {
-        return value < 0 ? defaultValue : normalizeValue (value, minimum, maximum);
+        return value < 0 ? defaultValue : MathUtils.normalize (value, minimum, maximum);
     }
 
 
     private static void setEnvelopeAttribute (final Element element, final String attribute, final double value, final double minimum, final double maximum)
     {
         if (value >= 0)
-            XMLUtils.setDoubleAttribute (element, attribute, normalizeValue (value, minimum, maximum), 3);
+            XMLUtils.setDoubleAttribute (element, attribute, MathUtils.normalize (value, minimum, maximum), 3);
     }
 }

@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Creator;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010Detector;
 import de.mossgrabers.convertwithmoss.format.nki.NkiCreator;
 import de.mossgrabers.convertwithmoss.format.nki.NkiDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -137,6 +138,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.detectors = new IDetector []
         {
+            new Music1010Detector (this),
             new MPCKeygroupDetector (this),
             new BitwigMultisampleDetector (this),
             new DecentSamplerDetector (this),

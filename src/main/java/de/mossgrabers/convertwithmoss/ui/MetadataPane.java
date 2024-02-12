@@ -59,26 +59,26 @@ public class MetadataPane implements IMetadataConfig
     /**
      * Load the metadata settings.
      *
-     * @param config The configuration file where the settings are stored
+     * @param configuration The configuration file where the settings are stored
      */
-    public void loadSettings (final BasicConfig config)
+    public void loadSettings (final BasicConfig configuration)
     {
-        this.preferFolderNameCheckBox.setSelected (config.getBoolean (this.prefix + PREFER_FOLDER_NAME, false));
-        this.defaultCreatorField.setText (config.getProperty (this.prefix + DEFAULT_CREATOR, "moss"));
-        this.creatorsField.setText (config.getProperty (this.prefix + CREATORS, ""));
+        this.preferFolderNameCheckBox.setSelected (configuration.getBoolean (this.prefix + PREFER_FOLDER_NAME, false));
+        this.defaultCreatorField.setText (configuration.getProperty (this.prefix + DEFAULT_CREATOR, "moss"));
+        this.creatorsField.setText (configuration.getProperty (this.prefix + CREATORS, ""));
     }
 
 
     /**
      * Save the metadata settings.
      *
-     * @param config The configuration file where the settings should be stored
+     * @param configuration The configuration file where the settings should be stored
      */
-    public void saveSettings (final BasicConfig config)
+    public void saveSettings (final BasicConfig configuration)
     {
-        config.setProperty (this.prefix + PREFER_FOLDER_NAME, Boolean.toString (this.preferFolderNameCheckBox.isSelected ()));
-        config.setProperty (this.prefix + DEFAULT_CREATOR, this.defaultCreatorField.getText ());
-        config.setProperty (this.prefix + CREATORS, this.creatorsField.getText ());
+        configuration.setProperty (this.prefix + PREFER_FOLDER_NAME, Boolean.toString (this.preferFolderNameCheckBox.isSelected ()));
+        configuration.setProperty (this.prefix + DEFAULT_CREATOR, this.defaultCreatorField.getText ());
+        configuration.setProperty (this.prefix + CREATORS, this.creatorsField.getText ());
     }
 
 

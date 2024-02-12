@@ -7,12 +7,13 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -135,7 +136,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
             name = globalName.get ();
 
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
-        multisampleSource.getMetadata ().detectMetadata (this.metadataConfig, parts);
+
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        this.createMetadata (metadata, this.getFirstSample (groups), parts);
+
         multisampleSource.setGroups (groups);
         return Collections.singletonList (multisampleSource);
     }
@@ -395,10 +399,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
         if (tune == 0)
             tune = this.getDoubleValue (SfzOpcode.PITCH, 0);
-        sampleMetadata.setTune (Utils.clamp (tune, -3600, 3600) / 100.0);
+        sampleMetadata.setTune (MathUtils.clamp (tune, -3600, 3600) / 100.0);
 
         final double pitchKeytrack = this.getDoubleValue (SfzOpcode.PITCH_KEYTRACK, 100);
-        sampleMetadata.setKeyTracking (Utils.clamp (pitchKeytrack, 0, 100) / 100.0);
+        sampleMetadata.setKeyTracking (MathUtils.clamp (pitchKeytrack, 0, 100) / 100.0);
 
         sampleMetadata.setBendUp (this.getIntegerValue (SfzOpcode.BEND_UP, 0));
         sampleMetadata.setBendDown (this.getIntegerValue (SfzOpcode.BEND_DOWN, 0));
@@ -557,9 +561,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
     private void parseVolume (final ISampleZone sampleMetadata)
     {
         final double volume = this.getDoubleValue (SfzOpcode.VOLUME, 0);
-        sampleMetadata.setGain (Utils.clamp (volume, -12, 12));
+        sampleMetadata.setGain (MathUtils.clamp (volume, -12, 12));
         final double panorama = this.getDoubleValue (SfzOpcode.PANORAMA, 0);
-        sampleMetadata.setPanorama (Utils.clamp (panorama, -100, 100) / 100.0);
+        sampleMetadata.setPanorama (MathUtils.clamp (panorama, -100, 100) / 100.0);
 
         final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
         amplitudeEnvelope.setDelay (this.getDoubleValue (SfzOpcode.AMPEG_DELAY, SfzOpcode.AMP_DELAY));
