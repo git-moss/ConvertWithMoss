@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.sf2;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -113,6 +113,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             final IMetadata metadata = source.getMetadata ();
             metadata.detectMetadata (this.metadataConfig, parts);
             metadata.setCreator (sf2File.getSoundDesigner ());
+            metadata.setCreationTime (sf2File.getParsedCreationDate ());
             metadata.setDescription (createDescription (sf2File));
 
             final GeneratorHierarchy generators = new GeneratorHierarchy ();
@@ -272,7 +273,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         // Store the matching right side sample with the left side one
                         leftSampleData.setRightSample (sample);
                         updateFilename (leftSampleZone, rightSampleZone);
-                        leftSampleZone.setPanorama (Utils.clamp (leftSampleZone.getPanorama () + rightSampleZone.getPanorama (), -1.0, 1.0));
+                        leftSampleZone.setPanorama (MathUtils.clamp (leftSampleZone.getPanorama () + rightSampleZone.getPanorama (), -1.0, 1.0));
                         resultSamples.add (leftSampleZone);
                         rightSampleZones.remove (i);
                         found = true;
@@ -327,7 +328,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         final Sf2SampleData leftSampleData = (Sf2SampleData) panLeftSampleZone.getSampleData ();
                         updateFilename (panLeftSampleZone, panRightSampleZone);
                         leftSampleData.setRightSample (((Sf2SampleData) panRightSampleZone.getSampleData ()).getSample ());
-                        panLeftSampleZone.setPanorama (Utils.clamp (panLeftSampleZone.getPanorama () + panRightSampleZone.getPanorama (), -1.0, 1.0));
+                        panLeftSampleZone.setPanorama (MathUtils.clamp (panLeftSampleZone.getPanorama () + panRightSampleZone.getPanorama (), -1.0, 1.0));
                         resultSamples.add (panLeftSampleZone);
                         panRightSamples.remove (i);
                         found = true;
@@ -554,9 +555,6 @@ public class Sf2DetectorTask extends AbstractDetectorTask
     private static String createDescription (final Sf2File sf2File)
     {
         final StringBuilder sb = new StringBuilder ();
-        final String creationDate = sf2File.getCreationDate ();
-        if (creationDate != null)
-            sb.append ("Creation Date: ").append (creationDate).append ('\n');
         final String copyright = sf2File.getCopyright ();
         if (copyright != null)
             sb.append ("Copyright: ").append (copyright).append ('\n');

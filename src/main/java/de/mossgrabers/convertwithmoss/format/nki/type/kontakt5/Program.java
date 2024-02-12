@@ -4,7 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -296,8 +296,8 @@ public class Program
             zone.setKeyRoot (rootKey);
 
             final float volume = this.instrumentVolume + kontaktZone.getZoneVolume ();
-            zone.setGain (Utils.valueToDb (volume));
-            zone.setPanorama (Utils.clamp (this.instrumentPan + kontaktZone.getZonePan (), -1, 1));
+            zone.setGain (MathUtils.valueToDb (volume));
+            zone.setPanorama (MathUtils.clamp (this.instrumentPan + kontaktZone.getZonePan (), -1, 1));
 
             zone.setTune (calculateTune (kontaktZone.getZoneTune (), group.getTune (), this.instrumentTune));
 

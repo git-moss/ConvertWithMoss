@@ -166,9 +166,8 @@ public class WavFileSampleData extends AbstractFileSampleData
         if (addRootKey && zone.getKeyRoot () == -1)
             zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
 
-        final int midiPitchFraction = sampleChunk.getMIDIPitchFraction ();
         if (zone.getTune () == 0)
-            zone.setTune (Math.max (0, Math.min (0.5, midiPitchFraction * 0.5 / 0x80000000)));
+            zone.setTune (Math.max (0, Math.min (0.5, sampleChunk.getMIDIPitchFractionAsCents () / 100.0)));
 
         if (addLoops)
             addLoops (sampleChunk, zone.getLoops ());
@@ -187,13 +186,13 @@ public class WavFileSampleData extends AbstractFileSampleData
             switch (sampleLoop.getType ())
             {
                 default:
-                case 0:
+                case SampleChunk.LOOP_FORWARD:
                     loop.setType (LoopType.FORWARD);
                     break;
-                case 1:
+                case SampleChunk.LOOP_ALTERNATING:
                     loop.setType (LoopType.ALTERNATING);
                     break;
-                case 2:
+                case SampleChunk.LOOP_BACKWARDS:
                     loop.setType (LoopType.BACKWARDS);
                     break;
             }
@@ -201,5 +200,16 @@ public class WavFileSampleData extends AbstractFileSampleData
             loop.setEnd (sampleLoop.getEnd ());
             loops.add (loop);
         }
+    }
+
+
+    /**
+     * Get the underlying WAV file.
+     *
+     * @return The wave file
+     */
+    public WaveFile getWaveFile ()
+    {
+        return this.waveFile;
     }
 }

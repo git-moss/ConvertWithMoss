@@ -7,8 +7,13 @@ package de.mossgrabers.convertwithmoss.file.wav;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.tools.StringUtils;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 
 /**
@@ -19,7 +24,10 @@ import java.util.Arrays;
 public class BroadcastAudioExtensionChunk extends WavChunk
 {
     // Not fully correct; last field has variable size (note counted in this value)
-    private static final int CHUNK_SIZE = 602;
+    private static final int       CHUNK_SIZE          = 602;
+
+    private final SimpleDateFormat simpleDateFormatter = new SimpleDateFormat ("yyyy-MM-dd", Locale.US);
+    private final SimpleDateFormat simpleTimeFormatter = new SimpleDateFormat ("HH:mm:ss", Locale.US);
 
 
     /**
@@ -61,6 +69,17 @@ public class BroadcastAudioExtensionChunk extends WavChunk
 
 
     /**
+     * Sets the description. Replaces all non-ASCII characters in the given string.
+     *
+     * @param description The description to set
+     */
+    public void setDescription (final String description)
+    {
+        this.chunk.setNullTerminatedString (0, 256, StringUtils.fixASCII (description));
+    }
+
+
+    /**
      * ASCII string (maximum 32 characters) containing the name of the originator/ producer of the
      * audio file. If the length of the string is less than 32 characters the field shall be ended
      * by a null character.
@@ -74,11 +93,22 @@ public class BroadcastAudioExtensionChunk extends WavChunk
 
 
     /**
-     * ASCII string (maximum 32 characters) containing the name of the originator/ producer of the
-     * audio file. If the length of the string is less than 32 characters the field shall be ended
-     * by a null character.
+     * Sets the originator. Replaces all non-ASCII characters in the given string.
      *
-     * @return The originator
+     * @param originator The originator to set
+     */
+    public void setOriginator (final String originator)
+    {
+        this.chunk.setNullTerminatedString (256, 32, StringUtils.fixASCII (originator));
+    }
+
+
+    /**
+     * ASCII string (maximum 32 characters) containing an unambiguous reference allocated by the
+     * originating organization. If the length of the string is less than 32 characters the field
+     * shall be terminated by a null character.
+     *
+     * @return The originator reference
      */
     public String getOriginatorReference ()
     {
@@ -87,13 +117,59 @@ public class BroadcastAudioExtensionChunk extends WavChunk
 
 
     /**
-     * ASCII characters containing the date of creation of the audio sequence. The format shall be «
-     * ‘,year’,-,’month,’-‘,day,’» with 4 characters for the year and 2 characters per other item.
+     * Sets the origination date and time fields.
+     *
+     * @param originationDateTime The date and time of the creation
+     */
+    public void setOriginationDateTime (final Date originationDateTime)
+    {
+        this.chunk.setNullTerminatedString (320, 10, this.simpleDateFormatter.format (originationDateTime));
+        this.chunk.setNullTerminatedString (330, 8, this.simpleTimeFormatter.format (originationDateTime));
+    }
+
+
+    /**
+     * Gets the origination date and time fields.
+     *
+     * @return The date and time of the creation
+     */
+    public Date getOriginationDateTime ()
+    {
+        try
+        {
+            final String originationDate = this.getOriginationDate ();
+            final String originationTime = this.getOriginationTime ();
+
+            if (originationDate.length () == 10 && originationTime.length () == 8)
+            {
+                final int year = Integer.parseInt (originationDate.substring (0, 4));
+                final int month = Integer.parseInt (originationDate.substring (5, 7));
+                final int day = Integer.parseInt (originationDate.substring (8, 10));
+                final int hours = Integer.parseInt (originationTime.substring (0, 2));
+                final int minutes = Integer.parseInt (originationTime.substring (3, 5));
+                final int seconds = Integer.parseInt (originationTime.substring (6, 8));
+                final Calendar calendar = Calendar.getInstance (Locale.US);
+                calendar.set (year, month - 1, day, hours, minutes, seconds);
+                return calendar.getTime ();
+            }
+
+        }
+        catch (final NumberFormatException ex)
+        {
+            // Ignore
+        }
+        return new Date ();
+    }
+
+
+    /**
+     * ASCII characters containing the date of creation of the audio sequence. The format shall be
+     * ‘,year’,-,’month,’-‘,day,’ with 4 characters for the year and 2 characters per other item.
      * Year is defined from 0000 to 9999 Month is defined from 1 to 12 Day is defined from 1 to 28,
      * 29, 30 or 31 The separator between the items can be anything but it is recommended that one
      * of the following characters be used: ‘-’ hyphen ‘_’ underscore ‘:’ colon ‘ ’ space ‘.’ stop.
      *
-     * @return The origination date
+     * @return The origination date in the form 'yyyy:mm:dd'
      */
     public String getOriginationDate ()
     {
@@ -108,7 +184,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      * is recommended that one of the following characters be used: ‘-’ hyphen ‘_’ underscore ‘:’
      * colon ‘ ’ space ‘.’ stop
      *
-     * @return The origination time
+     * @return The origination time in the form 'hh:mm:ss'
      */
     public String getOriginationTime ()
     {
@@ -125,7 +201,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getTimeReference ()
     {
-        return (this.chunk.fourBytesAsInt (342) << 32) + (this.chunk.fourBytesAsInt (338));
+        return (this.chunk.getFourBytesAsInt (342) << 32) + this.chunk.getFourBytesAsInt (338);
     }
 
 
@@ -138,7 +214,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getVersion ()
     {
-        return this.chunk.twoBytesAsInt (346);
+        return this.chunk.getTwoBytesAsInt (346);
     }
 
 
@@ -165,7 +241,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getLoudnessValue ()
     {
-        return this.chunk.twoBytesAsInt (412);
+        return this.chunk.getTwoBytesAsInt (412);
     }
 
 
@@ -176,7 +252,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getLoudnessRange ()
     {
-        return this.chunk.twoBytesAsInt (414);
+        return this.chunk.getTwoBytesAsInt (414);
     }
 
 
@@ -188,7 +264,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getMaxTruePeakLevel ()
     {
-        return this.chunk.twoBytesAsInt (416);
+        return this.chunk.getTwoBytesAsInt (416);
     }
 
 
@@ -200,7 +276,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getMaxMomentaryLoudness ()
     {
-        return this.chunk.twoBytesAsInt (418);
+        return this.chunk.getTwoBytesAsInt (418);
     }
 
 
@@ -212,7 +288,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getMaxShortTermLoudness ()
     {
-        return this.chunk.twoBytesAsInt (420);
+        return this.chunk.getTwoBytesAsInt (420);
     }
 
 

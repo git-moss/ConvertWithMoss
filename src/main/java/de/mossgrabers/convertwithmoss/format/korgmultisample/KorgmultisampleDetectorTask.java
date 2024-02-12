@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -99,8 +100,8 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
             in.read ();
         }
 
-        // Time of storage - the milliseconds from 1.1.1970: fromBytesLSB (time) * 1000L
-        in.readNBytes (8);
+        // Time of storage - the seconds from 1.1.1970
+        final Date creationDateTime = new Date (StreamUtils.fromBytesLE (in.readNBytes (8)) * 1000L);
 
         // Size of the content, not needed
         in.readNBytes (4);
@@ -117,6 +118,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         groups.add (group);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
+        metadata.setCreationTime (creationDateTime);
 
         int id;
         while ((id = in.read ()) != -1)
@@ -439,12 +441,12 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
      * Compares the tag with the string.
      *
      * @param tag The tag
-     * @param str The text for comparison
+     * @param text The text for comparison
      * @throws FormatException One or more characters do not match
      */
-    private static void checkTag (final String tag, final String str) throws FormatException
+    private static void checkTag (final String tag, final String text) throws FormatException
     {
-        if (!str.equals (tag))
+        if (!text.equals (tag))
             throw new FormatException (tag);
     }
 }

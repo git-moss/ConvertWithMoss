@@ -220,8 +220,7 @@ public class TagDetector
             "Ride",
             "808",
             "909",
-            "Gong",
-            "Pads"
+            "Gong"
         });
         CATEGORIES.put (CATEGORY_ENSEMBLE, new String []
         {
@@ -291,6 +290,7 @@ public class TagDetector
             CATEGORY_ORGAN,
             "Tonewheel",
             "Accordion",
+            "Hammond",
             "Farfisa",
             "Gospel",
             "B3",
@@ -298,7 +298,9 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_PAD, new String []
         {
-            CATEGORY_PAD
+            CATEGORY_PAD,
+            "Ambient",
+            "Atmo"
         });
         CATEGORIES.put (CATEGORY_PERCUSSION, new String []
         {

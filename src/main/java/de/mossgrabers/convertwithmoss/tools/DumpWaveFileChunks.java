@@ -48,14 +48,14 @@ public class DumpWaveFileChunks
     /**
      * The main function.
      *
-     * @param args First parameter is the folder to scan
+     * @param arguments First parameter is the folder to scan
      */
-    public static void main (final String [] args)
+    public static void main (final String [] arguments)
     {
-        if (args == null || args.length == 0)
+        if (arguments == null || arguments.length == 0)
             LOGGER.info ("Give a folder as parameter...");
         else
-            detect (new File (args[0]));
+            detect (new File (arguments[0]));
     }
 
 
@@ -85,13 +85,14 @@ public class DumpWaveFileChunks
             {
                 try
                 {
-                    final WaveFile sampleFile = new WaveFile (file, true);
+                    final WaveFile sampleFile = new WaveFile (file, false);
                     log ("\n" + file.getAbsolutePath ());
                     log (sampleFile.infoText ());
                 }
                 catch (final IOException | ParseException ex)
                 {
-                    log (ex.getMessage ());
+                    log ("\n" + file.getAbsolutePath ());
+                    log ("  " + ex.getMessage ());
                 }
             }
         }

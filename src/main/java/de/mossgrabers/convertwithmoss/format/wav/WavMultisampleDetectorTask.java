@@ -9,9 +9,12 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 import java.io.File;
@@ -120,14 +123,17 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
      * Detect metadata, order samples and finally create the multi-sample.
      *
      * @param folder The folder which contains the sample files
-     * @param sampleFileMetadata The detected sample files
+     * @param sampleFiles The detected sample files
      * @return The multi-sample
      */
-    private List<IMultisampleSource> createMultisample (final File folder, final WavFileSampleData [] sampleFileMetadata)
+    private List<IMultisampleSource> createMultisample (final File folder, final WavFileSampleData [] sampleFiles)
     {
+        if (sampleFiles.length == 0)
+            return Collections.emptyList ();
+
         try
         {
-            final WavKeyMapping keyMapping = new WavKeyMapping (sampleFileMetadata, this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.groupPatterns, this.monoSplitPatterns);
+            final WavKeyMapping keyMapping = new WavKeyMapping (sampleFiles, this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.groupPatterns, this.monoSplitPatterns);
             final String name = cleanupName (this.metadataConfig.isPreferFolderName () ? folder.getName () : keyMapping.getName (), this.postfixTexts);
             if (name.isEmpty ())
             {
@@ -135,19 +141,22 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
                 return Collections.emptyList ();
             }
 
-            String [] parts = AudioFileUtils.createPathParts (folder, this.sourceFolder, name);
-            if (parts.length > 1)
-            {
-                // Remove the samples folder
-                final List<String> subpaths = new ArrayList<> (Arrays.asList (parts));
-                subpaths.remove (1);
-                parts = subpaths.toArray (new String [subpaths.size ()]);
-            }
-
+            final String [] parts = this.createParts (folder, name);
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (folder, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, folder));
-            multisampleSource.getMetadata ().detectMetadata (this.metadataConfig, parts);
+            this.createMetadata (multisampleSource.getMetadata (), sampleFiles, parts);
 
-            final List<IGroup> sampleMetadata = keyMapping.getSampleMetadata ();
+            // If there are instrument chunks, use them otherwise create the multi-sample from the
+            // file names
+            final List<IGroup> sampleMetadata;
+            if (hasInstrumentChunks (sampleFiles))
+            {
+                final IGroup group = new DefaultGroup ("Group");
+                sampleMetadata = Collections.singletonList (group);
+                for (final WavFileSampleData sampleData: sampleFiles)
+                    addZone (group, sampleData);
+            }
+            else
+                sampleMetadata = keyMapping.getSampleMetadata ();
             multisampleSource.setGroups (sampleMetadata);
 
             this.notifier.log ("IDS_NOTIFY_DETECTED_GROUPS", Integer.toString (sampleMetadata.size ()));
@@ -159,8 +168,24 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
         catch (final MultisampleException | CombinationNotPossibleException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ());
-            return Collections.emptyList ();
         }
+
+        return Collections.emptyList ();
+    }
+
+
+    private static void addZone (final IGroup group, final WavFileSampleData sampleData)
+    {
+        final DefaultSampleZone sampleZone = new DefaultSampleZone ();
+        final InstrumentChunk instrumentChunk = sampleData.getWaveFile ().getInstrumentChunk ();
+        sampleZone.setKeyRoot (instrumentChunk.getUnshiftedNote ());
+        sampleZone.setKeyLow (instrumentChunk.getLowNote ());
+        sampleZone.setKeyHigh (instrumentChunk.getHighNote ());
+        sampleZone.setVelocityLow (instrumentChunk.getLowVelocity ());
+        sampleZone.setVelocityHigh (instrumentChunk.getHighVelocity ());
+        sampleZone.setGain (instrumentChunk.getGain ());
+        sampleZone.setTune (instrumentChunk.getFineTune () / 100.0);
+        group.addSampleMetadata (sampleZone);
     }
 
 
@@ -183,5 +208,35 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
             }
         }
         return n.trim ();
+    }
+
+
+    /**
+     * Check if all given WAV files have an instrument chunk.
+     *
+     * @param sampleFiles The files to check
+     * @return True if all given WAV files have an instrument chunk
+     */
+    private static boolean hasInstrumentChunks (final WavFileSampleData [] sampleFiles)
+    {
+        for (final WavFileSampleData sampleFileData: sampleFiles)
+        {
+            if (sampleFileData.getWaveFile ().getInstrumentChunk () == null)
+                return false;
+        }
+        return true;
+    }
+
+
+    private String [] createParts (final File folder, final String name)
+    {
+        final String [] parts = AudioFileUtils.createPathParts (folder, this.sourceFolder, name);
+        if (parts.length <= 1)
+            return parts;
+
+        // Remove the samples folder
+        final List<String> subpaths = new ArrayList<> (Arrays.asList (parts));
+        subpaths.remove (1);
+        return subpaths.toArray (new String [subpaths.size ()]);
     }
 }

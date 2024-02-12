@@ -6,6 +6,8 @@ package de.mossgrabers.convertwithmoss.core.model;
 
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
+import java.util.Date;
+
 
 /**
  * Several descriptive fields for a multi-sample.
@@ -28,6 +30,14 @@ public interface IMetadata
      * @return The creator
      */
     String getCreator ();
+
+
+    /**
+     * Get the date/time when the multi-sample was created.
+     *
+     * @return The date/time
+     */
+    Date getCreationTime ();
 
 
     /**
@@ -63,6 +73,14 @@ public interface IMetadata
 
 
     /**
+     * Set the date/time when the multi-sample was created.
+     *
+     * @param time The date/time
+     */
+    void setCreationTime (Date time);
+
+
+    /**
      * Set the category.
      *
      * @param category The sound category of the multi-sample
@@ -81,18 +99,18 @@ public interface IMetadata
     /**
      * Detect metadata (creator, category, keywords) from the given text parts.
      *
-     * @param config Some configuration settings
+     * @param configuration Some configuration settings
      * @param parts The text parts
      */
-    void detectMetadata (IMetadataConfig config, String [] parts);
+    void detectMetadata (IMetadataConfig configuration, String [] parts);
 
 
     /**
      * Detect metadata (creator, category, keywords) from the given text parts.
      *
-     * @param config Some configuration settings
+     * @param configuration Some configuration settings
      * @param parts The text parts
      * @param category If the category is not null, it is assigned and not detected
      */
-    void detectMetadata (IMetadataConfig config, String [] parts, String category);
+    void detectMetadata (IMetadataConfig configuration, String [] parts, String category);
 }

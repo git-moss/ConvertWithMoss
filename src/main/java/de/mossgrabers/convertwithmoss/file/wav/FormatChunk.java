@@ -140,7 +140,7 @@ public class FormatChunk extends WavChunk
      */
     public int getCompressionCode ()
     {
-        return this.chunk.twoBytesAsInt (0x00);
+        return this.chunk.getTwoBytesAsInt (0x00);
     }
 
 
@@ -152,7 +152,7 @@ public class FormatChunk extends WavChunk
      */
     public void setCompressionCode (final int compressionCode)
     {
-        this.chunk.intAsTwoBytes (0x00, compressionCode);
+        this.chunk.setIntAsTwoBytes (0x00, compressionCode);
     }
 
 
@@ -164,7 +164,7 @@ public class FormatChunk extends WavChunk
      */
     public int getNumberOfChannels ()
     {
-        return this.chunk.twoBytesAsInt (0x02);
+        return this.chunk.getTwoBytesAsInt (0x02);
     }
 
 
@@ -175,7 +175,7 @@ public class FormatChunk extends WavChunk
      */
     public void setNumberOfChannels (final int channels)
     {
-        this.chunk.intAsTwoBytes (0x02, channels);
+        this.chunk.setIntAsTwoBytes (0x02, channels);
 
         this.updateBlockAlign ();
     }
@@ -188,7 +188,7 @@ public class FormatChunk extends WavChunk
      */
     public int getSampleRate ()
     {
-        return this.chunk.fourBytesAsInt (0x04);
+        return this.chunk.getFourBytesAsInt (0x04);
     }
 
 
@@ -200,7 +200,7 @@ public class FormatChunk extends WavChunk
      */
     public void setSampleRate (final int sampleRate)
     {
-        this.chunk.intAsFourBytes (0x04, sampleRate);
+        this.chunk.setIntAsFourBytes (0x04, sampleRate);
 
         this.updateAverageBytesPerSecond ();
     }
@@ -216,7 +216,7 @@ public class FormatChunk extends WavChunk
      */
     public int getAverageBytesPerSecond ()
     {
-        return this.chunk.fourBytesAsInt (0x08);
+        return this.chunk.getFourBytesAsInt (0x08);
     }
 
 
@@ -229,7 +229,7 @@ public class FormatChunk extends WavChunk
         final int numberOfChannels = this.getNumberOfChannels ();
         final int blockAlign = this.getBlockAlign ();
         final int averageBytesPerSecond = sampleRate * blockAlign * numberOfChannels;
-        this.chunk.intAsFourBytes (0x08, averageBytesPerSecond);
+        this.chunk.setIntAsFourBytes (0x08, averageBytesPerSecond);
     }
 
 
@@ -242,7 +242,7 @@ public class FormatChunk extends WavChunk
      */
     public int getBlockAlign ()
     {
-        return this.chunk.twoBytesAsInt (0x0C);
+        return this.chunk.getTwoBytesAsInt (0x0C);
     }
 
 
@@ -256,7 +256,7 @@ public class FormatChunk extends WavChunk
         final int bitsPerSample = this.getSignicantBitsPerSample ();
         final int numberOfChannels = this.getNumberOfChannels ();
         final int blockAlign = bitsPerSample / 8 * numberOfChannels;
-        this.chunk.intAsTwoBytes (0x0C, blockAlign);
+        this.chunk.setIntAsTwoBytes (0x0C, blockAlign);
 
         this.updateAverageBytesPerSecond ();
     }
@@ -274,7 +274,7 @@ public class FormatChunk extends WavChunk
     public int getSignicantBitsPerSample ()
     {
         if (0x0E < this.chunk.getData ().length)
-            return this.chunk.twoBytesAsInt (0x0E);
+            return this.chunk.getTwoBytesAsInt (0x0E);
         return 0;
     }
 
@@ -290,7 +290,7 @@ public class FormatChunk extends WavChunk
      */
     public void setSignicantBitsPerSample (final int bitsPerSample)
     {
-        this.chunk.intAsTwoBytes (0x0E, bitsPerSample);
+        this.chunk.setIntAsTwoBytes (0x0E, bitsPerSample);
 
         this.updateBlockAlign ();
     }

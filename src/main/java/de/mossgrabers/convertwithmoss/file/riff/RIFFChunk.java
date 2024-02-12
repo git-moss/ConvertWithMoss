@@ -217,7 +217,7 @@ public class RIFFChunk implements IChunk
      * @param offset The offset into the data array
      * @return The integer value
      */
-    public int fourBytesAsInt (final int offset)
+    public int getFourBytesAsInt (final int offset)
     {
         final byte [] d = this.getData ();
         return Byte.toUnsignedInt (d[offset + 3]) << 24 | Byte.toUnsignedInt (d[offset + 2]) << 16 | Byte.toUnsignedInt (d[offset + 1]) << 8 | Byte.toUnsignedInt (d[offset + 0]);
@@ -230,7 +230,7 @@ public class RIFFChunk implements IChunk
      * @param offset The offset into the data array
      * @return The integer value
      */
-    public int twoBytesAsInt (final int offset)
+    public int getTwoBytesAsInt (final int offset)
     {
         final byte [] d = this.getData ();
         return Byte.toUnsignedInt (d[offset + 1]) << 8 | Byte.toUnsignedInt (d[offset]);
@@ -243,7 +243,7 @@ public class RIFFChunk implements IChunk
      * @param offset The offset into the data array
      * @return The integer value
      */
-    public int byteAsUnsignedInt (final int offset)
+    public int getByteAsUnsignedInt (final int offset)
     {
         final byte [] d = this.getData ();
         return Byte.toUnsignedInt (d[offset]);
@@ -256,7 +256,7 @@ public class RIFFChunk implements IChunk
      * @param offset The offset into the data array
      * @return The integer value
      */
-    public int byteAsSignedInt (final int offset)
+    public int getByteAsSignedInt (final int offset)
     {
         final byte [] d = this.getData ();
         return d[offset];
@@ -280,7 +280,7 @@ public class RIFFChunk implements IChunk
      * Read a null terminated string from the data chunk.
      *
      * @param offset The offset into the data array
-     * @param maxLength Reads up to this number of bytes if the null termination is optional if all
+     * @param maxLength Reads up to this number of bytes; the null termination is optional if all
      *            bytes are filled
      * @param defaultValue The value to return if no string is found
      * @return The string
@@ -307,15 +307,31 @@ public class RIFFChunk implements IChunk
 
 
     /**
+     * Write a null terminated string in the data chunk.
+     *
+     * @param offset The offset into the data array
+     * @param maxLength Writes up to this number of bytes, if the text is short 0s are written
+     * @param text The text to write
+     */
+    public void setNullTerminatedString (final int offset, final int maxLength, final String text)
+    {
+        final byte [] d = this.getData ();
+        final int textLength = text.length ();
+        for (int i = 0; i < maxLength; i++)
+            d[offset + i] = i < textLength ? (byte) text.charAt (i) : 0;
+    }
+
+
+    /**
      * Convert an integer into 4 bytes. MSB is first byte.
      *
      * @param offset The offset into the data array
      * @param value The integer to convert
      */
-    public void intAsFourBytes (final int offset, final int value)
+    public void setIntAsFourBytes (final int offset, final int value)
     {
         final byte [] d = this.getData ();
-        d[offset + 0] = (byte) value;
+        d[offset] = (byte) value;
         d[offset + 1] = (byte) (value >> 8);
         d[offset + 2] = (byte) (value >> 16);
         d[offset + 3] = (byte) (value >> 24);
@@ -328,11 +344,38 @@ public class RIFFChunk implements IChunk
      * @param offset The offset into the data array
      * @param value The integer to convert
      */
-    public void intAsTwoBytes (final int offset, final int value)
+    public void setIntAsTwoBytes (final int offset, final int value)
     {
         final byte [] d = this.getData ();
-        d[offset + 0] = (byte) value;
+        d[offset] = (byte) value;
         d[offset + 1] = (byte) (value >> 8);
+    }
+
+
+    /**
+     * Convert an unsigned integer into 1 byte.
+     *
+     * @param offset The offset into the data array
+     * @param value The integer to convert
+     */
+    public void setUnsignedIntAsByte (final int offset, final int value)
+    {
+        final byte [] d = this.getData ();
+        d[offset] = (byte) (value & 0xFF);
+
+    }
+
+
+    /**
+     * Convert a signed integer into 1 byte.
+     *
+     * @param offset The offset into the data array
+     * @param value The integer to convert
+     */
+    public void setSignedIntAsByte (final int offset, final int value)
+    {
+        final byte [] d = this.getData ();
+        d[offset] = (byte) value;
     }
 
 

@@ -88,9 +88,9 @@ public class Sf2Preset
         while (pos < 20 && data[offset + pos] != 0)
             pos++;
         this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
-        this.number = chunk.twoBytesAsInt (offset + 20);
-        this.bankNumber = chunk.twoBytesAsInt (offset + 22);
-        this.firstZoneIndex = chunk.twoBytesAsInt (offset + 24);
+        this.number = chunk.getTwoBytesAsInt (offset + 20);
+        this.bankNumber = chunk.getTwoBytesAsInt (offset + 22);
+        this.firstZoneIndex = chunk.getTwoBytesAsInt (offset + 24);
 
         // The DWORDs dwLibrary, dwGenre and dwMorphology are reserved for future implementation in
         // a preset library management function

@@ -1,11 +1,25 @@
 # Changes
 
-## 7.3.1 (unreleased)
+## 7.4.0 (unreleased)
 
-* New: WAV files metadata chunks are kept when read/written.
-* Fixed: WAV files INSTRUMENT chunk was not read and not written.
-* Fixed: WAV file chunks were not aligned to multiples of 2.
-* Fixed: Tab labels were not visible on Linux.
+* Added support for 1010music format (blackbox, tangerine).
+* All formats
+  * New: Support for creation date/time in formats which support it.
+  * New: Unsupported WAV file metadata chunks are kept when read/written.
+  * New: Samples in ZIP files get the modification date of the multi-sample source.
+  * New: Added 'Hammond' as organ synomym and 'Ambient' and 'Atmo' as pad synonyms in category detector.
+  * Fixed: Tab labels were not visible on Linux.
+* WAV - Reading
+  * New: Reads metadata (originator, description, creation date/time) from the broadcast audio chunk (if present) of the 1st WAV file.
+* WAV - Writing
+  * New: Added options to write instrument, sample and broadcast audio chunks.
+  * Fixed: WAV file chunks were not aligned to multiples of 2.
+* SFZ, DecentSampler, MPC Keygroup, TAL Sampler - Reading
+  * New: Reads metadata (originator, description, creation date/time) from the broadcast audio chunk (if present) of the 1st WAV file.
+* SFZ, DecentSampler, MPC Keygroup, TAL Sampler - Writing
+  * New: Writes metadata (originator, description, creation date/time) to the broadcast audio chunk of all WAV files.
+* MPC - Writing
+  * Fixed: The sample chunk of a MPC destination WAV file was missing the number of loops value.
 
 ## 7.3.0
 

@@ -31,8 +31,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +102,21 @@ public class Kontakt5Type extends AbstractKontaktType
         {
             if (monolithSamples != null)
                 replaceSamples (multisampleSource, monolithSamples);
+
+            final IMetadata metadata = multisampleSource.getMetadata ();
+            try
+            {
+                final BasicFileAttributes attrs = Files.readAttributes (sourceFile.toPath (), BasicFileAttributes.class);
+                final FileTime creationTime = attrs.creationTime ();
+                final FileTime modifiedTime = attrs.lastModifiedTime ();
+                final long creationTimeMillis = creationTime.toMillis ();
+                final long modifiedTimeMillis = modifiedTime.toMillis ();
+                metadata.setCreationTime (new Date (creationTimeMillis < modifiedTimeMillis ? creationTimeMillis : modifiedTimeMillis));
+            }
+            catch (final IOException ex)
+            {
+                metadata.setCreationTime (new Date ());
+            }
         }
         return sources;
     }

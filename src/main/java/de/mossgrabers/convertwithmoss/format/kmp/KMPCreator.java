@@ -9,6 +9,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.tools.FileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -45,7 +46,7 @@ public class KMPCreator extends AbstractCreator
 
         // Create a sub-folder for the KMP files (one for each group) and all samples
         final Set<String> createdKMPNames = new HashSet<> ();
-        final File subFolder = new File (destinationFolder, createDOSFileName (sampleName, createdKMPNames));
+        final File subFolder = new File (destinationFolder, FileUtils.createDOSFileName (sampleName, createdKMPNames));
         if (!subFolder.exists () && !subFolder.mkdirs ())
         {
             this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
@@ -62,7 +63,7 @@ public class KMPCreator extends AbstractCreator
             final IGroup group = groups.get (i);
             final ISampleZone zone = group.getSampleZones ().get (0);
             final String groupName = size > 1 ? String.format ("%d-%s", Integer.valueOf (zone.getVelocityHigh ()), sampleName) : sampleName;
-            final String dosFileName = createDOSFileName (groupName, createdKSFNames) + ".KMP";
+            final String dosFileName = FileUtils.createDOSFileName (groupName, createdKSFNames) + ".KMP";
             final File groupSubFolder;
             if (needsSubDir)
             {
@@ -106,25 +107,5 @@ public class KMPCreator extends AbstractCreator
             final KMPFile kmpFile = new KMPFile (this.notifier, dosFilename, groupName, group);
             kmpFile.write (multiFile.getParentFile (), out);
         }
-    }
-
-
-    private static String createDOSFileName (final String filename, final Set<String> createdNames)
-    {
-        String dosFilename = filename.toUpperCase ().replace (' ', '_');
-        if (dosFilename.length () > 8)
-            dosFilename = dosFilename.substring (0, 8);
-
-        int counter = 1;
-        while (createdNames.contains (dosFilename))
-        {
-            counter++;
-            final String counterStr = Integer.toString (counter);
-            dosFilename = dosFilename.substring (0, 8 - counterStr.length ()) + counterStr;
-        }
-
-        createdNames.add (dosFilename);
-
-        return dosFilename;
     }
 }

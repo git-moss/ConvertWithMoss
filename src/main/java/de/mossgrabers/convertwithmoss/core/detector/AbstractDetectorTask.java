@@ -6,11 +6,15 @@ package de.mossgrabers.convertwithmoss.core.detector;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.Utils;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -328,7 +332,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      */
     protected static double denormalizeValue (final double value, final double minimum, final double maximum)
     {
-        return minimum + Utils.clamp (value, 0, 1) * (maximum - minimum);
+        return minimum + MathUtils.clamp (value, 0, 1) * (maximum - minimum);
     }
 
 
@@ -364,5 +368,81 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         {
             throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ()));
         }
+    }
+
+
+    /**
+     * Guess metadata from the sample names and folder. Also check for the Broadcast Audio Extension
+     * chunk in the first sample WAV.
+     *
+     * @param metadata The metadata object to fill
+     * @param sampleFiles The wave file data
+     * @param parts The already processed parts of the file name
+     */
+    protected void createMetadata (final IMetadata metadata, final WavFileSampleData [] sampleFiles, final String [] parts)
+    {
+        this.createMetadata (metadata, sampleFiles == null || sampleFiles.length == 0 ? null : sampleFiles[0], parts);
+    }
+
+
+    /**
+     * Guess metadata from the sample names and folder. Also check for the Broadcast Audio Extension
+     * chunk in the sample WAV.
+     *
+     * @param metadata The metadata object to fill
+     * @param sampleFile The wave file data
+     * @param parts The already processed parts of the file name
+     */
+    protected void createMetadata (final IMetadata metadata, final WavFileSampleData sampleFile, final String [] parts)
+    {
+        this.createMetadata (metadata, sampleFile, parts, null);
+    }
+
+
+    /**
+     * Guess metadata from the sample names and folder. Also check for the Broadcast Audio Extension
+     * chunk in the sample WAV.
+     *
+     * @param metadata The metadata object to fill
+     * @param sampleFile The wave file data
+     * @param parts The already processed parts of the file name
+     * @param category If the category is not null, it is assigned and not detected
+     */
+    protected void createMetadata (final IMetadata metadata, final WavFileSampleData sampleFile, final String [] parts, final String category)
+    {
+        metadata.detectMetadata (this.metadataConfig, parts, category);
+
+        if (sampleFile == null)
+            return;
+        final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = sampleFile.getWaveFile ().getBroadcastAudioExtensionChunk ();
+        if (broadcastAudioExtensionChunk == null)
+            return;
+
+        final String originator = broadcastAudioExtensionChunk.getOriginator ();
+        if (!originator.isBlank ())
+            metadata.setCreator (originator);
+        final String description = broadcastAudioExtensionChunk.getDescription ();
+        if (!description.isBlank ())
+            metadata.setDescription (description);
+        metadata.setCreationTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
+    }
+
+
+    /**
+     * Get the first sample WAV file of the first group.
+     *
+     * @param groups The groups
+     * @return The WAV file or null if it does not exist
+     */
+    protected WavFileSampleData getFirstSample (final List<IGroup> groups)
+    {
+        WavFileSampleData sampleFile = null;
+        if (!groups.isEmpty ())
+        {
+            final List<ISampleZone> zones = groups.get (0).getSampleZones ();
+            if (!zones.isEmpty () && zones.get (0).getSampleData () instanceof final WavFileSampleData sf)
+                sampleFile = sf;
+        }
+        return sampleFile;
     }
 }
