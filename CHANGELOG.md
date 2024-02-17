@@ -1,8 +1,8 @@
 # Changes
 
-## 7.4.0 (unreleased)
+## 7.4.0
 
-* Added support for 1010music format (blackbox, tangerine).
+* Added support for 1010music format (blackbox, tangerine, bitbox).
 * All formats
   * New: Support for creation date/time in formats which support it.
   * New: Unsupported WAV file metadata chunks are kept when read/written.
