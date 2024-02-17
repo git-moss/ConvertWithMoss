@@ -3,8 +3,7 @@
 ## Mojave and later
 
 Mojave prevents software to be run which is not authorized by Apple.
-But instead of telling you so, you get an error that the files are corrupted
-(so, your OS is lying to you now...).
+But instead of telling you so, you get an error that the files are corrupted (so, your OS is lying to you now...).
 
 To fix it open the Terminal app and enter the application folder:
 
