@@ -14,6 +14,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
+import de.mossgrabers.convertwithmoss.file.OggFileSampleData;
 import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
@@ -50,6 +52,9 @@ import java.util.function.Consumer;
  */
 public abstract class AbstractDetectorTask extends Task<Boolean>
 {
+    private static final AudioFileFormat.Type    OGG_TYPE              = new AudioFileFormat.Type ("OGG", "ogg");
+    private static final AudioFileFormat.Type    FLAC_TYPE             = new AudioFileFormat.Type ("FLAC", "flac");
+
     protected final INotifier                    notifier;
     protected final Consumer<IMultisampleSource> consumer;
     protected final File                         sourceFolder;
@@ -348,20 +353,41 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         try
         {
             ISampleData sampleData = null;
-            final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
-            final AudioFileFormat.Type type = audioFileFormat.getType ();
-            if (AudioFileFormat.Type.WAVE.equals (type))
+
+            if (sampleFile.getName ().toLowerCase ().endsWith (".aiff"))
             {
-                if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                    sampleData = new WavFileSampleData (sampleFile);
-            }
-            else if (AudioFileFormat.Type.AIFF.equals (type))
-            {
+                // Note: only AIF is picked up as correct ending below
                 this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
                 sampleData = new AiffFileSampleData (sampleFile);
             }
-            if (sampleData == null)
-                throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
+            else
+            {
+                final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
+                final AudioFileFormat.Type type = audioFileFormat.getType ();
+                if (AudioFileFormat.Type.WAVE.equals (type))
+                {
+                    if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                        sampleData = new WavFileSampleData (sampleFile);
+                }
+                else if (AudioFileFormat.Type.AIFF.equals (type))
+                {
+                    this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
+                    sampleData = new AiffFileSampleData (sampleFile);
+                }
+                else if (OGG_TYPE.equals (type))
+                {
+                    this.notifier.log ("IDS_NOTIFY_CONVERT_OGG_TO_WAV", sampleFile.getName ());
+                    sampleData = new OggFileSampleData (sampleFile);
+                }
+                else if (FLAC_TYPE.equals (type))
+                {
+                    this.notifier.log ("IDS_NOTIFY_CONVERT_FLAC_TO_WAV", sampleFile.getName ());
+                    sampleData = new FlacFileSampleData (sampleFile);
+                }
+                if (sampleData == null)
+                    throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
+            }
+
             return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
         }
         catch (final UnsupportedAudioFileException | IOException ex)

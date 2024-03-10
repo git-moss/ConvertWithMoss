@@ -62,7 +62,7 @@ public class WavCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource, this.shouldWriteBroadcastAudioChunk (), this.shouldWriteInstrumentChunk (), this.shouldWriteSampleChunk (), this.shouldRemoveJunkChunks ());
+        this.writeSamples (sampleFolder, multisampleSource, this.getChunkSettings ());
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }

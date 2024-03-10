@@ -18,6 +18,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 
@@ -28,6 +30,9 @@ import java.util.Arrays;
  */
 public class AiffFileSampleData extends AbstractFileSampleData
 {
+    private File sourceFile = null;
+
+
     /**
      * Constructor.
      *
@@ -37,6 +42,21 @@ public class AiffFileSampleData extends AbstractFileSampleData
     public AiffFileSampleData (final File file) throws IOException
     {
         super (file);
+
+        this.fixFileEnding ();
+    }
+
+
+    private void fixFileEnding () throws IOException
+    {
+        if (!this.sampleFile.getName ().toLowerCase ().endsWith ("aiff"))
+            return;
+
+        // Ugly workaround for the SPI not accepting AIFF files with the ending 'aiff'
+        final File tempFile = File.createTempFile ("temp", ".aif");
+        Files.copy (this.sampleFile.toPath (), tempFile.toPath (), StandardCopyOption.REPLACE_EXISTING);
+        this.sourceFile = this.sampleFile;
+        this.sampleFile = tempFile;
     }
 
 
@@ -59,6 +79,15 @@ public class AiffFileSampleData extends AbstractFileSampleData
         catch (final UnsupportedAudioFileException ex)
         {
             throw new IOException (ex);
+        }
+        finally
+        {
+            // Remove the temporary file after usage
+            if (this.sourceFile == null)
+                return;
+            this.sampleFile.delete ();
+            this.sampleFile = this.sourceFile;
+            this.sourceFile = null;
         }
     }
 

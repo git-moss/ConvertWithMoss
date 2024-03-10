@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.mossgrabers</groupId>
 	<artifactId>convertwithmoss</artifactId>
-	<version>7.4.0</version>
+	<version>7.5.0</version>
 	<packaging>jar</packaging>
 	<name>ConvertWithMoss</name>
 	<organization>
@@ -40,6 +40,16 @@
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-web</artifactId>
 			<version>21.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.trilarion</groupId>
+			<artifactId>java-vorbis-support</artifactId>
+			<version>1.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.tianscar.javasound</groupId>
+			<artifactId>javasound-flac</artifactId>
+			<version>1.4.1</version>
 		</dependency>
 		<dependency>
 			<artifactId>uitools</artifactId>
@@ -144,14 +154,14 @@
 			<plugin>
 				<groupId>org.panteleyev</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
-				<version>1.6.0</version>
+				<version>1.6.3</version>
 				<configuration>
 					<input>target/lib</input>
 					<destination>target/release</destination>
 					<mainJar>convertwithmoss-${project.version}.jar</mainJar>
 					<mainClass>${main.class}</mainClass>
 					<appVersion>${project.version}</appVersion>
-					<copyright>(c) 2021-2023 by ${project.organization.name}</copyright>
+					<copyright>(c) 2021-2024 by ${project.organization.name}</copyright>
 					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
 					<licenseFile>LICENSE</licenseFile>

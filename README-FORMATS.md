@@ -1,6 +1,19 @@
 # Source formats
 
-The following multisample formats are supported.
+The following multisample formats are supported:
+
+1. [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
+2. [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
+3. [Multisample Format (Bitwig Studio, Presonus Studio One)](#multisample-format-bitwig-studio-presonus-studio-one)
+4. [DecentSampler](#decentsampler)
+5. [Korg KMP/KSF](#korg-kmpksf)
+6. [Korg wavestate/modwave](#korg-wavestatemodwave)
+7. [Native Instruments Kontakt NKI/NKM](#native-instruments-kontakt-nkinkm)
+8. [SFZ](#sfz)
+9. [SoundFont 2](#soundfont-2)
+10. [TAL Sampler](#tal-sampler)
+11. [WAV files](#wav-files)
+
 
 ## 1010music blackbox, tangerine, bitbox
 
@@ -107,9 +120,15 @@ If selected as a destination, a NKI file is written and all samples are placed i
 
 "The SFZ format is a file format to define how a collection of samples are arranged for performance. The goal behind the SFZ format is to provide a free, simple, minimalistic and expandable format to arrange, distribute and use audio samples with the highest possible quality and the highest possible performance flexibility" (cited from https://sfzformat.com/).
 
-The SFZ file contains only the description of the multisample. The related samples are normally kept in a separate folder. The converter supports only samples in WAV format encoded as (split) stereo uncompressed and IEEE float 32 bit format.
+The SFZ file contains only the description of the multisample. The related samples are normally kept in a separate folder. The converter supports samples in WAV, OGG and FLAC format.
 
 There are currently no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present the same guessing logic is applied as with plain WAV files (see the metadata parameters of WAV above for an explanation).
+
+Destination options:
+
+* Convert to FLAC format: If enabled, the sample files are converted to FLAC.
+
+If WAV is selected as the destination format, e.g. to extract them from binary files like SF2, there are options to write the metadata information to the respective chunks (see WAV format below).
 
 ## SoundFont 2
 

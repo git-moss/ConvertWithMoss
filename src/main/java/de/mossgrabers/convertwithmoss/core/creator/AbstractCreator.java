@@ -13,7 +13,7 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
 import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
@@ -23,21 +23,22 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 
 import org.w3c.dom.Document;
 
 import javafx.scene.control.CheckBox;
 
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
@@ -61,17 +62,18 @@ import java.util.zip.ZipOutputStream;
  */
 public abstract class AbstractCreator extends AbstractCoreTask implements ICreator
 {
-    private static final String FORWARD_SLASH               = "/";
+    private static final DestinationAudioFormat DESTINATION_FORMAT          = new DestinationAudioFormat ();
+    private static final String                 FORWARD_SLASH               = "/";
 
-    private static final String WRITE_BROADCAST_AUDIO_CHUNK = "WriteBroadcastAudioChunk";
-    private static final String WRITE_INSTRUMENT_CHUNK      = "WriteInstrumentChunk";
-    private static final String WRITE_SAMPLE_CHUNK          = "WriteSampleChunk";
-    private static final String REMOVE_JUNK_CHUNK           = "RemoveJunkChunk";
+    private static final String                 WRITE_BROADCAST_AUDIO_CHUNK = "WriteBroadcastAudioChunk";
+    private static final String                 WRITE_INSTRUMENT_CHUNK      = "WriteInstrumentChunk";
+    private static final String                 WRITE_SAMPLE_CHUNK          = "WriteSampleChunk";
+    private static final String                 REMOVE_JUNK_CHUNK           = "RemoveJunkChunk";
 
-    protected CheckBox          addBroadcastAudioChunk;
-    protected CheckBox          addInstrumentChunk;
-    protected CheckBox          addSampleChunk;
-    protected CheckBox          removeJunkChunks;
+    protected CheckBox                          addBroadcastAudioChunk;
+    protected CheckBox                          addInstrumentChunk;
+    protected CheckBox                          addSampleChunk;
+    protected CheckBox                          removeJunkChunks;
 
 
     /**
@@ -428,7 +430,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        return this.writeSamples (sampleFolder, multisampleSource, false, false, false, false);
+        return this.writeSamples (sampleFolder, multisampleSource, DESTINATION_FORMAT);
     }
 
 
@@ -437,16 +439,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multisample
-     * @param updateBroadcastAudioChunk Add or update the broadcast audio extension chunk if true
-     * @param updateInstrumentChunk Add or update the instrument chunk if true
-     * @param updateSampleChunk If true the sample chunk is add or updated if already present
-     * @param removeJunkChunks If true remove JUNK, junk, FLLR and MD5 chunks
+     * @param destinationFormat The destination audio format
      * @return The written files
      * @throws IOException Could not store the samples
      */
-    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final boolean updateBroadcastAudioChunk, final boolean updateInstrumentChunk, final boolean updateSampleChunk, final boolean removeJunkChunks) throws IOException
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        return this.writeSamples (sampleFolder, multisampleSource, updateBroadcastAudioChunk, updateInstrumentChunk, updateSampleChunk, removeJunkChunks, ".wav");
+        return this.writeSamples (sampleFolder, multisampleSource, destinationFormat, ".wav");
     }
 
 
@@ -455,15 +454,12 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multisample
-     * @param updateBroadcastAudioChunk Add or update the broadcast audio extension chunk if true
-     * @param updateInstrumentChunk Add or update the instrument chunk if true
-     * @param updateSampleChunk If true the sample chunk is add or updated if already present
-     * @param removeJunkChunks If true remove JUNK, junk, FLLR and MD5 chunks
+     * @param destinationFormat The destination audio format
      * @param fileEnding The suffix to use for the file
      * @return The written files
      * @throws IOException Could not store the samples
      */
-    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final boolean updateBroadcastAudioChunk, final boolean updateInstrumentChunk, final boolean updateSampleChunk, final boolean removeJunkChunks, final String fileEnding) throws IOException
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final DestinationAudioFormat destinationFormat, final String fileEnding) throws IOException
     {
         final List<File> writtenFiles = new ArrayList<> ();
 
@@ -480,11 +476,10 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                     if (outputCount % 80 == 0)
                         this.notifyNewline ();
 
-                    final ISampleData sampleData = zone.getSampleData ();
-                    if (updateBroadcastAudioChunk || updateInstrumentChunk || updateSampleChunk || removeJunkChunks)
-                        updateChunks (multisampleSource.getMetadata (), zone, sampleData, fos, updateBroadcastAudioChunk, updateInstrumentChunk, updateSampleChunk, removeJunkChunks);
+                    if (destinationFormat.requiresRewrite ())
+                        rewriteFile (multisampleSource.getMetadata (), zone, fos, destinationFormat);
                     else
-                        sampleData.writeSample (fos);
+                        zone.getSampleData ().writeSample (fos);
                 }
                 writtenFiles.add (file);
             }
@@ -495,49 +490,98 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
 
     /**
+     * Writes all samples in the given audio file format from all groups into the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multisample
+     * @param targetFormat The destination audio format
+     * @return The written files
+     * @throws IOException Could not store the samples
+     * @throws UnsupportedAudioFileException
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final AudioFileFormat.Type targetFormat) throws IOException, UnsupportedAudioFileException
+    {
+        final List<File> writtenFiles = new ArrayList<> ();
+        final String extension = "." + targetFormat.getExtension ();
+
+        int outputCount = 0;
+        for (final IGroup group: multisampleSource.getGroups ())
+        {
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final File file = new File (sampleFolder, zone.getName () + extension);
+                try (final FileOutputStream fos = new FileOutputStream (file))
+                {
+                    this.notifyProgress ();
+                    outputCount++;
+                    if (outputCount % 80 == 0)
+                        this.notifyNewline ();
+                    fos.write (AudioFileUtils.compressToFLAC (zone.getSampleData (), targetFormat));
+                }
+                writtenFiles.add (file);
+            }
+        }
+
+        return writtenFiles;
+    }
+
+
+    /**
+     * Re-calculates the sample start, stop and loop start, stop positions for the given new sample
+     * rate of all samples/zones in the given multi sample.
+     *
+     * @param multisampleSource The multi sample source
+     * @param newSampleRate The new sample rate
+     * @throws IOException Could not retrieve the current sample rate
+     */
+    protected void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate) throws IOException
+    {
+        for (final IGroup group: multisampleSource.getGroups ())
+        {
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final ISampleData sampleData = zone.getSampleData ();
+                final double sampleRateRatio = newSampleRate / (double) sampleData.getAudioMetadata ().getSampleRate ();
+                zone.setStart ((int) Math.round (zone.getStart () * sampleRateRatio));
+                zone.setStop ((int) Math.round (zone.getStop () * sampleRateRatio));
+
+                for (final ISampleLoop loop: zone.getLoops ())
+                {
+                    loop.setStart ((int) Math.round (loop.getStart () * sampleRateRatio));
+                    loop.setEnd ((int) Math.round (loop.getEnd () * sampleRateRatio));
+                }
+            }
+        }
+    }
+
+
+    /**
      * Writes the sample of the given zone and updates/adds their instrument and sample chunks.
      *
      * @param metadata The metadata to store in a BEXT chunk
      * @param zone The zone from which to take the data to store into the chunks
-     * @param sampleData The sample which contains the WAV data
      * @param outputStream Where to write the result
-     * @param updateBroadcastAudioChunk Add or update the broadcast audio extension chunk if true
-     * @param updateInstrumentChunk Add or update the instrument chunk if true
-     * @param updateSampleChunk If true the sample chunk is add or updated if already present
-     * @param removeJunkChunks If true remove JUNK, junk, FLLR and MD5 chunks
+     * @param destinationFormat The destination audio format
      * @throws IOException Could not store the samples
      */
-    private static void updateChunks (final IMetadata metadata, final ISampleZone zone, final ISampleData sampleData, final OutputStream outputStream, final boolean updateBroadcastAudioChunk, final boolean updateInstrumentChunk, final boolean updateSampleChunk, final boolean removeJunkChunks) throws IOException
+    private static void rewriteFile (final IMetadata metadata, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream ();
-        sampleData.writeSample (baos);
+        final WaveFile wavFile = AudioFileUtils.convertToWav (zone.getSampleData (), destinationFormat);
 
-        try (final InputStream inputStream = new ByteArrayInputStream (baos.toByteArray ()))
-        {
-            final WaveFile wavFile = new WaveFile ();
-            wavFile.read (inputStream, true);
+        if (destinationFormat.isUpdateBroadcastAudioChunk ())
+            updateBroadcastAudioChunk (metadata, wavFile);
 
-            if (updateBroadcastAudioChunk)
-                updateBroadcastAudioChunk (metadata, wavFile);
+        final int unityNote = MathUtils.clamp (zone.getKeyRoot (), 0, 127);
+        if (destinationFormat.isUpdateInstrumentChunk ())
+            updateInstrumentChunk (zone, wavFile, unityNote);
 
-            final int unityNote = MathUtils.clamp (zone.getKeyRoot (), 0, 127);
-            if (updateInstrumentChunk)
-                updateInstrumentChunk (zone, wavFile, unityNote);
+        if (destinationFormat.isUpdateSampleChunk ())
+            updateSampleChunk (zone, wavFile, unityNote);
 
-            if (updateSampleChunk)
-                updateSampleChunk (zone, wavFile, unityNote);
+        if (destinationFormat.isRemoveJunkChunks ())
+            wavFile.removeChunks (RiffID.JUNK_ID, RiffID.JUNK2_ID, RiffID.FILLER_ID, RiffID.MD5_ID);
 
-            if (removeJunkChunks)
-            {
-                wavFile.removeChunks (RiffID.JUNK_ID, RiffID.JUNK2_ID, RiffID.FILLER_ID, RiffID.MD5_ID);
-            }
-
-            wavFile.write (outputStream);
-        }
-        catch (final ParseException ex)
-        {
-            throw new IOException (ex);
-        }
+        wavFile.write (outputStream);
     }
 
 
@@ -706,14 +750,16 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Adds options add or update certain WAV chunks.
      *
      * @param panel The panel to add the widgets
+     * @return The separator pane
      */
-    protected void addWavChunkOptions (final BoxPanel panel)
+    protected TitledSeparator addWavChunkOptions (final BoxPanel panel)
     {
-        panel.createSeparator ("@IDS_WAV_CHUNK_TITLE");
+        final TitledSeparator separator = panel.createSeparator ("@IDS_WAV_CHUNK_TITLE");
         this.addBroadcastAudioChunk = panel.createCheckBox ("@IDS_WAV_WRITE_BEXT_CHUNK");
         this.addInstrumentChunk = panel.createCheckBox ("@IDS_WAV_WRITE_INSTRUMENT_CHUNK");
         this.addSampleChunk = panel.createCheckBox ("@IDS_WAV_WRITE_SAMPLE_CHUNK");
         this.removeJunkChunks = panel.createCheckBox ("@IDS_WAV_CHUNK_REMOVE");
+        return separator;
     }
 
 
@@ -740,53 +786,20 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     public void saveWavChunkSettings (final BasicConfig configuration, final String prefix)
     {
-        configuration.setBoolean (prefix + WRITE_BROADCAST_AUDIO_CHUNK, this.shouldWriteBroadcastAudioChunk ());
-        configuration.setBoolean (prefix + WRITE_INSTRUMENT_CHUNK, this.shouldWriteInstrumentChunk ());
-        configuration.setBoolean (prefix + WRITE_SAMPLE_CHUNK, this.shouldWriteSampleChunk ());
-        configuration.setBoolean (prefix + REMOVE_JUNK_CHUNK, this.shouldRemoveJunkChunks ());
+        configuration.setBoolean (prefix + WRITE_BROADCAST_AUDIO_CHUNK, this.addBroadcastAudioChunk.isSelected ());
+        configuration.setBoolean (prefix + WRITE_INSTRUMENT_CHUNK, this.addInstrumentChunk.isSelected ());
+        configuration.setBoolean (prefix + WRITE_SAMPLE_CHUNK, this.addSampleChunk.isSelected ());
+        configuration.setBoolean (prefix + REMOVE_JUNK_CHUNK, this.removeJunkChunks.isSelected ());
     }
 
 
     /**
-     * Check if the broadcast audio chunk should be written.
+     * Get the chunk settings.
      *
-     * @return True if enabled
+     * @return The chunk settings
      */
-    protected boolean shouldWriteBroadcastAudioChunk ()
+    protected DestinationAudioFormat getChunkSettings ()
     {
-        return this.addBroadcastAudioChunk.isSelected ();
-    }
-
-
-    /**
-     * Check if the instrument chunk should be written.
-     *
-     * @return True if enabled
-     */
-    protected boolean shouldWriteInstrumentChunk ()
-    {
-        return this.addInstrumentChunk.isSelected ();
-    }
-
-
-    /**
-     * Check if the sample chunk should be written.
-     *
-     * @return True if enabled
-     */
-    protected boolean shouldWriteSampleChunk ()
-    {
-        return this.addSampleChunk.isSelected ();
-    }
-
-
-    /**
-     * Check if some junk chunks should be removed.
-     *
-     * @return True if enabled
-     */
-    protected boolean shouldRemoveJunkChunks ()
-    {
-        return this.removeJunkChunks.isSelected ();
+        return new DestinationAudioFormat (this.addBroadcastAudioChunk.isSelected (), this.addInstrumentChunk.isSelected (), this.addSampleChunk.isSelected (), this.removeJunkChunks.isSelected ());
     }
 }

@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -15,6 +16,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 
 import org.w3c.dom.Document;
@@ -22,6 +24,7 @@ import org.w3c.dom.Element;
 
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 
@@ -45,9 +48,11 @@ import java.util.Optional;
 public class Music1010Creator extends AbstractCreator
 {
     private static final String              MUSIC_1010_INTERPOLATION_QUALITY = "Music1010InterpolationQuality";
+    private static final String              MUSIC_1010_RESAMPLE_TO_24_48     = "Music1010ResampleTo2448";
 
     private ToggleGroup                      interpolationQualityGroup;
     private boolean                          isInterpolationQualityHigh;
+    private CheckBox                         resampleTo2448;
 
     private static final Map<String, String> EMPTY_PARAM_ATTRIBUTES           = new HashMap<> ();
     private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES     = new HashMap<> ();
@@ -172,7 +177,10 @@ public class Music1010Creator extends AbstractCreator
         final RadioButton order2 = panel.createRadioButton ("@IDS_1010_MUSIC_INTERPOLATION_QUALITY_HIGH");
         order2.setToggleGroup (this.interpolationQualityGroup);
 
-        this.addWavChunkOptions (panel);
+        this.resampleTo2448 = panel.createCheckBox ("@IDS_1010_MUSIC_CONVERT_TO_24_48");
+
+        final TitledSeparator separator = this.addWavChunkOptions (panel);
+        separator.getStyleClass ().add ("titled-separator-pane");
 
         return panel.getPane ();
     }
@@ -183,6 +191,7 @@ public class Music1010Creator extends AbstractCreator
     public void loadSettings (final BasicConfig config)
     {
         this.interpolationQualityGroup.selectToggle (this.interpolationQualityGroup.getToggles ().get (config.getBoolean (MUSIC_1010_INTERPOLATION_QUALITY, false) ? 1 : 0));
+        this.resampleTo2448.setSelected (config.getBoolean (MUSIC_1010_RESAMPLE_TO_24_48, true));
 
         this.loadWavChunkSettings (config, "Music1010");
     }
@@ -193,6 +202,7 @@ public class Music1010Creator extends AbstractCreator
     public void saveSettings (final BasicConfig config)
     {
         config.setBoolean (MUSIC_1010_INTERPOLATION_QUALITY, this.isHighInterpolationQuality ());
+        config.setBoolean (MUSIC_1010_RESAMPLE_TO_24_48, this.resampleTo2448.isSelected ());
 
         this.saveWavChunkSettings (config, "Music1010");
     }
@@ -245,7 +255,19 @@ public class Music1010Creator extends AbstractCreator
         }
 
         // Store all samples
-        this.writeSamples (destinationFolder, multisampleSource, this.shouldWriteBroadcastAudioChunk (), this.shouldWriteInstrumentChunk (), this.shouldWriteSampleChunk (), this.shouldRemoveJunkChunks ());
+        final DestinationAudioFormat destinationAudioFormat = this.getChunkSettings ();
+        if (this.resampleTo2448.isSelected ())
+        {
+            this.recalculateSamplePositions (multisampleSource, 48000);
+
+            destinationAudioFormat.setBitResolutions (new int []
+            {
+                24
+            });
+            destinationAudioFormat.setMaxSampleRate (48000);
+            destinationAudioFormat.setUpSample (true);
+        }
+        this.writeSamples (destinationFolder, multisampleSource, destinationAudioFormat);
     }
 
 

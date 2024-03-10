@@ -122,7 +122,7 @@ public class Kontakt2Header
     private boolean                isFourDotTwo;
     private int                    patchType;
     private String                 kontaktVersion;
-    private final byte []                kontaktVersionBuffer      = new byte [4];
+    private final byte []          kontaktVersionBuffer      = new byte [4];
     private Date                   creation;
     private String                 libraryID;
     private int                    zones;
@@ -131,7 +131,7 @@ public class Kontakt2Header
     private int                    sampleSize;
     private boolean                isMonolith;
     private String                 minSupportedVersion;
-    private final byte []                minSupportedVersionBuffer = new byte [4];
+    private final byte []          minSupportedVersionBuffer = new byte [4];
     private int                    iconID;
     private String                 author                    = "";
     private int                    category1;

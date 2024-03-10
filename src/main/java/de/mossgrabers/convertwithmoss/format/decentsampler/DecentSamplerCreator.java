@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -18,6 +19,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 
 import org.w3c.dom.Document;
@@ -49,23 +51,24 @@ import java.util.zip.ZipOutputStream;
  */
 public class DecentSamplerCreator extends AbstractCreator
 {
-    private static final String MOD_AMP                   = "amp";
-    private static final String FOLDER_POSTFIX            = "Samples";
-    private boolean             isOutputFormatLibrary;
+    private static final DestinationAudioFormat DESTINATION_FORMAT        = new DestinationAudioFormat (true, false, false, false);
+    private static final String                 MOD_AMP                   = "amp";
+    private static final String                 FOLDER_POSTFIX            = "Samples";
+    private boolean                             isOutputFormatLibrary;
 
-    private static final String DS_OUTPUT_FORMAT_LIBRARY  = "DsOutputFormatPreset";
-    private static final String DS_OUTPUT_MAKE_MONOPHONIC = "DsOutputMakeMonophonic";
-    private static final String DS_OUTPUT_ADD_ENVELOPE    = "DsOutputAddEnvelope";
-    private static final String DS_OUTPUT_ADD_FILTER      = "DsOutputAddFilter";
-    private static final String DS_OUTPUT_ADD_REVERB      = "DsOutputAddReverb";
+    private static final String                 DS_OUTPUT_FORMAT_LIBRARY  = "DsOutputFormatPreset";
+    private static final String                 DS_OUTPUT_MAKE_MONOPHONIC = "DsOutputMakeMonophonic";
+    private static final String                 DS_OUTPUT_ADD_ENVELOPE    = "DsOutputAddEnvelope";
+    private static final String                 DS_OUTPUT_ADD_FILTER      = "DsOutputAddFilter";
+    private static final String                 DS_OUTPUT_ADD_REVERB      = "DsOutputAddReverb";
 
-    private ToggleGroup         outputFormatGroup;
-    private CheckBox            addEnvelopeBox;
-    private CheckBox            addFilterBox;
-    private CheckBox            addReverbBox;
-    private CheckBox            makeMonophonicBox;
+    private ToggleGroup                         outputFormatGroup;
+    private CheckBox                            addEnvelopeBox;
+    private CheckBox                            addFilterBox;
+    private CheckBox                            addReverbBox;
+    private CheckBox                            makeMonophonicBox;
 
-    private int                 seqPosition               = 1;
+    private int                                 seqPosition               = 1;
 
 
     /**
@@ -95,7 +98,8 @@ public class DecentSamplerCreator extends AbstractCreator
 
         this.makeMonophonicBox = panel.createCheckBox ("@IDS_DS_MAKE_MONOPHONIC");
 
-        panel.createSeparator ("@IDS_DS_USER_INTERFACE");
+        final TitledSeparator separator = panel.createSeparator ("@IDS_DS_USER_INTERFACE");
+        separator.getStyleClass ().add ("titled-separator-pane");
 
         this.addEnvelopeBox = panel.createCheckBox ("@IDS_DS_ADD_ENVELOPE");
         this.addFilterBox = panel.createCheckBox ("@IDS_DS_ADD_FILTER");
@@ -180,7 +184,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeFolderName);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource, true, false, false, false);
+        this.writeSamples (sampleFolder, multisampleSource, DESTINATION_FORMAT);
     }
 
 

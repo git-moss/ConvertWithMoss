@@ -292,7 +292,7 @@ public class KMPFile
         this.writeNameChunk (out);
         this.writeParameterChunk3 (out);
 
-        this.writeksfZones (folder);
+        this.writeKSFZones (folder);
     }
 
 
@@ -399,7 +399,7 @@ public class KMPFile
     }
 
 
-    private void writeksfZones (final File folder) throws IOException
+    private void writeKSFZones (final File folder) throws IOException
     {
         final List<ISampleZone> sampleMetadata = this.group.getSampleZones ();
         for (int i = 0; i < sampleMetadata.size (); i++)

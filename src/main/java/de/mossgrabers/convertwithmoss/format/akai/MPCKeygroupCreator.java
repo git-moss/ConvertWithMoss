@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -42,6 +43,9 @@ import java.util.Optional;
  */
 public class MPCKeygroupCreator extends AbstractCreator
 {
+    private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (true, false, true, true);
+
+
     private enum SamplePlay
     {
         ONE_SHOT,
@@ -89,7 +93,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         }
 
         // Store all samples - WAV ending needs to be upper case!
-        this.writeSamples (sampleFolder, multisampleSource, true, false, true, true, ".WAV");
+        this.writeSamples (sampleFolder, multisampleSource, DESTINATION_FORMAT, ".WAV");
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }

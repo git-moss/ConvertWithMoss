@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.kmp;
 
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -18,10 +19,6 @@ import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -37,26 +34,32 @@ import java.util.List;
  */
 public class KSFFile
 {
-    /** ID for KSF Sample parameter chunk. */
-    private static final String KSF_SAMPLE_PARAM_ID         = "SMP1";
-    /** ID for KSF Sample data chunk. */
-    private static final String KSF_SAMPLE_DATA_ID          = "SMD1";
-    /** ID for KSF Sample number chunk. */
-    private static final String KSF_SAMPLE_NUMBER_ID        = "SNO1";
-    /** ID for KSF Sample name chunk. */
-    private static final String KSF_SAMPLE_NAME_ID          = "NAME";
-    /** ID for KSF Sample file name chunk. */
-    private static final String KSF_SAMPLE_FILENAME_ID      = "SMF1";
-    /** ID for KSF divided sample parameter chunk. */
-    private static final String KSF_SAMPLE_DIVIDED_PARAM_ID = "SPD1";
-    /** ID for KSF divided sample data chunk. */
-    private static final String KSF_SAMPLE_DIVIDED_DATA_ID  = "SDD1";
+    private static final DestinationAudioFormat DESTINATION_FORMAT          = new DestinationAudioFormat (new int []
+    {
+        8,
+        16
+    }, 44100, false);
 
-    private static final int    KSF_SAMPLE_PARAM_SIZE       = 32;
-    private static final int    KSF_SAMPLE_DATA_SIZE        = 12;
-    private static final int    KSF_SAMPLE_NUMBER_SIZE      = 4;
-    private static final int    KSF_SAMPLE_NAME_SIZE        = 24;
-    private static final int    KSF_SAMPLE_FILENAME_SIZE    = 12;
+    /** ID for KSF Sample parameter chunk. */
+    private static final String                 KSF_SAMPLE_PARAM_ID         = "SMP1";
+    /** ID for KSF Sample data chunk. */
+    private static final String                 KSF_SAMPLE_DATA_ID          = "SMD1";
+    /** ID for KSF Sample number chunk. */
+    private static final String                 KSF_SAMPLE_NUMBER_ID        = "SNO1";
+    /** ID for KSF Sample name chunk. */
+    private static final String                 KSF_SAMPLE_NAME_ID          = "NAME";
+    /** ID for KSF Sample file name chunk. */
+    private static final String                 KSF_SAMPLE_FILENAME_ID      = "SMF1";
+    /** ID for KSF divided sample parameter chunk. */
+    private static final String                 KSF_SAMPLE_DIVIDED_PARAM_ID = "SPD1";
+    /** ID for KSF divided sample data chunk. */
+    private static final String                 KSF_SAMPLE_DIVIDED_DATA_ID  = "SDD1";
+
+    private static final int                    KSF_SAMPLE_PARAM_SIZE       = 32;
+    private static final int                    KSF_SAMPLE_DATA_SIZE        = 12;
+    private static final int                    KSF_SAMPLE_NUMBER_SIZE      = 4;
+    private static final int                    KSF_SAMPLE_NAME_SIZE        = 24;
+    private static final int                    KSF_SAMPLE_FILENAME_SIZE    = 12;
 
 
     /**
@@ -222,31 +225,14 @@ public class KSFFile
 
         out.write (KSF_SAMPLE_DATA_ID.getBytes ());
 
-        final ByteArrayOutputStream dataOut = new ByteArrayOutputStream ();
-        sampleZone.getSampleData ().writeSample (dataOut);
-
-        // Convert the file to be a 16 bit WAV file
-        final WaveFile waveFile = new WaveFile ();
-        try
-        {
-            // Convert the input sample to match the support bit resolutions and maximum sample rate
-            waveFile.read (new ByteArrayInputStream (AudioFileUtils.convertToFormat (dataOut.toByteArray (), new int []
-            {
-                8,
-                16
-            }, 44100)), true);
-        }
-        catch (final UnsupportedAudioFileException ex)
-        {
-            throw new IOException (ex);
-        }
-
+        // Convert the file to be a 8 or 16 bit WAV file with a maximum of 44.1kHz
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleZone.getSampleData (), DESTINATION_FORMAT);
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
         final DataChunk dataChunk = waveFile.getDataChunk ();
         final byte [] data = dataChunk.getData ();
         final int numSamples = dataChunk.calculateLength (formatChunk);
-        out.writeInt (KSF_SAMPLE_DATA_SIZE + data.length);
 
+        out.writeInt (KSF_SAMPLE_DATA_SIZE + data.length);
         out.writeInt (formatChunk.getSampleRate ());
 
         // Attributes byte combines several settings
