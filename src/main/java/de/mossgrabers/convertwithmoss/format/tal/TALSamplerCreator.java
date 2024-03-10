@@ -8,6 +8,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -38,6 +39,9 @@ import java.util.Optional;
  */
 public class TALSamplerCreator extends AbstractCreator
 {
+    private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (true, false, false, false);
+
+
     /**
      * Constructor.
      *
@@ -95,7 +99,7 @@ public class TALSamplerCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeFolderName);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource, true, false, false, false);
+        this.writeSamples (sampleFolder, multisampleSource, DESTINATION_FORMAT);
     }
 
 

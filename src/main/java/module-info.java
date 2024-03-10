@@ -13,6 +13,7 @@ module de.mossgrabers.convertwithmoss
     requires transitive java.xml;
     requires transitive de.mossgrabers.uitools;
     requires javafx.graphics;
+    requires com.github.trilarion.sound;
 
 
     exports de.mossgrabers.convertwithmoss.ui;

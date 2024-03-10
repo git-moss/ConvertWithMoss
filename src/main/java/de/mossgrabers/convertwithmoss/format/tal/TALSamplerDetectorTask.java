@@ -20,6 +20,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -54,10 +55,11 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
      * @param notifier The notifier
      * @param consumer The consumer that handles the detected multisample sources
      * @param sourceFolder The top source folder for the detection
+     * @param metadata Additional metadata configuration parameters
      */
-    protected TALSamplerDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
+    protected TALSamplerDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
     {
-        super (notifier, consumer, sourceFolder, null, ".talsmpl");
+        super (notifier, consumer, sourceFolder, metadata, ".talsmpl");
     }
 
 

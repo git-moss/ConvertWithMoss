@@ -42,6 +42,8 @@ public class KMPCreator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        this.recalculateSamplePositions (multisampleSource, 44100);
+
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
         // Create a sub-folder for the KMP files (one for each group) and all samples

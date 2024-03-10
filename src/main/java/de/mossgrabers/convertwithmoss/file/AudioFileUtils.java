@@ -5,7 +5,9 @@
 package de.mossgrabers.convertwithmoss.file;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
@@ -25,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -196,49 +199,156 @@ public final class AudioFileUtils
 
 
     /**
-     * Write the audio file from the input stream to the output stream. The resulting streamed file
-     * has a maximum bit resolution and sample rate of the given parameters.
+     * Converts the sample data contained in the given object into a WAV file. The resulting WAV
+     * file is converted to match the given destination format.
      *
-     * @param inputData The data of the input file
-     * @param bitResolutions The maximum bit resolution to convert to
-     * @param maxSampleRate The maximum sample rate to convert to
-     * @return The data of the output file
+     * @param sampleData The input sample data
+     * @param destinationFormat The destination WAV format configuration
+     * @return The data of the output file parse into a WaveFile object
      * @throws IOException Could not read or write
-     * @throws UnsupportedAudioFileException The format of the audio file is not supported
      */
-    public static byte [] convertToFormat (final byte [] inputData, final int [] bitResolutions, final int maxSampleRate) throws IOException, UnsupportedAudioFileException
+    public static WaveFile convertToWav (final ISampleData sampleData, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ();
-        convertToFormat (new ByteArrayInputStream (inputData), outputStream, bitResolutions, maxSampleRate);
-        return outputStream.toByteArray ();
+        try
+        {
+            final WaveFile waveFile = new WaveFile ();
+            waveFile.read (new ByteArrayInputStream (convertToWavData (sampleData, destinationFormat)), true);
+            return waveFile;
+        }
+        catch (final ParseException ex)
+        {
+            throw new IOException (ex);
+        }
     }
 
 
     /**
-     * Write the audio file from the input stream to the output stream. The resulting file has a
+     * Converts the sample data contained in the given object into a WAV file. The resulting WAV
+     * file is converted to match the given destination format. The WAV file is returned as bytes.
+     *
+     * @param sampleData The input sample data
+     * @param destinationFormat The destination WAV format configuration
+     * @return The data of the output file
+     * @throws IOException Could not read or write
+     */
+    public static byte [] convertToWavData (final ISampleData sampleData, final DestinationAudioFormat destinationFormat) throws IOException
+    {
+        final ByteArrayOutputStream dataOut = new ByteArrayOutputStream ();
+        sampleData.writeSample (dataOut);
+        return convertToWav (dataOut.toByteArray (), destinationFormat);
+    }
+
+
+    /**
+     * Converts the input data to the output data. Having the data in-memory is important because
+     * the audio input stream needs to get the length of data! The resulting streamed file has a
      * maximum bit resolution and sample rate of the given parameters.
      *
-     * @param inputStream From where to read the input file
-     * @param outputStream Where to stream the output file
-     * @param bitResolutions The maximum bit resolution to convert to
-     * @param maxSampleRate The maximum sample rate to convert to
+     * @param inputData The data of the input file
+     * @param destinationFormat The destination WAV format configuration
+     * @return The data of the output file
      * @throws IOException Could not read or write
-     * @throws UnsupportedAudioFileException The format of the audio file is not supported
      */
-    public static void convertToFormat (final InputStream inputStream, final OutputStream outputStream, final int [] bitResolutions, final int maxSampleRate) throws IOException, UnsupportedAudioFileException
+    private static byte [] convertToWav (final byte [] inputData, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputStream))
+        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (new ByteArrayInputStream (inputData)))
         {
             final AudioFormat audioFormat = audioInputStream.getFormat ();
-            final int bitResolution = getMatchingBitResolution (audioFormat.getSampleSizeInBits (), bitResolutions);
+            final int bitResolution = getMatchingBitResolution (audioFormat.getSampleSizeInBits (), destinationFormat.getBitResolutions ());
+
             int sampleRate = (int) audioFormat.getSampleRate ();
-            if (sampleRate > maxSampleRate)
+            final int maxSampleRate = destinationFormat.getMaxSampleRate ();
+            if (sampleRate > maxSampleRate || destinationFormat.isUpSample ())
                 sampleRate = maxSampleRate;
+
             final AudioFormat newAudioFormat = new AudioFormat (sampleRate, bitResolution, audioFormat.getChannels (), audioFormat.getEncoding () == Encoding.PCM_SIGNED, audioFormat.isBigEndian ());
+            File tempFile = null;
             try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (newAudioFormat, audioInputStream))
             {
-                AudioSystem.write (convertedAudioInputStream, AudioFileFormat.Type.WAVE, outputStream);
+                // Cannot write to a stream since the length is not known and therefore the WAV
+                // header cannot be written and write method crashes
+                tempFile = File.createTempFile ("wav", "tmp");
+                AudioSystem.write (convertedAudioInputStream, AudioFileFormat.Type.WAVE, tempFile);
+                return Files.readAllBytes (tempFile.toPath ());
             }
+            finally
+            {
+                if (tempFile != null)
+                    tempFile.delete ();
+            }
+        }
+        catch (final UnsupportedAudioFileException ex)
+        {
+            throw new IOException (ex);
+        }
+    }
+
+
+    /**
+     * De-compresses the input file and writes audio data in WAV format to the given output stream.
+     *
+     * @param inputFile The input file to convert
+     * @param outputStream The output stream to write to
+     * @throws IOException Could not convert or write the file
+     */
+    public static void decompressToWav (final File inputFile, final OutputStream outputStream) throws IOException
+    {
+        // The conversion needs to be a 2 step process to get the length of the data
+        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputFile))
+        {
+            final AudioFormat sourceFormat = audioInputStream.getFormat ();
+            final int channels = sourceFormat.getChannels ();
+            int sampleSizeInBits = sourceFormat.getSampleSizeInBits ();
+            if (sampleSizeInBits < 0)
+                sampleSizeInBits = 16;
+            final AudioFormat convertFormat = new AudioFormat (sourceFormat.getSampleRate (), sampleSizeInBits, channels, true, false);
+
+            // Step 1 - First convert to raw sample data
+            final byte [] audioDataBytes;
+            try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (convertFormat, audioInputStream))
+            {
+                audioDataBytes = convertedAudioInputStream.readAllBytes ();
+            }
+
+            // Step 2 - Convert from raw data to WAV format
+            final int numFrames = audioDataBytes.length / (convertFormat.getFrameSize () * channels);
+            final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream (audioDataBytes);
+            try (final AudioInputStream wavAudioInputStream = new AudioInputStream (byteArrayInputStream, convertFormat, numFrames))
+            {
+                AudioSystem.write (wavAudioInputStream, AudioFileFormat.Type.WAVE, outputStream);
+            }
+        }
+        catch (final UnsupportedAudioFileException ex)
+        {
+            throw new IOException (ex);
+        }
+    }
+
+
+    /**
+     * Compresses the given sample data contained in the sampleData object into a specific file
+     * format (e.g. FLAC).
+     *
+     * @param sampleData The sample data
+     * @param targetFormat The target format
+     * @return The byte contents of the file
+     * @throws IOException Could not read/write
+     * @throws UnsupportedAudioFileException The target audio format is not supported
+     */
+    public static byte [] compressToFLAC (final ISampleData sampleData, final AudioFileFormat.Type targetFormat) throws IOException, UnsupportedAudioFileException
+    {
+        final byte [] wavData = convertToWavData (sampleData, new DestinationAudioFormat ());
+
+        // Create a ByteArrayInputStream from the input data array
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream (wavData); AudioInputStream ais = AudioSystem.getAudioInputStream (bais))
+        {
+            final AudioFormat sourceFormat = ais.getFormat ();
+            final AudioFormat targetAudioFormat = new AudioFormat (sourceFormat.getSampleRate (), sourceFormat.getSampleSizeInBits (), sourceFormat.getChannels (), true, sourceFormat.isBigEndian ());
+            final AudioInputStream convertedAIS = AudioSystem.getAudioInputStream (targetAudioFormat, ais);
+
+            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ();
+            AudioSystem.write (convertedAIS, targetFormat, outputStream);
+            return outputStream.toByteArray ();
         }
     }
 
@@ -292,8 +402,19 @@ public final class AudioFileUtils
     }
 
 
+    /**
+     * Checks for a matching bit resolution. If the given resolution is among the given resolutions
+     * it is returned. If it is not among them the highest resolution in the array is returned.
+     *
+     * @param bitResolution The resolution to check
+     * @param bitResolutions The supported resolutions
+     * @return The matching resolution
+     */
     private static int getMatchingBitResolution (final int bitResolution, final int [] bitResolutions)
     {
+        if (bitResolutions == null)
+            return bitResolution;
+
         int maxBitResolution = 0;
         for (final int bitResolution2: bitResolutions)
         {

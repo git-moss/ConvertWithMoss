@@ -89,6 +89,11 @@
     -fx-padding: 0.0 10.0 0.0 0.0;
 }
 
+.titled-separator-pane
+{
+    -fx-padding: 20.0 0.0 0.0 0.0;
+}
+
 .flat-button {
     -fx-background-color: transparent;
     -fx-padding: 0.0;

@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.ui;
 
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 
 import javafx.scene.control.CheckBox;
@@ -28,6 +29,7 @@ public class MetadataPane implements IMetadataConfig
     private CheckBox            preferFolderNameCheckBox;
     private TextField           defaultCreatorField;
     private TextField           creatorsField;
+    private TitledSeparator     separator;
 
 
     /**
@@ -48,8 +50,7 @@ public class MetadataPane implements IMetadataConfig
      */
     public void addTo (final BoxPanel panel)
     {
-        panel.createSeparator ("@IDS_METADATA_HEADER");
-
+        this.separator = panel.createSeparator ("@IDS_METADATA_HEADER");
         this.preferFolderNameCheckBox = panel.createCheckBox ("@IDS_METADATA_PREFER_FOLDER");
         this.defaultCreatorField = panel.createField ("@IDS_METADATA_DEFAULT_CREATOR");
         this.creatorsField = panel.createField ("@IDS_METADATA_CREATORS", "@IDS_NOTIFY_COMMA", -1);
@@ -103,5 +104,16 @@ public class MetadataPane implements IMetadataConfig
     public String [] getCreatorTags ()
     {
         return StringUtils.splitByComma (this.creatorsField.getText ());
+    }
+
+
+    /**
+     * Get the separator.
+     *
+     * @return The separator
+     */
+    public TitledSeparator getSeparator ()
+    {
+        return this.separator;
     }
 }

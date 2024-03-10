@@ -11,6 +11,7 @@ import de.mossgrabers.convertwithmoss.ui.MetadataPane;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 
 import javafx.geometry.Orientation;
@@ -186,11 +187,13 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
         // Metadata
 
         this.metadataPane.addTo (panel);
+        this.metadataPane.getSeparator ().getStyleClass ().add ("titled-separator-pane");
 
         ////////////////////////////////////////////////////////////
         // Options
 
-        panel.createSeparator ("@IDS_WAV_OPTIONS");
+        final TitledSeparator separator = panel.createSeparator ("@IDS_WAV_OPTIONS");
+        separator.getStyleClass ().add ("titled-separator-pane");
 
         this.crossfadeNotesField = panel.createPositiveIntegerField ("@IDS_WAV_CROSSFADE_NOTES");
         this.crossfadeVelocitiesField = panel.createPositiveIntegerField ("@IDS_WAV_CROSSFADE_VELOCITIES");

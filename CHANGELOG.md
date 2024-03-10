@@ -1,5 +1,21 @@
 # Changes
 
+## 7.5.0
+
+* All formats
+  * New: Implemented workaround to accept AIFF files with an ending of 'aiff' (instead of only 'aif').
+* 1010music format - Writing
+  * New: Added option to convert samples to 24bit/48 kHz which saves a bit on processor power on the 1010music devices.
+* Korg KMP - Writing
+  * Fixed: Loop points were not correct when the source sample was not 44.1kHz.
+* SFZ - Reading
+  * New: Added support for SFZ files which use sample files in OGG or FLAC format.
+* SFZ - Writing
+  * New: Added option to create FLAC samples.
+  * New: Added options to write instrument, sample and broadcast audio chunks.
+* TAL Sampler - Reading
+  * Fixed: Metadata configuration widgets were missing.
+
 ## 7.4.0
 
 * Added support for 1010music format (blackbox, tangerine, bitbox).

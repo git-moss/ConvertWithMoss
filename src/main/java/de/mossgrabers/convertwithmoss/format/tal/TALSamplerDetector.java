@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.tal;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadataPane;
 
 import java.io.File;
 import java.util.function.Consumer;
@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  *
  * @author Jürgen Moßgraber
  */
-public class TALSamplerDetector extends AbstractDetector<TALSamplerDetectorTask>
+public class TALSamplerDetector extends AbstractDetectorWithMetadataPane<TALSamplerDetectorTask>
 {
     /**
      * Constructor.
@@ -26,7 +26,7 @@ public class TALSamplerDetector extends AbstractDetector<TALSamplerDetectorTask>
      */
     public TALSamplerDetector (final INotifier notifier)
     {
-        super ("TAL Sampler", notifier);
+        super ("TAL Sampler", notifier, "TALSampler");
     }
 
 
@@ -34,6 +34,6 @@ public class TALSamplerDetector extends AbstractDetector<TALSamplerDetectorTask>
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.startDetection (new TALSamplerDetectorTask (this.notifier, consumer, folder));
+        this.startDetection (new TALSamplerDetectorTask (this.notifier, consumer, folder, this.metadataPane));
     }
 }
