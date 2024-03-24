@@ -4,12 +4,12 @@
 
 package de.mossgrabers.convertwithmoss.format.korgmultisample;
 
+import java.io.File;
+import java.util.function.Consumer;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-
-import java.io.File;
-import java.util.function.Consumer;
 
 
 /**

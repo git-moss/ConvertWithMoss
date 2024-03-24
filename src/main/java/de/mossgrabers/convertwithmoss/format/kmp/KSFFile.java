@@ -4,6 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.format.kmp;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
+
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -18,13 +25,6 @@ import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.List;
 
 
 /**
@@ -260,14 +260,12 @@ public class KSFFile
         if (bits == 8)
             out.write (data);
         else
-        {
             // Flip bytes
             for (int i = 0; i < data.length; i += 2)
             {
                 out.write (data[i + 1]);
                 out.write (data[i]);
             }
-        }
 
         //////////////////////////////////////
         // KSF_SAMPLE_NAME_ID

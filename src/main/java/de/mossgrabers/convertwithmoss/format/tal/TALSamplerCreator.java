@@ -4,6 +4,17 @@
 
 package de.mossgrabers.convertwithmoss.format.tal;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -18,17 +29,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -177,10 +177,8 @@ public class TALSamplerCreator extends AbstractCreator
 
         final double gain = zone.getGain ();
         if (gain != 0)
-        {
             // Not sure if this is correct or if proper dB conversion would need to be applied...
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, convertGain (gain), 6);
-        }
         XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.PANORAMA, (zone.getPanorama () + 1.0) / 2.0, 2);
 
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.START_SAMPLE, Math.max (0, zone.getStart ()));
@@ -369,10 +367,8 @@ public class TALSamplerCreator extends AbstractCreator
     {
         final List<IGroup> optimizedGroups = new ArrayList<> ();
         for (final IGroup group: groups)
-        {
             for (final ISampleZone zone: group.getSampleZones ())
-                this.findMatchingGroup (optimizedGroups, zone).addSampleMetadata (zone);
-        }
+                this.findMatchingGroup (optimizedGroups, zone).addSampleZone (zone);
         return optimizedGroups;
     }
 
@@ -389,10 +385,8 @@ public class TALSamplerCreator extends AbstractCreator
     private IGroup findMatchingGroup (final List<IGroup> optimizedGroups, final ISampleZone zone)
     {
         for (final IGroup optGroup: optimizedGroups)
-        {
             if (!hasOverlappingSample (optGroup, zone))
                 return optGroup;
-        }
         if (optimizedGroups.size () < 4)
         {
             final IGroup group = new DefaultGroup ();

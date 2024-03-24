@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.tools.StringUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**

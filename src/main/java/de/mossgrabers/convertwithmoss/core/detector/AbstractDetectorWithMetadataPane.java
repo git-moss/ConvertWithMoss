@@ -8,7 +8,6 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.ui.MetadataPane;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;

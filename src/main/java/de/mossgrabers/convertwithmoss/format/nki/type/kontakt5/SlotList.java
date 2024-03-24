@@ -46,7 +46,6 @@ public class SlotList
         {
             final BitSet slotFlags = BitSet.valueOf (in.readNBytes (8));
             for (int i = 0; i < 64; i++)
-            {
                 if (slotFlags.get (i))
                 {
                     final PresetChunk programContainerChunk = new PresetChunk ();
@@ -55,12 +54,9 @@ public class SlotList
                         continue;
 
                     for (final PresetChunk child: programContainerChunk.getChildren ())
-                    {
                         if (child.getId () == PresetChunkID.PROGRAM_LIST)
                             programs.add (parseProgramList (child, filePaths));
-                    }
                 }
-            }
         }
 
         return programs;

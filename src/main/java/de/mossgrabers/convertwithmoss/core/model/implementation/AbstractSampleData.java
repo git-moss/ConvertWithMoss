@@ -4,10 +4,10 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import java.io.IOException;
+
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
-
-import java.io.IOException;
 
 
 /**

@@ -1,11 +1,11 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
@@ -26,10 +26,8 @@ public class AuthorizationChunkData extends AbstractChunkData
 
         final long hasPID = StreamUtils.readUnsigned32 (in, false);
         if (hasPID != 1)
-        {
             // Only found '2' so far
             return;
-        }
 
         // Unknown - number of license blocks ?!
         final long numLicenseBlock = StreamUtils.readUnsigned32 (in, false);

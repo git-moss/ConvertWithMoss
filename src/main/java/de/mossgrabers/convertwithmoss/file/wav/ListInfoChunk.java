@@ -4,15 +4,15 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.TreeMap;
+
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -56,7 +56,6 @@ public class ListInfoChunk extends WavChunk
     public byte [] getData ()
     {
         if (this.isDirty)
-        {
             try (final ByteArrayOutputStream out = new ByteArrayOutputStream ())
             {
                 out.write ("INFO".getBytes ());
@@ -80,7 +79,6 @@ public class ListInfoChunk extends WavChunk
             {
                 this.isDirty = false;
             }
-        }
 
         return this.chunk.getData ();
     }

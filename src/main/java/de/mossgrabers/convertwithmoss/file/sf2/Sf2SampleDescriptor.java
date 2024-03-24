@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.file.sf2;
 
+import java.nio.charset.StandardCharsets;
+
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.tools.ui.Functions;
-
-import java.nio.charset.StandardCharsets;
 
 
 /**

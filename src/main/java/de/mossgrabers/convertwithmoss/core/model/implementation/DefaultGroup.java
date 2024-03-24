@@ -4,12 +4,12 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -89,7 +89,7 @@ public class DefaultGroup implements IGroup
 
     /** {@inheritDoc} */
     @Override
-    public void addSampleMetadata (final ISampleZone sample)
+    public void addSampleZone (final ISampleZone sample)
     {
         this.samples.add (sample);
     }

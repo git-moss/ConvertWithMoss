@@ -4,6 +4,17 @@
 
 package de.mossgrabers.convertwithmoss.format.korgmultisample;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.function.Consumer;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
@@ -20,17 +31,6 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
-
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.function.Consumer;
 
 
 /**
@@ -91,12 +91,12 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
      */
     private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws FormatException, IOException
     {
-        readHeaders (in);
+        readHeader (in);
 
         // The version number, not always present
         if (in.read () == 0x1A)
         {
-            readAscii (in);
+            StreamUtils.readWithLengthAscii (in);
             in.read ();
         }
 
@@ -108,7 +108,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
         checkAscii (in);
 
-        final String name = readAscii (in);
+        final String name = StreamUtils.readWithLengthAscii (in);
 
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
@@ -122,23 +122,22 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
         int id;
         while ((id = in.read ()) != -1)
-        {
             switch (id)
             {
                 case KorgmultisampleTag.ID_AUTHOR:
-                    metadata.setCreator (readAscii (in));
+                    metadata.setCreator (StreamUtils.readWithLengthAscii (in));
                     break;
 
                 case KorgmultisampleTag.ID_CATEGORY:
-                    metadata.setCategory (readAscii (in));
+                    metadata.setCategory (StreamUtils.readWithLengthAscii (in));
                     break;
 
                 case KorgmultisampleTag.ID_COMMENT:
-                    metadata.setDescription (readAscii (in));
+                    metadata.setDescription (StreamUtils.readWithLengthAscii (in));
                     break;
 
                 case KorgmultisampleTag.ID_SAMPLE:
-                    group.addSampleMetadata (this.readSample (in));
+                    group.addSampleZone (this.readSample (in));
                     break;
 
                 case KorgmultisampleTag.ID_UUID:
@@ -149,7 +148,6 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                 default:
                     throw new FormatException (Integer.toHexString (id));
             }
-        }
 
         final String n = multisampleSource.getName ();
         if (n == null || n.isBlank () || "Empty".equals (n))
@@ -167,34 +165,34 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
      * @throws IOException Could not read
      * @throws FormatException Found unexpected format of the file
      */
-    private static void readHeaders (final InputStream in) throws IOException, FormatException
+    private static void readHeader (final InputStream in) throws IOException, FormatException
     {
         final byte [] headerTag = in.readNBytes (4);
-        checkTag (KorgmultisampleTag.TAG_KORG, headerTag);
+        StreamUtils.checkTag (KorgmultisampleTag.TAG_KORG, headerTag);
 
         // Ignore rest of the header
         in.readNBytes (8);
 
         checkAscii (in);
-        final String fileInfoTag = readAscii (in);
-        checkTag (KorgmultisampleTag.TAG_FILE_INFO, fileInfoTag);
+        final String fileInfoTag = StreamUtils.readWithLengthAscii (in);
+        StreamUtils.checkTag (KorgmultisampleTag.TAG_FILE_INFO, fileInfoTag);
         // Ignore file info data
         in.readNBytes (2);
 
         checkAscii (in);
-        final String multiSampleTag = readAscii (in);
-        checkTag (KorgmultisampleTag.TAG_MULTISAMPLE, multiSampleTag);
+        final String multiSampleTag = StreamUtils.readWithLengthAscii (in);
+        StreamUtils.checkTag (KorgmultisampleTag.TAG_MULTISAMPLE, multiSampleTag);
         // Ignore multisample header
         in.readNBytes (6);
 
         checkAscii (in);
-        final String singleItemTag = readAscii (in);
-        checkTag (KorgmultisampleTag.TAG_SINGLE_ITEM, singleItemTag);
+        final String singleItemTag = StreamUtils.readWithLengthAscii (in);
+        StreamUtils.checkTag (KorgmultisampleTag.TAG_SINGLE_ITEM, singleItemTag);
         // Ignore single item header
         in.readNBytes (1);
 
-        final String sampleBuilderTag = readAscii (in);
-        checkTag (KorgmultisampleTag.TAG_SAMPLE_BUILDER, sampleBuilderTag);
+        final String sampleBuilderTag = StreamUtils.readWithLengthAscii (in);
+        StreamUtils.checkTag (KorgmultisampleTag.TAG_SAMPLE_BUILDER, sampleBuilderTag);
     }
 
 
@@ -216,7 +214,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         in.readNBytes (2);
 
         checkAscii (in);
-        final String sampleFileName = readAscii (in);
+        final String sampleFileName = StreamUtils.readWithLengthAscii (in);
         final File sampleFile = this.createCanonicalFile (this.sourceFolder, sampleFileName);
         final ISampleData sampleData = new WavFileSampleData (sampleFile);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
@@ -392,7 +390,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * checks if the next byte in the stream indicates an ASCII string (0x0A).
+     * Checks if the next byte in the stream indicates an ASCII string (0x0A).
      *
      * @param in The input stream to read from
      * @throws IOException Could not read
@@ -402,51 +400,5 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         final int blockType = in.read ();
         if (blockType != 0x0A)
             throw new IOException ("Not an ASCII block.");
-    }
-
-
-    /**
-     * Reads an ASCII string. The first read byte indicates the length of the string.
-     *
-     * @param in The input stream to read from
-     * @return The read ASCII string
-     * @throws IOException Could not read
-     */
-    private static String readAscii (final InputStream in) throws IOException
-    {
-        final int blocklength = in.read ();
-        final byte [] blockData = in.readNBytes (blocklength);
-        return new String (blockData);
-    }
-
-
-    /**
-     * Interprets the byte array as characters and compares them with the given tag.
-     *
-     * @param tag The tag
-     * @param bytes The byte array
-     * @throws FormatException One or more characters do not match
-     */
-    private static void checkTag (final String tag, final byte [] bytes) throws FormatException
-    {
-        for (int i = 0; i < bytes.length; i++)
-        {
-            if ((char) bytes[i] != tag.charAt (i))
-                throw new FormatException (tag);
-        }
-    }
-
-
-    /**
-     * Compares the tag with the string.
-     *
-     * @param tag The tag
-     * @param text The text for comparison
-     * @throws FormatException One or more characters do not match
-     */
-    private static void checkTag (final String tag, final String text) throws FormatException
-    {
-        if (!text.equals (tag))
-            throw new FormatException (tag);
     }
 }

@@ -4,6 +4,10 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -11,10 +15,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 
 /**

@@ -4,6 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.format.nki;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.List;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
@@ -14,18 +19,12 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt1.Kontakt1Type;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.Kontakt2Type;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.List;
 
 
 /**
@@ -87,13 +86,11 @@ public class NkiCreator extends AbstractCreator
     {
         final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
         for (int i = 0; i < toggles.size (); i++)
-        {
             if (toggles.get (i).isSelected ())
             {
                 config.setInteger (NKI_OUTPUT_FORMAT, i);
                 break;
             }
-        }
     }
 
 

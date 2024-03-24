@@ -4,6 +4,26 @@
 
 package de.mossgrabers.convertwithmoss.core.detector;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Consumer;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -21,28 +41,7 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
-
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-
 import javafx.concurrent.Task;
-
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Consumer;
 
 
 /**
@@ -188,10 +187,8 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
             final String lower = name.toLowerCase (Locale.US);
             for (final String ending: endings)
-            {
                 if (lower.endsWith (ending))
                     return true;
-            }
 
             return false;
         });
@@ -342,14 +339,18 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
 
     /**
-     * Check the type of the source sample for compatibility and handle them accordingly.
+     * Check the type of the source sample for compatibility and handle them accordingly. This
+     * method supports WAV, AIF, AIFF, OGG and FLAC files.
      *
      * @param sampleFile The sample file for which to create sample metadata
      * @return The matching sample metadata, support is WAV and AIFF
-     * @throws IOException
+     * @throws IOException Unsupported sample file type
      */
-    protected DefaultSampleZone createSampleMetadata (final File sampleFile) throws IOException
+    protected DefaultSampleZone createSampleZone (final File sampleFile) throws IOException
     {
+        if (!sampleFile.exists ())
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
+
         try
         {
             ISampleData sampleData = null;

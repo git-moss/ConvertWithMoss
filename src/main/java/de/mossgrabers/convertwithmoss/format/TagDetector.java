@@ -455,10 +455,8 @@ public class TagDetector
         {
             final String t = text.toUpperCase (Locale.US);
             for (final Map.Entry<String, String> e: KEYWORD_LOOKUP.entrySet ())
-            {
                 if (t.contains (e.getKey ()))
                     keywords.add (e.getValue ());
-            }
         }
         return keywords.toArray (new String [keywords.size ()]);
     }
@@ -481,10 +479,8 @@ public class TagDetector
         {
             final String t = text.toUpperCase (Locale.US);
             for (final Map.Entry<String, String> e: lookupMap.entrySet ())
-            {
                 if (t.contains (e.getKey ()))
                     return e.getValue ();
-            }
         }
         return defaultTag;
     }
@@ -504,10 +500,8 @@ public class TagDetector
         {
             final String t = text.toUpperCase (Locale.US);
             for (final Map.Entry<String, String> e: lookupMap.entrySet ())
-            {
                 if (t.contains (e.getKey ()))
                     return e.getValue ();
-            }
         }
         return defaultTag;
     }

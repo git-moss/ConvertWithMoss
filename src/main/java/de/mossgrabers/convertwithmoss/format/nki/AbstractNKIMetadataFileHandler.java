@@ -4,6 +4,32 @@
 
 package de.mossgrabers.convertwithmoss.format.nki;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -35,32 +61,6 @@ import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -943,7 +943,6 @@ public abstract class AbstractNKIMetadataFileHandler
         final StringBuilder path = new StringBuilder ();
         int id;
         while ((id = reader.read ()) != -1)
-        {
             switch (id)
             {
                 case 'v':
@@ -984,7 +983,6 @@ public abstract class AbstractNKIMetadataFileHandler
                 default:
                     error (encodedSampleFileName);
             }
-        }
 
         error (encodedSampleFileName);
         // Never reached

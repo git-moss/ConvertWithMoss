@@ -8,7 +8,6 @@ import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
 

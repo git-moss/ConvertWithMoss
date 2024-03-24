@@ -4,16 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.format.tal;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -157,7 +157,6 @@ public class TALSamplerConstants
         int lengths = 0;
         int sampleRate = -1;
         for (final IGroup group: groups)
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 lengths += zone.getStop ();
@@ -165,7 +164,6 @@ public class TALSamplerConstants
                 if (sampleRate < 0)
                     sampleRate = zone.getSampleData ().getAudioMetadata ().getSampleRate ();
             }
-        }
         return lengths == 0 ? 0.001 : Math.max (0.001, lengths / (double) numSamples / sampleRate);
     }
 

@@ -4,6 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.sf2;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractSampleData;
@@ -11,9 +14,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMeta
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-
-import java.io.IOException;
-import java.io.OutputStream;
 
 
 /**
@@ -77,7 +77,6 @@ public class Sf2SampleData extends AbstractSampleData
         final int leftStart = (int) this.sample.getStart ();
         final int rightStart = (int) this.rightSample.getStart ();
         if (bitsPerSample == 24)
-        {
             // Convert to stereo interleaved format
             for (int i = 0; i < this.lengthInSamples; i++)
             {
@@ -100,9 +99,7 @@ public class Sf2SampleData extends AbstractSampleData
                     data[dataOffset + 5] = rightSample24Data[rightStart + i];
                 }
             }
-        }
         else
-        {
             for (int i = 0; i < this.lengthInSamples; i++)
             {
                 final int dataOffset = 4 * i;
@@ -121,7 +118,6 @@ public class Sf2SampleData extends AbstractSampleData
                     data[dataOffset + 3] = rightSampleData[rightOffset + 1];
                 }
             }
-        }
 
         dataChunk.setData (data);
 

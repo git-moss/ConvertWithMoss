@@ -4,6 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
+import java.io.File;
+import java.util.function.Consumer;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
@@ -13,7 +16,6 @@ import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -23,9 +25,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
-
-import java.io.File;
-import java.util.function.Consumer;
 
 
 /**
@@ -71,7 +70,6 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
 
         final String [] groupPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
         for (final String groupPattern: groupPatterns)
-        {
             if (!groupPattern.contains ("*"))
             {
                 Functions.message ("@IDS_NOTIFY_ERR_SPLIT_REGEX", groupPattern);
@@ -79,7 +77,6 @@ public class WavDetector extends AbstractDetector<WavMultisampleDetectorTask>
                 this.detectionPatternField.selectAll ();
                 return;
             }
-        }
 
         final String [] monoSplitPatterns = StringUtils.splitByComma (this.monoSplitsField.getText ());
         final String [] postfixTexts = StringUtils.splitByComma (this.postfixField.getText ());

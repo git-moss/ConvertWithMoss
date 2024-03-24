@@ -131,10 +131,8 @@ public class MPCFilter extends DefaultFilter
         final FilterType type = filter.getType ();
         final int poles = filter.getPoles ();
         for (int index = 1; index < MAX; index++)
-        {
             if (FILTER_TYPES[index] == type && FILTER_POLES[index] == poles)
                 return index;
-        }
         return 0;
     }
 }

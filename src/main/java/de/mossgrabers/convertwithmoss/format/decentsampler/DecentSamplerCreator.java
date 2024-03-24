@@ -4,6 +4,19 @@
 
 package de.mossgrabers.convertwithmoss.format.decentsampler;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.zip.ZipOutputStream;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -21,25 +34,11 @@ import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.zip.ZipOutputStream;
 
 
 /**

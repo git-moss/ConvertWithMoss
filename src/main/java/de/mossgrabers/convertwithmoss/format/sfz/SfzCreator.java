@@ -4,6 +4,19 @@
 
 package de.mossgrabers.convertwithmoss.format.sfz;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.UnsupportedAudioFileException;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -22,23 +35,9 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
-
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.UnsupportedAudioFileException;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
 
 
 /**
@@ -150,7 +149,6 @@ public class SfzCreator extends AbstractCreator
         safeCreateDirectory (sampleFolder);
 
         if (this.convertToFlac.isSelected ())
-        {
             try
             {
                 this.writeSamples (sampleFolder, multisampleSource, TARGET_FORMAT);
@@ -159,7 +157,6 @@ public class SfzCreator extends AbstractCreator
             {
                 throw new IOException (ex);
             }
-        }
         else
             this.writeSamples (sampleFolder, multisampleSource, this.getChunkSettings ());
 
@@ -208,10 +205,8 @@ public class SfzCreator extends AbstractCreator
             // Check for any sample which play round-robin
             int sequence = 0;
             for (final ISampleZone zone: zones)
-            {
                 if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                     sequence++;
-            }
 
             sb.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
             final String groupName = group.getName ();
@@ -269,10 +264,8 @@ public class SfzCreator extends AbstractCreator
         final int keyLow = zone.getKeyLow ();
         final int keyHigh = zone.getKeyHigh ();
         if (keyRoot == keyLow && keyLow == keyHigh)
-        {
             // Pitch and range are the same, use single key attribute
             addIntegerAttribute (buffer, SfzOpcode.KEY, keyRoot, true);
-        }
         else
         {
             addIntegerAttribute (buffer, SfzOpcode.PITCH_KEY_CENTER, keyRoot, true);
@@ -322,7 +315,6 @@ public class SfzCreator extends AbstractCreator
 
         final int start = zone.getStart ();
         if (start >= 0)
-
             addIntegerAttribute (buffer, SfzOpcode.OFFSET, start, false);
         final int end = zone.getStop ();
         if (end >= 0)
@@ -393,9 +385,7 @@ public class SfzCreator extends AbstractCreator
     {
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
-        {
             addAttribute (buffer, SfzOpcode.LOOP_MODE, "no_loop", false);
-        }
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);

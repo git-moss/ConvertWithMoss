@@ -1,4 +1,4 @@
-# Source formats
+# Supported Formats
 
 The following multisample formats are supported:
 
@@ -8,11 +8,12 @@ The following multisample formats are supported:
 4. [DecentSampler](#decentsampler)
 5. [Korg KMP/KSF](#korg-kmpksf)
 6. [Korg wavestate/modwave](#korg-wavestatemodwave)
-7. [Native Instruments Kontakt NKI/NKM](#native-instruments-kontakt-nkinkm)
-8. [SFZ](#sfz)
-9. [SoundFont 2](#soundfont-2)
-10. [TAL Sampler](#tal-sampler)
-11. [WAV files](#wav-files)
+7. [Logic EX24]()
+8. [Native Instruments Kontakt NKI/NKM](#native-instruments-kontakt-nkinkm)
+9. [SFZ](#sfz)
+10. [SoundFont 2](#soundfont-2)
+11. [TAL Sampler](#tal-sampler)
+12. [WAV files](#wav-files)
 
 
 ## 1010music blackbox, tangerine, bitbox
@@ -93,6 +94,14 @@ The korgmultisample format is currently used by the Korg wavestate and modwave k
 Since the format is pretty simple all data stored in the file is available for the conversion.
 
 Since the format supports only one group of a multisample, multiple destination files are created for each group available in the source. If there is more than one group in the source the name of the created file has the velocity range of the group added. Using that information a multisample with up to 4 groups can be created as a Performance in the device.
+
+## Logic EXS24
+
+The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digital audio workstation. It is primarily used for storing and playback of sampled instruments and sounds within Logic Pro. The format allows for comprehensive mapping and editing of samples, as well as providing various modulation and performance options.
+
+The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from the parent folder of the EXS.
+
+Currently, only reading of the format is supported.
 
 ## Native Instruments Kontakt NKI/NKM
 

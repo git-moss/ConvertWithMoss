@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
-import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 
 
 /**

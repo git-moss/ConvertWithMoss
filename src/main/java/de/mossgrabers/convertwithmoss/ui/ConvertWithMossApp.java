@@ -4,6 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.ui;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.function.Consumer;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
@@ -19,6 +24,7 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.exs.EXS24Detector;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
@@ -34,6 +40,7 @@ import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.wav.WavDetector;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.DefaultApplication;
 import de.mossgrabers.tools.ui.EndApplicationException;
@@ -43,7 +50,6 @@ import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import de.mossgrabers.tools.ui.panel.ButtonPanel;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -64,11 +70,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 
 /**
@@ -142,13 +143,15 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new MPCKeygroupDetector (this),
             new BitwigMultisampleDetector (this),
             new DecentSamplerDetector (this),
+            new EXS24Detector (this),
             new NkiDetector (this),
             new KMPDetector (this),
             new KorgmultisampleDetector (this),
             new SfzDetector (this),
             new Sf2Detector (this),
             new TALSamplerDetector (this),
-            new WavDetector (this)
+            new WavDetector (this),
+            new YamahaYsfcDetector (this)
         };
 
         this.creators = new ICreator []
@@ -572,7 +575,6 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final String category = multisampleSource.getMetadata ().getCategory ();
         boolean wasSet = false;
         for (final IGroup layer: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: layer.getSampleZones ())
             {
                 final IEnvelope volumeEnvelope = zone.getAmplitudeModulator ().getSource ();
@@ -582,7 +584,6 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
                     wasSet = true;
                 }
             }
-        }
         if (wasSet)
             this.log ("IDS_NOTIFY_APPLY_DEFAULT_ENVELOPE", category);
     }

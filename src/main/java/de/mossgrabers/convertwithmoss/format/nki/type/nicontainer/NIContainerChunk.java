@@ -4,16 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.ChunkDataFactory;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.IChunkData;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.SubTreeItemChunkData;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
 
 /**

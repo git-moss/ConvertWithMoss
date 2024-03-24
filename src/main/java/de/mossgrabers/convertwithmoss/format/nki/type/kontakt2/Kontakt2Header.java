@@ -4,10 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.nki.Magic;
-
 import java.io.DataInput;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,6 +17,10 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
+
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.nki.Magic;
 
 
 /**
@@ -262,7 +262,7 @@ public class Kontakt2Header
 
         if (this.isFourDotTwo)
             out.write (this.md5Checksum);
-        else // TODO isn't that a checksum as well?
+        else
             StreamUtils.writeUnsigned32 (out, this.checksum, this.isBigEndian);
 
         StreamUtils.writeUnsigned32 (out, this.svnRevision, this.isBigEndian);

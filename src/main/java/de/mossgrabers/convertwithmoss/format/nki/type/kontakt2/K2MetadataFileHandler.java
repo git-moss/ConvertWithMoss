@@ -4,17 +4,17 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
-import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Element;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import org.w3c.dom.Element;
+
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
+import de.mossgrabers.tools.XMLUtils;
 
 
 /**
@@ -75,14 +75,10 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
         if (targetsElement == null)
             return null;
         for (final Element targetElement: XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false))
-        {
             for (final Element valueElement: XMLUtils.getChildElementsByName (targetElement, this.tags.value (), false))
-            {
                 // We only support 1 target!
                 if (this.tags.targetParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
                     return valueElement.getAttribute (this.tags.valueValueAttribute ());
-            }
-        }
         return null;
     }
 
@@ -95,9 +91,7 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
         if (targetsElement == null)
             return 0;
         for (final Element targetElement: XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false))
-        {
             for (final Element valueElement: XMLUtils.getChildElementsByName (targetElement, this.tags.value (), false))
-            {
                 // We only support 1 target!
                 if (this.tags.intensityParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
                 {
@@ -111,8 +105,6 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
                         return 0;
                     }
                 }
-            }
-        }
         return 0;
     }
 

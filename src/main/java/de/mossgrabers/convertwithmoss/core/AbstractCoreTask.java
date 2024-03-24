@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.core;
 
 import de.mossgrabers.tools.ui.BasicConfig;
-
 import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 

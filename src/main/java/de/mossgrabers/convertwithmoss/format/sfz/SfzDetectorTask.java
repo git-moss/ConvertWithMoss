@@ -4,10 +4,25 @@
 
 package de.mossgrabers.convertwithmoss.format.sfz;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -29,21 +44,6 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -82,7 +82,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
      */
@@ -117,7 +117,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
      *
      * @param multiSampleFile The file
      * @param content The content to parse
-     * @return The parsed multisample source
+     * @return The parsed multi-sample source
      */
     private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String content)
     {
@@ -219,10 +219,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     final File sampleFile = this.createCanonicalFile (sampleBaseFolder, sampleName.get ());
                     try
                     {
-                        final DefaultSampleZone sampleMetadata = this.createSampleMetadata (sampleFile);
+                        final DefaultSampleZone sampleMetadata = this.createSampleZone (sampleFile);
                         this.parseRegion (sampleMetadata);
                         this.readMissingValues (sampleMetadata);
-                        group.addSampleMetadata (sampleMetadata);
+                        group.addSampleZone (sampleMetadata);
                     }
                     catch (final IOException ex)
                     {
@@ -341,7 +341,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (lowKey >= 0)
             sampleMetadata.setKeyLow (lowKey);
 
-        // Upper bounds including crossfade
+        // Upper bounds including cross-fade
         int highKey = this.getKeyValue (SfzOpcode.XF_OUT_HI_KEY);
         if (highKey < 0)
             highKey = this.getKeyValue (SfzOpcode.HI_KEY);
@@ -375,7 +375,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (lowVel >= 0)
             sampleMetadata.setVelocityLow (lowVel);
 
-        // Upper bounds including crossfade
+        // Upper bounds including cross-fade
         int highVel = this.getIntegerValue (SfzOpcode.XF_OUT_HI_VEL);
         if (highVel < 0)
             highVel = this.getIntegerValue (SfzOpcode.HI_VEL);
@@ -446,6 +446,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final String filterTypeStr = attribute.isEmpty () ? "lpf_2p" : attribute.get ();
         if (filterTypeStr.length () < 6)
             return;
+
         FilterType filterType = FILTER_TYPE_MAP.get (filterTypeStr.substring (0, 3));
         // Unsupported filter type?
         if (filterType == null)
@@ -499,7 +500,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
         final Optional<String> loopMode = this.getAttribute (SfzOpcode.LOOP_MODE);
         if (loopMode.isPresent ())
-        {
             switch (loopMode.get ())
             {
                 default:
@@ -517,7 +517,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     }
                     break;
             }
-        }
 
         final int loopStart = this.getIntegerValue (SfzOpcode.LOOP_START, SfzOpcode.LOOPSTART);
         if (loopStart >= 0)
@@ -532,7 +531,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
             // Calculate seconds in percent of the loop length
             final int loopLength = loop.getStart () - loop.getEnd ();
             if (loopLength > 0)
-            {
                 try
                 {
                     final double loopLengthInSeconds = loopLength / (double) sampleMetadata.getSampleData ().getAudioMetadata ().getSampleRate ();
@@ -544,7 +542,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
                 {
                     this.notifier.logError (ex);
                 }
-            }
         }
 
         // The loop might not have valid start and end set, in that case they will be read from the

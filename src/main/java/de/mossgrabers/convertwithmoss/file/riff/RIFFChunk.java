@@ -4,14 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.file.riff;
 
-import de.mossgrabers.convertwithmoss.exception.NoDataInChunkException;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import de.mossgrabers.convertwithmoss.exception.NoDataInChunkException;
 
 
 /**
@@ -165,10 +165,8 @@ public class RIFFChunk implements IChunk
     {
         final List<RIFFChunk> array = new ArrayList<> ();
         for (final RIFFChunk chunk: this.collectionChunks)
-        {
             if (chunk.id == id)
                 array.add (chunk);
-        }
         return array;
     }
 

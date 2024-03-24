@@ -4,6 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.format.bitwig;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.zip.ZipOutputStream;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
@@ -15,16 +25,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.zip.ZipOutputStream;
 
 
 /**
@@ -121,10 +121,8 @@ public class BitwigMultisampleCreator extends AbstractCreator
             final int idx = name == null || name.isBlank () ? -1 : index;
 
             for (final ISampleZone zone: group.getSampleZones ())
-            {
                 if (zone.getTrigger () != TriggerType.RELEASE)
                     createSample (document, multisampleElement, idx, zone);
-            }
 
             index++;
         }

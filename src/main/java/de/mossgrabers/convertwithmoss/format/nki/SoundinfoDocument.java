@@ -4,17 +4,17 @@
 
 package de.mossgrabers.convertwithmoss.format.nki;
 
-import de.mossgrabers.tools.XMLUtils;
+import java.io.StringReader;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import java.io.StringReader;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import de.mossgrabers.tools.XMLUtils;
 
 
 /**
@@ -71,14 +71,12 @@ public class SoundinfoDocument
         // Read the attribute tags
         final Element attributesElement = XMLUtils.getChildElementByName (top, "attributes");
         if (attributesElement != null)
-        {
             for (final Element attributeElement: XMLUtils.getChildElementsByName (attributesElement, "attribute", false))
             {
                 final String value = XMLUtils.read (attributeElement, "value");
                 if (value != null && !value.isBlank () && !IGNORE_TAGS.contains (value))
                     this.categories.add (value);
             }
-        }
     }
 
 

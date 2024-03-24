@@ -4,13 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -55,10 +55,8 @@ public class FileList
                 throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_VERSION", Long.toString (version)));
 
             if (version == 1)
-            {
                 // absoluteMonolithSourcePath not used currently
                 readFile (in);
-            }
         }
 
         this.sampleFiles = readFiles (in);
@@ -87,10 +85,8 @@ public class FileList
             this.otherFiles = readFiles (in);
         }
         else
-        {
             // Final padding
             StreamUtils.readUnsigned32 (in, false);
-        }
     }
 
 

@@ -4,10 +4,10 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**

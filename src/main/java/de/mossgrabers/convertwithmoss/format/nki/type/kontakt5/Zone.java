@@ -4,13 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -119,10 +119,8 @@ public class Zone
         StreamUtils.readUnsigned32 (in, false);
 
         if (version <= 0x93)
-        {
             // Unknown
             StreamUtils.readUnsigned32 (in, false);
-        }
 
         // Not sure what this is actually doing, some time 0, 60 or identical to rootKey
         this.rootNote = (int) StreamUtils.readUnsigned32 (in, false);

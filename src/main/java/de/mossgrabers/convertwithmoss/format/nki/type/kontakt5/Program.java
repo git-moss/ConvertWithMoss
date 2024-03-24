@@ -4,6 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -23,14 +31,6 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 
 /**
@@ -219,10 +219,8 @@ public class Program
             this.zones.add (zone);
 
             for (final PresetChunk zoneChildChunk: zoneChunk.getChildren ())
-            {
                 if (zoneChildChunk.getId () == PresetChunkID.LOOP_ARRAY)
                     parseLoops (zone, zoneChildChunk.getPublicData ());
-            }
         }
     }
 
@@ -285,7 +283,7 @@ public class Program
             final Group group = groupPair.getValue ();
 
             final ISampleZone zone = this.createZone (source, kontaktZone);
-            defaultGroup.addSampleMetadata (zone);
+            defaultGroup.addSampleZone (zone);
 
             zone.setStart (kontaktZone.getSampleStart ());
             zone.setStop (kontaktZone.getNumFrames () - kontaktZone.getSampleEnd ());

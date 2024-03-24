@@ -4,15 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
-import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
-import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFVisitor;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFWriter;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -24,6 +15,15 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFVisitor;
+import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
+import de.mossgrabers.convertwithmoss.file.riff.RIFFWriter;
+import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -231,10 +231,8 @@ public class WaveFile extends AbstractRIFFVisitor
 
         final List<WavChunk> newChunkStack = new ArrayList<> ();
         for (final WavChunk chunk: this.chunkStack)
-        {
             if (!ignore.contains (Integer.valueOf (chunk.getId ())))
                 newChunkStack.add (chunk);
-        }
 
         this.chunkStack.clear ();
         this.chunkStack.addAll (newChunkStack);

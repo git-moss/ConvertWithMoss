@@ -4,12 +4,12 @@
 
 package de.mossgrabers.convertwithmoss.core.detector;
 
-import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
-import de.mossgrabers.convertwithmoss.core.INotifier;
-
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
+import de.mossgrabers.convertwithmoss.core.INotifier;
 
 
 /**

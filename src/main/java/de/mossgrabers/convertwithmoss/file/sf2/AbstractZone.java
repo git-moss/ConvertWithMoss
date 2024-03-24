@@ -191,10 +191,8 @@ public abstract class AbstractZone
     public Optional<Sf2Modulator> getModulator (final Integer modulatorID)
     {
         for (final Sf2Modulator modulator: this.modulators)
-        {
             if (modulator.getControllerSource () == modulatorID.intValue ())
                 return Optional.of (modulator);
-        }
         return Optional.empty ();
     }
 }

@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import java.util.Date;
+
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-
-import java.util.Date;
 
 
 /**

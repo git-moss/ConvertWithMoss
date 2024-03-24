@@ -4,6 +4,15 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -17,15 +26,6 @@ import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 
 /**

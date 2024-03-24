@@ -4,16 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.file.ncw;
 
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
