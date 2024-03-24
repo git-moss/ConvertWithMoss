@@ -4,9 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.tools;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -15,6 +12,9 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 
 /**
@@ -82,7 +82,6 @@ public class DumpWaveFileChunks
             }
 
             if (file.getName ().toLowerCase (Locale.US).endsWith (".wav"))
-            {
                 try
                 {
                     final WaveFile sampleFile = new WaveFile (file, false);
@@ -94,7 +93,6 @@ public class DumpWaveFileChunks
                     log ("\n" + file.getAbsolutePath ());
                     log ("  " + ex.getMessage ());
                 }
-            }
         }
     }
 

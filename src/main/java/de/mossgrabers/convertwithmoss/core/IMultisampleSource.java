@@ -4,13 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.core;
 
-import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 
 
 /**

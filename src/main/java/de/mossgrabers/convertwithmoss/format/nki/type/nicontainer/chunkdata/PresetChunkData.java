@@ -4,6 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Bank;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.FileList;
@@ -12,14 +20,6 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.PresetChunkID;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.SlotList;
 import de.mossgrabers.tools.ui.Functions;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -124,10 +124,8 @@ public class PresetChunkData extends AbstractChunkData
             new Bank ().parse (bankChunk);
 
             for (final PresetChunk childChunk: bankChunk.getChildren ())
-            {
                 if (childChunk.getId () == PresetChunkID.SLOT_LIST)
                     programs.addAll (new SlotList ().parse (childChunk, filePaths));
-            }
         }
 
         return programs;
@@ -147,10 +145,8 @@ public class PresetChunkData extends AbstractChunkData
         {
             filelistChunk = this.getTopChunk (PresetChunkID.FILENAME_LIST_EX);
             if (filelistChunk.isEmpty ())
-            {
                 // No files?
                 return Collections.emptyList ();
-            }
         }
         final FileList fileList = new FileList ();
         fileList.parse (filelistChunk.get ());
@@ -167,10 +163,8 @@ public class PresetChunkData extends AbstractChunkData
     private Optional<PresetChunk> getTopChunk (final int presetChunkID)
     {
         for (final PresetChunk chunk: this.chunks)
-        {
             if (chunk.getId () == presetChunkID)
                 return Optional.of (chunk);
-        }
         return Optional.empty ();
     }
 
@@ -186,12 +180,10 @@ public class PresetChunkData extends AbstractChunkData
     {
         final List<PresetChunk> results = new ArrayList<> ();
         for (final PresetChunk chunk: topChunks)
-        {
             if (chunk.getId () == presetChunkID)
                 results.add (chunk);
             else
                 results.addAll (findAllChunks (chunk.getChildren (), presetChunkID));
-        }
         return results;
     }
 

@@ -4,6 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
@@ -16,14 +24,6 @@ import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Consumer;
 
 
 /**
@@ -185,7 +185,7 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
         sampleZone.setVelocityHigh (instrumentChunk.getHighVelocity ());
         sampleZone.setGain (instrumentChunk.getGain ());
         sampleZone.setTune (instrumentChunk.getFineTune () / 100.0);
-        group.addSampleMetadata (sampleZone);
+        group.addSampleZone (sampleZone);
     }
 
 
@@ -200,13 +200,11 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
     {
         String n = name;
         for (final String pt: postfixTexts)
-        {
             if (name.endsWith (pt))
             {
                 n = n.substring (0, n.length () - pt.length ());
                 break;
             }
-        }
         return n.trim ();
     }
 
@@ -220,10 +218,8 @@ public class WavMultisampleDetectorTask extends AbstractDetectorTask
     private static boolean hasInstrumentChunks (final WavFileSampleData [] sampleFiles)
     {
         for (final WavFileSampleData sampleFileData: sampleFiles)
-        {
             if (sampleFileData.getWaveFile ().getInstrumentChunk () == null)
                 return false;
-        }
         return true;
     }
 

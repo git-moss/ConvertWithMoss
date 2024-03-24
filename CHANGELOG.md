@@ -1,5 +1,11 @@
 # Changes
 
+## 8.0.0 (unreleased)
+
+* Added support for reading Logic EXS24 files.
+* NKI - Read
+  * Fixed: A proper error message will be output if a sample file is missing.
+
 ## 7.5.0
 
 * All formats

@@ -4,12 +4,12 @@
 
 package de.mossgrabers.convertwithmoss.file;
 
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 
 
 /**

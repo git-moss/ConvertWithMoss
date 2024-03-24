@@ -4,23 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.file;
 
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
-import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.ui.Functions;
-
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioFormat.Encoding;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -30,6 +13,23 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioFormat.Encoding;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**

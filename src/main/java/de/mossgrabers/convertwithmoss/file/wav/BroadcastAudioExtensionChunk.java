@@ -4,16 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
-import de.mossgrabers.tools.StringUtils;
-
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**

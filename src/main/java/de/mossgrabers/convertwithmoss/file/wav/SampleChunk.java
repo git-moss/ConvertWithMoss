@@ -4,12 +4,12 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

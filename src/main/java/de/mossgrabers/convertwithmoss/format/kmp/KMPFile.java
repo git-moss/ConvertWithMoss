@@ -4,16 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.kmp;
 
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -23,6 +13,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -189,7 +189,7 @@ public class KMPFile
         in.read ();
 
         for (int i = 0; i < this.numSamples; i++)
-            this.group.addSampleMetadata (new DefaultSampleZone ());
+            this.group.addSampleZone (new DefaultSampleZone ());
     }
 
 
@@ -219,7 +219,6 @@ public class KMPFile
             if (SAMPLE_SKIPPED.equals (sampleFilename))
                 this.notifier.logError ("IDS_KMP_ERR_SKIPPED_SAMPLE");
             else if (sampleFilename.startsWith (SAMPLE_INTERNAL))
-            {
                 try
                 {
                     final int internalIndex = Integer.parseInt (sampleFilename.substring (SAMPLE_INTERNAL.length ()));
@@ -229,7 +228,6 @@ public class KMPFile
                 {
                     // All good, not a reference to internal sample memory
                 }
-            }
 
             this.readKSFZone (zone, sampleFilename);
         }

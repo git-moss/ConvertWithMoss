@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
-import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunkType;
-
 import java.lang.reflect.InvocationTargetException;
 import java.util.EnumMap;
 import java.util.Map;
+
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunkType;
 
 
 /**

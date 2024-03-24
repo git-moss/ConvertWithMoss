@@ -4,6 +4,20 @@
 
 package de.mossgrabers.convertwithmoss.format.tal;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -23,20 +37,6 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 
 /**
@@ -154,7 +154,6 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
             // Parse all groups
             final List<IGroup> groups = new ArrayList<> (4);
             for (int groupCounter = 0; groupCounter < 4; groupCounter++)
-            {
                 // Group is disabled?
                 if (XMLUtils.getIntegerAttribute (programElement, TALSamplerTag.PROGRAM_LAYER_ON + TALSamplerConstants.LAYERS[groupCounter], 0) == 1)
                 {
@@ -164,18 +163,15 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                         final IGroup group = new DefaultGroup ();
                         group.setName ("Group " + (groupCounter + 1));
                         for (final Element layerElement: XMLUtils.getChildElementsByName (groupElement, TALSamplerTag.MULTISAMPLES, false))
-                        {
                             for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, TALSamplerTag.MULTISAMPLE, false))
                             {
                                 final DefaultSampleZone sampleMetadata = this.parseSample (parentFolder, programElement, groupCounter, sampleElement);
                                 if (sampleMetadata != null)
-                                    group.addSampleMetadata (sampleMetadata);
+                                    group.addSampleZone (sampleMetadata);
                             }
-                        }
                         groups.add (group);
                     }
                 }
-            }
 
             this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts);
             multisampleSource.setGroups (groups);
@@ -217,7 +213,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.IS_ROM_SAMPLE, 0) == 1)
             throw new IOException (Functions.getMessage ("IDS_TAL_ROM_SAMPLES_NOT_SUPPORTED", filename));
 
-        final DefaultSampleZone zone = this.createSampleMetadata (new File (parentFolder, filename));
+        final DefaultSampleZone zone = this.createSampleZone (new File (parentFolder, filename));
 
         zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
         zone.setPanorama (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANORAMA, 0.5) * 2.0 - 1.0);
@@ -313,19 +309,14 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
         final Element modMatrixElement = XMLUtils.getChildElementByName (programElement, "modmatrix");
         double globalPitchEnvelopeDepth = -1;
         if (modMatrixElement != null)
-        {
             for (final Element entryElement: XMLUtils.getChildElementsByName (modMatrixElement, "entry", false))
-            {
                 if (XMLUtils.getIntegerAttribute (entryElement, "parameterid", -1) == 164 && XMLUtils.getIntegerAttribute (entryElement, "modmatrixsourceid", -1) == 2)
                 {
                     globalPitchEnvelopeDepth = XMLUtils.getDoubleAttribute (entryElement, "modmatrixamount", 1.0);
                     break;
                 }
-            }
-        }
 
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setBendUp (bend);
@@ -351,7 +342,6 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                     pitchEnvelope.setRelease (pitchRelease);
                 }
             }
-        }
 
         return optFilter;
     }

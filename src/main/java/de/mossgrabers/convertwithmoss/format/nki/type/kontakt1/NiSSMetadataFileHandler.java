@@ -4,14 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt1;
 
+import java.util.Map;
+
+import org.w3c.dom.Element;
+
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Element;
-
-import java.util.Map;
 
 
 /**
@@ -38,12 +38,10 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     protected Element [] findProgramElements (final Element top)
     {
         if (this.tags.program ().equals (top.getNodeName ()))
-        {
             return new Element []
             {
                 top
             };
-        }
 
         if (this.tags.rootContainer ().equals (top.getNodeName ()))
             return XMLUtils.getChildElementsByName (top, this.tags.program (), false);
@@ -58,11 +56,9 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     {
         final Element [] valueElements = XMLUtils.getChildElementsByName (modulator, this.tags.value (), false);
         for (final Element valueElement: valueElements)
-        {
             // We only support 1 target!
             if (this.tags.targetParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
                 return valueElement.getAttribute (this.tags.valueValueAttribute ());
-        }
         return null;
     }
 
@@ -73,7 +69,6 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     {
         final Element [] valueElements = XMLUtils.getChildElementsByName (modulator, this.tags.value (), false);
         for (final Element valueElement: valueElements)
-        {
             // We only support 1 target!
             if (this.tags.intensityParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
             {
@@ -87,7 +82,6 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
                     return 0;
                 }
             }
-        }
         return 0;
     }
 

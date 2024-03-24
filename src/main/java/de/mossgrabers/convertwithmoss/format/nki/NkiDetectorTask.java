@@ -4,6 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.format.nki;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
@@ -15,13 +22,6 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Kontakt5MonolithT
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Kontakt5Type;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.ui.Functions;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Consumer;
 
 
 /**

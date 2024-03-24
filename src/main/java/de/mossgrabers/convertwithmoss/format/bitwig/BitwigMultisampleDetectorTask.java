@@ -4,28 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.bitwig;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +19,28 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.XMLUtils;
 
 
 /**
@@ -169,7 +169,6 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         final Node [] groupNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.GROUP, false);
         int groupCounter = 0;
         for (final Node groupNode: groupNodes)
-        {
             if (groupNode instanceof final Element groupElement)
             {
                 this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.GROUP));
@@ -184,14 +183,12 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 this.notifier.logError (ERR_BAD_METADATA_FILE);
                 return Collections.emptyList ();
             }
-        }
         // Additional group for potentially un-grouped samples
         indexedGroups.put (Integer.valueOf (-1), new DefaultGroup ());
 
         // Parse (deprecated) layer tag
         final Node [] layerNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.LAYER, false);
         for (final Node layerNode: layerNodes)
-        {
             if (layerNode instanceof final Element layerElement)
             {
                 this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LAYER));
@@ -210,7 +207,6 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 this.notifier.logError (ERR_BAD_METADATA_FILE);
                 return Collections.emptyList ();
             }
-        }
 
         // Parse all top level samples
         for (final Element sampleElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.SAMPLE, false))
@@ -331,14 +327,12 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             // Older multisample files use true/false
             final String attribute = keyElement.getAttribute ("track");
             if (attribute != null)
-            {
                 if ("true".equals (attribute))
                     zone.setKeyTracking (1.0);
                 else if ("false".equals (attribute))
                     zone.setKeyTracking (0);
                 else
                     zone.setKeyTracking (XMLUtils.getDoubleAttribute (keyElement, "track", 0));
-            }
         }
 
         final Element velocityElement = XMLUtils.getChildElementByName (sampleElement, BitwigMultisampleTag.VELOCITY);
@@ -387,6 +381,6 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             this.notifier.logError (ex);
         }
 
-        group.addSampleMetadata (zone);
+        group.addSampleZone (zone);
     }
 }

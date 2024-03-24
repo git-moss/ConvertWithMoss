@@ -162,7 +162,6 @@ public class FastLZ
                 }
             }
             else
-            {
                 while (true)
                 {
                     if (data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++])
@@ -170,13 +169,10 @@ public class FastLZ
                     if (data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++] || data[ref++] != data[ip++])
                         break;
                     while (ip < ipBound)
-                    {
                         if (data[ref++] != data[ip++])
                             break;
-                    }
                     break;
                 }
-            }
 
             if (copy != 0)
                 compressed[op - copy - 1] = (byte) (copy - 1);
@@ -229,7 +225,6 @@ public class FastLZ
             {
                 final int length = MAX_LEN - 2;
                 if (len > length)
-                {
                     while (len > length)
                     {
                         compressed[op++] = (byte) ((7 << 5) + (distance >>> 8));
@@ -237,7 +232,6 @@ public class FastLZ
                         compressed[op++] = (byte) (distance & 255);
                         len -= length;
                     }
-                }
 
                 if (len < 7)
                 {
@@ -308,18 +302,14 @@ public class FastLZ
                 ref -= ofs;
 
                 if (len == 6)
-                {
                     if (compressionLevel == FASTLZ_LEVEL1)
                         len += compressed[ip++] & 0xff;
                     else
-                    {
                         do
                         {
                             code = compressed[ip++] & 0xff;
                             len += code;
                         } while (code == 255);
-                    }
-                }
                 if (compressionLevel == FASTLZ_LEVEL1)
                     ref -= compressed[ip++] & 0xff;
                 else

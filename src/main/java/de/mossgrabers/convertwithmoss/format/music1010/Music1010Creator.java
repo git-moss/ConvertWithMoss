@@ -4,6 +4,18 @@
 
 package de.mossgrabers.convertwithmoss.format.music1010;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -18,24 +30,11 @@ import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 
 /**
@@ -305,15 +304,11 @@ public class Music1010Creator extends AbstractCreator
         // Add all groups
         int sampleIndex = 0;
         for (final IGroup group: groups)
-        {
-            // No group support
-
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 createSample (document, folderName, presetPath, sessionElement, zone, sampleIndex);
                 sampleIndex++;
             }
-        }
 
         final Element paramsElement = XMLUtils.getChildElementByName (firstSlot, Music1010Tag.PARAMS);
 
@@ -365,7 +360,6 @@ public class Music1010Creator extends AbstractCreator
     {
         Element firstElement = null;
         for (int row = 0; row < 4; row++)
-        {
             for (int column = 0; column < 4; column++)
             {
                 final boolean isFirst = row == 0 && column == 0;
@@ -385,7 +379,6 @@ public class Music1010Creator extends AbstractCreator
 
                 paramsElement.setAttribute (Music1010Tag.ATTR_INTERPOLATION_QUALITY, this.isInterpolationQualityHigh ? "1" : "0");
             }
-        }
         return firstElement;
     }
 

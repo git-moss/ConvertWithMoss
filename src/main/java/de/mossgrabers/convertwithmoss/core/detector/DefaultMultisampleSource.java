@@ -4,6 +4,12 @@
 
 package de.mossgrabers.convertwithmoss.core.detector;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -11,12 +17,6 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -123,13 +123,11 @@ public class DefaultMultisampleSource implements IMultisampleSource
             {
                 // There needs to be at least one sample with a normal attack trigger
                 for (final ISampleZone sample: sampleMetadata)
-                {
                     if (sample.getTrigger () != TriggerType.RELEASE)
                     {
                         cleanedGroups.add (group);
                         break;
                     }
-                }
             }
             else
                 cleanedGroups.add (group);
@@ -176,7 +174,6 @@ public class DefaultMultisampleSource implements IMultisampleSource
     {
         IFilter globalFilter = null;
         for (final IGroup group: this.groups)
-        {
             for (final ISampleZone sampleMetadata: group.getSampleZones ())
             {
                 final Optional<IFilter> optFilter = sampleMetadata.getFilter ();
@@ -189,7 +186,6 @@ public class DefaultMultisampleSource implements IMultisampleSource
                 else if (!globalFilter.equals (filter))
                     return Optional.empty ();
             }
-        }
         return Optional.ofNullable (globalFilter);
     }
 
@@ -199,9 +195,7 @@ public class DefaultMultisampleSource implements IMultisampleSource
     public void setGlobalFilter (final IFilter filter)
     {
         for (final IGroup group: this.groups)
-        {
             for (final ISampleZone zone: group.getSampleZones ())
                 zone.setFilter (filter);
-        }
     }
 }

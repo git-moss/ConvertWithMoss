@@ -4,12 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.file.ncw;
 
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
-import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -21,6 +15,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -142,19 +142,13 @@ public class NcwFile
         {
             final DataOutputStream out = new DataOutputStream (bout);
             for (int i = 0; i < this.numberOfSamples; i++)
-            {
                 for (int channel = 0; channel < this.channels; channel++)
                     out.writeFloat (this.channelDataFloat[channel][i]);
-            }
         }
         else
-        {
             for (int i = 0; i < this.numberOfSamples; i++)
-            {
                 for (int channel = 0; channel < this.channels; channel++)
                     StreamUtils.writeUnsigned (bout, this.channelData[channel][i], this.bitsPerSample, false);
-            }
-        }
 
         dataChunk.setData (bout.toByteArray ());
         wavFile.write (outputStream);
@@ -268,15 +262,11 @@ public class NcwFile
             final byte [] blockData = inputStream.readNBytes (NUM_SAMPLES * Math.abs (bits) / 8);
             final int [] samples;
             if (bits > 0)
-            {
                 // Delta encoding compression
                 samples = decodeDeltaBlock (baseValue, blockData, bits);
-            }
             else if (bits < 0)
-            {
                 // Truncation encoding compression
                 samples = decodeTruncatedBlock (blockData, Math.abs (bits));
-            }
             else
             {
                 // No compression
@@ -316,7 +306,6 @@ public class NcwFile
                 throw new IOException (Functions.getMessage ("IDS_NCW_MID_SIDE_ONLY_SUPPORTED_FOR_STEREO"));
 
             for (int i = 0; i < length; i++)
-            {
                 if (isFloat)
                 {
                     final float mid = this.channelDataFloat[0][offset + i];
@@ -331,7 +320,6 @@ public class NcwFile
                     this.channelData[0][offset + i] = mid + side;
                     this.channelData[1][offset + i] = mid - side;
                 }
-            }
         }
     }
 

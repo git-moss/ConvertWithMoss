@@ -4,6 +4,20 @@
 
 package de.mossgrabers.convertwithmoss.format.akai;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -18,20 +32,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
 
 
 /**
@@ -286,7 +286,6 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         // Check if a keygroup exists to which the layer can be added
         for (final Keygroup keygroup: keygroups)
-        {
             // Look for velocity or sequence keygroups (type must match)
             if (keygroup.isSequence () == isSequence)
             {
@@ -302,7 +301,6 @@ public class MPCKeygroupCreator extends AbstractCreator
                 if (isSequence)
                     return Optional.empty ();
             }
-        }
 
         // No existing keygroup found, create a new one (Instrument is a keygroup)
 

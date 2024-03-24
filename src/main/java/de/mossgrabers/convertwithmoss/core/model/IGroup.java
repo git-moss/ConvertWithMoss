@@ -4,9 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.core.model;
 
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-
 import java.util.List;
+
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 
 /**
@@ -65,9 +65,9 @@ public interface IGroup
 
 
     /**
-     * Add a sample description.
+     * Add a sample zone.
      *
      * @param sample The sample description
      */
-    void addSampleMetadata (ISampleZone sample);
+    void addSampleZone (ISampleZone sample);
 }

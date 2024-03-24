@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.tools;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-
 import java.io.File;
 import java.io.IOException;
+
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 
 /**

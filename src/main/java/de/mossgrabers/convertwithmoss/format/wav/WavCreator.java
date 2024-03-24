@@ -4,17 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
+import java.io.File;
+import java.io.IOException;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
-
-import java.io.File;
-import java.io.IOException;
 
 
 /**

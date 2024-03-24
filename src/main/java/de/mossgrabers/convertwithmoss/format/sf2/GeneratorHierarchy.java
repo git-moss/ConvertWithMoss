@@ -4,14 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.sf2;
 
-import de.mossgrabers.convertwithmoss.file.sf2.Generator;
-import de.mossgrabers.tools.Pair;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+
+import de.mossgrabers.convertwithmoss.file.sf2.Generator;
+import de.mossgrabers.tools.Pair;
 
 
 /**
@@ -199,10 +199,8 @@ public class GeneratorHierarchy
     {
         final Set<String> unsupported = new TreeSet<> ();
         for (final Integer generator: this.allGenerators)
-        {
             if (!this.processedGenerators.contains (generator))
                 unsupported.add (Generator.GENERATORS[generator.intValue ()]);
-        }
         return unsupported;
     }
 

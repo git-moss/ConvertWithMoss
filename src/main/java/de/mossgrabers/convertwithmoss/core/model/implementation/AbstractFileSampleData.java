@@ -4,9 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -16,6 +13,9 @@ import java.nio.file.Files;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**

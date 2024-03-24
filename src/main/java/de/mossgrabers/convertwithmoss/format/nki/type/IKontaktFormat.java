@@ -4,14 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.List;
+
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 
 /**

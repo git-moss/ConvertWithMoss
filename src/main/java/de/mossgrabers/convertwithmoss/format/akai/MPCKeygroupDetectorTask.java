@@ -4,6 +4,22 @@
 
 package de.mossgrabers.convertwithmoss.format.akai;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -26,22 +42,6 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 
 
 /**
@@ -179,13 +179,11 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         {
             final int pitchBend = (int) Math.round (pitchBendRange * 1200.0);
             for (final IGroup group: groups)
-            {
                 for (final ISampleZone zone: group.getSampleZones ())
                 {
                     zone.setBendUp (pitchBend);
                     zone.setBendDown (-pitchBend);
                 }
-            }
         }
 
         return Collections.singletonList (multisampleSource);
@@ -439,7 +437,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
     private void readMissingData (final boolean isDrum, final boolean isOneShot, final DefaultSampleZone zone) throws FileNotFoundException
     {
         if (zone.getStop () <= 0 || zone.getKeyRoot () < 0 || !isOneShot && zone.getLoops ().isEmpty ())
-        {
             try
             {
                 zone.getSampleData ().addMetadata (zone, !isDrum, !isDrum && !isOneShot);
@@ -452,7 +449,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             {
                 this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
             }
-        }
     }
 
 
@@ -507,7 +503,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                 count++;
             }
 
-            group.addSampleMetadata (sampleMetadata);
+            group.addSampleZone (sampleMetadata);
         }
 
         return new ArrayList<> (layerMap.values ());
@@ -542,7 +538,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         }
 
         for (final IGroup layer: groups)
-        {
             for (final ISampleZone sampleMetadata: layer.getSampleZones ())
             {
                 final Integer noteNumber = padNoteMap.get (Integer.valueOf (sampleMetadata.getKeyLow ()));
@@ -558,7 +553,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                 if (sampleMetadata.getKeyRoot () < 0)
                     sampleMetadata.setKeyRoot (nn);
             }
-        }
     }
 
 

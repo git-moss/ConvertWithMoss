@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.mossgrabers</groupId>
 	<artifactId>convertwithmoss</artifactId>
-	<version>7.5.0</version>
+	<version>8.0.0</version>
 	<packaging>jar</packaging>
 	<name>ConvertWithMoss</name>
 	<organization>
@@ -34,12 +34,12 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>21.0.2</version>
+			<version>22</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-web</artifactId>
-			<version>21.0.2</version>
+			<version>22</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.trilarion</groupId>
@@ -86,7 +86,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.12.1</version>
+				<version>3.13.0</version>
 				<configuration>
 					<fork>true</fork>
 					<source>17</source>

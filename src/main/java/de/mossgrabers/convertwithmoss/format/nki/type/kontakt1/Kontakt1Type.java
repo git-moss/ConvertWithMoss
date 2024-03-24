@@ -4,14 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt1;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.file.CompressionUtils;
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.nki.Magic;
-import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,6 +13,14 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.file.CompressionUtils;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.nki.Magic;
+import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 
 /**

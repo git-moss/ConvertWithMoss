@@ -4,13 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.file;
 
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**

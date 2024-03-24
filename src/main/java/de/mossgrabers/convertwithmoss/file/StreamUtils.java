@@ -1,7 +1,6 @@
 package de.mossgrabers.convertwithmoss.file;
 
-import de.mossgrabers.tools.ui.Functions;
-
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +12,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
+
+import de.mossgrabers.convertwithmoss.exception.FormatException;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -198,15 +200,11 @@ public class StreamUtils
     public static void writeUnsigned (final OutputStream out, final int value, final int numBits, final boolean isBigEndian) throws IOException
     {
         if (isBigEndian)
-        {
             for (int offset = numBits - 8; offset >= 0; offset -= 8)
                 out.write (value >> offset & 0xFF);
-        }
         else
-        {
             for (int offset = 0; offset < numBits; offset += 8)
                 out.write (value >> offset & 0xFF);
-        }
     }
 
 
@@ -449,7 +447,7 @@ public class StreamUtils
 
 
     /**
-     * Reads all bytes from an input stream and interprets it as ASCII text.
+     * Reads all bytes from an input stream and interprets it as UTF-8 text.
      *
      * @param in The stream to read from
      * @return The read text
@@ -480,6 +478,23 @@ public class StreamUtils
         if (resultLength != length)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ASCII_LENGTH_TOO_SHORT", Integer.toBinaryString (length), Integer.toBinaryString (resultLength)));
         return new String (buffer, StandardCharsets.US_ASCII);
+    }
+
+
+    /**
+     * Reads bytes from an input stream until a zero appears and interprets it as ASCII text.
+     *
+     * @param in The stream to read from
+     * @return The read text
+     * @throws IOException Could not read
+     */
+    public static String readNullTerminatedASCII (final InputStream in) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        int b;
+        while ((b = in.read ()) != 0)
+            out.write (b);
+        return new String (out.toByteArray (), StandardCharsets.US_ASCII);
     }
 
 
@@ -640,6 +655,50 @@ public class StreamUtils
         final int size = (int) readUnsigned32 (in, false);
         final byte [] wideStringBytes = in.readNBytes (size * 2);
         return new String (wideStringBytes, StandardCharsets.UTF_16LE);
+    }
+
+
+    /**
+     * Reads an ASCII string. The first read byte indicates the length of the string.
+     *
+     * @param in The input stream to read from
+     * @return The read ASCII string
+     * @throws IOException Could not read
+     */
+    public static String readWithLengthAscii (final InputStream in) throws IOException
+    {
+        final int blocklength = in.read ();
+        final byte [] blockData = in.readNBytes (blocklength);
+        return new String (blockData);
+    }
+
+
+    /**
+     * Interprets the byte array as ASCII characters and compares them with the given tag.
+     *
+     * @param tag The tag
+     * @param bytes The byte array
+     * @throws FormatException One or more characters do not match
+     */
+    public static void checkTag (final String tag, final byte [] bytes) throws FormatException
+    {
+        for (int i = 0; i < bytes.length; i++)
+            if ((char) bytes[i] != tag.charAt (i))
+                throw new FormatException (tag);
+    }
+
+
+    /**
+     * Compares the tag with the string.
+     *
+     * @param tag The tag
+     * @param text The text for comparison
+     * @throws FormatException One or more characters do not match
+     */
+    public static void checkTag (final String tag, final String text) throws FormatException
+    {
+        if (!text.equals (tag))
+            throw new FormatException (tag);
     }
 
 

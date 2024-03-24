@@ -4,16 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
-import de.mossgrabers.convertwithmoss.exception.MultisampleException;
-import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +20,16 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
+import de.mossgrabers.convertwithmoss.exception.MultisampleException;
+import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;
+import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -289,9 +289,7 @@ public class WavKeyMapping
                 if (size > 2)
                     throw new MultisampleException (Functions.getMessage ("IDS_WAV_MORE_THAN_2_FILES"), entry);
                 if (size == 2)
-                {
                     for (final ISampleZone zone: zones)
-                    {
                         try
                         {
                             if (!zone.getSampleData ().getAudioMetadata ().isMono ())
@@ -301,9 +299,6 @@ public class WavKeyMapping
                         {
                             throw new MultisampleException (ex.getMessage (), entry);
                         }
-                    }
-
-                }
                 noOfAssignedSamples = size;
             }
             else if (noOfAssignedSamples != size)
@@ -478,10 +473,8 @@ public class WavKeyMapping
                     query = "(?<prefix>.*)(?<value>\\d+)" + Pattern.quote (parts[0]) + "(?<postfix>.*)";
             }
             else if (parts.length == 2)
-            {
                 // * is in the middle
                 query = "(?<prefix>.*)" + Pattern.quote (parts[0]) + "(?<value>\\d+)" + Pattern.quote (parts[1]) + "(?<postfix>.*)";
-            }
             else
                 throw new MultisampleException (Functions.getMessage ("IDS_WAV_ERR_IN_GROUP_PATTERN", groupPattern));
 
@@ -583,10 +576,8 @@ public class WavKeyMapping
 
         // Finally, set the root keys
         for (final Map.Entry<Integer, List<ISampleZone>> e: result.entrySet ())
-        {
             for (final ISampleZone zone: e.getValue ())
                 zone.setKeyRoot (e.getKey ().intValue ());
-        }
 
         return result;
     }
@@ -763,10 +754,8 @@ public class WavKeyMapping
         {
             final char c = firstFilename.charAt (pos);
             for (int i = 1; i < names.size (); i++)
-            {
                 if (c != names.get (i).charAt (pos))
                     return firstFilename.substring (0, pos).trim ();
-            }
         }
         return firstFilename.trim ();
     }

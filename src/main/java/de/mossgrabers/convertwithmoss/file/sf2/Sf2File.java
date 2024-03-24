@@ -4,13 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.file.sf2;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFVisitor;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -22,6 +15,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFVisitor;
+import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
+import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -211,9 +211,7 @@ public class Sf2File extends AbstractRIFFVisitor
     public Date getParsedCreationDate ()
     {
         if (this.creationDate != null)
-        {
             for (final SimpleDateFormat parser: this.creationDateParsers)
-            {
                 try
                 {
                     return parser.parse (this.creationDate);
@@ -222,8 +220,6 @@ public class Sf2File extends AbstractRIFFVisitor
                 {
                     // Ignore
                 }
-            }
-        }
         return new Date ();
     }
 

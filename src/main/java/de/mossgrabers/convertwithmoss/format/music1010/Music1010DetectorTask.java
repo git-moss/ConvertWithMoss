@@ -4,6 +4,21 @@
 
 package de.mossgrabers.convertwithmoss.format.music1010;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -26,21 +41,6 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 
 /**
@@ -85,7 +85,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      * Reads and processes the 1010music preset file.
      *
      * @param file The preset file
-     * @return The processed multi sample (singleton list)
+     * @return The processed multi-sample (singleton list)
      */
     private List<IMultisampleSource> processPresetFile (final File file)
     {
@@ -112,7 +112,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      *            directory structure
      * @param isLibrary If it is a library otherwise a preset
      * @param document The XML document to parse
-     * @return The parsed multisample source
+     * @return The parsed multi-sample source
      */
     private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String basePath, final boolean isLibrary, final Document document)
     {
@@ -244,7 +244,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
 
             parseEffects (paramsElement, multisampleSource);
 
-            group.addSampleMetadata (sampleZone);
+            group.addSampleZone (sampleZone);
         }
 
         return Optional.of (multisampleSource);
@@ -372,7 +372,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         amplitudeEnvelope.setSustain (ampEnvSustain);
         amplitudeEnvelope.setRelease (ampEnvRelease);
 
-        group.addSampleMetadata (sampleZone);
+        group.addSampleZone (sampleZone);
     }
 
 
@@ -414,7 +414,6 @@ public class Music1010DetectorTask extends AbstractDetectorTask
     private static void filterCells (final Element [] cellElements, final List<Element> multisampleElements, final List<Element> sampleElements, final List<Element> assetElements)
     {
         for (final Element cellElement: cellElements)
-        {
             switch (cellElement.getAttribute (Music1010Tag.ATTR_TYPE))
             {
                 case "sample":
@@ -433,6 +432,5 @@ public class Music1010DetectorTask extends AbstractDetectorTask
                     // Ignore
                     break;
             }
-        }
     }
 }

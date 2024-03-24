@@ -4,16 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.file.riff;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-
-import javax.imageio.stream.ImageInputStream;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Map;
+
+import javax.imageio.stream.ImageInputStream;
+
+import de.mossgrabers.convertwithmoss.exception.ParseException;
 
 
 /**
@@ -155,19 +155,16 @@ public class RIFFParser
                     this.parseLIST (props);
                 else if (isLocalChunkID (id))
                     this.parseLocalChunk (chunk, id);
+                else if (ignoreUnknownChunks)
+                {
+                    final long longSize = this.in.readUDWORD ();
+                    this.in.skipFully (longSize);
+                }
                 else
                 {
-                    if (ignoreUnknownChunks)
-                    {
-                        final long longSize = this.in.readUDWORD ();
-                        this.in.skipFully (longSize);
-                    }
-                    else
-                    {
-                        final ParseException pex = new ParseException ("Invalid Chunk: \"" + RiffID.toASCII (id) + "\" (" + id + ") at offset:" + idscan);
-                        chunk.setParserMessage (pex.getMessage ());
-                        throw pex;
-                    }
+                    final ParseException pex = new ParseException ("Invalid Chunk: \"" + RiffID.toASCII (id) + "\" (" + id + ") at offset:" + idscan);
+                    chunk.setParserMessage (pex.getMessage ());
+                    throw pex;
                 }
 
                 this.in.align ();
@@ -272,9 +269,7 @@ public class RIFFParser
                 return;
         }
         else
-        {
             chunk.markTooLarge ();
-        }
 
         this.in.skipFully (longSize);
         if (this.isStopChunks)
@@ -368,9 +363,7 @@ public class RIFFParser
             }
         }
         else
-        {
             chunk.markTooLarge ();
-        }
 
         this.in.skipFully (longSize);
         if (this.isStopChunk (chunk))
@@ -558,7 +551,6 @@ public class RIFFParser
         sb.append (" 0x").append (Integer.toHexString (id));
 
         if (this.iin != null)
-        {
             try
             {
                 sb.append (" near ").append (this.iin.getStreamPosition ()).append (" 0x").append (Long.toHexString (this.iin.getStreamPosition ()));
@@ -567,7 +559,6 @@ public class RIFFParser
             {
                 sb.append (", no further information available.");
             }
-        }
         throw new ParseException (sb.toString ());
     }
 }

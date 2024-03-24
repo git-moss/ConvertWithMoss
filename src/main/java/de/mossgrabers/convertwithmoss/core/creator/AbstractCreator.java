@@ -4,6 +4,32 @@
 
 package de.mossgrabers.convertwithmoss.core.creator;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+import java.util.zip.CRC32;
+import java.util.zip.CheckedOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
+
+import org.w3c.dom.Document;
+
 import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -25,34 +51,7 @@ import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-
-import org.w3c.dom.Document;
-
 import javafx.scene.control.CheckBox;
-
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.UnsupportedAudioFileException;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.Set;
-import java.util.zip.CRC32;
-import java.util.zip.CheckedOutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 
 /**
@@ -294,7 +293,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.notifyProgress ();
@@ -302,9 +300,8 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 if (outputCount % 80 == 0)
                     this.notifyNewline ();
 
-                zipSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationTime (), relativeFolderName);
+                this.zipSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationTime (), relativeFolderName);
             }
-        }
     }
 
 
@@ -317,9 +314,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param dateTime The date and time to set as the creation date of the file entry
      * @throws IOException Could not read the file
      */
-    protected static void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime) throws IOException
+    protected void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime) throws IOException
     {
-        zipSamplefile (alreadyStored, zipOutputStream, zone, dateTime, null);
+        this.zipSamplefile (alreadyStored, zipOutputStream, zone, dateTime, null);
     }
 
 
@@ -333,7 +330,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param path Optional path (may be null), must not end with a slash
      * @throws IOException Could not read the file
      */
-    protected static void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime, final String path) throws IOException
+    protected void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime, final String path) throws IOException
     {
         final String name = checkSampleName (alreadyStored, zone, path);
         if (name == null)
@@ -348,7 +345,11 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         }
 
         zipOutputStream.putNextEntry (entry);
-        zone.getSampleData ().writeSample (zipOutputStream);
+        final ISampleData sampleData = zone.getSampleData ();
+        if (sampleData == null)
+            this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), name);
+        else
+            sampleData.writeSample (zipOutputStream);
         zipOutputStream.closeEntry ();
     }
 
@@ -366,7 +367,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.notifyProgress ();
@@ -374,9 +374,8 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 if (outputCount % 80 == 0)
                     this.notifyNewline ();
 
-                storeSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationTime (), relativeFolderName);
+                this.storeSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationTime (), relativeFolderName);
             }
-        }
     }
 
 
@@ -389,9 +388,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param dateTime The date and time to set as the creation date of the file entry
      * @throws IOException Could not read the file
      */
-    protected static void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime) throws IOException
+    protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime) throws IOException
     {
-        storeSamplefile (alreadyStored, zipOutputStream, zone, null, null);
+        this.storeSamplefile (alreadyStored, zipOutputStream, zone, null, null);
     }
 
 
@@ -405,7 +404,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param path Optional path (may be null), must not end with a slash
      * @throws IOException Could not read the file
      */
-    protected static void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime, final String path) throws IOException
+    protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime, final String path) throws IOException
     {
         final String name = checkSampleName (alreadyStored, zone, path);
         if (name == null)
@@ -414,7 +413,11 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         final CRC32 crc = new CRC32 ();
         try (final ByteArrayOutputStream bout = new ByteArrayOutputStream (); final OutputStream checkedOut = new CheckedOutputStream (bout, crc))
         {
-            zone.getSampleData ().writeSample (checkedOut);
+            final ISampleData sampleData = zone.getSampleData ();
+            if (sampleData == null)
+                this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), name);
+            else
+                sampleData.writeSample (checkedOut);
             putUncompressedEntry (zipOutputStream, name, bout.toByteArray (), crc, dateTime);
         }
     }
@@ -465,7 +468,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
         int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 final File file = new File (sampleFolder, zone.getName () + fileEnding);
@@ -479,11 +481,16 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                     if (destinationFormat.requiresRewrite ())
                         rewriteFile (multisampleSource.getMetadata (), zone, fos, destinationFormat);
                     else
-                        zone.getSampleData ().writeSample (fos);
+                    {
+                        final ISampleData sampleData = zone.getSampleData ();
+                        if (sampleData == null)
+                            this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), file.getName ());
+                        else
+                            sampleData.writeSample (fos);
+                    }
                 }
                 writtenFiles.add (file);
             }
-        }
 
         return writtenFiles;
     }
@@ -506,7 +513,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
         int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 final File file = new File (sampleFolder, zone.getName () + extension);
@@ -516,11 +522,14 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                     outputCount++;
                     if (outputCount % 80 == 0)
                         this.notifyNewline ();
-                    fos.write (AudioFileUtils.compressToFLAC (zone.getSampleData (), targetFormat));
+                    final ISampleData sampleData = zone.getSampleData ();
+                    if (sampleData == null)
+                        this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), file.getName ());
+                    else
+                        fos.write (AudioFileUtils.compressToFLAC (sampleData, targetFormat));
                 }
                 writtenFiles.add (file);
             }
-        }
 
         return writtenFiles;
     }
@@ -537,10 +546,11 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     protected void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate) throws IOException
     {
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 final ISampleData sampleData = zone.getSampleData ();
+                if (sampleData == null)
+                    continue;
                 final double sampleRateRatio = newSampleRate / (double) sampleData.getAudioMetadata ().getSampleRate ();
                 zone.setStart ((int) Math.round (zone.getStart () * sampleRateRatio));
                 zone.setStop ((int) Math.round (zone.getStop () * sampleRateRatio));
@@ -551,7 +561,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                     loop.setEnd ((int) Math.round (loop.getEnd () * sampleRateRatio));
                 }
             }
-        }
     }
 
 
@@ -566,7 +575,10 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     private static void rewriteFile (final IMetadata metadata, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        final WaveFile wavFile = AudioFileUtils.convertToWav (zone.getSampleData (), destinationFormat);
+        final ISampleData sampleData = zone.getSampleData ();
+        if (sampleData == null)
+            return;
+        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
 
         if (destinationFormat.isUpdateBroadcastAudioChunk ())
             updateBroadcastAudioChunk (metadata, wavFile);

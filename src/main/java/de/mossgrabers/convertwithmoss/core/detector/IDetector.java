@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.core.detector;
 
-import de.mossgrabers.convertwithmoss.core.ICoreTask;
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-
 import java.io.File;
 import java.util.function.Consumer;
+
+import de.mossgrabers.convertwithmoss.core.ICoreTask;
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 
 
 /**

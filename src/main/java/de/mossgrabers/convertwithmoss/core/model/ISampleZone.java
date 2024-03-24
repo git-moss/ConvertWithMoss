@@ -4,11 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.core.model;
 
-import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-
 import java.util.List;
 import java.util.Optional;
+
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 
 /**
@@ -426,7 +426,7 @@ public interface ISampleZone
      * Fill in the data from another sample metadata object. The includes all data except the file
      * names and file data.
      *
-     * @param sampleMetadata The data source
+     * @param sampleZone The source zone
      */
-    void fillMetadata (ISampleZone sampleMetadata);
+    void fillMetadata (ISampleZone sampleZone);
 }

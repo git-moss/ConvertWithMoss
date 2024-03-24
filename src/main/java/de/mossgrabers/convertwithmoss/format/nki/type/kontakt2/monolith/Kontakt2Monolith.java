@@ -4,13 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith;
 
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
-import de.mossgrabers.convertwithmoss.format.nki.Magic;
-import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -19,6 +12,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
+import de.mossgrabers.convertwithmoss.format.nki.Magic;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -145,7 +145,6 @@ public class Kontakt2Monolith
     private final void findItems (final Directory dictionary, final DirectoryEntryType type, final List<DirectoryEntry> results)
     {
         for (final DirectoryEntry item: dictionary.getEntries ())
-        {
             if (item.getReferenceType () == DirectoryEntryType.DIRECTORY)
             {
                 final long pointer = item.getPointer ();
@@ -154,7 +153,6 @@ public class Kontakt2Monolith
             }
             else if (item.getReferenceType () == type)
                 results.add (item);
-        }
     }
 
 

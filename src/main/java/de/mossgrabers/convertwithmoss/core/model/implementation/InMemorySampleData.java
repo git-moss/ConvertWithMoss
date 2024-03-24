@@ -4,14 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-
-import java.io.IOException;
-import java.io.OutputStream;
 
 
 /**

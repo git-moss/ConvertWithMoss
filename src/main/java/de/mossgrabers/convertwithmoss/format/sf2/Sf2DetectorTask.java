@@ -4,6 +4,15 @@
 
 package de.mossgrabers.convertwithmoss.format.sf2;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -33,15 +42,6 @@ import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
 
 
 /**
@@ -144,7 +144,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                     generators.setInstrumentZoneGenerators (instrZone.getGenerators ());
                     final ISampleZone zone = createSampleMetadata (instrZone.getSample (), generators);
                     parseModulators (zone, presetZone, instrZone);
-                    group.addSampleMetadata (zone);
+                    group.addSampleZone (zone);
                 }
 
                 groups.add (group);
@@ -601,10 +601,8 @@ public class Sf2DetectorTask extends AbstractDetectorTask
     {
         final int minLength = Math.min (a.length (), b.length ());
         for (int i = 0; i < minLength; i++)
-        {
             if (a.charAt (i) != b.charAt (i))
                 return a.substring (0, i);
-        }
         return a.substring (0, minLength);
     }
 }

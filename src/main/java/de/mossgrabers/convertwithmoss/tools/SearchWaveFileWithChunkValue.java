@@ -4,15 +4,15 @@
 
 package de.mossgrabers.convertwithmoss.tools;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
-import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
+
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
+import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 
 /**

@@ -4,6 +4,22 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.channels.Channels;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
@@ -24,22 +40,6 @@ import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.Soun
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.nio.channels.Channels;
-import java.nio.file.Files;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -158,10 +158,8 @@ public class Kontakt5Type extends AbstractKontaktType
 
         // Check for encrypted sections
         for (final NIContainerChunk autorizationChunk: niContainerItem.findAll (NIContainerChunkType.AUTHORIZATION))
-        {
             if (autorizationChunk.getData () instanceof final AuthorizationChunkData authorization && !authorization.getSerialNumberPIDs ().isEmpty ())
                 this.notifier.logError ("IDS_NKI5_CONTAINS_ENCRYPTED_SUB_TREE");
-        }
 
         return Collections.emptyList ();
     }
@@ -231,7 +229,6 @@ public class Kontakt5Type extends AbstractKontaktType
         }
 
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 final String zoneName = zone.getName ();
@@ -244,6 +241,5 @@ public class Kontakt5Type extends AbstractKontaktType
                 }
                 zone.setSampleData (memoryFile);
             }
-        }
     }
 }

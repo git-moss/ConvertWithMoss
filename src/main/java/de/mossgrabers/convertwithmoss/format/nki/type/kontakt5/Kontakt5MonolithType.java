@@ -4,19 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
-import de.mossgrabers.convertwithmoss.format.nki.Magic;
-import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
-import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-import de.mossgrabers.tools.ui.Functions;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +17,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
+import de.mossgrabers.convertwithmoss.format.nki.Magic;
+import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -96,10 +96,8 @@ public class Kontakt5MonolithType extends AbstractKontaktType
         // Lookup the NKI file
         MonolithFile nkiFile = null;
         for (final MonolithFile file: monolithFiles.values ())
-        {
             if (file.name.toLowerCase ().endsWith (".nki"))
                 nkiFile = file;
-        }
         if (nkiFile == null)
             throw new IOException (Functions.getMessage ("IDS_NKI5_NO_NKI_IN_CONTAINER"));
 

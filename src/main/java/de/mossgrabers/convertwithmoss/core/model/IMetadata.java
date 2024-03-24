@@ -4,9 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.core.model;
 
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-
 import java.util.Date;
+
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 
 /**

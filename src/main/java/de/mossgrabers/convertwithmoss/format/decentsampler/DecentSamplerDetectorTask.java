@@ -4,6 +4,26 @@
 
 package de.mossgrabers.convertwithmoss.format.decentsampler;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
@@ -26,26 +46,6 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 
 /**
@@ -279,7 +279,6 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         final List<IGroup> groups = new ArrayList<> (groupNodes.length);
         int groupCounter = 1;
         for (final Node groupNode: groupNodes)
-        {
             if (groupNode instanceof final Element groupElement)
             {
                 this.currentGroupElement = groupElement;
@@ -307,7 +306,6 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 this.notifier.logError (ERR_BAD_METADATA_FILE);
                 return Collections.emptyList ();
             }
-        }
         return groups;
     }
 
@@ -364,7 +362,6 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             if (triggerAttribute == null || triggerAttribute.isBlank ())
                 triggerAttribute = trigger;
             if (triggerAttribute != null && !triggerAttribute.isBlank ())
-            {
                 try
                 {
                     sampleZone.setTrigger (TriggerType.valueOf (triggerAttribute.toUpperCase (Locale.ENGLISH)));
@@ -373,7 +370,6 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 {
                     this.notifier.logError ("IDS_DS_UNKNOWN_TRIGGER", triggerAttribute);
                 }
-            }
 
             sampleZone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
             sampleZone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
@@ -431,7 +427,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             amplitudeEnvelope.setSustain (this.getDoubleValue (DecentSamplerTag.AMP_ENV_SUSTAIN, -1));
             amplitudeEnvelope.setRelease (this.getDoubleValue (DecentSamplerTag.AMP_ENV_RELEASE, -1));
 
-            group.addSampleMetadata (sampleZone);
+            group.addSampleZone (sampleZone);
         }
     }
 
