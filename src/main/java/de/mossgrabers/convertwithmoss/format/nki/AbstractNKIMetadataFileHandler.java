@@ -829,16 +829,12 @@ public abstract class AbstractNKIMetadataFileHandler
             if ((loopMode.equals (this.tags.untilEndValue ()) || loopMode.equals (this.tags.untilReleaseValue ())) && alternatingLoop.equals (this.tags.yes ()))
                 loopType = LoopType.ALTERNATING;
 
-            final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
-            sampleLoop.setStart (loopStart);
-            sampleLoop.setEnd (loopLength + loopStart);
-            if (xFadeLength > 0)
-            {
-                final double xFadeFactor = (double) loopLength / (double) xFadeLength;
-                sampleLoop.setCrossfade (xFadeFactor > 1.0d ? 1.0d : xFadeFactor);
-            }
-            sampleLoop.setType (loopType);
-            sampleMetadata.addLoop (sampleLoop);
+            final DefaultSampleLoop loop = new DefaultSampleLoop ();
+            loop.setStart (loopStart);
+            loop.setEnd (loopLength + loopStart);
+            loop.setCrossfadeInSamples (xFadeLength);
+            loop.setType (loopType);
+            sampleMetadata.addLoop (loop);
         }
     }
 

@@ -17,8 +17,8 @@ class EXS24Group
     int     polyphony                 = 0;    // = Max
     int     options                   = 1;
     int     exclusive                 = 0;
-    int     minvel                    = 0;
-    int     maxvel                    = 127;
+    int     minVelocity               = 0;
+    int     maxVelocity               = 127;
     int     sampleSelectRandomOffset  = 0;
     int     releaseTriggerTime        = 0;
     int     velocityRangExFade        = 0;

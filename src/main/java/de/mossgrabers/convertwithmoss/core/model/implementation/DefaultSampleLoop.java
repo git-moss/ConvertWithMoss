@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 
@@ -81,7 +82,27 @@ public class DefaultSampleLoop implements ISampleLoop
     @Override
     public void setCrossfade (final double crossfade)
     {
-        this.crossfade = crossfade;
+        this.crossfade = MathUtils.clamp (crossfade, 0.0, 1.0);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setCrossfadeInSamples (final double crossfadeSamples)
+    {
+        final int loopLength = this.loopEnd - this.loopStart;
+        if (loopLength > 0)
+            this.setCrossfade (crossfade / loopLength);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setCrossfadeInSeconds (final double crossfadeSeconds, final int sampleRate)
+    {
+        final int loopLength = this.loopEnd - this.loopStart;
+        final double loopLengthInSeconds = loopLength / sampleRate;
+        this.setCrossfade (crossfadeSeconds / loopLengthInSeconds);
     }
 
 

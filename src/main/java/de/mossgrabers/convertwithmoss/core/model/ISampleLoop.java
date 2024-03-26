@@ -63,17 +63,37 @@ public interface ISampleLoop
 
 
     /**
-     * Get the loop crossfade.
+     * Get the loop cross-fade.
      *
-     * @return The crossfade value in the range of [0..1] which is [0..100%]
+     * @return The cross-fade value in the range of [0..1] which is [0..100%]
      */
     double getCrossfade ();
 
 
     /**
-     * Set the loop crossfade.
+     * Set the loop cross-fade which is relative to the length of the loop. 100% cross-fades the
+     * whole loop. 0% creates no cross-fade.
      *
-     * @param crossfade The crossfade value in the range of [0..1] which is [0..100%]
+     * @param crossfade The cross-fade value in the range of [0..1] which is [0..100%]
      */
     void setCrossfade (double crossfade);
+
+
+    /**
+     * Set the loop cross-fade in samples (frames). Calculates the relative value from the loop
+     * length which means that the loop start and end must have been already set correctly.
+     *
+     * @param crossfadeSamples The cross-fade value in samples
+     */
+    void setCrossfadeInSamples (double crossfadeSamples);
+
+
+    /**
+     * Set the loop cross-fade in milli-seconds. Calculates the relative value from the loop length
+     * which means that the loop start and end must have been already set correctly.
+     *
+     * @param crossfadeSeconds The cross-fade value in seconds
+     * @param sampleRate The sample rate to calculate between samples and milli-seconds
+     */
+    void setCrossfadeInSeconds (double crossfadeSeconds, int sampleRate);
 }

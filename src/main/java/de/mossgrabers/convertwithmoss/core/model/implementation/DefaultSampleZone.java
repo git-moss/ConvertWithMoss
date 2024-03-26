@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -337,7 +338,7 @@ public class DefaultSampleZone implements ISampleZone
     @Override
     public void setGain (final double gain)
     {
-        this.gain = gain;
+        this.gain = MathUtils.clamp (gain, -12.0, 12.0);
     }
 
 
