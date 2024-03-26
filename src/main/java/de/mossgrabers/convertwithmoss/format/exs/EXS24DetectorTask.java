@@ -12,19 +12,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -155,7 +159,10 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             }
         }
 
-        return Collections.singletonList (this.createMultisample (file, groups, zones, samples));
+        final Optional<IMultisampleSource> multisample = this.createMultisample (file, groups, zones, samples);
+        if (multisample.isEmpty ())
+            return Collections.emptyList ();
+        return Collections.singletonList (multisample.get ());
     }
 
 
@@ -175,7 +182,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      * @return The multi-sample source
      * @throws IOException Could not create a multi-sample
      */
-    private IMultisampleSource createMultisample (final File file, final Map<Integer, EXS24Group> exs24Groups, final List<EXS24Zone> exs24Zones, final List<EXS24Sample> exs24Samples) throws IOException
+    private Optional<IMultisampleSource> createMultisample (final File file, final Map<Integer, EXS24Group> exs24Groups, final List<EXS24Zone> exs24Zones, final List<EXS24Sample> exs24Samples) throws IOException
     {
         final String name = file.getName ();
         final File parentFile = file.getParentFile ();
@@ -183,9 +190,13 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
 
         final Map<Integer, IGroup> groupsMap = new TreeMap<> ();
+        final Map<IGroup, EXS24Group> groupMapping = new HashMap<> ();
 
         for (final EXS24Zone exs24Zone: exs24Zones)
         {
+            if (this.waitForDelivery ())
+                return Optional.empty ();
+
             final ISampleZone zone = createAndCheckSampleZone (parentFile, exs24Zone, exs24Samples);
             if (zone == null)
                 continue;
@@ -193,35 +204,84 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             zone.setKeyRoot (exs24Zone.key);
             zone.setKeyLow (exs24Zone.keyLow);
             zone.setKeyHigh (exs24Zone.keyHigh);
-            zone.setVelocityLow (exs24Zone.velocityLow);
-            zone.setVelocityHigh (exs24Zone.velocityHigh);
+            zone.setVelocityLow (exs24Zone.velocityRangeOn ? exs24Zone.velocityLow : 0);
+            zone.setVelocityHigh (exs24Zone.velocityRangeOn ? exs24Zone.velocityHigh : 127);
             zone.setStart (exs24Zone.sampleStart);
             zone.setStop (exs24Zone.sampleEnd);
+            zone.setReversed (exs24Zone.reverse);
+            zone.setGain (exs24Zone.volumeAdjust);
+
+            if (exs24Zone.pitch && (exs24Zone.coarseTuning != 0 || exs24Zone.fineTuning != 0))
+                zone.setTune (exs24Zone.coarseTuning + exs24Zone.fineTuning / 100.0);
+
+            zone.setPanorama (MathUtils.clamp (exs24Zone.pan, -50, 50) / 50.0);
 
             if (exs24Zone.loopOn)
             {
                 final DefaultSampleLoop loop = new DefaultSampleLoop ();
                 loop.setStart (exs24Zone.loopStart);
                 loop.setEnd (exs24Zone.loopEnd);
+                if (exs24Zone.loopCrossfade != 0)
+                {
+                    // Existence has been checked above...
+                    final EXS24Sample exs24Sample = exs24Samples.get (exs24Zone.sampleIndex);
+                    loop.setCrossfadeInSeconds (exs24Zone.loopCrossfade / 1000.0, exs24Sample.sampleRate);
+                }
                 zone.getLoops ().add (loop);
             }
-
             // Add group data from exs24Groups
             final IGroup group = groupsMap.computeIfAbsent (Integer.valueOf (exs24Zone.groupIndex), key -> {
 
                 final IGroup newGroup = new DefaultGroup ();
                 final EXS24Group exs24Group = exs24Groups.get (key);
                 if (exs24Group != null)
+                {
+                    groupMapping.put (newGroup, exs24Group);
                     newGroup.setName (exs24Group.name.replace ((char) 0, ' '));
+                    if (exs24Group.releaseTrigger)
+                        newGroup.setTrigger (TriggerType.RELEASE);
+                }
                 return newGroup;
 
             });
+
+            final EXS24Group exs24Group = groupMapping.get (group);
+            if (exs24Group != null)
+            {
+                if (exs24Group.volume != 0)
+                    zone.setGain (zone.getGain () + exs24Group.volume);
+                if (exs24Group.pan != 0)
+                    zone.setPanorama (zone.getPanorama () + exs24Group.pan);
+
+                // Zone is completely outside of the groups' velocity range
+                if (zone.getVelocityHigh () < exs24Group.minVelocity)
+                    continue;
+                if (exs24Group.minVelocity != 0 && zone.getVelocityLow () < exs24Group.minVelocity)
+                    zone.setVelocityLow (exs24Group.minVelocity);
+                // Zone is completely outside of the groups' velocity range
+                if (zone.getVelocityLow () > exs24Group.maxVelocity)
+                    continue;
+                if (exs24Group.maxVelocity != 0 && zone.getVelocityHigh () > exs24Group.maxVelocity)
+                    zone.setVelocityHigh (exs24Group.maxVelocity);
+
+                // Zone is completely outside of the groups' note range
+                if (zone.getKeyHigh () < exs24Group.startNote)
+                    continue;
+                if (exs24Group.startNote != 0 && zone.getKeyLow () < exs24Group.startNote)
+                    zone.setKeyLow (exs24Group.startNote);
+                // Zone is completely outside of the groups' note range
+                if (zone.getKeyLow () > exs24Group.endNote)
+                    continue;
+                if (exs24Group.endNote != 0 && zone.getKeyHigh () > exs24Group.endNote)
+                    zone.setKeyHigh (exs24Group.endNote);
+            }
+
             group.addSampleZone (zone);
         }
 
         multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
-        return multisampleSource;
+        return Optional.of (multisampleSource);
     }
 
 
@@ -265,8 +325,6 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             return sampleFile;
 
         // Go one folder up and search recursively...
-        this.notifier.log ("IDS_EXS_SEARCHING_SAMPLE_FILE", fileName);
-
         final File found = findSampleFileRecursively (folder.getParentFile (), fileName);
         // Returning the original file triggers the expected error...
         return found == null ? sampleFile : found;
@@ -383,8 +441,8 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         group.fixedSampleSelect = (group.options & 128) > 0; // 0 = OFF, 1 = ON
 
         group.exclusive = in.read ();
-        group.minvel = in.read ();
-        group.maxvel = in.read ();
+        group.minVelocity = in.read ();
+        group.maxVelocity = in.read ();
         group.sampleSelectRandomOffset = in.read ();
 
         in.skipNBytes (8);

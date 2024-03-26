@@ -403,9 +403,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 final DefaultSampleLoop loop = new DefaultSampleLoop ();
                 loop.setStart (loopStart);
                 loop.setEnd (loopEnd);
-                final int loopLength = loopEnd - loopStart;
-                if (loopLength > 0)
-                    loop.setCrossfade (loopCrossfade / loopLength);
+                loop.setCrossfadeInSamples (loopCrossfade);
                 sampleZone.addLoop (loop);
             }
 
