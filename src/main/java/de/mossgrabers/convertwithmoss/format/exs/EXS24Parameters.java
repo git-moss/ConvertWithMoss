@@ -4,8 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.exs;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
+
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
@@ -13,7 +19,7 @@ import java.util.Map;
  *
  * @author Jürgen Moßgraber
  */
-public class EXS24Parameters
+public class EXS24Parameters extends EXS24Object
 {
     private static final Map<Integer, String>  PARAM_NAMES    = new HashMap<> ();
     private static final Map<Integer, Integer> DEFAULT_PARAMS = new HashMap<> ();
@@ -502,10 +508,12 @@ public class EXS24Parameters
     public static final int MOD11_VIA_INVERT           = 0x1a1;
     public static final int MOD11_BYPASS               = 0x1a2;
 
+    Map<Integer, Integer>   params                     = new TreeMap<> ();
+
 
     /**
      * Get the name of the parameter.
-     * 
+     *
      * @param id The parameter ID for which to get the name
      * @return The name or null if it does not exist
      */
@@ -519,10 +527,70 @@ public class EXS24Parameters
 
 
     /**
-     * Private due to constant class.
+     * Constructor.
      */
-    private EXS24Parameters ()
+    public EXS24Parameters ()
     {
-        // Intentionally empty
+        super (EXS24Block.TYPE_PARAMS);
+    }
+
+
+    /**
+     * Constructor.
+     * 
+     * @param block The block to read
+     * @throws IOException Could not read the block
+     */
+    public EXS24Parameters (final EXS24Block block) throws IOException
+    {
+        this ();
+        this.read (block);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void read (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        int paramCount = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        int paramBlockLength = paramCount * 3;
+        byte [] parameterData = in.readNBytes (paramBlockLength);
+
+        for (int i = 0; i < paramCount; i++)
+        {
+            final int paramID = parameterData[i] & 0xFF;
+            if (paramID != 0)
+            {
+                final int valueOffset = paramCount + 2 * i;
+                final int value = StreamUtils.readSigned16 (parameterData, valueOffset, isBigEndian);
+                this.params.put (paramID, Integer.valueOf (value));
+            }
+        }
+
+        final int available = in.available ();
+        if (available > 0)
+        {
+            paramCount = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+            if (paramCount <= 0 || paramCount * 2 > available)
+                return;
+
+            paramBlockLength = paramCount * 2;
+            if (paramBlockLength <= 0)
+                return;
+            parameterData = in.readNBytes (paramBlockLength);
+            for (int i = 0; i < paramBlockLength; i += 2)
+            {
+                final int paramID = parameterData[i] & 0xFF;
+                if (paramID != 0)
+                    this.params.put (paramID, Integer.valueOf (parameterData[i + 1]));
+            }
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
+    {
+        // TODO
     }
 }

@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.exs.EXS24Creator;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Detector;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
@@ -161,6 +162,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new MPCKeygroupCreator (this),
             new BitwigMultisampleCreator (this),
             new DecentSamplerCreator (this),
+            new EXS24Creator (this),
             new NkiCreator (this),
             new KMPCreator (this),
             new KorgmultisampleCreator (this),
