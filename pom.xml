@@ -54,7 +54,7 @@
 		<dependency>
 			<artifactId>uitools</artifactId>
 			<groupId>de.mossgrabers</groupId>
-			<version>1.4.0</version>
+			<version>1.4.1</version>
 		</dependency>
 	</dependencies>
 

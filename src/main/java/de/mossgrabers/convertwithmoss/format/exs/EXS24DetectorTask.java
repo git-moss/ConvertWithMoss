@@ -26,9 +26,15 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -51,6 +57,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     private static final int         CHUNK_TYPE_GROUP      = 0x02;
     private static final int         CHUNK_TYPE_SAMPLE     = 0x03;
     private static final int         CHUNK_TYPE_PARAMS     = 0x04;
+    private static final int         CHUNK_TYPE_UNKNOWN    = 0x08;
 
     private static final Set<String> BIG_ENDIAN_MAGIC      = new HashSet<> (2);
     private static final Set<String> LITTLE_ENDIAN_MAGIC   = new HashSet<> (2);
@@ -104,9 +111,11 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      */
     private List<IMultisampleSource> readEXSFile (final File file, final InputStream in) throws IOException
     {
+        EXS24Instrument instrument = null;
         final List<EXS24Zone> zones = new ArrayList<> ();
         final List<EXS24Sample> samples = new ArrayList<> ();
         final Map<Integer, EXS24Group> groups = new TreeMap<> ();
+        final Map<Integer, Integer> params = new TreeMap<> ();
 
         while (in.available () > 0)
         {
@@ -132,10 +141,11 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             final String blockName = cleanName (StreamUtils.readASCII (in, 64));
             final byte [] content = in.readNBytes (blockSize);
 
-            switch (blockType)
+            // There are variants which have a 0x40 added...
+            switch (blockType & 0x0F)
             {
                 case CHUNK_TYPE_INSTRUMENT:
-                    // No idea about the values in the instrument content yet
+                    instrument = this.readInstrument (content, isBigEndian);
                     break;
 
                 case CHUNK_TYPE_ZONE:
@@ -143,7 +153,11 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                     break;
 
                 case CHUNK_TYPE_GROUP:
-                    groups.put (Integer.valueOf (index), readGroup (blockName, content, isBigEndian));
+                    int idx = index;
+                    // Workaround for some files which have not a proper index set!
+                    if (index == 0 && groups.containsKey (index))
+                        idx = groups.size ();
+                    groups.put (Integer.valueOf (idx), readGroup (blockName, content, isBigEndian));
                     break;
 
                 case CHUNK_TYPE_SAMPLE:
@@ -151,24 +165,26 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                     break;
 
                 case CHUNK_TYPE_PARAMS:
-                    // Currently not used
+                    params.putAll (this.readParameters (content, isBigEndian));
+                    break;
+
+                case CHUNK_TYPE_UNKNOWN:
+                    // No idea what that is but it is 4 bytes long...
                     break;
 
                 default:
-                    throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_EXS_BLOCK_TYPE", Integer.toString (blockType)));
+                    this.notifier.logError ("IDS_EXS_UNKNOWN_EXS_BLOCK_TYPE", Integer.toString (blockType));
+                    break;
             }
         }
 
-        final Optional<IMultisampleSource> multisample = this.createMultisample (file, groups, zones, samples);
+        if (instrument == null)
+            return Collections.emptyList ();
+
+        final Optional<IMultisampleSource> multisample = this.createMultisample (file, groups, zones, samples, params);
         if (multisample.isEmpty ())
             return Collections.emptyList ();
         return Collections.singletonList (multisample.get ());
-    }
-
-
-    private static String cleanName (final String ascii)
-    {
-        return ascii.split ("\0")[0];
     }
 
 
@@ -176,13 +192,13 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      * Create a multi-sample from the read EXS information.
      *
      * @param file The source file
-     * @param exs24Groups All read EXS groups
-     * @param exs24Zones All read EXS zones
+     * @param exs24Groups All .doubleValue () / 127.0 * 10.0 * @param exs24Zones All read EXS zones
      * @param exs24Samples All read EXS samples
+     * @param parameters The global parameters
      * @return The multi-sample source
      * @throws IOException Could not create a multi-sample
      */
-    private Optional<IMultisampleSource> createMultisample (final File file, final Map<Integer, EXS24Group> exs24Groups, final List<EXS24Zone> exs24Zones, final List<EXS24Sample> exs24Samples) throws IOException
+    private Optional<IMultisampleSource> createMultisample (final File file, final Map<Integer, EXS24Group> exs24Groups, final List<EXS24Zone> exs24Zones, final List<EXS24Sample> exs24Samples, final Map<Integer, Integer> parameters) throws IOException
     {
         final String name = file.getName ();
         final File parentFile = file.getParentFile ();
@@ -197,7 +213,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             if (this.waitForDelivery ())
                 return Optional.empty ();
 
-            final ISampleZone zone = createAndCheckSampleZone (parentFile, exs24Zone, exs24Samples);
+            final ISampleZone zone = this.createAndCheckSampleZone (parentFile, exs24Zone, exs24Samples);
             if (zone == null)
                 continue;
 
@@ -230,58 +246,36 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                 zone.getLoops ().add (loop);
             }
             // Add group data from exs24Groups
-            final IGroup group = groupsMap.computeIfAbsent (Integer.valueOf (exs24Zone.groupIndex), key -> {
-
-                final IGroup newGroup = new DefaultGroup ();
-                final EXS24Group exs24Group = exs24Groups.get (key);
-                if (exs24Group != null)
-                {
-                    groupMapping.put (newGroup, exs24Group);
-                    newGroup.setName (exs24Group.name.replace ((char) 0, ' '));
-                    if (exs24Group.releaseTrigger)
-                        newGroup.setTrigger (TriggerType.RELEASE);
-                }
-                return newGroup;
-
-            });
+            final IGroup group = this.getOrCreateGroup (exs24Groups, groupsMap, groupMapping, exs24Zone);
 
             final EXS24Group exs24Group = groupMapping.get (group);
-            if (exs24Group != null)
-            {
-                if (exs24Group.volume != 0)
-                    zone.setGain (zone.getGain () + exs24Group.volume);
-                if (exs24Group.pan != 0)
-                    zone.setPanorama (zone.getPanorama () + exs24Group.pan);
-
-                // Zone is completely outside of the groups' velocity range
-                if (zone.getVelocityHigh () < exs24Group.minVelocity)
-                    continue;
-                if (exs24Group.minVelocity != 0 && zone.getVelocityLow () < exs24Group.minVelocity)
-                    zone.setVelocityLow (exs24Group.minVelocity);
-                // Zone is completely outside of the groups' velocity range
-                if (zone.getVelocityLow () > exs24Group.maxVelocity)
-                    continue;
-                if (exs24Group.maxVelocity != 0 && zone.getVelocityHigh () > exs24Group.maxVelocity)
-                    zone.setVelocityHigh (exs24Group.maxVelocity);
-
-                // Zone is completely outside of the groups' note range
-                if (zone.getKeyHigh () < exs24Group.startNote)
-                    continue;
-                if (exs24Group.startNote != 0 && zone.getKeyLow () < exs24Group.startNote)
-                    zone.setKeyLow (exs24Group.startNote);
-                // Zone is completely outside of the groups' note range
-                if (zone.getKeyLow () > exs24Group.endNote)
-                    continue;
-                if (exs24Group.endNote != 0 && zone.getKeyHigh () > exs24Group.endNote)
-                    zone.setKeyHigh (exs24Group.endNote);
-            }
-
-            group.addSampleZone (zone);
+            if (exs24Group == null || this.limitByGroupAttributes (exs24Group, zone))
+                group.addSampleZone (zone);
         }
 
         multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
+        this.applyGlobalParameters (multisampleSource, parameters);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
         return Optional.of (multisampleSource);
+    }
+
+
+    private IGroup getOrCreateGroup (final Map<Integer, EXS24Group> exs24Groups, final Map<Integer, IGroup> groupsMap, final Map<IGroup, EXS24Group> groupMapping, final EXS24Zone exs24Zone)
+    {
+        return groupsMap.computeIfAbsent (Integer.valueOf (exs24Zone.groupIndex), key -> {
+
+            final IGroup newGroup = new DefaultGroup ();
+            final EXS24Group exs24Group = exs24Groups.get (key);
+            if (exs24Group != null)
+            {
+                groupMapping.put (newGroup, exs24Group);
+                newGroup.setName (exs24Group.name.replace ((char) 0, ' '));
+                if (exs24Group.releaseTrigger)
+                    newGroup.setTrigger (TriggerType.RELEASE);
+            }
+            return newGroup;
+
+        });
     }
 
 
@@ -300,20 +294,135 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             return null;
         }
 
-        final File sampleFile = findSampleFile (parentFile, exs24Sample.fileName);
+        final File sampleFile = this.findSampleFile (parentFile, exs24Sample.fileName);
         if (!sampleFile.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
             return null;
         }
-        return createSampleZone (sampleFile);
+        return this.createSampleZone (sampleFile);
+    }
+
+
+    private void applyGlobalParameters (final IMultisampleSource multisampleSource, final Map<Integer, Integer> parameters)
+    {
+        this.applyFilterParameters (multisampleSource, parameters);
+
+        // Pitch bend up/down
+        final Integer pitchBendUp = parameters.get (EXS24Parameters.PITCH_BEND_UP);
+        final Integer pitchBendDown = parameters.get (EXS24Parameters.PITCH_BEND_DOWN);
+        final int bendUp = pitchBendUp != null ? pitchBendUp.intValue () * 100 : 200;
+        int bendDown = -200;
+        if (pitchBendDown != null)
+            bendDown = pitchBendDown.intValue () == -1 ? -bendUp : pitchBendDown.intValue () * -100;
+
+        final Integer globalCoarseTune = parameters.get (EXS24Parameters.COARSE_TUNE);
+        final int coarseTune = globalCoarseTune == null ? 0 : globalCoarseTune.intValue ();
+        final Integer globalFineTune = parameters.get (EXS24Parameters.FINE_TUNE);
+        final int fineTune = globalFineTune == null ? 0 : globalFineTune.intValue ();
+        final double tuneOffset = coarseTune + fineTune / 100.0;
+
+        final IEnvelope globalAmplitudeEnvelope = this.createEnvelope (parameters, 1);
+
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                zone.setBendUp (bendUp);
+                zone.setBendDown (bendDown);
+                zone.setTune (zone.getTune () + tuneOffset);
+
+                final IModulator amplitudeModulator = zone.getAmplitudeModulator ();
+                amplitudeModulator.setDepth (1.0);
+                amplitudeModulator.setSource (globalAmplitudeEnvelope);
+            }
+    }
+
+
+    private IEnvelope createEnvelope (final Map<Integer, Integer> parameters, final int envelopeIndex)
+    {
+        final Integer delay = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_DELAY_START : EXS24Parameters.ENV2_DELAY_START);
+        final Integer attack = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_HI_VEL : EXS24Parameters.ENV2_ATK_HI_VEL);
+        final Integer hold = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_HOLD : EXS24Parameters.ENV2_HOLD);
+        final Integer decay = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_DECAY : EXS24Parameters.ENV2_DECAY);
+        final Integer sustain = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_SUSTAIN : EXS24Parameters.ENV2_SUSTAIN);
+        final Integer release = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_RELEASE : EXS24Parameters.ENV2_RELEASE);
+
+        final IEnvelope envelope = new DefaultEnvelope ();
+        // Maximum time for each step are 10 seconds
+        envelope.setDelay (delay == null ? 0 : delay.doubleValue () / 127.0 * 10.0);
+        envelope.setAttack (attack == null ? 0 : attack.intValue ());
+        envelope.setHold (hold == null ? 0 : hold.doubleValue () / 127.0 * 10.0);
+        envelope.setDecay (decay == null ? 0 : decay.doubleValue () / 127.0 * 10.0);
+        envelope.setSustain (sustain == null ? 1.0 : sustain.doubleValue () / 127.0);
+        envelope.setRelease (release == null ? 0 : release.doubleValue () / 127.0 * 10.0);
+
+        return envelope;
+    }
+
+
+    private void applyFilterParameters (final IMultisampleSource multisampleSource, final Map<Integer, Integer> parameters)
+    {
+        final Integer isFilterEnabled = parameters.get (EXS24Parameters.FILTER1_TOGGLE);
+        if (isFilterEnabled == null || isFilterEnabled.intValue () <= 0)
+            return;
+
+        final Integer filterTypeIndex = parameters.get (EXS24Parameters.FILTER1_TYPE);
+        if (filterTypeIndex == null)
+            return;
+
+        final IEnvelope globalFilterEnvelope = this.createEnvelope (parameters, 2);
+
+        // TODO confirm that the order is correct...
+        final FilterType filterType;
+        final int poles;
+        switch (filterTypeIndex.intValue ())
+        {
+            default:
+            case 0:
+                filterType = FilterType.LOW_PASS;
+                poles = 4;
+                break;
+            case 1:
+                filterType = FilterType.LOW_PASS;
+                poles = 3;
+                break;
+            case 2:
+                filterType = FilterType.LOW_PASS;
+                poles = 2;
+                break;
+            case 3:
+                filterType = FilterType.LOW_PASS;
+                poles = 1;
+                break;
+            case 4:
+                filterType = FilterType.HIGH_PASS;
+                poles = 2;
+                break;
+            case 5:
+                filterType = FilterType.BAND_PASS;
+                poles = 2;
+                break;
+        }
+
+        final Integer filterFrequency = parameters.get (EXS24Parameters.FILTER1_CUTOFF);
+        final Integer filterResonance = parameters.get (EXS24Parameters.FILTER1_RESO);
+
+        final int frequency = filterFrequency == null ? 1000 : filterFrequency.intValue ();
+        final int resonance = filterResonance == null ? 0 : filterResonance.intValue ();
+
+        final double cutoff = frequency / 1000.0 * IFilter.MAX_FREQUENCY;
+        final double denormalize = MathUtils.denormalize (resonance / 1000.0, 0, 40.0);
+
+        final IFilter filter = new DefaultFilter (filterType, poles, cutoff, denormalize);
+        filter.getCutoffModulator ().setSource (globalFilterEnvelope);
+        multisampleSource.setGlobalFilter (filter);
     }
 
 
     /**
      * If the sample is not found in the given folder, a search is started from one folder up and
      * search recursively for the wave file.
-     * 
+     *
      * @param folder The folder where the sample is expected
      * @param fileName The name of the sample file
      * @return The sample file
@@ -325,9 +434,42 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             return sampleFile;
 
         // Go one folder up and search recursively...
-        final File found = findSampleFileRecursively (folder.getParentFile (), fileName);
+        final File found = this.findSampleFileRecursively (folder.getParentFile (), fileName);
         // Returning the original file triggers the expected error...
         return found == null ? sampleFile : found;
+    }
+
+
+    private boolean limitByGroupAttributes (final EXS24Group exs24Group, final ISampleZone zone)
+    {
+        if (exs24Group.volume != 0)
+            zone.setGain (zone.getGain () + exs24Group.volume);
+        if (exs24Group.pan != 0)
+            zone.setPanorama (zone.getPanorama () + exs24Group.pan);
+
+        // Zone is completely outside of the groups' velocity range
+        if (zone.getVelocityHigh () < exs24Group.minVelocity)
+            return false;
+        if (exs24Group.minVelocity != 0 && zone.getVelocityLow () < exs24Group.minVelocity)
+            zone.setVelocityLow (exs24Group.minVelocity);
+        // Zone is completely outside of the groups' velocity range
+        if (zone.getVelocityLow () > exs24Group.maxVelocity)
+            return false;
+        if (exs24Group.maxVelocity != 0 && zone.getVelocityHigh () > exs24Group.maxVelocity)
+            zone.setVelocityHigh (exs24Group.maxVelocity);
+
+        // Zone is completely outside of the groups' note range
+        if (zone.getKeyHigh () < exs24Group.startNote)
+            return false;
+        if (exs24Group.startNote != 0 && zone.getKeyLow () < exs24Group.startNote)
+            zone.setKeyLow (exs24Group.startNote);
+        // Zone is completely outside of the groups' note range
+        if (zone.getKeyLow () > exs24Group.endNote)
+            return false;
+        if (exs24Group.endNote != 0 && zone.getKeyHigh () > exs24Group.endNote)
+            zone.setKeyHigh (exs24Group.endNote);
+
+        return true;
     }
 
 
@@ -335,14 +477,11 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     {
         File sampleFile = new File (folder, fileName);
         if (sampleFile.exists ())
-        {
-            this.notifier.log ("IDS_EXS_FOUND_FILE", sampleFile.getAbsolutePath ());
             return sampleFile;
-        }
 
         for (final File subFolder: folder.listFiles (File::isDirectory))
         {
-            sampleFile = findSampleFileRecursively (subFolder, fileName);
+            sampleFile = this.findSampleFileRecursively (subFolder, fileName);
             if (sampleFile != null)
                 return sampleFile;
         }
@@ -352,8 +491,44 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
 
     /**
+     * Read an instrument block.
+     *
+     * @param content The data of the block
+     * @param isBigEndian True if big-endian otherwise little-endian
+     * @throws IOException Could not read the data
+     */
+    private EXS24Instrument readInstrument (final byte [] content, final boolean isBigEndian) throws IOException
+    {
+        final ByteArrayInputStream in = new ByteArrayInputStream (content);
+
+        final EXS24Instrument instrument = new EXS24Instrument ();
+
+        // No idea, always 0
+        StreamUtils.readUnsigned32 (in, isBigEndian);
+
+        instrument.numZoneBlocks = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        instrument.numGroupBlocks = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        instrument.numSampleBlocks = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        instrument.numParameterBlocks = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+
+        // No idea about these values, maybe there are more unknown block types
+        StreamUtils.readUnsigned32 (in, isBigEndian);
+        StreamUtils.readUnsigned32 (in, isBigEndian);
+        StreamUtils.readUnsigned32 (in, isBigEndian);
+        // There are files which have this set and then 16 blocks appear with a block type of 8. The
+        // content of each block is 4 bytes but they are all 0.
+        StreamUtils.readUnsigned32 (in, isBigEndian);
+
+        // No idea about this value, maybe there are more unknown block types
+        StreamUtils.readUnsigned32 (in, isBigEndian);
+
+        return instrument;
+    }
+
+
+    /**
      * Read a zone block.
-     * 
+     *
      * @param content The data of the block
      * @param isBigEndian True if big-endian otherwise little-endian
      * @throws IOException Could not read the data
@@ -419,7 +594,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
     /**
      * Read a group block.
-     * 
+     *
      * @param content The data of the block
      * @param isBigEndian True if big-endian otherwise little-endian
      * @throws IOException Could not read the data
@@ -510,7 +685,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
     /**
      * Read a sample block.
-     * 
+     *
      * @param content The data of the block
      * @param isBigEndian True if big-endian otherwise little-endian
      * @throws IOException Could not read the data
@@ -544,6 +719,64 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         sample.fileName = in.available () > 0 ? cleanName (StreamUtils.readASCII (in, 256)) : name;
 
         return sample;
+    }
+
+
+    /**
+     * Read a parameters block.
+     *
+     * @param content The data of the block
+     * @param isBigEndian True if big-endian otherwise little-endian
+     * @return The read parameters
+     * @throws IOException Could not read the data
+     */
+    private Map<Integer, Integer> readParameters (final byte [] content, final boolean isBigEndian) throws IOException
+    {
+        final ByteArrayInputStream in = new ByteArrayInputStream (content);
+
+        int paramCount = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        int paramBlockLength = paramCount * 3;
+        byte [] parameterData = in.readNBytes (paramBlockLength);
+
+        final Map<Integer, Integer> params = new TreeMap<> ();
+        for (int i = 0; i < paramCount; i++)
+        {
+            final int paramID = parameterData[i] & 0xFF;
+            if (paramID != 0)
+            {
+                final int valueOffset = paramCount + 2 * i;
+                final int value = StreamUtils.readSigned16 (parameterData, valueOffset, isBigEndian);
+                params.put (paramID, Integer.valueOf (value));
+            }
+        }
+
+        final int available = in.available ();
+        if (available > 0)
+        {
+            paramCount = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+            if (paramCount <= 0 || paramCount * 2 > available)
+                return params;
+
+            paramBlockLength = paramCount * 2;
+            if (paramBlockLength <= 0)
+                return params;
+            parameterData = in.readNBytes (paramBlockLength);
+            for (int i = 0; i < paramBlockLength; i += 2)
+            {
+                final int paramID = parameterData[i] & 0xFF;
+                if (paramID != 0)
+                    params.put (paramID, Integer.valueOf (parameterData[i + 1]));
+            }
+        }
+
+        return params;
+    }
+
+
+    private static String cleanName (final String ascii)
+    {
+        final String [] split = ascii.split ("\0");
+        return split.length == 0 ? "" : split[0];
     }
 
 
