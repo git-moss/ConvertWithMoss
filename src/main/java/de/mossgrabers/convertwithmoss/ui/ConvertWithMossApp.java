@@ -63,6 +63,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -276,15 +277,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         final BoxPanel bottomRight = new BoxPanel (Orientation.HORIZONTAL);
         this.enableDarkMode = bottomRight.createCheckBox ("@IDS_MAIN_ENABLE_DARK_MODE", "@IDS_MAIN_ENABLE_DARK_MODE_TOOLTIP");
-        this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> {
-            final ObservableList<String> stylesheets = this.scene.getStylesheets ();
-            final String stylesheet = this.startPath + "/css/Darkmode.css";
-            this.loggingArea.setDarkmode (isSelected.booleanValue ());
-            if (isSelected.booleanValue ())
-                stylesheets.add (stylesheet);
-            else
-                stylesheets.remove (stylesheet);
-        });
+        this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> updateLogger (isSelected));
 
         final BorderPane destinationPane = new BorderPane (this.destinationTabPane);
         destinationPane.setTop (destinationUpperPart.getPane ());
@@ -325,6 +318,23 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
+    private void updateLogger (final Boolean isSelected)
+    {
+        final ObservableList<String> stylesheets = this.scene.getStylesheets ();
+        final String stylesheet = this.startPath + "/css/Darkmode.css";
+        if (isSelected.booleanValue ())
+        {
+            stylesheets.add (stylesheet);
+            this.loggingArea.getWebView ().setBlendMode (BlendMode.OVERLAY);
+        }
+        else
+        {
+            stylesheets.remove (stylesheet);
+            this.loggingArea.getWebView ().setBlendMode (BlendMode.DARKEN);
+        }
+    }
+
+
     /**
      * Load configuration settings.
      */
@@ -344,7 +354,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.createFolderStructure.setSelected (this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true));
         this.addNewFiles.setSelected (this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false));
-        this.enableDarkMode.setSelected (this.config.getBoolean (ENABLE_DARK_MODE, false));
+        final boolean isDarkmode = this.config.getBoolean (ENABLE_DARK_MODE, false);
+        this.enableDarkMode.setSelected (isDarkmode);
+        this.updateLogger (isDarkmode);
         this.renameCheckbox.setSelected (this.config.getBoolean (RENAMING_SOURCE_ENABLED, false));
 
         this.updateRenamingControls ();

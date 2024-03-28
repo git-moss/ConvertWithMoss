@@ -51,6 +51,24 @@ public class StreamUtils
 
 
     /**
+     * Reads and converts 2 bytes to an signed integer from the given array.
+     *
+     * @param array The input array
+     * @param offset The offset into the array
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readSigned16 (final byte [] array, final int offset, final boolean isBigEndian) throws IOException
+    {
+        final ByteBuffer buffer = ByteBuffer.wrap (array, offset, 2);
+        buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        return buffer.getShort ();
+    }
+
+
+    /**
      * Reads and converts 2 bytes to an unsigned integer.
      *
      * @param in The input stream

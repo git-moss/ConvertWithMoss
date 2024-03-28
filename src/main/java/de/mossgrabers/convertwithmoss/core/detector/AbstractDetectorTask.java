@@ -358,7 +358,6 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             if (sampleFile.getName ().toLowerCase ().endsWith (".aiff"))
             {
                 // Note: only AIF is picked up as correct ending below
-                this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
                 sampleData = new AiffFileSampleData (sampleFile);
             }
             else
@@ -372,17 +371,14 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                 }
                 else if (AudioFileFormat.Type.AIFF.equals (type))
                 {
-                    this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
                     sampleData = new AiffFileSampleData (sampleFile);
                 }
                 else if (OGG_TYPE.equals (type))
                 {
-                    this.notifier.log ("IDS_NOTIFY_CONVERT_OGG_TO_WAV", sampleFile.getName ());
                     sampleData = new OggFileSampleData (sampleFile);
                 }
                 else if (FLAC_TYPE.equals (type))
                 {
-                    this.notifier.log ("IDS_NOTIFY_CONVERT_FLAC_TO_WAV", sampleFile.getName ());
                     sampleData = new FlacFileSampleData (sampleFile);
                 }
                 if (sampleData == null)

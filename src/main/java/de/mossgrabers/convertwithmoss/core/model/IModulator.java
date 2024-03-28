@@ -14,7 +14,7 @@ public interface IModulator
     /**
      * Get the modulation depth.
      *
-     * @return The depth
+     * @return The depth in the range of [0..1]
      */
     double getDepth ();
 
@@ -22,7 +22,7 @@ public interface IModulator
     /**
      * Set the modulation depth.
      *
-     * @param depth The modulation depth
+     * @param depth The modulation depth in the range of [0..1]
      */
     void setDepth (double depth);
 

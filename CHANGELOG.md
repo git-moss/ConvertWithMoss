@@ -3,6 +3,7 @@
 ## 8.0.0 (unreleased)
 
 * Added support for reading Logic EXS24 files.
+* Fixed: Font color of logger in light mode was wrong.
 * NKI - Read
   * Fixed: A proper error message will be output if a sample file is missing.
 

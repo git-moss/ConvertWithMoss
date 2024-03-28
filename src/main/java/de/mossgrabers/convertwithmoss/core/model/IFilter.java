@@ -29,7 +29,8 @@ public interface IFilter
 
 
     /**
-     * Get the number of poles, if any.
+     * Get the number of poles, if any. A simple filter (1-pole) has a slope of 6 dB per octave. A
+     * two-pole has a slope of 12 dB/octave, and 4-pole 24 dB/octave.
      *
      * @return The number of poles
      */
@@ -37,7 +38,7 @@ public interface IFilter
 
 
     /**
-     * The cutoff in hertz.
+     * The cutoff in Hertz.
      *
      * @return The cutoff
      */

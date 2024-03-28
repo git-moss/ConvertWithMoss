@@ -610,7 +610,6 @@ public abstract class AbstractNKIMetadataFileHandler
             }
             else if (AudioFileFormat.Type.AIFF.equals (type))
             {
-                this.notifier.log ("IDS_NOTIFY_CONVERT_TO_WAV", sampleFile.getName ());
                 return new AiffFileSampleData (sampleFile);
             }
 
