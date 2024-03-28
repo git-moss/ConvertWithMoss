@@ -766,6 +766,20 @@ public class StreamUtils
 
 
     /**
+     * Writes a number of zero bytes to the given output stream.
+     *
+     * @param out The stream to write to
+     * @param numBytes The number of bytes to write
+     * @throws IOException Could not read
+     */
+    public static void padBytes (final OutputStream out, final int numBytes) throws IOException
+    {
+        for (int i = 0; i < numBytes; i++)
+            out.write (0);
+    }
+
+
+    /**
      * Skip exactly N bytes.
      *
      * @param fileAccess The random access file to read from

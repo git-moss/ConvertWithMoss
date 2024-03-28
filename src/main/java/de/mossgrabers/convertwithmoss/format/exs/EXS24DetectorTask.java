@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.format.exs;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -13,11 +12,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
@@ -38,9 +35,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -50,22 +46,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class EXS24DetectorTask extends AbstractDetectorTask
 {
-    private static final String      ENDING_EXS            = ".exs";
-
-    private static final int         CHUNK_TYPE_INSTRUMENT = 0x00;
-    private static final int         CHUNK_TYPE_ZONE       = 0x01;
-    private static final int         CHUNK_TYPE_GROUP      = 0x02;
-    private static final int         CHUNK_TYPE_SAMPLE     = 0x03;
-    private static final int         CHUNK_TYPE_PARAMS     = 0x04;
-    private static final int         CHUNK_TYPE_UNKNOWN    = 0x08;
-
-    private static final Set<String> BIG_ENDIAN_MAGIC      = new HashSet<> (2);
-    private static final Set<String> LITTLE_ENDIAN_MAGIC   = new HashSet<> (2);
-    static
-    {
-        Collections.addAll (BIG_ENDIAN_MAGIC, "SOBT", "SOBJ");
-        Collections.addAll (LITTLE_ENDIAN_MAGIC, "TBOS", "JBOS");
-    }
+    private static final String ENDING_EXS = ".exs";
 
 
     /**
@@ -103,8 +84,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     /**
      * Load the EXS file.
      *
-     * @param file
-     *
+     * @param file The EXS24 file
      * @param in The input stream to read from
      * @return The parsed multi-sample source
      * @throws IOException Could not read from the file
@@ -119,61 +99,38 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
         while (in.available () > 0)
         {
-            final boolean isBigEndian = in.read () == 0;
-
-            final int version1 = in.read ();
-            final int version2 = in.read ();
-            if (version1 != 1 && version2 != 0)
-                throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_VERSION", Integer.toString (version1), Integer.toString (version2)));
-
-            final int blockType = in.read ();
-            final int blockSize = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-
-            final int index = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-
-            // Flags -> Found: 03 (on a group), 64 (instrument), 2, 3, 2147483650 (zone), 2 (sample)
-            StreamUtils.readUnsigned32 (in, isBigEndian);
-
-            final String magic = StreamUtils.readASCII (in, 4);
-            if (!(isBigEndian ? BIG_ENDIAN_MAGIC : LITTLE_ENDIAN_MAGIC).contains (magic))
-                throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_MAGIC", magic));
-
-            final String blockName = cleanName (StreamUtils.readASCII (in, 64));
-            final byte [] content = in.readNBytes (blockSize);
-
-            // There are variants which have a 0x40 added...
-            switch (blockType & 0x0F)
+            final EXS24Block block = new EXS24Block (in);
+            switch (block.type)
             {
-                case CHUNK_TYPE_INSTRUMENT:
-                    instrument = this.readInstrument (content, isBigEndian);
+                case EXS24Block.TYPE_INSTRUMENT:
+                    instrument = new EXS24Instrument (block);
                     break;
 
-                case CHUNK_TYPE_ZONE:
-                    zones.add (readZone (content, isBigEndian));
+                case EXS24Block.TYPE_ZONE:
+                    zones.add (new EXS24Zone (block));
                     break;
 
-                case CHUNK_TYPE_GROUP:
-                    int idx = index;
+                case EXS24Block.TYPE_GROUP:
+                    final EXS24Group group = new EXS24Group (block);
                     // Workaround for some files which have not a proper index set!
-                    if (index == 0 && groups.containsKey (index))
-                        idx = groups.size ();
-                    groups.put (Integer.valueOf (idx), readGroup (blockName, content, isBigEndian));
+                    int idx = block.index == 0 && groups.containsKey (block.index) ? groups.size () : block.index;
+                    groups.put (Integer.valueOf (idx), group);
                     break;
 
-                case CHUNK_TYPE_SAMPLE:
-                    samples.add (readSample (index, blockName, content, isBigEndian));
+                case EXS24Block.TYPE_SAMPLE:
+                    samples.add (new EXS24Sample (block));
                     break;
 
-                case CHUNK_TYPE_PARAMS:
-                    params.putAll (this.readParameters (content, isBigEndian));
+                case EXS24Block.TYPE_PARAMS:
+                    params.putAll (new EXS24Parameters (block).params);
                     break;
 
-                case CHUNK_TYPE_UNKNOWN:
+                case EXS24Block.TYPE_UNKNOWN:
                     // No idea what that is but it is 4 bytes long...
                     break;
 
                 default:
-                    this.notifier.logError ("IDS_EXS_UNKNOWN_EXS_BLOCK_TYPE", Integer.toString (blockType));
+                    this.notifier.logError ("IDS_EXS_UNKNOWN_EXS_BLOCK_TYPE", Integer.toString (block.type));
                     break;
             }
         }
@@ -200,7 +157,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      */
     private Optional<IMultisampleSource> createMultisample (final File file, final Map<Integer, EXS24Group> exs24Groups, final List<EXS24Zone> exs24Zones, final List<EXS24Sample> exs24Samples, final Map<Integer, Integer> parameters) throws IOException
     {
-        final String name = file.getName ();
+        final String name = FileUtils.getNameWithoutType (file);
         final File parentFile = file.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
@@ -487,303 +444,5 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         }
 
         return null;
-    }
-
-
-    /**
-     * Read an instrument block.
-     *
-     * @param content The data of the block
-     * @param isBigEndian True if big-endian otherwise little-endian
-     * @throws IOException Could not read the data
-     */
-    private EXS24Instrument readInstrument (final byte [] content, final boolean isBigEndian) throws IOException
-    {
-        final ByteArrayInputStream in = new ByteArrayInputStream (content);
-
-        final EXS24Instrument instrument = new EXS24Instrument ();
-
-        // No idea, always 0
-        StreamUtils.readUnsigned32 (in, isBigEndian);
-
-        instrument.numZoneBlocks = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        instrument.numGroupBlocks = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        instrument.numSampleBlocks = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        instrument.numParameterBlocks = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-
-        // No idea about these values, maybe there are more unknown block types
-        StreamUtils.readUnsigned32 (in, isBigEndian);
-        StreamUtils.readUnsigned32 (in, isBigEndian);
-        StreamUtils.readUnsigned32 (in, isBigEndian);
-        // There are files which have this set and then 16 blocks appear with a block type of 8. The
-        // content of each block is 4 bytes but they are all 0.
-        StreamUtils.readUnsigned32 (in, isBigEndian);
-
-        // No idea about this value, maybe there are more unknown block types
-        StreamUtils.readUnsigned32 (in, isBigEndian);
-
-        return instrument;
-    }
-
-
-    /**
-     * Read a zone block.
-     *
-     * @param content The data of the block
-     * @param isBigEndian True if big-endian otherwise little-endian
-     * @throws IOException Could not read the data
-     */
-    private static EXS24Zone readZone (final byte [] content, final boolean isBigEndian) throws IOException
-    {
-        final EXS24Zone zone = new EXS24Zone ();
-
-        final ByteArrayInputStream in = new ByteArrayInputStream (content);
-
-        final int zoneOpts = in.read ();
-        zone.pitch = (zoneOpts & 1 << 1) == 0;
-        zone.oneshot = (zoneOpts & 1 << 0) != 0;
-        zone.reverse = (zoneOpts & 1 << 2) != 0;
-        zone.velocityRangeOn = (zoneOpts & 1 << 3) != 0;
-
-        zone.key = in.read ();
-        zone.fineTuning = twosComplement (in.read (), 8);
-        zone.pan = twosComplement (in.read (), 8);
-        zone.volumeAdjust = twosComplement (in.read (), 8);
-        zone.volumeScale = in.read ();
-        zone.keyLow = in.read ();
-        zone.keyHigh = in.read ();
-        in.skipNBytes (1);
-        zone.velocityLow = in.read ();
-        zone.velocityHigh = in.read ();
-        in.skipNBytes (1);
-        zone.sampleStart = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        zone.sampleEnd = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        zone.loopStart = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        zone.loopEnd = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        zone.loopCrossfade = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        zone.loopTune = in.read ();
-
-        final int loopOptions = in.read ();
-        zone.loopOn = (loopOptions & 1) != 0;
-        zone.loopEqualPower = (loopOptions & 2) != 0;
-        zone.loopPlayToEndOnRelease = (loopOptions & 4) != 0;
-
-        zone.loopDirection = in.read ();
-        in.skipNBytes (42);
-        zone.flexOptions = in.read ();
-        zone.flexSpeed = in.read ();
-        zone.tailTune = in.read ();
-        zone.coarseTuning = twosComplement (in.read (), 8);
-
-        in.skipNBytes (1);
-
-        zone.output = in.read ();
-        if ((zoneOpts & 1 << 6) == 0)
-            zone.output = -1;
-
-        in.skipNBytes (5);
-
-        zone.groupIndex = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        zone.sampleIndex = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-
-        // There are files with more data (mostly about a tail part) which is currently not used
-
-        return zone;
-    }
-
-
-    /**
-     * Read a group block.
-     *
-     * @param content The data of the block
-     * @param isBigEndian True if big-endian otherwise little-endian
-     * @throws IOException Could not read the data
-     */
-    private static EXS24Group readGroup (final String name, final byte [] content, final boolean isBigEndian) throws IOException
-    {
-        final EXS24Group group = new EXS24Group ();
-
-        group.name = name;
-
-        final ByteArrayInputStream in = new ByteArrayInputStream (content);
-
-        group.volume = in.read ();
-        group.pan = in.read ();
-        group.polyphony = in.read ();
-        group.options = in.read ();
-        group.mute = (group.options & 16) > 0; // 0 = OFF, 1 = ON
-        group.releaseTriggerDecay = (group.options & 64) > 0; // 0 = OFF, 1 = ON
-        group.fixedSampleSelect = (group.options & 128) > 0; // 0 = OFF, 1 = ON
-
-        group.exclusive = in.read ();
-        group.minVelocity = in.read ();
-        group.maxVelocity = in.read ();
-        group.sampleSelectRandomOffset = in.read ();
-
-        in.skipNBytes (8);
-
-        group.releaseTriggerTime = StreamUtils.readUnsigned16 (in, isBigEndian);
-
-        in.skipNBytes (14);
-
-        group.velocityRangExFade = in.read () - 128;
-        group.velocityRangExFadeType = in.read ();
-        group.keyrangExFadeType = in.read ();
-        group.keyrangExFade = in.read () - 128;
-
-        in.skipNBytes (2);
-
-        group.enableByTempoLow = in.read ();
-        group.enableByTempoHigh = in.read ();
-
-        in.skipNBytes (1);
-
-        group.cutoffOffset = in.read ();
-        in.skipNBytes (1);
-
-        group.resoOffset = in.read ();
-        in.skipNBytes (12);
-
-        group.env1AttackOffset = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        group.env1DecayOffset = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        group.env1SustainOffset = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        group.env1ReleaseOffset = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        in.skipNBytes (1);
-
-        group.releaseTrigger = in.read () > 0;
-        group.output = in.read ();
-        group.enableByNoteValue = in.read ();
-
-        if (in.available () > 0)
-        {
-            in.skipNBytes (4);
-
-            group.roundRobinGroupPos = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-            group.enableByType = in.read ();
-            group.enableByNote = group.enableByType == 1;
-            group.enableByRoundRobin = group.enableByType == 2;
-            group.enableByControl = group.enableByType == 3;
-            group.enableByBend = group.enableByType == 4;
-            group.enableByChannel = group.enableByType == 5;
-            group.enableByArticulation = group.enableByType == 6;
-            group.enablebyTempo = group.enableByType == 7;
-
-            group.enableByControlValue = in.read ();
-            group.enableByControlLow = in.read ();
-            group.enableByControlHigh = in.read ();
-            group.startNote = in.read ();
-            group.endNote = in.read ();
-            group.enableByMidiChannel = in.read ();
-            group.enableByArticulationValue = in.read ();
-        }
-
-        // There are files with more data which is currently not used
-
-        return group;
-    }
-
-
-    /**
-     * Read a sample block.
-     *
-     * @param content The data of the block
-     * @param isBigEndian True if big-endian otherwise little-endian
-     * @throws IOException Could not read the data
-     */
-    private static EXS24Sample readSample (final int sampleIndex, final String name, final byte [] content, final boolean isBigEndian) throws IOException
-    {
-        final EXS24Sample sample = new EXS24Sample ();
-        sample.id = sampleIndex;
-
-        final ByteArrayInputStream in = new ByteArrayInputStream (content);
-
-        sample.waveDataStart = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        sample.length = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        sample.sampleRate = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        sample.bitDepth = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-
-        sample.channels = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        sample.channels2 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-
-        in.skipNBytes (4);
-
-        sample.type = StreamUtils.readASCII (in, 4);
-        sample.size = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        sample.isCompressed = StreamUtils.readUnsigned32 (in, isBigEndian) > 0;
-
-        in.skipNBytes (40);
-
-        sample.filePath = cleanName (StreamUtils.readASCII (in, 256));
-
-        // If not present the name from the header is used!
-        sample.fileName = in.available () > 0 ? cleanName (StreamUtils.readASCII (in, 256)) : name;
-
-        return sample;
-    }
-
-
-    /**
-     * Read a parameters block.
-     *
-     * @param content The data of the block
-     * @param isBigEndian True if big-endian otherwise little-endian
-     * @return The read parameters
-     * @throws IOException Could not read the data
-     */
-    private Map<Integer, Integer> readParameters (final byte [] content, final boolean isBigEndian) throws IOException
-    {
-        final ByteArrayInputStream in = new ByteArrayInputStream (content);
-
-        int paramCount = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        int paramBlockLength = paramCount * 3;
-        byte [] parameterData = in.readNBytes (paramBlockLength);
-
-        final Map<Integer, Integer> params = new TreeMap<> ();
-        for (int i = 0; i < paramCount; i++)
-        {
-            final int paramID = parameterData[i] & 0xFF;
-            if (paramID != 0)
-            {
-                final int valueOffset = paramCount + 2 * i;
-                final int value = StreamUtils.readSigned16 (parameterData, valueOffset, isBigEndian);
-                params.put (paramID, Integer.valueOf (value));
-            }
-        }
-
-        final int available = in.available ();
-        if (available > 0)
-        {
-            paramCount = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-            if (paramCount <= 0 || paramCount * 2 > available)
-                return params;
-
-            paramBlockLength = paramCount * 2;
-            if (paramBlockLength <= 0)
-                return params;
-            parameterData = in.readNBytes (paramBlockLength);
-            for (int i = 0; i < paramBlockLength; i += 2)
-            {
-                final int paramID = parameterData[i] & 0xFF;
-                if (paramID != 0)
-                    params.put (paramID, Integer.valueOf (parameterData[i + 1]));
-            }
-        }
-
-        return params;
-    }
-
-
-    private static String cleanName (final String ascii)
-    {
-        final String [] split = ascii.split ("\0");
-        return split.length == 0 ? "" : split[0];
-    }
-
-
-    private static int twosComplement (int value, final int bits)
-    {
-        if ((value & 1 << bits - 1) != 0)
-            value -= 1 << bits;
-        return value;
     }
 }

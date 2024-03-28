@@ -57,7 +57,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             return;
         }
 
-        // Korg multisample format supports only 1 multi sample group. Therefore create 1 output
+        // Korg multisample format supports only 1 multi-sample group. Therefore create 1 output
         // file for each group
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
         final int size = groups.size ();

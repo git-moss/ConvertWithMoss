@@ -427,7 +427,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Writes all samples in WAV format from all groups into the given folder.
      *
      * @param sampleFolder The destination folder
-     * @param multisampleSource The multisample
+     * @param multisampleSource The multi-sample
      * @return The written files
      * @throws IOException Could not store the samples
      */
@@ -441,7 +441,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Writes all samples in WAV format from all groups into the given folder.
      *
      * @param sampleFolder The destination folder
-     * @param multisampleSource The multisample
+     * @param multisampleSource The multi-sample
      * @param destinationFormat The destination audio format
      * @return The written files
      * @throws IOException Could not store the samples
