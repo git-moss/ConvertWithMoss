@@ -187,7 +187,7 @@ public class WavFileSampleData extends AbstractFileSampleData
             {
                 default:
                 case SampleChunk.LOOP_FORWARD:
-                    loop.setType (LoopType.FORWARD);
+                    loop.setType (LoopType.FORWARDS);
                     break;
                 case SampleChunk.LOOP_ALTERNATING:
                     loop.setType (LoopType.ALTERNATING);

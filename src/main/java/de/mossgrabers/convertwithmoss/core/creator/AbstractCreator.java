@@ -61,13 +61,14 @@ import javafx.scene.control.CheckBox;
  */
 public abstract class AbstractCreator extends AbstractCoreTask implements ICreator
 {
-    private static final DestinationAudioFormat DESTINATION_FORMAT          = new DestinationAudioFormat ();
-    private static final String                 FORWARD_SLASH               = "/";
+    private static final DestinationAudioFormat DESTINATION_FORMAT                 = new DestinationAudioFormat ();
+    private static final String                 IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA = "IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA";
+    private static final String                 FORWARD_SLASH                      = "/";
 
-    private static final String                 WRITE_BROADCAST_AUDIO_CHUNK = "WriteBroadcastAudioChunk";
-    private static final String                 WRITE_INSTRUMENT_CHUNK      = "WriteInstrumentChunk";
-    private static final String                 WRITE_SAMPLE_CHUNK          = "WriteSampleChunk";
-    private static final String                 REMOVE_JUNK_CHUNK           = "RemoveJunkChunk";
+    private static final String                 WRITE_BROADCAST_AUDIO_CHUNK        = "WriteBroadcastAudioChunk";
+    private static final String                 WRITE_INSTRUMENT_CHUNK             = "WriteInstrumentChunk";
+    private static final String                 WRITE_SAMPLE_CHUNK                 = "WriteSampleChunk";
+    private static final String                 REMOVE_JUNK_CHUNK                  = "RemoveJunkChunk";
 
     protected CheckBox                          addBroadcastAudioChunk;
     protected CheckBox                          addInstrumentChunk;
@@ -195,9 +196,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param content The text content of the file to add
      * @throws IOException Could not add the file
      */
-    protected void zipTextFile (final ZipOutputStream zipOutputStream, final String fileName, final String content) throws IOException
+    protected static void zipTextFile (final ZipOutputStream zipOutputStream, final String fileName, final String content) throws IOException
     {
-        this.zipDataFile (zipOutputStream, fileName, content.getBytes (StandardCharsets.UTF_8));
+        zipDataFile (zipOutputStream, fileName, content.getBytes (StandardCharsets.UTF_8));
     }
 
 
@@ -209,7 +210,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param data The content of the file to add
      * @throws IOException Could not add the file
      */
-    protected void zipDataFile (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data) throws IOException
+    protected static void zipDataFile (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data) throws IOException
     {
         zipOutputStream.putNextEntry (new ZipEntry (fileName));
         zipOutputStream.write (data);
@@ -226,9 +227,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param content The text content of the file to add
      * @throws IOException Could not add the file
      */
-    protected void storeTextFile (final ZipOutputStream zipOutputStream, final String fileName, final String content) throws IOException
+    protected static void storeTextFile (final ZipOutputStream zipOutputStream, final String fileName, final String content) throws IOException
     {
-        this.storeTextFile (zipOutputStream, fileName, content, null);
+        storeTextFile (zipOutputStream, fileName, content, null);
     }
 
 
@@ -241,9 +242,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param dateTime The date and time to set as the creation date of the file entry
      * @throws IOException Could not add the file
      */
-    protected void storeTextFile (final ZipOutputStream zipOutputStream, final String fileName, final String content, final Date dateTime) throws IOException
+    protected static void storeTextFile (final ZipOutputStream zipOutputStream, final String fileName, final String content, final Date dateTime) throws IOException
     {
-        this.storeDataFile (zipOutputStream, fileName, content.getBytes (StandardCharsets.UTF_8), dateTime);
+        storeDataFile (zipOutputStream, fileName, content.getBytes (StandardCharsets.UTF_8), dateTime);
     }
 
 
@@ -255,9 +256,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param data The content of the file to add
      * @throws IOException Could not add the file
      */
-    protected void storeDataFile (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data) throws IOException
+    protected static void storeDataFile (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data) throws IOException
     {
-        this.storeDataFile (zipOutputStream, fileName, data, null);
+        storeDataFile (zipOutputStream, fileName, data, null);
     }
 
 
@@ -270,7 +271,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param dateTime The date and time to set as the creation date of the file entry
      * @throws IOException Could not add the file
      */
-    protected void storeDataFile (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data, final Date dateTime) throws IOException
+    protected static void storeDataFile (final ZipOutputStream zipOutputStream, final String fileName, final byte [] data, final Date dateTime) throws IOException
     {
         // The checksum needs to be calculated in advance before the data is written to the output
         // stream!
@@ -347,7 +348,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         zipOutputStream.putNextEntry (entry);
         final ISampleData sampleData = zone.getSampleData ();
         if (sampleData == null)
-            this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), name);
+            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
         else
             sampleData.writeSample (zipOutputStream);
         zipOutputStream.closeEntry ();
@@ -415,7 +416,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         {
             final ISampleData sampleData = zone.getSampleData ();
             if (sampleData == null)
-                this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), name);
+                this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
             else
                 sampleData.writeSample (checkedOut);
             putUncompressedEntry (zipOutputStream, name, bout.toByteArray (), crc, dateTime);
@@ -456,7 +457,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Writes all samples in WAV format from all groups into the given folder.
      *
      * @param sampleFolder The destination folder
-     * @param multisampleSource The multisample
+     * @param multisampleSource The multi-sample
      * @param destinationFormat The destination audio format
      * @param fileEnding The suffix to use for the file
      * @return The written files
@@ -484,7 +485,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                     {
                         final ISampleData sampleData = zone.getSampleData ();
                         if (sampleData == null)
-                            this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), file.getName ());
+                            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
                         else
                             sampleData.writeSample (fos);
                     }
@@ -500,7 +501,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * Writes all samples in the given audio file format from all groups into the given folder.
      *
      * @param sampleFolder The destination folder
-     * @param multisampleSource The multisample
+     * @param multisampleSource The multi-sample
      * @param targetFormat The destination audio format
      * @return The written files
      * @throws IOException Could not store the samples
@@ -524,7 +525,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                         this.notifyNewline ();
                     final ISampleData sampleData = zone.getSampleData ();
                     if (sampleData == null)
-                        this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), file.getName ());
+                        this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
                     else
                         fos.write (AudioFileUtils.compressToFLAC (sampleData, targetFormat));
                 }
@@ -537,13 +538,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
     /**
      * Re-calculates the sample start, stop and loop start, stop positions for the given new sample
-     * rate of all samples/zones in the given multi sample.
+     * rate of all samples/zones in the given multi-sample.
      *
-     * @param multisampleSource The multi sample source
+     * @param multisampleSource The multi-sample source
      * @param newSampleRate The new sample rate
      * @throws IOException Could not retrieve the current sample rate
      */
-    protected void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate) throws IOException
+    protected static void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate) throws IOException
     {
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
@@ -624,7 +625,8 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
             final SampleChunkLoop sampleChunkLoop = chunkLoops.get (i);
             switch (sampleLoop.getType ())
             {
-                case FORWARD:
+                default:
+                case FORWARDS:
                     sampleChunkLoop.setType (SampleChunk.LOOP_FORWARD);
                     break;
                 case ALTERNATING:

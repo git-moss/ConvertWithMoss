@@ -95,7 +95,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final List<EXS24Zone> zones = new ArrayList<> ();
         final List<EXS24Sample> samples = new ArrayList<> ();
         final Map<Integer, EXS24Group> groups = new TreeMap<> ();
-        final Map<Integer, Integer> params = new TreeMap<> ();
+        final EXS24Parameters parameters = new EXS24Parameters ();
 
         while (in.available () > 0)
         {
@@ -113,7 +113,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                 case EXS24Block.TYPE_GROUP:
                     final EXS24Group group = new EXS24Group (block);
                     // Workaround for some files which have not a proper index set!
-                    int idx = block.index == 0 && groups.containsKey (block.index) ? groups.size () : block.index;
+                    final int idx = block.index == 0 && groups.containsKey (Integer.valueOf (block.index)) ? groups.size () : block.index;
                     groups.put (Integer.valueOf (idx), group);
                     break;
 
@@ -122,7 +122,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                     break;
 
                 case EXS24Block.TYPE_PARAMS:
-                    params.putAll (new EXS24Parameters (block).params);
+                    parameters.read (block);
                     break;
 
                 case EXS24Block.TYPE_UNKNOWN:
@@ -138,7 +138,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         if (instrument == null)
             return Collections.emptyList ();
 
-        final Optional<IMultisampleSource> multisample = this.createMultisample (file, groups, zones, samples, params);
+        final Optional<IMultisampleSource> multisample = this.createMultisample (file, groups, zones, samples, parameters);
         if (multisample.isEmpty ())
             return Collections.emptyList ();
         return Collections.singletonList (multisample.get ());
@@ -155,7 +155,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      * @return The multi-sample source
      * @throws IOException Could not create a multi-sample
      */
-    private Optional<IMultisampleSource> createMultisample (final File file, final Map<Integer, EXS24Group> exs24Groups, final List<EXS24Zone> exs24Zones, final List<EXS24Sample> exs24Samples, final Map<Integer, Integer> parameters) throws IOException
+    private Optional<IMultisampleSource> createMultisample (final File file, final Map<Integer, EXS24Group> exs24Groups, final List<EXS24Zone> exs24Zones, final List<EXS24Sample> exs24Samples, final EXS24Parameters parameters) throws IOException
     {
         final String name = FileUtils.getNameWithoutType (file);
         final File parentFile = file.getParentFile ();
@@ -203,21 +203,21 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                 zone.getLoops ().add (loop);
             }
             // Add group data from exs24Groups
-            final IGroup group = this.getOrCreateGroup (exs24Groups, groupsMap, groupMapping, exs24Zone);
+            final IGroup group = getOrCreateGroup (exs24Groups, groupsMap, groupMapping, exs24Zone);
 
             final EXS24Group exs24Group = groupMapping.get (group);
-            if (exs24Group == null || this.limitByGroupAttributes (exs24Group, zone))
+            if (exs24Group == null || limitByGroupAttributes (exs24Group, zone))
                 group.addSampleZone (zone);
         }
 
         multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
-        this.applyGlobalParameters (multisampleSource, parameters);
+        applyGlobalParameters (multisampleSource, parameters);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
         return Optional.of (multisampleSource);
     }
 
 
-    private IGroup getOrCreateGroup (final Map<Integer, EXS24Group> exs24Groups, final Map<Integer, IGroup> groupsMap, final Map<IGroup, EXS24Group> groupMapping, final EXS24Zone exs24Zone)
+    private static IGroup getOrCreateGroup (final Map<Integer, EXS24Group> exs24Groups, final Map<Integer, IGroup> groupsMap, final Map<IGroup, EXS24Group> groupMapping, final EXS24Zone exs24Zone)
     {
         return groupsMap.computeIfAbsent (Integer.valueOf (exs24Zone.groupIndex), key -> {
 
@@ -261,9 +261,9 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     }
 
 
-    private void applyGlobalParameters (final IMultisampleSource multisampleSource, final Map<Integer, Integer> parameters)
+    private static void applyGlobalParameters (final IMultisampleSource multisampleSource, final EXS24Parameters parameters)
     {
-        this.applyFilterParameters (multisampleSource, parameters);
+        applyFilterParameters (multisampleSource, parameters);
 
         // Pitch bend up/down
         final Integer pitchBendUp = parameters.get (EXS24Parameters.PITCH_BEND_UP);
@@ -279,7 +279,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final int fineTune = globalFineTune == null ? 0 : globalFineTune.intValue ();
         final double tuneOffset = coarseTune + fineTune / 100.0;
 
-        final IEnvelope globalAmplitudeEnvelope = this.createEnvelope (parameters, 1);
+        final IEnvelope globalAmplitudeEnvelope = createEnvelope (parameters, 1);
 
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
@@ -295,7 +295,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     }
 
 
-    private IEnvelope createEnvelope (final Map<Integer, Integer> parameters, final int envelopeIndex)
+    private static IEnvelope createEnvelope (final EXS24Parameters parameters, final int envelopeIndex)
     {
         final Integer delay = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_DELAY_START : EXS24Parameters.ENV2_DELAY_START);
         final Integer attack = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_HI_VEL : EXS24Parameters.ENV2_ATK_HI_VEL);
@@ -317,7 +317,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     }
 
 
-    private void applyFilterParameters (final IMultisampleSource multisampleSource, final Map<Integer, Integer> parameters)
+    private static void applyFilterParameters (final IMultisampleSource multisampleSource, final EXS24Parameters parameters)
     {
         final Integer isFilterEnabled = parameters.get (EXS24Parameters.FILTER1_TOGGLE);
         if (isFilterEnabled == null || isFilterEnabled.intValue () <= 0)
@@ -327,9 +327,8 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         if (filterTypeIndex == null)
             return;
 
-        final IEnvelope globalFilterEnvelope = this.createEnvelope (parameters, 2);
+        final IEnvelope globalFilterEnvelope = createEnvelope (parameters, 2);
 
-        // TODO confirm that the order is correct...
         final FilterType filterType;
         final int poles;
         switch (filterTypeIndex.intValue ())
@@ -367,7 +366,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final int frequency = filterFrequency == null ? 1000 : filterFrequency.intValue ();
         final int resonance = filterResonance == null ? 0 : filterResonance.intValue ();
 
-        final double cutoff = frequency / 1000.0 * IFilter.MAX_FREQUENCY;
+        final double cutoff = MathUtils.denormalize (frequency / 1000.0, 0, IFilter.MAX_FREQUENCY);
         final double denormalize = MathUtils.denormalize (resonance / 1000.0, 0, 40.0);
 
         final IFilter filter = new DefaultFilter (filterType, poles, cutoff, denormalize);
@@ -397,7 +396,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     }
 
 
-    private boolean limitByGroupAttributes (final EXS24Group exs24Group, final ISampleZone zone)
+    private static boolean limitByGroupAttributes (final EXS24Group exs24Group, final ISampleZone zone)
     {
         if (exs24Group.volume != 0)
             zone.setGain (zone.getGain () + exs24Group.volume);

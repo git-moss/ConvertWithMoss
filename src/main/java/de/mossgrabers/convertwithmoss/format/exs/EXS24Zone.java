@@ -12,7 +12,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * Structure for a EXS24 this.
+ * Structure for a EXS24 zone.
  *
  * @author Jürgen Moßgraber
  */
@@ -63,7 +63,7 @@ class EXS24Zone extends EXS24Object
 
     /**
      * Constructor.
-     * 
+     *
      * @param block The block to read
      * @throws IOException Could not read the block
      */
@@ -85,9 +85,9 @@ class EXS24Zone extends EXS24Object
         this.velocityRangeOn = (zoneOpts & 1 << 3) != 0;
 
         this.key = in.read ();
-        this.fineTuning = twosComplement (in.read ());
-        this.pan = twosComplement (in.read ());
-        this.volumeAdjust = twosComplement (in.read ());
+        this.fineTuning = decodeTwosComplement (in.read ());
+        this.pan = decodeTwosComplement (in.read ());
+        this.volumeAdjust = decodeTwosComplement (in.read ());
         this.volumeScale = in.read ();
         this.keyLow = in.read ();
         this.keyHigh = in.read ();
@@ -112,7 +112,7 @@ class EXS24Zone extends EXS24Object
         this.flexOptions = in.read ();
         this.flexSpeed = in.read ();
         this.tailTune = in.read ();
-        this.coarseTuning = twosComplement (in.read ());
+        this.coarseTuning = decodeTwosComplement (in.read ());
 
         in.skipNBytes (1);
 
@@ -129,19 +129,51 @@ class EXS24Zone extends EXS24Object
     }
 
 
-    private static int twosComplement (final int value)
+    /** {@inheritDoc} */
+    @Override
+    protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
+    {
+        out.write ((this.oneshot ? 1 : 0) | (this.pitch ? 0 : 2) | (this.reverse ? 4 : 0) | (this.velocityRangeOn ? 8 : 0));
+        out.write (this.key);
+        out.write (encodeTwosComplement (this.fineTuning));
+        out.write (encodeTwosComplement (this.pan));
+        out.write (encodeTwosComplement (this.volumeAdjust));
+        out.write (this.volumeScale);
+        out.write (this.keyLow);
+        out.write (this.keyHigh);
+        StreamUtils.padBytes (out, 1);
+        out.write (this.velocityLow);
+        out.write (this.velocityHigh);
+        StreamUtils.padBytes (out, 1);
+        StreamUtils.writeUnsigned32 (out, this.sampleStart, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.sampleEnd, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.loopStart, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.loopEnd, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.loopCrossfade, isBigEndian);
+        out.write (this.loopTune);
+        out.write ((this.loopOn ? 1 : 0) | (this.loopEqualPower ? 2 : 0) | (this.loopPlayToEndOnRelease ? 4 : 0));
+        out.write (this.loopDirection);
+        StreamUtils.padBytes (out, 42);
+        out.write (this.flexOptions);
+        out.write (this.flexSpeed);
+        out.write (this.tailTune);
+        out.write (encodeTwosComplement (this.coarseTuning));
+        StreamUtils.padBytes (out, 1);
+        out.write (this.output);
+        StreamUtils.padBytes (out, 5);
+        StreamUtils.writeUnsigned32 (out, this.groupIndex, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.sampleIndex, isBigEndian);
+    }
+
+
+    private static int decodeTwosComplement (final int value)
     {
         return (value & 0x80) != 0 ? value - 256 : value;
     }
 
 
-    /** {@inheritDoc} */
-    protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
+    private static int encodeTwosComplement (final int value)
     {
-        // TODO
-
-        // StreamUtils.writeUnsigned32 (out, this.env1ReleaseOffset, isBigEndian);
-        // StreamUtils.padBytes (out, 1);
-        // out.write (this.releaseTrigger ? 1 : 0);
+        return value < 0 ? value + 256 : value;
     }
 }

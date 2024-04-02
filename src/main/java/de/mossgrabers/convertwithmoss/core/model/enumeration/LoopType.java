@@ -12,7 +12,7 @@ package de.mossgrabers.convertwithmoss.core.model.enumeration;
 public enum LoopType
 {
     /** Normal forward loop. */
-    FORWARD,
+    FORWARDS,
     /** Loop backward (reverse). */
     BACKWARDS,
     /** Loop forward/backward, also known as Ping-Pong. */

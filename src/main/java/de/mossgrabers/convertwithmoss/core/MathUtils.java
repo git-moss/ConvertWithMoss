@@ -54,14 +54,30 @@ public class MathUtils
     /**
      * Convert continuous double value to dB.
      *
-     * @param x The value to convert
+     * @param value The value to convert
      * @return The value converted to dB
      */
-    public static double valueToDb (final double x)
+    public static double valueToDb (final double value)
     {
-        if (x < 0.0000000298023223876953125)
+        if (value < 0.0000000298023223876953125)
             return -150;
-        return Math.max (-150.0, Math.log (x) * 8.6858896380650365530225783783321);
+        return Math.max (-150.0, Math.log (value) * 8.6858896380650365530225783783321);
+    }
+
+
+    /**
+     * Converts a dB value in the range of -Infinity to 0dB to a double range of [0..1].
+     * 
+     * @param dBValue The dB value to convert
+     * @return The double value
+     */
+    public static double dBToDouble (final double dBValue)
+    {
+        if (dBValue <= Double.NEGATIVE_INFINITY)
+            return 0.0;
+        if (dBValue >= 0.0)
+            return 1.0;
+        return Math.pow (10, dBValue / 20);
     }
 
 

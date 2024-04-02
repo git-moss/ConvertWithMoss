@@ -16,7 +16,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
  */
 public class DefaultSampleLoop implements ISampleLoop
 {
-    private LoopType loopType  = LoopType.FORWARD;
+    private LoopType loopType  = LoopType.FORWARDS;
     private int      loopStart = -1;
     private int      loopEnd   = -1;
     private double   crossfade = 0;
@@ -92,7 +92,7 @@ public class DefaultSampleLoop implements ISampleLoop
     {
         final int loopLength = this.loopEnd - this.loopStart;
         if (loopLength > 0)
-            this.setCrossfade (crossfade / loopLength);
+            this.setCrossfade (this.crossfade / loopLength);
     }
 
 

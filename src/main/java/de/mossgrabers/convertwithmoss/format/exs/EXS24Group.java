@@ -85,7 +85,7 @@ class EXS24Group extends EXS24Object
 
     /**
      * Constructor.
-     * 
+     *
      * @param block The block to read
      * @throws IOException Could not read the block
      */
@@ -175,6 +175,7 @@ class EXS24Group extends EXS24Object
 
 
     /** {@inheritDoc} */
+    @Override
     protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
     {
         out.write (this.volume);

@@ -66,7 +66,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
             zos.setMethod (ZipOutputStream.STORED);
-            this.storeTextFile (zos, "multisample.xml", metadata.get (), multisampleSource.getMetadata ().getCreationTime ());
+            AbstractCreator.storeTextFile (zos, "multisample.xml", metadata.get (), multisampleSource.getMetadata ().getCreationTime ());
             this.storeSampleFiles (zos, null, multisampleSource);
         }
 

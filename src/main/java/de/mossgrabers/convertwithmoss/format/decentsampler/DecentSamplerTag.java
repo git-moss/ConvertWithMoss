@@ -56,7 +56,7 @@ public class DecentSamplerTag
     /** The group name tag. */
     public static final String                    GROUP_NAME      = "name";
 
-    /** The sample-key tag. */
+    /** The sample path attribute. */
     public static final String                    PATH            = "path";
     /** The volume tag on different levels. */
     public static final String                    VOLUME          = "volume";

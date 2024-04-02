@@ -27,7 +27,7 @@ class EXS24Sample extends EXS24Object
     int     channels2;
     String  type;
     int     size;
-    boolean isCompressed;
+    boolean isCompressed = false;
     String  filePath;
     String  fileName;
 
@@ -43,7 +43,7 @@ class EXS24Sample extends EXS24Object
 
     /**
      * Constructor.
-     * 
+     *
      * @param block The block to read
      * @throws IOException Could not read the block
      */
@@ -82,8 +82,21 @@ class EXS24Sample extends EXS24Object
 
 
     /** {@inheritDoc} */
+    @Override
     protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
     {
-        // TODO Auto-generated method stub
+        StreamUtils.writeUnsigned32 (out, this.waveDataStart, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.length, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.sampleRate, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.bitDepth, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.channels, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.channels2, isBigEndian);
+        StreamUtils.padBytes (out, 4);
+        StreamUtils.writeASCII (out, this.type, 4);
+        StreamUtils.writeUnsigned32 (out, this.size, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.isCompressed ? 1 : 0, isBigEndian);
+        StreamUtils.padBytes (out, 40);
+        StreamUtils.writeASCII (out, this.filePath, 256);
+        StreamUtils.writeASCII (out, this.fileName, 256);
     }
 }

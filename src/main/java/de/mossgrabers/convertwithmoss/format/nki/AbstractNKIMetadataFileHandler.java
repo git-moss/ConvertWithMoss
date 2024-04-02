@@ -609,9 +609,7 @@ public abstract class AbstractNKIMetadataFileHandler
                     return new WavFileSampleData (sampleFile);
             }
             else if (AudioFileFormat.Type.AIFF.equals (type))
-            {
                 return new AiffFileSampleData (sampleFile);
-            }
 
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ());
         }
@@ -824,7 +822,7 @@ public abstract class AbstractNKIMetadataFileHandler
             if (loopMode.equals (this.tags.oneshotValue ()))
                 continue;
 
-            LoopType loopType = LoopType.FORWARD;
+            LoopType loopType = LoopType.FORWARDS;
             if ((loopMode.equals (this.tags.untilEndValue ()) || loopMode.equals (this.tags.untilReleaseValue ())) && alternatingLoop.equals (this.tags.yes ()))
                 loopType = LoopType.ALTERNATING;
 

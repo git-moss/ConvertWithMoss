@@ -356,10 +356,8 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             ISampleData sampleData = null;
 
             if (sampleFile.getName ().toLowerCase ().endsWith (".aiff"))
-            {
                 // Note: only AIF is picked up as correct ending below
                 sampleData = new AiffFileSampleData (sampleFile);
-            }
             else
             {
                 final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
@@ -370,17 +368,11 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                         sampleData = new WavFileSampleData (sampleFile);
                 }
                 else if (AudioFileFormat.Type.AIFF.equals (type))
-                {
                     sampleData = new AiffFileSampleData (sampleFile);
-                }
                 else if (OGG_TYPE.equals (type))
-                {
                     sampleData = new OggFileSampleData (sampleFile);
-                }
                 else if (FLAC_TYPE.equals (type))
-                {
                     sampleData = new FlacFileSampleData (sampleFile);
-                }
                 if (sampleData == null)
                     throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
             }

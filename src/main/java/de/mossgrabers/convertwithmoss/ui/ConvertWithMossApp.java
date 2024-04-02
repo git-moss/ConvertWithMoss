@@ -279,7 +279,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         final BoxPanel bottomRight = new BoxPanel (Orientation.HORIZONTAL);
         this.enableDarkMode = bottomRight.createCheckBox ("@IDS_MAIN_ENABLE_DARK_MODE", "@IDS_MAIN_ENABLE_DARK_MODE_TOOLTIP");
-        this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> updateLogger (isSelected));
+        this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> this.updateLogger (isSelected.booleanValue ()));
 
         final BorderPane destinationPane = new BorderPane (this.destinationTabPane);
         destinationPane.setTop (destinationUpperPart.getPane ());
@@ -320,11 +320,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
-    private void updateLogger (final Boolean isSelected)
+    private void updateLogger (final boolean isSelected)
     {
         final ObservableList<String> stylesheets = this.scene.getStylesheets ();
         final String stylesheet = this.startPath + "/css/Darkmode.css";
-        if (isSelected.booleanValue ())
+        if (isSelected)
         {
             stylesheets.add (stylesheet);
             this.loggingArea.getWebView ().setBlendMode (BlendMode.OVERLAY);

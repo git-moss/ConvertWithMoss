@@ -35,7 +35,7 @@ class EXS24Instrument extends EXS24Object
 
     /**
      * Constructor.
-     * 
+     *
      * @param block The block to read
      * @throws IOException Could not read the block
      */
@@ -72,6 +72,7 @@ class EXS24Instrument extends EXS24Object
 
 
     /** {@inheritDoc} */
+    @Override
     protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
     {
         // No idea, always 0

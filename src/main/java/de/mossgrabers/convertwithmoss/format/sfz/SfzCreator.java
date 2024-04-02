@@ -68,7 +68,7 @@ public class SfzCreator extends AbstractCreator
         FILTER_TYPE_MAP.put (FilterType.BAND_PASS, "bpf");
         FILTER_TYPE_MAP.put (FilterType.BAND_REJECTION, "brf");
 
-        LOOP_TYPE_MAP.put (LoopType.FORWARD, "forward");
+        LOOP_TYPE_MAP.put (LoopType.FORWARDS, "forward");
         LOOP_TYPE_MAP.put (LoopType.BACKWARDS, "backward");
         LOOP_TYPE_MAP.put (LoopType.ALTERNATING, "alternate");
     }

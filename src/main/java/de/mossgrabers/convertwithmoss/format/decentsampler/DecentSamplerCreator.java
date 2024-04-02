@@ -201,7 +201,7 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
-            this.zipTextFile (zos, sampleName + ".dspreset", metadata);
+            AbstractCreator.zipTextFile (zos, sampleName + ".dspreset", metadata);
             this.zipSampleFiles (zos, relativeFolderName, multisampleSource);
         }
     }

@@ -71,7 +71,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
      */
@@ -101,7 +101,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * Reads a DecentSampler library file and processes all presets it contains.
      *
      * @param file The library file
-     * @return The processed multi samples
+     * @return The processed multi-samples
      */
     private List<IMultisampleSource> processLibraryFile (final File file)
     {
@@ -127,7 +127,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param file The ZIP source file
      * @param zipFile The ZIP file containing the entry
      * @param entry The ZIP entry to process
-     * @return The parsed multi samples
+     * @return The parsed multi-samples
      * @throws IOException Could not process the file
      */
     private List<IMultisampleSource> processFile (final File file, final ZipFile zipFile, final ZipEntry entry) throws IOException
@@ -171,7 +171,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * Reads and processes the Decent Sampler preset file.
      *
      * @param file The preset file
-     * @return The processed multi sample (singleton list)
+     * @return The processed multi-sample (singleton list)
      */
     private List<IMultisampleSource> processPresetFile (final File file)
     {
@@ -197,7 +197,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      *            directory structure
      * @param isLibrary If it is a library otherwise a preset
      * @param document The XML document to parse
-     * @return The parsed multisample source
+     * @return The parsed multi-sample source
      */
     private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String basePath, final boolean isLibrary, final Document document)
     {
@@ -242,7 +242,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * Parse the effects on the top level.
      *
      * @param top The top element
-     * @param multisampleSource The multisample to fill
+     * @param multisampleSource The multi-sample to fill
      */
     private static void parseEffects (final Element top, final DefaultMultisampleSource multisampleSource)
     {
@@ -286,7 +286,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 this.checkAttributes (DecentSamplerTag.GROUP, groupElement.getAttributes (), DecentSamplerTag.getAttributes (DecentSamplerTag.GROUP));
 
                 final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
-                final String groupName = k == null || k.isBlank () ? "Velocity Layer " + groupCounter : k;
+                final String groupName = k == null || k.isBlank () ? "Group " + groupCounter : k;
                 final DefaultGroup group = new DefaultGroup (groupName);
 
                 final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);

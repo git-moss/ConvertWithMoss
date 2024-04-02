@@ -359,7 +359,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
                 {
                     default:
                     case "loop":
-                        loop.setType (LoopType.FORWARD);
+                        loop.setType (LoopType.FORWARDS);
                         break;
                     case "ping-pong":
                         loop.setType (LoopType.ALTERNATING);
