@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.w3c.dom.Document;
@@ -248,7 +249,9 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 ampEnvelope.setSustain (MathUtils.dBToDouble (parseVolume (aegElement, TX16WxTag.AMP_ENV_SUSTAIN)));
                 ampEnvelope.setRelease (parseTime (aegElement, TX16WxTag.AMP_ENV_RELEASE));
 
-                parseFilter (soundShapeElement, multisampleSource);
+                final Optional<IFilter> filter = parseFilter (soundShapeElement);
+                // TODO if (filter.isPresent ())
+
             }
         }
 
@@ -349,40 +352,43 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * Parse the filter in the sound shape element.
      *
      * @param soundShapeElement The sound shape element
-     * @param multisampleSource The multi-sample to fill
+     * @return The read filter
      */
-    private static void parseFilter (final Element soundShapeElement, final DefaultMultisampleSource multisampleSource)
+    private static Optional<IFilter> parseFilter (final Element soundShapeElement)
     {
         // TODO
 
         final Element filterElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.FILTER);
         if (filterElement == null)
-            return;
+            return Optional.empty ();
 
         final String filterTypeValue = filterElement.getAttribute (TX16WxTag.FILTER_TYPE);
         if (filterTypeValue == null)
-            return;
+            return Optional.empty ();
 
         final FilterType filterType = FILTER_TYPES.get (filterTypeValue);
         if (filterType == null)
-            return;
-        
-        final String frequencyValue = filterElement.getAttribute (TX16WxTag.FILTER_FREQUENCY);
+            return Optional.empty ();
+
+        String frequencyValue = filterElement.getAttribute (TX16WxTag.FILTER_FREQUENCY);
         if (frequencyValue == null)
             frequencyValue = filterElement.getAttribute (TX16WxTag.FILTER_CUTOFF);
         if (frequencyValue == null)
-            return;
+            return Optional.empty ();
         double frequency;
         if (frequencyValue.endsWith ("hz") || frequencyValue.endsWith ("Hz"))
             frequency = Double.parseDouble (frequencyValue.substring (0, frequencyValue.length () - 2).trim ());
         else if (frequencyValue.endsWith ("khz") || frequencyValue.endsWith ("kHz"))
             frequency = Double.parseDouble (frequencyValue.substring (0, frequencyValue.length () - 3).trim ()) * 1000;
-        
-        
-        final double resonance = XMLUtils.getDoubleAttribute (effectElement, "resonance", 0);
+        else
+            return Optional.empty ();
 
-        return new DefaultFilter (filterType, 4, frequency, resonance));
-     }
+        final double resonance = XMLUtils.getDoubleAttribute (soundShapeElement, "resonance", 0);
+        // TODO parse resonance correctly
+        // TODO parse poles
+
+        return Optional.of (new DefaultFilter (filterType, 4, frequency, resonance));
+    }
 
 
     /**
