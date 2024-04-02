@@ -8,6 +8,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -65,16 +66,16 @@ public class AiffFileSampleData extends AbstractFileSampleData
     public void writeSample (final OutputStream outputStream) throws IOException
     {
         // Read the input AIFF file
-        try (final AudioInputStream in = AudioSystem.getAudioInputStream (new BufferedInputStream (new FileInputStream (this.sampleFile))))
+        try (final InputStream in = new BufferedInputStream (new FileInputStream (this.sampleFile)); final AudioInputStream audioIn = AudioSystem.getAudioInputStream (in))
         {
             // Obtains the file types that the system can write from the audio input stream
             // specified. Check if WAV can be written
-            final AudioFileFormat.Type [] supportedTypes = AudioSystem.getAudioFileTypes (in);
+            final AudioFileFormat.Type [] supportedTypes = AudioSystem.getAudioFileTypes (audioIn);
             if (!Arrays.asList (supportedTypes).contains (AudioFileFormat.Type.AIFF))
                 throw new IOException (Functions.getMessage ("IDS_ERR_AIFF_TO_WAV_NOT_SUPPORTED"));
 
             // Write the output WAV file
-            AudioSystem.write (in, AudioFileFormat.Type.WAVE, outputStream);
+            AudioSystem.write (audioIn, AudioFileFormat.Type.WAVE, outputStream);
         }
         catch (final UnsupportedAudioFileException ex)
         {

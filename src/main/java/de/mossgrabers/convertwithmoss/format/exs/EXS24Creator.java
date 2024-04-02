@@ -8,12 +8,22 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.StringUtils;
@@ -64,14 +74,16 @@ public class EXS24Creator extends AbstractCreator
 
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
-        this.storeMultisample (multisampleSource, multiFile);
-        this.writeSamples (subFolder, multisampleSource);
+        final Map<String, File> writtenSamples = new HashMap<> ();
+        for (final File sampleFile: this.writeSamples (subFolder, multisampleSource))
+            writtenSamples.put (sampleFile.getName (), sampleFile);
+        storeMultisample (multisampleSource, multiFile, writtenSamples);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
-    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile) throws IOException
+    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final Map<String, File> writtenSamples) throws IOException
     {
         final boolean isBigEndian = true;
 
@@ -89,12 +101,58 @@ public class EXS24Creator extends AbstractCreator
 
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                final EXS24Zone exsZone = new EXS24Zone ();
-                exsZones.add (exsZone);
-                final EXS24Sample exsSample = new EXS24Sample ();
-                exsSamples.add (exsSample);
-                // TODO Fill zones
-                // TODO Fill samples
+                final EXS24Zone exs24Zone = new EXS24Zone ();
+                exsZones.add (exs24Zone);
+                final EXS24Sample exs24Sample = new EXS24Sample ();
+                exsSamples.add (exs24Sample);
+
+                // Fill zone
+                exs24Zone.sampleIndex = exsSamples.size () - 1;
+                exs24Zone.groupIndex = exsGroups.size () - 1;
+                exs24Zone.name = zone.getName ();
+
+                exs24Zone.key = zone.getKeyRoot ();
+                exs24Zone.keyLow = zone.getKeyLow ();
+                exs24Zone.keyHigh = zone.getKeyHigh ();
+                exs24Zone.velocityRangeOn = true;
+                exs24Zone.velocityLow = zone.getVelocityLow ();
+                exs24Zone.velocityHigh = zone.getVelocityHigh ();
+                exs24Zone.sampleStart = zone.getStart ();
+                exs24Zone.sampleEnd = zone.getStop ();
+                exs24Zone.reverse = zone.isReversed ();
+                exs24Zone.volumeAdjust = (int) zone.getGain ();
+                exs24Zone.pitch = true;
+                final double tune = zone.getTune ();
+                exs24Zone.coarseTuning = (int) (tune / 100);
+                exs24Zone.fineTuning = (int) (tune % 100);
+                exs24Zone.pan = (int) (zone.getPanorama () * 50);
+
+                final List<ISampleLoop> loops = zone.getLoops ();
+                exs24Zone.loopOn = !loops.isEmpty ();
+                if (exs24Zone.loopOn)
+                {
+                    final ISampleLoop loop = loops.get (0);
+                    exs24Zone.loopStart = loop.getStart ();
+                    exs24Zone.loopEnd = loop.getEnd ();
+                    exs24Zone.loopCrossfade = (int) (loop.getCrossfade () * (exs24Zone.loopEnd - exs24Zone.loopStart));
+                }
+
+                // Fill sample
+                final ISampleData sampleData = zone.getSampleData ();
+                final IAudioMetadata audioMetadata = sampleData.getAudioMetadata ();
+                final String name = zone.getName () + ".wav";
+                final File sampleFile = writtenSamples.get (name);
+                exs24Sample.name = name;
+                exs24Sample.waveDataStart = 88;
+                exs24Sample.length = audioMetadata.getNumberOfSamples ();
+                exs24Sample.sampleRate = audioMetadata.getSampleRate ();
+                exs24Sample.bitDepth = audioMetadata.getBitResolution ();
+                exs24Sample.channels = audioMetadata.getChannels ();
+                exs24Sample.channels2 = audioMetadata.getChannels ();
+                exs24Sample.type = isBigEndian ? "WAVE" : "EVAW";
+                exs24Sample.size = (int) sampleFile.length ();
+                exs24Sample.filePath = "";
+                exs24Sample.fileName = name;
             }
         }
 
@@ -105,9 +163,105 @@ public class EXS24Creator extends AbstractCreator
         exsInstrument.numSampleBlocks = exsSamples.size ();
         exsInstrument.numParameterBlocks = 1;
 
+        // Fill global parameters for zone 1
         final EXS24Parameters exsParameters = new EXS24Parameters ();
-        // TODO fill parameters
+        if (!groups.isEmpty ())
+        {
+            final List<ISampleZone> sampleZones = groups.get (0).getSampleZones ();
+            if (!sampleZones.isEmpty ())
+            {
+                final ISampleZone zone = sampleZones.get (0);
+                // Pitch bend up/down
+                exsParameters.put (EXS24Parameters.PITCH_BEND_UP, zone.getBendUp () / 100);
+                exsParameters.put (EXS24Parameters.PITCH_BEND_DOWN, Math.abs (zone.getBendDown () / 100));
 
+                createEnvelope (exsParameters, 1, zone.getAmplitudeModulator ());
+                applyFilterParameters (exsParameters, multisampleSource.getGlobalFilter ());
+            }
+        }
+
+        writeAllBlocks (multiFile, exsZones, exsSamples, exsGroups, exsInstrument, exsParameters, isBigEndian);
+    }
+
+
+    private static void createEnvelope (final EXS24Parameters parameters, final int envelopeIndex, final IModulator modulator)
+    {
+        final IEnvelope envelope = modulator.getSource ();
+        final double depth = modulator.getDepth ();
+
+        // Maximum time for each step are 10 seconds
+        final int delay = (int) (envelope.getDelay () / 10.0 * 127.0);
+        final int attack = (int) (envelope.getAttack () / 10.0 * 127.0);
+        final int hold = (int) (envelope.getHold () / 10.0 * 127.0);
+        final int decay = (int) (envelope.getDecay () / 10.0 * 127.0);
+        final int sustain = (int) (envelope.getSustain () * 127.0 * depth);
+        final int release = (int) (envelope.getRelease () / 10.0 * 127.0);
+        parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DELAY_START : EXS24Parameters.ENV2_DELAY_START, delay);
+        parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_HI_VEL : EXS24Parameters.ENV2_ATK_HI_VEL, attack);
+        parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_HOLD : EXS24Parameters.ENV2_HOLD, hold);
+        parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DECAY : EXS24Parameters.ENV2_DECAY, decay);
+        parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_SUSTAIN : EXS24Parameters.ENV2_SUSTAIN, sustain);
+        parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_RELEASE : EXS24Parameters.ENV2_RELEASE, release);
+    }
+
+
+    private static void applyFilterParameters (final EXS24Parameters parameters, final Optional<IFilter> filterOpt)
+    {
+        final boolean isEnabled = filterOpt.isPresent ();
+        parameters.put (EXS24Parameters.FILTER1_TOGGLE, isEnabled ? 1 : 0);
+        if (!isEnabled)
+            return;
+
+        final IFilter filter = filterOpt.get ();
+        final int poles = filter.getPoles ();
+        final int filterTypeIndex;
+        switch (filter.getType ())
+        {
+            case LOW_PASS:
+                switch (poles)
+                {
+                    default:
+                    case 4:
+                        filterTypeIndex = 0;
+                        break;
+                    case 3:
+                        filterTypeIndex = 1;
+                        break;
+                    case 2:
+                        filterTypeIndex = 2;
+                        break;
+                    case 1:
+                        filterTypeIndex = 3;
+                        break;
+                }
+                break;
+
+            case HIGH_PASS:
+                filterTypeIndex = 4;
+                break;
+
+            case BAND_PASS:
+                filterTypeIndex = 5;
+                break;
+
+            case BAND_REJECTION:
+            default:
+                parameters.put (EXS24Parameters.FILTER1_TOGGLE, 0);
+                return;
+        }
+        parameters.put (EXS24Parameters.FILTER1_TYPE, filterTypeIndex);
+
+        createEnvelope (parameters, 2, filter.getCutoffModulator ());
+
+        final int frequency = (int) MathUtils.normalize (filter.getCutoff () * 1000.0, 0, IFilter.MAX_FREQUENCY);
+        final int resonance = (int) MathUtils.normalize (filter.getResonance () * 1000.0, 0, 40.0);
+        parameters.put (EXS24Parameters.FILTER1_CUTOFF, frequency);
+        parameters.put (EXS24Parameters.FILTER1_RESO, resonance);
+    }
+
+
+    private static void writeAllBlocks (final File multiFile, final List<EXS24Zone> exsZones, final List<EXS24Sample> exsSamples, final List<EXS24Group> exsGroups, final EXS24Instrument exsInstrument, final EXS24Parameters exsParameters, final boolean isBigEndian) throws IOException
+    {
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
             final EXS24Block instrumentBlock = exsInstrument.write (isBigEndian);

@@ -226,7 +226,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
             if (loopMode > 0)
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
-                loop.setType (loopMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARD);
+                loop.setType (loopMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
                 loop.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, 0));
                 loop.setEnd (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0));
                 loop.setCrossfade (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0) / 1000.0);
@@ -380,7 +380,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      * Parse the effects on the top level.
      *
      * @param paramsElement The parameter element of the sample cell
-     * @param multisampleSource The multisample to fill
+     * @param multisampleSource The multi-sample to fill
      */
     private static void parseEffects (final Element paramsElement, final DefaultMultisampleSource multisampleSource)
     {

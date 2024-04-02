@@ -65,7 +65,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         FILTER_TYPE_MAP.put ("bpf", FilterType.BAND_PASS);
         FILTER_TYPE_MAP.put ("brf", FilterType.BAND_REJECTION);
 
-        LOOP_TYPE_MAP.put ("forward", LoopType.FORWARD);
+        LOOP_TYPE_MAP.put ("forward", LoopType.FORWARDS);
         LOOP_TYPE_MAP.put ("backward", LoopType.BACKWARDS);
         LOOP_TYPE_MAP.put ("alternate", LoopType.ALTERNATING);
     }
@@ -527,7 +527,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
         final double crossfadeInSeconds = this.getDoubleValue (SfzOpcode.LOOP_CROSSFADE, 0);
         if (crossfadeInSeconds >= 0)
-        {
             try
             {
                 loop.setCrossfadeInSeconds (crossfadeInSeconds, sampleMetadata.getSampleData ().getAudioMetadata ().getSampleRate ());
@@ -536,7 +535,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
             {
                 this.notifier.logError (ex);
             }
-        }
 
         // The loop might not have valid start and end set, in that case they will be read from the
         // WAV file

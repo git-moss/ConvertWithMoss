@@ -257,7 +257,7 @@ public class Music1010Creator extends AbstractCreator
         final DestinationAudioFormat destinationAudioFormat = this.getChunkSettings ();
         if (this.resampleTo2448.isSelected ())
         {
-            this.recalculateSamplePositions (multisampleSource, 48000);
+            AbstractCreator.recalculateSamplePositions (multisampleSource, 48000);
 
             destinationAudioFormat.setBitResolutions (new int []
             {

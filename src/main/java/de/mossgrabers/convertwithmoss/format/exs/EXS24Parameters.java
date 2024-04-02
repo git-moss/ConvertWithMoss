@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  *
  * @author Jürgen Moßgraber
  */
+@SuppressWarnings("javadoc")
 public class EXS24Parameters extends EXS24Object
 {
     private static final Map<Integer, String>  PARAM_NAMES    = new HashMap<> ();
@@ -26,281 +27,281 @@ public class EXS24Parameters extends EXS24Object
 
     static
     {
-        DEFAULT_PARAMS.put (7, 0);
-        DEFAULT_PARAMS.put (8, 0);
-        DEFAULT_PARAMS.put (3, 2);
-        DEFAULT_PARAMS.put (4, -1);
-        DEFAULT_PARAMS.put (5, 16);
-        DEFAULT_PARAMS.put (20, 0);
-        DEFAULT_PARAMS.put (73, 0);
-        DEFAULT_PARAMS.put (243, 0);
-        DEFAULT_PARAMS.put (30, 1000);
-        DEFAULT_PARAMS.put (29, 0);
-        DEFAULT_PARAMS.put (75, 100);
-        DEFAULT_PARAMS.put (46, 0);
-        DEFAULT_PARAMS.put (90, -60);
-        DEFAULT_PARAMS.put (89, 0);
-        DEFAULT_PARAMS.put (60, 0);
-        DEFAULT_PARAMS.put (61, 98);
-        DEFAULT_PARAMS.put (62, 0);
-        DEFAULT_PARAMS.put (64, 0);
-        DEFAULT_PARAMS.put (63, 98);
-        DEFAULT_PARAMS.put (76, 0);
-        DEFAULT_PARAMS.put (77, 0);
-        DEFAULT_PARAMS.put (78, 0);
-        DEFAULT_PARAMS.put (79, 0);
-        DEFAULT_PARAMS.put (80, 0);
-        DEFAULT_PARAMS.put (92, 0);
-        DEFAULT_PARAMS.put (82, 0);
-        DEFAULT_PARAMS.put (83, 0);
-        DEFAULT_PARAMS.put (84, 0);
-        DEFAULT_PARAMS.put (81, 127);
-        DEFAULT_PARAMS.put (85, 0);
-        DEFAULT_PARAMS.put (97, 0);
-        DEFAULT_PARAMS.put (165, 1);
-        DEFAULT_PARAMS.put (167, 98);
-        DEFAULT_PARAMS.put (166, -1);
-        DEFAULT_PARAMS.put (172, 64);
-        DEFAULT_PARAMS.put (173, 8);
-        DEFAULT_PARAMS.put (174, -14);
-        DEFAULT_PARAMS.put (175, -1);
-        DEFAULT_PARAMS.put (176, 0);
-        DEFAULT_PARAMS.put (177, 0);
-        DEFAULT_PARAMS.put (179, 6);
-        DEFAULT_PARAMS.put (180, -12);
-        DEFAULT_PARAMS.put (181, 1);
-        DEFAULT_PARAMS.put (182, 0);
-        DEFAULT_PARAMS.put (183, 343);
-        DEFAULT_PARAMS.put (254, 1000);
-        DEFAULT_PARAMS.put (378, 0);
-        DEFAULT_PARAMS.put (375, 1000);
-        DEFAULT_PARAMS.put (376, 0);
-        DEFAULT_PARAMS.put (377, 100);
-        DEFAULT_PARAMS.put (389, 3);
-        DEFAULT_PARAMS.put (390, 3);
-        DEFAULT_PARAMS.put (363, 2);
-        DEFAULT_PARAMS.put (500, 0);
-        DEFAULT_PARAMS.put (362, 2);
-        DEFAULT_PARAMS.put (501, 0);
-        DEFAULT_PARAMS.put (353, 2);
-        DEFAULT_PARAMS.put (354, 0);
-        DEFAULT_PARAMS.put (355, 0);
-        DEFAULT_PARAMS.put (357, 0);
-        DEFAULT_PARAMS.put (358, 0);
-        DEFAULT_PARAMS.put (359, 0);
-        DEFAULT_PARAMS.put (502, 0);
-        DEFAULT_PARAMS.put (503, 2);
-        DEFAULT_PARAMS.put (505, 0);
-        DEFAULT_PARAMS.put (506, 0);
-        DEFAULT_PARAMS.put (509, 0);
-        DEFAULT_PARAMS.put (511, 0);
-        DEFAULT_PARAMS.put (512, 0);
-        DEFAULT_PARAMS.put (515, 0);
-        DEFAULT_PARAMS.put (516, 2);
-        DEFAULT_PARAMS.put (518, 0);
-        DEFAULT_PARAMS.put (519, 0);
-        DEFAULT_PARAMS.put (522, 0);
-        DEFAULT_PARAMS.put (524, 0);
-        DEFAULT_PARAMS.put (525, 0);
-        DEFAULT_PARAMS.put (528, 0);
-        DEFAULT_PARAMS.put (335, 0);
-        DEFAULT_PARAMS.put (334, 0);
-        DEFAULT_PARAMS.put (336, 0);
-        DEFAULT_PARAMS.put (337, 0);
-        DEFAULT_PARAMS.put (341, 0);
-        DEFAULT_PARAMS.put (340, 0);
-        DEFAULT_PARAMS.put (342, 0);
-        DEFAULT_PARAMS.put (343, 0);
-        DEFAULT_PARAMS.put (344, 0);
-        DEFAULT_PARAMS.put (347, 0);
-        DEFAULT_PARAMS.put (349, 0);
-        DEFAULT_PARAMS.put (492, 0);
-        DEFAULT_PARAMS.put (491, 98);
-        DEFAULT_PARAMS.put (493, 0);
-        DEFAULT_PARAMS.put (496, 0);
-        DEFAULT_PARAMS.put (498, 0);
-        DEFAULT_PARAMS.put (535, 1);
-        DEFAULT_PARAMS.put (282, 48);
-        DEFAULT_PARAMS.put (387, -10);
-        DEFAULT_PARAMS.put (388, 1);
+        DEFAULT_PARAMS.put (Integer.valueOf (7), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (8), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (3), Integer.valueOf (2));
+        DEFAULT_PARAMS.put (Integer.valueOf (4), Integer.valueOf (-1));
+        DEFAULT_PARAMS.put (Integer.valueOf (5), Integer.valueOf (16));
+        DEFAULT_PARAMS.put (Integer.valueOf (20), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (73), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (243), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (30), Integer.valueOf (1000));
+        DEFAULT_PARAMS.put (Integer.valueOf (29), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (75), Integer.valueOf (100));
+        DEFAULT_PARAMS.put (Integer.valueOf (46), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (90), Integer.valueOf (-60));
+        DEFAULT_PARAMS.put (Integer.valueOf (89), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (60), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (61), Integer.valueOf (98));
+        DEFAULT_PARAMS.put (Integer.valueOf (62), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (64), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (63), Integer.valueOf (98));
+        DEFAULT_PARAMS.put (Integer.valueOf (76), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (77), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (78), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (79), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (80), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (92), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (82), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (83), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (84), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (81), Integer.valueOf (127));
+        DEFAULT_PARAMS.put (Integer.valueOf (85), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (97), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (165), Integer.valueOf (1));
+        DEFAULT_PARAMS.put (Integer.valueOf (167), Integer.valueOf (98));
+        DEFAULT_PARAMS.put (Integer.valueOf (166), Integer.valueOf (-1));
+        DEFAULT_PARAMS.put (Integer.valueOf (172), Integer.valueOf (64));
+        DEFAULT_PARAMS.put (Integer.valueOf (173), Integer.valueOf (8));
+        DEFAULT_PARAMS.put (Integer.valueOf (174), Integer.valueOf (-14));
+        DEFAULT_PARAMS.put (Integer.valueOf (175), Integer.valueOf (-1));
+        DEFAULT_PARAMS.put (Integer.valueOf (176), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (177), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (179), Integer.valueOf (6));
+        DEFAULT_PARAMS.put (Integer.valueOf (180), Integer.valueOf (-12));
+        DEFAULT_PARAMS.put (Integer.valueOf (181), Integer.valueOf (1));
+        DEFAULT_PARAMS.put (Integer.valueOf (182), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (183), Integer.valueOf (343));
+        DEFAULT_PARAMS.put (Integer.valueOf (254), Integer.valueOf (1000));
+        DEFAULT_PARAMS.put (Integer.valueOf (378), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (375), Integer.valueOf (1000));
+        DEFAULT_PARAMS.put (Integer.valueOf (376), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (377), Integer.valueOf (100));
+        DEFAULT_PARAMS.put (Integer.valueOf (389), Integer.valueOf (3));
+        DEFAULT_PARAMS.put (Integer.valueOf (390), Integer.valueOf (3));
+        DEFAULT_PARAMS.put (Integer.valueOf (363), Integer.valueOf (2));
+        DEFAULT_PARAMS.put (Integer.valueOf (500), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (362), Integer.valueOf (2));
+        DEFAULT_PARAMS.put (Integer.valueOf (501), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (353), Integer.valueOf (2));
+        DEFAULT_PARAMS.put (Integer.valueOf (354), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (355), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (357), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (358), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (359), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (502), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (503), Integer.valueOf (2));
+        DEFAULT_PARAMS.put (Integer.valueOf (505), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (506), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (509), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (511), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (512), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (515), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (516), Integer.valueOf (2));
+        DEFAULT_PARAMS.put (Integer.valueOf (518), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (519), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (522), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (524), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (525), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (528), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (335), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (334), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (336), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (337), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (341), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (340), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (342), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (343), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (344), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (347), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (349), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (492), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (491), Integer.valueOf (98));
+        DEFAULT_PARAMS.put (Integer.valueOf (493), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (496), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (498), Integer.valueOf (0));
+        DEFAULT_PARAMS.put (Integer.valueOf (535), Integer.valueOf (1));
+        DEFAULT_PARAMS.put (Integer.valueOf (282), Integer.valueOf (48));
+        DEFAULT_PARAMS.put (Integer.valueOf (387), Integer.valueOf (-10));
+        DEFAULT_PARAMS.put (Integer.valueOf (388), Integer.valueOf (1));
 
-        PARAM_NAMES.put (0x07, "MASTER_VOLUME");
-        PARAM_NAMES.put (0x160, "MASTER_PAN");
-        PARAM_NAMES.put (0x08, "VOLUME_KEYSCALE");
-        PARAM_NAMES.put (0x03, "PITCH_BEND_UP");
-        PARAM_NAMES.put (0x04, "PITCH_BEND_DOWN");
-        PARAM_NAMES.put (0x0a, "MONO_LEGATO");
-        PARAM_NAMES.put (0x116, "MIDI_MONO_MODE");
-        PARAM_NAMES.put (0x11a, "MIDI_MONO_MODE_PITCH_RANGE");
-        PARAM_NAMES.put (0x05, "POLYPHONY_VOICES");
-        PARAM_NAMES.put (0x2d, "TRANSPOSE");
-        PARAM_NAMES.put (0x0e, "COARSE_TUNE");
-        PARAM_NAMES.put (0x0f, "FINE_TUNE");
-        PARAM_NAMES.put (0x14, "GLIDE");
-        PARAM_NAMES.put (0x48, "PORTA_DOWN");
-        PARAM_NAMES.put (0x49, "PORTA_UP");
-        PARAM_NAMES.put (0x2c, "FILTER1_TOGGLE");
-        PARAM_NAMES.put (0xf3, "FILTER1_TYPE");
-        PARAM_NAMES.put (0xaa, "FILTER1_FAT");
-        PARAM_NAMES.put (0x1e, "FILTER1_CUTOFF");
-        PARAM_NAMES.put (0x1d, "FILTER1_RESO");
-        PARAM_NAMES.put (0x4b, "FILTER1_DRIVE");
-        PARAM_NAMES.put (0x2e, "FILTER1_KEYTRACK");
-        PARAM_NAMES.put (0x174, "FILTER2_TOGGLE");
-        PARAM_NAMES.put (0x186, "FILTER2_TYPE");
-        PARAM_NAMES.put (0x177, "FILTER2_CUTOFF");
-        PARAM_NAMES.put (0x178, "FILTER2_RESO");
-        PARAM_NAMES.put (0x179, "FILTER2_DRIVE");
-        PARAM_NAMES.put (0x173, "FILTERS_SERIAL_PARALLEL");
-        PARAM_NAMES.put (0x17a, "FILTERS_BLEND");
-        PARAM_NAMES.put (0x3c, "LFO_1_FADE");
-        PARAM_NAMES.put (0x3d, "LFO_1_RATE");
-        PARAM_NAMES.put (0x3e, "LFO_1_WAVE_SHAPE");
-        PARAM_NAMES.put (0x14c, "LFO_1_KEY_TRIGGER");
-        PARAM_NAMES.put (0x14d, "LFO_1_MONO_POLY");
-        PARAM_NAMES.put (0x14e, "LFO_1_PHASE");
-        PARAM_NAMES.put (0x14f, "LFO_1_POSITIVE_OR_MIDPOINT");
-        PARAM_NAMES.put (0x150, "LFO_1_TEMPO_SYNC");
-        PARAM_NAMES.put (0x187, "LFO_1_FADE_IN_OR_OUT");
-        PARAM_NAMES.put (0x3f, "LFO_2_RATE");
-        PARAM_NAMES.put (0x40, "LFO_2_WAVE_SHAPE");
-        PARAM_NAMES.put (0x151, "LFO_2_FADE");
-        PARAM_NAMES.put (0x152, "LFO_2_KEY_TRIGGER");
-        PARAM_NAMES.put (0x153, "LFO_2_MONO_POLY");
-        PARAM_NAMES.put (0x154, "LFO_2_PHASE");
-        PARAM_NAMES.put (0x155, "LFO_2_POSITIVE_OR_MIDPOINT");
-        PARAM_NAMES.put (0x156, "LFO_2_TEMPO_SYNC");
-        PARAM_NAMES.put (0x188, "LFO_2_FADE_IN_OR_OUT");
-        PARAM_NAMES.put (0xa7, "LFO_3_RATE");
-        PARAM_NAMES.put (0x158, "LFO_3_WAVE_SHAPE");
-        PARAM_NAMES.put (0x157, "LFO_3_FADE");
-        PARAM_NAMES.put (0x159, "LFO_3_KEY_TRIGGER");
-        PARAM_NAMES.put (0x15a, "LFO_3_MONO_POLY");
-        PARAM_NAMES.put (0x15b, "LFO_3_PHASE");
-        PARAM_NAMES.put (0x15c, "LFO_3_POSITIVE_OR_MIDPOINT");
-        PARAM_NAMES.put (0x15d, "LFO_3_TEMPO_SYNC");
-        PARAM_NAMES.put (0x189, "LFO_3_FADE_IN_OR_OUT");
-        PARAM_NAMES.put (0x16a, "ENV2_TYPE");
-        PARAM_NAMES.put (0x17d, "ENV2_VEL_SENS");
-        PARAM_NAMES.put (0x16c, "ENV2_DELAY_START");
-        PARAM_NAMES.put (0x192, "ENV2_ATK_CURVE");
-        PARAM_NAMES.put (0x4c, "ENV2_ATK_HI_VEL");
-        PARAM_NAMES.put (0x4d, "ENV2_ATK_LO_VEL");
-        PARAM_NAMES.put (0x38, "ENV2_HOLD");
-        PARAM_NAMES.put (0x4e, "ENV2_DECAY");
-        PARAM_NAMES.put (0x4f, "ENV2_SUSTAIN");
-        PARAM_NAMES.put (0x50, "ENV2_RELEASE");
-        PARAM_NAMES.put (0x5b, "ENV2_TIME_CURVE");
-        PARAM_NAMES.put (0x16b, "ENV1_TYPE");
-        PARAM_NAMES.put (0x5a, "ENV1_VEL_SENS");
-        PARAM_NAMES.put (0x59, "ENV1_VOLUME_HIGH");
-        PARAM_NAMES.put (0x16d, "ENV1_DELAY_START");
-        PARAM_NAMES.put (0x195, "ENV1_ATK_CURVE");
-        PARAM_NAMES.put (0x52, "ENV1_ATK_HI_VEL");
-        PARAM_NAMES.put (0x53, "ENV1_ATK_LO_VEL");
-        PARAM_NAMES.put (0x58, "ENV1_HOLD");
-        PARAM_NAMES.put (0x54, "ENV1_DECAY");
-        PARAM_NAMES.put (0x51, "ENV1_SUSTAIN");
-        PARAM_NAMES.put (0x55, "ENV1_RELEASE");
-        PARAM_NAMES.put (-1, "ENV1_TIME_CURVE");
-        PARAM_NAMES.put (0x183, "AMP_VELOCITY_CURVE");
-        PARAM_NAMES.put (0x5f, "VELOCITY_OFFSET");
-        PARAM_NAMES.put (0xa4, "RANDOM_VELOCITY");
-        PARAM_NAMES.put (0xa3, "RANDOM_SAMPLE_SEL");
-        PARAM_NAMES.put (0x62, "RANDOM_PITCH");
-        PARAM_NAMES.put (0x61, "XFADE_AMOUNT");
-        PARAM_NAMES.put (0xa5, "XFADE_TYPE");
-        PARAM_NAMES.put (0xab, "UNISON_TOGGLE");
-        PARAM_NAMES.put (0xa6, "COARSE_TUNE_REMOTE");
-        PARAM_NAMES.put (0xac, "HOLD_VIA_CONTROL");
-        PARAM_NAMES.put (0xad, "MOD1_DESTINATION");
-        PARAM_NAMES.put (0xae, "MOD1_SOURCE");
-        PARAM_NAMES.put (0xaf, "MOD1_VIA");
-        PARAM_NAMES.put (0xb0, "MOD1_AMOUNT_LOW");
-        PARAM_NAMES.put (0xb1, "MOD1_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xe9, "MOD1_SRC_INVERT");
-        PARAM_NAMES.put (0xb2, "MOD1_VIA_INVERT");
-        PARAM_NAMES.put (0xf4, "MOD1_BYPASS");
-        PARAM_NAMES.put (0xb3, "MOD2_DESTINATION");
-        PARAM_NAMES.put (0xb4, "MOD2_SOURCE");
-        PARAM_NAMES.put (0xb5, "MOD2_VIA");
-        PARAM_NAMES.put (0xb6, "MOD2_AMOUNT_LOW");
-        PARAM_NAMES.put (0xb7, "MOD2_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xea, "MOD2_SRC_INVERT");
-        PARAM_NAMES.put (0xb8, "MOD2_VIA_INVERT");
-        PARAM_NAMES.put (0xf5, "MOD2_BYPASS");
-        PARAM_NAMES.put (0xb9, "MOD3_DESTINATION");
-        PARAM_NAMES.put (0xba, "MOD3_SOURCE");
-        PARAM_NAMES.put (0xbb, "MOD3_VIA");
-        PARAM_NAMES.put (0xbc, "MOD3_AMOUNT_LOW");
-        PARAM_NAMES.put (0xbd, "MOD3_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xeb, "MOD3_SRC_INVERT");
-        PARAM_NAMES.put (0xbe, "MOD3_VIA_INVERT");
-        PARAM_NAMES.put (0xf6, "MOD3_BYPASS");
-        PARAM_NAMES.put (0xbf, "MOD4_DESTINATION");
-        PARAM_NAMES.put (0xc0, "MOD4_SOURCE");
-        PARAM_NAMES.put (0xc1, "MOD4_VIA");
-        PARAM_NAMES.put (0xc2, "MOD4_AMOUNT_LOW");
-        PARAM_NAMES.put (0xc3, "MOD4_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xec, "MOD4_SRC_INVERT");
-        PARAM_NAMES.put (0xc4, "MOD4_VIA_INVERT");
-        PARAM_NAMES.put (0xf7, "MOD4_BYPASS");
-        PARAM_NAMES.put (0xc5, "MOD5_DESTINATION");
-        PARAM_NAMES.put (0xc6, "MOD5_SOURCE");
-        PARAM_NAMES.put (0xc7, "MOD5_VIA");
-        PARAM_NAMES.put (0xc8, "MOD5_AMOUNT_LOW");
-        PARAM_NAMES.put (0xc9, "MOD5_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xed, "MOD5_SRC_INVERT");
-        PARAM_NAMES.put (0xca, "MOD5_VIA_INVERT");
-        PARAM_NAMES.put (0xf8, "MOD5_BYPASS");
-        PARAM_NAMES.put (0xcb, "MOD6_DESTINATION");
-        PARAM_NAMES.put (0xcc, "MOD6_SOURCE");
-        PARAM_NAMES.put (0xcd, "MOD6_VIA");
-        PARAM_NAMES.put (0xce, "MOD6_AMOUNT_LOW");
-        PARAM_NAMES.put (0xcf, "MOD6_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xee, "MOD6_SRC_INVERT");
-        PARAM_NAMES.put (0xd0, "MOD6_VIA_INVERT");
-        PARAM_NAMES.put (0xf9, "MOD6_BYPASS");
-        PARAM_NAMES.put (0xd1, "MOD7_DESTINATION");
-        PARAM_NAMES.put (0xd2, "MOD7_SOURCE");
-        PARAM_NAMES.put (0xd3, "MOD7_VIA");
-        PARAM_NAMES.put (0xd4, "MOD7_AMOUNT_LOW");
-        PARAM_NAMES.put (0xd5, "MOD7_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xef, "MOD7_SRC_INVERT");
-        PARAM_NAMES.put (0xd6, "MOD7_VIA_INVERT");
-        PARAM_NAMES.put (0xfa, "MOD7_BYPASS");
-        PARAM_NAMES.put (0xd7, "MOD8_DESTINATION");
-        PARAM_NAMES.put (0xd8, "MOD8_SOURCE");
-        PARAM_NAMES.put (0xd9, "MOD8_VIA");
-        PARAM_NAMES.put (0xda, "MOD8_AMOUNT_LOW");
-        PARAM_NAMES.put (0xdb, "MOD8_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xf0, "MOD8_SRC_INVERT");
-        PARAM_NAMES.put (0xdc, "MOD8_VIA_INVERT");
-        PARAM_NAMES.put (0xfb, "MOD8_BYPASS");
-        PARAM_NAMES.put (0xdd, "MOD9_DESTINATION");
-        PARAM_NAMES.put (0xde, "MOD9_SOURCE");
-        PARAM_NAMES.put (0xdf, "MOD9_VIA");
-        PARAM_NAMES.put (0xe0, "MOD9_AMOUNT_LOW");
-        PARAM_NAMES.put (0xe1, "MOD9_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xf1, "MOD9_SRC_INVERT");
-        PARAM_NAMES.put (0xe2, "MOD9_VIA_INVERT");
-        PARAM_NAMES.put (0xfc, "MOD9_BYPASS");
-        PARAM_NAMES.put (0xe3, "MOD10_DESTINATION");
-        PARAM_NAMES.put (0xe4, "MOD10_SOURCE");
-        PARAM_NAMES.put (0xe5, "MOD10_VIA");
-        PARAM_NAMES.put (0xe6, "MOD10_AMOUNT_LOW");
-        PARAM_NAMES.put (0xe7, "MOD10_AMOUNT_HIGH");
-        PARAM_NAMES.put (0xf2, "MOD10_SRC_INVERT");
-        PARAM_NAMES.put (0xe8, "MOD10_VIA_INVERT");
-        PARAM_NAMES.put (0xfd, "MOD10_BYPASS");
-        PARAM_NAMES.put (0x19b, "MOD11_DESTINATION");
-        PARAM_NAMES.put (0x19c, "MOD11_SOURCE");
-        PARAM_NAMES.put (0x19d, "MOD11_VIA");
-        PARAM_NAMES.put (0x19e, "MOD11_AMOUNT_LOW");
-        PARAM_NAMES.put (0x19f, "MOD11_AMOUNT_HIGH");
-        PARAM_NAMES.put (0x1a0, "MOD11_SRC_INVERT");
-        PARAM_NAMES.put (0x1a1, "MOD11_VIA_INVERT");
-        PARAM_NAMES.put (0x1a2, "MOD11_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0x07), "MASTER_VOLUME");
+        PARAM_NAMES.put (Integer.valueOf (0x160), "MASTER_PAN");
+        PARAM_NAMES.put (Integer.valueOf (0x08), "VOLUME_KEYSCALE");
+        PARAM_NAMES.put (Integer.valueOf (0x03), "PITCH_BEND_UP");
+        PARAM_NAMES.put (Integer.valueOf (0x04), "PITCH_BEND_DOWN");
+        PARAM_NAMES.put (Integer.valueOf (0x0a), "MONO_LEGATO");
+        PARAM_NAMES.put (Integer.valueOf (0x116), "MIDI_MONO_MODE");
+        PARAM_NAMES.put (Integer.valueOf (0x11a), "MIDI_MONO_MODE_PITCH_RANGE");
+        PARAM_NAMES.put (Integer.valueOf (0x05), "POLYPHONY_VOICES");
+        PARAM_NAMES.put (Integer.valueOf (0x2d), "TRANSPOSE");
+        PARAM_NAMES.put (Integer.valueOf (0x0e), "COARSE_TUNE");
+        PARAM_NAMES.put (Integer.valueOf (0x0f), "FINE_TUNE");
+        PARAM_NAMES.put (Integer.valueOf (0x14), "GLIDE");
+        PARAM_NAMES.put (Integer.valueOf (0x48), "PORTA_DOWN");
+        PARAM_NAMES.put (Integer.valueOf (0x49), "PORTA_UP");
+        PARAM_NAMES.put (Integer.valueOf (0x2c), "FILTER1_TOGGLE");
+        PARAM_NAMES.put (Integer.valueOf (0xf3), "FILTER1_TYPE");
+        PARAM_NAMES.put (Integer.valueOf (0xaa), "FILTER1_FAT");
+        PARAM_NAMES.put (Integer.valueOf (0x1e), "FILTER1_CUTOFF");
+        PARAM_NAMES.put (Integer.valueOf (0x1d), "FILTER1_RESO");
+        PARAM_NAMES.put (Integer.valueOf (0x4b), "FILTER1_DRIVE");
+        PARAM_NAMES.put (Integer.valueOf (0x2e), "FILTER1_KEYTRACK");
+        PARAM_NAMES.put (Integer.valueOf (0x174), "FILTER2_TOGGLE");
+        PARAM_NAMES.put (Integer.valueOf (0x186), "FILTER2_TYPE");
+        PARAM_NAMES.put (Integer.valueOf (0x177), "FILTER2_CUTOFF");
+        PARAM_NAMES.put (Integer.valueOf (0x178), "FILTER2_RESO");
+        PARAM_NAMES.put (Integer.valueOf (0x179), "FILTER2_DRIVE");
+        PARAM_NAMES.put (Integer.valueOf (0x173), "FILTERS_SERIAL_PARALLEL");
+        PARAM_NAMES.put (Integer.valueOf (0x17a), "FILTERS_BLEND");
+        PARAM_NAMES.put (Integer.valueOf (0x3c), "LFO_1_FADE");
+        PARAM_NAMES.put (Integer.valueOf (0x3d), "LFO_1_RATE");
+        PARAM_NAMES.put (Integer.valueOf (0x3e), "LFO_1_WAVE_SHAPE");
+        PARAM_NAMES.put (Integer.valueOf (0x14c), "LFO_1_KEY_TRIGGER");
+        PARAM_NAMES.put (Integer.valueOf (0x14d), "LFO_1_MONO_POLY");
+        PARAM_NAMES.put (Integer.valueOf (0x14e), "LFO_1_PHASE");
+        PARAM_NAMES.put (Integer.valueOf (0x14f), "LFO_1_POSITIVE_OR_MIDPOINT");
+        PARAM_NAMES.put (Integer.valueOf (0x150), "LFO_1_TEMPO_SYNC");
+        PARAM_NAMES.put (Integer.valueOf (0x187), "LFO_1_FADE_IN_OR_OUT");
+        PARAM_NAMES.put (Integer.valueOf (0x3f), "LFO_2_RATE");
+        PARAM_NAMES.put (Integer.valueOf (0x40), "LFO_2_WAVE_SHAPE");
+        PARAM_NAMES.put (Integer.valueOf (0x151), "LFO_2_FADE");
+        PARAM_NAMES.put (Integer.valueOf (0x152), "LFO_2_KEY_TRIGGER");
+        PARAM_NAMES.put (Integer.valueOf (0x153), "LFO_2_MONO_POLY");
+        PARAM_NAMES.put (Integer.valueOf (0x154), "LFO_2_PHASE");
+        PARAM_NAMES.put (Integer.valueOf (0x155), "LFO_2_POSITIVE_OR_MIDPOINT");
+        PARAM_NAMES.put (Integer.valueOf (0x156), "LFO_2_TEMPO_SYNC");
+        PARAM_NAMES.put (Integer.valueOf (0x188), "LFO_2_FADE_IN_OR_OUT");
+        PARAM_NAMES.put (Integer.valueOf (0xa7), "LFO_3_RATE");
+        PARAM_NAMES.put (Integer.valueOf (0x158), "LFO_3_WAVE_SHAPE");
+        PARAM_NAMES.put (Integer.valueOf (0x157), "LFO_3_FADE");
+        PARAM_NAMES.put (Integer.valueOf (0x159), "LFO_3_KEY_TRIGGER");
+        PARAM_NAMES.put (Integer.valueOf (0x15a), "LFO_3_MONO_POLY");
+        PARAM_NAMES.put (Integer.valueOf (0x15b), "LFO_3_PHASE");
+        PARAM_NAMES.put (Integer.valueOf (0x15c), "LFO_3_POSITIVE_OR_MIDPOINT");
+        PARAM_NAMES.put (Integer.valueOf (0x15d), "LFO_3_TEMPO_SYNC");
+        PARAM_NAMES.put (Integer.valueOf (0x189), "LFO_3_FADE_IN_OR_OUT");
+        PARAM_NAMES.put (Integer.valueOf (0x16a), "ENV2_TYPE");
+        PARAM_NAMES.put (Integer.valueOf (0x17d), "ENV2_VEL_SENS");
+        PARAM_NAMES.put (Integer.valueOf (0x16c), "ENV2_DELAY_START");
+        PARAM_NAMES.put (Integer.valueOf (0x192), "ENV2_ATK_CURVE");
+        PARAM_NAMES.put (Integer.valueOf (0x4c), "ENV2_ATK_HI_VEL");
+        PARAM_NAMES.put (Integer.valueOf (0x4d), "ENV2_ATK_LO_VEL");
+        PARAM_NAMES.put (Integer.valueOf (0x38), "ENV2_HOLD");
+        PARAM_NAMES.put (Integer.valueOf (0x4e), "ENV2_DECAY");
+        PARAM_NAMES.put (Integer.valueOf (0x4f), "ENV2_SUSTAIN");
+        PARAM_NAMES.put (Integer.valueOf (0x50), "ENV2_RELEASE");
+        PARAM_NAMES.put (Integer.valueOf (0x5b), "ENV2_TIME_CURVE");
+        PARAM_NAMES.put (Integer.valueOf (0x16b), "ENV1_TYPE");
+        PARAM_NAMES.put (Integer.valueOf (0x5a), "ENV1_VEL_SENS");
+        PARAM_NAMES.put (Integer.valueOf (0x59), "ENV1_VOLUME_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0x16d), "ENV1_DELAY_START");
+        PARAM_NAMES.put (Integer.valueOf (0x195), "ENV1_ATK_CURVE");
+        PARAM_NAMES.put (Integer.valueOf (0x52), "ENV1_ATK_HI_VEL");
+        PARAM_NAMES.put (Integer.valueOf (0x53), "ENV1_ATK_LO_VEL");
+        PARAM_NAMES.put (Integer.valueOf (0x58), "ENV1_HOLD");
+        PARAM_NAMES.put (Integer.valueOf (0x54), "ENV1_DECAY");
+        PARAM_NAMES.put (Integer.valueOf (0x51), "ENV1_SUSTAIN");
+        PARAM_NAMES.put (Integer.valueOf (0x55), "ENV1_RELEASE");
+        PARAM_NAMES.put (Integer.valueOf (-1), "ENV1_TIME_CURVE");
+        PARAM_NAMES.put (Integer.valueOf (0x183), "AMP_VELOCITY_CURVE");
+        PARAM_NAMES.put (Integer.valueOf (0x5f), "VELOCITY_OFFSET");
+        PARAM_NAMES.put (Integer.valueOf (0xa4), "RANDOM_VELOCITY");
+        PARAM_NAMES.put (Integer.valueOf (0xa3), "RANDOM_SAMPLE_SEL");
+        PARAM_NAMES.put (Integer.valueOf (0x62), "RANDOM_PITCH");
+        PARAM_NAMES.put (Integer.valueOf (0x61), "XFADE_AMOUNT");
+        PARAM_NAMES.put (Integer.valueOf (0xa5), "XFADE_TYPE");
+        PARAM_NAMES.put (Integer.valueOf (0xab), "UNISON_TOGGLE");
+        PARAM_NAMES.put (Integer.valueOf (0xa6), "COARSE_TUNE_REMOTE");
+        PARAM_NAMES.put (Integer.valueOf (0xac), "HOLD_VIA_CONTROL");
+        PARAM_NAMES.put (Integer.valueOf (0xad), "MOD1_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xae), "MOD1_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xaf), "MOD1_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xb0), "MOD1_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xb1), "MOD1_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xe9), "MOD1_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xb2), "MOD1_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xf4), "MOD1_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xb3), "MOD2_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xb4), "MOD2_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xb5), "MOD2_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xb6), "MOD2_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xb7), "MOD2_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xea), "MOD2_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xb8), "MOD2_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xf5), "MOD2_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xb9), "MOD3_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xba), "MOD3_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xbb), "MOD3_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xbc), "MOD3_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xbd), "MOD3_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xeb), "MOD3_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xbe), "MOD3_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xf6), "MOD3_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xbf), "MOD4_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xc0), "MOD4_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xc1), "MOD4_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xc2), "MOD4_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xc3), "MOD4_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xec), "MOD4_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xc4), "MOD4_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xf7), "MOD4_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xc5), "MOD5_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xc6), "MOD5_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xc7), "MOD5_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xc8), "MOD5_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xc9), "MOD5_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xed), "MOD5_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xca), "MOD5_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xf8), "MOD5_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xcb), "MOD6_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xcc), "MOD6_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xcd), "MOD6_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xce), "MOD6_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xcf), "MOD6_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xee), "MOD6_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xd0), "MOD6_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xf9), "MOD6_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xd1), "MOD7_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xd2), "MOD7_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xd3), "MOD7_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xd4), "MOD7_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xd5), "MOD7_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xef), "MOD7_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xd6), "MOD7_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xfa), "MOD7_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xd7), "MOD8_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xd8), "MOD8_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xd9), "MOD8_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xda), "MOD8_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xdb), "MOD8_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xf0), "MOD8_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xdc), "MOD8_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xfb), "MOD8_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xdd), "MOD9_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xde), "MOD9_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xdf), "MOD9_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xe0), "MOD9_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xe1), "MOD9_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xf1), "MOD9_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xe2), "MOD9_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xfc), "MOD9_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0xe3), "MOD10_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0xe4), "MOD10_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0xe5), "MOD10_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0xe6), "MOD10_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0xe7), "MOD10_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0xf2), "MOD10_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xe8), "MOD10_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0xfd), "MOD10_BYPASS");
+        PARAM_NAMES.put (Integer.valueOf (0x19b), "MOD11_DESTINATION");
+        PARAM_NAMES.put (Integer.valueOf (0x19c), "MOD11_SOURCE");
+        PARAM_NAMES.put (Integer.valueOf (0x19d), "MOD11_VIA");
+        PARAM_NAMES.put (Integer.valueOf (0x19e), "MOD11_AMOUNT_LOW");
+        PARAM_NAMES.put (Integer.valueOf (0x19f), "MOD11_AMOUNT_HIGH");
+        PARAM_NAMES.put (Integer.valueOf (0x1a0), "MOD11_SRC_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0x1a1), "MOD11_VIA_INVERT");
+        PARAM_NAMES.put (Integer.valueOf (0x1a2), "MOD11_BYPASS");
     }
 
     public static final int MASTER_VOLUME              = 0x07;
@@ -537,7 +538,7 @@ public class EXS24Parameters extends EXS24Object
 
     /**
      * Constructor.
-     * 
+     *
      * @param block The block to read
      * @throws IOException Could not read the block
      */
@@ -563,7 +564,7 @@ public class EXS24Parameters extends EXS24Object
             {
                 final int valueOffset = paramCount + 2 * i;
                 final int value = StreamUtils.readSigned16 (parameterData, valueOffset, isBigEndian);
-                this.params.put (paramID, Integer.valueOf (value));
+                this.params.put (Integer.valueOf (paramID), Integer.valueOf (value));
             }
         }
 
@@ -582,15 +583,45 @@ public class EXS24Parameters extends EXS24Object
             {
                 final int paramID = parameterData[i] & 0xFF;
                 if (paramID != 0)
-                    this.params.put (paramID, Integer.valueOf (parameterData[i + 1]));
+                    this.params.put (Integer.valueOf (paramID), Integer.valueOf (parameterData[i + 1]));
             }
         }
     }
 
 
     /** {@inheritDoc} */
+    @Override
     protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
     {
-        // TODO
+        final int paramCount = this.params.size ();
+        StreamUtils.writeUnsigned32 (out, paramCount, isBigEndian);
+        for (final Map.Entry<Integer, Integer> entry: this.params.entrySet ())
+            out.write (entry.getKey ().intValue ());
+        for (final Map.Entry<Integer, Integer> entry: this.params.entrySet ())
+            StreamUtils.writeUnsigned16 (out, entry.getValue ().intValue (), isBigEndian);
+    }
+
+
+    /**
+     * Get a parameter value.
+     * 
+     * @param id The ID of the parameter
+     * @return The parameter value
+     */
+    public Integer get (final int id)
+    {
+        return this.params.get (Integer.valueOf (id));
+    }
+
+
+    /**
+     * Set a parameter value.
+     * 
+     * @param id The ID of the parameter
+     * @param value The parameter value
+     */
+    public void put (final int id, final int value)
+    {
+        this.params.put (Integer.valueOf (id), Integer.valueOf (value));
     }
 }

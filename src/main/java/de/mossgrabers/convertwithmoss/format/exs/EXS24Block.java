@@ -36,8 +36,8 @@ class EXS24Block
     /** An unknown block. */
     public static final int          TYPE_UNKNOWN              = 0x08;
 
-    private final String             BIG_ENDIAN_MAGIC          = "SOBT";
-    private final String             LITTLE_ENDIAN_MAGIC       = "TBOS";
+    private static final String      BIG_ENDIAN_MAGIC          = "SOBT";
+    private static final String      LITTLE_ENDIAN_MAGIC       = "TBOS";
     private static final Set<String> BIG_ENDIAN_MAGIC_BYTES    = new HashSet<> (2);
     private static final Set<String> LITTLE_ENDIAN_MAGIC_BYTES = new HashSet<> (2);
     static
@@ -55,7 +55,7 @@ class EXS24Block
 
     /**
      * Constructor.
-     * 
+     *
      * @param in The input stream to read from
      * @throws IOException Could not read the data
      */
@@ -67,7 +67,7 @@ class EXS24Block
 
     /**
      * Constructor.
-     * 
+     *
      * @param type The type of the block
      * @param content The content of the block
      * @throws IOException Could not read the data
@@ -96,14 +96,14 @@ class EXS24Block
 
         // There are variants which have a 0x40 added...
         this.type = in.read () & 0x0F;
-        final int size = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        this.index = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        final int size = (int) StreamUtils.readUnsigned32 (in, this.isBigEndian);
+        this.index = (int) StreamUtils.readUnsigned32 (in, this.isBigEndian);
 
         // Flags -> Found: 03 (on a group), 64 (instrument), 2, 3, 2147483650 (zone), 2 (sample)
-        StreamUtils.readUnsigned32 (in, isBigEndian);
+        StreamUtils.readUnsigned32 (in, this.isBigEndian);
 
         final String magic = StreamUtils.readASCII (in, 4);
-        if (!(isBigEndian ? BIG_ENDIAN_MAGIC_BYTES : LITTLE_ENDIAN_MAGIC_BYTES).contains (magic))
+        if (!(this.isBigEndian ? BIG_ENDIAN_MAGIC_BYTES : LITTLE_ENDIAN_MAGIC_BYTES).contains (magic))
             throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_MAGIC", magic));
 
         this.name = StringUtils.removeCharactersAfterZero (StreamUtils.readASCII (in, 64));
@@ -124,7 +124,7 @@ class EXS24Block
         out.write (0);
         out.write (this.type);
 
-        StreamUtils.writeUnsigned32 (out, content.length, this.isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.content.length, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, this.index, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, 0, this.isBigEndian);
         StreamUtils.writeASCII (out, this.isBigEndian ? BIG_ENDIAN_MAGIC : LITTLE_ENDIAN_MAGIC, 4);
