@@ -8,7 +8,7 @@ The following multisample formats are supported:
 4. [DecentSampler](#decentsampler)
 5. [Korg KMP/KSF](#korg-kmpksf)
 6. [Korg wavestate/modwave](#korg-wavestatemodwave)
-7. [Logic EX24]()
+7. [Logic EXS24](#logic-exs24)
 8. [Native Instruments Kontakt NKI/NKM](#native-instruments-kontakt-nkinkm)
 9. [SFZ](#sfz)
 10. [SoundFont 2](#soundfont-2)
@@ -99,9 +99,7 @@ Since the format supports only one group of a multisample, multiple destination 
 
 The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digital audio workstation. It is primarily used for storing and playback of sampled instruments and sounds within Logic Pro. The format allows for comprehensive mapping and editing of samples, as well as providing various modulation and performance options.
 
-The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from the parent folder of the EXS.
-
-Currently, only reading of the format is supported.
+The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. The number of folders can be configured.
 
 ## Native Instruments Kontakt NKI/NKM
 
