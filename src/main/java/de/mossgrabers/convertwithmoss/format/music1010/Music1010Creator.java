@@ -241,7 +241,7 @@ public class Music1010Creator extends AbstractCreator
      * Create a preset file.
      *
      * @param destinationFolder Where to store the preset file
-     * @param multisampleSource The multi sample to store in the library
+     * @param multisampleSource The multi-sample to store in the library
      * @param multiFile The file to store the preset
      * @param metadata The preset metadata description file
      * @throws IOException Could not store the file

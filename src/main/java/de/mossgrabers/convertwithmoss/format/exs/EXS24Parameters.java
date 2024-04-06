@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -593,12 +595,21 @@ public class EXS24Parameters extends EXS24Object
     @Override
     protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
     {
+        final Set<Entry<Integer, Integer>> entrySet = this.params.entrySet ();
         final int paramCount = this.params.size ();
-        StreamUtils.writeUnsigned32 (out, paramCount, isBigEndian);
-        for (final Map.Entry<Integer, Integer> entry: this.params.entrySet ())
+
+        // It seems that always 100 parameters are required...
+        StreamUtils.writeUnsigned32 (out, 100, isBigEndian);
+
+        for (final Map.Entry<Integer, Integer> entry: entrySet)
             out.write (entry.getKey ().intValue ());
-        for (final Map.Entry<Integer, Integer> entry: this.params.entrySet ())
+        for (int i = paramCount; i < 100; i++)
+            out.write (0);
+
+        for (final Map.Entry<Integer, Integer> entry: entrySet)
             StreamUtils.writeUnsigned16 (out, entry.getValue ().intValue (), isBigEndian);
+        for (int i = paramCount; i < 100; i++)
+            StreamUtils.writeUnsigned16 (out, 0, isBigEndian);
     }
 
 

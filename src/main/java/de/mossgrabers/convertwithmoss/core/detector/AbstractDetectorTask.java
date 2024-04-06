@@ -69,7 +69,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param fileEndings The file ending(s) identifying the files
      * @param metadata Additional metadata configuration parameters
@@ -117,10 +117,10 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
 
     /**
-     * Read and parse the given multi sample file.
+     * Read and parse the given multi-sample file.
      *
      * @param sourceFile The file to process
-     * @return The parsed multisample information
+     * @return The parsed multi-sample information
      */
     protected abstract List<IMultisampleSource> readFile (final File sourceFile);
 

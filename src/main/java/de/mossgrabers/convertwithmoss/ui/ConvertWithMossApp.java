@@ -41,7 +41,6 @@ import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.wav.WavDetector;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.DefaultApplication;
 import de.mossgrabers.tools.ui.EndApplicationException;
@@ -152,8 +151,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new SfzDetector (this),
             new Sf2Detector (this),
             new TALSamplerDetector (this),
-            new WavDetector (this),
-            new YamahaYsfcDetector (this)
+            new WavDetector (this)// ,
+                // new YamahaYsfcDetector (this)
         };
 
         this.creators = new ICreator []
@@ -580,9 +579,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
 
     /**
-     * Apply a volume envelopes if none are set based on the category of the multisample source.
+     * Apply a volume envelopes if none are set based on the category of the multi-sample source.
      *
-     * @param multisampleSource The multisample source
+     * @param multisampleSource The multi-sample source
      */
     private void applyDefaultEnvelope (final IMultisampleSource multisampleSource)
     {
@@ -606,7 +605,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     /**
      * Applies the renaming of a IMultisampleSource according to the renaming table.
      *
-     * @param multisampleSource the multisample source to be renamed.
+     * @param multisampleSource the multi-sample source to be renamed.
      */
     private void applyRenaming (final IMultisampleSource multisampleSource)
     {
