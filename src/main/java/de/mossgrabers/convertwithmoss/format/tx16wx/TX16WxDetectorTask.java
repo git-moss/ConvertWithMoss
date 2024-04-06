@@ -356,8 +356,6 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      */
     private static Optional<IFilter> parseFilter (final Element soundShapeElement)
     {
-        // TODO
-
         final Element filterElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.FILTER);
         if (filterElement == null)
             return Optional.empty ();

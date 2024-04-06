@@ -23,6 +23,7 @@ import javafx.scene.control.ScrollPane;
 public abstract class AbstractDetectorWithMetadataPane<T extends AbstractDetectorTask> extends AbstractDetector<T>
 {
     protected final MetadataPane metadataPane;
+    protected final String       prefix;
 
 
     /**
@@ -36,6 +37,7 @@ public abstract class AbstractDetectorWithMetadataPane<T extends AbstractDetecto
     {
         super (name, notifier);
 
+        this.prefix = prefix;
         this.metadataPane = new MetadataPane (prefix);
     }
 

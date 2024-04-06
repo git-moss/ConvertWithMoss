@@ -360,7 +360,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      *
      * @param zipOutputStream The ZIP output stream to which to add the samples
      * @param relativeFolderName The relative folder under which to store the file in the ZIP
-     * @param multisampleSource The multisample
+     * @param multisampleSource The multi-sample
      * @throws IOException Could not store the samples
      */
     protected void storeSampleFiles (final ZipOutputStream zipOutputStream, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException

@@ -37,6 +37,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
+import javafx.scene.control.ComboBox;
 
 
 /**
@@ -46,7 +47,9 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class EXS24DetectorTask extends AbstractDetectorTask
 {
-    private static final String ENDING_EXS = ".exs";
+    private static final String     ENDING_EXS = ".exs";
+
+    private final ComboBox<Integer> directorySearch;
 
 
     /**
@@ -55,10 +58,13 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      * @param notifier The notifier
      * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
+     * @param directorySearch Combo box to read the directory search level
      */
-    protected EXS24DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
+    protected EXS24DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final ComboBox<Integer> directorySearch)
     {
         super (notifier, consumer, sourceFolder, metadata, ENDING_EXS);
+
+        this.directorySearch = directorySearch;
     }
 
 
@@ -73,7 +79,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         {
             return this.readEXSFile (file, in);
         }
-        catch (final IOException ex)
+        catch (final Exception ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
         }
@@ -137,6 +143,20 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
         if (instrument == null)
             return Collections.emptyList ();
+
+        // Fix IDs if not set...
+        for (int i = 0; i < zones.size (); i++)
+        {
+            final EXS24Zone zone = zones.get (i);
+            if (zone.id <= 0)
+                zone.id = i;
+        }
+
+        if (samples.isEmpty () && !zones.isEmpty ())
+        {
+            this.notifier.logError ("IDS_EXS_NO_SAMPLES", Integer.toString (zones.size ()));
+            return Collections.emptyList ();
+        }
 
         final Optional<IMultisampleSource> multisample = this.createMultisample (file, groups, zones, samples, parameters);
         if (multisample.isEmpty ())
@@ -238,16 +258,24 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
     private ISampleZone createAndCheckSampleZone (final File parentFile, final EXS24Zone exs24Zone, final List<EXS24Sample> exs24Samples) throws IOException
     {
-        if (exs24Zone.sampleIndex >= exs24Samples.size ())
+        // If sample index is not set, use the zone id (index)
+        int sampleIndex = exs24Zone.sampleIndex;
+        if (sampleIndex < 0)
         {
-            this.notifier.logError ("IDS_EXS_SAMPLE_INDEX_OUT_OF_BOUNDS", Integer.toString (exs24Zone.sampleIndex));
+            sampleIndex = exs24Zone.id;
+            exs24Zone.sampleIndex = sampleIndex;
+        }
+
+        if (sampleIndex >= exs24Samples.size ())
+        {
+            this.notifier.logError ("IDS_EXS_SAMPLE_INDEX_OUT_OF_BOUNDS", Integer.toString (sampleIndex));
             return null;
         }
 
-        final EXS24Sample exs24Sample = exs24Samples.get (exs24Zone.sampleIndex);
+        final EXS24Sample exs24Sample = exs24Samples.get (sampleIndex);
         if (exs24Sample == null)
         {
-            this.notifier.logError ("IDS_EXS_SAMPLE_INDEX_OUT_OF_BOUNDS", Integer.toString (exs24Zone.sampleIndex));
+            this.notifier.logError ("IDS_EXS_SAMPLE_INDEX_OUT_OF_BOUNDS", Integer.toString (sampleIndex));
             return null;
         }
 
@@ -389,8 +417,19 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         if (sampleFile.exists ())
             return sampleFile;
 
+        final int height = this.directorySearch.getSelectionModel ().getSelectedItem ().intValue ();
+        File startDirectory = null;
+        for (int i = 0; i < height; i++)
+        {
+            final File dir = startDirectory == null ? folder.getParentFile () : startDirectory.getParentFile ();
+            if (dir.exists () && dir.isDirectory ())
+                startDirectory = dir;
+        }
+        if (startDirectory == null)
+            return sampleFile;
+
         // Go one folder up and search recursively...
-        final File found = this.findSampleFileRecursively (folder.getParentFile (), fileName);
+        final File found = this.findSampleFileRecursively (startDirectory, fileName);
         // Returning the original file triggers the expected error...
         return found == null ? sampleFile : found;
     }
