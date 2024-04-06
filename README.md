@@ -16,10 +16,11 @@ The following multisample formats are supported as the source and destination fo
 4. DecentSampler (*.dspreset, *.dslibrary)
 5. Korg KMP/KSF (*.KMP)
 6. Korg wavestate/modwave (*.korgmultisample)
-7. Native Instruments Kontakt (*.nki) 1-4
-8. SFZ (*.sfz)
-9. SoundFont 2 (*.sf2)
-10. WAV files (*.wav)
+7. Logic EXS24 (*.exs)
+8. Native Instruments Kontakt (*.nki) 1-4
+9. SFZ (*.sfz)
+10. SoundFont 2 (*.sf2)
+11. WAV files (*.wav)
 
 See [README-FORMATS.md][1] document for more details. Even more details about the specific converted parameters can be found here:
 
