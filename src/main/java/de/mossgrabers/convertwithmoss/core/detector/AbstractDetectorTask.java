@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.core.detector;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,16 +72,16 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * @param notifier The notifier
      * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
-     * @param fileEndings The file ending(s) identifying the files
      * @param metadata Additional metadata configuration parameters
+     * @param fileEndings The file ending(s) identifying the files
      */
     protected AbstractDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final String... fileEndings)
     {
         this.notifier = notifier;
         this.consumer = consumer;
         this.sourceFolder = sourceFolder;
-        this.fileEndings = fileEndings;
         this.metadataConfig = metadata;
+        this.fileEndings = fileEndings;
     }
 
 
@@ -346,10 +347,24 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * @return The matching sample metadata, support is WAV and AIFF
      * @throws IOException Unsupported sample file type
      */
-    protected DefaultSampleZone createSampleZone (final File sampleFile) throws IOException
+    protected ISampleZone createSampleZone (final File sampleFile) throws IOException
+    {
+        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), createSampleData (sampleFile));
+    }
+
+
+    /**
+     * Check the type of the source sample for compatibility and handle them accordingly. This
+     * method supports WAV, AIF, AIFF, OGG and FLAC files.
+     *
+     * @param sampleFile The sample file for which to create sample metadata
+     * @return The matching sample metadata, support is WAV and AIFF
+     * @throws IOException Unsupported sample file type
+     */
+    protected ISampleData createSampleData (final File sampleFile) throws IOException
     {
         if (!sampleFile.exists ())
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
+            throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
 
         try
         {
@@ -377,7 +392,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                     throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
             }
 
-            return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
+            return sampleData;
         }
         catch (final UnsupportedAudioFileException | IOException ex)
         {
@@ -459,5 +474,75 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                 sampleFile = sf;
         }
         return sampleFile;
+    }
+
+
+    /**
+     * If the sample is not found in the given folder, a search is started from one folder up and
+     * search recursively for the wave file.
+     *
+     * @param folder The folder where the sample is expected
+     * @param fileName The name of the sample file
+     * @param levels The number of levels to move upwards to start the search
+     * @return The sample file
+     */
+    protected static File findSampleFile (final File folder, final String fileName, final int levels)
+    {
+        final File file = new File (fileName);
+        File sampleFile;
+
+        // First check if the filename is absolute, if the absolute path does not exist, try only
+        // the name
+        if (fileName.startsWith ("file:"))
+            sampleFile = new File (folder, file.getName ());
+        else if (file.isAbsolute ())
+        {
+            if (file.exists ())
+                sampleFile = file;
+            else
+                sampleFile = new File (folder, file.getName ());
+        }
+        else
+            sampleFile = new File (folder, fileName);
+
+        if (sampleFile.exists ())
+            return sampleFile;
+
+        // Go n-levels up and start searching for the file
+        File startDirectory = null;
+        for (int i = 0; i < levels; i++)
+        {
+            final File dir = startDirectory == null ? folder.getParentFile () : startDirectory.getParentFile ();
+            if (dir.exists () && dir.isDirectory ())
+                startDirectory = dir;
+        }
+        if (startDirectory == null)
+            return sampleFile;
+
+        // Go one folder up and search recursively...
+        final File found = findSampleFileRecursively (startDirectory, sampleFile.getName ());
+        // Returning the original file triggers the expected error...
+        return found == null ? sampleFile : found;
+    }
+
+
+    private static File findSampleFileRecursively (final File folder, final String fileName)
+    {
+        File sampleFile = new File (folder, fileName);
+        if (sampleFile.exists ())
+            return sampleFile;
+
+        final File [] children = folder.listFiles (File::isDirectory);
+        if (children != null)
+        {
+            for (final File subFolder: children)
+            {
+                sampleFile = findSampleFileRecursively (subFolder, fileName);
+                if (sampleFile != null)
+                    return sampleFile;
+            }
+        }
+
+        return null;
     }
 }

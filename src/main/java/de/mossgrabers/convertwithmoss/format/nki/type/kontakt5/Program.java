@@ -257,9 +257,9 @@ public class Program
 
 
     /**
-     * Fill the given multisample instance with data from the program.
+     * Fill the given multi-sample instance with data from the program.
      *
-     * @param source The multisample to fill
+     * @param source The multi-sample to fill
      * @throws IOException Error finding samples
      */
     public void fillInto (final DefaultMultisampleSource source) throws IOException

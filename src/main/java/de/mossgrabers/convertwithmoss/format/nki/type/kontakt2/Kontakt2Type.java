@@ -146,7 +146,7 @@ public class Kontakt2Type extends AbstractKontaktType
      * @param crc32Hash The CRC32 hash of the compressed data
      * @param metadataConfig Default metadata
      * @return All parsed multi-samples
-     * @throws IOException
+     * @throws IOException Could decode the multi-samples
      */
     private List<IMultisampleSource> handleFastLZ (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final int compressedDataSize, final int uncompressedSize, final long crc32Hash, final IMetadataConfig metadataConfig) throws IOException
     {
@@ -184,7 +184,7 @@ public class Kontakt2Type extends AbstractKontaktType
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @param metadataConfig Default metadata
      * @return All parsed multi-samples
-     * @throws IOException
+     * @throws IOException Could not parse the data
      */
     private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, ISampleData> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
     {
@@ -267,15 +267,15 @@ public class Kontakt2Type extends AbstractKontaktType
         String additionalInfo = "";
         final String website = header.getWebsite ();
         if (!website.isBlank ())
-            additionalInfo += "\nWebsite : " + website;
+            additionalInfo += "\nWebsite: " + website;
         this.metadata.setDescription (additionalInfo);
     }
 
 
     /**
-     * Update the metadata info on all multi samples.
+     * Update the metadata info on all multi-samples.
      *
-     * @param multiSamples The multi samples to update
+     * @param multiSamples The multi-samples to update
      * @param headerMetadata The metadata found in the header
      * @param soundInfo The sound info
      */
@@ -297,11 +297,14 @@ public class Kontakt2Type extends AbstractKontaktType
         else
             categories = Collections.emptySet ();
 
+        final String creator = headerMetadata.getCreator ();
+        final String category = headerMetadata.getCategory ();
+
         for (final IMultisampleSource multiSample: multiSamples)
         {
             final IMetadata metadata = multiSample.getMetadata ();
-            metadata.setCreator (headerMetadata.getCreator ());
-            metadata.setCategory (headerMetadata.getCategory ());
+            metadata.setCreator (creator);
+            metadata.setCategory (category);
 
             final List<String> soundCategories = new ArrayList<> ();
             soundCategories.addAll (categories);

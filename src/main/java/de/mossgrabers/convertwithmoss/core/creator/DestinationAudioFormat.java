@@ -11,14 +11,9 @@ package de.mossgrabers.convertwithmoss.core.creator;
  */
 public class DestinationAudioFormat
 {
-    private boolean updateBroadcastAudioChunk;
-    private boolean updateInstrumentChunk;
-    private boolean updateSampleChunk;
-    private boolean removeJunkChunks;
-
     private int []  bitResolutions = null;
     private int     maxSampleRate  = -1;
-    private boolean upSample;
+    private boolean upSample       = false;
 
 
     /**
@@ -27,23 +22,6 @@ public class DestinationAudioFormat
     public DestinationAudioFormat ()
     {
         // Intentionally empty
-    }
-
-
-    /**
-     * Constructor.
-     *
-     * @param updateBroadcastAudioChunk Add or update the broadcast audio extension chunk if true
-     * @param updateInstrumentChunk Add or update the instrument chunk if true
-     * @param updateSampleChunk If true the sample chunk is add or updated if already present
-     * @param removeJunkChunks If true remove JUNK, junk, FLLR and MD5 chunks
-     */
-    public DestinationAudioFormat (final boolean updateBroadcastAudioChunk, final boolean updateInstrumentChunk, final boolean updateSampleChunk, final boolean removeJunkChunks)
-    {
-        this.updateBroadcastAudioChunk = updateBroadcastAudioChunk;
-        this.updateInstrumentChunk = updateInstrumentChunk;
-        this.updateSampleChunk = updateSampleChunk;
-        this.removeJunkChunks = removeJunkChunks;
     }
 
 
@@ -60,62 +38,6 @@ public class DestinationAudioFormat
         this.bitResolutions = bitResolutions;
         this.maxSampleRate = maxSampleRate;
         this.upSample = upSample;
-    }
-
-
-    /**
-     * Should the broadcast audio chunk be updated
-     *
-     * @return True if the broadcast audio chunk be updated
-     */
-    public boolean isUpdateBroadcastAudioChunk ()
-    {
-        return this.updateBroadcastAudioChunk;
-    }
-
-
-    /**
-     * Should the instrument chunk be updated
-     *
-     * @return True if the instrument chunk be updated
-     */
-    public boolean isUpdateInstrumentChunk ()
-    {
-        return this.updateInstrumentChunk;
-    }
-
-
-    /**
-     * Should the sample chunk be updated
-     *
-     * @return True if the sample chunk be updated
-     */
-    public boolean isUpdateSampleChunk ()
-    {
-        return this.updateSampleChunk;
-    }
-
-
-    /**
-     * Shall junk chunks be removed?
-     *
-     * @return True if junk chunks should be removed
-     */
-    public boolean isRemoveJunkChunks ()
-    {
-        return this.removeJunkChunks;
-    }
-
-
-    /**
-     * Check if either a chunk option is enabled or bit resolution / frequency needs to be
-     * re-sampled.
-     *
-     * @return True if at least one is enabled
-     */
-    public boolean requiresRewrite ()
-    {
-        return this.updateBroadcastAudioChunk || this.updateInstrumentChunk || this.updateSampleChunk || this.removeJunkChunks || this.bitResolutions != null || this.maxSampleRate != -1;
     }
 
 

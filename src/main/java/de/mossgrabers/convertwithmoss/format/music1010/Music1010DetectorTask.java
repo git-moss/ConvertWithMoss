@@ -398,12 +398,12 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         // represents. Therefore, we assume 40dB maximum and a linear range (could also
         // be logarithmic).
         final int resonance = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_FILTER_RESONANCE, 0);
-        multisampleSource.setGlobalFilter (new DefaultFilter (type, 4, cutoff, MathUtils.denormalize (resonance / 1000.0, 0, 40.0)));
+        multisampleSource.setGlobalFilter (new DefaultFilter (type, 4, cutoff, MathUtils.clamp (resonance / 1000.0, 0, 1.0)));
     }
 
 
     /**
-     * Filter (multi-)sample and asset cells.
+     * Filter multi-sample and asset cells.
      *
      * @param cellElements All cell elements
      * @param multisampleElements The cell elements with type 'sample' and multi-sample mode enabled

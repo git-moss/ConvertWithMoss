@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 
@@ -31,7 +32,7 @@ public class DefaultModulator implements IModulator
     @Override
     public void setDepth (final double depth)
     {
-        this.depth = depth;
+        this.depth = MathUtils.clamp (depth, -1.0, 1.0);
     }
 
 

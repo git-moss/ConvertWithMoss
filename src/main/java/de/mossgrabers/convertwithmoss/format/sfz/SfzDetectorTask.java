@@ -39,7 +39,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -47,7 +46,7 @@ import de.mossgrabers.tools.Pair;
 
 
 /**
- * Detects recursively SFZ multisample files in folders. Files must end with <i>.sfz</i>.
+ * Detects recursively SFZ multi-sample files in folders. Files must end with <i>.sfz</i>.
  *
  * @author Jürgen Moßgraber
  */
@@ -219,10 +218,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     final File sampleFile = this.createCanonicalFile (sampleBaseFolder, sampleName.get ());
                     try
                     {
-                        final DefaultSampleZone sampleMetadata = this.createSampleZone (sampleFile);
-                        this.parseRegion (sampleMetadata);
-                        this.readMissingValues (sampleMetadata);
-                        group.addSampleZone (sampleMetadata);
+                        final ISampleZone sampleZone = this.createSampleZone (sampleFile);
+                        this.parseRegion (sampleZone);
+                        this.readMissingValues (sampleZone);
+                        group.addSampleZone (sampleZone);
                     }
                     catch (final IOException ex)
                     {
@@ -411,7 +410,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (envelopeDepth == 0)
             envelopeDepth = this.getIntegerValue (SfzOpcode.PITCH_DEPTH, 0);
         final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
-        pitchModulator.setDepth (envelopeDepth);
+        pitchModulator.setDepth (envelopeDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
 
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
         pitchEnvelope.setDelay (this.getDoubleValue (SfzOpcode.PITCHEG_DELAY, SfzOpcode.PITCH_DELAY));
@@ -468,11 +467,11 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (envelopeDepth == 0)
             envelopeDepth = this.getIntegerValue (SfzOpcode.FIL_DEPTH, 0);
 
-        final IFilter filter = new DefaultFilter (filterType, poles, cutoff, resonance);
+        final IFilter filter = new DefaultFilter (filterType, poles, cutoff, resonance / IFilter.MAX_RESONANCE);
         sampleMetadata.setFilter (filter);
 
         final IModulator cutoffModulator = filter.getCutoffModulator ();
-        cutoffModulator.setDepth (envelopeDepth);
+        cutoffModulator.setDepth (envelopeDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
 
         // Filter envelope
         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
@@ -568,7 +567,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
     }
 
 
-    private void readMissingValues (final DefaultSampleZone zone)
+    private void readMissingValues (final ISampleZone zone)
     {
         try
         {

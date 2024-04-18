@@ -65,7 +65,11 @@ public class SoundinfoChunkData extends AbstractChunkData
 
         final int numberOfAttributes = (int) StreamUtils.readUnsigned32 (in, false);
         for (int i = 0; i < numberOfAttributes; i++)
-            this.attributes.add (StreamUtils.readWithLengthUTF16 (in));
+        {
+            final String value = StreamUtils.readWithLengthUTF16 (in);
+            if (!"KontaktInstrument".equals (value))
+                this.attributes.add (value);
+        }
 
         // Always 0
         StreamUtils.readUnsigned32 (in, false);

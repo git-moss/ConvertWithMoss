@@ -138,6 +138,22 @@ public class StreamUtils
 
 
     /**
+     * Writes an integer as 2 bytes. Same method as writing unsigned but for clarity.
+     *
+     * @param out The output stream
+     * @param value The value to write
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian (least
+     *            significant bytes first)
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static void writeSigned16 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    {
+        writeUnsigned16 (out, value, isBigEndian);
+    }
+
+
+    /**
      * Writes an integer as 3 bytes.
      *
      * @param out The output stream
@@ -189,6 +205,22 @@ public class StreamUtils
 
 
     /**
+     * Writes an integer as 4 bytes. Same method as writing unsigned but for clarity.
+     *
+     * @param out The output stream
+     * @param value The value to write
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian (least
+     *            significant bytes first)
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static void writeSigned32 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    {
+        writeUnsigned32 (out, value, isBigEndian);
+    }
+
+
+    /**
      * Writes an integer as 4 bytes.
      *
      * @param out The output stream
@@ -198,7 +230,7 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static void writeUnsigned32 (final OutputStream out, final int value, final boolean isBigEndian) throws IOException
+    public static void writeUnsigned32 (final OutputStream out, final long value, final boolean isBigEndian) throws IOException
     {
         writeUnsigned (out, value, 32, isBigEndian);
     }
@@ -215,14 +247,14 @@ public class StreamUtils
      * @throws IOException The stream has been closed and the contained input stream does not
      *             support reading after close, or another I/O error occurs.
      */
-    public static void writeUnsigned (final OutputStream out, final int value, final int numBits, final boolean isBigEndian) throws IOException
+    public static void writeUnsigned (final OutputStream out, final long value, final int numBits, final boolean isBigEndian) throws IOException
     {
         if (isBigEndian)
             for (int offset = numBits - 8; offset >= 0; offset -= 8)
-                out.write (value >> offset & 0xFF);
+                out.write ((int) (value >> offset & 0xFF));
         else
             for (int offset = 0; offset < numBits; offset += 8)
-                out.write (value >> offset & 0xFF);
+                out.write ((int) (value >> offset & 0xFF));
     }
 
 
@@ -435,7 +467,7 @@ public class StreamUtils
      *
      * @param in The input stream to read from
      * @return Could not read next byte
-     * @throws IOException
+     * @throws IOException Could not read the number
      */
     public static int [] read7bitNumberLE (final InputStream in) throws IOException
     {
@@ -742,7 +774,7 @@ public class StreamUtils
      * @param fileAccess The random access file to read from
      * @param isBigEndian True if bytes are stored big-endian
      * @return The timestamp as a date
-     * @throws IOException
+     * @throws IOException Could not read the timestamp
      */
     public static Date readTimestamp (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {

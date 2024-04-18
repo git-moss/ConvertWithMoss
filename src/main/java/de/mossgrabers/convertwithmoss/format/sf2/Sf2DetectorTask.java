@@ -55,13 +55,13 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
-     * @param metadata Additional metadata configuration parameters
+     * @param metadataConfig Additional metadata configuration parameters
      */
-    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
+    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadataConfig)
     {
-        super (notifier, consumer, sourceFolder, metadata, ".sf2");
+        super (notifier, consumer, sourceFolder, metadataConfig, ".sf2");
     }
 
 
@@ -85,12 +85,12 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Create multisample sources for all presets found in the SF2 file.
+     * Create multi-sample sources for all presets found in the SF2 file.
      *
      * @param sourceFile The SF2 source file
      * @param sf2File The parsed SF2 file
      * @param parts The path parts
-     * @return The multisample sources
+     * @return The multi-sample sources
      */
     private List<IMultisampleSource> parseSF2File (final File sourceFile, final Sf2File sf2File, final String [] parts)
     {
@@ -142,7 +142,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         continue;
                     }
                     generators.setInstrumentZoneGenerators (instrZone.getGenerators ());
-                    final ISampleZone zone = createSampleMetadata (instrZone.getSample (), generators);
+                    final ISampleZone zone = createSampleZone (instrZone.getSample (), generators);
                     parseModulators (zone, presetZone, instrZone);
                     group.addSampleZone (zone);
                 }
@@ -161,7 +161,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
     }
 
 
-    private static void parseModulators (final ISampleZone sampleMetadata, final Sf2PresetZone zone, final Sf2InstrumentZone instrZone)
+    private static void parseModulators (final ISampleZone sampleZone, final Sf2PresetZone zone, final Sf2InstrumentZone instrZone)
     {
         Optional<Sf2Modulator> modulator = instrZone.getModulator (Sf2Modulator.MODULATOR_PITCH_BEND);
         if (modulator.isEmpty ())
@@ -172,8 +172,8 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             if (sf2Modulator.getDestinationGenerator () == Generator.FINE_TUNE)
             {
                 final int amount = sf2Modulator.getModulationAmount ();
-                sampleMetadata.setBendUp (amount);
-                sampleMetadata.setBendDown (-amount);
+                sampleZone.setBendUp (amount);
+                sampleZone.setBendDown (-amount);
             }
         }
     }
@@ -385,13 +385,13 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Create a sample metadata description.
+     * Create a sample zone.
      *
      * @param sample The source sample
      * @param generators All hierarchical generator values
-     * @return The sample metadata
+     * @return The sample zone
      */
-    private static ISampleZone createSampleMetadata (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
+    private static ISampleZone createSampleZone (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
     {
         try
         {
@@ -475,10 +475,10 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                             resonance = initialResonance / 100.0;
                     }
 
-                    final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance);
+                    final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance / IFilter.MAX_RESONANCE);
                     final IModulator cutoffModulator = filter.getCutoffModulator ();
                     final int cutoffModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_FILTER_CUTOFF).intValue ();
-                    cutoffModulator.setDepth (cutoffModDepth);
+                    cutoffModulator.setDepth (cutoffModDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
                     if (cutoffModDepth != 0)
                     {
                         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
@@ -494,7 +494,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
                     final IModulator pitchModulator = zone.getPitchModulator ();
                     final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
-                    pitchModulator.setDepth (pitchModDepth);
+                    pitchModulator.setDepth (pitchModDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
                     if (pitchModDepth != 0)
                     {
                         final IEnvelope pitchEnvelope = pitchModulator.getSource ();

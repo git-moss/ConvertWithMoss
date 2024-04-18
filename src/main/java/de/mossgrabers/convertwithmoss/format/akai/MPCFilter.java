@@ -110,7 +110,7 @@ public class MPCFilter extends DefaultFilter
      */
     public MPCFilter (final int id, final double cutoff, final double resonance)
     {
-        super (null, 0, cutoff * MAX_FREQUENCY, resonance * 40.0);
+        super (null, 0, cutoff * MAX_FREQUENCY, resonance);
 
         if (id >= MAX)
             return;

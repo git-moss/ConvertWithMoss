@@ -35,7 +35,6 @@ import javafx.scene.control.ToggleGroup;
 public class NkiCreator extends AbstractCreator
 {
     private static final String NKI_OUTPUT_FORMAT = "NkiOutputFormat";
-    private static final String FOLDER_POSTFIX    = " Samples";
 
     private ToggleGroup         outputFormatGroup;
 
@@ -57,7 +56,7 @@ public class NkiCreator extends AbstractCreator
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        panel.createSeparator ("@IDS_NKI_OUTPUT_FORMAT");
+        panel.createSeparator ("@IDS_OUTPUT_FORMAT");
 
         this.outputFormatGroup = new ToggleGroup ();
         final RadioButton order1 = panel.createRadioButton ("@IDS_NKI_KONTAKT_1");
@@ -65,6 +64,8 @@ public class NkiCreator extends AbstractCreator
         final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_2");
         order2.setToggleGroup (this.outputFormatGroup);
         order2.setDisable (true);
+
+        this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
 
         return panel.getPane ();
     }
@@ -77,6 +78,8 @@ public class NkiCreator extends AbstractCreator
         final int formatIndex = config.getInteger (NKI_OUTPUT_FORMAT, 0);
         final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
         this.outputFormatGroup.selectToggle (toggles.get (formatIndex < toggles.size () ? formatIndex : 0));
+
+        this.loadWavChunkSettings (config, "Nki");
     }
 
 
@@ -91,6 +94,8 @@ public class NkiCreator extends AbstractCreator
                 config.setInteger (NKI_OUTPUT_FORMAT, i);
                 break;
             }
+
+        this.saveWavChunkSettings (config, "Nki");
     }
 
 

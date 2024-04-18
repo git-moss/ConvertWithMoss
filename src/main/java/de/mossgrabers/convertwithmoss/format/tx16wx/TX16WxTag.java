@@ -11,92 +11,166 @@ package de.mossgrabers.convertwithmoss.format.tx16wx;
  */
 public class TX16WxTag
 {
+    /** The name attribute. */
+    public static final String NAME                   = "tx:name";
+
     /** The root tag. */
-    public static final String PROGRAM          = "program";
+    public static final String PROGRAM                = "tx:program";
+    /** The quality attribute. */
+    public static final String PROGRAM_QUALITY        = "tx:quality";
+    /** The created-by attribute. */
+    public static final String PROGRAM_CREATED_BY     = "tx:created-by";
+
+    /** The program icon attribute. */
+    public static final String PROGRAM_ICON           = "tx:icon";
 
     /** The group tag. */
-    public static final String GROUP            = "group";
-    /** The group name attribute. */
-    public static final String GROUP_NAME       = "name";
+    public static final String GROUP                  = "tx:group";
     /** The group play mode attribute. */
-    public static final String GROUP_PLAYMODE   = "playmode";
+    public static final String GROUP_PLAYMODE         = "tx:playmode";
+    /** The group output attribute. */
+    public static final String GROUP_OUTPUT           = "tx:output";
+    /** The group delay attribute. */
+    public static final String GROUP_DELAY            = "tx:delay";
+
     /** The group sound shape tag and attribute. */
-    public static final String SOUND_SHAPE      = "soundshape";
+    public static final String SOUND_SHAPE            = "tx:soundshape";
     /** The group sound shape ID attribute. */
-    public static final String SOUND_SHAPE_ID   = "id";
+    public static final String SOUND_SHAPE_ID         = "tx:id";
 
     /** The volume tag on different levels. */
-    public static final String VOLUME           = "volume";
+    public static final String VOLUME                 = "tx:volume";
+    /** The attenuation tag on different levels. */
+    public static final String ATTENUATION            = "tx:attenuation";
+
     /** The panorama attribute on different levels. */
-    public static final String PANORAMA         = "pan";
+    public static final String PANORAMA               = "tx:pan";
     /** The coarse tuning attribute. */
-    public static final String TUNING_COARSE    = "coarse";
+    public static final String TUNING_COARSE          = "tx:coarse";
     /** The fine tuning attribute. */
-    public static final String TUNING_FINE      = "fine";
+    public static final String TUNING_FINE            = "tx:fine";
 
     /** The region tag. */
-    public static final String REGION           = "region";
+    public static final String REGION                 = "tx:region";
     /** The sample tag. */
-    public static final String SAMPLE           = "wave";
+    public static final String SAMPLE                 = "tx:wave";
     /** The sample ID attribute. */
-    public static final String SAMPLE_ID        = "id";
+    public static final String SAMPLE_ID              = "tx:id";
     /** The sample path attribute. */
-    public static final String PATH             = "path";
+    public static final String PATH                   = "tx:path";
     /** The start attribute. */
-    public static final String START            = "start";
+    public static final String START                  = "tx:start";
     /** The end attribute. */
-    public static final String END              = "end";
+    public static final String END                    = "tx:end";
+    /** The reverse attribute. */
+    public static final String REVERSE                = "tx:reverse";
 
     /** The sample loop tag. */
-    public static final String SAMPLE_LOOP      = "loop";
+    public static final String SAMPLE_LOOP            = "tx:loop";
     /** The loop start tag sample attribute. */
-    public static final String LOOP_START       = "start";
+    public static final String LOOP_START             = "tx:start";
     /** The loop end tag sample attribute. */
-    public static final String LOOP_END         = "end";
+    public static final String LOOP_END               = "tx:end";
     /** The mode of the loop. */
-    public static final String LOOP_MODE        = "mode";
+    public static final String LOOP_MODE              = "tx:mode";
     /** The loop cross-fade attribute. */
-    public static final String LOOP_CROSSFADE   = "xfade";
+    public static final String LOOP_CROSSFADE         = "tx:xfade";
 
     /** The root note attribute. */
-    public static final String ROOT_NOTE        = "rootkey";
+    public static final String ROOT                   = "tx:root";
 
     /** The key/velocity-bounds element. */
-    public static final String BOUNDS           = "bounds";
+    public static final String BOUNDS                 = "tx:bounds";
     /** The key/velocity-fade-bounds element. */
-    public static final String FADE_BOUNDS      = "fade";
+    public static final String FADE_BOUNDS            = "tx:fade";
     /** The low note tag sample attribute. */
-    public static final String LO_NOTE          = "low-key";
+    public static final String LO_NOTE                = "tx:low-key";
     /** The high note tag sample attribute. */
-    public static final String HI_NOTE          = "high-key";
+    public static final String HI_NOTE                = "tx:high-key";
     /** The alternative low note tag sample attribute. */
-    public static final String LO_NOTE_ALT      = "lowkey";
+    public static final String LO_NOTE_ALT            = "tx:lowkey";
     /** The alternative high note tag sample attribute. */
-    public static final String HI_NOTE_ALT      = "highkey";
+    public static final String HI_NOTE_ALT            = "tx:highkey";
     /** The low velocity tag sample attribute. */
-    public static final String LO_VEL           = "low-el";
+    public static final String LO_VEL                 = "tx:low-vel";
     /** The high velocity tag sample attribute. */
-    public static final String HI_VEL           = "high-vel";
+    public static final String HI_VEL                 = "tx:high-vel";
 
     /** The amplitude envelope tag. */
-    public static final String AMP_ENVELOPE     = "aeg";
+    public static final String AMP_ENVELOPE           = "tx:aeg";
     /** The amplitude envelope attack attribute. */
-    public static final String AMP_ENV_ATTACK   = "attack";
-    /** The amplitude envelope decay attribute. */
-    public static final String AMP_ENV_DECAY    = "decay1";
+    public static final String AMP_ENV_ATTACK         = "tx:attack";
+    /** The amplitude envelope decay 1 attribute. */
+    public static final String AMP_ENV_DECAY1         = "tx:decay1";
+    /** The amplitude envelope level 1 attribute. */
+    public static final String AMP_ENV_LEVEL1         = "tx:level1";
+    /** The amplitude envelope level 2 attribute. */
+    public static final String AMP_ENV_LEVEL2         = "tx:level2";
+    /** The amplitude envelope decay 2 attribute. */
+    public static final String AMP_ENV_DECAY2         = "tx:decay2";
     /** The amplitude envelope sustain attribute. */
-    public static final String AMP_ENV_SUSTAIN  = "sustain";
+    public static final String AMP_ENV_SUSTAIN        = "tx:sustain";
     /** The amplitude envelope release attribute. */
-    public static final String AMP_ENV_RELEASE  = "release";
+    public static final String AMP_ENV_RELEASE        = "tx:release";
+
+    /** The envelope 1 tag. */
+    public static final String ENVELOPE_1             = "tx:env1";
+    /** The envelope 2 tag. */
+    public static final String ENVELOPE_2             = "tx:env2";
+    /** The envelope 1/2 level 0 attribute. */
+    public static final String ENV_LEVEL0             = "tx:level0";
+    /** The envelope 1/2 level 1 attribute. */
+    public static final String ENV_LEVEL1             = "tx:level1";
+    /** The envelope 1/2 level 2 attribute. */
+    public static final String ENV_LEVEL2             = "tx:level2";
+    /** The envelope 1/2 level 3 attribute. */
+    public static final String ENV_LEVEL3             = "tx:level3";
+    /** The envelope 1/2 time 1 attribute. */
+    public static final String ENV_TIME1              = "tx:time1";
+    /** The envelope 1/2 time 2 attribute. */
+    public static final String ENV_TIME2              = "tx:time2";
+    /** The envelope 1/2 time 3 attribute. */
+    public static final String ENV_TIME3              = "tx:time3";
 
     /** The filter tag. */
-    public static final String FILTER           = "filter1";
+    public static final String FILTER                 = "tx:filter";
+    /** The filter 1 tag. */
+    public static final String FILTER1                = "tx:filter1";
     /** The filter type attribute. */
-    public static final String FILTER_TYPE      = "type";
-    /** The filter frequency type attribute. */
-    public static final String FILTER_FREQUENCY = "freq";
+    public static final String FILTER_TYPE            = "tx:type";
+    /** The filter frequency attribute. */
+    public static final String FILTER_FREQUENCY       = "tx:freq";
+    /** The filter resonance attribute (resonance in 0-100%). */
+    public static final String FILTER_RESONANCE       = "tx:resonance";
+    /** The filter slope attribute. */
+    public static final String FILTER_SLOPE           = "tx:slope";
+
+    /** The filter res attribute (resonance in volume). */
+    public static final String FILTER_RES             = "tx:res";
     /** The filter cutoff type attribute. */
-    public static final String FILTER_CUTOFF    = "cutoff";
+    public static final String FILTER_CUTOFF          = "tx:cutoff";
+
+    /** The modulation tag. */
+    public static final String MODULATION             = "tx:modulation";
+    /** The modulation entry tag. */
+    public static final String MODULATION_ENTRY       = "tx:entry";
+    /** The modulation source attribute. */
+    public static final String MODULATION_SOURCE      = "tx:source";
+    /** The modulation destination attribute. */
+    public static final String MODULATION_DESTINATION = "tx:destination";
+    /** The modulation amount attribute. */
+    public static final String MODULATION_AMOUNT      = "tx:amount";
+    /** The modulation source curve tag. */
+    public static final String MODULATION_SRC_CURVE   = "tx:src-curve";
+    /** The modulation via curve tag. */
+    public static final String MODULATION_VIA_CURVE   = "tx:via-curve";
+    /** The modulation curve smooth attribute. */
+    public static final String MODULATION_SMOOTH      = "tx:smooth";
+    /** The modulation curve shape attribute. */
+    public static final String MODULATION_SHAPE       = "tx:shape";
+
+    /** The region sound-offsets tag. */
+    public static final String SOUND_OFFSETS          = "tx:sound-offsets";
 
 
     /**

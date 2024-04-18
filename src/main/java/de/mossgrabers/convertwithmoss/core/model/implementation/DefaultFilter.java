@@ -30,7 +30,7 @@ public class DefaultFilter implements IFilter
      * @param type The type of the filter
      * @param poles The number of poles of the filter, if any
      * @param cutoff The cutoff frequency
-     * @param resonance The resonance
+     * @param resonance The resonance in the range of [0..1] where 1 represents 40dB.
      */
     public DefaultFilter (final FilterType type, final int poles, final double cutoff, final double resonance)
     {

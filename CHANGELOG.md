@@ -1,5 +1,25 @@
 # Changes
 
+## 8.5.0 (unreleased)
+
+* Added support for reading and writing CWITEC TX16Wx (*.txprog) files.
+* Added support for reading and writing Propellerhead Reason NN-XT (*.sxt) files.
+* All formats
+  * New: Added chunk update settings to all output formats that reference WAV files.
+  * Fixed: Fixed some issues with conversion of filter and pitch envelope modulation depth.
+* Decent Sampler
+  * New: Minimum version is now set to "1.11".
+  * New: Added support for new filter types: lowpass, lowpass_1pl, bandpass, highpass, peak and notch.
+  * New: Added filter envelope.
+  * New: Added support for panorama.
+  * New: Removed all knobs except reverb settings to be able to set these parameters on the samples level.
+* Kontakt - Reading
+  * New: Use category detection when category is set to 'New'.
+* SFZ - Writing
+  * Fixed: The length of the loop crossfade was calculated incorrectly.
+* TX16Wx / MPC - Writing
+  * New: Set filter on groups from 1st zone of the group instead of the 1st zone of the 1st group.
+
 ## 8.0.0
 
 * Added support for reading and writing Logic EXS24 files.

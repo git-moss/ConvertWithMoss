@@ -32,7 +32,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.XMLUtils;
@@ -53,13 +52,13 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
-     * @param metadata Additional metadata configuration parameters
+     * @param metadataConfig Additional metadata configuration parameters
      */
-    protected TALSamplerDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
+    protected TALSamplerDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadataConfig)
     {
-        super (notifier, consumer, sourceFolder, metadata, ".talsmpl");
+        super (notifier, consumer, sourceFolder, metadataConfig, ".talsmpl");
     }
 
 
@@ -115,9 +114,9 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
     /**
      * Process the TAL Sampler metadata file and the related wave files.
      *
-     * @param multiSampleFile The multisample file
+     * @param multiSampleFile The multi-sample file
      * @param document The metadata XML document
-     * @return The parsed multisample source
+     * @return The parsed multi-sample source
      * @throws IOException Could not parse the description
      */
     private List<IMultisampleSource> parseDescription (final File multiSampleFile, final Document document) throws IOException
@@ -165,9 +164,9 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                         for (final Element layerElement: XMLUtils.getChildElementsByName (groupElement, TALSamplerTag.MULTISAMPLES, false))
                             for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, TALSamplerTag.MULTISAMPLE, false))
                             {
-                                final DefaultSampleZone sampleMetadata = this.parseSample (parentFolder, programElement, groupCounter, sampleElement);
-                                if (sampleMetadata != null)
-                                    group.addSampleZone (sampleMetadata);
+                                final ISampleZone sampleZone = this.parseSample (parentFolder, programElement, groupCounter, sampleElement);
+                                if (sampleZone != null)
+                                    group.addSampleZone (sampleZone);
                             }
                         groups.add (group);
                     }
@@ -197,7 +196,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
      * @return The created sample metadata
      * @throws IOException Could not create the sample metadata
      */
-    private DefaultSampleZone parseSample (final File parentFolder, final Element programElement, final int groupCounter, final Element sampleElement) throws IOException
+    private ISampleZone parseSample (final File parentFolder, final Element programElement, final int groupCounter, final Element sampleElement) throws IOException
     {
         final String filename = sampleElement.getAttribute (TALSamplerTag.MULTISAMPLE_URL);
         if (filename == null || filename.isBlank ())
@@ -213,7 +212,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.IS_ROM_SAMPLE, 0) == 1)
             throw new IOException (Functions.getMessage ("IDS_TAL_ROM_SAMPLES_NOT_SUPPORTED", filename));
 
-        final DefaultSampleZone zone = this.createSampleZone (new File (parentFolder, filename));
+        final ISampleZone zone = this.createSampleZone (new File (parentFolder, filename));
 
         zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
         zone.setPanorama (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANORAMA, 0.5) * 2.0 - 1.0);
@@ -255,7 +254,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
 
     private static Optional<IFilter> parseModulationAttributes (final Element programElement, final DefaultMultisampleSource multisampleSource) throws IOException
     {
-        // Pitchbend
+        // Pitch-bend
         final int bend = (int) MathUtils.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, 1.0) * 1200.0, 0.0, 1200.0);
 
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (multisampleSource.getGroups ());
@@ -278,11 +277,11 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                 final IFilter baseFilter = filterType.get ();
 
                 final double cutoff = MathUtils.denormalizeCutoff (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, 1.0));
-                final double resonance = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, 0) * 40.0;
+                final double resonance = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, 0);
                 final IFilter filter = new DefaultFilter (baseFilter.getType (), baseFilter.getPoles (), cutoff, resonance);
                 optFilter = Optional.of (filter);
 
-                final double filterModDepth = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, 0) * IFilter.MAX_ENVELOPE_DEPTH;
+                final double filterModDepth = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, 0);
                 if (filterModDepth > 0)
                 {
                     final IModulator cutoffModulator = filter.getCutoffModulator ();

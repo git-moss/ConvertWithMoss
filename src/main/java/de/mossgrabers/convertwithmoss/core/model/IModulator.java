@@ -12,9 +12,14 @@ package de.mossgrabers.convertwithmoss.core.model;
 public interface IModulator
 {
     /**
-     * Get the modulation depth.
+     * Get the modulation depth. The range maps to the 3 envelope types as follow:
+     * <ul>
+     * <li>Amplitude: 0..1
+     * <li>Filter: -12000..12000 cent
+     * <li>Pitch: -48000..48000 cent
+     * </ul>
      *
-     * @return The depth in the range of [0..1]
+     * @return The depth in the range of [-1..1]
      */
     double getDepth ();
 
@@ -22,7 +27,7 @@ public interface IModulator
     /**
      * Set the modulation depth.
      *
-     * @param depth The modulation depth in the range of [0..1]
+     * @param depth The modulation depth in the range of [-1..1]
      */
     void setDepth (double depth);
 

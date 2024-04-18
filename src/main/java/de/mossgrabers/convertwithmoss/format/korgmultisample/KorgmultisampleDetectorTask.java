@@ -48,7 +48,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      */
     protected KorgmultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
@@ -85,7 +85,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
      *
      * @param in The input stream to read from
      * @param file The source file
-     * @return The parsed multisample source
+     * @return The parsed multi-sample source
      * @throws FormatException Error in the format of the file
      * @throws IOException Could not read from the file
      */
@@ -182,7 +182,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         checkAscii (in);
         final String multiSampleTag = StreamUtils.readWithLengthAscii (in);
         StreamUtils.checkTag (KorgmultisampleTag.TAG_MULTISAMPLE, multiSampleTag);
-        // Ignore multisample header
+        // Ignore multi-sample header
         in.readNBytes (6);
 
         checkAscii (in);

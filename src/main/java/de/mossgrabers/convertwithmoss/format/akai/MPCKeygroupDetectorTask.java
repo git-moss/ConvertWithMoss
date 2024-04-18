@@ -282,9 +282,8 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                     final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
                     if (pitchEnvAmount != 0.5)
                     {
-                        final int cents = (int) Math.min (3600, Math.max (-3600, Math.round ((pitchEnvAmount - 0.5) * 2.0 * 3600.0)));
                         final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
-                        pitchModulator.setDepth (cents);
+                        pitchModulator.setDepth ((pitchEnvAmount - 0.5) * 2.0);
                         pitchModulator.getSource ().set (pitchEnvelope);
                     }
 
@@ -324,7 +323,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (filterAmount > 0)
         {
             final IModulator cutoffModulator = filter.getCutoffModulator ();
-            cutoffModulator.setDepth ((int) Math.round (filterAmount * IFilter.MAX_ENVELOPE_DEPTH));
+            cutoffModulator.setDepth (filterAmount);
             cutoffModulator.getSource ().set (parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE));
         }
         return filter;

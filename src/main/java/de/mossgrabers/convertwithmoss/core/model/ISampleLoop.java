@@ -63,11 +63,27 @@ public interface ISampleLoop
 
 
     /**
+     * Get the loop length in samples.
+     *
+     * @return The loop length
+     */
+    int getLength ();
+
+
+    /**
      * Get the loop cross-fade.
      *
      * @return The cross-fade value in the range of [0..1] which is [0..100%]
      */
     double getCrossfade ();
+
+
+    /**
+     * Get the loop cross-fade in samples (frames).
+     *
+     * @return The cross-fade value in samples
+     */
+    int getCrossfadeInSamples ();
 
 
     /**
@@ -85,7 +101,7 @@ public interface ISampleLoop
      *
      * @param crossfadeSamples The cross-fade value in samples
      */
-    void setCrossfadeInSamples (double crossfadeSamples);
+    void setCrossfadeInSamples (int crossfadeSamples);
 
 
     /**

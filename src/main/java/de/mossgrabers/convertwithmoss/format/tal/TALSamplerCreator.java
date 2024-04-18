@@ -19,7 +19,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
-import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -29,6 +28,10 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.panel.BoxPanel;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
 
 
 /**
@@ -39,9 +42,6 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class TALSamplerCreator extends AbstractCreator
 {
-    private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (true, false, false, false);
-
-
     /**
      * Constructor.
      *
@@ -50,6 +50,34 @@ public class TALSamplerCreator extends AbstractCreator
     public TALSamplerCreator (final INotifier notifier)
     {
         super ("TAL Sampler", notifier);
+
+        this.configureWavChunkUpdates (true, false, false, false);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Node getEditPane ()
+    {
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        this.addWavChunkOptions (panel);
+        return panel.getPane ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void loadSettings (final BasicConfig config)
+    {
+        this.loadWavChunkSettings (config, "TALSampler");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void saveSettings (final BasicConfig config)
+    {
+        this.saveWavChunkSettings (config, "TALSampler");
     }
 
 
@@ -65,7 +93,7 @@ public class TALSamplerCreator extends AbstractCreator
             return;
         }
 
-        final String relativeFolderName = sampleName + " " + TALSamplerConstants.FOLDER_POSTFIX;
+        final String relativeFolderName = sampleName + FOLDER_POSTFIX;
 
         final Optional<String> metadata = this.createMetadata (relativeFolderName, multisampleSource);
         if (metadata.isEmpty ())
@@ -84,7 +112,7 @@ public class TALSamplerCreator extends AbstractCreator
      *
      * @param relativeFolderName A relative path for the samples
      * @param destinationFolder Where to store the preset file
-     * @param multisampleSource The multi sample to store in the library
+     * @param multisampleSource The multi-sample to store in the library
      * @param multiFile The file of the dslibrary
      * @param metadata The dspreset metadata description file
      * @throws IOException Could not store the file
@@ -99,7 +127,7 @@ public class TALSamplerCreator extends AbstractCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeFolderName);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource, DESTINATION_FORMAT);
+        this.writeSamples (sampleFolder, multisampleSource);
     }
 
 
@@ -253,17 +281,17 @@ public class TALSamplerCreator extends AbstractCreator
         if (groups.isEmpty ())
             return;
 
-        final ISampleZone sampleMetadata = groups.get (0).getSampleZones ().get (0);
+        final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
 
-        // Pitchbend 2 semitones up/down
-        final int bendUp = Math.abs (sampleMetadata.getBendUp ());
+        // Pitch-bend
+        final int bendUp = Math.abs (zone.getBendUp ());
         final double bendUpValue = bendUp == 0 ? 0.16 : MathUtils.clamp (bendUp / 1200.0, 0, 1.0);
         XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, bendUpValue, 3);
 
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (groups);
 
         // Add amplitude envelope
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+        final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttack (), 0, maxEnvelopeTime);
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHold (), 0, maxEnvelopeTime);
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecay (), 0, maxEnvelopeTime);
@@ -282,9 +310,8 @@ public class TALSamplerCreator extends AbstractCreator
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_MODE, TALSamplerConstants.getFilterValue (filter), 16);
 
             final double cutoff = MathUtils.normalizeCutoff (filter.getCutoff ());
-            final double resonance = MathUtils.normalize (filter.getResonance (), 40.0);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, cutoff, 4);
-            XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, resonance, 4);
+            XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, filter.getResonance (), 4);
 
             final IModulator cutoffModulator = filter.getCutoffModulator ();
             final double filterModDepth = cutoffModulator.getDepth ();
@@ -297,14 +324,14 @@ public class TALSamplerCreator extends AbstractCreator
                 setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, filterEnvelope.getSustain (), 0, 1);
                 setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, filterEnvelope.getRelease (), 0, maxEnvelopeTime);
 
-                XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, filterModDepth / IFilter.MAX_ENVELOPE_DEPTH, 4);
+                XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, filterModDepth, 4);
 
                 // TALSamplerTag.FILTER_KEYBOARD not supported
             }
         }
 
         // Add pitch envelope
-        final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+        final IModulator pitchModulator = zone.getPitchModulator ();
         final double pitchModDepth = pitchModulator.getDepth ();
         if (pitchModDepth > 0)
         {
@@ -320,7 +347,7 @@ public class TALSamplerCreator extends AbstractCreator
             Element entryElement = XMLUtils.addElement (document, modMatrixElement, "entry");
             entryElement.setAttribute ("parameterid", "164");
             entryElement.setAttribute ("modmatrixsourceid", "2");
-            entryElement.setAttribute ("modmatrixamount", "1.0");
+            XMLUtils.setDoubleAttribute (entryElement, "modmatrixamount", pitchModDepth, 16);
             for (int i = 0; i < 9; i++)
             {
                 entryElement = XMLUtils.addElement (document, modMatrixElement, "entry");

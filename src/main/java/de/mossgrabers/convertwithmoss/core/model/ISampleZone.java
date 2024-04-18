@@ -179,33 +179,33 @@ public interface ISampleZone
 
 
     /**
-     * Get the@Override number of notes to crossfade on the lower end of the range.
+     * Get the number of notes to cross-fade on the lower end of the range.
      *
-     * @return The number of notes to crossfade (0-127)
+     * @return The number of notes to cross-fade (0-127)
      */
     int getNoteCrossfadeLow ();
 
 
     /**
-     * Set the number of notes to crossfade on the lower end of the range.
+     * Set the number of notes to cross-fade on the lower end of the range.
      *
-     * @param crossfadeLow The number of notes to crossfade (0-127)
+     * @param crossfadeLow The number of notes to cross-fade (0-127)
      */
     void setNoteCrossfadeLow (int crossfadeLow);
 
 
     /**
-     * Get the number of notes to crossfade on the higher end of the range.
+     * Get the number of notes to cross-fade on the higher end of the range.
      *
-     * @return The number of notes to crossfade (0-127)
+     * @return The number of notes to cross-fade (0-127)
      */
     int getNoteCrossfadeHigh ();
 
 
     /**
-     * Set the number of notes to crossfade on the higher end of the range.
+     * Set the number of notes to cross-fade on the higher end of the range.
      *
-     * @param crossfadeHigh The number of notes to crossfade (0-127)
+     * @param crossfadeHigh The number of notes to cross-fade (0-127)
      */
     void setNoteCrossfadeHigh (int crossfadeHigh);
 
@@ -243,33 +243,33 @@ public interface ISampleZone
 
 
     /**
-     * Get the number of velocity values to crossfade on the lower end of the range.
+     * Get the number of velocity values to cross-fade on the lower end of the range.
      *
-     * @return The number of of velocity values to crossfade (0-127)
+     * @return The number of of velocity values to cross-fade (0-127)
      */
     int getVelocityCrossfadeLow ();
 
 
     /**
-     * Set the number of of velocity values to crossfade on the lower end of the range.
+     * Set the number of of velocity values to cross-fade on the lower end of the range.
      *
-     * @param crossfadeLow The number of velocity values to crossfade (0-127)
+     * @param crossfadeLow The number of velocity values to cross-fade (0-127)
      */
     void setVelocityCrossfadeLow (int crossfadeLow);
 
 
     /**
-     * Get the number of notes to crossfade on the higher end of the range.
+     * Get the number of notes to cross-fade on the higher end of the range.
      *
-     * @return The number of of velocity values to crossfade (0-127)
+     * @return The number of of velocity values to cross-fade (0-127)
      */
     int getVelocityCrossfadeHigh ();
 
 
     /**
-     * Set the number of notes to crossfade on the higher end of the range.
+     * Set the number of notes to cross-fade on the higher end of the range.
      *
-     * @param crossfadeHigh The number of velocity values to crossfade (0-127)
+     * @param crossfadeHigh The number of velocity values to cross-fade (0-127)
      */
     void setVelocityCrossfadeHigh (int crossfadeHigh);
 

@@ -49,7 +49,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 {
     private static final String     ENDING_EXS = ".exs";
 
-    private final ComboBox<Integer> directorySearch;
+    private final ComboBox<Integer> levelsOfDirectorySearch;
 
 
     /**
@@ -58,13 +58,14 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      * @param notifier The notifier
      * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
-     * @param directorySearch Combo box to read the directory search level
+     * @param metadataConfig Additional metadata configuration parameters
+     * @param levelsOfDirectorySearch Combo box to read the directory search level
      */
-    protected EXS24DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final ComboBox<Integer> directorySearch)
+    protected EXS24DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadataConfig, final ComboBox<Integer> levelsOfDirectorySearch)
     {
-        super (notifier, consumer, sourceFolder, metadata, ENDING_EXS);
+        super (notifier, consumer, sourceFolder, metadataConfig, ENDING_EXS);
 
-        this.directorySearch = directorySearch;
+        this.levelsOfDirectorySearch = levelsOfDirectorySearch;
     }
 
 
@@ -279,7 +280,8 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             return null;
         }
 
-        final File sampleFile = this.findSampleFile (parentFile, exs24Sample.fileName);
+        final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
+        final File sampleFile = findSampleFile (parentFile, exs24Sample.fileName, height);
         if (!sampleFile.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
@@ -395,43 +397,11 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final int resonance = filterResonance == null ? 0 : filterResonance.intValue ();
 
         final double cutoff = MathUtils.denormalize (frequency / 1000.0, 0, IFilter.MAX_FREQUENCY);
-        final double denormalize = MathUtils.denormalize (resonance / 1000.0, 0, 40.0);
-
-        final IFilter filter = new DefaultFilter (filterType, poles, cutoff, denormalize);
-        filter.getCutoffModulator ().setSource (globalFilterEnvelope);
+        final IFilter filter = new DefaultFilter (filterType, poles, cutoff, MathUtils.clamp (resonance / 1000.0, 0, 1));
+        final IModulator cutoffModulator = filter.getCutoffModulator ();
+        cutoffModulator.setDepth (1.0);
+        cutoffModulator.setSource (globalFilterEnvelope);
         multisampleSource.setGlobalFilter (filter);
-    }
-
-
-    /**
-     * If the sample is not found in the given folder, a search is started from one folder up and
-     * search recursively for the wave file.
-     *
-     * @param folder The folder where the sample is expected
-     * @param fileName The name of the sample file
-     * @return The sample file
-     */
-    private File findSampleFile (final File folder, final String fileName)
-    {
-        final File sampleFile = new File (folder, fileName);
-        if (sampleFile.exists ())
-            return sampleFile;
-
-        final int height = this.directorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-        File startDirectory = null;
-        for (int i = 0; i < height; i++)
-        {
-            final File dir = startDirectory == null ? folder.getParentFile () : startDirectory.getParentFile ();
-            if (dir.exists () && dir.isDirectory ())
-                startDirectory = dir;
-        }
-        if (startDirectory == null)
-            return sampleFile;
-
-        // Go one folder up and search recursively...
-        final File found = this.findSampleFileRecursively (startDirectory, fileName);
-        // Returning the original file triggers the expected error...
-        return found == null ? sampleFile : found;
     }
 
 
@@ -465,22 +435,5 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             zone.setKeyHigh (exs24Group.endNote);
 
         return true;
-    }
-
-
-    private File findSampleFileRecursively (final File folder, final String fileName)
-    {
-        File sampleFile = new File (folder, fileName);
-        if (sampleFile.exists ())
-            return sampleFile;
-
-        for (final File subFolder: folder.listFiles (File::isDirectory))
-        {
-            sampleFile = this.findSampleFileRecursively (subFolder, fileName);
-            if (sampleFile != null)
-                return sampleFile;
-        }
-
-        return null;
     }
 }

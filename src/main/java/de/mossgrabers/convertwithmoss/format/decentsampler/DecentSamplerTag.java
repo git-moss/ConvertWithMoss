@@ -26,6 +26,10 @@ public class DecentSamplerTag
     public static final String                    MOD_EFFECT      = "effect";
     /** The effects tag. */
     public static final String                    EFFECTS_EFFECT  = "effect";
+    /** The modulators tag. */
+    public static final String                    MODULATORS      = "modulators";
+    /** The envelope tag. */
+    public static final String                    ENVELOPE        = "envelope";
 
     /** The user interface tag. */
     public static final String                    UI              = "ui";
@@ -60,6 +64,8 @@ public class DecentSamplerTag
     public static final String                    PATH            = "path";
     /** The volume tag on different levels. */
     public static final String                    VOLUME          = "volume";
+    /** The panorama tag on different levels. */
+    public static final String                    PANORAMA        = "pan";
     /** The start tag sample attribute. */
     public static final String                    START           = "start";
     /** The end tag sample attribute. */
@@ -89,17 +95,20 @@ public class DecentSamplerTag
     public static final String                    LOOP_START      = "loopStart";
     /** The loop end tag sample attribute. */
     public static final String                    LOOP_END        = "loopEnd";
-    /** The loop crossfade tag sample attribute. */
+    /** The loop cross-fade tag sample attribute. */
     public static final String                    LOOP_CROSSFADE  = "loopCrossfade";
 
-    /** The amplitude envelope attack attribute. */
-    public static final String                    AMP_ENV_ATTACK  = "attack";
-    /** The amplitude envelope decay attribute. */
-    public static final String                    AMP_ENV_DECAY   = "decay";
-    /** The amplitude envelope sustain attribute. */
-    public static final String                    AMP_ENV_SUSTAIN = "sustain";
-    /** The amplitude envelope release attribute. */
-    public static final String                    AMP_ENV_RELEASE = "release";
+    /** The envelope modulation amount attribute. */
+    public static final String                    MOD_AMOUNT      = "modAmount";
+
+    /** The envelope attack attribute. */
+    public static final String                    ENV_ATTACK      = "attack";
+    /** The envelope decay attribute. */
+    public static final String                    ENV_DECAY       = "decay";
+    /** The envelope sustain attribute. */
+    public static final String                    ENV_SUSTAIN     = "sustain";
+    /** The envelope release attribute. */
+    public static final String                    ENV_RELEASE     = "release";
 
     /** The supported top level tags. */
     public static final Set<String>               TOP_LEVEL_TAGS  = Set.of (EFFECTS, UI, GROUPS);
@@ -114,9 +123,9 @@ public class DecentSamplerTag
     static
     {
         ATTRIBUTES.put (DECENTSAMPLER, Collections.emptySet ());
-        ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, SEQ_MODE, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
-        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE, TRIGGER));
-        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, AMP_ENV_ATTACK, AMP_ENV_DECAY, AMP_ENV_SUSTAIN, AMP_ENV_RELEASE));
+        ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, SEQ_MODE, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE));
+        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, PANORAMA, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE, TRIGGER));
+        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANORAMA, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE));
     }
 
 

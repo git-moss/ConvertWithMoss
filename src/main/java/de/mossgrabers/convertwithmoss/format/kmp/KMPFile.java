@@ -42,7 +42,7 @@ public class KMPFile
     private static final String KMP_REL2_ID     = "RLP2";
     /** ID for KMP relative parameter chunk 3. */
     private static final String KMP_REL3_ID     = "RLP3";
-    /** ID for KMP multisample number chunk. */
+    /** ID for KMP multi-sample number chunk. */
     private static final String KMP_NUMBER_ID   = "MNO1";
 
     private static final int    KMP_MSP_SIZE    = 18;
