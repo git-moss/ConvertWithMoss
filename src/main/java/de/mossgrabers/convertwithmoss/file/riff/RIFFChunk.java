@@ -64,7 +64,7 @@ public class RIFFChunk implements IChunk
      * @param type The type of the chunk
      * @param id The chunk ID
      * @param size The size of the chunk
-     * @param propGroup
+     * @param propGroup The property group chunk
      */
     public RIFFChunk (final int type, final int id, final long size, final RIFFChunk propGroup)
     {

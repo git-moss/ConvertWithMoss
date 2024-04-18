@@ -615,7 +615,7 @@ public class EXS24Parameters extends EXS24Object
 
     /**
      * Get a parameter value.
-     * 
+     *
      * @param id The ID of the parameter
      * @return The parameter value
      */
@@ -627,7 +627,7 @@ public class EXS24Parameters extends EXS24Object
 
     /**
      * Set a parameter value.
-     * 
+     *
      * @param id The ID of the parameter
      * @param value The parameter value
      */

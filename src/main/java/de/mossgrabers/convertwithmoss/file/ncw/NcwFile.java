@@ -419,7 +419,11 @@ public class NcwFile
     }
 
 
-    // TODO remove
+    /**
+     * TODO remove, when finished
+     * 
+     * @param attributes None
+     */
     public static void main (final String [] attributes)
     {
         // Stereo 16bit

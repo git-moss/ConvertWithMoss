@@ -23,9 +23,6 @@ import javafx.scene.Node;
  */
 public class WavCreator extends AbstractCreator
 {
-    private static final String FOLDER_POSTFIX = " Samples";
-
-
     /**
      * Constructor.
      *
@@ -34,6 +31,8 @@ public class WavCreator extends AbstractCreator
     public WavCreator (final INotifier notifier)
     {
         super ("WAV", notifier);
+
+        this.configureWavChunkUpdates (true, true, true, true);
     }
 
 
@@ -42,28 +41,8 @@ public class WavCreator extends AbstractCreator
     public Node getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
         this.addWavChunkOptions (panel);
-
         return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
-    {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
-
-        this.notifier.log ("IDS_NOTIFY_STORING", safeSampleFolderName);
-
-        // Store all samples
-        final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
-        safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource, this.getChunkSettings ());
-
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
@@ -80,5 +59,23 @@ public class WavCreator extends AbstractCreator
     public void saveSettings (final BasicConfig config)
     {
         this.saveWavChunkSettings (config, "Wav");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    {
+        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
+
+        this.notifier.log ("IDS_NOTIFY_STORING", safeSampleFolderName);
+
+        // Store all samples
+        final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
+        safeCreateDirectory (sampleFolder);
+        this.writeSamples (sampleFolder, multisampleSource);
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 }

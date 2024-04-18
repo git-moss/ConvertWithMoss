@@ -112,7 +112,14 @@ public class DefaultEnvelope implements IEnvelope
     {
         if (category == null)
             return ENVELOPE_PLUCKED;
-        return DEFAULT_ENVELOPES.getOrDefault (category, ENVELOPE_PLUCKED);
+
+        final IEnvelope envelope = DEFAULT_ENVELOPES.get (category);
+        if (envelope != null)
+            return envelope;
+
+        // Seems the category is not one of the normalized ones
+        final String normalizedCategory = TagDetector.detectCategory (category.split (" "));
+        return DEFAULT_ENVELOPES.getOrDefault (normalizedCategory, ENVELOPE_PLUCKED);
     }
 
 

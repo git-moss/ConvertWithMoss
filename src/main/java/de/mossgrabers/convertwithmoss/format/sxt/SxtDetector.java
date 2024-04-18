@@ -2,7 +2,7 @@
 // (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.exs;
+package de.mossgrabers.convertwithmoss.format.sxt;
 
 import java.io.File;
 import java.util.function.Consumer;
@@ -19,11 +19,11 @@ import javafx.scene.control.ScrollPane;
 
 
 /**
- * Descriptor for EXS24 files detector.
+ * Descriptor for Propellerhead Software Reason NN-XT (*.sxt) files detector.
  *
  * @author Jürgen Moßgraber
  */
-public class EXS24Detector extends AbstractDetectorWithMetadataPane<EXS24DetectorTask>
+public class SxtDetector extends AbstractDetectorWithMetadataPane<SxtDetectorTask>
 {
     private static final String DIRECTORY_SEARCH = "DirectorySearch";
 
@@ -35,9 +35,9 @@ public class EXS24Detector extends AbstractDetectorWithMetadataPane<EXS24Detecto
      *
      * @param notifier The notifier
      */
-    public EXS24Detector (final INotifier notifier)
+    public SxtDetector (final INotifier notifier)
     {
-        super ("Logic EXS24", notifier, "EXS24");
+        super ("Propellerhead Reason NN-XT", notifier, "SXT");
     }
 
 
@@ -85,6 +85,6 @@ public class EXS24Detector extends AbstractDetectorWithMetadataPane<EXS24Detecto
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.startDetection (new EXS24DetectorTask (this.notifier, consumer, folder, this.metadataPane, this.directorySearch));
+        this.startDetection (new SxtDetectorTask (this.notifier, consumer, folder, this.metadataPane, this.directorySearch));
     }
 }

@@ -22,7 +22,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
-import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -32,6 +31,10 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.panel.BoxPanel;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
 
 
 /**
@@ -43,9 +46,6 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class MPCKeygroupCreator extends AbstractCreator
 {
-    private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (true, false, true, true);
-
-
     private enum SamplePlay
     {
         ONE_SHOT,
@@ -62,6 +62,32 @@ public class MPCKeygroupCreator extends AbstractCreator
     public MPCKeygroupCreator (final INotifier notifier)
     {
         super ("Akai MPC Keygroup", notifier);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Node getEditPane ()
+    {
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        this.addWavChunkOptions (panel);
+        return panel.getPane ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void loadSettings (final BasicConfig config)
+    {
+        this.loadWavChunkSettings (config, "MPC");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void saveSettings (final BasicConfig config)
+    {
+        this.saveWavChunkSettings (config, "MPC");
     }
 
 
@@ -93,7 +119,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         }
 
         // Store all samples - WAV ending needs to be upper case!
-        this.writeSamples (sampleFolder, multisampleSource, DESTINATION_FORMAT, ".WAV");
+        this.writeSamples (sampleFolder, multisampleSource, ".WAV");
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -103,7 +129,7 @@ public class MPCKeygroupCreator extends AbstractCreator
      * Create the text of the description file.
      *
      * @param multisampleSource The multi-sample
-     * @param sampleName The name of the multi sample
+     * @param sampleName The name of the multi-sample
      * @return The XML structure
      */
     private Optional<String> createMetadata (final IMultisampleSource multisampleSource, final String sampleName)
@@ -133,7 +159,7 @@ public class MPCKeygroupCreator extends AbstractCreator
 
             for (final ISampleZone sampleMetadata: group.getSampleZones ())
             {
-                final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger, multisampleSource.getGlobalFilter ());
+                final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger);
                 if (keygroupOpt.isEmpty ())
                 {
                     this.notifier.logError ("IDS_MPC_MORE_THAN_4_LAYERS", Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
@@ -276,12 +302,12 @@ public class MPCKeygroupCreator extends AbstractCreator
     }
 
 
-    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleZone sampleMetadata, final Document document, final Element instrumentsElement, final TriggerType trigger, final Optional<IFilter> optFilter)
+    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleZone zone, final Document document, final Element instrumentsElement, final TriggerType trigger)
     {
-        final int keyLow = sampleMetadata.getKeyLow ();
-        final int keyHigh = sampleMetadata.getKeyHigh ();
+        final int keyLow = zone.getKeyLow ();
+        final int keyHigh = zone.getKeyHigh ();
         final String rangeKey = keyLow + "-" + keyHigh;
-        final boolean isSequence = sampleMetadata.getPlayLogic () == PlayLogic.ROUND_ROBIN;
+        final boolean isSequence = zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
         final List<Keygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, key -> new ArrayList<> ());
 
         // Check if a keygroup exists to which the layer can be added
@@ -290,7 +316,7 @@ public class MPCKeygroupCreator extends AbstractCreator
             if (keygroup.isSequence () == isSequence)
             {
                 // Velocity range must match as well for sequences
-                if (keygroup.isSequence () && isSequence && (sampleMetadata.getVelocityLow () != keygroup.getVelocityLow () || sampleMetadata.getVelocityHigh () != keygroup.getVelocityHigh ()))
+                if (keygroup.isSequence () && isSequence && (zone.getVelocityLow () != keygroup.getVelocityLow () || zone.getVelocityHigh () != keygroup.getVelocityHigh ()))
                     continue;
 
                 // Matching keygroup with free layer found
@@ -308,19 +334,20 @@ public class MPCKeygroupCreator extends AbstractCreator
         instrumentElement.setAttribute ("number", Integer.toString (calcInstrumentNumber (keygroupsMap)));
         instrumentsElement.appendChild (instrumentElement);
 
+        final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isPresent ())
         {
             final IFilter filter = optFilter.get ();
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_TYPE, Integer.toString (MPCFilter.getFilterIndex (filter)));
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, formatDouble (MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY), 2));
-            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RESONANCE, formatDouble (Math.min (40, filter.getResonance ()) / 40.0, 2));
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RESONANCE, formatDouble (filter.getResonance (), 2));
 
             final IModulator cutoffModulator = filter.getCutoffModulator ();
             final double envelopeDepth = cutoffModulator.getDepth ();
             // Only positive modulation values are supported with MPC
             if (envelopeDepth > 0)
             {
-                XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, formatDouble (envelopeDepth / IFilter.MAX_ENVELOPE_DEPTH, 2));
+                XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, formatDouble (envelopeDepth, 2));
 
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                 setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttack (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
@@ -333,21 +360,21 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, Integer.toString (keyLow));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
-        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, sampleMetadata.getKeyTracking () == 0 ? "True" : "False");
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, zone.getKeyTracking () == 0 ? "True" : "False");
 
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+        final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttack (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHold (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1, 1);
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
 
-        final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+        final IModulator pitchModulator = zone.getPitchModulator ();
         final double pitchDepth = pitchModulator.getDepth ();
         // Only positive modulation values are supported with MPC
         if (pitchDepth > 0)
         {
-            final double mpcPitchDepth = MathUtils.clamp (pitchDepth, -3600, 3600) / 3600.0 / 2.0 + 0.5;
+            final double mpcPitchDepth = pitchDepth / 2.0 + 0.5;
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, formatDouble (mpcPitchDepth, 2));
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
@@ -358,13 +385,13 @@ public class MPCKeygroupCreator extends AbstractCreator
             setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, pitchEnvelope.getRelease (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
         }
 
-        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (sampleMetadata.getPlayLogic ()).getID ());
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (zone.getPlayLogic ()).getID ());
 
         SamplePlay triggerMode = SamplePlay.NOTE_ON;
 
         if (trigger == TriggerType.RELEASE)
             triggerMode = SamplePlay.NOTE_OFF;
-        else if (amplitudeEnvelope.getSustain () <= 0 && sampleMetadata.getKeyLow () == sampleMetadata.getKeyHigh ())
+        else if (amplitudeEnvelope.getSustain () <= 0 && zone.getKeyLow () == zone.getKeyHigh ())
             triggerMode = SamplePlay.ONE_SHOT;
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode.ordinal ()));
@@ -375,7 +402,7 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         final Keygroup keygroup;
         if (isSequence)
-            keygroup = new Keygroup (layersElement, sampleMetadata.getVelocityLow (), sampleMetadata.getVelocityHigh ());
+            keygroup = new Keygroup (layersElement, zone.getVelocityLow (), zone.getVelocityHigh ());
         else
             keygroup = new Keygroup (layersElement);
         keygroups.add (keygroup);

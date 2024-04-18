@@ -27,6 +27,10 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.panel.BoxPanel;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
 
 
 /**
@@ -44,6 +48,32 @@ public class EXS24Creator extends AbstractCreator
     public EXS24Creator (final INotifier notifier)
     {
         super ("Logic EXS24", notifier);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Node getEditPane ()
+    {
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        this.addWavChunkOptions (panel);
+        return panel.getPane ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void loadSettings (final BasicConfig config)
+    {
+        this.loadWavChunkSettings (config, "EXS24");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void saveSettings (final BasicConfig config)
+    {
+        this.saveWavChunkSettings (config, "EXS24");
     }
 
 
@@ -134,7 +164,7 @@ public class EXS24Creator extends AbstractCreator
                     final ISampleLoop loop = loops.get (0);
                     exs24Zone.loopStart = loop.getStart ();
                     exs24Zone.loopEnd = loop.getEnd ();
-                    exs24Zone.loopCrossfade = (int) (loop.getCrossfade () * (exs24Zone.loopEnd - exs24Zone.loopStart));
+                    exs24Zone.loopCrossfade = loop.getCrossfadeInSamples ();
                 }
 
                 // Fill sample
@@ -163,7 +193,7 @@ public class EXS24Creator extends AbstractCreator
         exsInstrument.numSampleBlocks = exsSamples.size ();
         exsInstrument.numParameterBlocks = 1;
 
-        // Fill global parameters for zone 1
+        // Fill global parameters from zone 1
         final EXS24Parameters exsParameters = new EXS24Parameters ();
         if (!groups.isEmpty ())
         {
@@ -253,10 +283,8 @@ public class EXS24Creator extends AbstractCreator
 
         createEnvelope (parameters, 2, filter.getCutoffModulator ());
 
-        final int frequency = (int) MathUtils.normalize (filter.getCutoff () * 1000.0, 0, IFilter.MAX_FREQUENCY);
-        final int resonance = (int) MathUtils.normalize (filter.getResonance () * 1000.0, 0, 40.0);
-        parameters.put (EXS24Parameters.FILTER1_CUTOFF, frequency);
-        parameters.put (EXS24Parameters.FILTER1_RESO, resonance);
+        parameters.put (EXS24Parameters.FILTER1_CUTOFF, (int) MathUtils.normalize (filter.getCutoff () * 1000.0, 0, IFilter.MAX_FREQUENCY));
+        parameters.put (EXS24Parameters.FILTER1_RESO, (int) (filter.getResonance () * 1000));
     }
 
 

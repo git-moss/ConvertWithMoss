@@ -33,7 +33,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
@@ -51,7 +50,6 @@ public class SfzCreator extends AbstractCreator
     private static final String                  SFZ_CONVERT_TO_FLAC = "SfzConvertToFlac";
     private static final AudioFileFormat.Type    TARGET_FORMAT       = new AudioFileFormat.Type ("FLAC", "flac");
     private static final char                    LINE_FEED           = '\n';
-    private static final String                  FOLDER_POSTFIX      = " Samples";
     private static final String                  SFZ_HEADER          = """
             /////////////////////////////////////////////////////////////////////////////
             ////
@@ -92,12 +90,9 @@ public class SfzCreator extends AbstractCreator
     public Node getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
+        panel.createSeparator ("@IDS_OUTPUT_FORMAT");
         this.convertToFlac = panel.createCheckBox ("@IDS_SFZ_CONVERT_TO_FLAC");
-
-        final TitledSeparator separator = this.addWavChunkOptions (panel);
-        separator.getStyleClass ().add ("titled-separator-pane");
-
+        this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
         return panel.getPane ();
     }
 
@@ -158,7 +153,7 @@ public class SfzCreator extends AbstractCreator
                 throw new IOException (ex);
             }
         else
-            this.writeSamples (sampleFolder, multisampleSource, this.getChunkSettings ());
+            this.writeSamples (sampleFolder, multisampleSource);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -346,7 +341,7 @@ public class SfzCreator extends AbstractCreator
         final double envelopeDepth = pitchModulator.getDepth ();
         if (envelopeDepth > 0)
         {
-            buffer.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) envelopeDepth).append (LINE_FEED);
+            buffer.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
 
@@ -402,7 +397,7 @@ public class SfzCreator extends AbstractCreator
             final double crossfade = sampleLoop.getCrossfade ();
             if (crossfade > 0)
             {
-                final int loopLength = sampleLoop.getStart () - sampleLoop.getEnd ();
+                final int loopLength = sampleLoop.getLength ();
                 if (loopLength > 0)
                 {
                     double loopLengthInSeconds;
@@ -472,7 +467,7 @@ public class SfzCreator extends AbstractCreator
         final String type = FILTER_TYPE_MAP.get (filter.getType ());
         addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + MathUtils.clamp (filter.getPoles (), 1, 4) + "p", false);
         addAttribute (buffer, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
-        addAttribute (buffer, SfzOpcode.RESONANCE, formatDouble (Math.min (40, filter.getResonance ()), 2), true);
+        addAttribute (buffer, SfzOpcode.RESONANCE, formatDouble (filter.getResonance () * IFilter.MAX_RESONANCE, 2), true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
@@ -480,7 +475,7 @@ public class SfzCreator extends AbstractCreator
         final double envelopeDepth = cutoffModulator.getDepth ();
         if (envelopeDepth > 0)
         {
-            buffer.append (SfzOpcode.FILEG_DEPTH).append ('=').append ((int) envelopeDepth).append (LINE_FEED);
+            buffer.append (SfzOpcode.FILEG_DEPTH).append ('=').append ((int) (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
 
             final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 

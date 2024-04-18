@@ -11,8 +11,10 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
@@ -56,15 +58,36 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class DecentSamplerDetectorTask extends AbstractDetectorTask
 {
-    private static final String ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String                  ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
 
-    private static final String ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
-    private static final String ENDING_DSLIBRARY      = ".dslibrary";
-    private static final String ENDING_DSPRESET       = ".dspreset";
+    private static final String                  ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
+    private static final String                  ENDING_DSLIBRARY      = ".dslibrary";
+    private static final String                  ENDING_DSPRESET       = ".dspreset";
 
-    private Element             currentGroupsElement;
-    private Element             currentGroupElement;
-    private Element             currentSampleElement;
+    private static final Map<String, FilterType> FILTER_TYPE_MAP       = new HashMap<> ();
+    private static final Map<String, Integer>    FILTER_POLES_MAP      = new HashMap<> ();
+    static
+    {
+        FILTER_TYPE_MAP.put ("lowpass_4pl", FilterType.LOW_PASS);
+        FILTER_TYPE_MAP.put ("lowpass", FilterType.LOW_PASS);
+        FILTER_TYPE_MAP.put ("lowpass_1pl", FilterType.LOW_PASS);
+        FILTER_TYPE_MAP.put ("highpass", FilterType.HIGH_PASS);
+        FILTER_TYPE_MAP.put ("bandpass", FilterType.BAND_PASS);
+        FILTER_TYPE_MAP.put ("peak", FilterType.BAND_PASS);
+        FILTER_TYPE_MAP.put ("notch", FilterType.BAND_REJECTION);
+
+        FILTER_POLES_MAP.put ("lowpass_4pl", Integer.valueOf (4));
+        FILTER_POLES_MAP.put ("lowpass", Integer.valueOf (2));
+        FILTER_POLES_MAP.put ("lowpass_1pl", Integer.valueOf (1));
+        FILTER_POLES_MAP.put ("highpass", Integer.valueOf (2));
+        FILTER_POLES_MAP.put ("bandpass", Integer.valueOf (2));
+        FILTER_POLES_MAP.put ("peak", Integer.valueOf (2));
+        FILTER_POLES_MAP.put ("notch", Integer.valueOf (2));
+    }
+
+    private Element currentGroupsElement;
+    private Element currentGroupElement;
+    private Element currentSampleElement;
 
 
     /**
@@ -253,11 +276,13 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         for (final Element effectElement: XMLUtils.getChildElementsByName (top, DecentSamplerTag.EFFECTS_EFFECT, false))
         {
             final String effectType = effectElement.getAttribute ("type");
-            if ("lowpass_4pl".equals (effectType))
+            final FilterType filterType = FILTER_TYPE_MAP.get (effectType);
+            if (filterType != null)
             {
+                final int poles = FILTER_POLES_MAP.get (effectType).intValue ();
                 final double frequency = XMLUtils.getDoubleAttribute (effectElement, "frequency", IFilter.MAX_FREQUENCY);
                 final double resonance = XMLUtils.getDoubleAttribute (effectElement, "resonance", 0);
-                multisampleSource.setGlobalFilter (new DefaultFilter (FilterType.LOW_PASS, 4, frequency, resonance));
+                multisampleSource.setGlobalFilter (new DefaultFilter (filterType, poles, frequency, resonance));
                 return;
             }
         }
@@ -290,6 +315,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 final DefaultGroup group = new DefaultGroup (groupName);
 
                 final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
+                final double groupPanoramaOffset = XMLUtils.getIntegerAttribute (groupElement, DecentSamplerTag.PANORAMA, 0);
                 double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.GROUP_TUNING, 0);
                 // Actually not in the specification but support it anyway
                 if (groupTuningOffset == 0)
@@ -297,7 +323,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
                 final String triggerAttribute = groupElement.getAttribute (DecentSamplerTag.TRIGGER);
 
-                this.parseGroup (group, groupElement, basePath, libraryFile, groupVolumeOffset, globalTuningOffset + groupTuningOffset, triggerAttribute);
+                this.parseGroup (group, groupElement, basePath, libraryFile, groupVolumeOffset, groupPanoramaOffset, globalTuningOffset + groupTuningOffset, triggerAttribute);
                 groups.add (group);
                 groupCounter++;
             }
@@ -318,10 +344,11 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param basePath The base path of the samples
      * @param libraryFile If it is a library otherwise null
      * @param groupVolumeOffset The volume offset
+     * @param groupPanoramaOffset The panorama offset
      * @param tuningOffset The tuning offset
      * @param trigger The trigger value
      */
-    private void parseGroup (final DefaultGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double tuningOffset, final String trigger)
+    private void parseGroup (final DefaultGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double groupPanoramaOffset, final double tuningOffset, final String trigger)
     {
         for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE, false))
         {
@@ -374,6 +401,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             sampleZone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
             sampleZone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
             sampleZone.setGain (groupVolumeOffset + parseVolume (sampleElement, DecentSamplerTag.VOLUME));
+            sampleZone.setPanorama (groupPanoramaOffset + XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.PANORAMA, 0) / 100.0);
             sampleZone.setTune (tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0));
 
             final String zoneLogic = this.currentGroupsElement.getAttribute (DecentSamplerTag.SEQ_MODE);
@@ -396,7 +424,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
             final int loopStart = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, -1));
             final int loopEnd = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, -1));
-            final double loopCrossfade = XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, 0);
+            final int loopCrossfade = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, 0);
 
             if (loopStart >= 0 || loopEnd > 0 || loopCrossfade > 0)
             {
@@ -420,10 +448,10 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             // Volume envelope
 
             final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeModulator ().getSource ();
-            amplitudeEnvelope.setAttack (this.getDoubleValue (DecentSamplerTag.AMP_ENV_ATTACK, -1));
-            amplitudeEnvelope.setDecay (this.getDoubleValue (DecentSamplerTag.AMP_ENV_DECAY, -1));
-            amplitudeEnvelope.setSustain (this.getDoubleValue (DecentSamplerTag.AMP_ENV_SUSTAIN, -1));
-            amplitudeEnvelope.setRelease (this.getDoubleValue (DecentSamplerTag.AMP_ENV_RELEASE, -1));
+            amplitudeEnvelope.setAttack (this.getDoubleValue (DecentSamplerTag.ENV_ATTACK, -1));
+            amplitudeEnvelope.setDecay (this.getDoubleValue (DecentSamplerTag.ENV_DECAY, -1));
+            amplitudeEnvelope.setSustain (this.getDoubleValue (DecentSamplerTag.ENV_SUSTAIN, -1));
+            amplitudeEnvelope.setRelease (this.getDoubleValue (DecentSamplerTag.ENV_RELEASE, -1));
 
             group.addSampleZone (sampleZone);
         }

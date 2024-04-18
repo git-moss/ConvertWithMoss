@@ -18,6 +18,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
+import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupDetector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
@@ -37,8 +38,12 @@ import de.mossgrabers.convertwithmoss.format.nki.NkiDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
+import de.mossgrabers.convertwithmoss.format.sxt.SxtCreator;
+import de.mossgrabers.convertwithmoss.format.sxt.SxtDetector;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxCreator;
+import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.wav.WavDetector;
 import de.mossgrabers.tools.ui.AbstractFrame;
@@ -141,13 +146,16 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.detectors = new IDetector []
         {
             new Music1010Detector (this),
+            new AbletonDetector (this),
             new MPCKeygroupDetector (this),
             new BitwigMultisampleDetector (this),
+            new TX16WxDetector (this),
             new DecentSamplerDetector (this),
-            new EXS24Detector (this),
             new NkiDetector (this),
             new KMPDetector (this),
             new KorgmultisampleDetector (this),
+            new EXS24Detector (this),
+            new SxtDetector (this),
             new SfzDetector (this),
             new Sf2Detector (this),
             new TALSamplerDetector (this),
@@ -160,11 +168,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new Music1010Creator (this),
             new MPCKeygroupCreator (this),
             new BitwigMultisampleCreator (this),
+            new TX16WxCreator (this),
             new DecentSamplerCreator (this),
-            new EXS24Creator (this),
             new NkiCreator (this),
             new KMPCreator (this),
             new KorgmultisampleCreator (this),
+            new EXS24Creator (this),
+            new SxtCreator (this),
             new SfzCreator (this),
             new TALSamplerCreator (this),
             new WavCreator (this)
@@ -587,13 +597,14 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     {
         final String category = multisampleSource.getMetadata ().getCategory ();
         boolean wasSet = false;
+        final IEnvelope defaultEnvelope = DefaultEnvelope.getDefaultEnvelope (category);
         for (final IGroup layer: multisampleSource.getGroups ())
             for (final ISampleZone zone: layer.getSampleZones ())
             {
                 final IEnvelope volumeEnvelope = zone.getAmplitudeModulator ().getSource ();
                 if (!volumeEnvelope.isSet ())
                 {
-                    volumeEnvelope.set (DefaultEnvelope.getDefaultEnvelope (category));
+                    volumeEnvelope.set (defaultEnvelope);
                     wasSet = true;
                 }
             }
@@ -734,7 +745,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         for (final Tab tab: tabPane.getTabs ())
         {
-            final Label l = new Label ("xxxx");
+            final Label l = new Label ("    ");
             l.setVisible (false);
             l.setMaxHeight (0);
             l.setPrefHeight (0);

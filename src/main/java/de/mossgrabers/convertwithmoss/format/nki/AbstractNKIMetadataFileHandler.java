@@ -108,12 +108,12 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file which contains the XML document
      * @param content The XML content to parse
-     * @param metadata Default metadata
+     * @param metadataConfig Default metadata
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
-     * @return The parsed multisample source
+     * @return The parsed multi-sample source
      * @throws IOException An error occurred parsing the XML document
      */
-    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadata, final Map<String, ISampleData> monolithSamples) throws IOException
+    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         try
         {
@@ -127,7 +127,7 @@ public abstract class AbstractNKIMetadataFileHandler
             if (programElements.length == 0)
                 return Collections.emptyList ();
 
-            final String n = metadata.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+            final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
             final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
 
             final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
@@ -136,7 +136,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
                 if (this.parseProgram (programElement, multisampleSource, monolithSamples))
                 {
-                    updateMetadata (metadata, parts, multisampleSource.getMetadata ());
+                    updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
                     multisampleSources.add (multisampleSource);
                 }
             }
@@ -156,14 +156,14 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param parts The filename and path parts
      * @param metadata Where to set the found metadata
      */
-    private static void updateMetadata (final IMetadataConfig metadataConfig, final String [] parts, final IMetadata metadata)
+    public static void updateMetadata (final IMetadataConfig metadataConfig, final String [] parts, final IMetadata metadata)
     {
         final String creator = metadata.getCreator ();
         if (creator == null || creator.isBlank ())
             metadata.setCreator (TagDetector.detect (parts, metadataConfig.getCreatorTags (), metadataConfig.getCreatorName ()));
 
         final String category = metadata.getCategory ();
-        if (category == null || category.isBlank ())
+        if (category == null || category.isBlank () || "New".equals (category))
             metadata.setCategory (TagDetector.detectCategory (parts));
 
         final String [] keywords = metadata.getKeywords ();
@@ -176,7 +176,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * Creates a metadata description file.
      *
      * @param safeSampleFolderName The folder where the samples are placed
-     * @param multisampleSource The multisample source
+     * @param multisampleSource The multi-sample source
      * @return The XML document as a text
      */
     public Optional<String> create (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
@@ -298,9 +298,8 @@ public abstract class AbstractNKIMetadataFileHandler
     {
         String loopContent = loopTemplate.replace ("%LOOP_INDEX%", Integer.toString (loopIndex));
 
-        final int loopStart = loop.getStart ();
-        loopContent = loopContent.replace ("%LOOP_START%", Integer.toString (loopStart));
-        loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getEnd () - loopStart));
+        loopContent = loopContent.replace ("%LOOP_START%", Integer.toString (loop.getStart ()));
+        loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getLength ()));
 
         loopContent = loopContent.replace ("%LOOP_ALTERNATING%", loop.getType () == LoopType.ALTERNATING ? "yes" : "no");
         return loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
@@ -1089,8 +1088,8 @@ public abstract class AbstractNKIMetadataFileHandler
         final String cutoffText = valueMap.get ("cutoff");
         final double cutoff = cutoffText == null ? 1.0 : Double.parseDouble (cutoffText);
         final String resonanceText = valueMap.get ("resonance");
-        final double resonance = resonanceText == null ? 1.0 : Double.parseDouble (resonanceText);
-        return new DefaultFilter (filterType, Integer.parseInt (matcher.group (2)), cutoff * IFilter.MAX_FREQUENCY, resonance);
+        final double resonance = resonanceText == null ? 0 : Double.parseDouble (resonanceText);
+        return new DefaultFilter (filterType, Integer.parseInt (matcher.group (2)), cutoff, resonance);
     }
 
 
@@ -1261,7 +1260,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * Reads the pitch bend configuration from a group element.
      *
      * @param groupElement The group element
-     * @return The number of semitones (up=down)
+     * @return The number of semi-tones (up=down)
      */
     private int readGroupPitchBend (final Element groupElement)
     {

@@ -30,8 +30,6 @@ public class TALSamplerConstants
     /** The range between -12dB and +6dB. */
     public static final double    VALUE_RANGE     = PLUS_6_DB - MINUS_12_DB;
 
-    /** The post-fix to use for the samples folder. */
-    public static final String    FOLDER_POSTFIX  = "Samples";
     /** The current file format version to set. */
     public static final String    CURRENT_VERSION = "9";
     /** The IDs to for the 4 layers. */
@@ -149,7 +147,7 @@ public class TALSamplerConstants
      *
      * @param groups The multi groups which contains the samples
      * @return The medium sample length in seconds
-     * @throws IOException
+     * @throws IOException Could not get the sample rate from the audio data
      */
     public static double getMediumSampleLength (final List<IGroup> groups) throws IOException
     {

@@ -58,7 +58,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      */
     protected BitwigMultisampleDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder)
@@ -118,11 +118,11 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Process the multisample metadata file and the related wave files.
+     * Process the multi-sample metadata file and the related wave files.
      *
-     * @param multiSampleFile The multisample file
+     * @param multiSampleFile The multi-sample file
      * @param document The metadata XML document
-     * @return The parsed multisample source
+     * @return The parsed multi-sample source
      */
     private List<IMultisampleSource> parseDescription (final File multiSampleFile, final Document document)
     {
@@ -222,7 +222,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Parse the Bitwig multisample description file.
+     * Parse the metadata description file.
      *
      * @param top The top XML element
      * @param metadata Where to store the parsed information

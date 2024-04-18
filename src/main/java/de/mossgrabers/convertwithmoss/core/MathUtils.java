@@ -54,8 +54,8 @@ public class MathUtils
     /**
      * Convert continuous double value to dB.
      *
-     * @param value The value to convert
-     * @return The value converted to dB
+     * @param value The value to convert in the range of [0..1]
+     * @return The value converted to dB in the range of [-150..0]
      */
     public static double valueToDb (final double value)
     {
@@ -67,7 +67,7 @@ public class MathUtils
 
     /**
      * Converts a dB value in the range of -Infinity to 0dB to a double range of [0..1].
-     * 
+     *
      * @param dBValue The dB value to convert
      * @return The double value
      */

@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.file;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -102,7 +103,7 @@ public final class AudioFileUtils
     {
         try
         {
-            return getMetadata (AudioSystem.getAudioFileFormat (audioFileStream));
+            return getMetadata (AudioSystem.getAudioFileFormat (new BufferedInputStream (audioFileStream)));
         }
         catch (final UnsupportedAudioFileException ex)
         {

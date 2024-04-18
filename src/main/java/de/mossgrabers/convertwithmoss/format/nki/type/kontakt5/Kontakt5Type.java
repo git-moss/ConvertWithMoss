@@ -28,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunkType;
@@ -89,7 +90,7 @@ public class Kontakt5Type extends AbstractKontaktType
      * @param sourceFile The source file which contains the XML document
      * @param inputStream The input stream to read from
      * @param monolithSamples If the NKI is inside a monolith, these are the sample files
-     * @return The parsed multisample sources
+     * @return The parsed multi-sample sources
      * @param metadataConfig Default metadata
      * @throws IOException Error reading the file
      */
@@ -150,8 +151,13 @@ public class Kontakt5Type extends AbstractKontaktType
             if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
             {
                 final List<IMultisampleSource> sources = this.convertPrograms (presetChunkData, sourceFile, metadataConfig);
+                final String n = metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+                final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
                 for (final IMultisampleSource multisampleSource: sources)
+                {
                     updateMetadata (niContainerItem, multisampleSource);
+                    AbstractNKIMetadataFileHandler.updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
+                }
                 return sources;
             }
         }
@@ -181,19 +187,20 @@ public class Kontakt5Type extends AbstractKontaktType
             metadata.setKeywords (attributes.toArray (new String [attributes.size ()]));
             if (metadata.getCreator () == null)
                 metadata.setCreator (soundinfo.getAuthor ());
-            if (metadata.getCategory () == null && !attributes.isEmpty ())
+            final String category = metadata.getCategory ();
+            if ((category == null || category.isBlank () || "New".equals (category)) && !attributes.isEmpty ())
                 metadata.setCategory (attributes.get (0));
         }
     }
 
 
     /**
-     * Convert the program object into one or more multisample sources.
+     * Convert the program object into one or more multi-sample sources.
      *
      * @param presetChunkData The preset chunk data which contains the preset information
      * @param sourceFile The source file to convert
      * @param metadataConfig Default metadata
-     * @return The multisample sources
+     * @return The multi-sample sources
      * @throws IOException Could not convert the program
      */
     private List<IMultisampleSource> convertPrograms (final PresetChunkData presetChunkData, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException

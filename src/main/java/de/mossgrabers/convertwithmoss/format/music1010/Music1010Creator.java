@@ -159,6 +159,8 @@ public class Music1010Creator extends AbstractCreator
     public Music1010Creator (final INotifier notifier)
     {
         super ("1010music", notifier);
+
+        this.configureWavChunkUpdates (true, true, true, true);
     }
 
 
@@ -254,7 +256,7 @@ public class Music1010Creator extends AbstractCreator
         }
 
         // Store all samples
-        final DestinationAudioFormat destinationAudioFormat = this.getChunkSettings ();
+        final DestinationAudioFormat destinationAudioFormat = new DestinationAudioFormat ();
         if (this.resampleTo2448.isSelected ())
         {
             AbstractCreator.recalculateSamplePositions (multisampleSource, 48000);
@@ -486,7 +488,7 @@ public class Music1010Creator extends AbstractCreator
         // Note: Resonance is in the range [0..1] but it is not documented what value 1
         // represents. Therefore, we assume 40dB maximum and a linear range (could also
         // be logarithmic).
-        final int resonance = (int) (MathUtils.normalize (filter.getResonance (), 0, 40) * 1000.0);
+        final int resonance = (int) (filter.getResonance () * 1000.0);
         paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_RESONANCE, Integer.toString (resonance));
     }
 }

@@ -6,8 +6,11 @@ package de.mossgrabers.convertwithmoss.format.tx16wx;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -38,12 +42,14 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
+import javafx.scene.control.ComboBox;
 
 
 /**
@@ -59,6 +65,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
     private static final Map<String, LoopType>   LOOP_MODES            = new HashMap<> ();
     private static final Map<String, FilterType> FILTER_TYPES          = new HashMap<> ();
+    private static final Map<String, Integer>    FILTER_SLOPES         = new HashMap<> ();
     static
     {
         LOOP_MODES.put ("Forward", LoopType.FORWARDS);
@@ -69,7 +76,13 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         FILTER_TYPES.put ("HighPass", FilterType.HIGH_PASS);
         FILTER_TYPES.put ("BandPass", FilterType.BAND_PASS);
         FILTER_TYPES.put ("Notch", FilterType.BAND_REJECTION);
+
+        FILTER_SLOPES.put ("24dB", Integer.valueOf (4));
+        FILTER_SLOPES.put ("12dB", Integer.valueOf (2));
+        FILTER_SLOPES.put ("6dB", Integer.valueOf (1));
     }
+
+    protected final ComboBox<Integer> levelsOfDirectorySearch;
 
 
     /**
@@ -79,10 +92,13 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
+     * @param levelsOfDirectorySearch Combo box to read the directory search level
      */
-    protected TX16WxDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
+    protected TX16WxDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final ComboBox<Integer> levelsOfDirectorySearch)
     {
         super (notifier, consumer, sourceFolder, metadata, ENDING_TXPROGRAM);
+
+        this.levelsOfDirectorySearch = levelsOfDirectorySearch;
     }
 
 
@@ -126,16 +142,25 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         }
 
         final Map<String, ISampleZone> sampleMap = this.parseSamples (topElement, basePath);
-        final List<IGroup> groups = this.parseGroups (topElement, sampleMap);
+        final List<IGroup> groups = new ArrayList<> ();
+        final Optional<IFilter> filter = this.parseGroups (topElement, sampleMap, groups);
 
-        final String name = FileUtils.getNameWithoutType (multiSampleFile);
+        String name = topElement.getAttribute (TX16WxTag.NAME);
+        if (name == null || name.isBlank ())
+            name = FileUtils.getNameWithoutType (multiSampleFile);
         final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
-        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts);
+
+        final String category = topElement.getAttribute (TX16WxTag.PROGRAM_ICON);
+        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, category);
 
         multisampleSource.setGroups (groups);
+
+        // Note: groups must be already set!
+        if (filter.isPresent ())
+            multisampleSource.setGlobalFilter (filter.get ());
 
         return Collections.singletonList (multisampleSource);
     }
@@ -143,16 +168,17 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
     /**
      * Parse all sample (wave) tags.
-     * 
+     *
      * @param basePath The base path of the samples
      * @return All parsed samples
      */
     private Map<String, ISampleZone> parseSamples (final Element topElement, final String basePath)
     {
+        final File parentFile = new File (basePath);
         final Map<String, ISampleZone> sampleZoneMap = new HashMap<> ();
-        for (final Element sampleElement: XMLUtils.getChildElementsByName (topElement, TX16WxTag.SAMPLE, false))
+        for (final Element waveElement: XMLUtils.getChildElementsByName (topElement, TX16WxTag.SAMPLE, false))
         {
-            final String sampleName = sampleElement.getAttribute (TX16WxTag.PATH);
+            String sampleName = waveElement.getAttribute (TX16WxTag.PATH);
             if (sampleName == null || sampleName.isBlank ())
             {
                 this.notifier.logError (ERR_BAD_METADATA_FILE);
@@ -162,7 +188,21 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
             final ISampleZone sampleZone;
             try
             {
-                sampleZone = this.createSampleZone (new File (basePath, sampleName));
+                sampleName = URLDecoder.decode (sampleName, StandardCharsets.UTF_8);
+
+                final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
+                final File sampleFile = findSampleFile (parentFile, sampleName, height);
+                if (!sampleFile.exists ())
+                {
+                    this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
+                    continue;
+                }
+                sampleZone = this.createSampleZone (sampleFile);
+            }
+            catch (final FileNotFoundException ex)
+            {
+                this.notifier.logError (ex);
+                continue;
             }
             catch (final IOException ex)
             {
@@ -170,11 +210,15 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 continue;
             }
 
-            final String sampleID = sampleElement.getAttribute (TX16WxTag.SAMPLE_ID);
+            final String sampleID = waveElement.getAttribute (TX16WxTag.SAMPLE_ID);
             sampleZoneMap.put (sampleID, sampleZone);
 
+            sampleZone.setStart (XMLUtils.getIntegerAttribute (waveElement, TX16WxTag.START, -1));
+            sampleZone.setStop (XMLUtils.getIntegerAttribute (waveElement, TX16WxTag.END, -1));
+            sampleZone.setKeyRoot (getNoteAttribute (waveElement, TX16WxTag.ROOT));
+
             // Parse all loops
-            readLoops (sampleElement, sampleZone.getLoops ());
+            readLoops (waveElement, sampleZone.getLoops ());
         }
 
         return sampleZoneMap;
@@ -186,31 +230,35 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      *
      * @param programElement The XML element containing all groups
      * @param sampleMap The mapping of all sample element to their ID
+     * @param groups Where to add the parsed groups
      * @return All parsed groups
      */
-    private List<IGroup> parseGroups (final Element programElement, final Map<String, ISampleZone> sampleMap)
+    private Optional<IFilter> parseGroups (final Element programElement, final Map<String, ISampleZone> sampleMap, final List<IGroup> groups)
     {
         final Map<String, Element> soundShapeElementMap = new HashMap<> ();
         for (final Element soundShapeElement: XMLUtils.getChildElementsByName (programElement, TX16WxTag.SOUND_SHAPE, false))
         {
             final String soundShapeID = soundShapeElement.getAttribute (TX16WxTag.SOUND_SHAPE_ID);
-            if (soundShapeID != null)
+            if (soundShapeID != null && !soundShapeID.isBlank ())
                 soundShapeElementMap.put (soundShapeID, soundShapeElement);
         }
 
-        final List<IGroup> groups = new ArrayList<> ();
+        Optional<IFilter> filter = Optional.empty ();
+
         int groupCounter = 1;
         for (final Element groupElement: XMLUtils.getChildElementsByName (programElement, TX16WxTag.GROUP, false))
         {
-            final String k = groupElement.getAttribute (TX16WxTag.GROUP_NAME);
+            final String k = groupElement.getAttribute (TX16WxTag.NAME);
             final String groupName = k == null || k.isBlank () ? "Group " + groupCounter : k;
             final DefaultGroup group = new DefaultGroup (groupName);
 
-            this.parseGroup (group, groupElement, sampleMap, soundShapeElementMap);
+            final Optional<IFilter> optFilter = this.parseGroup (group, groupElement, sampleMap, soundShapeElementMap);
+            if (optFilter.isPresent () && filter.isEmpty ())
+                filter = optFilter;
             groups.add (group);
             groupCounter++;
         }
-        return groups;
+        return filter;
     }
 
 
@@ -221,108 +269,152 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * @param groupElement The XML group element
      * @param sampleMap The mapping of all sample element to their ID
      * @param soundShapeElementMap The sound shape elements mapped to their ID
+     * @return The filter, if any
      */
-    private void parseGroup (final DefaultGroup group, final Element groupElement, final Map<String, ISampleZone> sampleMap, final Map<String, Element> soundShapeElementMap)
+    private Optional<IFilter> parseGroup (final DefaultGroup group, final Element groupElement, final Map<String, ISampleZone> sampleMap, final Map<String, Element> soundShapeElementMap)
     {
-        final double groupVolumeOffset = parseVolume (groupElement, TX16WxTag.VOLUME);
+        final double groupVolumeOffset = this.parseVolume (groupElement, TX16WxTag.VOLUME);
         final double groupPanoramaOffset = parsePanorama (groupElement, TX16WxTag.PANORAMA);
-        double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, TX16WxTag.TUNING_COARSE, 0) * 100;
-        groupTuningOffset += XMLUtils.getDoubleAttribute (groupElement, TX16WxTag.TUNING_FINE, 0);
+        double groupTuningOffset = XMLUtils.getIntegerAttribute (groupElement, TX16WxTag.TUNING_COARSE, 0);
+        groupTuningOffset += XMLUtils.getIntegerAttribute (groupElement, TX16WxTag.TUNING_FINE, 0) / 100.0;
 
         final String playMode = groupElement.getAttribute (TX16WxTag.GROUP_PLAYMODE);
         if ("Release".equals (playMode))
             group.setTrigger (TriggerType.RELEASE);
 
-        // Volume envelope
+        Optional<IFilter> filter = Optional.empty ();
+        Optional<IModulator> pitchModulator = Optional.empty ();
+        int pitchbend = -1;
+
         IEnvelope ampEnvelope = null;
         final String soundShape = groupElement.getAttribute (TX16WxTag.SOUND_SHAPE);
-        if (soundShape != null)
+        if (soundShape != null && !soundShape.isBlank ())
         {
             final Element soundShapeElement = soundShapeElementMap.get (soundShape);
             if (soundShapeElement != null)
             {
                 // Amplitude envelope
                 final Element aegElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.AMP_ENVELOPE);
-                ampEnvelope = new DefaultEnvelope ();
-                ampEnvelope.setAttack (parseTime (aegElement, TX16WxTag.AMP_ENV_ATTACK));
-                ampEnvelope.setDecay (parseTime (aegElement, TX16WxTag.AMP_ENV_DECAY));
-                ampEnvelope.setSustain (MathUtils.dBToDouble (parseVolume (aegElement, TX16WxTag.AMP_ENV_SUSTAIN)));
-                ampEnvelope.setRelease (parseTime (aegElement, TX16WxTag.AMP_ENV_RELEASE));
+                if (aegElement != null)
+                {
+                    ampEnvelope = new DefaultEnvelope ();
+                    // The whole group can be delayed which is basically the same as the amplitude
+                    // delay
+                    ampEnvelope.setDelay (parseTime (soundShapeElement, TX16WxTag.GROUP_DELAY));
+                    ampEnvelope.setAttack (parseTime (aegElement, TX16WxTag.AMP_ENV_ATTACK));
+                    ampEnvelope.setHold (parseTime (aegElement, TX16WxTag.AMP_ENV_DECAY1));
+                    ampEnvelope.setDecay (parseTime (aegElement, TX16WxTag.AMP_ENV_DECAY2));
+                    ampEnvelope.setSustain (parseNormalizedVolume (aegElement, TX16WxTag.AMP_ENV_SUSTAIN));
+                    ampEnvelope.setRelease (parseTime (aegElement, TX16WxTag.AMP_ENV_RELEASE));
+                }
 
-                final Optional<IFilter> filter = parseFilter (soundShapeElement);
-                // TODO if (filter.isPresent ())
-
+                filter = this.parseFilter (soundShapeElement);
+                pitchModulator = parsePitchModulator (soundShapeElement);
+                final int bend = parsePitchbend (soundShapeElement);
+                if (bend > 0)
+                    pitchbend = bend;
             }
         }
 
         for (final Element regionElement: XMLUtils.getChildElementsByName (groupElement, TX16WxTag.REGION, false))
         {
-            final ISampleZone sampleZone = sampleMap.get (regionElement.getAttribute (TX16WxTag.SAMPLE));
-
-            // Play back start not available
-            // Play back stop not available
-
-            sampleZone.setGain (groupVolumeOffset + parseVolume (regionElement, TX16WxTag.VOLUME));
-            sampleZone.setPanorama (groupPanoramaOffset + parsePanorama (regionElement, TX16WxTag.PANORAMA));
-
-            double tuning = XMLUtils.getDoubleAttribute (regionElement, TX16WxTag.TUNING_COARSE, 0) * 100;
-            tuning += XMLUtils.getDoubleAttribute (regionElement, TX16WxTag.TUNING_FINE, 0);
-            sampleZone.setTune (groupTuningOffset + tuning);
-
-            // TODO seems to be in a sub-group element "switcher"
-            // final String zoneLogic = this.currentGroupsElement.getAttribute (TX16WxTag.SEQ_MODE);
-            // sampleZone.setPlayLogic (zoneLogic != null && "round_robin".equals (zoneLogic) ?
-            // PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
-
-            // Key tracking not available
-
-            sampleZone.setKeyRoot (getNoteAttribute (regionElement, TX16WxTag.ROOT_NOTE));
-
-            final Element boundsElement = XMLUtils.getChildElementByName (regionElement, TX16WxTag.BOUNDS);
-            if (boundsElement != null)
+            final ISampleZone zone = sampleMap.get (regionElement.getAttribute (TX16WxTag.SAMPLE));
+            if (zone != null)
             {
-                sampleZone.setKeyLow (getNoteAttribute (boundsElement, TX16WxTag.LO_NOTE, TX16WxTag.LO_NOTE_ALT));
-                sampleZone.setKeyHigh (getNoteAttribute (boundsElement, TX16WxTag.HI_NOTE, TX16WxTag.HI_NOTE_ALT));
-                final int velLow = XMLUtils.getIntegerAttribute (boundsElement, TX16WxTag.LO_VEL, -1);
-                final int velHigh = XMLUtils.getIntegerAttribute (boundsElement, TX16WxTag.HI_VEL, -1);
-                if (velLow > 0)
-                    sampleZone.setVelocityLow (velLow);
-                if (velHigh > 0)
-                    sampleZone.setVelocityHigh (velHigh);
+                this.parseZone (zone, regionElement, groupVolumeOffset, groupPanoramaOffset, groupTuningOffset);
+                group.addSampleZone (zone);
 
-                final Element fadeBoundsElement = XMLUtils.getChildElementByName (regionElement, TX16WxTag.FADE_BOUNDS);
-                if (fadeBoundsElement != null)
+                if (pitchModulator.isPresent ())
                 {
-                    sampleZone.setNoteCrossfadeLow (getNoteAttribute (fadeBoundsElement, TX16WxTag.LO_NOTE, TX16WxTag.LO_NOTE_ALT));
-                    sampleZone.setNoteCrossfadeHigh (getNoteAttribute (fadeBoundsElement, TX16WxTag.HI_NOTE, TX16WxTag.HI_NOTE_ALT));
-                    final int fadeVelLow = XMLUtils.getIntegerAttribute (fadeBoundsElement, TX16WxTag.LO_VEL, -1);
-                    final int fadeVelHigh = XMLUtils.getIntegerAttribute (fadeBoundsElement, TX16WxTag.HI_VEL, -1);
-                    if (fadeVelLow > 0)
-                        sampleZone.setVelocityCrossfadeLow (fadeVelLow);
-                    if (fadeVelHigh > 0)
-                        sampleZone.setVelocityCrossfadeHigh (fadeVelHigh);
+                    final IModulator modulator = pitchModulator.get ();
+                    final IModulator zonePitchModulator = zone.getPitchModulator ();
+                    zonePitchModulator.setDepth (modulator.getDepth ());
+                    zonePitchModulator.setSource (modulator.getSource ());
                 }
-            }
 
-            try
+                if (pitchbend >= 0)
+                {
+                    zone.setBendUp (pitchbend);
+                    zone.setBendDown (pitchbend);
+                }
+
+                zone.getAmplitudeModulator ().setSource (ampEnvelope);
+            }
+        }
+
+        return filter;
+    }
+
+
+    /**
+     * Parse the zone attributes.
+     *
+     * @param zone The zone for which to parse the attributes
+     * @param regionElement The region element which contains the attributes
+     * @param groupVolumeOffset The group offset for volume
+     * @param groupPanoramaOffset The group offset for panorama
+     * @param groupTuningOffset The group offset for tuning
+     */
+    private void parseZone (final ISampleZone zone, final Element regionElement, final double groupVolumeOffset, final double groupPanoramaOffset, final double groupTuningOffset)
+    {
+        zone.setGain (groupVolumeOffset + this.parseVolume (regionElement, TX16WxTag.ATTENUATION));
+        zone.setPanorama (groupPanoramaOffset + parsePanorama (regionElement, TX16WxTag.PANORAMA));
+
+        double tuning = 0;
+        final Element soundOffsetsElement = XMLUtils.getChildElementByName (regionElement, TX16WxTag.SOUND_OFFSETS);
+        if (soundOffsetsElement != null)
+        {
+            tuning = XMLUtils.getIntegerAttribute (soundOffsetsElement, TX16WxTag.TUNING_COARSE, 0);
+            tuning += XMLUtils.getIntegerAttribute (soundOffsetsElement, TX16WxTag.TUNING_FINE, 0) / 100.0;
+        }
+        zone.setTune (groupTuningOffset + tuning);
+
+        // There is group switching with sequences (round-robin) but it seems no zone switching
+        // Key tracking not available
+
+        if (zone.getKeyRoot () == -1)
+            zone.setKeyRoot (getNoteAttribute (regionElement, TX16WxTag.ROOT));
+
+        final Element boundsElement = XMLUtils.getChildElementByName (regionElement, TX16WxTag.BOUNDS);
+        if (boundsElement != null)
+        {
+            zone.setKeyLow (getNoteAttribute (boundsElement, TX16WxTag.LO_NOTE, TX16WxTag.LO_NOTE_ALT));
+            zone.setKeyHigh (getNoteAttribute (boundsElement, TX16WxTag.HI_NOTE, TX16WxTag.HI_NOTE_ALT));
+            final int velLow = XMLUtils.getIntegerAttribute (boundsElement, TX16WxTag.LO_VEL, -1);
+            final int velHigh = XMLUtils.getIntegerAttribute (boundsElement, TX16WxTag.HI_VEL, -1);
+            if (velLow > 0)
+                zone.setVelocityLow (velLow);
+            if (velHigh > 0)
+                zone.setVelocityHigh (velHigh);
+
+            final Element fadeBoundsElement = XMLUtils.getChildElementByName (regionElement, TX16WxTag.FADE_BOUNDS);
+            if (fadeBoundsElement != null)
             {
-                sampleZone.getSampleData ().addMetadata (sampleZone, false, false);
+                zone.setNoteCrossfadeLow (getNoteAttribute (fadeBoundsElement, TX16WxTag.LO_NOTE, TX16WxTag.LO_NOTE_ALT));
+                zone.setNoteCrossfadeHigh (getNoteAttribute (fadeBoundsElement, TX16WxTag.HI_NOTE, TX16WxTag.HI_NOTE_ALT));
+                final int fadeVelLow = XMLUtils.getIntegerAttribute (fadeBoundsElement, TX16WxTag.LO_VEL, -1);
+                final int fadeVelHigh = XMLUtils.getIntegerAttribute (fadeBoundsElement, TX16WxTag.HI_VEL, -1);
+                if (fadeVelLow > 0)
+                    zone.setVelocityCrossfadeLow (fadeVelLow);
+                if (fadeVelHigh > 0)
+                    zone.setVelocityCrossfadeHigh (fadeVelHigh);
             }
-            catch (final IOException ex)
-            {
-                this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
-            }
+        }
 
-            sampleZone.getAmplitudeModulator ().setSource (ampEnvelope);
-
-            group.addSampleZone (sampleZone);
+        try
+        {
+            zone.getSampleData ().addMetadata (zone, false, false);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
         }
     }
 
 
     /**
      * Read all loops from the sample element.
-     * 
+     *
      * @param sampleElement The sample element
      * @param loops The loops list
      */
@@ -331,8 +423,8 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         for (final Element loopElement: XMLUtils.getChildElementsByName (sampleElement, TX16WxTag.SAMPLE_LOOP, false))
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
-            final String loopMode = sampleElement.getAttribute (TX16WxTag.LOOP_MODE);
-            if (loopMode != null)
+            final String loopMode = loopElement.getAttribute (TX16WxTag.LOOP_MODE);
+            if (loopMode != null && !loopMode.isBlank ())
             {
                 final LoopType loopType = LOOP_MODES.get (loopMode);
                 if (loopType != null)
@@ -354,38 +446,167 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * @param soundShapeElement The sound shape element
      * @return The read filter
      */
-    private static Optional<IFilter> parseFilter (final Element soundShapeElement)
+    private Optional<IFilter> parseFilter (final Element soundShapeElement)
     {
-        final Element filterElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.FILTER);
+        Element filterElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.FILTER);
+        if (filterElement == null)
+            filterElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.FILTER1);
         if (filterElement == null)
             return Optional.empty ();
 
         final String filterTypeValue = filterElement.getAttribute (TX16WxTag.FILTER_TYPE);
-        if (filterTypeValue == null)
+        if (filterTypeValue == null || filterTypeValue.isBlank ())
             return Optional.empty ();
-
         final FilterType filterType = FILTER_TYPES.get (filterTypeValue);
         if (filterType == null)
             return Optional.empty ();
 
         String frequencyValue = filterElement.getAttribute (TX16WxTag.FILTER_FREQUENCY);
-        if (frequencyValue == null)
+        if (frequencyValue == null || frequencyValue.isBlank ())
             frequencyValue = filterElement.getAttribute (TX16WxTag.FILTER_CUTOFF);
-        if (frequencyValue == null)
+        if (frequencyValue == null || frequencyValue.isBlank ())
             return Optional.empty ();
         double frequency;
-        if (frequencyValue.endsWith ("hz") || frequencyValue.endsWith ("Hz"))
-            frequency = Double.parseDouble (frequencyValue.substring (0, frequencyValue.length () - 2).trim ());
-        else if (frequencyValue.endsWith ("khz") || frequencyValue.endsWith ("kHz"))
+        if (frequencyValue.endsWith ("khz") || frequencyValue.endsWith ("kHz"))
             frequency = Double.parseDouble (frequencyValue.substring (0, frequencyValue.length () - 3).trim ()) * 1000;
+        else if (frequencyValue.endsWith ("hz") || frequencyValue.endsWith ("Hz"))
+            frequency = Double.parseDouble (frequencyValue.substring (0, frequencyValue.length () - 2).trim ());
         else
             return Optional.empty ();
 
-        final double resonance = XMLUtils.getDoubleAttribute (soundShapeElement, "resonance", 0);
-        // TODO parse resonance correctly
-        // TODO parse poles
+        final String resonanceValue = filterElement.getAttribute (TX16WxTag.FILTER_RESONANCE);
+        double resonance = 0;
+        if (resonanceValue != null && resonanceValue.endsWith ("%"))
+            resonance = Double.parseDouble (resonanceValue.substring (0, resonanceValue.length () - 1).trim ()) / 100.0;
+        else
+            resonance = MathUtils.normalize (this.parseVolume (filterElement, TX16WxTag.FILTER_RES), IFilter.MAX_RESONANCE);
 
-        return Optional.of (new DefaultFilter (filterType, 4, frequency, resonance));
+        int poles = 4;
+        final String slopeValue = filterElement.getAttribute (TX16WxTag.FILTER_SLOPE);
+        if (slopeValue != null && !slopeValue.isBlank ())
+        {
+            final Integer poleValue = FILTER_SLOPES.get (slopeValue);
+            if (poleValue != null)
+                poles = poleValue.intValue ();
+        }
+
+        final DefaultFilter filter = new DefaultFilter (filterType, poles, frequency, resonance);
+        parseFilterEnvelope (filter, soundShapeElement);
+        return Optional.of (filter);
+    }
+
+
+    /**
+     * Parse the filter envelope from the modulation section in the sound shape element.
+     *
+     * @param filter The filter for which to parse the envelope
+     * @param soundShapeElement The sound shape element
+     */
+    private static void parseFilterEnvelope (final IFilter filter, final Element soundShapeElement)
+    {
+        final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
+        if (modulationElement == null)
+            return;
+        for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TX16WxTag.MODULATION_ENTRY, false))
+        {
+            final String modeSource = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_SOURCE);
+            final String modDestination = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_DESTINATION);
+            final boolean isEnv1 = "ENV1".equals (modeSource);
+            final boolean isEnv2 = "ENV2".equals (modeSource);
+            if ((isEnv1 || isEnv2) && "Filter 1 Freq".equals (modDestination))
+            {
+                final String modAmount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
+                if (modAmount.endsWith ("Ct"))
+                {
+                    final IModulator cutoffModulator = filter.getCutoffModulator ();
+                    final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
+                    cutoffModulator.setDepth (MathUtils.clamp (Math.abs (amount), 0, 1.0));
+
+                    final Element envElement = XMLUtils.getChildElementByName (soundShapeElement, isEnv1 ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
+                    if (envElement != null)
+                    {
+                        final IEnvelope envEnvelope = cutoffModulator.getSource ();
+                        // Note: Level 0, 1 and 3 can currently not be mapped!
+                        envEnvelope.setAttack (parseTime (envElement, TX16WxTag.ENV_TIME1));
+                        envEnvelope.setDecay (parseTime (envElement, TX16WxTag.ENV_TIME2));
+                        envEnvelope.setSustain (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL2));
+                        envEnvelope.setRelease (parseTime (envElement, TX16WxTag.ENV_TIME3));
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Parse the pitch envelope and modulation depth from the modulation section in the sound shape
+     * element.
+     *
+     * @param soundShapeElement The sound shape element
+     */
+    private static Optional<IModulator> parsePitchModulator (final Element soundShapeElement)
+    {
+        final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
+        if (modulationElement == null)
+            return null;
+        for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TX16WxTag.MODULATION_ENTRY, false))
+        {
+            final String modeSource = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_SOURCE);
+            final String modDestination = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_DESTINATION);
+            final boolean isEnv1 = "ENV1".equals (modeSource);
+            final boolean isEnv2 = "ENV2".equals (modeSource);
+            if ((isEnv1 || isEnv2) && ("Pitch".equals (modDestination) || "Pitch (Raw)".equals (modDestination)))
+            {
+                final String modAmount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
+                if (modAmount.endsWith ("Ct"))
+                {
+                    final IModulator pitchModulator = new DefaultModulator ();
+                    final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
+                    pitchModulator.setDepth (MathUtils.clamp (Math.abs (amount), 0, 1.0));
+
+                    final Element envElement = XMLUtils.getChildElementByName (soundShapeElement, isEnv1 ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
+                    if (envElement != null)
+                    {
+                        final IEnvelope envEnvelope = pitchModulator.getSource ();
+                        // Note: this mapping is different then on the filter envelope (see above)!
+                        envEnvelope.setAttack (0);
+                        envEnvelope.setDecay (parseTime (envElement, TX16WxTag.ENV_TIME1));
+                        envEnvelope.setSustain (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
+                        envEnvelope.setRelease (parseTime (envElement, TX16WxTag.ENV_TIME2));
+                        return Optional.of (pitchModulator);
+                    }
+                }
+            }
+        }
+
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Parse the pitch-bend from the modulation section in the sound shape element.
+     *
+     * @param soundShapeElement The sound shape element
+     * @return The pitch-bend, negative if not found
+     */
+    private static int parsePitchbend (final Element soundShapeElement)
+    {
+        final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
+        if (modulationElement == null)
+            return -1;
+        for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TX16WxTag.MODULATION_ENTRY, false))
+        {
+            final String modeSource = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_SOURCE);
+            final String modDestination = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_DESTINATION);
+            if ("Pitchbend".equals (modeSource) && ("Pitch".equals (modDestination) || "Pitch (raw)".equals (modDestination)))
+            {
+                final String modAmount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
+                if (modAmount.endsWith ("Ct"))
+                    return Math.abs (Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()));
+            }
+        }
+
+        return -1;
     }
 
 
@@ -410,13 +631,13 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Parses a volume value from the given tag.
+     * Parses a volume value in dB from the given tag.
      *
      * @param element The element which contains the volume attribute
      * @param tag The tag name of the attribute containing the volume
      * @return The volume in dB
      */
-    private static double parseVolume (final Element element, final String tag)
+    private double parseVolume (final Element element, final String tag)
     {
         String attribute = element.getAttribute (tag);
         if (attribute == null)
@@ -428,13 +649,44 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
         // Is the value in dB?
         if (attribute.endsWith ("dB"))
-            return Double.parseDouble (attribute.substring (0, attribute.length () - 2).trim ());
+        {
+            final String value = attribute.substring (0, attribute.length () - 2).trim ();
+            return "-inf".equals (value) ? Double.NEGATIVE_INFINITY : Double.parseDouble (value);
+        }
 
-        // The value is in the range of [0..1] but it is not specified what 0 and 1 means, lets
-        // scale it to [0..6] dB.
-        if (attribute.endsWith ("%"))
-            return Double.parseDouble (attribute.substring (0, attribute.length () - 1).trim ()) / 100.0 * 6.0;
-        return Double.parseDouble (attribute) * 6.0;
+        this.notifier.logError ("IDS_TX16WX_PERCENT_NOT_SUPPORTED", attribute);
+        return 0;
+    }
+
+
+    /**
+     * Parses a volume value in percent or already normalized to [0..1] from the given tag. If the
+     * value is in dB it is assumed to be in the range of [-150..0].
+     *
+     * @param element The element which contains the volume attribute
+     * @param tag The tag name of the attribute containing the volume
+     * @return The volume in the range of [0..1]
+     */
+    private static double parseNormalizedVolume (final Element element, final String tag)
+    {
+        String attribute = element.getAttribute (tag);
+        if (attribute == null)
+            return 0;
+
+        attribute = attribute.trim ();
+        if (attribute.isBlank ())
+            return 0;
+
+        // Is the value in dB?
+        if (attribute.endsWith ("dB"))
+        {
+            final String value = attribute.substring (0, attribute.length () - 2).trim ();
+            final double dBValue = "-inf".equals (value) ? Double.NEGATIVE_INFINITY : Double.parseDouble (value);
+            return MathUtils.dBToDouble (dBValue);
+        }
+
+        final double value = attribute.endsWith ("%") ? Double.parseDouble (attribute.substring (0, attribute.length () - 1).trim ()) / 100.0 : Double.parseDouble (attribute);
+        return MathUtils.clamp (value, 0, 1);
     }
 
 
@@ -471,7 +723,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      *
      * @param element The element which contains the attribute
      * @param tag The tag name of the attribute
-     * @return The time in milli-seconds in the range of 0.1ms to 38000ms
+     * @return The time in seconds in the range of 0.1ms to 38000ms
      */
     private static double parseTime (final Element element, final String tag)
     {
@@ -485,7 +737,8 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
         // Is the value in milli-seconds?
         if (attribute.endsWith ("ms"))
-            return Double.parseDouble (attribute.substring (0, attribute.length () - 2).trim ());
-        return Double.parseDouble (attribute.substring (0, attribute.length () - 1).trim ()) * 1000;
+            return Double.parseDouble (attribute.substring (0, attribute.length () - 2).trim ()) / 1000.0;
+        // ... otherwise in seconds
+        return Double.parseDouble (attribute.substring (0, attribute.length () - 1).trim ());
     }
 }

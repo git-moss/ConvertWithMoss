@@ -85,7 +85,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
      *
      * @param in The input stream to read from
      * @param file The YSFC source file
-     * @return The parsed multi samples
+     * @return The parsed multi-samples
      * @throws IOException Could not process the file
      * @throws FormatException Found unexpected format of the file
      */

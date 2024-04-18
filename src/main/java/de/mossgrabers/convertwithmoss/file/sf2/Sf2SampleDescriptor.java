@@ -55,8 +55,8 @@ public class Sf2SampleDescriptor
      * Constructor.
      *
      * @param sampleIndex The index of the sample
-     * @param sample24Data
-     * @param sampleData
+     * @param sampleData The sample data bytes
+     * @param sample24Data The additional sample data bytes for 24 bit samples
      */
     public Sf2SampleDescriptor (final int sampleIndex, final byte [] sampleData, final byte [] sample24Data)
     {

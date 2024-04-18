@@ -11,6 +11,10 @@ package de.mossgrabers.convertwithmoss.core.model;
  */
 public interface IEnvelope
 {
+    /** The maximum filter envelope depth. 12000 cents which are 10 octaves. */
+    public static final int MAX_ENVELOPE_DEPTH = 12000;
+
+
     /**
      * The delay to start the envelope.
      *

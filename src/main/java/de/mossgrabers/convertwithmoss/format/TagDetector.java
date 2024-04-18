@@ -161,9 +161,11 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_BRASS, new String []
         {
             CATEGORY_BRASS,
-            "Horn",
-            "Trumpet",
             "Trombone",
+            "Trumpet",
+            "Cornet",
+            "Bugle",
+            "Horn",
             "Tuba"
         });
         CATEGORIES.put (CATEGORY_CHIP, new String []
@@ -176,17 +178,17 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_VOCAL, new String []
         {
             CATEGORY_VOCAL,
-            "Choir",
-            "Vox",
-            "Voice",
+            "Microphone",
+            "Gregorian",
+            "Whisper",
             "Vocode",
             "Choral",
-            "Gregorian",
-            "Ahh",
-            "Whisper",
+            "Choir",
+            "Voice",
             "Shout",
             "Sing",
-            "Microphone"
+            "Vox",
+            "Ahh"
         });
         CATEGORIES.put (CATEGORY_CHROMATIC_PERCUSSION, new String []
         {
@@ -214,13 +216,15 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_DRUM, new String []
         {
             CATEGORY_DRUM,
+            "Drum-Set",
+            "Drumset",
+            "Cymbal",
+            "Gong",
+            "Ride",
             "Kit",
             "Tom",
-            "Cymbal",
-            "Ride",
             "808",
-            "909",
-            "Gong"
+            "909"
         });
         CATEGORIES.put (CATEGORY_ENSEMBLE, new String []
         {
@@ -266,7 +270,10 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_KICK, new String []
         {
-            CATEGORY_KICK
+            CATEGORY_KICK,
+            "bass-drum",
+            "bassdrum",
+            "BD"
         });
         CATEGORIES.put (CATEGORY_LEAD, new String []
         {
@@ -305,20 +312,21 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_PERCUSSION, new String []
         {
             CATEGORY_PERCUSSION,
+            "Tambourine",
+            "Woodblock",
+            "Triangle",
+            "Cowbell",
+            "Timbale",
+            "Timpani",
+            "Maracas",
+            "Djembe",
+            "Shaker",
             "Agogo",
             "Bongo",
             "Chimes",
             "Conga",
-            "Cowbell",
             "Cuica",
-            "Djembe",
-            "Shaker",
-            "Tabla",
-            "Tambourine",
-            "Timbale",
-            "Timpani",
-            "Triangle",
-            "Woodblock"
+            "Tabla"
         });
         CATEGORIES.put (CATEGORY_PIANO, new String []
         {
@@ -349,12 +357,13 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_PLUCK, new String []
         {
             CATEGORY_PLUCK,
-            "Mandolin",
-            "Harp",
-            "Koto",
-            "Sitar",
+            "Balalaika",
             "Dulcimer",
             "Mandolin",
+            "Sitar",
+            "Harp",
+            "Koto",
+            "Lyre",
             "Oud"
         });
         CATEGORIES.put (CATEGORY_SNARE, new String []
@@ -377,12 +386,14 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_SYNTH, new String []
         {
-            "Syn",
+            "Electronic-Music",
             "Sequence",
             "Sweep",
             "Swell",
             "Mini",
-            "Moog"
+            "Moog",
+            "Syn",
+            "DJ"
         });
         CATEGORIES.put (CATEGORY_WINDS, new String []
         {

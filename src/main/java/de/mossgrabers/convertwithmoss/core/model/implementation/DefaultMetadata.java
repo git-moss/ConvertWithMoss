@@ -120,7 +120,7 @@ public class DefaultMetadata implements IMetadata
     public void detectMetadata (final IMetadataConfig config, final String [] parts, final String category)
     {
         this.setCreator (TagDetector.detect (parts, config.getCreatorTags (), config.getCreatorName ()));
-        this.setCategory (category != null ? category : TagDetector.detectCategory (parts));
+        this.setCategory (category == null || category.isBlank () ? TagDetector.detectCategory (parts) : category);
         this.setKeywords (TagDetector.detectKeywords (parts));
     }
 }

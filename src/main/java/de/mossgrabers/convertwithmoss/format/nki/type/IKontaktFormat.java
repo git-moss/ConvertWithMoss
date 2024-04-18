@@ -27,7 +27,7 @@ public interface IKontaktFormat
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
-     * @return The parsed multisample sources
+     * @return The parsed multi-sample sources
      * @param metadataConfig Default metadata
      * @throws IOException Error reading the file
      */
@@ -35,12 +35,12 @@ public interface IKontaktFormat
 
 
     /**
-     * Write a new NKI file from the given multisample source.
+     * Write a new NKI file from the given multi-sample source.
      *
      * @param out Where to write the data
      * @param safeSampleFolderName The folder where the samples are placed
      * @param multisampleSource The source
-     * @param sizeOfSamples
+     * @param sizeOfSamples The size of all samples
      * @throws IOException Error writing the file
      */
     void writeNKI (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int sizeOfSamples) throws IOException;
