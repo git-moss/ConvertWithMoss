@@ -12,15 +12,17 @@ The following multisample formats are supported as the source and destination fo
 
 1. 1010music blackbox, tangerine, bitbox (preset.xml)
 2. Akai MPC Keygroups (*.xpm)
-3. Bitwig Studio multisample (*.multisample)
+3. CWITEC TX16Wx (*.txprog)
 4. DecentSampler (*.dspreset, *.dslibrary)
 5. Korg KMP/KSF (*.KMP)
 6. Korg wavestate/modwave (*.korgmultisample)
 7. Logic EXS24 (*.exs)
-8. Native Instruments Kontakt (*.nki) 1-4
-9. SFZ (*.sfz)
-10. SoundFont 2 (*.sf2)
-11. WAV files (*.wav)
+8. Multisample Format (*.multisample)
+9. Native Instruments Kontakt (*.nki)
+10. Propellerhead Reason NN-XT (*.sxt)
+11. SFZ (*.sfz)
+12. SoundFont 2 (*.sf2)
+13. WAV files (*.wav)
 
 See [README-FORMATS.md][1] document for more details. Even more details about the specific converted parameters can be found here:
 
