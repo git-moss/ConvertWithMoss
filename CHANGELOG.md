@@ -1,6 +1,6 @@
 # Changes
 
-## 8.5.0 (unreleased)
+## 8.5.0
 
 * Added support for reading and writing CWITEC TX16Wx (*.txprog) files.
 * Added support for reading and writing Propellerhead Reason NN-XT (*.sxt) files.
@@ -17,7 +17,7 @@
   * New: Use category detection when category is set to 'New'.
 * SFZ - Writing
   * Fixed: The length of the loop crossfade was calculated incorrectly.
-* TX16Wx / MPC - Writing
+* MPC - Writing
   * New: Set filter on groups from 1st zone of the group instead of the 1st zone of the 1st group.
 
 ## 8.0.0

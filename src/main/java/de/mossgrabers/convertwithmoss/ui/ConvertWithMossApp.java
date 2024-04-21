@@ -18,7 +18,6 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
-import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupDetector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
@@ -126,9 +125,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     /**
      * Main-method.
      *
-     * @param args The startup arguments
+     * @param arguments The startup arguments
      */
-    public static void main (final String [] args)
+    public static void main (final String [] arguments)
     {
         Application.launch (DefaultApplication.class, ConvertWithMossApp.class.getName ());
     }
@@ -146,7 +145,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.detectors = new IDetector []
         {
             new Music1010Detector (this),
-            new AbletonDetector (this),
+            // new AbletonDetector (this),
             new MPCKeygroupDetector (this),
             new BitwigMultisampleDetector (this),
             new TX16WxDetector (this),
@@ -429,7 +428,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             return;
 
         final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
-        if (selectedDetector < 0)
+        if ((selectedDetector < 0) || !this.detectors[selectedDetector].checkSettings ())
             return;
 
         this.loggingArea.clear ();
@@ -725,9 +724,17 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
-    private static Button setupButton (final BasePanel panel, final String iconName, final String labelName)
+    private static Button setupButton (final BasePanel panel, final String iconName, final String labelName) throws EndApplicationException
     {
-        final Image icon = Functions.iconFor ("de/mossgrabers/convertwithmoss/images/" + iconName + ".png");
+        Image icon;
+        try
+        {
+            icon = Functions.iconFor ("de/mossgrabers/convertwithmoss/images/" + iconName + ".png");
+        }
+        catch (final IOException ex)
+        {
+            throw new EndApplicationException (ex);
+        }
         final Button button = panel.createButton (icon, labelName);
         button.alignmentProperty ().set (Pos.CENTER_LEFT);
         button.graphicTextGapProperty ().set (12);

@@ -165,7 +165,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         final int numKeygroups = XMLUtils.getChildElementIntegerContent (programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, 128);
 
-        final Element [] instrumentElements = XMLUtils.getChildElementsByName (instrumentsElement, MPCKeygroupTag.INSTRUMENTS_INSTRUMENT, false);
+        final List<Element> instrumentElements = XMLUtils.getChildElementsByName (instrumentsElement, MPCKeygroupTag.INSTRUMENTS_INSTRUMENT);
         final List<IGroup> groups = this.parseGroups (file.getParentFile (), numKeygroups, instrumentElements, isDrum);
 
         if (isDrum)
@@ -195,16 +195,16 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
      *
      * @param basePath The path where the XPM file is located, this is the base path for samples
      * @param numKeygroups The number of valid keygroups
-     * @param instrumentsElements The instrument elements
+     * @param instrumentElements The instrument elements
      * @param isDrum True, if it is a drum type (not a keygroup)
      * @return The parsed groups
      * @throws FileNotFoundException The WAV file could not be found
      */
-    private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final Element [] instrumentsElements, final boolean isDrum) throws FileNotFoundException
+    private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final List<Element> instrumentElements, final boolean isDrum) throws FileNotFoundException
     {
         final List<DefaultSampleZone> samples = new ArrayList<> ();
 
-        for (final Element instrumentElement: instrumentsElements)
+        for (final Element instrumentElement: instrumentElements)
         {
             final int instrumentNumber = XMLUtils.getIntegerAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_NUMBER, 0);
             if (instrumentNumber > numKeygroups)
@@ -264,8 +264,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             final Element layersElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LAYERS);
             if (layersElement != null)
             {
-                final Element [] layerElements = XMLUtils.getChildElementsByName (layersElement, MPCKeygroupTag.LAYERS_LAYER, false);
-                for (final Element layerElement: layerElements)
+                for (final Element layerElement: XMLUtils.getChildElementsByName (layersElement, MPCKeygroupTag.LAYERS_LAYER))
                 {
                     final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
                     final int velEnd = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_END, 0);

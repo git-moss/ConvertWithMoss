@@ -102,6 +102,6 @@ public class AiffFileSampleData extends AbstractFileSampleData
         if (zone.getStop () <= 0)
             zone.setStop (this.getAudioMetadata ().getNumberOfSamples ());
 
-        // More info not available in AIFF
+        // TODO read metadata from AIFF chunks!
     }
 }

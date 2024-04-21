@@ -48,6 +48,14 @@ public interface ICoreTask
 
 
     /**
+     * Check if the settings which are required for the execution of the task are correct.
+     *
+     * @return True if correct and the task can be executed
+     */
+    boolean checkSettings ();
+
+
+    /**
      * Shutdown the task. Execute some necessary cleanup.
      */
     void shutdown ();

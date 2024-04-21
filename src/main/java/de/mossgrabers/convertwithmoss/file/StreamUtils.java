@@ -458,7 +458,21 @@ public class StreamUtils
      */
     public static double readDoubleLE (final byte [] data)
     {
-        return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getDouble ();
+        return readDouble (data, false);
+    }
+
+
+    /**
+     * Converts a N byte double value.
+     *
+     * @param data The N byte array
+     * @param isBigEndian True if bytes of the size number are stored big-endian otherwise
+     *            little-endian (least significant bytes first)
+     * @return The double value
+     */
+    public static double readDouble (final byte [] data, final boolean isBigEndian)
+    {
+        return ByteBuffer.wrap (data).order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN).getDouble ();
     }
 
 

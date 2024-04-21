@@ -300,8 +300,8 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      */
     private List<IGroup> parseGroups (final Element groupElements, final String basePath, final File libraryFile, final double globalTuningOffset)
     {
-        final Node [] groupNodes = XMLUtils.getChildrenByName (groupElements, DecentSamplerTag.GROUP, false);
-        final List<IGroup> groups = new ArrayList<> (groupNodes.length);
+        final List<Element> groupNodes = XMLUtils.getChildElementsByName (groupElements, DecentSamplerTag.GROUP);
+        final List<IGroup> groups = new ArrayList<> (groupNodes.size ());
         int groupCounter = 1;
         for (final Node groupNode: groupNodes)
             if (groupNode instanceof final Element groupElement)

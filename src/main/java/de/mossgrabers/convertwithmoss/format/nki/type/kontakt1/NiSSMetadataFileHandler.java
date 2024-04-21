@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt1;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.w3c.dom.Element;
@@ -35,18 +37,15 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected Element [] findProgramElements (final Element top)
+    protected List<Element> findProgramElements (final Element top)
     {
         if (this.tags.program ().equals (top.getNodeName ()))
-            return new Element []
-            {
-                top
-            };
+            return Collections.singletonList (top);
 
         if (this.tags.rootContainer ().equals (top.getNodeName ()))
-            return XMLUtils.getChildElementsByName (top, this.tags.program (), false);
+            return XMLUtils.getChildElementsByName (top, this.tags.program ());
 
-        return new Element [0];
+        return Collections.emptyList ();
     }
 
 
@@ -54,8 +53,7 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     @Override
     protected String getModulationTarget (final Element modulator)
     {
-        final Element [] valueElements = XMLUtils.getChildElementsByName (modulator, this.tags.value (), false);
-        for (final Element valueElement: valueElements)
+        for (final Element valueElement: XMLUtils.getChildElementsByName (modulator, this.tags.value ()))
             // We only support 1 target!
             if (this.tags.targetParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
                 return valueElement.getAttribute (this.tags.valueValueAttribute ());
@@ -67,8 +65,7 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     @Override
     protected double getModulationIntensity (final Element modulator)
     {
-        final Element [] valueElements = XMLUtils.getChildElementsByName (modulator, this.tags.value (), false);
-        for (final Element valueElement: valueElements)
+        for (final Element valueElement: XMLUtils.getChildElementsByName (modulator, this.tags.value ()))
             // We only support 1 target!
             if (this.tags.intensityParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
             {

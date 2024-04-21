@@ -51,6 +51,14 @@ public abstract class AbstractCoreTask implements ICoreTask
 
     /** {@inheritDoc} */
     @Override
+    public boolean checkSettings ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void loadSettings (final BasicConfig config)
     {
         // Intentionally empty

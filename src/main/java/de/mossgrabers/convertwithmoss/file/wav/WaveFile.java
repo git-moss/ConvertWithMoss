@@ -87,7 +87,7 @@ public class WaveFile extends AbstractRIFFVisitor
 
 
     /**
-     * Constructor. Reads a WAV file from a stream.
+     * Constructor. Use in combination with the read-method to read a WAV file from a stream.
      */
     public WaveFile ()
     {

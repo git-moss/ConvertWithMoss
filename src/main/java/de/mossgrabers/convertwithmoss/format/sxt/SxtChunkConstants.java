@@ -11,13 +11,9 @@ package de.mossgrabers.convertwithmoss.format.sxt;
  */
 public class SxtChunkConstants
 {
-    /** ID for FORM chunk. */
-    public static final String FORM          = "FORM";
     /** ID for a patch chunk. */
     public static final String PATCH         = "PTCH";
 
-    /** ID for a a CAT chunk. */
-    public static final String CAT           = "CAT ";
     /** ID for a a CAT type containing zero or more 'REFE' chunks. */
     public static final String REFERENCES    = "REFS";
     /** ID for a chunk containing a reference to a sample. */

@@ -45,7 +45,7 @@ class SxtGroup
 
     /**
      * Read all group parameters.
-     * 
+     *
      * @param in The input stream from which to read
      * @param version The version of the group chunk
      * @throws IOException Could not read the parameters
@@ -63,7 +63,7 @@ class SxtGroup
 
     /**
      * Write all group parameters.
-     * 
+     *
      * @param out The output stream from which to read
      * @param version The version of the group chunk
      * @throws IOException Could not read the parameters

@@ -34,12 +34,12 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>22</version>
+			<version>22.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-web</artifactId>
-			<version>22</version>
+			<version>22.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.trilarion</groupId>
@@ -54,7 +54,7 @@
 		<dependency>
 			<artifactId>uitools</artifactId>
 			<groupId>de.mossgrabers</groupId>
-			<version>1.4.1</version>
+			<version>1.4.2</version>
 		</dependency>
 	</dependencies>
 
@@ -98,7 +98,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.3.0</version>
+				<version>3.4.0</version>
 				<configuration>
 					<outputDirectory>target/lib</outputDirectory>
 					<archive>
