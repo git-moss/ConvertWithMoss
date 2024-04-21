@@ -248,7 +248,7 @@ public class Kontakt2Type extends AbstractKontaktType
         if (iconName != null)
             this.metadata.setCategory (iconName);
         this.metadata.setCreator (header.getAuthor ());
-        this.metadata.setCreationTime (header.getCreation ());
+        this.metadata.setCreationDateTime (header.getCreation ());
 
         final String category1Name = header.getCategory1Name ();
         if (!Kontakt2Header.CATEGORY_OTHER.equals (category1Name))

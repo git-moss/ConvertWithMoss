@@ -308,7 +308,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 if (outputCount % 80 == 0)
                     this.notifyNewline ();
 
-                this.zipSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationTime (), relativeFolderName);
+                this.zipSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
             }
     }
 
@@ -382,7 +382,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 if (outputCount % 80 == 0)
                     this.notifyNewline ();
 
-                this.storeSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationTime (), relativeFolderName);
+                this.storeSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
             }
     }
 
@@ -696,7 +696,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
         broadcastAudioChunk.setDescription (metadata.getDescription ());
         broadcastAudioChunk.setOriginator (metadata.getCreator ());
-        broadcastAudioChunk.setOriginationDateTime (metadata.getCreationTime ());
+        broadcastAudioChunk.setOriginationDateTime (metadata.getCreationDateTime ());
     }
 
 
@@ -758,12 +758,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         entry.setCrc (checksum.getValue ());
         entry.setMethod (ZipOutputStream.STORED);
         if (dateTime != null)
-        {
-            final long millis = dateTime.getTime ();
-            entry.setCreationTime (FileTime.fromMillis (millis));
-            entry.setTime (millis);
-        }
-
+            entry.setLastModifiedTime (FileTime.fromMillis (dateTime.getTime ()));
         zipOutputStream.putNextEntry (entry);
         zipOutputStream.write (data);
         zipOutputStream.closeEntry ();

@@ -37,7 +37,7 @@ public interface IMetadata
      *
      * @return The date/time
      */
-    Date getCreationTime ();
+    Date getCreationDateTime ();
 
 
     /**
@@ -77,7 +77,7 @@ public interface IMetadata
      *
      * @param time The date/time
      */
-    void setCreationTime (Date time);
+    void setCreationDateTime (Date time);
 
 
     /**

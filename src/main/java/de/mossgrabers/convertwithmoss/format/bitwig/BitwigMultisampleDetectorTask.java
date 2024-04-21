@@ -157,11 +157,11 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
             final FileTime modifiedTime = attrs.lastModifiedTime ();
             final long creationTimeMillis = creationTime.toMillis ();
             final long modifiedTimeMillis = modifiedTime.toMillis ();
-            metadata.setCreationTime (new Date (creationTimeMillis < modifiedTimeMillis ? creationTimeMillis : modifiedTimeMillis));
+            metadata.setCreationDateTime (new Date (creationTimeMillis < modifiedTimeMillis ? creationTimeMillis : modifiedTimeMillis));
         }
         catch (final IOException ex)
         {
-            metadata.setCreationTime (new Date ());
+            metadata.setCreationDateTime (new Date ());
         }
 
         // Parse all groups

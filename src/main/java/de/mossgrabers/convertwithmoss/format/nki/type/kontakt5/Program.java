@@ -239,15 +239,16 @@ public class Program
 
         final ByteArrayInputStream childDataIn = new ByteArrayInputStream (data);
         final int loopEnablement = StreamUtils.readUnsigned16 (childDataIn, false);
-        final int u1 = StreamUtils.readUnsigned16 (childDataIn, false);
-        if (u1 != 0x60)
-            throw new IOException (Functions.getMessage ("IDS_NKI5_UNKNOWN_LOOP_VALUE", Integer.toHexString (u1).toUpperCase ()));
 
         for (int i = 0; i < 8; i++)
         {
             final int j = (int) Math.pow (2, i);
             if ((loopEnablement & j) > 0)
             {
+                final int u1 = StreamUtils.readUnsigned16 (childDataIn, false);
+                if (u1 != 0x60)
+                    throw new IOException (Functions.getMessage ("IDS_NKI5_UNKNOWN_LOOP_VALUE", Integer.toHexString (u1).toUpperCase ()));
+
                 final ZoneLoop loop = new ZoneLoop ();
                 loop.parse (childDataIn);
                 zone.addLoop (loop);
@@ -320,12 +321,15 @@ public class Program
             for (final ZoneLoop zoneLoop: kontaktZone.getLoops ())
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
-                if (zoneLoop.getAlternatingLoop () > 0)
-                    loop.setType (LoopType.ALTERNATING);
-                loop.setStart (zoneLoop.getLoopStart ());
-                loop.setEnd (zoneLoop.getLoopStart () + zoneLoop.getLoopLength ());
-                loop.setCrossfadeInSamples (zoneLoop.getCrossfadeLength ());
-                zone.addLoop (loop);
+                final int loopMode = zoneLoop.getMode ();
+                if (loopMode == ZoneLoop.MODE_UNTIL_END || loopMode == ZoneLoop.MODE_UNTIL_RELEASE)
+                {
+                    loop.setType (zoneLoop.isAlternating () > 0 ? LoopType.ALTERNATING : LoopType.FORWARDS);
+                    loop.setStart (zoneLoop.getLoopStart ());
+                    loop.setEnd (zoneLoop.getLoopStart () + zoneLoop.getLoopLength ());
+                    loop.setCrossfadeInSamples (zoneLoop.getCrossfadeLength ());
+                    zone.addLoop (loop);
+                }
             }
         }
 

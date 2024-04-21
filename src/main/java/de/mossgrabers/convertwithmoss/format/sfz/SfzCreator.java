@@ -393,7 +393,7 @@ public class SfzCreator extends AbstractCreator
             addIntegerAttribute (buffer, SfzOpcode.LOOP_START, sampleLoop.getStart (), false);
             buffer.append (SfzOpcode.LOOP_END).append ('=').append (sampleLoop.getEnd ());
 
-            // Calculate the crossfade in seconds from a percentage of the loop length
+            // Calculate the cross-fade in seconds from a percentage of the loop length
             final double crossfade = sampleLoop.getCrossfade ();
             if (crossfade > 0)
             {

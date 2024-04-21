@@ -18,15 +18,11 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class ZoneLoop
 {
     /** Until End. */
-    public static final int MODE_UNTIL_END         = 0x1;
-    /** Until End <->. */
-    public static final int MODE_UNTIL_END_ALT     = 0x1006000;
+    public static final int MODE_UNTIL_END     = 1;
     /** Until Release. */
-    public static final int MODE_UNTIL_RELEASE     = 0x0;
-    /** Until Release <->. */
-    public static final int MODE_UNTIL_RELEASE_ALT = 0x3F80;
+    public static final int MODE_UNTIL_RELEASE = 2;
     /** One shot. */
-    public static final int MODE_ONESHOT           = 0x80000001;
+    public static final int MODE_ONESHOT       = 3;
 
     private int             mode;
     private int             loopStart;
@@ -52,11 +48,14 @@ public class ZoneLoop
         this.alternatingLoop = in.read ();
         this.loopTuning = StreamUtils.readFloatLE (in);
         this.xFadeLength = (int) StreamUtils.readUnsigned32 (in, false);
+        // Padding, except after last loop
+        if (in.available () > 0)
+            in.skipNBytes (1);
     }
 
 
     /**
-     * Get the loop mode.
+     * Get the loop mode. See the defined constants above.
      *
      * @return The mode
      */
@@ -104,7 +103,7 @@ public class ZoneLoop
      *
      * @return 1 if alternating otherwise 0
      */
-    public int getAlternatingLoop ()
+    public int isAlternating ()
     {
         return this.alternatingLoop;
     }
@@ -122,9 +121,9 @@ public class ZoneLoop
 
 
     /**
-     * Get the length of the crossfade in samples.
+     * Get the length of the cross-fade in samples.
      *
-     * @return The length of the crossfade in samples.
+     * @return The length of the cross-fade in samples.
      */
     public int getCrossfadeLength ()
     {
