@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -37,6 +38,8 @@ import de.mossgrabers.convertwithmoss.file.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
 import de.mossgrabers.convertwithmoss.file.OggFileSampleData;
+import de.mossgrabers.convertwithmoss.file.aiff.AiffCommonChunk;
+import de.mossgrabers.convertwithmoss.file.aiff.AiffFile;
 import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
@@ -203,7 +206,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * @param supportedElements The supported child elements
      * @param childElements The present child elements
      */
-    protected void checkChildTags (final String tagName, final Set<String> supportedElements, final Element [] childElements)
+    protected void checkChildTags (final String tagName, final Set<String> supportedElements, final List<Element> childElements)
     {
         for (final Element childElement: childElements)
         {
@@ -349,7 +352,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      */
     protected ISampleZone createSampleZone (final File sampleFile) throws IOException
     {
-        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), createSampleData (sampleFile));
+        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), this.createSampleData (sampleFile));
     }
 
 
@@ -366,12 +369,13 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         if (!sampleFile.exists ())
             throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
 
+        final String fileEnding = sampleFile.getName ().toLowerCase ();
         try
         {
             ISampleData sampleData = null;
 
-            if (sampleFile.getName ().toLowerCase ().endsWith (".aiff"))
-                // Note: only AIF is picked up as correct ending below
+            if (fileEnding.endsWith (".aiff"))
+                // Note: only AIF ending is picked up as correct ending below
                 sampleData = new AiffFileSampleData (sampleFile);
             else
             {
@@ -396,7 +400,22 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
         catch (final UnsupportedAudioFileException | IOException ex)
         {
-            throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ()));
+            // Check if the error is caused by a compressed (= encrypted) AIFC file and report
+            // accordingly
+            if (sampleFile.getName ().toLowerCase ().endsWith (".aif"))
+            {
+                final AiffFile aiffFile = new AiffFile (sampleFile);
+                final Optional<AiffCommonChunk> commonChunk = aiffFile.getCommonChunk ();
+                if (commonChunk.isPresent ())
+                {
+                    final AiffCommonChunk aiffCommonChunk = commonChunk.get ();
+                    final String compressionType = aiffCommonChunk.getCompressionType ();
+                    if (compressionType != null)
+                        throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), aiffCommonChunk.getCompressionName (), compressionType));
+                }
+            }
+
+            throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ()), ex);
         }
     }
 
@@ -534,14 +553,12 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
         final File [] children = folder.listFiles (File::isDirectory);
         if (children != null)
-        {
             for (final File subFolder: children)
             {
                 sampleFile = findSampleFileRecursively (subFolder, fileName);
                 if (sampleFile != null)
                     return sampleFile;
             }
-        }
 
         return null;
     }

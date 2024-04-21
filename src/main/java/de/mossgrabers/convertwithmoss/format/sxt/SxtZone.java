@@ -205,7 +205,7 @@ class SxtZone
 
     /**
      * Read all zone parameters.
-     * 
+     *
      * @param in The input stream from which to read
      * @throws IOException Could not read the parameters
      */
@@ -325,7 +325,7 @@ class SxtZone
 
     /**
      * Write all zone parameters.
-     * 
+     *
      * @param out The output stream from which to read
      * @throws IOException Could not read the parameters
      */
@@ -445,7 +445,7 @@ class SxtZone
 
     /**
      * Fill the data from the SXT zone into a sample zone.
-     * 
+     *
      * @param zone The zone into which to fill the data
      */
     public void fillInto (final ISampleZone zone)
@@ -605,7 +605,7 @@ class SxtZone
 
     /**
      * Set the data of the SXT zone from a sample zone.
-     * 
+     *
      * @param zone The zone from which to get the data
      * @throws IOException Audio metadata could not be loaded
      */
@@ -637,17 +637,14 @@ class SxtZone
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
             this.playMode = 0;
+        else if (zone.isReversed ())
+            this.playMode = 4;
         else
         {
-            if (zone.isReversed ())
-                this.playMode = 4;
-            else
-            {
-                final ISampleLoop loop = loops.get (0);
-                this.playMode = loop.getType () == LoopType.ALTERNATING ? 2 : 1;
-                this.sampleLoopStart = loop.getStart ();
-                this.sampleLoopEnd = loop.getEnd ();
-            }
+            final ISampleLoop loop = loops.get (0);
+            this.playMode = loop.getType () == LoopType.ALTERNATING ? 2 : 1;
+            this.sampleLoopStart = loop.getStart ();
+            this.sampleLoopEnd = loop.getEnd ();
         }
 
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
@@ -693,7 +690,7 @@ class SxtZone
 
             this.filterFreq = (int) (Math.log (filter.getCutoff () / 440.0) * 1200 + 6900);
 
-            int poles = filter.getPoles ();
+            final int poles = filter.getPoles ();
             switch (filter.getType ())
             {
                 default:
@@ -780,7 +777,7 @@ class SxtZone
 
         // Set gain and panorama
         final double dBValue = zone.getGain ();
-        double gainRatio = Math.pow (10, dBValue / 20);
+        final double gainRatio = Math.pow (10, dBValue / 20);
         this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3) * 1440 - 1440);
 
         this.pan = (int) (zone.getPanorama () * 1000.0);

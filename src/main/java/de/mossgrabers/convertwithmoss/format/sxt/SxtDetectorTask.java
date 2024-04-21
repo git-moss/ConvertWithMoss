@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.format.sxt;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -31,15 +30,17 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
+import de.mossgrabers.convertwithmoss.file.iff.IffFile;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
 import javafx.scene.control.ComboBox;
 
 
 /**
- * Detects recursively NN-XT files in folders. Files must end with <i>.sxt</i>.
+ * Detects recursively NN-XT files in folders. Files must end with <i>.sxt</i>. SCT files are based
+ * on the 'EA IFF 85' Standard for Interchange Format.
  *
  * @author Jürgen Moßgraber
  */
@@ -101,53 +102,60 @@ public class SxtDetectorTask extends AbstractDetectorTask
      */
     private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws FormatException, IOException
     {
-        final Pair<String, ByteArrayInputStream> result = readChunk (in);
-        final ByteArrayInputStream chunkStream = result.getValue ();
-        StreamUtils.checkTag (SxtChunkConstants.PATCH, result.getKey ());
+        final IffChunk iffChunk = IffFile.readChunk (in);
+        StreamUtils.checkTag (SxtChunkConstants.PATCH, iffChunk.getID ());
 
         final File parentFile = file.getParentFile ();
         final String name = FileUtils.getNameWithoutType (file);
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
 
-        final Map<Integer, File> samples = new HashMap<> ();
-        while (chunkStream.available () > 0)
+        try (final InputStream chunkStream = iffChunk.streamData ())
         {
-            final Pair<String, ByteArrayInputStream> childChunk = readChunk (chunkStream);
-            switch (childChunk.getKey ())
+            final Map<Integer, File> samples = new HashMap<> ();
+            while (chunkStream.available () > 0)
             {
-                case SxtChunkConstants.REFERENCES:
-                    final ByteArrayInputStream referencesInputStream = childChunk.getValue ();
-                    int sampleIndex = 0;
-                    while (referencesInputStream.available () > 0)
+                final IffChunk childChunk = IffFile.readChunk (chunkStream);
+                try (final InputStream childChunkStream = childChunk.streamData ())
+                {
+                    switch (childChunk.getID ())
                     {
-                        final Pair<String, ByteArrayInputStream> referenceChunk = readChunk (referencesInputStream);
-                        StreamUtils.checkTag (SxtChunkConstants.REFERENCE, referenceChunk.getKey ());
-                        final File sampleFile = this.parseReference (referenceChunk.getValue (), parentFile);
-                        samples.put (Integer.valueOf (sampleIndex), sampleFile);
-                        sampleIndex++;
+                        case SxtChunkConstants.REFERENCES:
+                            int sampleIndex = 0;
+                            while (childChunkStream.available () > 0)
+                            {
+                                final IffChunk referenceChunk = IffFile.readChunk (childChunkStream);
+                                StreamUtils.checkTag (SxtChunkConstants.REFERENCE, referenceChunk.getID ());
+                                try (final InputStream referenceChunkStream = referenceChunk.streamData ())
+                                {
+                                    final File sampleFile = this.parseReference (referenceChunkStream, parentFile);
+                                    samples.put (Integer.valueOf (sampleIndex), sampleFile);
+                                    sampleIndex++;
+                                }
+                            }
+                            break;
+
+                        case SxtChunkConstants.DESC:
+                            this.parseDescription (multisampleSource, childChunkStream);
+                            break;
+
+                        case SxtChunkConstants.AUTHOR:
+                            parseAuthor (multisampleSource.getMetadata (), childChunkStream);
+                            break;
+
+                        case SxtChunkConstants.PARAMETERS:
+                            // Contains only global offsets which can be ignored
+                            break;
+
+                        case SxtChunkConstants.BODY:
+                            this.parseGroups (multisampleSource, childChunkStream, samples);
+                            break;
+
+                        default:
+                            this.notifier.logError ("IDS_SXT_UNKNOWN_CHUNK_TYPE", childChunk.getID ());
+                            break;
                     }
-                    break;
-
-                case SxtChunkConstants.DESC:
-                    parseDescription (multisampleSource, childChunk.getValue ());
-                    break;
-
-                case SxtChunkConstants.AUTHOR:
-                    parseAuthor (multisampleSource.getMetadata (), childChunk.getValue ());
-                    break;
-
-                case SxtChunkConstants.PARAMETERS:
-                    // Contains only global offsets which can be ignored
-                    break;
-
-                case SxtChunkConstants.BODY:
-                    this.parseGroups (multisampleSource, childChunk.getValue (), samples);
-                    break;
-
-                default:
-                    this.notifier.logError ("IDS_SXT_UNKNOWN_CHUNK_TYPE", childChunk.getKey ());
-                    break;
+                }
             }
         }
 
@@ -163,7 +171,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
      * @param multisampleSource Where to store the patch name
      * @throws IOException Could not read the data or data is invalid
      */
-    private void parseDescription (final DefaultMultisampleSource multisampleSource, final ByteArrayInputStream in) throws IOException
+    private void parseDescription (final DefaultMultisampleSource multisampleSource, final InputStream in) throws IOException
     {
         final int version = readVersion (in);
         final boolean isReason3 = version == SxtChunkConstants.VERSION_1_3_0;
@@ -185,7 +193,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
      * @param metadata Where to store the author information
      * @throws IOException Could not read the data or data is invalid
      */
-    private static void parseAuthor (final IMetadata metadata, final ByteArrayInputStream in) throws IOException
+    private static void parseAuthor (final IMetadata metadata, final InputStream in) throws IOException
     {
         final int version = readVersion (in);
         final boolean isReason3 = version == SxtChunkConstants.VERSION_1_3_0;
@@ -206,7 +214,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
      * @param samples The samples with their indices
      * @throws IOException Could not read the data or data is invalid
      */
-    private void parseGroups (final DefaultMultisampleSource multisampleSource, final ByteArrayInputStream in, final Map<Integer, File> samples) throws IOException
+    private void parseGroups (final DefaultMultisampleSource multisampleSource, final InputStream in, final Map<Integer, File> samples) throws IOException
     {
         final int bodyVersion = readVersion (in);
         if (bodyVersion != SxtChunkConstants.VERSION_1_0_0)
@@ -277,7 +285,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
      * @return The path to the sample file
      * @throws IOException Could not read the data or data is invalid
      */
-    private File parseReference (final ByteArrayInputStream in, final File parentFile) throws IOException
+    private File parseReference (final InputStream in, final File parentFile) throws IOException
     {
         final int version = readVersion (in);
         final boolean isReason3 = version == SxtChunkConstants.VERSION_1_3_0;
@@ -335,7 +343,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
      * @return The parsed path info
      * @throws IOException Could not read the paths
      */
-    private static SxtPathInfo readPaths (final ByteArrayInputStream in, final boolean isReason3) throws IOException
+    private static SxtPathInfo readPaths (final InputStream in, final boolean isReason3) throws IOException
     {
         final SxtPathInfo pathInfo = new SxtPathInfo ();
 
@@ -404,40 +412,12 @@ public class SxtDetectorTask extends AbstractDetectorTask
     }
 
 
-    private static String readSubPaths (final StringBuilder sb, final ByteArrayInputStream in, final boolean isReason3) throws IOException
+    private static String readSubPaths (final StringBuilder sb, final InputStream in, final boolean isReason3) throws IOException
     {
         final int subPathCount = (int) StreamUtils.readUnsigned32 (in, true);
         for (int i = 0; i < subPathCount; i++)
             sb.append ("/").append (readString (in, isReason3));
         return sb.toString ();
-    }
-
-
-    /**
-     * Reads a chunk header and returns the data of the chunk.
-     *
-     * @param in The input stream to read from
-     * @return The data of the chunk wrapped in an input stream and its ID
-     * @throws IOException Could not read
-     */
-    private static Pair<String, ByteArrayInputStream> readChunk (final InputStream in) throws IOException
-    {
-        String chunkID = StreamUtils.readASCII (in, 4);
-
-        long size = StreamUtils.readUnsigned32 (in, true);
-
-        // If it is a FORM or CAT chunk return the actual FORM type
-        if (SxtChunkConstants.FORM.equals (chunkID) || SxtChunkConstants.CAT.equals (chunkID))
-        {
-            chunkID = StreamUtils.readASCII (in, 4);
-            size -= 4;
-        }
-
-        final byte [] data = in.readNBytes ((int) size);
-        // Chunk length is always 2 aligned!
-        if (size % 2 == 1)
-            in.skip (1);
-        return new Pair<> (chunkID, new ByteArrayInputStream (data));
     }
 
 

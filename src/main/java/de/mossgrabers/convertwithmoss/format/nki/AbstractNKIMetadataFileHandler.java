@@ -123,8 +123,8 @@ public abstract class AbstractNKIMetadataFileHandler
             if (!this.isValidTopLevelElement (top))
                 return Collections.emptyList ();
 
-            final Element [] programElements = this.findProgramElements (top);
-            if (programElements.length == 0)
+            final List<Element> programElements = this.findProgramElements (top);
+            if (programElements.isEmpty ())
                 return Collections.emptyList ();
 
             final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
@@ -377,7 +377,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param top The top element of the document
      * @return An array of program elements, an empty array if nothing was found
      */
-    protected abstract Element [] findProgramElements (final Element top);
+    protected abstract List<Element> findProgramElements (final Element top);
 
 
     /**
@@ -407,8 +407,8 @@ public abstract class AbstractNKIMetadataFileHandler
         if (description != null && !NULL_ENTRY.equals (description))
             metadata.setDescription (description);
 
-        final Element [] groupElements = this.getGroupElements (programElement);
-        final Element [] zoneElements = this.getZoneElements (programElement);
+        final List<Element> groupElements = this.getGroupElements (programElement);
+        final List<Element> zoneElements = this.getZoneElements (programElement);
 
         final String sourcePath = multisampleSource.getSourceFile ().getParentFile ().getCanonicalPath ();
         final List<IGroup> groups = this.getGroups (programParameters, groupElements, zoneElements, sourcePath, monolithSamples);
@@ -447,12 +447,8 @@ public abstract class AbstractNKIMetadataFileHandler
         if (element == null)
             return Collections.emptyMap ();
 
-        final Element [] valueElements = XMLUtils.getChildElementsByName (element, this.tags.value (), false);
-        if (valueElements == null)
-            return Collections.emptyMap ();
-
         final HashMap<String, String> result = new HashMap<> ();
-        for (final Element valueElement: valueElements)
+        for (final Element valueElement: XMLUtils.getChildElementsByName (element, this.tags.value ()))
         {
             final String valueName = valueElement.getAttribute (this.tags.valueNameAttribute ());
             final String valueValue = valueElement.getAttribute (this.tags.valueValueAttribute ());
@@ -469,10 +465,10 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param programElement The XML program element
      * @return The array of group elements
      */
-    private Element [] getGroupElements (final Element programElement)
+    private List<Element> getGroupElements (final Element programElement)
     {
         final Element groupsElement = XMLUtils.getChildElementByName (programElement, this.tags.groups ());
-        return groupsElement != null ? XMLUtils.getChildElementsByName (groupsElement, this.tags.group (), false) : null;
+        return groupsElement != null ? XMLUtils.getChildElementsByName (groupsElement, this.tags.group ()) : null;
     }
 
 
@@ -482,10 +478,10 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param programElement The XML program element
      * @return The array of zone elements
      */
-    private Element [] getZoneElements (final Element programElement)
+    private List<Element> getZoneElements (final Element programElement)
     {
         final Element zoneElement = XMLUtils.getChildElementByName (programElement, this.tags.zones ());
-        return zoneElement != null ? XMLUtils.getChildElementsByName (zoneElement, this.tags.zone (), false) : null;
+        return zoneElement != null ? XMLUtils.getChildElementsByName (zoneElement, this.tags.zone ()) : null;
     }
 
 
@@ -500,7 +496,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return the groups created (empty list is returned if nothing was created)
      * @throws IOException Could not get sample file(s)
      */
-    private List<IGroup> getGroups (final Map<String, String> programParameters, final Element [] groupElements, final Element [] zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
+    private List<IGroup> getGroups (final Map<String, String> programParameters, final List<Element> groupElements, final List<Element> zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         if (groupElements == null || zoneElements == null)
             return Collections.emptyList ();
@@ -528,7 +524,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The group created from the zone element (null, if there is no group element)
      * @throws IOException Could not get sample file(s)
      */
-    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final Element [] zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
+    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final List<Element> zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         if (groupElement == null)
             return null;
@@ -788,12 +784,9 @@ public abstract class AbstractNKIMetadataFileHandler
         if (loopsElement == null)
             return;
 
-        final Element [] loopElements = XMLUtils.getChildElementsByName (loopsElement, this.tags.loopElement (), false);
-        if (loopElements == null)
-            return;
-
+        final List<Element> loopElements = XMLUtils.getChildElementsByName (loopsElement, this.tags.loopElement (), false);
         final List<ISampleLoop> loops = sampleMetadata.getLoops ();
-        if (loopElements.length > 0)
+        if (!loopElements.isEmpty ())
             loops.clear ();
         for (final Element loopElement: loopElements)
         {
@@ -1016,12 +1009,8 @@ public abstract class AbstractNKIMetadataFileHandler
         if (modulatorsElement == null)
             return Collections.emptyMap ();
 
-        final Element [] modulatorElements = XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement (), false);
-        if (modulatorElements == null)
-            return Collections.emptyMap ();
-
         final Map<String, IModulator> modulators = new HashMap<> ();
-        for (final Element modulatorElement: modulatorElements)
+        for (final Element modulatorElement: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement ()))
         {
             final Element envElement = XMLUtils.getChildElementByName (modulatorElement, this.tags.envelopeElement ());
             if (envElement != null && !this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()))
@@ -1242,11 +1231,7 @@ public abstract class AbstractNKIMetadataFileHandler
      */
     protected Element findElementWithParameters (final Element parentElement, final String elementNameToBeFound, final String... nameValuePairs)
     {
-        final Element [] elementsOfInterest = XMLUtils.getChildElementsByName (parentElement, elementNameToBeFound, false);
-        if (elementsOfInterest == null)
-            return null;
-
-        for (final Element elementOfInterest: elementsOfInterest)
+        for (final Element elementOfInterest: XMLUtils.getChildElementsByName (parentElement, elementNameToBeFound))
         {
             final boolean doesMatch = this.hasNameValuePairs (elementOfInterest, nameValuePairs);
             if (doesMatch)
@@ -1265,18 +1250,14 @@ public abstract class AbstractNKIMetadataFileHandler
     private int readGroupPitchBend (final Element groupElement)
     {
         final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.extModulatorsElement ());
-        if (modulatorsElement == null)
-            return -1;
-
-        final Element [] modulators = XMLUtils.getChildElementsByName (modulatorsElement, this.tags.extModulatorElement (), false);
-        if (modulators == null)
-            return -1;
-
-        for (final Element modulator: modulators)
+        if (modulatorsElement != null)
         {
-            final int pitchBend = this.getPitchBendFromModulator (modulator);
-            if (pitchBend >= 0)
-                return pitchBend;
+            for (final Element modulator: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.extModulatorElement ()))
+            {
+                final int pitchBend = this.getPitchBendFromModulator (modulator);
+                if (pitchBend >= 0)
+                    return pitchBend;
+            }
         }
         return -1;
     }
@@ -1326,7 +1307,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param zoneElements The zone elements from which to find the zones belonging to the group
      * @return An array of zone elements belonging to the group element
      */
-    private Element [] findGroupZones (final Element groupElement, final Element [] zoneElements)
+    private Element [] findGroupZones (final Element groupElement, final List<Element> zoneElements)
     {
         final int index = XMLUtils.getIntegerAttribute (groupElement, this.tags.indexAttribute (), -1);
         if (index == -1 || zoneElements == null)

@@ -544,10 +544,10 @@ public class TX16WxCreator extends AbstractCreator
                     envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (filterEnvelope.getAttack ()));
                     envElement.setAttribute (TX16WxTag.ENV_LEVEL1, "100%");
                     envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (filterEnvelope.getDecay ()));
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL2, ((int) (filterEnvelope.getSustain () * 100.0)) + "%");
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL2, (int) (filterEnvelope.getSustain () * 100.0) + "%");
                     envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (filterEnvelope.getRelease ()));
                     envElement.setAttribute (TX16WxTag.ENV_LEVEL3, "0%");
-                    addModulationEntry (document, modulationElement, "ENV1", "Filter 1 Freq", ((int) (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH)) + "Ct");
+                    addModulationEntry (document, modulationElement, "ENV1", "Filter 1 Freq", (int) (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
                 }
             }
 
@@ -560,12 +560,12 @@ public class TX16WxCreator extends AbstractCreator
                 final IEnvelope pitchEnvelope = pitchModulator.getSource ();
                 envElement.setAttribute (TX16WxTag.ENV_LEVEL0, "0%");
                 envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (pitchEnvelope.getDecay ()));
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL1, ((int) (pitchEnvelope.getSustain () * 100.0)) + "%");
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) (pitchEnvelope.getSustain () * 100.0) + "%");
                 envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (pitchEnvelope.getRelease ()));
                 envElement.setAttribute (TX16WxTag.ENV_LEVEL2, "0%");
                 envElement.setAttribute (TX16WxTag.ENV_TIME3, "0ms");
                 envElement.setAttribute (TX16WxTag.ENV_LEVEL3, "0%");
-                addModulationEntry (document, modulationElement, "ENV2", "Pitch", ((int) (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH)) + "Ct");
+                addModulationEntry (document, modulationElement, "ENV2", "Pitch", (int) (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
         }
 

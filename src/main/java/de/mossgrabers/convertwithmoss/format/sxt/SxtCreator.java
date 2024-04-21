@@ -20,6 +20,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.iff.IffFile;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -141,7 +142,7 @@ public class SxtCreator extends AbstractCreator
         // Combine all sample references
         final ByteArrayOutputStream referencesOutputStream = new ByteArrayOutputStream ();
         for (final ByteArrayOutputStream out: sampleReferenceOutputStreams)
-            writeChunk (referencesOutputStream, SxtChunkConstants.REFERENCE, out.toByteArray (), false, false);
+            IffFile.writeLocalChunk (referencesOutputStream, SxtChunkConstants.REFERENCE, out.toByteArray ());
 
         // Combine all parts of the BODY chunk
         final ByteArrayOutputStream bodyOutputStream = new ByteArrayOutputStream ();
@@ -165,16 +166,16 @@ public class SxtCreator extends AbstractCreator
 
         // Combine all chunks
         final ByteArrayOutputStream childChunksOutputStream = new ByteArrayOutputStream ();
-        writeChunk (childChunksOutputStream, SxtChunkConstants.REFERENCES, referencesOutputStream.toByteArray (), false, true);
+        IffFile.writeGroupChunk (childChunksOutputStream, IffFile.CAT, SxtChunkConstants.REFERENCES, referencesOutputStream.toByteArray ());
         writeDescriptionChunk (childChunksOutputStream, multiSampleName);
         writeAuthorChunk (childChunksOutputStream, multisampleSource.getMetadata ());
         writeParameterChunk (childChunksOutputStream);
-        writeChunk (childChunksOutputStream, SxtChunkConstants.BODY, bodyOutputStream.toByteArray (), false, false);
+        IffFile.writeLocalChunk (childChunksOutputStream, SxtChunkConstants.BODY, bodyOutputStream.toByteArray ());
 
         // Finally wrap into a FORM chunk and write the file
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            writeChunk (out, SxtChunkConstants.PATCH, childChunksOutputStream.toByteArray (), true, false);
+            IffFile.writeGroupChunk (out, IffFile.FORM, SxtChunkConstants.PATCH, childChunksOutputStream.toByteArray ());
         }
     }
 
@@ -195,7 +196,7 @@ public class SxtCreator extends AbstractCreator
         writeString (contentOutStream, multiSampleName);
         writeString (contentOutStream, "NNXT Digital Sampler");
 
-        writeChunk (out, SxtChunkConstants.DESC, contentOutStream.toByteArray (), false, false);
+        IffFile.writeLocalChunk (out, SxtChunkConstants.DESC, contentOutStream.toByteArray ());
     }
 
 
@@ -213,7 +214,7 @@ public class SxtCreator extends AbstractCreator
         writeString (contentOutStream, metadata.getCreator ());
         writeString (contentOutStream, metadata.getDescription ());
 
-        writeChunk (out, SxtChunkConstants.AUTHOR, contentOutStream.toByteArray (), false, false);
+        IffFile.writeLocalChunk (out, SxtChunkConstants.AUTHOR, contentOutStream.toByteArray ());
     }
 
 
@@ -267,7 +268,7 @@ public class SxtCreator extends AbstractCreator
         // Reserved
         contentOutStream.write (0);
 
-        writeChunk (out, SxtChunkConstants.PARAMETERS, contentOutStream.toByteArray (), false, false);
+        IffFile.writeLocalChunk (out, SxtChunkConstants.PARAMETERS, contentOutStream.toByteArray ());
     }
 
 
@@ -381,39 +382,5 @@ public class SxtCreator extends AbstractCreator
         final byte [] data = text.getBytes (StandardCharsets.UTF_8);
         StreamUtils.writeUnsigned32 (out, data.length, true);
         out.write (data);
-    }
-
-
-    /**
-     * Reads a chunk header and returns the data of the chunk.
-     *
-     * @param out The output stream to write to
-     * @param chunkData The data of the chunk
-     * @throws IOException Could not write
-     */
-    private static void writeChunk (final OutputStream out, final String chunkID, final byte [] chunkData, final boolean isFORM, final boolean isCAT) throws IOException
-    {
-        String id = chunkID;
-        int length = chunkData.length;
-        if (isFORM)
-        {
-            id = SxtChunkConstants.FORM;
-            length += 4;
-        }
-        else if (isCAT)
-        {
-            id = SxtChunkConstants.CAT;
-            length += 4;
-        }
-
-        StreamUtils.writeASCII (out, id, 4);
-        StreamUtils.writeUnsigned32 (out, length, true);
-        if (isFORM || isCAT)
-            StreamUtils.writeASCII (out, chunkID, 4);
-
-        out.write (chunkData);
-        // Chunk length is always 2 aligned!
-        if (chunkData.length % 2 == 1)
-            out.write (0);
     }
 }

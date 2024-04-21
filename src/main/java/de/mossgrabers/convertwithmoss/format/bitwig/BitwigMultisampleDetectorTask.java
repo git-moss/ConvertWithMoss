@@ -166,9 +166,8 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
         // Parse all groups
         final Map<Integer, IGroup> indexedGroups = new TreeMap<> ();
-        final Node [] groupNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.GROUP, false);
         int groupCounter = 0;
-        for (final Node groupNode: groupNodes)
+        for (final Node groupNode: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.GROUP))
             if (groupNode instanceof final Element groupElement)
             {
                 this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.GROUP));
@@ -187,8 +186,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         indexedGroups.put (Integer.valueOf (-1), new DefaultGroup ());
 
         // Parse (deprecated) layer tag
-        final Node [] layerNodes = XMLUtils.getChildrenByName (top, BitwigMultisampleTag.LAYER, false);
-        for (final Node layerNode: layerNodes)
+        for (final Node layerNode: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.LAYER))
             if (layerNode instanceof final Element layerElement)
             {
                 this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LAYER));
@@ -251,7 +249,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
         }
 
         final List<String> keywords = new ArrayList<> ();
-        final Node keywordsElement = XMLUtils.getChildByName (top, BitwigMultisampleTag.KEYWORDS);
+        final Element keywordsElement = XMLUtils.getChildElementByName (top, BitwigMultisampleTag.KEYWORDS);
         if (keywordsElement != null)
         {
             this.checkAttributes (BitwigMultisampleTag.KEYWORDS, keywordsElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.KEYWORDS));

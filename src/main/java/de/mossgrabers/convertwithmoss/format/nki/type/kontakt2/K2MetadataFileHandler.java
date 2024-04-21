@@ -5,7 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -38,32 +38,22 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected Element [] findProgramElements (final Element top)
+    protected List<Element> findProgramElements (final Element top)
     {
-        final Element [] rootContainers;
+        final List<Element> rootContainers;
         if (this.tags.rootContainer ().equals (top.getNodeName ()))
-        {
-            rootContainers = new Element [1];
-            rootContainers[0] = top;
-        }
+            rootContainers = Collections.singletonList (top);
         else
-        {
             rootContainers = XMLUtils.getChildElementsByName (top, this.tags.rootContainer (), true);
-            if (rootContainers == null)
-                return new Element [0];
-        }
 
         final List<Element> programElements = new ArrayList<> ();
-
         for (final Element rootContainer: rootContainers)
         {
             final Element programsElement = XMLUtils.getChildElementByName (rootContainer, K2Tag.K2_PROGRAMS);
-            if (programsElement == null)
-                return new Element [0];
-            programElements.addAll (Arrays.asList (XMLUtils.getChildElementsByName (programsElement, this.tags.program (), false)));
+            if (programsElement != null)
+                programElements.addAll (XMLUtils.getChildElementsByName (programsElement, this.tags.program ()));
         }
-
-        return programElements.toArray (new Element [programElements.size ()]);
+        return programElements;
     }
 
 
@@ -117,8 +107,8 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
         if (targetsElement == null)
             return null;
 
-        final Element [] targetElements = XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false);
-        if (targetElements == null)
+        final List<Element> targetElements = XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false);
+        if (targetElements.isEmpty ())
             return null;
 
         final Element targetElement = this.findElementWithParameters (targetsElement, K2Tag.K2_TARGET_ELEMENT, this.tags.targetParam (), this.tags.pitchValue ());

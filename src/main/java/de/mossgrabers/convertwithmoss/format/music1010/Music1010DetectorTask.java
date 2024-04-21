@@ -130,7 +130,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
             return Collections.emptyList ();
         }
 
-        final Element [] cellElements = XMLUtils.getChildElementsByName (sessionElement, Music1010Tag.CELL, false);
+        final List<Element> cellElements = XMLUtils.getChildElementsByName (sessionElement, Music1010Tag.CELL);
         final List<Element> multisampleElements = new ArrayList<> ();
         final List<Element> sampleElements = new ArrayList<> ();
         final List<Element> assetElements = new ArrayList<> ();
@@ -411,7 +411,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      *            cell-mode 0
      * @param assetElements The cell elements with type 'asset'
      */
-    private static void filterCells (final Element [] cellElements, final List<Element> multisampleElements, final List<Element> sampleElements, final List<Element> assetElements)
+    private static void filterCells (final List<Element> cellElements, final List<Element> multisampleElements, final List<Element> sampleElements, final List<Element> assetElements)
     {
         for (final Element cellElement: cellElements)
             switch (cellElement.getAttribute (Music1010Tag.ATTR_TYPE))
