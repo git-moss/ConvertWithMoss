@@ -9,6 +9,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -111,6 +114,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                 if (this.waitForDelivery ())
                     break;
 
+                this.updateCreationDateTime (multisample.getMetadata (), file);
                 this.consumer.accept (multisample);
 
                 if (this.isCancelled ())
@@ -473,7 +477,34 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         final String description = broadcastAudioExtensionChunk.getDescription ();
         if (!description.isBlank ())
             metadata.setDescription (description);
-        metadata.setCreationTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
+        metadata.setCreationDateTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
+    }
+
+
+    /**
+     * Update the metadata creation date/time from the source file.
+     * 
+     * @param metadata The metadata to update
+     * @param sourceFile The source file from which to get the creation date/time
+     */
+    protected void updateCreationDateTime (final IMetadata metadata, final File sourceFile)
+    {
+        if (metadata.getCreationDateTime () != null)
+            return;
+
+        try
+        {
+            final BasicFileAttributes attrs = Files.readAttributes (sourceFile.toPath (), BasicFileAttributes.class);
+            final FileTime creationTime = attrs.creationTime ();
+            final FileTime modifiedTime = attrs.lastModifiedTime ();
+            final long creationTimeMillis = creationTime.toMillis ();
+            final long modifiedTimeMillis = modifiedTime.toMillis ();
+            metadata.setCreationDateTime (new Date (creationTimeMillis < modifiedTimeMillis ? creationTimeMillis : modifiedTimeMillis));
+        }
+        catch (final IOException ex)
+        {
+            metadata.setCreationDateTime (new Date ());
+        }
     }
 
 

@@ -85,7 +85,7 @@ public class Kontakt1Type extends AbstractKontaktType
             final String xmlCode = CompressionUtils.readZLIB (fileAccess);
             final List<IMultisampleSource> multisampleSources = this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, Collections.emptyMap ());
             for (final IMultisampleSource multisampleSource: multisampleSources)
-                multisampleSource.getMetadata ().setCreationTime (new Date (timeSeconds * 1000));
+                multisampleSource.getMetadata ().setCreationDateTime (new Date (timeSeconds * 1000));
             return multisampleSources;
         }
         catch (final UnsupportedEncodingException ex)
@@ -125,7 +125,7 @@ public class Kontakt1Type extends AbstractKontaktType
         StreamUtils.writeUnsigned32 (out, 0x01, false);
 
         // Unix-Timestamp UTC+1
-        StreamUtils.writeUnsigned32 (out, (int) (multisampleSource.getMetadata ().getCreationTime ().getTime () / 1000), false);
+        StreamUtils.writeUnsigned32 (out, (int) (multisampleSource.getMetadata ().getCreationDateTime ().getTime () / 1000), false);
 
         // The sum of the size of all used samples (only the content data block of a WAV without any
         // headers)

@@ -20,7 +20,7 @@ public class DefaultMetadata implements IMetadata
 {
     private String    description  = "";
     private String    creator      = "";
-    private Date      creationTime = new Date ();
+    private Date      creationTime = null;
     private String    category     = "";
     private String [] keywords     = new String [0];
 
@@ -43,7 +43,7 @@ public class DefaultMetadata implements IMetadata
 
     /** {@inheritDoc} */
     @Override
-    public Date getCreationTime ()
+    public Date getCreationDateTime ()
     {
         return this.creationTime;
     }
@@ -84,7 +84,7 @@ public class DefaultMetadata implements IMetadata
 
     /** {@inheritDoc} */
     @Override
-    public void setCreationTime (final Date time)
+    public void setCreationDateTime (final Date time)
     {
         if (time != null)
             this.creationTime = time;

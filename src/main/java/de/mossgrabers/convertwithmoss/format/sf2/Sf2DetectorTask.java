@@ -113,7 +113,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             final IMetadata metadata = source.getMetadata ();
             metadata.detectMetadata (this.metadataConfig, parts);
             metadata.setCreator (sf2File.getSoundDesigner ());
-            metadata.setCreationTime (sf2File.getParsedCreationDate ());
+            metadata.setCreationDateTime (sf2File.getParsedCreationDate ());
             metadata.setDescription (createDescription (sf2File));
 
             final GeneratorHierarchy generators = new GeneratorHierarchy ();

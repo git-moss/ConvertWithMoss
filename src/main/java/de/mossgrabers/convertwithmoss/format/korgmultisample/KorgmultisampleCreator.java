@@ -129,7 +129,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             final IMetadata metadata = multisampleSource.getMetadata ();
 
             writeHeader (out);
-            writeTime (out, metadata.getCreationTime ());
+            writeTime (out, metadata.getCreationDateTime ());
 
             final byte [] byteArray;
             try (final ByteArrayOutputStream multisampleOutput = new ByteArrayOutputStream ())

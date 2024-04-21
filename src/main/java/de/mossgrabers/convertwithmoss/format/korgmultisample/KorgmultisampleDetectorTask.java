@@ -118,7 +118,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         groups.add (group);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
-        metadata.setCreationTime (creationDateTime);
+        metadata.setCreationDateTime (creationDateTime);
 
         int id;
         while ((id = in.read ()) != -1)

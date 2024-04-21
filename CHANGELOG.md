@@ -1,5 +1,12 @@
 # Changes
 
+## 8.5.1
+
+* Kontakt - Reading
+  * Fixed: In Kontakt 4.2 to 7 the loop data was not read correctly. This could create loops of length 0 for One-Shots.
+* Multisample - Write
+  * Fixed: Bitwig could not process the ZIP compressed samples due to an added info field. Additional info is removed again.
+
 ## 8.5.0
 
 * Added support for reading and writing CWITEC TX16Wx (*.txprog) files.
