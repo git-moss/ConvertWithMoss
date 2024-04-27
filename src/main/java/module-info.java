@@ -5,7 +5,7 @@
  */
 module de.mossgrabers.convertwithmoss
 {
-    requires java.desktop;
+    requires transitive java.desktop;
     requires java.logging;
     requires transitive java.prefs;
     requires transitive javafx.controls;
@@ -20,12 +20,14 @@ module de.mossgrabers.convertwithmoss
     exports de.mossgrabers.convertwithmoss.core;
     exports de.mossgrabers.convertwithmoss.core.model;
     exports de.mossgrabers.convertwithmoss.core.model.enumeration;
+    exports de.mossgrabers.convertwithmoss.core.creator;
     exports de.mossgrabers.convertwithmoss.format.bitwig;
     exports de.mossgrabers.convertwithmoss.format.sfz;
     exports de.mossgrabers.convertwithmoss.format.wav;
     exports de.mossgrabers.convertwithmoss.exception;
     exports de.mossgrabers.convertwithmoss.file.riff;
     exports de.mossgrabers.convertwithmoss.file.wav;
+    exports de.mossgrabers.convertwithmoss.file;
 
 
     opens de.mossgrabers.convertwithmoss.css;

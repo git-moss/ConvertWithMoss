@@ -35,13 +35,13 @@ public interface ISampleData
 
 
     /**
-     * Add metadata information to the given zone which might be stored in the underlying sample
-     * data format.
+     * Add information to the given zone which might be stored in the underlying sample data format
+     * (e.g. key/velocity zones and loops).
      *
      * @param zone The zone to which to add the data
      * @param addRootKey If true, set the root key
      * @param addLoops If true, found loops are added
      * @throws IOException Could not read or parse the underlying data
      */
-    void addMetadata (ISampleZone zone, boolean addRootKey, boolean addLoops) throws IOException;
+    void addZoneData (ISampleZone zone, boolean addRootKey, boolean addLoops) throws IOException;
 }

@@ -103,7 +103,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
     private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws FormatException, IOException
     {
         final IffChunk iffChunk = IffFile.readChunk (in);
-        StreamUtils.checkTag (SxtChunkConstants.PATCH, iffChunk.getID ());
+        StreamUtils.checkTag (SxtChunkConstants.PATCH, iffChunk.getId ());
 
         final File parentFile = file.getParentFile ();
         final String name = FileUtils.getNameWithoutType (file);
@@ -118,14 +118,14 @@ public class SxtDetectorTask extends AbstractDetectorTask
                 final IffChunk childChunk = IffFile.readChunk (chunkStream);
                 try (final InputStream childChunkStream = childChunk.streamData ())
                 {
-                    switch (childChunk.getID ())
+                    switch (childChunk.getId ())
                     {
                         case SxtChunkConstants.REFERENCES:
                             int sampleIndex = 0;
                             while (childChunkStream.available () > 0)
                             {
                                 final IffChunk referenceChunk = IffFile.readChunk (childChunkStream);
-                                StreamUtils.checkTag (SxtChunkConstants.REFERENCE, referenceChunk.getID ());
+                                StreamUtils.checkTag (SxtChunkConstants.REFERENCE, referenceChunk.getId ());
                                 try (final InputStream referenceChunkStream = referenceChunk.streamData ())
                                 {
                                     final File sampleFile = this.parseReference (referenceChunkStream, parentFile);
@@ -152,7 +152,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
                             break;
 
                         default:
-                            this.notifier.logError ("IDS_SXT_UNKNOWN_CHUNK_TYPE", childChunk.getID ());
+                            this.notifier.logError ("IDS_SXT_UNKNOWN_CHUNK_TYPE", childChunk.getId ());
                             break;
                     }
                 }

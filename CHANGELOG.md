@@ -1,5 +1,13 @@
 # Changes
 
+## 9.0.0 (unreleased)
+
+* Added support for creating multi-samples from AIFF files and the contained metadata.
+* WAV - Reading
+  * New: If the name ends with a dash it is removed.
+  * Fixed: Samples could have doubled file endings (.wav.wav).
+  * Fixed: If Instrument chunks were present in the files, the conversion did not work.
+
 ## 8.5.1
 
 * Kontakt - Reading

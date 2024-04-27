@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.mossgrabers.convertwithmoss.file.IChunk;
+
 
 /**
  * Enumeration for known RIFF IDs.
@@ -143,13 +145,13 @@ public enum RiffID
      * Constructor.
      *
      * @param name A name for the chunk
-     * @param ascii The ASCII representation of the ID
+     * @param asciiID The ASCII representation of the ID
      */
-    private RiffID (final String name, final String ascii)
+    private RiffID (final String name, final String asciiID)
     {
         this.name = name;
-        this.ascii = ascii;
-        this.id = ascii == null ? -1 : toId (ascii);
+        this.ascii = asciiID;
+        this.id = asciiID == null ? -1 : IChunk.toId (asciiID);
     }
 
 
@@ -226,19 +228,6 @@ public enum RiffID
             (byte) (id >>> 8),
             (byte) (id >>> 0)
         }, StandardCharsets.US_ASCII);
-    }
-
-
-    /**
-     * Converts the first four letters of the string into an RIFF Identifier.
-     *
-     * @param text The string to be converted
-     * @return ID representation of the string
-     */
-    private static int toId (final String text)
-    {
-        final byte [] bytes = text.getBytes ();
-        return bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
     }
 
 

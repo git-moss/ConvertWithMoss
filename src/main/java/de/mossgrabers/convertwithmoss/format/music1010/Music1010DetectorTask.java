@@ -356,7 +356,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
 
         try
         {
-            sampleZone.getSampleData ().addMetadata (sampleZone, false, true);
+            sampleZone.getSampleData ().addZoneData (sampleZone, false, true);
         }
         catch (final IOException ex)
         {

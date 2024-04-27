@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.file.riff;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import de.mossgrabers.convertwithmoss.file.IChunk;
+
 
 /**
  * Writes Resource Interchange File Format (RIFF) data. See the RIFF specification for more info.

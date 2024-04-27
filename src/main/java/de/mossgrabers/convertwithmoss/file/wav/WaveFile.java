@@ -292,27 +292,6 @@ public class WaveFile extends AbstractRIFFVisitor
 
 
     /**
-     * Check if the chunk stack is already filled from reading the WAV file. Fill it if empty.
-     */
-    private void fillChunkStack ()
-    {
-        if (!this.chunkStack.isEmpty ())
-            return;
-
-        this.chunkStack.add (this.formatChunk);
-        if (this.broadcastAudioExtensionChunk != null)
-            this.chunkStack.add (this.broadcastAudioExtensionChunk);
-        if (this.listInfoChunk != null)
-            this.chunkStack.add (this.listInfoChunk);
-        this.chunkStack.add (this.dataChunk);
-        if (this.instrumentChunk != null)
-            this.chunkStack.add (this.instrumentChunk);
-        if (this.sampleChunk != null)
-            this.chunkStack.add (this.sampleChunk);
-    }
-
-
-    /**
      * Combines two mono files into a stereo file. Format and sample chunks must be identical.
      *
      * @param otherWave The other sample to include
@@ -414,6 +393,27 @@ public class WaveFile extends AbstractRIFFVisitor
                 this.chunkStack.add (new UnknownChunk (riffID, chunk));
                 break;
         }
+    }
+
+
+    /**
+     * Check if the chunk stack is already filled from reading the WAV file. Fill it if empty.
+     */
+    private void fillChunkStack ()
+    {
+        if (!this.chunkStack.isEmpty ())
+            return;
+
+        this.chunkStack.add (this.formatChunk);
+        if (this.broadcastAudioExtensionChunk != null)
+            this.chunkStack.add (this.broadcastAudioExtensionChunk);
+        if (this.listInfoChunk != null)
+            this.chunkStack.add (this.listInfoChunk);
+        this.chunkStack.add (this.dataChunk);
+        if (this.instrumentChunk != null)
+            this.chunkStack.add (this.instrumentChunk);
+        if (this.sampleChunk != null)
+            this.chunkStack.add (this.sampleChunk);
     }
 
 

@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 
@@ -41,8 +42,16 @@ public class OggFileSampleData extends AbstractFileSampleData
 
     /** {@inheritDoc} */
     @Override
-    public void addMetadata (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
+    public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
         // No info available in OGG
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void updateMetadata (IMetadata metadata)
+    {
+        // Could be implemented with e.g. JAudioTagger
     }
 }

@@ -247,7 +247,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
             zone.addLoop (loop);
         }
 
-        zone.getSampleData ().addMetadata (zone, false, false);
+        zone.getSampleData ().addZoneData (zone, false, false);
         return zone;
     }
 

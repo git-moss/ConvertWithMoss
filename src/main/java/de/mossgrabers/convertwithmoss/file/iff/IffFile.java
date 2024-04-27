@@ -59,8 +59,8 @@ public class IffFile
 
         final byte [] data = in.readNBytes ((int) size);
         // Chunk length is always 2 aligned!
-        if (size % 2 == 1)
-            in.skip (1);
+        if (size % 2 == 1 && in.available () > 0)
+            in.skipNBytes (1);
         return new IffChunk (chunkID, data);
     }
 

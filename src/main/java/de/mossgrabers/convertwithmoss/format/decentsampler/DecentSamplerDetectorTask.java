@@ -437,7 +437,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
             try
             {
-                sampleZone.getSampleData ().addMetadata (sampleZone, false, false);
+                sampleZone.getSampleData ().addZoneData (sampleZone, false, false);
             }
             catch (final IOException ex)
             {

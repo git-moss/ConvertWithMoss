@@ -59,7 +59,7 @@ public class InMemorySampleData implements ISampleData
 
     /** {@inheritDoc} */
     @Override
-    public void addMetadata (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
+    public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
         // Not further info available
     }

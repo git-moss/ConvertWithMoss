@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -32,18 +31,17 @@ import org.w3c.dom.NamedNodeMap;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.file.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
 import de.mossgrabers.convertwithmoss.file.OggFileSampleData;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffCommonChunk;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffFile;
-import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
+import de.mossgrabers.convertwithmoss.file.aiff.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -368,7 +366,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * @return The matching sample metadata, support is WAV and AIFF
      * @throws IOException Unsupported sample file type
      */
-    protected ISampleData createSampleData (final File sampleFile) throws IOException
+    protected IFileBasedSampleData createSampleData (final File sampleFile) throws IOException
     {
         if (!sampleFile.exists ())
             throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
@@ -376,7 +374,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         final String fileEnding = sampleFile.getName ().toLowerCase ();
         try
         {
-            ISampleData sampleData = null;
+            IFileBasedSampleData sampleData = null;
 
             if (fileEnding.endsWith (".aiff"))
                 // Note: only AIF ending is picked up as correct ending below
@@ -409,13 +407,12 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             if (sampleFile.getName ().toLowerCase ().endsWith (".aif"))
             {
                 final AiffFile aiffFile = new AiffFile (sampleFile);
-                final Optional<AiffCommonChunk> commonChunk = aiffFile.getCommonChunk ();
-                if (commonChunk.isPresent ())
+                final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
+                if (commonChunk != null)
                 {
-                    final AiffCommonChunk aiffCommonChunk = commonChunk.get ();
-                    final String compressionType = aiffCommonChunk.getCompressionType ();
+                    final String compressionType = commonChunk.getCompressionType ();
                     if (compressionType != null)
-                        throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), aiffCommonChunk.getCompressionName (), compressionType));
+                        throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), compressionType));
                 }
             }
 
@@ -429,12 +426,12 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * chunk in the first sample WAV.
      *
      * @param metadata The metadata object to fill
-     * @param sampleFiles The wave file data
+     * @param sampleData The wave file data
      * @param parts The already processed parts of the file name
      */
-    protected void createMetadata (final IMetadata metadata, final WavFileSampleData [] sampleFiles, final String [] parts)
+    protected void createMetadata (final IMetadata metadata, final List<IFileBasedSampleData> sampleData, final String [] parts)
     {
-        this.createMetadata (metadata, sampleFiles == null || sampleFiles.length == 0 ? null : sampleFiles[0], parts);
+        this.createMetadata (metadata, sampleData == null || sampleData.isEmpty () ? null : sampleData.get (0), parts);
     }
 
 
@@ -443,12 +440,12 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * chunk in the sample WAV.
      *
      * @param metadata The metadata object to fill
-     * @param sampleFile The wave file data
+     * @param sampleData The sample file data
      * @param parts The already processed parts of the file name
      */
-    protected void createMetadata (final IMetadata metadata, final WavFileSampleData sampleFile, final String [] parts)
+    protected void createMetadata (final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts)
     {
-        this.createMetadata (metadata, sampleFile, parts, null);
+        this.createMetadata (metadata, sampleData, parts, null);
     }
 
 
@@ -457,27 +454,15 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * chunk in the sample WAV.
      *
      * @param metadata The metadata object to fill
-     * @param sampleFile The wave file data
+     * @param sampleData The wave file data
      * @param parts The already processed parts of the file name
      * @param category If the category is not null, it is assigned and not detected
      */
-    protected void createMetadata (final IMetadata metadata, final WavFileSampleData sampleFile, final String [] parts, final String category)
+    protected void createMetadata (final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts, final String category)
     {
         metadata.detectMetadata (this.metadataConfig, parts, category);
-
-        if (sampleFile == null)
-            return;
-        final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = sampleFile.getWaveFile ().getBroadcastAudioExtensionChunk ();
-        if (broadcastAudioExtensionChunk == null)
-            return;
-
-        final String originator = broadcastAudioExtensionChunk.getOriginator ();
-        if (!originator.isBlank ())
-            metadata.setCreator (originator);
-        final String description = broadcastAudioExtensionChunk.getDescription ();
-        if (!description.isBlank ())
-            metadata.setDescription (description);
-        metadata.setCreationDateTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
+        if (sampleData != null)
+            sampleData.updateMetadata (metadata);
     }
 
 

@@ -372,7 +372,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
         try
         {
-            zone.getSampleData ().addMetadata (zone, false, false);
+            zone.getSampleData ().addZoneData (zone, false, false);
         }
         catch (final IOException ex)
         {

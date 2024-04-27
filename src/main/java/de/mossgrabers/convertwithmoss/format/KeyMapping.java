@@ -2,7 +2,7 @@
 // (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.wav;
+package de.mossgrabers.convertwithmoss.format;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +21,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -28,16 +29,17 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * Detects MIDI notes and creates a key mapping for the multisample.
+ * Detects MIDI notes from filenames and creates a key mapping for the multi-sample.
  *
  * @author Jürgen Moßgraber
  */
-public class WavKeyMapping
+public class KeyMapping
 {
     /** The names of notes. */
     private static final String []                  NOTE_NAMES_FLAT         =
@@ -136,22 +138,21 @@ public class WavKeyMapping
     /**
      * Constructor.
      *
-     * @param sampleInfos The sample information from which to get the filenames and set the key
-     *            ranges.
+     * @param sampleData The sample data from which to get the filenames and set the key ranges.
      * @param isAscending Sort ascending otherwise descending
-     * @param crossfadeNotes The number of notes to crossfade ranges
-     * @param crossfadeVelocities The number of velocity steps to crossfade ranges
+     * @param crossfadeNotes The number of notes to cross-fade ranges
+     * @param crossfadeVelocities The number of velocity steps to cross-fade ranges
      * @param groupPatterns The group patterns
      * @param leftChannelPatterns The left channel detection patterns
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    public WavKeyMapping (final WavFileSampleData [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    public KeyMapping (final List<IFileBasedSampleData> sampleData, final boolean isAscending, final int crossfadeNotes, final int crossfadeVelocities, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
-        this.orderedSampleMetadata = this.createGroups (sampleInfos, isAscending, crossfadeNotes, groupPatterns, leftChannelPatterns);
-        this.name = this.calculateCommonName (this.findShortestFilename ());
+        this.orderedSampleMetadata = this.createGroups (sampleData, isAscending, crossfadeNotes, groupPatterns, leftChannelPatterns);
+        this.name = findCommonPrefix (new ArrayList<> (this.extractedNames));
 
-        // Calculate velocity crossfades
+        // Calculate velocity cross-fades
         final int range = 127 / this.orderedSampleMetadata.size ();
         int low = 0;
         int high = range;
@@ -180,7 +181,7 @@ public class WavKeyMapping
 
 
     /**
-     * Get the detected name of the multisample.
+     * Get the detected name of the multi-sample.
      *
      * @return The name
      */
@@ -204,20 +205,19 @@ public class WavKeyMapping
     /**
      * Detect and create a group order.
      *
-     * @param sampleInfos The sample information from which to get the filenames and set the key
-     *            ranges.
+     * @param sampleData The sample data from which to get the filenames and set the key ranges.
      * @param isAscending Sort ascending otherwise descending
-     * @param crossfadeNotes The number of notes to crossfade ranges
+     * @param crossfadeNotes The number of notes to cross-fade ranges
      * @param groupPatterns The group patterns
      * @param leftChannelPatterns The left channel detection patterns
      * @return The created groups
      * @throws MultisampleException Found duplicated MIDI notes
      * @throws CombinationNotPossibleException Could not create stereo files
      */
-    private List<IGroup> createGroups (final WavFileSampleData [] sampleInfos, final boolean isAscending, final int crossfadeNotes, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
+    private List<IGroup> createGroups (final List<IFileBasedSampleData> sampleData, final boolean isAscending, final int crossfadeNotes, final String [] groupPatterns, final String [] leftChannelPatterns) throws MultisampleException, CombinationNotPossibleException
     {
         final Map<Integer, List<ISampleZone>> sampleMetadata = new TreeMap<> ();
-        final Map<Integer, List<ISampleZone>> groups = detectGroups (sampleInfos, groupPatterns);
+        final Map<Integer, List<ISampleZone>> groups = detectGroups (sampleData, groupPatterns);
 
         for (final Entry<Integer, List<ISampleZone>> entry: groups.entrySet ())
         {
@@ -398,22 +398,22 @@ public class WavKeyMapping
     /**
      * Detect groups.
      *
-     * @param wavFileSampleData Info about all available samples
+     * @param sampleData Info about all available samples
      * @param groupPatterns The patterns to match for groups
      * @return The detected groups
      * @throws MultisampleException There was a pattern detected but (or more) of the samples could
      *             not be matched
      */
-    private static Map<Integer, List<ISampleZone>> detectGroups (final WavFileSampleData [] wavFileSampleData, final String [] groupPatterns) throws MultisampleException
+    private static Map<Integer, List<ISampleZone>> detectGroups (final List<IFileBasedSampleData> sampleData, final String [] groupPatterns) throws MultisampleException
     {
         final Map<Integer, List<ISampleZone>> groups = new TreeMap<> ();
 
         // If no groups are detected create one group which contains all samples
-        final Optional<Pattern> patternResult = getGroupPattern (wavFileSampleData, groupPatterns);
+        final Optional<Pattern> patternResult = getGroupPattern (sampleData, groupPatterns);
         if (patternResult.isEmpty ())
         {
-            final List<ISampleZone> zones = new ArrayList<> (wavFileSampleData.length);
-            for (final WavFileSampleData si: wavFileSampleData)
+            final List<ISampleZone> zones = new ArrayList<> (sampleData.size ());
+            for (final IFileBasedSampleData si: sampleData)
                 zones.add (new DefaultSampleZone (FileUtils.getNameWithoutType (new File (si.getFilename ())), si));
             groups.put (Integer.valueOf (0), zones);
             return groups;
@@ -421,7 +421,7 @@ public class WavKeyMapping
 
         // Now match all sample names with the detected group pattern
         final Pattern pattern = patternResult.get ();
-        for (final WavFileSampleData si: wavFileSampleData)
+        for (final IFileBasedSampleData si: sampleData)
         {
             final String filename = si.getFilename ();
             final Matcher matcher = pattern.matcher (filename);
@@ -433,7 +433,7 @@ public class WavKeyMapping
                 final Integer id = Integer.valueOf (number);
                 final String prefix = matcher.group ("prefix");
                 final String postfix = matcher.group ("postfix");
-                final ISampleZone zone = new DefaultSampleZone (prefix + postfix, si);
+                final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (prefix + postfix), si);
                 groups.computeIfAbsent (id, key -> new ArrayList<> ()).add (zone);
             }
             catch (final NumberFormatException ex)
@@ -449,16 +449,16 @@ public class WavKeyMapping
     /**
      * Check if one of the group patterns matches.
      *
-     * @param wavFileSampleData The WAV sample data
+     * @param sampleData The sample data
      * @param groupPatterns The patterns to detect groups
      * @return The matching pattern or null
      * @throws MultisampleException If a pattern could not be parsed
      */
-    private static Optional<Pattern> getGroupPattern (final WavFileSampleData [] wavFileSampleData, final String [] groupPatterns) throws MultisampleException
+    private static Optional<Pattern> getGroupPattern (final List<IFileBasedSampleData> sampleData, final String [] groupPatterns) throws MultisampleException
     {
-        if (groupPatterns.length == 0 || wavFileSampleData.length == 0)
+        if (groupPatterns.length == 0 || sampleData.isEmpty ())
             return Optional.empty ();
-        final String filename = wavFileSampleData[0].getFilename ();
+        final String filename = sampleData.get (0).getFilename ();
         for (final String groupPattern: groupPatterns)
         {
             final String [] parts = groupPattern.split ("\\*");
@@ -654,13 +654,12 @@ public class WavKeyMapping
      */
     private int lookupMidiNote (final Map<String, Integer> keyMap, final String filename)
     {
-        // Remove .wav at the end
-        String fn = filename.substring (0, filename.length () - 4).trim ();
+        String fn = FileUtils.getNameWithoutType (filename);
         final String noteArea = fn.toUpperCase (Locale.US);
 
         int pos = -1;
         String str = "";
-        Integer note = Integer.valueOf (0);
+        int note = 0;
 
         // Test if one of the notes is a part of the text
         for (final Map.Entry<String, Integer> e: keyMap.entrySet ())
@@ -669,7 +668,7 @@ public class WavKeyMapping
             final int p = noteArea.lastIndexOf (n);
             if (p == -1)
                 continue;
-            // There might be parts of the name which is not the note info, therefore run through
+            // There might be parts of the name which are not the note info, therefore run through
             // all of them and use the most right info but only if the result has at least the same
             // length
             final int keyLength = n.length ();
@@ -678,23 +677,25 @@ public class WavKeyMapping
             {
                 pos = p;
                 str = n;
-                note = e.getValue ();
+                note = e.getValue ().intValue ();
             }
         }
 
         if (pos == -1)
             return -1;
+
+        // Remove the detected note part from the name
         fn = fn.substring (0, pos) + fn.substring (pos + str.length (), fn.length ());
         this.extractedNames.add (fn.trim ());
-        return note.intValue ();
+        return note;
     }
 
 
     /**
-     * Create crossfades between the sample ranges.
+     * Create cross-fades between the sample ranges.
      *
      * @param noteMap The note map ordered by notes ascending
-     * @param crossfadeNotes The number of notes to crossfade
+     * @param crossfadeNotes The number of notes to cross-fade
      */
     private static void createCrossfades (final Map<Integer, ISampleZone> noteMap, final int crossfadeNotes)
     {
@@ -720,43 +721,21 @@ public class WavKeyMapping
 
 
     /**
-     * Get the length of the shortest extracted name.
-     *
-     * @return The number of characters
+     * Find the common prefix among all given names.
+     * 
+     * @param names The names
+     * @return The common prefix
      */
-    private int findShortestFilename ()
+    public static String findCommonPrefix (final List<String> names)
     {
-        int minimum = -1;
-        for (final String en: this.extractedNames)
-        {
-            final int l = en.length ();
-            if (l < minimum || minimum == -1)
-                minimum = l;
-        }
-        return minimum;
-    }
-
-
-    /**
-     * Calculate the common characters of all extracted names starting from the beginning.
-     *
-     * @param length The maximum number of characters to look at
-     * @return The identical characters among all names
-     */
-    private String calculateCommonName (final int length)
-    {
-        if (this.extractedNames.isEmpty ())
+        if (names.isEmpty ())
             return "";
-
-        final List<String> names = new ArrayList<> (this.extractedNames);
-        final String firstFilename = names.get (0);
-        for (int pos = 0; pos < length; pos++)
+        String prefix = names.get (0);
+        for (int i = 1; i < names.size (); i++)
         {
-            final char c = firstFilename.charAt (pos);
-            for (int i = 1; i < names.size (); i++)
-                if (c != names.get (i).charAt (pos))
-                    return firstFilename.substring (0, pos).trim ();
+            while (!names.get (i).startsWith (prefix))
+                prefix = prefix.substring (0, prefix.length () - 1);
         }
-        return firstFilename.trim ();
+        return prefix;
     }
 }

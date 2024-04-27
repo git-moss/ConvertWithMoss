@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.file.iff;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import de.mossgrabers.convertwithmoss.exception.NoDataInChunkException;
+
 
 /**
  * Data of an IFF chunk.
@@ -44,11 +46,25 @@ public class IffChunk
 
 
     /**
+     * Gets the data.
+     *
+     * @return The data array. The array will not be cloned for performance reasons and is expected
+     *         to be modified from wrapper classes!
+     */
+    public byte [] getData ()
+    {
+        if (this.data == null)
+            throw new NoDataInChunkException ("Chunk contains no data.");
+        return this.data;
+    }
+
+
+    /**
      * Get the local chunk or group type ID.
      * 
      * @return The ID
      */
-    public String getID ()
+    public String getId ()
     {
         return this.id;
     }

@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -23,7 +24,7 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public abstract class AbstractFileSampleData extends AbstractSampleData
+public abstract class AbstractFileSampleData extends AbstractSampleData implements IFileBasedSampleData
 {
     protected String           filename;
     protected File             sampleFile;
@@ -147,11 +148,8 @@ public abstract class AbstractFileSampleData extends AbstractSampleData
     }
 
 
-    /**
-     * Get the filename.
-     *
-     * @return The name of the file
-     */
+    /** {@inheritDoc} */
+    @Override
     public String getFilename ()
     {
         return this.filename;

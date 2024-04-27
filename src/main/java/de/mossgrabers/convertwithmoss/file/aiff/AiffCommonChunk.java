@@ -16,14 +16,25 @@ import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
  *
  * @author Jürgen Moßgraber
  */
-public class AiffCommonChunk
+public class AiffCommonChunk extends AiffChunk
 {
     int    numChannels;
     long   numSampleFrames;
     int    sampleSize;
     int    sampleRate;
-    String compressionType;
-    String compressionName;
+    String compressionType = null;
+    String compressionName = null;
+
+
+    /**
+     * Constructor.
+     * 
+     * @param chunk The IFF chunk
+     */
+    protected AiffCommonChunk (final IffChunk chunk)
+    {
+        super (chunk);
+    }
 
 
     /**
@@ -46,6 +57,8 @@ public class AiffCommonChunk
             {
                 this.compressionType = StreamUtils.readASCII (in, 4);
                 this.compressionName = StreamUtils.readWithLengthAscii (in).trim ();
+                if ((this.compressionName.length () + 1) % 2 == 1)
+                    in.skipNBytes (1);
             }
         }
     }
@@ -129,7 +142,7 @@ public class AiffCommonChunk
         final int sign = data[0] >> 7;
 
         // Extract the exponent. It's stored with a bias of 16383, so subtract that off
-        int exponent = data[0] << 8 | data[1];
+        int exponent = data[0] << 8 | data[1] & 0xFF;
         // Strip sign bit
         exponent &= 0X7FFF;
         // 1 is added to the "real" exponent
@@ -150,5 +163,24 @@ public class AiffCommonChunk
         // Combine into a floating point number
         final double val = Math.pow (2, exponent) * mantissa;
         return sign == 0 ? val : -val;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String infoText ()
+    {
+        final StringBuilder sb = new StringBuilder ();
+        sb.append ("Compression: ");
+        if (this.compressionType == null)
+            sb.append ("None\n");
+        else
+            sb.append (this.compressionName).append (" (").append (this.compressionType).append (")\n");
+
+        sb.append ("Number of Channels: ").append (this.numChannels).append ('\n');
+        sb.append ("Sample Rate: ").append (this.sampleRate).append ('\n');
+        sb.append ("Sample Frames: ").append (this.numSampleFrames).append ('\n');
+        sb.append ("Sample Size: ").append (this.sampleSize);
+        return sb.toString ();
     }
 }
