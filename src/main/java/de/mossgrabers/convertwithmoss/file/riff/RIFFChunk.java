@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.exception.NoDataInChunkException;
+import de.mossgrabers.convertwithmoss.file.IChunk;
 
 
 /**

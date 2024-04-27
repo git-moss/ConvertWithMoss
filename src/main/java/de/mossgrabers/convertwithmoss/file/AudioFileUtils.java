@@ -360,7 +360,7 @@ public final class AudioFileUtils
      *
      * @param msSourceFolder The currently processed sub-folder
      * @param sourceFolder The source folder
-     * @param name The name of the multisample
+     * @param name The name of the multi-sample
      * @return The array with all parts and the name in reverse order
      */
     public static String [] createPathParts (final File msSourceFolder, final File sourceFolder, final String name)

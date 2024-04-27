@@ -149,7 +149,7 @@ public class Sf2SampleData extends AbstractSampleData
 
     /** {@inheritDoc} */
     @Override
-    public void addMetadata (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
+    public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
         // No further metadata available
     }

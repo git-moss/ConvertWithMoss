@@ -5,7 +5,7 @@
 package de.mossgrabers.convertwithmoss.file.wav;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.IChunk;
+import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
@@ -73,6 +73,6 @@ public class WavChunk implements IChunk
     @Override
     public String infoText ()
     {
-        return "Date Size: " + this.getData ().length + " Bytes";
+        return "Data Size: " + this.getData ().length + " Bytes";
     }
 }

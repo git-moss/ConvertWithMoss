@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
@@ -76,7 +77,7 @@ public class NcwFileSampleData extends AbstractFileSampleData
 
     /** {@inheritDoc} */
     @Override
-    public void addMetadata (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
+    public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
         if (zone.getStart () < 0)
             zone.setStart (0);
@@ -84,5 +85,13 @@ public class NcwFileSampleData extends AbstractFileSampleData
             zone.setStop (this.ncwFile.getNumberOfSamples ());
 
         // More info not available in NCW
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void updateMetadata (IMetadata metadata)
+    {
+        // No metadata available
     }
 }

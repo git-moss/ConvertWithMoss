@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -21,6 +22,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
@@ -139,7 +141,7 @@ public class WavFileSampleData extends AbstractFileSampleData
 
     /** {@inheritDoc} */
     @Override
-    public void addMetadata (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
+    public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
         final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
         final int numberOfChannels = formatChunk.getNumberOfChannels ();
@@ -211,5 +213,23 @@ public class WavFileSampleData extends AbstractFileSampleData
     public WaveFile getWaveFile ()
     {
         return this.waveFile;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void updateMetadata (final IMetadata metadata)
+    {
+        final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = this.waveFile.getBroadcastAudioExtensionChunk ();
+        if (broadcastAudioExtensionChunk == null)
+            return;
+
+        final String originator = broadcastAudioExtensionChunk.getOriginator ();
+        if (!originator.isBlank ())
+            metadata.setCreator (originator);
+        final String description = broadcastAudioExtensionChunk.getDescription ();
+        if (!description.isBlank ())
+            metadata.setDescription (description);
+        metadata.setCreationDateTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
     }
 }

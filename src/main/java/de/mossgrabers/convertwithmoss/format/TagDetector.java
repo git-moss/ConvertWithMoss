@@ -388,6 +388,7 @@ public class TagDetector
         {
             "Electronic-Music",
             "Sequence",
+            "Trance",
             "Sweep",
             "Swell",
             "Mini",

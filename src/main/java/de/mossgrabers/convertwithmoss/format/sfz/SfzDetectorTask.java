@@ -583,7 +583,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
                 readLoops = oldLoop.getStart () < 0 || oldLoop.getEnd () < 0;
             }
 
-            zone.getSampleData ().addMetadata (zone, true, readLoops);
+            zone.getSampleData ().addZoneData (zone, true, readLoops);
 
             // If start or end was already set overwrite it here
             if (readLoops)

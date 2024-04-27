@@ -437,7 +437,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (zone.getStop () <= 0 || zone.getKeyRoot () < 0 || !isOneShot && zone.getLoops ().isEmpty ())
             try
             {
-                zone.getSampleData ().addMetadata (zone, !isDrum, !isDrum && !isOneShot);
+                zone.getSampleData ().addZoneData (zone, !isDrum, !isDrum && !isOneShot);
             }
             catch (final FileNotFoundException ex)
             {

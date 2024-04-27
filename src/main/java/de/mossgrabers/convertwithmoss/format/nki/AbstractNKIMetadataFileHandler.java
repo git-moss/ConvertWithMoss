@@ -51,8 +51,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultModulator
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
-import de.mossgrabers.convertwithmoss.file.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.aiff.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
@@ -620,7 +620,7 @@ public abstract class AbstractNKIMetadataFileHandler
     {
         try
         {
-            zone.getSampleData ().addMetadata (zone, true, true);
+            zone.getSampleData ().addZoneData (zone, true, true);
         }
         catch (final IOException ex)
         {

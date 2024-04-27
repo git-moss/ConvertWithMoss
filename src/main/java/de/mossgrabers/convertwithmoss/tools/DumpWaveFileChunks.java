@@ -18,7 +18,7 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 
 /**
- * Command line utility to look for specific settings in a sample chunk.
+ * Command line utility to dump WAV file chunks.
  *
  * @author Jürgen Moßgraber
  */
@@ -28,7 +28,7 @@ public class DumpWaveFileChunks
     static
     {
         System.setProperty ("java.util.logging.SimpleFormatter.format", "%5$s%n");
-        LOGGER = Logger.getLogger ("de.mossgrabers.convertwithmoss.file.wav.DumpWaveFileChunks");
+        LOGGER = Logger.getLogger ("de.mossgrabers.convertwithmoss.tools.DumpWaveFileChunks");
 
         try
         {
