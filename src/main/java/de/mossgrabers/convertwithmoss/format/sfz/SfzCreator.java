@@ -339,20 +339,24 @@ public class SfzCreator extends AbstractCreator
 
         final IModulator pitchModulator = zone.getPitchModulator ();
         final double envelopeDepth = pitchModulator.getDepth ();
-        if (envelopeDepth > 0)
+        if (envelopeDepth != 0)
         {
             buffer.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
 
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DELAY, pitchEnvelope.getDelay ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK, pitchEnvelope.getAttack ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_HOLD, pitchEnvelope.getHold ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY, pitchEnvelope.getDecay ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE, pitchEnvelope.getRelease ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DELAY, pitchEnvelope.getDelayTime ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK, pitchEnvelope.getAttackTime ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_HOLD, pitchEnvelope.getHoldTime ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY, pitchEnvelope.getDecayTime ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE, pitchEnvelope.getReleaseTime ());
 
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_START, pitchEnvelope.getStart () * 100.0);
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_SUSTAIN, pitchEnvelope.getSustain () * 100.0);
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_START, pitchEnvelope.getStartLevel () * 100.0);
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_SUSTAIN, pitchEnvelope.getSustainLevel () * 100.0);
+
+            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK_SHAPE, pitchEnvelope.getAttackSlope () * 10.0);
+            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY_SHAPE, pitchEnvelope.getDecaySlope () * 10.0);
+            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE_SHAPE, pitchEnvelope.getReleaseSlope () * 10.0);
 
             if (envelopeStr.length () > 0)
                 buffer.append (envelopeStr).append (LINE_FEED);
@@ -437,14 +441,18 @@ public class SfzCreator extends AbstractCreator
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
 
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DELAY, amplitudeEnvelope.getDelay ());
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK, amplitudeEnvelope.getAttack ());
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_HOLD, amplitudeEnvelope.getHold ());
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY, amplitudeEnvelope.getDecay ());
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE, amplitudeEnvelope.getRelease ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DELAY, amplitudeEnvelope.getDelayTime ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK, amplitudeEnvelope.getAttackTime ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_HOLD, amplitudeEnvelope.getHoldTime ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY, amplitudeEnvelope.getDecayTime ());
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE, amplitudeEnvelope.getReleaseTime ());
 
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_START, amplitudeEnvelope.getStart () * 100.0);
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_SUSTAIN, amplitudeEnvelope.getSustain () * 100.0);
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_START, amplitudeEnvelope.getStartLevel () * 100.0);
+        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_SUSTAIN, amplitudeEnvelope.getSustainLevel () * 100.0);
+
+        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK_SHAPE, amplitudeEnvelope.getAttackSlope () * 10.0);
+        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY_SHAPE, amplitudeEnvelope.getDecaySlope () * 10.0);
+        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE_SHAPE, amplitudeEnvelope.getReleaseSlope () * 10.0);
 
         if (envelopeStr.length () > 0)
             buffer.append (envelopeStr).append (LINE_FEED);
@@ -479,14 +487,18 @@ public class SfzCreator extends AbstractCreator
 
             final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DELAY, filterEnvelope.getDelay ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK, filterEnvelope.getAttack ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_HOLD, filterEnvelope.getHold ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY, filterEnvelope.getDecay ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE, filterEnvelope.getRelease ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DELAY, filterEnvelope.getDelayTime ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK, filterEnvelope.getAttackTime ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_HOLD, filterEnvelope.getHoldTime ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY, filterEnvelope.getDecayTime ());
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE, filterEnvelope.getReleaseTime ());
 
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_START, filterEnvelope.getStart () * 100.0);
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_SUSTAIN, filterEnvelope.getSustain () * 100.0);
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_START, filterEnvelope.getStartLevel () * 100.0);
+            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_SUSTAIN, filterEnvelope.getSustainLevel () * 100.0);
+
+            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK_SHAPE, filterEnvelope.getAttackSlope () * 10.0);
+            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY_SHAPE, filterEnvelope.getDecaySlope () * 10.0);
+            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE_SHAPE, filterEnvelope.getReleaseSlope () * 10.0);
 
             if (envelopeStr.length () > 0)
                 buffer.append (envelopeStr).append (LINE_FEED);
@@ -503,6 +515,16 @@ public class SfzCreator extends AbstractCreator
     private static void addIntegerAttribute (final StringBuilder sb, final String opcode, final int value, final boolean addLineFeed)
     {
         addAttribute (sb, opcode, Integer.toString (value), addLineFeed);
+    }
+
+
+    private static void addSlopeAttribute (final StringBuilder sb, final String opcode, final double value)
+    {
+        if (value == 0)
+            return;
+        if (sb.length () > 0)
+            sb.append (' ');
+        sb.append (opcode).append ('=').append (MathUtils.clamp (value, -10.0, 10.0));
     }
 
 

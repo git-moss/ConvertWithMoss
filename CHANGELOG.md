@@ -1,12 +1,24 @@
 # Changes
 
-## 9.0.0 (unreleased)
+## 9.0.0
 
-* Added support for creating multi-samples from AIFF files and the contained metadata.
-* WAV - Reading
+* New: Added support for Ableton ADV (read/write) and ADG (only read) files.
+* New: Added support for creating multi-samples from AIFF files and the contained metadata.
+* New: Envelope improvements
+  * SFZ: Added attack, decay and release slope attributes to amplitude, filter and pitch envelopes.
+* DecentSampler - Read
+  * New: Read/write amplitude attackCurve, decayCurve and releaseCurve attributes.
+  * Fixed: When processing a dslibrary file the name of the library file was always used as the destination preset name instead of the dspreset name. Therefore, only one preset from the library was created.
+* Kontakt 1-2 - Read/Write
+  * New: Added attack curve to amplitude, filter and pitch envelopes.
+* MPC Keygroups - Read/Write
+  * New: Added attack, decay and release slope attributes to amplitude, filter and pitch envelopes.
+* TX16Wx Read/Write
+  * New: Added attack, decay and release slope attributes to amplitude, filter and pitch envelopes. Added all envelope levels.
+* WAV - Read
   * New: If the name ends with a dash it is removed.
   * Fixed: Samples could have doubled file endings (.wav.wav).
-  * Fixed: If Instrument chunks were present in the files, the conversion did not work.
+  * Fixed: If Instrument chunks were present in the files, the conversion did not work (there was an error shown that the MIDI note could not be detected which was misleading as well).
 
 ## 8.5.1
 

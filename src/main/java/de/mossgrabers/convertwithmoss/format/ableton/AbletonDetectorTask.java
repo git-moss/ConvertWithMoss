@@ -12,8 +12,10 @@ import java.io.StringReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
@@ -28,12 +30,18 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -54,6 +62,16 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AbletonDetectorTask extends AbstractDetectorTask
 {
+    private static final Map<String, FilterType> FILTER_TYPES = new HashMap<> ();
+    static
+    {
+        FILTER_TYPES.put ("0", FilterType.LOW_PASS);
+        FILTER_TYPES.put ("1", FilterType.HIGH_PASS);
+        FILTER_TYPES.put ("2", FilterType.BAND_PASS);
+        FILTER_TYPES.put ("3", FilterType.BAND_REJECTION);
+    }
+
+
     /**
      * Constructor.
      *
@@ -157,18 +175,14 @@ public class AbletonDetectorTask extends AbstractDetectorTask
      */
     private IMultisampleSource parseSampler (final File multiSampleFile, final Element deviceElement, final File rootPath, final String creator) throws IOException
     {
-        String name = AbletonDetectorTask.getValueAttribute (deviceElement, AbletonTag.TAG_USER_NAME);
-        if (name.isBlank ())
-            name = multiSampleFile.getName ();
+        final String name = FileUtils.getNameWithoutType (multiSampleFile);
 
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
         final IMetadata metadata = multisampleSource.getMetadata ();
         parseMetadata (deviceElement, metadata, creator);
 
-        final Element playerElement = getRequiredElement (deviceElement, AbletonTag.TAG_PLAYER);
-
-        this.parseMultiSample (multiSampleFile, rootPath, multisampleSource, playerElement);
+        this.parseMultiSample (multiSampleFile, rootPath, multisampleSource, deviceElement);
         this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
         return multisampleSource;
     }
@@ -199,7 +213,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
             filePresetRefElement = XMLUtils.getChildElementByName (valueElement, AbletonTag.TAG_FILE_PRESET_REF2);
 
         if (filePresetRefElement == null)
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_TAG", AbletonTag.TAG_FILE_PRESET_REF));
+            return findSampleFolder (multiSampleFile);
 
         final Element fileRefElement = getRequiredElement (filePresetRefElement, AbletonTag.TAG_FILE_REF);
 
@@ -220,15 +234,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
             case 1:
                 // no idea what to make out of this relative data. Therefore, search upwards till
                 // the Sample folder is found...
-                File folder = multiSampleFile;
-                while ((folder = folder.getParentFile ()) != null)
-                {
-                    final Set<String> children = new HashSet<> ();
-                    Collections.addAll (children, folder.list ());
-                    if (children.contains ("Samples"))
-                        return folder;
-                }
-                return new File ("");
+                return findSampleFolder (multiSampleFile);
 
             case 5:
             case 6:
@@ -246,11 +252,12 @@ public class AbletonDetectorTask extends AbstractDetectorTask
      * @param multiSampleFile The multi-sample file
      * @param rootPath The root path where the samples are located
      * @param multisampleSource Where to store the data
-     * @param playerElement The Player element which contains the zone data
+     * @param deviceElement The device element which contains the zone data
      * @throws IOException Could not access the sample
      */
-    private void parseMultiSample (final File multiSampleFile, final File rootPath, final IMultisampleSource multisampleSource, final Element playerElement) throws IOException
+    private void parseMultiSample (final File multiSampleFile, final File rootPath, final IMultisampleSource multisampleSource, final Element deviceElement) throws IOException
     {
+        final Element playerElement = getRequiredElement (deviceElement, AbletonTag.TAG_PLAYER);
         final Element mapElement = getRequiredElement (playerElement, AbletonTag.TAG_MULTI_SAMPLE_MAP);
         final Element samplePartsElement = getRequiredElement (mapElement, AbletonTag.TAG_SAMPLE_PARTS);
 
@@ -273,6 +280,12 @@ public class AbletonDetectorTask extends AbstractDetectorTask
                 group.addSampleZone (zone);
             }
         }
+
+        final IFilter filter = readFilter (deviceElement);
+        if (filter != null)
+            multisampleSource.setGlobalFilter (filter);
+
+        applyGlobalEnvelopes (deviceElement, multisampleSource);
     }
 
 
@@ -314,14 +327,15 @@ public class AbletonDetectorTask extends AbstractDetectorTask
         final Element sustainLoopElement = XMLUtils.getChildElementByName (multiSamplePartElement, AbletonTag.TAG_SUSTAIN_LOOP);
         if (sustainLoopElement != null)
         {
-            final int loopType = AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_LOOP_END, zone.getStop ());
-            if (loopType > 0)
+            final int loopMode = AbletonDetectorTask.getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_MODE, 0);
+            if (loopMode > 0)
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
-                loop.setStart (AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_LOOP_START, 0));
-                loop.setEnd (AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_LOOP_END, zone.getStop ()));
-                loop.setCrossfadeInSamples (AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_LOOP_CROSSFADE, 0));
-                loop.setType (loopType == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
+                loop.setStart (AbletonDetectorTask.getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_START, 0));
+                loop.setEnd (AbletonDetectorTask.getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_END, zone.getStop ()));
+                loop.setCrossfadeInSamples (AbletonDetectorTask.getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_CROSSFADE, 0));
+                loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
+                zone.getLoops ().add (loop);
             }
         }
     }
@@ -358,6 +372,187 @@ public class AbletonDetectorTask extends AbstractDetectorTask
 
         if (creator != null && !creator.isBlank ())
             metadata.setCreator (creator);
+    }
+
+
+    private static IFilter readFilter (final Element samplePartsElement)
+    {
+        try
+        {
+            final Element filterElement = getRequiredElement (samplePartsElement, AbletonTag.TAG_FILTER);
+            final Element filterIsOnElement = getRequiredElement (filterElement, AbletonTag.TAG_IS_ON);
+            final boolean isFilterOn = getBooleanValueAttribute (filterIsOnElement, AbletonTag.TAG_MANUAL);
+            if (!isFilterOn)
+                return null;
+
+            final Element slotElement = getRequiredElement (filterElement, AbletonTag.TAG_SLOT);
+            final Element valueElement = getRequiredElement (slotElement, AbletonTag.TAG_VALUE);
+            final Element simplerFilterElement = getRequiredElement (valueElement, AbletonTag.TAG_SIMPLER_FILTER);
+            final Element typeElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_TYPE);
+            FilterType type = FILTER_TYPES.get (getValueAttribute (typeElement, AbletonTag.TAG_MANUAL));
+            if (type == null)
+                type = FilterType.LOW_PASS;
+
+            final Element slopeElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_SLOPE);
+            int poles = getBooleanValueAttribute (slopeElement, AbletonTag.TAG_MANUAL) ? 4 : 2;
+
+            final Element freqElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_FREQUENCY);
+            double cutoff = getDoubleValueAttribute (freqElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY);
+
+            final Element resElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_RESONANCE);
+            double resonance = getDoubleValueAttribute (resElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY) / 1.25;
+
+            final DefaultFilter filter = new DefaultFilter (type, poles, cutoff, resonance);
+
+            // Read the envelope
+            final Element envelopeElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_ENVELOPE);
+            final Element isOnElement = getRequiredElement (envelopeElement, AbletonTag.TAG_IS_ON);
+            if (getBooleanValueAttribute (isOnElement, AbletonTag.TAG_MANUAL))
+            {
+                final Element amountElement = getRequiredElement (envelopeElement, AbletonTag.TAG_AMOUNT);
+
+                final Element attackTimeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_ATTACK_TIME);
+                final Element decayTimeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_DECAY_TIME);
+                final Element releaseTimeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_TIME);
+
+                final Element attackLevelElement = getRequiredElement (envelopeElement, AbletonTag.TAG_ATTACK_LEVEL);
+                final Element sustainLevelElement = getRequiredElement (envelopeElement, AbletonTag.TAG_SUSTAIN_LEVEL);
+                final Element releaseLevelElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_LEVEL);
+
+                final Element attackSlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_ATTACK_SLOPE);
+                final Element decaySlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_DECAY_SLOPE);
+                final Element releaseSlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_SLOPE);
+
+                final IModulator cutoffModulator = filter.getCutoffModulator ();
+                cutoffModulator.setDepth (Math.abs (getDoubleValueAttribute (amountElement, AbletonTag.TAG_MANUAL, 0) / 72.0));
+
+                final IEnvelope filterEnvelope = cutoffModulator.getSource ();
+                filterEnvelope.setAttackTime (getDoubleValueAttribute (attackTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+                filterEnvelope.setDecayTime (getDoubleValueAttribute (decayTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+                filterEnvelope.setReleaseTime (getDoubleValueAttribute (releaseTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+
+                filterEnvelope.setStartLevel (getDoubleValueAttribute (attackLevelElement, AbletonTag.TAG_MANUAL, 0));
+                filterEnvelope.setSustainLevel (getDoubleValueAttribute (sustainLevelElement, AbletonTag.TAG_MANUAL, 1));
+                filterEnvelope.setEndLevel (getDoubleValueAttribute (releaseLevelElement, AbletonTag.TAG_MANUAL, 0));
+
+                filterEnvelope.setAttackSlope (-getDoubleValueAttribute (attackSlopeElement, AbletonTag.TAG_MANUAL, 0));
+                filterEnvelope.setDecaySlope (-getDoubleValueAttribute (decaySlopeElement, AbletonTag.TAG_MANUAL, 0));
+                filterEnvelope.setReleaseSlope (-getDoubleValueAttribute (releaseSlopeElement, AbletonTag.TAG_MANUAL, 0));
+            }
+
+            return filter;
+        }
+        catch (final IOException ex)
+        {
+            // No filter configured
+            return null;
+        }
+    }
+
+
+    private static void applyGlobalEnvelopes (final Element deviceElement, final IMultisampleSource multisampleSource)
+    {
+        try
+        {
+            // Read the amplitude envelope
+            final Element volAndPanElement = getRequiredElement (deviceElement, AbletonTag.TAG_VOLUME_AND_PAN);
+            final Element envelopeElement = getRequiredElement (volAndPanElement, AbletonTag.TAG_ENVELOPE);
+
+            final Element attackTimeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_ATTACK_TIME);
+            final Element decayTimeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_DECAY_TIME);
+            final Element releaseTimeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_TIME);
+
+            final Element attackLevelElement = getRequiredElement (envelopeElement, AbletonTag.TAG_ATTACK_LEVEL);
+            final Element sustainLevelElement = getRequiredElement (envelopeElement, AbletonTag.TAG_SUSTAIN_LEVEL);
+            final Element releaseLevelElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_LEVEL);
+
+            final Element attackSlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_ATTACK_SLOPE);
+            final Element decaySlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_DECAY_SLOPE);
+            final Element releaseSlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_SLOPE);
+
+            final IEnvelope ampEnvelope = new DefaultEnvelope ();
+            ampEnvelope.setAttackTime (getDoubleValueAttribute (attackTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+            ampEnvelope.setDecayTime (getDoubleValueAttribute (decayTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+            ampEnvelope.setReleaseTime (getDoubleValueAttribute (releaseTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+
+            ampEnvelope.setStartLevel (getDoubleValueAttribute (attackLevelElement, AbletonTag.TAG_MANUAL, 0));
+            ampEnvelope.setSustainLevel (getDoubleValueAttribute (sustainLevelElement, AbletonTag.TAG_MANUAL, 1));
+            ampEnvelope.setEndLevel (getDoubleValueAttribute (releaseLevelElement, AbletonTag.TAG_MANUAL, 0));
+
+            ampEnvelope.setAttackSlope (-getDoubleValueAttribute (attackSlopeElement, AbletonTag.TAG_MANUAL, 0));
+            ampEnvelope.setDecaySlope (-getDoubleValueAttribute (decaySlopeElement, AbletonTag.TAG_MANUAL, 0));
+            ampEnvelope.setReleaseSlope (-getDoubleValueAttribute (releaseSlopeElement, AbletonTag.TAG_MANUAL, 0));
+
+            // Read the pitch envelope
+            final Element auxEnvelopeElement = getRequiredElement (deviceElement, AbletonTag.TAG_AUX_ENVELOPE);
+            final Element isAuxEnvOnElement = getRequiredElement (auxEnvelopeElement, AbletonTag.TAG_IS_ON);
+            IEnvelope auxEnvelope = null;
+            double auxDepth = 0;
+            if (getBooleanValueAttribute (isAuxEnvOnElement, AbletonTag.TAG_MANUAL))
+            {
+                final Element slotElement = getRequiredElement (auxEnvelopeElement, AbletonTag.TAG_SLOT);
+                final Element valueElement = getRequiredElement (slotElement, AbletonTag.TAG_VALUE);
+                final Element auxEnvElement = getRequiredElement (valueElement, AbletonTag.TAG_SIMPLER_AUX_ENVELOPE);
+
+                final Element auxAttackTimeElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_ATTACK_TIME);
+                final Element auxDecayTimeElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_DECAY_TIME);
+                final Element auxReleaseTimeElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_RELEASE_TIME);
+
+                final Element auxAttackLevelElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_ATTACK_LEVEL);
+                final Element auxSustainLevelElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_SUSTAIN_LEVEL);
+                final Element auxReleaseLevelElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_RELEASE_LEVEL);
+
+                final Element auxAttackSlopeElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_ATTACK_SLOPE);
+                final Element auxDecaySlopeElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_DECAY_SLOPE);
+                final Element auxReleaseSlopeElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_RELEASE_SLOPE);
+
+                final Element auxModDestElement = getRequiredElement (auxEnvElement, AbletonTag.TAG_MODULATION_DESTINATION);
+                Element auxConnectionElement = getRequiredElement (auxModDestElement, AbletonTag.TAG_MODULATION_CONNECTION_0);
+                int destination = getIntegerValueAttribute (auxConnectionElement, AbletonTag.TAG_MODULATION_CONNECTION, 0);
+                // 6 = Pitch Modulation
+                if (destination != 6)
+                {
+                    auxConnectionElement = getRequiredElement (auxModDestElement, AbletonTag.TAG_MODULATION_CONNECTION_1);
+                    destination = getIntegerValueAttribute (auxConnectionElement, AbletonTag.TAG_MODULATION_CONNECTION, 0);
+                }
+                if (destination == 6)
+                {
+                    auxEnvelope = new DefaultEnvelope ();
+                    auxDepth = Math.abs (getDoubleValueAttribute (auxConnectionElement, AbletonTag.TAG_AMOUNT, 0) / 100.0);
+
+                    auxEnvelope.setAttackTime (getDoubleValueAttribute (auxAttackTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+                    auxEnvelope.setDecayTime (getDoubleValueAttribute (auxDecayTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+                    auxEnvelope.setReleaseTime (getDoubleValueAttribute (auxReleaseTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
+
+                    auxEnvelope.setStartLevel (getDoubleValueAttribute (auxAttackLevelElement, AbletonTag.TAG_MANUAL, 0));
+                    auxEnvelope.setSustainLevel (getDoubleValueAttribute (auxSustainLevelElement, AbletonTag.TAG_MANUAL, 0));
+                    auxEnvelope.setEndLevel (getDoubleValueAttribute (auxReleaseLevelElement, AbletonTag.TAG_MANUAL, 0));
+
+                    auxEnvelope.setAttackSlope (-getDoubleValueAttribute (auxAttackSlopeElement, AbletonTag.TAG_MANUAL, 0));
+                    auxEnvelope.setDecaySlope (-getDoubleValueAttribute (auxDecaySlopeElement, AbletonTag.TAG_MANUAL, 0));
+                    auxEnvelope.setReleaseSlope (-getDoubleValueAttribute (auxReleaseSlopeElement, AbletonTag.TAG_MANUAL, 0));
+                }
+            }
+
+            for (final IGroup group: multisampleSource.getGroups ())
+            {
+                for (final ISampleZone zone: group.getSampleZones ())
+                {
+                    zone.getAmplitudeModulator ().setSource (ampEnvelope);
+                    if (auxEnvelope != null)
+                    {
+                        final IModulator pitchModulator = zone.getPitchModulator ();
+                        pitchModulator.setDepth (auxDepth);
+                        pitchModulator.setSource (auxEnvelope);
+                    }
+                }
+            }
+        }
+        catch (final IOException ex)
+        {
+            // Ignore missing elements
+            return;
+        }
     }
 
 
@@ -422,6 +617,13 @@ public class AbletonDetectorTask extends AbstractDetectorTask
     }
 
 
+    private static boolean getBooleanValueAttribute (final Element parentElement, final String elementTag)
+    {
+        final String value = AbletonDetectorTask.getValueAttribute (parentElement, elementTag);
+        return Boolean.parseBoolean (value);
+    }
+
+
     private static String getValueAttribute (final Element parentElement, final String elementTag)
     {
         final Element element = XMLUtils.getChildElementByName (parentElement, elementTag);
@@ -435,5 +637,19 @@ public class AbletonDetectorTask extends AbstractDetectorTask
         if (element == null)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_TAG", tagName));
         return element;
+    }
+
+
+    private static File findSampleFolder (final File multiSampleFile)
+    {
+        File folder = multiSampleFile;
+        while ((folder = folder.getParentFile ()) != null)
+        {
+            final Set<String> children = new HashSet<> ();
+            Collections.addAll (children, folder.list ());
+            if (children.contains ("Samples"))
+                return folder;
+        }
+        return new File ("");
     }
 }

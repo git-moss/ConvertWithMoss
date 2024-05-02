@@ -237,10 +237,10 @@ public class Music1010DetectorTask extends AbstractDetectorTask
             // Volume envelope
 
             final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeModulator ().getSource ();
-            amplitudeEnvelope.setAttack (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0));
-            amplitudeEnvelope.setDecay (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0));
-            amplitudeEnvelope.setSustain (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0);
-            amplitudeEnvelope.setRelease (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_RELEASE, 0), 38.0));
+            amplitudeEnvelope.setAttackTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0));
+            amplitudeEnvelope.setDecayTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0));
+            amplitudeEnvelope.setSustainLevel (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0);
+            amplitudeEnvelope.setReleaseTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_RELEASE, 0), 38.0));
 
             parseEffects (paramsElement, multisampleSource);
 
@@ -367,10 +367,10 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeModulator ().getSource ();
-        amplitudeEnvelope.setAttack (ampEnvAttack);
-        amplitudeEnvelope.setDecay (ampEnvDecay);
-        amplitudeEnvelope.setSustain (ampEnvSustain);
-        amplitudeEnvelope.setRelease (ampEnvRelease);
+        amplitudeEnvelope.setAttackTime (ampEnvAttack);
+        amplitudeEnvelope.setDecayTime (ampEnvDecay);
+        amplitudeEnvelope.setSustainLevel (ampEnvSustain);
+        amplitudeEnvelope.setReleaseTime (ampEnvRelease);
 
         group.addSampleZone (sampleZone);
     }

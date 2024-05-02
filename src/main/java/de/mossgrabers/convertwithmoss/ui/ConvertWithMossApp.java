@@ -18,6 +18,8 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
+import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
+import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.aiff.AiffDetector;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.MPCKeygroupDetector;
@@ -35,7 +37,6 @@ import de.mossgrabers.convertwithmoss.format.music1010.Music1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Detector;
 import de.mossgrabers.convertwithmoss.format.nki.NkiCreator;
 import de.mossgrabers.convertwithmoss.format.nki.NkiDetector;
-import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
@@ -146,9 +147,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.detectors = new IDetector []
         {
-            new AiffDetector (this),
             new Music1010Detector (this),
-            // new AbletonDetector (this),
+            new AbletonDetector (this),
+            new AiffDetector (this),
             new MPCKeygroupDetector (this),
             new BitwigMultisampleDetector (this),
             new TX16WxDetector (this),
@@ -168,6 +169,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.creators = new ICreator []
         {
             new Music1010Creator (this),
+            new AbletonCreator (this),
             new MPCKeygroupCreator (this),
             new BitwigMultisampleCreator (this),
             new TX16WxCreator (this),
@@ -177,7 +179,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new KorgmultisampleCreator (this),
             new EXS24Creator (this),
             new SxtCreator (this),
-            new Sf2Creator (this),
+            // new Sf2Creator (this),
             new SfzCreator (this),
             new TALSamplerCreator (this),
             new WavCreator (this)

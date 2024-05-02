@@ -511,14 +511,14 @@ class SxtZone
             pitchModulator.setDepth (this.modEnvToPitch / 1000.0);
             final IEnvelope modEnvelope = pitchModulator.getSource ();
             if (this.modEnvDelayIsOff == 0)
-                modEnvelope.setDelay (envelopeTimeCentsToSeconds (this.modEnvDelay));
+                modEnvelope.setDelayTime (envelopeTimeCentsToSeconds (this.modEnvDelay));
             if (this.modEnvAttackIsOff == 0)
-                modEnvelope.setAttack (envelopeTimeCentsToSeconds (this.modEnvAttack));
+                modEnvelope.setAttackTime (envelopeTimeCentsToSeconds (this.modEnvAttack));
             if (this.modEnvHoldIsOff == 0)
-                modEnvelope.setHold (envelopeTimeCentsToSeconds (this.modEnvHold));
-            modEnvelope.setDecay (envelopeTimeCentsToSeconds (this.modEnvDecay));
-            modEnvelope.setSustain (this.modEnvSustain / 1000.0);
-            modEnvelope.setRelease (envelopeTimeCentsToSeconds (this.modEnvRelease));
+                modEnvelope.setHoldTime (envelopeTimeCentsToSeconds (this.modEnvHold));
+            modEnvelope.setDecayTime (envelopeTimeCentsToSeconds (this.modEnvDecay));
+            modEnvelope.setSustainLevel (this.modEnvSustain / 1000.0);
+            modEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.modEnvRelease));
         }
 
         // Set filter
@@ -571,14 +571,14 @@ class SxtZone
                 cutoffModulator.setDepth (this.modEnvToFilterFreq / 1000.0);
                 final IEnvelope modEnvelope = cutoffModulator.getSource ();
                 if (this.modEnvDelayIsOff == 0)
-                    modEnvelope.setDelay (envelopeTimeCentsToSeconds (this.modEnvDelay));
+                    modEnvelope.setDelayTime (envelopeTimeCentsToSeconds (this.modEnvDelay));
                 if (this.modEnvAttackIsOff == 0)
-                    modEnvelope.setAttack (envelopeTimeCentsToSeconds (this.modEnvAttack));
+                    modEnvelope.setAttackTime (envelopeTimeCentsToSeconds (this.modEnvAttack));
                 if (this.modEnvHoldIsOff == 0)
-                    modEnvelope.setHold (envelopeTimeCentsToSeconds (this.modEnvHold));
-                modEnvelope.setDecay (envelopeTimeCentsToSeconds (this.modEnvDecay));
-                modEnvelope.setSustain (this.modEnvSustain / 1000.0);
-                modEnvelope.setRelease (envelopeTimeCentsToSeconds (this.modEnvRelease));
+                    modEnvelope.setHoldTime (envelopeTimeCentsToSeconds (this.modEnvHold));
+                modEnvelope.setDecayTime (envelopeTimeCentsToSeconds (this.modEnvDecay));
+                modEnvelope.setSustainLevel (this.modEnvSustain / 1000.0);
+                modEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.modEnvRelease));
             }
         }
 
@@ -586,14 +586,14 @@ class SxtZone
         final IModulator amplitudeModulator = zone.getAmplitudeModulator ();
         final IEnvelope ampEnvelope = amplitudeModulator.getSource ();
         if (this.ampEnvDelayIsOff == 0)
-            ampEnvelope.setDelay (envelopeTimeCentsToSeconds (this.ampEnvDelay));
+            ampEnvelope.setDelayTime (envelopeTimeCentsToSeconds (this.ampEnvDelay));
         if (this.ampEnvAttackIsOff == 0)
-            ampEnvelope.setAttack (envelopeTimeCentsToSeconds (this.ampEnvAttack));
+            ampEnvelope.setAttackTime (envelopeTimeCentsToSeconds (this.ampEnvAttack));
         if (this.ampEnvHoldIsOff == 0)
-            ampEnvelope.setHold (envelopeTimeCentsToSeconds (this.ampEnvHold));
-        ampEnvelope.setDecay (envelopeTimeCentsToSeconds (this.ampEnvDecay));
-        ampEnvelope.setSustain (this.ampEnvSustain / 1000.0);
-        ampEnvelope.setRelease (envelopeTimeCentsToSeconds (this.ampEnvRelease));
+            ampEnvelope.setHoldTime (envelopeTimeCentsToSeconds (this.ampEnvHold));
+        ampEnvelope.setDecayTime (envelopeTimeCentsToSeconds (this.ampEnvDecay));
+        ampEnvelope.setSustainLevel (this.ampEnvSustain / 1000.0);
+        ampEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.ampEnvRelease));
 
         // Set gain and panorama
         final double gain = Math.pow ((this.ampEnvGain + 1440) / 1440, 3);
@@ -657,28 +657,28 @@ class SxtZone
         {
             this.modEnvToPitch = (int) (depth * 1000.0);
             final IEnvelope modEnvelope = pitchModulator.getSource ();
-            final double delay = modEnvelope.getDelay ();
+            final double delay = modEnvelope.getDelayTime ();
             if (delay >= 0)
             {
                 this.modEnvDelayIsOff = 1;
                 this.modEnvDelay = envelopeTimeSecondsToCents (delay);
             }
-            final double attack = modEnvelope.getAttack ();
+            final double attack = modEnvelope.getAttackTime ();
             if (attack >= 0)
             {
                 this.modEnvAttackIsOff = 1;
                 this.modEnvAttack = envelopeTimeSecondsToCents (attack);
             }
-            final double hold = modEnvelope.getHold ();
+            final double hold = modEnvelope.getHoldTime ();
             if (hold >= 0)
             {
                 this.modEnvHoldIsOff = 1;
                 this.modEnvHold = envelopeTimeSecondsToCents (hold);
             }
-            this.modEnvDecay = envelopeTimeSecondsToCents (modEnvelope.getDecay ());
-            final double sustain = modEnvelope.getSustain ();
+            this.modEnvDecay = envelopeTimeSecondsToCents (modEnvelope.getDecayTime ());
+            final double sustain = modEnvelope.getSustainLevel ();
             this.modEnvSustain = sustain < 0 ? 1000 : (int) (sustain * 1000);
-            this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getRelease ());
+            this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getReleaseTime ());
         }
 
         // Set filter
@@ -724,56 +724,56 @@ class SxtZone
             {
                 this.modEnvToPitch = (int) (modEnvDepth * 1000.0);
                 final IEnvelope modEnvelope = cutoffModulator.getSource ();
-                final double delay = modEnvelope.getDelay ();
+                final double delay = modEnvelope.getDelayTime ();
                 if (delay >= 0)
                 {
                     this.modEnvDelayIsOff = 1;
                     this.modEnvDelay = envelopeTimeSecondsToCents (delay);
                 }
-                final double attack = modEnvelope.getAttack ();
+                final double attack = modEnvelope.getAttackTime ();
                 if (attack >= 0)
                 {
                     this.modEnvAttackIsOff = 1;
                     this.modEnvAttack = envelopeTimeSecondsToCents (attack);
                 }
-                final double hold = modEnvelope.getHold ();
+                final double hold = modEnvelope.getHoldTime ();
                 if (hold >= 0)
                 {
                     this.modEnvHoldIsOff = 1;
                     this.modEnvHold = envelopeTimeSecondsToCents (hold);
                 }
-                this.modEnvDecay = envelopeTimeSecondsToCents (modEnvelope.getDecay ());
-                final double sustain = modEnvelope.getSustain ();
+                this.modEnvDecay = envelopeTimeSecondsToCents (modEnvelope.getDecayTime ());
+                final double sustain = modEnvelope.getSustainLevel ();
                 this.modEnvSustain = sustain < 0 ? 1000 : (int) (sustain * 1000);
-                this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getRelease ());
+                this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getReleaseTime ());
             }
         }
 
         // Set amplitude envelope
         final IModulator amplitudeModulator = zone.getAmplitudeModulator ();
         final IEnvelope ampEnvelope = amplitudeModulator.getSource ();
-        final double delay = ampEnvelope.getDelay ();
+        final double delay = ampEnvelope.getDelayTime ();
         if (delay >= 0)
         {
             this.ampEnvDelayIsOff = 1;
             this.ampEnvDelay = envelopeTimeSecondsToCents (delay);
         }
-        final double attack = ampEnvelope.getAttack ();
+        final double attack = ampEnvelope.getAttackTime ();
         if (attack >= 0)
         {
             this.ampEnvAttackIsOff = 1;
             this.ampEnvAttack = envelopeTimeSecondsToCents (attack);
         }
-        final double hold = ampEnvelope.getHold ();
+        final double hold = ampEnvelope.getHoldTime ();
         if (hold >= 0)
         {
             this.ampEnvHoldIsOff = 1;
             this.ampEnvHold = envelopeTimeSecondsToCents (hold);
         }
-        this.ampEnvDecay = envelopeTimeSecondsToCents (ampEnvelope.getDecay ());
-        final double sustain = ampEnvelope.getSustain ();
+        this.ampEnvDecay = envelopeTimeSecondsToCents (ampEnvelope.getDecayTime ());
+        final double sustain = ampEnvelope.getSustainLevel ();
         this.ampEnvSustain = sustain < 0 ? 1000 : (int) (sustain * 1000);
-        this.ampEnvRelease = envelopeTimeSecondsToCents (ampEnvelope.getRelease ());
+        this.ampEnvRelease = envelopeTimeSecondsToCents (ampEnvelope.getReleaseTime ());
 
         // Set gain and panorama
         final double dBValue = zone.getGain ();

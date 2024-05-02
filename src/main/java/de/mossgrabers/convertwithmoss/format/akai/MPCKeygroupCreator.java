@@ -184,7 +184,7 @@ public class MPCKeygroupCreator extends AbstractCreator
      * Creates a program element.
      *
      * @param document The XML document
-     * @param multisampleSource The multi sample source
+     * @param multisampleSource The multi-sample source
      * @return The created element
      */
     private static Element createProgramElement (final Document document, final IMultisampleSource multisampleSource)
@@ -350,11 +350,14 @@ public class MPCKeygroupCreator extends AbstractCreator
                 XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, formatDouble (envelopeDepth, 2));
 
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttack (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, filterEnvelope.getHold (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, filterEnvelope.getDecay (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, filterEnvelope.getSustain (), 0, 1, 1);
-                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, filterEnvelope.getRelease (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, filterEnvelope.getAttackTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, filterEnvelope.getHoldTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, filterEnvelope.getDecayTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, filterEnvelope.getSustainLevel (), 0, 1, 1);
+                setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, filterEnvelope.getReleaseTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
+                setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK_CURVE, filterEnvelope.getAttackSlope ());
+                setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY_CURVE, filterEnvelope.getDecaySlope ());
+                setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE_CURVE, filterEnvelope.getReleaseSlope ());
             }
         }
 
@@ -363,11 +366,14 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, zone.getKeyTracking () == 0 ? "True" : "False");
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttack (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHold (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecay (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1, 1);
-        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getRelease (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttackTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, amplitudeEnvelope.getHoldTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, amplitudeEnvelope.getDecayTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, amplitudeEnvelope.getSustainLevel (), 0, 1, 1);
+        setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, amplitudeEnvelope.getReleaseTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
+        setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK_CURVE, amplitudeEnvelope.getAttackSlope ());
+        setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY_CURVE, amplitudeEnvelope.getDecaySlope ());
+        setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE_CURVE, amplitudeEnvelope.getReleaseSlope ());
 
         final IModulator pitchModulator = zone.getPitchModulator ();
         final double pitchDepth = pitchModulator.getDepth ();
@@ -378,11 +384,14 @@ public class MPCKeygroupCreator extends AbstractCreator
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, formatDouble (mpcPitchDepth, 2));
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, pitchEnvelope.getAttack (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, pitchEnvelope.getHold (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, pitchEnvelope.getDecay (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, pitchEnvelope.getSustain (), 0, 1, 1);
-            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, pitchEnvelope.getRelease (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, pitchEnvelope.getAttackTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, pitchEnvelope.getHoldTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_HOLD_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, pitchEnvelope.getDecayTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_DECAY_TIME, true);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, pitchEnvelope.getSustainLevel (), 0, 1, 1);
+            setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, pitchEnvelope.getReleaseTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_RELEASE_TIME, true);
+            setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK_CURVE, pitchEnvelope.getAttackSlope ());
+            setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY_CURVE, pitchEnvelope.getDecaySlope ());
+            setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE_CURVE, pitchEnvelope.getReleaseSlope ());
         }
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY, ZonePlay.from (zone.getPlayLogic ()).getID ());
@@ -391,7 +400,7 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         if (trigger == TriggerType.RELEASE)
             triggerMode = SamplePlay.NOTE_OFF;
-        else if (amplitudeEnvelope.getSustain () <= 0 && zone.getKeyLow () == zone.getKeyHigh ())
+        else if (amplitudeEnvelope.getSustainLevel () <= 0 && zone.getKeyLow () == zone.getKeyHigh ())
             triggerMode = SamplePlay.ONE_SHOT;
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode.ordinal ()));
@@ -464,5 +473,12 @@ public class MPCKeygroupCreator extends AbstractCreator
         final double v = value < 0 ? defaultValue : value;
         final double normalizedValue = logarithmic ? normalizeLogarithmicEnvTimeValue (v, minimum, maximum) : MathUtils.normalize (v, minimum, maximum);
         XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.6f", Double.valueOf (normalizedValue)));
+    }
+
+
+    private static void setEnvelopeCurveAttribute (final Document document, final Element element, final String curveTag, final double slopeValue)
+    {
+        final double value = MathUtils.clamp ((slopeValue + 1.0) / 2.0, 0, 1);
+        XMLUtils.addTextElement (document, element, curveTag, String.format (Locale.US, "%.6f", Double.valueOf (value)));
     }
 }

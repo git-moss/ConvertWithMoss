@@ -904,4 +904,24 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     {
         return this.isUpdateBroadcastAudioChunk () || this.isUpdateInstrumentChunk () || this.isUpdateSampleChunk () || this.isRemoveJunkChunks () || destinationFormat.getBitResolutions () != null || destinationFormat.getMaxSampleRate () != -1;
     }
+
+
+    protected static double limitToDefault (final double value, final double defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
+    }
+
+
+    protected static int limitToDefault (final int value, final int defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
+    }
+
+
+    protected static String formatDouble (final double value)
+    {
+        if (value == 0)
+            return "0";
+        return String.format (Locale.US, "%.8f", Double.valueOf (value));
+    }
 }

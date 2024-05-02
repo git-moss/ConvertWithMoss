@@ -334,14 +334,16 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final Integer sustain = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_SUSTAIN : EXS24Parameters.ENV2_SUSTAIN);
         final Integer release = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_RELEASE : EXS24Parameters.ENV2_RELEASE);
 
+        // No example file which has ENV1_ATK_CURVE or ENV2_ATK_CURVE) set
+
         final IEnvelope envelope = new DefaultEnvelope ();
         // Maximum time for each step are 10 seconds
-        envelope.setDelay (delay == null ? 0 : delay.doubleValue () / 127.0 * 10.0);
-        envelope.setAttack (attack == null ? 0 : attack.intValue ());
-        envelope.setHold (hold == null ? 0 : hold.doubleValue () / 127.0 * 10.0);
-        envelope.setDecay (decay == null ? 0 : decay.doubleValue () / 127.0 * 10.0);
-        envelope.setSustain (sustain == null ? 1.0 : sustain.doubleValue () / 127.0);
-        envelope.setRelease (release == null ? 0 : release.doubleValue () / 127.0 * 10.0);
+        envelope.setDelayTime (delay == null ? 0 : delay.doubleValue () / 127.0 * 10.0);
+        envelope.setAttackTime (attack == null ? 0 : attack.intValue ());
+        envelope.setHoldTime (hold == null ? 0 : hold.doubleValue () / 127.0 * 10.0);
+        envelope.setDecayTime (decay == null ? 0 : decay.doubleValue () / 127.0 * 10.0);
+        envelope.setSustainLevel (sustain == null ? 1.0 : sustain.doubleValue () / 127.0);
+        envelope.setReleaseTime (release == null ? 0 : release.doubleValue () / 127.0 * 10.0);
 
         return envelope;
     }

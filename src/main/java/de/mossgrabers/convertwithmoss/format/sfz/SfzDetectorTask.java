@@ -413,15 +413,20 @@ public class SfzDetectorTask extends AbstractDetectorTask
         pitchModulator.setDepth (envelopeDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
 
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-        pitchEnvelope.setDelay (this.getDoubleValue (SfzOpcode.PITCHEG_DELAY, SfzOpcode.PITCH_DELAY));
-        pitchEnvelope.setAttack (this.getDoubleValue (SfzOpcode.PITCHEG_ATTACK, SfzOpcode.PITCH_ATTACK));
-        pitchEnvelope.setHold (this.getDoubleValue (SfzOpcode.PITCHEG_HOLD, SfzOpcode.PITCH_HOLD));
-        pitchEnvelope.setDecay (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY, SfzOpcode.PITCH_DECAY));
-        pitchEnvelope.setRelease (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE, SfzOpcode.PITCH_RELEASE));
+        pitchEnvelope.setDelayTime (this.getDoubleValue (SfzOpcode.PITCHEG_DELAY, SfzOpcode.PITCH_DELAY));
+        pitchEnvelope.setAttackTime (this.getDoubleValue (SfzOpcode.PITCHEG_ATTACK, SfzOpcode.PITCH_ATTACK));
+        pitchEnvelope.setHoldTime (this.getDoubleValue (SfzOpcode.PITCHEG_HOLD, SfzOpcode.PITCH_HOLD));
+        pitchEnvelope.setDecayTime (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY, SfzOpcode.PITCH_DECAY));
+        pitchEnvelope.setReleaseTime (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE, SfzOpcode.PITCH_RELEASE));
+
         final double startValue = this.getDoubleValue (SfzOpcode.PITCHEG_START, SfzOpcode.PITCH_START);
         final double sustainValue = this.getDoubleValue (SfzOpcode.PITCHEG_SUSTAIN, SfzOpcode.PITCH_SUSTAIN);
-        pitchEnvelope.setStart (startValue < 0 ? -1 : startValue / 100.0);
-        pitchEnvelope.setSustain (sustainValue < 0 ? -1 : sustainValue / 100.0);
+        pitchEnvelope.setStartLevel (startValue < 0 ? -1 : startValue / 100.0);
+        pitchEnvelope.setSustainLevel (sustainValue < 0 ? -1 : sustainValue / 100.0);
+
+        pitchEnvelope.setAttackSlope (this.getDoubleValue (SfzOpcode.PITCHEG_ATTACK_SHAPE, 0) / 10.0);
+        pitchEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY_SHAPE, 0) / 10.0);
+        pitchEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE_SHAPE, 0) / 10.0);
 
         ////////////////////////////////////////////////////////////
         // Volume
@@ -475,16 +480,20 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
         // Filter envelope
         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-        filterEnvelope.setDelay (this.getDoubleValue (SfzOpcode.FILEG_DELAY, SfzOpcode.FIL_DELAY));
-        filterEnvelope.setAttack (this.getDoubleValue (SfzOpcode.FILEG_ATTACK, SfzOpcode.FIL_ATTACK));
-        filterEnvelope.setHold (this.getDoubleValue (SfzOpcode.FILEG_HOLD, SfzOpcode.FIL_HOLD));
-        filterEnvelope.setDecay (this.getDoubleValue (SfzOpcode.FILEG_DECAY, SfzOpcode.FIL_DECAY));
-        filterEnvelope.setRelease (this.getDoubleValue (SfzOpcode.FILEG_RELEASE, SfzOpcode.FIL_RELEASE));
+        filterEnvelope.setDelayTime (this.getDoubleValue (SfzOpcode.FILEG_DELAY, SfzOpcode.FIL_DELAY));
+        filterEnvelope.setAttackTime (this.getDoubleValue (SfzOpcode.FILEG_ATTACK, SfzOpcode.FIL_ATTACK));
+        filterEnvelope.setHoldTime (this.getDoubleValue (SfzOpcode.FILEG_HOLD, SfzOpcode.FIL_HOLD));
+        filterEnvelope.setDecayTime (this.getDoubleValue (SfzOpcode.FILEG_DECAY, SfzOpcode.FIL_DECAY));
+        filterEnvelope.setReleaseTime (this.getDoubleValue (SfzOpcode.FILEG_RELEASE, SfzOpcode.FIL_RELEASE));
 
         final double startValue = this.getDoubleValue (SfzOpcode.FILEG_START, SfzOpcode.FIL_START);
         final double sustainValue = this.getDoubleValue (SfzOpcode.FILEG_SUSTAIN, SfzOpcode.FIL_SUSTAIN);
-        filterEnvelope.setStart (startValue < 0 ? -1 : startValue / 100.0);
-        filterEnvelope.setSustain (sustainValue < 0 ? -1 : sustainValue / 100.0);
+        filterEnvelope.setStartLevel (startValue < 0 ? -1 : startValue / 100.0);
+        filterEnvelope.setSustainLevel (sustainValue < 0 ? -1 : sustainValue / 100.0);
+
+        filterEnvelope.setAttackSlope (this.getDoubleValue (SfzOpcode.FILEG_ATTACK_SHAPE, 0) / 10.0);
+        filterEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.FILEG_DECAY_SHAPE, 0) / 10.0);
+        filterEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.FILEG_RELEASE_SHAPE, 0) / 10.0);
     }
 
 
@@ -554,16 +563,20 @@ public class SfzDetectorTask extends AbstractDetectorTask
         sampleMetadata.setPanorama (MathUtils.clamp (panorama, -100, 100) / 100.0);
 
         final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
-        amplitudeEnvelope.setDelay (this.getDoubleValue (SfzOpcode.AMPEG_DELAY, SfzOpcode.AMP_DELAY));
-        amplitudeEnvelope.setAttack (this.getDoubleValue (SfzOpcode.AMPEG_ATTACK, SfzOpcode.AMP_ATTACK));
-        amplitudeEnvelope.setHold (this.getDoubleValue (SfzOpcode.AMPEG_HOLD, SfzOpcode.AMP_HOLD));
-        amplitudeEnvelope.setDecay (this.getDoubleValue (SfzOpcode.AMPEG_DECAY, SfzOpcode.AMP_DECAY));
-        amplitudeEnvelope.setRelease (this.getDoubleValue (SfzOpcode.AMPEG_RELEASE, SfzOpcode.AMP_RELEASE));
+        amplitudeEnvelope.setDelayTime (this.getDoubleValue (SfzOpcode.AMPEG_DELAY, SfzOpcode.AMP_DELAY));
+        amplitudeEnvelope.setAttackTime (this.getDoubleValue (SfzOpcode.AMPEG_ATTACK, SfzOpcode.AMP_ATTACK));
+        amplitudeEnvelope.setHoldTime (this.getDoubleValue (SfzOpcode.AMPEG_HOLD, SfzOpcode.AMP_HOLD));
+        amplitudeEnvelope.setDecayTime (this.getDoubleValue (SfzOpcode.AMPEG_DECAY, SfzOpcode.AMP_DECAY));
+        amplitudeEnvelope.setReleaseTime (this.getDoubleValue (SfzOpcode.AMPEG_RELEASE, SfzOpcode.AMP_RELEASE));
 
         final double startValue = this.getDoubleValue (SfzOpcode.AMPEG_START, SfzOpcode.AMP_START);
         final double sustainValue = this.getDoubleValue (SfzOpcode.AMPEG_SUSTAIN, SfzOpcode.AMP_SUSTAIN);
-        amplitudeEnvelope.setStart (startValue < 0 ? -1 : startValue / 100.0);
-        amplitudeEnvelope.setSustain (sustainValue < 0 ? -1 : sustainValue / 100.0);
+        amplitudeEnvelope.setStartLevel (startValue < 0 ? -1 : startValue / 100.0);
+        amplitudeEnvelope.setSustainLevel (sustainValue < 0 ? -1 : sustainValue / 100.0);
+
+        amplitudeEnvelope.setAttackSlope (this.getDoubleValue (SfzOpcode.AMPEG_ATTACK_SHAPE, 0) / 10.0);
+        amplitudeEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.AMPEG_DECAY_SHAPE, 0) / 10.0);
+        amplitudeEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.AMPEG_RELEASE_SHAPE, 0) / 10.0);
     }
 
 

@@ -3,9 +3,9 @@
             <V name="volume" value="1."/>
             <V name="pan" value="0."/>
             <V name="tune" value="0."/>
-            <V name="keyTracking" value="yes"/>
-            <V name="reverse" value="no"/>
-            <V name="releaseTrigger" value="no"/>
+            <V name="keyTracking" value="%GROUP_KEY_TRACKING%"/>
+            <V name="reverse" value="%GROUP_REVERSE%"/>
+            <V name="releaseTrigger" value="%GROUP_RELEASE_TRIGGER%"/>
             <V name="releaseTriggerNoteMonophonic" value="yes"/>
             <V name="rlsTrigCounter" value="0"/>
             <V name="outputMask" value="-1"/>
@@ -57,7 +57,7 @@
               <Targets>
                 <Target index="0">
                   <V name="target" value="volume"/>
-                  <V name="intensity" value="1."/>
+                  <V name="intensity" value="%ENVELOPE_INTENSITY%"/>
                   <V name="slotIdx" value="-1"/>
                   <V name="flags" value="20"/>
                   <V name="smoothingCoef" value="0"/>
@@ -72,12 +72,12 @@
               <V name="classID" value="0"/>
               <V name="name" value="ENV_AHDSR"/>
               <Envelope type="ahdsr" version="0.90">
-                <V name="atkCurving" value="-0.33199998736381531"/>
-                <V name="attack" value="0."/>
-                <V name="decay" value="500."/>
-                <V name="hold" value="0."/>
-                <V name="release" value="300."/>
-                <V name="sustain" value="1."/>
+                <V name="atkCurving" value="%ENVELOPE_ATTACK_CURVE%"/>
+                <V name="attack" value="%ENVELOPE_ATTACK%"/>
+                <V name="decay" value="%ENVELOPE_DECAY%"/>
+                <V name="hold" value="%ENVELOPE_HOLD%"/>
+                <V name="release" value="%ENVELOPE_RELEASE%"/>
+                <V name="sustain" value="%ENVELOPE_SUSTAIN%"/>
                 <V name="noteOffLessMode" value="no"/>
               </Envelope>
             </K2_IntMod>
@@ -107,7 +107,7 @@
               <Targets>
                 <Target index="0">
                   <V name="target" value="pitch"/>
-                  <V name="intensity" value="0.16666699945926666"/>
+                  <V name="intensity" value="%PITCH_BEND%"/>
                   <V name="slotIdx" value="-1"/>
                   <V name="flags" value="20"/>
                   <V name="smoothingCoef" value="250"/>

@@ -292,11 +292,11 @@ public class TALSamplerCreator extends AbstractCreator
 
         // Add amplitude envelope
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttack (), 0, maxEnvelopeTime);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHold (), 0, maxEnvelopeTime);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecay (), 0, maxEnvelopeTime);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, amplitudeEnvelope.getSustain (), 0, 1);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getRelease (), 0, maxEnvelopeTime);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttackTime (), 0, maxEnvelopeTime);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHoldTime (), 0, maxEnvelopeTime);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecayTime (), 0, maxEnvelopeTime);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, amplitudeEnvelope.getSustainLevel (), 0, 1);
+        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
 
         // Add filter settings
         if (optFilter.isPresent ())
@@ -318,11 +318,11 @@ public class TALSamplerCreator extends AbstractCreator
             if (filterModDepth > 0)
             {
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, filterEnvelope.getAttack (), 0, maxEnvelopeTime);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, filterEnvelope.getHold (), 0, maxEnvelopeTime);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, filterEnvelope.getDecay (), 0, maxEnvelopeTime);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, filterEnvelope.getSustain (), 0, 1);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, filterEnvelope.getRelease (), 0, maxEnvelopeTime);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, filterEnvelope.getAttackTime (), 0, maxEnvelopeTime);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, filterEnvelope.getHoldTime (), 0, maxEnvelopeTime);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, filterEnvelope.getDecayTime (), 0, maxEnvelopeTime);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, filterEnvelope.getSustainLevel (), 0, 1);
+                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, filterEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
 
                 XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, filterModDepth, 4);
 
@@ -336,11 +336,11 @@ public class TALSamplerCreator extends AbstractCreator
         if (pitchModDepth > 0)
         {
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, pitchEnvelope.getAttack (), 0, maxEnvelopeTime);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, pitchEnvelope.getHold (), 0, maxEnvelopeTime);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, pitchEnvelope.getDecay (), 0, maxEnvelopeTime);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, pitchEnvelope.getSustain (), 0, 1);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, pitchEnvelope.getRelease (), 0, maxEnvelopeTime);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, pitchEnvelope.getAttackTime (), 0, maxEnvelopeTime);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, pitchEnvelope.getHoldTime (), 0, maxEnvelopeTime);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, pitchEnvelope.getDecayTime (), 0, maxEnvelopeTime);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, pitchEnvelope.getSustainLevel (), 0, 1);
+            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, pitchEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
 
             // Envelope 3 needs to be set to modulate the global pitch
             final Element modMatrixElement = XMLUtils.addElement (document, programElement, "modmatrix");

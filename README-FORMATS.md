@@ -3,19 +3,21 @@
 The following multisample formats are supported:
 
 1. [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
-2. [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
-3. [CWITEC TX16Wx](#cwitec-tx16wx)
-4. [DecentSampler](#decentsampler)
-5. [Korg KMP/KSF](#korg-kmpksf)
-6. [Korg wavestate/modwave](#korg-wavestatemodwave)
-7. [Logic EXS24](#logic-exs24)
-8. [Multisample Format (Bitwig Studio, Presonus Studio One)](#multisample-format-bitwig-studio-presonus-studio-one)
-9. [Native Instruments Kontakt NKI/NKM](#kontakt-nkinkm)
-10. [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
-11. [SFZ](#sfz)
-12. [SoundFont 2](#soundfont-2)
-13. [TAL Sampler](#tal-sampler)
-14. [WAV files](#wav-files)
+2. [AIFF](#aiff)
+3. [Ableton Sampler](#ableton-sampler)
+4. [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
+5. [CWITEC TX16Wx](#cwitec-tx16wx)
+6. [DecentSampler](#decentsampler)
+7. [Korg KMP/KSF](#korg-kmpksf)
+8. [Korg wavestate/modwave](#korg-wavestatemodwave)
+9. [Logic EXS24](#logic-exs24)
+10. [Multisample Format (Bitwig Studio, Presonus Studio One)](#multisample-format-bitwig-studio-presonus-studio-one)
+11. [Native Instruments Kontakt NKI/NKM](#kontakt-nkinkm)
+12. [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+13. [SFZ](#sfz)
+14. [SoundFont 2](#soundfont-2)
+15. [TAL Sampler](#tal-sampler)
+16. [WAV files](#wav-files)
 
 ## Automatic Metadata detection
 
@@ -56,6 +58,22 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 * Option to set the *Interpolation Quality*. Setting it to *High* requires a bit more processing power on the 1010music devices.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
+## AIFF
+
+The Audio Interchange File Format (Audio IFF) provides a standard for storing sampled sounds. The format is quite flexible, allowing for the storage of monaural or multichannel sampled sounds at a variety of sample rates and sample widths. Audio IFF conforms to the "EA IFF 85" Standard for Interchange Format Files developed by Electronic Arts.
+
+If AIFF is selected as the source format, all AIFF files located in the same folder are considered as a part of one multisample. You can also select a top folder. If you do so, all sub-folders are checked for potential multisample folders.
+
+The applied algorithm and configuration options are the same as when WAV files are used as the source. See the [WAV section](#wav-files) for details.
+
+## Ableton Sampler
+
+Ableton uses a generic preset format (*.adv) for all of their devices. For combined rack presets another format (*.adg) is used. All their formats are XML documents which are compressed with the open GZIP algorithm.
+
+ConvertWithMoss can extract Sampler and Simpler presets from ADV files as well as all instances of Sampler or Simpler in ADG files when selected as a source. The presets from the Ableton libraries cannot be extracted since their AIFF files use a proprietary encryption algorithm. It writes ADV files as the destination.
+
+ADV files and their samples need to be placed in the Ableton user library in the correct folders to allow Ableton to open it. Therefore, ConvertWithMoss creates the necessary folder structure which can be simply copied to the user library. If the source has sub-folders the global option *Create folder structure* should be deactivated otherwise it can be quite tedious to collect all the results files with their additional Ableton sub-folder structure.
+
 ## Akai MPC Keygroups / Drum
 
 A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV). Both keygroup and drum types are supported.
@@ -71,14 +89,17 @@ Other restrictions are:
 
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
-## Multisample Format (Bitwig Studio, Presonus Studio One)
+## CWITEC TX16Wx
 
-This open format is currently supported by the stock sampler in Bitwig Studio and Presonus Studio One. A multisample file is a zip archive which contains all samples in WAV format and a metadata file in XML format.
-It supports multiple groups, key and velocity crossfades as well as several metadata information: creator, sound category and keywords.
+TX16Wx is a free sampler plugin available for Windows and Macos. TX16Wx Professional is the commercial expansion of TX16Wx. It adds some advanced features like effects, signal routing or trigger switching. But the free version is already very powerful and covers all of the features that ConvertWithMoss supports.
 
-The parser supports all information from the format except the group color and select parameters 1 to 3, which are not mappable.
+The format uses a XML format and keeps the samples separate.
 
-This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+
+### Destination Options
+
+* Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
 ## DecentSampler
 
@@ -168,6 +189,15 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
+## Multisample Format (Bitwig Studio, Presonus Studio One)
+
+This open format is currently supported by the stock sampler in Bitwig Studio and Presonus Studio One. A multisample file is a zip archive which contains all samples in WAV format and a metadata file in XML format.
+It supports multiple groups, key and velocity crossfades as well as several metadata information: creator, sound category and keywords.
+
+The parser supports all information from the format except the group color and select parameters 1 to 3, which are not mappable.
+
+This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
+
 ## Propellerhead Reason NN-XT
 
 The Propellerhead Reason NN-XT is a software sampler that is included in the Reason software package. Reason is a digital audio workstation (DAW) software developed by Propellerhead Software. It allows users to load and play back sampled sounds, such as instruments or drum hits. The file ending is *sxt*.
@@ -205,18 +235,6 @@ TAL-Sampler is an analog modeled synthesizer with a sampler engine as the sound 
 
 Choosing TAL Sampler as the destination format, creates a *talsmpl*
 file and stores all samples in a sub-folder by the same name. The samples of the source groups are distributed across the 4 layers of TAL Sampler in such a way that the key and velocity splits do not overlap. This is a workaround for the fact that TAL Sampler does not support overlapping samples. Since groups have only the name and trigger type as attributes, which are not supported in TAL Sampler anyway, this should work in most cases. If there are still overlapping samples a warning is displayed.
-
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
-
-### Destination Options
-
-* Options to write/update [WAV Chunk Information](#wav-chunk-information)
-
-## CWITEC TX16Wx
-
-TX16Wx is a free sampler plugin available for Windows and Macos. TX16Wx Professional is the commercial expansion of TX16Wx. It adds some advanced features like effects, signal routing or trigger switching. But the free version is already very powerful and covers all of the features that ConvertWithMoss supports.
-
-The format uses a XML format and keeps the samples separate.
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 

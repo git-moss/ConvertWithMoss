@@ -220,12 +220,12 @@ public class EXS24Creator extends AbstractCreator
         final double depth = modulator.getDepth ();
 
         // Maximum time for each step are 10 seconds
-        final int delay = (int) (envelope.getDelay () / 10.0 * 127.0);
-        final int attack = (int) (envelope.getAttack () / 10.0 * 127.0);
-        final int hold = (int) (envelope.getHold () / 10.0 * 127.0);
-        final int decay = (int) (envelope.getDecay () / 10.0 * 127.0);
-        final int sustain = (int) (envelope.getSustain () * 127.0 * depth);
-        final int release = (int) (envelope.getRelease () / 10.0 * 127.0);
+        final int delay = (int) (envelope.getDelayTime () / 10.0 * 127.0);
+        final int attack = (int) (envelope.getAttackTime () / 10.0 * 127.0);
+        final int hold = (int) (envelope.getHoldTime () / 10.0 * 127.0);
+        final int decay = (int) (envelope.getDecayTime () / 10.0 * 127.0);
+        final int sustain = (int) (envelope.getSustainLevel () * 127.0 * depth);
+        final int release = (int) (envelope.getReleaseTime () / 10.0 * 127.0);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DELAY_START : EXS24Parameters.ENV2_DELAY_START, delay);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_HI_VEL : EXS24Parameters.ENV2_ATK_HI_VEL, attack);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_HOLD : EXS24Parameters.ENV2_HOLD, hold);

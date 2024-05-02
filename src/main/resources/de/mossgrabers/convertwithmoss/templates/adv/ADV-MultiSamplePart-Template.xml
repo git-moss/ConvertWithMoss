@@ -1,0 +1,110 @@
+					<MultiSamplePart Id="%SAMPLE_ID%" HasImportedSlicePoints="true" NeedsAnalysisData="false">
+						<LomId Value="0" />
+						<Name Value="%SAMPLE_FILE%" />
+						<Selection Value="true" />
+						<IsActive Value="true" />
+						<Solo Value="false" />
+						<KeyRange>
+							<Min Value="%KEY_RANGE_LOW%" />
+							<Max Value="%KEY_RANGE_HIGH%" />
+							<CrossfadeMin Value="%KEY_RANGE_LOW_CROSSFADE%" />
+							<CrossfadeMax Value="%KEY_RANGE_HIGH_CROSSFADE%" />
+						</KeyRange>
+						<VelocityRange>
+							<Min Value="%VEL_RANGE_LOW%" />
+							<Max Value="%VEL_RANGE_HIGH%" />
+							<CrossfadeMin Value="%VEL_RANGE_LOW_CROSSFADE%" />
+							<CrossfadeMax Value="%VEL_RANGE_HIGH_CROSSFADE%" />
+						</VelocityRange>
+						<SelectorRange>
+							<Min Value="0" />
+							<Max Value="127" />
+							<CrossfadeMin Value="0" />
+							<CrossfadeMax Value="127" />
+						</SelectorRange>
+						<RootKey Value="%ROOT_KEY%" />
+						<Detune Value="%DETUNE%" />
+						<TuneScale Value="%TUNE_SCALE%" />
+						<Panorama Value="%PANORAMA%" />
+						<Volume Value="%VOLUME%" />
+						<Link Value="false" />
+						<SampleStart Value="%SAMPLE_START%" />
+						<SampleEnd Value="%SAMPLE_END%" />
+						<SustainLoop>
+							<Start Value="%LOOP_START%" />
+							<End Value="%LOOP_END%" />
+							<Mode Value="%LOOP_MODE%" />
+							<Crossfade Value="%LOOP_CROSSFADE%" />
+							<Detune Value="0" />
+						</SustainLoop>
+						<ReleaseLoop>
+							<Start Value="0" />
+							<End Value="%SAMPLE_END%" />
+							<Mode Value="3" />
+							<Crossfade Value="0" />
+							<Detune Value="0" />
+						</ReleaseLoop>
+						<SampleRef>
+							<FileRef>
+								<RelativePathType Value="6" />
+								<RelativePath Value="Samples/Imported/%SAMPLE_FOLDER%/%SAMPLE_FILE%" />
+								<Path Value="/Volumes/data/Samples/Imported/%SAMPLE_FOLDER%/%SAMPLE_FILE%" />
+								<Type Value="1" />
+								<LivePackName Value="" />
+								<LivePackId Value="" />
+								<OriginalFileSize Value="%SAMPLE_FILE_SIZE%" />
+								<!--<OriginalCrc Value="2207" />-->
+							</FileRef>
+							<LastModDate Value="%SAMPLE_FILE_TIMESTAMP%" />
+							<SourceContext />
+							<SampleUsageHint Value="0" />
+							<DefaultDuration Value="%SAMPLE_DURATION%" />
+							<DefaultSampleRate Value="%SAMPLE_RATE%" />
+						</SampleRef>
+						<SlicingThreshold Value="100" />
+						<SlicingBeatGrid Value="4" />
+						<SlicingRegions Value="8" />
+						<SlicingStyle Value="0" />
+						<SampleWarpProperties>
+							<WarpMarkers />
+							<WarpMode Value="0" />
+							<GranularityTones Value="30" />
+							<GranularityTexture Value="65" />
+							<FluctuationTexture Value="25" />
+							<ComplexProFormants Value="100" />
+							<ComplexProEnvelope Value="128" />
+							<TransientResolution Value="6" />
+							<TransientLoopMode Value="2" />
+							<TransientEnvelope Value="100" />
+							<IsWarped Value="false" />
+							<Onsets>
+								<UserOnsets />
+								<HasUserOnsets Value="false" />
+							</Onsets>
+							<TimeSignature>
+								<TimeSignatures>
+									<RemoteableTimeSignature Id="0">
+										<Numerator Value="4" />
+										<Denominator Value="4" />
+										<Time Value="0" />
+									</RemoteableTimeSignature>
+								</TimeSignatures>
+							</TimeSignature>
+							<BeatGrid>
+								<FixedNumerator Value="1" />
+								<FixedDenominator Value="16" />
+								<GridIntervalPixel Value="20" />
+								<Ntoles Value="2" />
+								<SnapToGrid Value="true" />
+								<Fixed Value="false" />
+							</BeatGrid>
+						</SampleWarpProperties>
+						<SlicePoints>
+							<SlicePoint TimeInSeconds="0.0000680272108843537395" Rank="0" NormalizedEnergy="1" />
+						</SlicePoints>
+						<ManualSlicePoints />
+						<BeatSlicePoints />
+						<RegionSlicePoints />
+						<UseDynamicBeatSlices Value="true" />
+						<UseDynamicRegionSlices Value="true" />
+					</MultiSamplePart>

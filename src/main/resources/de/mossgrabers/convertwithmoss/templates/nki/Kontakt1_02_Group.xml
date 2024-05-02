@@ -47,7 +47,7 @@
           <V name="bypass" value="no"/>
           <V name="retrigger" value="yes"/>
           <Envelope type="ahdsr" version="0.60">
-            <V name="atkCurving" value="0"/>
+            <V name="atkCurving" value="%ENVELOPE_ATTACK_CURVE%"/>
             <V name="attack" value="%ENVELOPE_ATTACK%"/>
             <V name="decay" value="%ENVELOPE_DECAY%"/>
             <V name="hold" value="%ENVELOPE_HOLD%"/>
@@ -61,7 +61,7 @@
           <V name="bypass" value="no"/>
           <V name="retrigger" value="yes"/>
           <Envelope type="ahdsr" version="0.60">
-            <V name="atkCurving" value="0"/>
+            <V name="atkCurving" value="%FILTER_CUTOFF_ENVELOPE_ATTACK_CURVE%"/>
             <V name="attack" value="%FILTER_CUTOFF_ENVELOPE_ATTACK%"/>
             <V name="decay" value="%FILTER_CUTOFF_ENVELOPE_DECAY%"/>
             <V name="hold" value="%FILTER_CUTOFF_ENVELOPE_HOLD%"/>
@@ -75,7 +75,7 @@
           <V name="bypass" value="no"/>
           <V name="retrigger" value="yes"/>
           <Envelope type="ahdsr" version="0.60">
-            <V name="atkCurving" value="0"/>
+            <V name="atkCurving" value="%PITCH_ENVELOPE_ATTACK_CURVE%"/>
             <V name="attack" value="%PITCH_ENVELOPE_ATTACK%"/>
             <V name="decay" value="%PITCH_ENVELOPE_DECAY%"/>
             <V name="hold" value="%PITCH_ENVELOPE_HOLD%"/>

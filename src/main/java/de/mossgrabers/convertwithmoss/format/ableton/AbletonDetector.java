@@ -26,7 +26,7 @@ public class AbletonDetector extends AbstractDetectorWithMetadataPane<AbletonDet
      */
     public AbletonDetector (final INotifier notifier)
     {
-        super ("Ableton Sampler/Simpler", notifier, "Ableton");
+        super ("Ableton Sampler", notifier, "Ableton");
     }
 
 

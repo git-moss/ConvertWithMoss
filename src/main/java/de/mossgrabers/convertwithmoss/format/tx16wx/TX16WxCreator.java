@@ -498,18 +498,21 @@ public class TX16WxCreator extends AbstractCreator
             final Element aegElement = XMLUtils.addElement (document, soundshapeElement, TX16WxTag.AMP_ENVELOPE);
 
             // The whole group can be delayed which is basically the same as the amplitude delay
-            soundshapeElement.setAttribute (TX16WxTag.GROUP_DELAY, formatTime (amplitudeEnvelope.getDelay ()));
+            soundshapeElement.setAttribute (TX16WxTag.GROUP_DELAY, formatTime (amplitudeEnvelope.getDelayTime ()));
 
-            final double sustain = amplitudeEnvelope.getSustain ();
+            final double sustain = amplitudeEnvelope.getSustainLevel ();
             final String sustainLevel = sustain < 0 ? "1" : Double.toString (MathUtils.clamp (sustain, 0, 1));
 
-            aegElement.setAttribute (TX16WxTag.AMP_ENV_ATTACK, formatTime (amplitudeEnvelope.getAttack ()));
+            aegElement.setAttribute (TX16WxTag.AMP_ENV_ATTACK, formatTime (amplitudeEnvelope.getAttackTime ()));
             aegElement.setAttribute (TX16WxTag.AMP_ENV_LEVEL1, "0 dB");
-            aegElement.setAttribute (TX16WxTag.AMP_ENV_DECAY1, formatTime (amplitudeEnvelope.getHold ()));
-            aegElement.setAttribute (TX16WxTag.AMP_ENV_LEVEL2, sustainLevel);
-            aegElement.setAttribute (TX16WxTag.AMP_ENV_DECAY2, formatTime (amplitudeEnvelope.getDecay ()));
+            aegElement.setAttribute (TX16WxTag.AMP_ENV_DECAY1, formatTime (amplitudeEnvelope.getHoldTime ()));
+            aegElement.setAttribute (TX16WxTag.AMP_ENV_LEVEL2, "0 dB");
+            aegElement.setAttribute (TX16WxTag.AMP_ENV_DECAY2, formatTime (amplitudeEnvelope.getDecayTime ()));
             aegElement.setAttribute (TX16WxTag.AMP_ENV_SUSTAIN, sustainLevel);
-            aegElement.setAttribute (TX16WxTag.AMP_ENV_RELEASE, formatTime (amplitudeEnvelope.getRelease ()));
+            aegElement.setAttribute (TX16WxTag.AMP_ENV_RELEASE, formatTime (amplitudeEnvelope.getReleaseTime ()));
+            XMLUtils.setDoubleAttribute (aegElement, TX16WxTag.AMP_ENV_ATTACK_SHAPE, amplitudeEnvelope.getAttackSlope (), 6);
+            XMLUtils.setDoubleAttribute (aegElement, TX16WxTag.AMP_ENV_DECAY2_SHAPE, amplitudeEnvelope.getDecaySlope (), 6);
+            XMLUtils.setDoubleAttribute (aegElement, TX16WxTag.AMP_ENV_RELEASE_SHAPE, amplitudeEnvelope.getReleaseSlope (), 6);
 
             // Pitch-bend
             int pitchbend = Math.abs (zone.getBendUp ());
@@ -536,17 +539,20 @@ public class TX16WxCreator extends AbstractCreator
 
                 final IModulator cutoffModulator = filter.getCutoffModulator ();
                 final double filterModDepth = cutoffModulator.getDepth ();
-                if (filterModDepth > 0)
+                if (filterModDepth != 0)
                 {
                     final Element envElement = XMLUtils.addElement (document, soundshapeElement, TX16WxTag.ENVELOPE_1);
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL0, "0%");
-                    envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (filterEnvelope.getAttack ()));
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL1, "100%");
-                    envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (filterEnvelope.getDecay ()));
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL2, (int) (filterEnvelope.getSustain () * 100.0) + "%");
-                    envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (filterEnvelope.getRelease ()));
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL3, "0%");
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL0, (int) (filterEnvelope.getStartLevel () * 100.0) + "%");
+                    envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (filterEnvelope.getAttackTime ()));
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) (filterEnvelope.getSustainLevel () * 100.0) + "%");
+                    envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (filterEnvelope.getDecayTime ()));
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL2, (int) (filterEnvelope.getSustainLevel () * 100.0) + "%");
+                    envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (filterEnvelope.getReleaseTime ()));
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL3, (int) (filterEnvelope.getEndLevel () * 100.0) + "%");
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, amplitudeEnvelope.getAttackSlope (), 6);
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, amplitudeEnvelope.getDecaySlope (), 6);
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);
                     addModulationEntry (document, modulationElement, "ENV1", "Filter 1 Freq", (int) (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
                 }
             }
@@ -554,17 +560,20 @@ public class TX16WxCreator extends AbstractCreator
             // Add pitch modulator
             final IModulator pitchModulator = zone.getPitchModulator ();
             final double pitchModDepth = pitchModulator.getDepth ();
-            if (pitchModDepth > 0)
+            if (pitchModDepth != 0)
             {
                 final Element envElement = XMLUtils.addElement (document, soundshapeElement, TX16WxTag.ENVELOPE_2);
                 final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL0, "0%");
-                envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (pitchEnvelope.getDecay ()));
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) (pitchEnvelope.getSustain () * 100.0) + "%");
-                envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (pitchEnvelope.getRelease ()));
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL2, "0%");
-                envElement.setAttribute (TX16WxTag.ENV_TIME3, "0ms");
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL3, "0%");
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL0, (int) (pitchEnvelope.getStartLevel () * 100.0) + "%");
+                envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (pitchEnvelope.getAttackTime ()));
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) (pitchEnvelope.getSustainLevel () * 100.0) + "%");
+                envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (pitchEnvelope.getDecayTime ()));
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL2, (int) (pitchEnvelope.getSustainLevel () * 100.0) + "%");
+                envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (pitchEnvelope.getReleaseTime ()));
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL3, (int) (pitchEnvelope.getEndLevel () * 100.0) + "%");
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, amplitudeEnvelope.getAttackSlope (), 6);
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, amplitudeEnvelope.getDecaySlope (), 6);
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);
                 addModulationEntry (document, modulationElement, "ENV2", "Pitch", (int) (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
         }

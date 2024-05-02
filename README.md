@@ -1,41 +1,35 @@
-# ConvertWithMoss
+---
+title: The ConvertWithMoss Manual
+author: 
+- Jürgen Moßgraber
+header-includes:
+    \usepackage{fancyhdr}
+    \pagestyle{fancy}
+geometry: margin=2.5cm
+papersize: a4paper
+date:   \today
+...
 
-Converts multisamples in a specific source format to a different destination format. Furthermore, it can create multisample files from plain WAV files.
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
 
-Additionally, the conversion process reads and writes metadata (name, category, creator, description and keywords) as well as envelopes and filter settings, if supported by the format. If the source format does not support the information a guessing algorithm is applied based on the samples names.
+# Welcome to the ConvertWithMoss Documentation
 
-Furthermore, samples can be grouped into groups and key ranges. Each sample can have 1 or no loop and parameters for pitch and different playback parameters.
+This tool converts multisamples in a [specific source format to a different destination format](README-FORMATS.md#). Furthermore, it can create multisample files from plain AIFF and WAV files.
 
-## Supported formats
+Additionally, the conversion process reads and writes metadata (name, category, creator, description and keywords) as well as envelopes and filter settings, if supported by the format. If the source format does not support metadata a guessing algorithm is applied based on the samples names.
 
-The following multisample formats are supported as the source and destination formats (except SF2 is currenlty only a source):
-
-1. 1010music blackbox, tangerine, bitbox (preset.xml)
-2. Akai MPC Keygroups (*.xpm)
-3. CWITEC TX16Wx (*.txprog)
-4. DecentSampler (*.dspreset, *.dslibrary)
-5. Korg KMP/KSF (*.KMP)
-6. Korg wavestate/modwave (*.korgmultisample)
-7. Logic EXS24 (*.exs)
-8. Multisample Format (*.multisample)
-9. Native Instruments Kontakt (*.nki)
-10. Propellerhead Reason NN-XT (*.sxt)
-11. SFZ (*.sfz)
-12. SoundFont 2 (*.sf2)
-13. WAV files (*.wav)
-
-See [README-FORMATS.md][1] document for more details. Even more details about the specific converted parameters can be found here:
-
-https://github.com/git-moss/ConvertWithMoss/blob/main/documentation/SupportedFeaturesSampleFormats.ods
+Details about the specific converted parameters can be found in a [spreadsheet][1].
 
 ## Installation
 
 [Download][2] and run the matching installer for your operating system.
 After that you can start the application ConvertWithMoss.
 
-> **Note**
+> **Note macOS**
 >
-> macOS users should read [README-MACOS.md][3] document for important notices.
+> Read the [macOS installation specifics](README-MACOS.md#) for important notices!
 
 ## Build from sources
 
@@ -47,8 +41,8 @@ For Linux (BSD not tested) there is also a `Makefile` for build and install with
 
 ## Usage
 
-1. Select a source folder, which contains one or multiple folders with multisamples in the selected source format. The files can also be located in sub-folders.
-2. Select the output folder where you want to create the multisamples. This folder must be empty. You can add a non-existing folder to the name, which then is automatically created. E.g. you could select the Desktop and then add a folder *Conversions*.
+1. Select the source format on the left. Select a source folder, which contains one or multiple folders with multisamples in the selected source format. The files can also be located in sub-folders.
+2. Select the destination format. Select the output folder where you want to create the multisamples. This folder must be empty. You can add a non-existing folder to the name, which then is automatically created. E.g. you could select the Desktop and then add a folder *Conversions*.
 3. Press the *Convert* button to start the conversion. The progress is shown with notification messages in the log area, which you should check for potential errors like defect source files, skipped folder, etc.
 
 Alternatively, press *Analyse* to execute the same process as *Convert* but does not write any files. Use this to check for errors before finally running the conversion.
@@ -60,7 +54,5 @@ Alternatively, press *Analyse* to execute the same process as *Convert* but does
 * **Add new files**: Starts the conversion even if the output folder is not empty but only adds files which are not already present.
 * **Dark Mode**: Toggles the user interface between a light and dark layout.
 
-
-[1]: README-FORMATS.md
+[1]: https://github.com/git-moss/ConvertWithMoss/blob/main/documentation/SupportedFeaturesSampleFormats.ods
 [2]: https://mossgrabers.de/Software/ConvertWithMoss/ConvertWithMoss.html
-[3]: README-MACOS.md

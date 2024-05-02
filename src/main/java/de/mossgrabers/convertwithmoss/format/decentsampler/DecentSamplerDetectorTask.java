@@ -167,7 +167,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         {
             final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseMetadataFile (file, parent, true, document);
+            return this.parseMetadataFile (FileUtils.getNameWithoutType (name), file, parent, true, document);
         }
         catch (final SAXException ex)
         {
@@ -202,7 +202,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         {
             final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseMetadataFile (file, file.getParent (), false, document);
+            return this.parseMetadataFile (FileUtils.getNameWithoutType (file), file, file.getParent (), false, document);
         }
         catch (final IOException | SAXException ex)
         {
@@ -214,7 +214,8 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
     /**
      * Load and parse the metadata description file.
-     *
+     * 
+     * @param presetName The name to use for the preset
      * @param multiSampleFile The preset or library file
      * @param basePath The parent folder, in case of a library the relative folder in the ZIP
      *            directory structure
@@ -222,7 +223,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String basePath, final boolean isLibrary, final Document document)
+    private List<IMultisampleSource> parseMetadataFile (final String presetName, final File multiSampleFile, final String basePath, final boolean isLibrary, final Document document)
     {
         final Element top = document.getDocumentElement ();
         if (!DecentSamplerTag.DECENTSAMPLER.equals (top.getNodeName ()))
@@ -246,11 +247,10 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         final List<IGroup> groups = this.parseGroups (groupsElement, basePath, isLibrary ? multiSampleFile : null, globalTuningOffset);
 
-        final String name = FileUtils.getNameWithoutType (multiSampleFile);
-        final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : presetName;
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, presetName, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts);
 
         multisampleSource.setGroups (groups);
@@ -448,10 +448,14 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             // Volume envelope
 
             final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeModulator ().getSource ();
-            amplitudeEnvelope.setAttack (this.getDoubleValue (DecentSamplerTag.ENV_ATTACK, -1));
-            amplitudeEnvelope.setDecay (this.getDoubleValue (DecentSamplerTag.ENV_DECAY, -1));
-            amplitudeEnvelope.setSustain (this.getDoubleValue (DecentSamplerTag.ENV_SUSTAIN, -1));
-            amplitudeEnvelope.setRelease (this.getDoubleValue (DecentSamplerTag.ENV_RELEASE, -1));
+            amplitudeEnvelope.setAttackTime (this.getDoubleValue (DecentSamplerTag.ENV_ATTACK, -1));
+            amplitudeEnvelope.setDecayTime (this.getDoubleValue (DecentSamplerTag.ENV_DECAY, -1));
+            amplitudeEnvelope.setSustainLevel (this.getDoubleValue (DecentSamplerTag.ENV_SUSTAIN, -1));
+            amplitudeEnvelope.setReleaseTime (this.getDoubleValue (DecentSamplerTag.ENV_RELEASE, -1));
+
+            amplitudeEnvelope.setAttackSlope (this.getDoubleValue (DecentSamplerTag.ENV_ATTACK_CURVE, -1) / 100.0);
+            amplitudeEnvelope.setDecaySlope (this.getDoubleValue (DecentSamplerTag.ENV_DECAY_CURVE, 1) / 100.0);
+            amplitudeEnvelope.setReleaseSlope (this.getDoubleValue (DecentSamplerTag.ENV_RELEASE_CURVE, 1) / 100.0);
 
             group.addSampleZone (sampleZone);
         }

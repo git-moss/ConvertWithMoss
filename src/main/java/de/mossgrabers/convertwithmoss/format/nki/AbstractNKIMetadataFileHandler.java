@@ -311,20 +311,22 @@ public abstract class AbstractNKIMetadataFileHandler
         final IModulator amplitudeModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getAmplitudeModulator ();
         final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
         String groupContent = groupContentTemplate.replace ("%ENVELOPE_INTENSITY%", formatDouble (limitToDefault (amplitudeModulator.getDepth (), 1)));
-        groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (limitToDefault (amplitudeEnvelope.getAttack (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (limitToDefault (amplitudeEnvelope.getDecay (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (limitToDefault (amplitudeEnvelope.getHold (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getRelease (), 1) * 1000.0d));
-        groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustain (), 1)));
+        groupContent = groupContent.replace ("%ENVELOPE_ATTACK_CURVE%", formatDouble (-amplitudeEnvelope.getAttackSlope ()));
+        groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (limitToDefault (amplitudeEnvelope.getAttackTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (limitToDefault (amplitudeEnvelope.getDecayTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%ENVELOPE_HOLD%", formatDouble (limitToDefault (amplitudeEnvelope.getHoldTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getReleaseTime (), 1) * 1000.0d));
+        groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustainLevel (), 1)));
 
         final IModulator pitchModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getPitchModulator ();
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (pitchModulator.getDepth (), 1)));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (limitToDefault (pitchEnvelope.getAttack (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getDecay (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_HOLD%", formatDouble (limitToDefault (pitchEnvelope.getHold (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_RELEASE%", formatDouble (limitToDefault (pitchEnvelope.getRelease (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (pitchEnvelope.getSustain (), 0)));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK_CURVE%", formatDouble (-pitchEnvelope.getAttackSlope ()));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (limitToDefault (pitchEnvelope.getAttackTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getDecayTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_HOLD%", formatDouble (limitToDefault (pitchEnvelope.getHoldTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_RELEASE%", formatDouble (limitToDefault (pitchEnvelope.getReleaseTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (pitchEnvelope.getSustainLevel (), 0)));
 
         final Optional<IFilter> filterOpt = sampleMetadata == null ? Optional.empty () : sampleMetadata.getFilter ();
         final IFilter filter = filterOpt.isPresent () ? filterOpt.get () : new DefaultFilter (FilterType.LOW_PASS, 2, IFilter.MAX_FREQUENCY, 0);
@@ -335,11 +337,12 @@ public abstract class AbstractNKIMetadataFileHandler
         final IModulator filterCutoffModulator = filter.getCutoffModulator ();
         final IEnvelope filterCutoffEnvelope = filterCutoffModulator.getSource ();
         groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (filterCutoffModulator.getDepth (), 1)));
-        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_ATTACK%", formatDouble (limitToDefault (filterCutoffEnvelope.getAttack (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_DECAY%", formatDouble (limitToDefault (filterCutoffEnvelope.getDecay (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_HOLD%", formatDouble (limitToDefault (filterCutoffEnvelope.getHold (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_RELEASE%", formatDouble (limitToDefault (filterCutoffEnvelope.getRelease (), 1) * 1000.0d));
-        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (filterCutoffEnvelope.getSustain (), 1)));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_ATTACK_CURVE%", formatDouble (-filterCutoffEnvelope.getAttackSlope ()));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_ATTACK%", formatDouble (limitToDefault (filterCutoffEnvelope.getAttackTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_DECAY%", formatDouble (limitToDefault (filterCutoffEnvelope.getDecayTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_HOLD%", formatDouble (limitToDefault (filterCutoffEnvelope.getHoldTime (), 0) * 1000.0d));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_RELEASE%", formatDouble (limitToDefault (filterCutoffEnvelope.getReleaseTime (), 1) * 1000.0d));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (filterCutoffEnvelope.getSustainLevel (), 1)));
         return groupContent;
     }
 
@@ -706,11 +709,12 @@ public abstract class AbstractNKIMetadataFileHandler
             amplitudeModulator.setDepth (groupAmpModulator.getDepth ());
 
             final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
-            amplitudeEnvelope.setAttack (source.getAttack ());
-            amplitudeEnvelope.setHold (source.getHold ());
-            amplitudeEnvelope.setDecay (source.getDecay ());
-            amplitudeEnvelope.setSustain (source.getSustain ());
-            amplitudeEnvelope.setRelease (source.getRelease ());
+            amplitudeEnvelope.setAttackSlope (source.getAttackSlope ());
+            amplitudeEnvelope.setAttackTime (source.getAttackTime ());
+            amplitudeEnvelope.setHoldTime (source.getHoldTime ());
+            amplitudeEnvelope.setDecayTime (source.getDecayTime ());
+            amplitudeEnvelope.setSustainLevel (source.getSustainLevel ());
+            amplitudeEnvelope.setReleaseTime (source.getReleaseTime ());
         }
 
         final IModulator groupPitchModulator = groupEnvelopes.get (this.tags.targetPitchValue ());
@@ -721,11 +725,12 @@ public abstract class AbstractNKIMetadataFileHandler
             pitchModulator.setDepth (groupPitchModulator.getDepth ());
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-            pitchEnvelope.setAttack (source.getAttack ());
-            pitchEnvelope.setHold (source.getHold ());
-            pitchEnvelope.setDecay (source.getDecay ());
-            pitchEnvelope.setSustain (source.getSustain ());
-            pitchEnvelope.setRelease (source.getRelease ());
+            pitchEnvelope.setAttackSlope (source.getAttackSlope ());
+            pitchEnvelope.setAttackTime (source.getAttackTime ());
+            pitchEnvelope.setHoldTime (source.getHoldTime ());
+            pitchEnvelope.setDecayTime (source.getDecayTime ());
+            pitchEnvelope.setSustainLevel (source.getSustainLevel ());
+            pitchEnvelope.setReleaseTime (source.getReleaseTime ());
         }
 
         final Optional<IFilter> filterOpt = sampleMetadata.getFilter ();
@@ -741,11 +746,12 @@ public abstract class AbstractNKIMetadataFileHandler
                 filterCutoffModulator.setDepth (groupFilterCutoffModulator.getDepth ());
 
                 final IEnvelope filterCutoffEnvelope = filterCutoffModulator.getSource ();
-                filterCutoffEnvelope.setAttack (source.getAttack ());
-                filterCutoffEnvelope.setHold (source.getHold ());
-                filterCutoffEnvelope.setDecay (source.getDecay ());
-                filterCutoffEnvelope.setSustain (source.getSustain ());
-                filterCutoffEnvelope.setRelease (source.getRelease ());
+                filterCutoffEnvelope.setAttackSlope (source.getAttackSlope ());
+                filterCutoffEnvelope.setAttackTime (source.getAttackTime ());
+                filterCutoffEnvelope.setHoldTime (source.getHoldTime ());
+                filterCutoffEnvelope.setDecayTime (source.getDecayTime ());
+                filterCutoffEnvelope.setSustainLevel (source.getSustainLevel ());
+                filterCutoffEnvelope.setReleaseTime (source.getReleaseTime ());
             }
         }
     }
@@ -1100,14 +1106,15 @@ public abstract class AbstractNKIMetadataFileHandler
             final IEnvelope env = modulator.getSource ();
 
             final Map<String, String> envParams = this.readValueMap (envElement);
-            env.setAttack (getDouble (envParams, this.tags.attackParam ()) / 1000.0d);
-            env.setHold (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.holdParam ()) / 1000.0d);
-            env.setDecay (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.decayParam ()) / 1000.0d);
+            env.setAttackSlope (-getDouble (envParams, this.tags.attackCurveParam ()));
+            env.setAttackTime (getDouble (envParams, this.tags.attackParam ()) / 1000.0d);
+            env.setHoldTime (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.holdParam ()) / 1000.0d);
+            env.setDecayTime (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.decayParam ()) / 1000.0d);
 
             if (!envType.equals (this.tags.ahdEnvTypeValue ()))
             {
-                env.setSustain (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.sustainParam ()));
-                env.setRelease (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.releaseParam ()) / 1000.0d);
+                env.setSustainLevel (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.sustainParam ()));
+                env.setReleaseTime (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.releaseParam ()) / 1000.0d);
             }
             return modulator;
         }
