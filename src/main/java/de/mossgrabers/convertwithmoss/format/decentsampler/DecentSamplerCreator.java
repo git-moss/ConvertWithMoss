@@ -441,10 +441,10 @@ public class DecentSamplerCreator extends AbstractCreator
             envelopeElement.setAttribute ("scope", "voice");
 
             final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, filterEnvelope.getAttack ());
-            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, filterEnvelope.getDecay ());
-            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_SUSTAIN, filterEnvelope.getSustain ());
-            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, filterEnvelope.getRelease ());
+            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, filterEnvelope.getAttackTime ());
+            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, filterEnvelope.getDecayTime ());
+            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_SUSTAIN, filterEnvelope.getSustainLevel ());
+            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, filterEnvelope.getReleaseTime ());
 
             final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
             bindingElement.setAttribute ("type", "effect");
@@ -486,10 +486,10 @@ public class DecentSamplerCreator extends AbstractCreator
         XMLUtils.setDoubleAttribute (envelopeElement, DecentSamplerTag.MOD_AMOUNT, envelopeDepth, 2);
 
         final IEnvelope envelope = pitchModulator.getSource ();
-        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, envelope.getAttack ());
-        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, envelope.getDecay ());
-        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_SUSTAIN, envelope.getSustain ());
-        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, envelope.getRelease ());
+        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, envelope.getAttackTime ());
+        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, envelope.getDecayTime ());
+        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_SUSTAIN, envelope.getSustainLevel ());
+        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, envelope.getReleaseTime ());
 
         final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", "amp");
@@ -567,16 +567,27 @@ public class DecentSamplerCreator extends AbstractCreator
      */
     private static void addVolumeEnvelope (final IEnvelope amplitudeEnvelope, final Element element)
     {
-        setEnvelopeAttribute (element, DecentSamplerTag.ENV_ATTACK, amplitudeEnvelope.getAttack ());
-        setEnvelopeAttribute (element, DecentSamplerTag.ENV_DECAY, amplitudeEnvelope.getDecay ());
-        setEnvelopeAttribute (element, DecentSamplerTag.ENV_SUSTAIN, amplitudeEnvelope.getSustain ());
-        setEnvelopeAttribute (element, DecentSamplerTag.ENV_RELEASE, amplitudeEnvelope.getRelease ());
+        setEnvelopeAttribute (element, DecentSamplerTag.ENV_ATTACK, amplitudeEnvelope.getAttackTime ());
+        setEnvelopeAttribute (element, DecentSamplerTag.ENV_DECAY, amplitudeEnvelope.getDecayTime ());
+        setEnvelopeAttribute (element, DecentSamplerTag.ENV_SUSTAIN, amplitudeEnvelope.getSustainLevel ());
+        setEnvelopeAttribute (element, DecentSamplerTag.ENV_RELEASE, amplitudeEnvelope.getReleaseTime ());
+
+        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_ATTACK_CURVE, amplitudeEnvelope.getAttackSlope () * 100.0);
+        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_DECAY_CURVE, amplitudeEnvelope.getDecaySlope () * 100.0);
+        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_RELEASE_CURVE, amplitudeEnvelope.getReleaseSlope () * 100.0);
     }
 
 
     private static void setEnvelopeAttribute (final Element element, final String attribute, final double value)
     {
         if (value >= 0)
+            XMLUtils.setDoubleAttribute (element, attribute, value, 3);
+    }
+
+
+    private static void setEnvelopeSlopeAttribute (final Element element, final String attribute, final double value)
+    {
+        if (value != 0)
             XMLUtils.setDoubleAttribute (element, attribute, value, 3);
     }
 }

@@ -18,10 +18,10 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
  */
 public class DefaultEnvelope implements IEnvelope
 {
-    private static final IEnvelope              ENVELOPE_PERCUSSIVE = new DefaultEnvelope (-1, -1, 0, -1, -1, -1, 0.003);
-    private static final IEnvelope              ENVELOPE_PLUCKED    = new DefaultEnvelope (-1, -1, 0, -1, -1, -1, 0.7);
-    private static final IEnvelope              ENVELOPE_KEYS       = new DefaultEnvelope (-1, -1, 0, -1, -1, -1, 1);
-    private static final IEnvelope              ENVELOPE_PADS       = new DefaultEnvelope (-1, -1, 0, -1, -1, -1, 4);
+    private static final IEnvelope              ENVELOPE_PERCUSSIVE = new DefaultEnvelope (-1, -1, 0, -1, -1, -1, -1, 0.003, 0);
+    private static final IEnvelope              ENVELOPE_PLUCKED    = new DefaultEnvelope (-1, -1, 0, -1, -1, -1, -1, 0.7, 0);
+    private static final IEnvelope              ENVELOPE_KEYS       = new DefaultEnvelope (-1, -1, 0, -1, -1, -1, -1, 1, 0);
+    private static final IEnvelope              ENVELOPE_PADS       = new DefaultEnvelope (-1, -1, 0, -1, -1, -1, -1, 4, 0);
 
     private static final Map<String, IEnvelope> DEFAULT_ENVELOPES   = new HashMap<> ();
     static
@@ -60,13 +60,20 @@ public class DefaultEnvelope implements IEnvelope
         DEFAULT_ENVELOPES.put (TagDetector.CATEGORY_WORLD, ENVELOPE_KEYS);
     }
 
-    private double delay   = -1;
-    private double start   = -1;
-    private double attack  = -1;
-    private double hold    = -1;
-    private double decay   = -1;
-    private double sustain = -1;
-    private double release = -1;
+    private double delayTime    = -1;
+    private double attackTime   = -1;
+    private double holdTime     = -1;
+    private double decayTime    = -1;
+    private double releaseTime  = -1;
+
+    private double startLevel   = -1;
+    private double holdLevel    = -1;
+    private double sustainLevel = -1;
+    private double endLevel     = -1;
+
+    private double attackSlope  = 0;
+    private double decaySlope   = 0;
+    private double releaseSlope = 0;
 
 
     /**
@@ -81,23 +88,27 @@ public class DefaultEnvelope implements IEnvelope
     /**
      * Default constructor.
      *
-     * @param delay The delay value in seconds, -1 to ignore the parameter
-     * @param start The start value in the range of [0..1], -1 to ignore the parameter
-     * @param attack The attack value in seconds, -1 to ignore the parameter
-     * @param hold The hold value in seconds, -1 to ignore the parameter
-     * @param decay The decay value in seconds, -1 to ignore the parameter
-     * @param sustain The sustain value in the range of [0..1], -1 to ignore the parameter
-     * @param release The release value in seconds, -1 to ignore the parameter
+     * @param delayTime The delay value in seconds, -1 to ignore the parameter
+     * @param startLevel The start value in the range of [0..1], -1 to ignore the parameter
+     * @param attackTime The attack value in seconds, -1 to ignore the parameter
+     * @param holdLevel The hold level value in the range of [0..1], -1 to ignore the parameter
+     * @param holdTime The hold value in seconds, -1 to ignore the parameter
+     * @param decayTime The decay value in seconds, -1 to ignore the parameter
+     * @param sustainTime The sustain value in the range of [0..1], -1 to ignore the parameter
+     * @param releaseTime The release value in seconds, -1 to ignore the parameter
+     * @param endLevel The end level value in the range of [0..1], -1 to ignore the parameter
      */
-    public DefaultEnvelope (final double delay, final double start, final double attack, final double hold, final double decay, final double sustain, final double release)
+    private DefaultEnvelope (final double delayTime, final double startLevel, final double attackTime, final double holdLevel, final double holdTime, final double decayTime, final double sustainTime, final double releaseTime, final double endLevel)
     {
-        this.delay = delay;
-        this.start = start;
-        this.attack = attack;
-        this.hold = hold;
-        this.decay = decay;
-        this.sustain = sustain;
-        this.release = release;
+        this.delayTime = delayTime;
+        this.startLevel = startLevel;
+        this.attackTime = attackTime;
+        this.holdLevel = holdLevel;
+        this.holdTime = holdTime;
+        this.decayTime = decayTime;
+        this.sustainLevel = sustainTime;
+        this.releaseTime = releaseTime;
+        this.endLevel = endLevel;
     }
 
 
@@ -125,113 +136,193 @@ public class DefaultEnvelope implements IEnvelope
 
     /** {@inheritDoc} */
     @Override
-    public double getDelay ()
+    public double getDelayTime ()
     {
-        return this.delay;
+        return this.delayTime;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setDelay (final double delay)
+    public void setDelayTime (final double delayTime)
     {
-        this.delay = delay;
+        this.delayTime = delayTime;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public double getStart ()
+    public double getStartLevel ()
     {
-        return this.start;
+        return this.startLevel;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setStart (final double start)
+    public void setStartLevel (final double startLevel)
     {
-        this.start = start;
+        this.startLevel = startLevel;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public double getAttack ()
+    public double getAttackTime ()
     {
-        return this.attack;
+        return this.attackTime;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setAttack (final double attack)
+    public void setAttackTime (final double attackTime)
     {
-        this.attack = attack;
+        this.attackTime = attackTime;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public double getHold ()
+    public double getAttackSlope ()
     {
-        return this.hold;
+        return this.attackSlope;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setHold (final double hold)
+    public void setAttackSlope (final double slope)
     {
-        this.hold = hold;
+        this.attackSlope = slope;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public double getDecay ()
+    public double getHoldLevel ()
     {
-        return this.decay;
+        return this.holdLevel;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setDecay (final double decay)
+    public void setHoldLevel (final double holdLevel)
     {
-        this.decay = decay;
+        this.holdLevel = holdLevel;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public double getSustain ()
+    public double getHoldTime ()
     {
-        return this.sustain;
+        return this.holdTime;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setSustain (final double sustain)
+    public void setHoldTime (final double holdTime)
     {
-        this.sustain = sustain;
+        this.holdTime = holdTime;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public double getRelease ()
+    public double getDecayTime ()
     {
-        return this.release;
+        return this.decayTime;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setRelease (final double release)
+    public void setDecayTime (final double decayTime)
     {
-        this.release = release;
+        this.decayTime = decayTime;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getDecaySlope ()
+    {
+        return this.decaySlope;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setDecaySlope (final double slope)
+    {
+        this.decaySlope = slope;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getSustainLevel ()
+    {
+        return this.sustainLevel;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSustainLevel (final double sustainLevel)
+    {
+        this.sustainLevel = sustainLevel;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getReleaseTime ()
+    {
+        return this.releaseTime;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setReleaseTime (final double releaseTime)
+    {
+        this.releaseTime = releaseTime;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getReleaseSlope ()
+    {
+        return this.releaseSlope;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setReleaseSlope (final double slope)
+    {
+        this.releaseSlope = slope;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getEndLevel ()
+    {
+        return this.endLevel;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setEndLevel (final double endLevel)
+    {
+        this.endLevel = endLevel;
     }
 
 
@@ -241,22 +332,30 @@ public class DefaultEnvelope implements IEnvelope
     {
         final int prime = 31;
         int result = 1;
-        long temp;
-        temp = Double.doubleToLongBits (this.attack);
+        long temp = Double.doubleToLongBits (this.delayTime);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        temp = Double.doubleToLongBits (this.decay);
+        temp = Double.doubleToLongBits (this.attackTime);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        temp = Double.doubleToLongBits (this.delay);
+        temp = Double.doubleToLongBits (this.holdTime);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        temp = Double.doubleToLongBits (this.hold);
+        temp = Double.doubleToLongBits (this.decayTime);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        temp = Double.doubleToLongBits (this.release);
+        temp = Double.doubleToLongBits (this.releaseTime);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        temp = Double.doubleToLongBits (this.start);
+        temp = Double.doubleToLongBits (this.startLevel);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        temp = Double.doubleToLongBits (this.sustain);
+        temp = Double.doubleToLongBits (this.holdLevel);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        return result;
+        temp = Double.doubleToLongBits (this.sustainLevel);
+        result = prime * result + (int) (temp ^ temp >>> 32);
+        temp = Double.doubleToLongBits (this.endLevel);
+        result = prime * result + (int) (temp ^ temp >>> 32);
+        temp = Double.doubleToLongBits (this.attackSlope);
+        result = prime * result + (int) (temp ^ temp >>> 32);
+        temp = Double.doubleToLongBits (this.decaySlope);
+        result = prime * result + (int) (temp ^ temp >>> 32);
+        temp = Double.doubleToLongBits (this.releaseSlope);
+        return prime * result + (int) (temp ^ temp >>> 32);
     }
 
 
@@ -269,11 +368,29 @@ public class DefaultEnvelope implements IEnvelope
         if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final DefaultEnvelope other = (DefaultEnvelope) obj;
-        if (Double.doubleToLongBits (this.attack) != Double.doubleToLongBits (other.attack) || Double.doubleToLongBits (this.decay) != Double.doubleToLongBits (other.decay) || Double.doubleToLongBits (this.delay) != Double.doubleToLongBits (other.delay) || Double.doubleToLongBits (this.hold) != Double.doubleToLongBits (other.hold))
+        if (Double.doubleToLongBits (this.delayTime) != Double.doubleToLongBits (other.delayTime))
             return false;
-        if (Double.doubleToLongBits (this.release) != Double.doubleToLongBits (other.release) || Double.doubleToLongBits (this.start) != Double.doubleToLongBits (other.start))
+        if (Double.doubleToLongBits (this.attackTime) != Double.doubleToLongBits (other.attackTime))
             return false;
-        return Double.doubleToLongBits (this.sustain) == Double.doubleToLongBits (other.sustain);
+        if (Double.doubleToLongBits (this.holdTime) != Double.doubleToLongBits (other.holdTime))
+            return false;
+        if (Double.doubleToLongBits (this.decayTime) != Double.doubleToLongBits (other.decayTime))
+            return false;
+        if (Double.doubleToLongBits (this.releaseTime) != Double.doubleToLongBits (other.releaseTime))
+            return false;
+        if (Double.doubleToLongBits (this.startLevel) != Double.doubleToLongBits (other.startLevel))
+            return false;
+        if (Double.doubleToLongBits (this.holdLevel) != Double.doubleToLongBits (other.holdLevel))
+            return false;
+        if (Double.doubleToLongBits (this.sustainLevel) != Double.doubleToLongBits (other.sustainLevel))
+            return false;
+        if (Double.doubleToLongBits (this.attackSlope) != Double.doubleToLongBits (other.attackSlope))
+            return false;
+        if (Double.doubleToLongBits (this.decaySlope) != Double.doubleToLongBits (other.decaySlope))
+            return false;
+        if (Double.doubleToLongBits (this.releaseSlope) != Double.doubleToLongBits (other.releaseSlope))
+            return false;
+        return Double.doubleToLongBits (this.endLevel) == Double.doubleToLongBits (other.endLevel);
     }
 
 
@@ -281,13 +398,20 @@ public class DefaultEnvelope implements IEnvelope
     @Override
     public void set (final IEnvelope sourceEnvelope)
     {
-        this.delay = sourceEnvelope.getDelay ();
-        this.start = sourceEnvelope.getStart ();
-        this.attack = sourceEnvelope.getAttack ();
-        this.hold = sourceEnvelope.getHold ();
-        this.decay = sourceEnvelope.getDecay ();
-        this.sustain = sourceEnvelope.getSustain ();
-        this.release = sourceEnvelope.getRelease ();
+        this.delayTime = sourceEnvelope.getDelayTime ();
+        this.attackTime = sourceEnvelope.getAttackTime ();
+        this.holdTime = sourceEnvelope.getHoldTime ();
+        this.decayTime = sourceEnvelope.getDecayTime ();
+        this.releaseTime = sourceEnvelope.getReleaseTime ();
+
+        this.startLevel = sourceEnvelope.getStartLevel ();
+        this.holdLevel = sourceEnvelope.getHoldLevel ();
+        this.sustainLevel = sourceEnvelope.getSustainLevel ();
+        this.endLevel = sourceEnvelope.getEndLevel ();
+
+        this.attackSlope = sourceEnvelope.getAttackSlope ();
+        this.decaySlope = sourceEnvelope.getDecaySlope ();
+        this.releaseSlope = sourceEnvelope.getReleaseSlope ();
     }
 
 
@@ -295,6 +419,6 @@ public class DefaultEnvelope implements IEnvelope
     @Override
     public boolean isSet ()
     {
-        return this.delay != -1 || this.start != -1 || this.attack != -1 || this.hold != -1 || this.decay != -1 || this.sustain != -1 || this.release != -1;
+        return this.delayTime != -1 || this.startLevel != -1 || this.attackTime != -1 || this.holdLevel != -1 || this.holdTime != -1 || this.decayTime != -1 || this.sustainLevel != -1 || this.releaseTime != -1 || this.endLevel != -1 || this.attackSlope != 0 || this.decaySlope != 0 || this.releaseSlope != 0;
     }
 }

@@ -446,12 +446,12 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
             // Volume envelope
             final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
-            amplitudeEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DELAY)));
-            amplitudeEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_ATTACK)));
-            amplitudeEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_HOLD)));
-            amplitudeEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DECAY)));
-            amplitudeEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_RELEASE)));
-            amplitudeEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.VOL_ENV_SUSTAIN)));
+            amplitudeEnvelope.setDelayTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DELAY)));
+            amplitudeEnvelope.setAttackTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_ATTACK)));
+            amplitudeEnvelope.setHoldTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_HOLD)));
+            amplitudeEnvelope.setDecayTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DECAY)));
+            amplitudeEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_RELEASE)));
+            amplitudeEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.VOL_ENV_SUSTAIN)));
 
             // Filter settings
             final Integer initialCutoffValue = generators.getSignedValue (Generator.INITIAL_FILTER_CUTOFF);
@@ -482,12 +482,12 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                     if (cutoffModDepth != 0)
                     {
                         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                        filterEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
-                        filterEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
-                        filterEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
-                        filterEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
-                        filterEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
-                        filterEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                        filterEnvelope.setDelayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
+                        filterEnvelope.setAttackTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
+                        filterEnvelope.setHoldTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
+                        filterEnvelope.setDecayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
+                        filterEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
+                        filterEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
                     }
 
                     zone.setFilter (filter);
@@ -498,12 +498,12 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                     if (pitchModDepth != 0)
                     {
                         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-                        pitchEnvelope.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
-                        pitchEnvelope.setAttack (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
-                        pitchEnvelope.setHold (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
-                        pitchEnvelope.setDecay (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
-                        pitchEnvelope.setRelease (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
-                        pitchEnvelope.setSustain (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                        pitchEnvelope.setDelayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
+                        pitchEnvelope.setAttackTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
+                        pitchEnvelope.setHoldTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
+                        pitchEnvelope.setDecayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
+                        pitchEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
+                        pitchEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
                     }
                 }
             }

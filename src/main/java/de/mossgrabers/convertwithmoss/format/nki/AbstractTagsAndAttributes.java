@@ -72,6 +72,9 @@ public abstract class AbstractTagsAndAttributes
     /** The AHDSR envelope type value. */
     private static final String AHDSR_ENV_TYPE_VALUE       = "ahdsr";
 
+    /** The attack curve parameter. */
+    private static final String ATTACK_PARAM_CURVE         = "atkCurving";
+
     /** The attack parameter. */
     private static final String ATTACK_PARAM               = "attack";
 
@@ -462,6 +465,17 @@ public abstract class AbstractTagsAndAttributes
     public String attackParam ()
     {
         return ATTACK_PARAM;
+    }
+
+
+    /**
+     * Get the envelope attack curve tag.
+     *
+     * @return The tag
+     */
+    public String attackCurveParam ()
+    {
+        return ATTACK_PARAM_CURVE;
     }
 
 

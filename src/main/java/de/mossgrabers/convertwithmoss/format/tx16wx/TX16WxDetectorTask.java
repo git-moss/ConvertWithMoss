@@ -300,12 +300,17 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                     ampEnvelope = new DefaultEnvelope ();
                     // The whole group can be delayed which is basically the same as the amplitude
                     // delay
-                    ampEnvelope.setDelay (parseTime (soundShapeElement, TX16WxTag.GROUP_DELAY));
-                    ampEnvelope.setAttack (parseTime (aegElement, TX16WxTag.AMP_ENV_ATTACK));
-                    ampEnvelope.setHold (parseTime (aegElement, TX16WxTag.AMP_ENV_DECAY1));
-                    ampEnvelope.setDecay (parseTime (aegElement, TX16WxTag.AMP_ENV_DECAY2));
-                    ampEnvelope.setSustain (parseNormalizedVolume (aegElement, TX16WxTag.AMP_ENV_SUSTAIN));
-                    ampEnvelope.setRelease (parseTime (aegElement, TX16WxTag.AMP_ENV_RELEASE));
+                    ampEnvelope.setDelayTime (parseTime (soundShapeElement, TX16WxTag.GROUP_DELAY));
+                    ampEnvelope.setAttackTime (parseTime (aegElement, TX16WxTag.AMP_ENV_ATTACK));
+                    ampEnvelope.setHoldTime (parseTime (aegElement, TX16WxTag.AMP_ENV_DECAY1));
+                    ampEnvelope.setDecayTime (parseTime (aegElement, TX16WxTag.AMP_ENV_DECAY2));
+                    ampEnvelope.setReleaseTime (parseTime (aegElement, TX16WxTag.AMP_ENV_RELEASE));
+
+                    ampEnvelope.setSustainLevel (parseNormalizedVolume (aegElement, TX16WxTag.AMP_ENV_SUSTAIN));
+
+                    ampEnvelope.setAttackSlope (parsePanorama (aegElement, TX16WxTag.AMP_ENV_ATTACK_SHAPE));
+                    ampEnvelope.setDecaySlope (parsePanorama (aegElement, TX16WxTag.AMP_ENV_DECAY2_SHAPE));
+                    ampEnvelope.setReleaseSlope (parsePanorama (aegElement, TX16WxTag.AMP_ENV_RELEASE_SHAPE));
                 }
 
                 filter = this.parseFilter (soundShapeElement);
@@ -520,17 +525,24 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 {
                     final IModulator cutoffModulator = filter.getCutoffModulator ();
                     final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
-                    cutoffModulator.setDepth (MathUtils.clamp (Math.abs (amount), 0, 1.0));
+                    cutoffModulator.setDepth (MathUtils.clamp (amount, -1, 1));
 
                     final Element envElement = XMLUtils.getChildElementByName (soundShapeElement, isEnv1 ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
                     if (envElement != null)
                     {
                         final IEnvelope envEnvelope = cutoffModulator.getSource ();
-                        // Note: Level 0, 1 and 3 can currently not be mapped!
-                        envEnvelope.setAttack (parseTime (envElement, TX16WxTag.ENV_TIME1));
-                        envEnvelope.setDecay (parseTime (envElement, TX16WxTag.ENV_TIME2));
-                        envEnvelope.setSustain (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL2));
-                        envEnvelope.setRelease (parseTime (envElement, TX16WxTag.ENV_TIME3));
+                        envEnvelope.setAttackTime (parseTime (envElement, TX16WxTag.ENV_TIME1));
+                        envEnvelope.setDecayTime (parseTime (envElement, TX16WxTag.ENV_TIME2));
+                        envEnvelope.setReleaseTime (parseTime (envElement, TX16WxTag.ENV_TIME3));
+
+                        envEnvelope.setStartLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL0));
+                        envEnvelope.setHoldLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
+                        envEnvelope.setSustainLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL2));
+                        envEnvelope.setEndLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL3));
+
+                        envEnvelope.setAttackSlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE1));
+                        envEnvelope.setDecaySlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE2));
+                        envEnvelope.setReleaseSlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE3));
                     }
                 }
             }
@@ -562,17 +574,25 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 {
                     final IModulator pitchModulator = new DefaultModulator ();
                     final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
-                    pitchModulator.setDepth (MathUtils.clamp (Math.abs (amount), 0, 1.0));
+                    pitchModulator.setDepth (MathUtils.clamp (amount, -1, 1));
 
                     final Element envElement = XMLUtils.getChildElementByName (soundShapeElement, isEnv1 ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
                     if (envElement != null)
                     {
                         final IEnvelope envEnvelope = pitchModulator.getSource ();
-                        // Note: this mapping is different then on the filter envelope (see above)!
-                        envEnvelope.setAttack (0);
-                        envEnvelope.setDecay (parseTime (envElement, TX16WxTag.ENV_TIME1));
-                        envEnvelope.setSustain (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
-                        envEnvelope.setRelease (parseTime (envElement, TX16WxTag.ENV_TIME2));
+                        envEnvelope.setAttackTime (parseTime (envElement, TX16WxTag.ENV_TIME1));
+                        envEnvelope.setDecayTime (parseTime (envElement, TX16WxTag.ENV_TIME2));
+                        envEnvelope.setReleaseTime (parseTime (envElement, TX16WxTag.ENV_TIME3));
+
+                        envEnvelope.setStartLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL0));
+                        envEnvelope.setHoldLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
+                        envEnvelope.setSustainLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL2));
+                        envEnvelope.setEndLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL3));
+
+                        envEnvelope.setAttackSlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE1));
+                        envEnvelope.setDecaySlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE2));
+                        envEnvelope.setReleaseSlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE3));
+
                         return Optional.of (pitchModulator);
                     }
                 }

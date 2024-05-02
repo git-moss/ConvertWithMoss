@@ -112,6 +112,14 @@ public class TX16WxTag
     public static final String AMP_ENV_SUSTAIN        = "tx:sustain";
     /** The amplitude envelope release attribute. */
     public static final String AMP_ENV_RELEASE        = "tx:release";
+    /** The amplitude envelope attack-shape attribute. */
+    public static final String AMP_ENV_ATTACK_SHAPE   = "tx:attack-shape";
+    /** The amplitude envelope decay1-shape attribute. */
+    public static final String AMP_ENV_DECAY1_SHAPE   = "tx:decay1-shape";
+    /** The amplitude envelope decay2-shape attribute. */
+    public static final String AMP_ENV_DECAY2_SHAPE   = "tx:decay2-shape";
+    /** The amplitude envelope release-shape attribute. */
+    public static final String AMP_ENV_RELEASE_SHAPE  = "tx:release-shape";
 
     /** The envelope 1 tag. */
     public static final String ENVELOPE_1             = "tx:env1";
@@ -131,6 +139,12 @@ public class TX16WxTag
     public static final String ENV_TIME2              = "tx:time2";
     /** The envelope 1/2 time 3 attribute. */
     public static final String ENV_TIME3              = "tx:time3";
+    /** The envelope 1/2 shape 1 attribute. */
+    public static final String ENV_SHAPE1             = "tx:shape1";
+    /** The envelope 1/2 shape 2 attribute. */
+    public static final String ENV_SHAPE2             = "tx:shape2";
+    /** The envelope 1/2 shape 3 attribute. */
+    public static final String ENV_SHAPE3             = "tx:shape3";
 
     /** The filter tag. */
     public static final String FILTER                 = "tx:filter";

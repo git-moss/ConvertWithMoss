@@ -288,11 +288,11 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                     cutoffModulator.setDepth (filterModDepth);
 
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                    filterEnvelope.setAttack (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, 0, maxEnvelopeTime, 0));
-                    filterEnvelope.setHold (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, 0, maxEnvelopeTime, 0));
-                    filterEnvelope.setDecay (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, 0, maxEnvelopeTime, 0));
-                    filterEnvelope.setSustain (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, 0, 1, 1));
-                    filterEnvelope.setRelease (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, 0, maxEnvelopeTime, 0));
+                    filterEnvelope.setAttackTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, 0, maxEnvelopeTime, 0));
+                    filterEnvelope.setHoldTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, 0, maxEnvelopeTime, 0));
+                    filterEnvelope.setDecayTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, 0, maxEnvelopeTime, 0));
+                    filterEnvelope.setSustainLevel (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, 0, 1, 1));
+                    filterEnvelope.setReleaseTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, 0, maxEnvelopeTime, 0));
                 }
             }
         }
@@ -322,11 +322,11 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                 zone.setBendDown (bend);
 
                 final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
-                amplitudeEnvelope.setAttack (ampAttach);
-                amplitudeEnvelope.setHold (ampHold);
-                amplitudeEnvelope.setDecay (ampDecay);
-                amplitudeEnvelope.setSustain (ampSustain);
-                amplitudeEnvelope.setRelease (ampRelease);
+                amplitudeEnvelope.setAttackTime (ampAttach);
+                amplitudeEnvelope.setHoldTime (ampHold);
+                amplitudeEnvelope.setDecayTime (ampDecay);
+                amplitudeEnvelope.setSustainLevel (ampSustain);
+                amplitudeEnvelope.setReleaseTime (ampRelease);
 
                 if (globalPitchEnvelopeDepth > 0)
                 {
@@ -334,11 +334,11 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                     pitchModulator.setDepth (globalPitchEnvelopeDepth);
 
                     final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-                    pitchEnvelope.setAttack (pitchAttack);
-                    pitchEnvelope.setHold (pitchHold);
-                    pitchEnvelope.setDecay (pitchDecay);
-                    pitchEnvelope.setSustain (pitchSustain);
-                    pitchEnvelope.setRelease (pitchRelease);
+                    pitchEnvelope.setAttackTime (pitchAttack);
+                    pitchEnvelope.setHoldTime (pitchHold);
+                    pitchEnvelope.setDecayTime (pitchDecay);
+                    pitchEnvelope.setSustainLevel (pitchSustain);
+                    pitchEnvelope.setReleaseTime (pitchRelease);
                 }
             }
 
