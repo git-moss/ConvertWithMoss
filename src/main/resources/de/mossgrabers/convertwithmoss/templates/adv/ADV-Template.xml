@@ -451,7 +451,7 @@
 							</DecaySlope>
 							<SustainLevel>
 								<LomId Value="0" />
-								<Manual Value="%FILTER_EG_SUSTAIN_TIME%" />
+								<Manual Value="%FILTER_EG_SUSTAIN_LEVEL%" />
 								<MidiControllerRange>
 									<Min Value="0" />
 									<Max Value="1" />
@@ -844,7 +844,7 @@
 				</DecaySlope>
 				<SustainLevel>
 					<LomId Value="0" />
-					<Manual Value="%AMP_EG_SUSTAIN_TIME%" />
+					<Manual Value="%AMP_EG_SUSTAIN_LEVEL%" />
 					<MidiControllerRange>
 						<Min Value="0.0003162277571" />
 						<Max Value="1" />
@@ -1088,7 +1088,7 @@
 						</DecaySlope>
 						<SustainLevel>
 							<LomId Value="0" />
-							<Manual Value="%PITCH_EG_SUSTAIN_TIME%" />
+							<Manual Value="%PITCH_EG_SUSTAIN_LEVEL%" />
 							<MidiControllerRange>
 								<Min Value="0" />
 								<Max Value="1" />

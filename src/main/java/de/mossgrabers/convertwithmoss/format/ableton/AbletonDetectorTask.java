@@ -157,8 +157,18 @@ public class AbletonDetectorTask extends AbstractDetectorTask
 
         final File rootPath = samplerElements.getValue ();
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-        for (final Element samplerElement: samplerElements.getKey ())
-            multisampleSources.add (this.parseSampler (multiSampleFile, samplerElement, rootPath, creator));
+        int counter = 0;
+        final List<Element> elementsList = samplerElements.getKey ();
+        final boolean multiple = elementsList.size () > 1;
+        for (final Element samplerElement: elementsList)
+        {
+            final IMultisampleSource multiSample = this.parseSampler (multiSampleFile, samplerElement, rootPath, creator);
+            multisampleSources.add (multiSample);
+            // Create unique names if there are multiple ones
+            if (multiple)
+                multiSample.setName (FileUtils.getNameWithoutType (multiSample.getName ()) + (counter + 1));
+            counter++;
+        }
         return multisampleSources;
     }
 

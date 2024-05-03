@@ -3,8 +3,8 @@
 The following multisample formats are supported:
 
 1. [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
-2. [AIFF](#aiff)
-3. [Ableton Sampler](#ableton-sampler)
+2. [Ableton Sampler](#ableton-sampler)
+3. [AIFF](#aiff)
 4. [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
 5. [CWITEC TX16Wx](#cwitec-tx16wx)
 6. [DecentSampler](#decentsampler)

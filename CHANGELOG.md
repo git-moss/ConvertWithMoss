@@ -1,5 +1,11 @@
 # Changes
 
+## 9.0.1
+
+* Ableton - Read/Write
+  * Fixed: The template contained and error and resulting ADV files could not be loaded in Ableton.
+  * Fixed: Names from ADG files were not unique.
+
 ## 9.0.0
 
 * New: Added support for Ableton ADV (read/write) and ADG (only read) files.
