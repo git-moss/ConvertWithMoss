@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.file.riff;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -13,6 +15,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.exception.NoDataInChunkException;
 import de.mossgrabers.convertwithmoss.file.IChunk;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
@@ -22,7 +25,8 @@ import de.mossgrabers.convertwithmoss.file.IChunk;
  */
 public class RIFFChunk implements IChunk
 {
-    private int                             id;
+    private final RiffID                    riffID;
+    private final int                       id;
     private int                             type;
     private long                            size;
     private byte []                         data;
@@ -60,6 +64,21 @@ public class RIFFChunk implements IChunk
 
 
     /**
+     * Constructor. Use for sub-class wrappers
+     * 
+     * @param riffID The RIFF ID
+     * @param data The data of the chunk
+     * @param size The expected size of the chunk
+     */
+    protected RIFFChunk (final RiffID riffID, final byte [] data, final int size)
+    {
+        this (0, riffID.getId (), size);
+
+        this.setData (data);
+    }
+
+
+    /**
      * Constructor.
      *
      * @param type The type of the chunk
@@ -70,6 +89,7 @@ public class RIFFChunk implements IChunk
     public RIFFChunk (final int type, final int id, final long size, final RIFFChunk propGroup)
     {
         this.id = id;
+        this.riffID = RiffID.fromId (id);
         this.type = type;
         this.size = size;
 
@@ -77,6 +97,17 @@ public class RIFFChunk implements IChunk
             return;
         this.propertyChunks.putAll (propGroup.propertyChunks);
         this.collectionChunks.addAll (propGroup.collectionChunks);
+    }
+
+
+    /**
+     * Get the RIFF ID.
+     * 
+     * @return The RIFF ID
+     */
+    public RiffID getRiffID ()
+    {
+        return this.riffID;
     }
 
 
@@ -192,6 +223,10 @@ public class RIFFChunk implements IChunk
      */
     public void setData (final byte [] data)
     {
+        // Check expected length
+        if (this.id != RiffID.LIST_ID.getId () && data.length < this.size)
+            throw new IllegalArgumentException (this.getRiffID ().getName () + " chunk too short. Corrupted file?!");
+
         this.data = data;
     }
 
@@ -200,7 +235,7 @@ public class RIFFChunk implements IChunk
     @Override
     public byte [] getData ()
     {
-        if (this.data == null)
+        if (this.id != RiffID.LIST_ID.getId () && this.data == null)
         {
             if (this.tooLarge)
                 throw new NoDataInChunkException ("Chunk contains no data since it was too large to be loaded.");
@@ -402,6 +437,20 @@ public class RIFFChunk implements IChunk
 
     /** {@inheritDoc} */
     @Override
+    public void write (final OutputStream out) throws IOException
+    {
+        StreamUtils.writeUnsigned32 (out, this.id, true);
+        final byte [] data = this.getData ();
+        StreamUtils.writeUnsigned32 (out, data.length, false);
+        out.write (data);
+        // Padding
+        if (data.length % 2 == 1)
+            out.write (0);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public boolean equals (final Object another)
     {
         if (another instanceof final RIFFChunk that)
@@ -439,6 +488,6 @@ public class RIFFChunk implements IChunk
     @Override
     public String infoText ()
     {
-        return RiffID.toASCII (this.getType ()) + " -> " + RiffID.toASCII (this.getId ());
+        return "Unknown Data";
     }
 }

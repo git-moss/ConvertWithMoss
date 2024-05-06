@@ -4,6 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.file.aiff;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
@@ -79,5 +82,13 @@ public class AiffChunk implements IChunk
     public String infoText ()
     {
         return "Date Size: " + this.getData ().length + " Bytes";
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void write (OutputStream out) throws IOException
+    {
+        // Not used
     }
 }

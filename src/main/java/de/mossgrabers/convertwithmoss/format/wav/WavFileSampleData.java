@@ -220,16 +220,25 @@ public class WavFileSampleData extends AbstractFileSampleData
     @Override
     public void updateMetadata (final IMetadata metadata)
     {
-        final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = this.waveFile.getBroadcastAudioExtensionChunk ();
-        if (broadcastAudioExtensionChunk == null)
-            return;
+        final StringBuilder sb = new StringBuilder (this.waveFile.formatInfoFields ());
 
-        final String originator = broadcastAudioExtensionChunk.getOriginator ();
-        if (!originator.isBlank ())
-            metadata.setCreator (originator);
-        final String description = broadcastAudioExtensionChunk.getDescription ();
-        if (!description.isBlank ())
-            metadata.setDescription (description);
-        metadata.setCreationDateTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
+        final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = this.waveFile.getBroadcastAudioExtensionChunk ();
+        if (broadcastAudioExtensionChunk != null)
+        {
+            final String originator = broadcastAudioExtensionChunk.getOriginator ();
+            if (!originator.isBlank ())
+                metadata.setCreator (originator);
+            final String description = broadcastAudioExtensionChunk.getDescription ().trim ();
+            if (!description.isBlank ())
+            {
+                if (sb.length () > 0)
+                    sb.append ('\n');
+                sb.append (description);
+            }
+            metadata.setCreationDateTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
+        }
+
+        if (sb.length () > 0)
+            metadata.setDescription (sb.toString ());
     }
 }

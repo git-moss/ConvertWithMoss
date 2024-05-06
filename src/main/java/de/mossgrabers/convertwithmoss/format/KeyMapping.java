@@ -433,7 +433,7 @@ public class KeyMapping
                 final Integer id = Integer.valueOf (number);
                 final String prefix = matcher.group ("prefix");
                 final String postfix = matcher.group ("postfix");
-                final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (prefix + postfix), si);
+                final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (prefix + postfix)), si);
                 groups.computeIfAbsent (id, key -> new ArrayList<> ()).add (zone);
             }
             catch (final NumberFormatException ex)
@@ -654,7 +654,7 @@ public class KeyMapping
      */
     private int lookupMidiNote (final Map<String, Integer> keyMap, final String filename)
     {
-        String fn = FileUtils.getNameWithoutType (filename);
+        String fn = FileUtils.getNameWithoutType (new File (filename));
         final String noteArea = fn.toUpperCase (Locale.US);
 
         int pos = -1;

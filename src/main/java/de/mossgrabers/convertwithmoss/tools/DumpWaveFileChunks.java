@@ -85,7 +85,6 @@ public class DumpWaveFileChunks
                 try
                 {
                     final WaveFile sampleFile = new WaveFile (file, false);
-                    log ("\n" + file.getAbsolutePath ());
                     log (sampleFile.infoText ());
                 }
                 catch (final IOException | ParseException ex)

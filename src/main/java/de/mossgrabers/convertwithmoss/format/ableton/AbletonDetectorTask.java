@@ -166,7 +166,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
             multisampleSources.add (multiSample);
             // Create unique names if there are multiple ones
             if (multiple)
-                multiSample.setName (FileUtils.getNameWithoutType (multiSample.getName ()) + (counter + 1));
+                multiSample.setName (FileUtils.getNameWithoutType (new File (multiSample.getName ())) + (counter + 1));
             counter++;
         }
         return multisampleSources;

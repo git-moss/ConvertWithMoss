@@ -13,11 +13,11 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
- * Accessor for a sample chunk ("smpl") in a WAV file.
+ * Wrapper of a sample chunk ("smpl") in a WAV file.
  *
  * @author Jürgen Moßgraber
  */
-public class SampleChunk extends WavChunk
+public class SampleChunk extends RIFFChunk
 {
     /** Play the loop forwards. */
     public static final int             LOOP_FORWARD     = 0;
@@ -39,10 +39,10 @@ public class SampleChunk extends WavChunk
      */
     public SampleChunk (final int numSampleLoops)
     {
-        super (RiffID.SMPL_ID, new RIFFChunk (0, RiffID.SMPL_ID.getId (), CHUNK_SIZE));
+        super (RiffID.SMPL_ID, new byte [0], 0);
 
         final int sizeOfLoops = numSampleLoops * LOOP_SIZE;
-        this.chunk.setData (new byte [CHUNK_SIZE + sizeOfLoops]);
+        this.setData (new byte [CHUNK_SIZE + sizeOfLoops]);
         this.setNumSampleLoops (numSampleLoops);
         this.setSamplerData (sizeOfLoops);
 
@@ -60,7 +60,7 @@ public class SampleChunk extends WavChunk
      */
     public SampleChunk (final RIFFChunk chunk) throws ParseException
     {
-        super (RiffID.SMPL_ID, chunk, CHUNK_SIZE);
+        super (RiffID.SMPL_ID, chunk.getData (), chunk.getData ().length);
 
         final byte [] data = chunk.getData ();
 
@@ -86,7 +86,7 @@ public class SampleChunk extends WavChunk
      */
     public int getManufacturer ()
     {
-        return this.chunk.getFourBytesAsInt (0x00);
+        return this.getFourBytesAsInt (0x00);
     }
 
 
@@ -99,7 +99,7 @@ public class SampleChunk extends WavChunk
      */
     public int getProduct ()
     {
-        return this.chunk.getFourBytesAsInt (0x04);
+        return this.getFourBytesAsInt (0x04);
     }
 
 
@@ -112,7 +112,7 @@ public class SampleChunk extends WavChunk
      */
     public int getSamplePeriod ()
     {
-        return this.chunk.getFourBytesAsInt (0x08);
+        return this.getFourBytesAsInt (0x08);
     }
 
 
@@ -123,7 +123,7 @@ public class SampleChunk extends WavChunk
      */
     public void setSamplePeriod (final int samplePeriod)
     {
-        this.chunk.setIntAsFourBytes (0x08, samplePeriod);
+        this.setIntAsFourBytes (0x08, samplePeriod);
     }
 
 
@@ -136,7 +136,7 @@ public class SampleChunk extends WavChunk
      */
     public int getMIDIUnityNote ()
     {
-        return this.chunk.getFourBytesAsInt (0x0C);
+        return this.getFourBytesAsInt (0x0C);
     }
 
 
@@ -149,7 +149,7 @@ public class SampleChunk extends WavChunk
      */
     public void setMIDIUnityNote (final int note)
     {
-        this.chunk.setIntAsFourBytes (0x0C, note);
+        this.setIntAsFourBytes (0x0C, note);
     }
 
 
@@ -167,7 +167,7 @@ public class SampleChunk extends WavChunk
      */
     public int getMIDIPitchFraction ()
     {
-        return this.chunk.getFourBytesAsInt (0x10);
+        return this.getFourBytesAsInt (0x10);
     }
 
 
@@ -190,7 +190,7 @@ public class SampleChunk extends WavChunk
      */
     public void setMIDIPitchFraction (final int pitchFraction)
     {
-        this.chunk.setIntAsFourBytes (0x10, pitchFraction);
+        this.setIntAsFourBytes (0x10, pitchFraction);
     }
 
 
@@ -214,7 +214,7 @@ public class SampleChunk extends WavChunk
      */
     public int getSMPTEFormat ()
     {
-        return this.chunk.getFourBytesAsInt (0x14);
+        return this.getFourBytesAsInt (0x14);
     }
 
 
@@ -226,7 +226,7 @@ public class SampleChunk extends WavChunk
      */
     public int getSMPTEOffset ()
     {
-        return this.chunk.getFourBytesAsInt (0x18);
+        return this.getFourBytesAsInt (0x18);
     }
 
 
@@ -238,7 +238,7 @@ public class SampleChunk extends WavChunk
      */
     public int getNumSampleLoops ()
     {
-        return this.chunk.getFourBytesAsInt (0x1C);
+        return this.getFourBytesAsInt (0x1C);
     }
 
 
@@ -250,7 +250,7 @@ public class SampleChunk extends WavChunk
      */
     private void setNumSampleLoops (final int numLoops)
     {
-        this.chunk.setIntAsFourBytes (0x1C, numLoops);
+        this.setIntAsFourBytes (0x1C, numLoops);
     }
 
 
@@ -263,7 +263,7 @@ public class SampleChunk extends WavChunk
      */
     public int getSamplerData ()
     {
-        return this.chunk.getFourBytesAsInt (0x20);
+        return this.getFourBytesAsInt (0x20);
     }
 
 
@@ -274,7 +274,7 @@ public class SampleChunk extends WavChunk
      */
     private void setSamplerData (final int sampleDataSize)
     {
-        this.chunk.setIntAsFourBytes (0x20, sampleDataSize);
+        this.setIntAsFourBytes (0x20, sampleDataSize);
     }
 
 
@@ -302,9 +302,9 @@ public class SampleChunk extends WavChunk
         sb.append ("SMPTE Format: ").append (this.getSMPTEFormat ()).append ('\n');
         sb.append ("SMPTE Offset: ").append (this.getSMPTEOffset ()).append ('\n');
         sb.append ("Num Sample Loops: ").append (this.getNumSampleLoops ()).append ('\n');
-        sb.append ("Sampler Data: ").append (this.getSamplerData ()).append ('\n');
+        sb.append ("Sampler Data: ").append (this.getSamplerData ());
         for (int i = 0; i < this.loops.size (); i++)
-            sb.append ("Loop ").append (i + 1).append (":\n").append (this.loops.get (i).infoText ());
+            sb.append ("\nLoop ").append (i + 1).append (":\n").append (this.loops.get (i).infoText ());
         return sb.toString ();
     }
 
@@ -338,7 +338,7 @@ public class SampleChunk extends WavChunk
          */
         public int getCuePointID ()
         {
-            return SampleChunk.this.chunk.getFourBytesAsInt (this.offset + 0x00);
+            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x00);
         }
 
 
@@ -351,7 +351,7 @@ public class SampleChunk extends WavChunk
          */
         public int getType ()
         {
-            return SampleChunk.this.chunk.getFourBytesAsInt (this.offset + 0x04);
+            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x04);
         }
 
 
@@ -362,7 +362,7 @@ public class SampleChunk extends WavChunk
          */
         public void setType (final int type)
         {
-            SampleChunk.this.chunk.setIntAsFourBytes (this.offset + 0x04, type);
+            SampleChunk.this.setIntAsFourBytes (this.offset + 0x04, type);
         }
 
 
@@ -374,7 +374,7 @@ public class SampleChunk extends WavChunk
          */
         public int getStart ()
         {
-            return SampleChunk.this.chunk.getFourBytesAsInt (this.offset + 0x08);
+            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x08);
         }
 
 
@@ -385,7 +385,7 @@ public class SampleChunk extends WavChunk
          */
         public void setStart (final int start)
         {
-            SampleChunk.this.chunk.setIntAsFourBytes (this.offset + 0x08, start);
+            SampleChunk.this.setIntAsFourBytes (this.offset + 0x08, start);
         }
 
 
@@ -397,7 +397,7 @@ public class SampleChunk extends WavChunk
          */
         public int getEnd ()
         {
-            return SampleChunk.this.chunk.getFourBytesAsInt (this.offset + 0x0C);
+            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x0C);
         }
 
 
@@ -408,7 +408,7 @@ public class SampleChunk extends WavChunk
          */
         public void setEnd (final int end)
         {
-            SampleChunk.this.chunk.setIntAsFourBytes (this.offset + 0x0C, end);
+            SampleChunk.this.setIntAsFourBytes (this.offset + 0x0C, end);
         }
 
 
@@ -423,7 +423,7 @@ public class SampleChunk extends WavChunk
          */
         public int getFraction ()
         {
-            return SampleChunk.this.chunk.getFourBytesAsInt (this.offset + 0x10);
+            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x10);
         }
 
 
@@ -438,7 +438,7 @@ public class SampleChunk extends WavChunk
          */
         public int getPlayCount ()
         {
-            return SampleChunk.this.chunk.getFourBytesAsInt (this.offset + 0x14);
+            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x14);
         }
 
 
@@ -449,7 +449,7 @@ public class SampleChunk extends WavChunk
          */
         public void setPlayCount (final int playCount)
         {
-            SampleChunk.this.chunk.setIntAsFourBytes (this.offset + 0x14, playCount);
+            SampleChunk.this.setIntAsFourBytes (this.offset + 0x14, playCount);
         }
 
 

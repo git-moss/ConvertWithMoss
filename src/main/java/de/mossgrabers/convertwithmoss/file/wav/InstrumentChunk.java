@@ -4,17 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
- * Accessor for an instrument chunk ("inst") in a WAV file.
+ * Wrapper of an instrument chunk ("inst") in a WAV file.
  *
  * @author Jürgen Moßgraber
  */
-public class InstrumentChunk extends WavChunk
+public class InstrumentChunk extends RIFFChunk
 {
     private static final int CHUNK_SIZE = 7;
 
@@ -24,9 +23,7 @@ public class InstrumentChunk extends WavChunk
      */
     public InstrumentChunk ()
     {
-        super (RiffID.INST_ID, new RIFFChunk (0, RiffID.INST_ID.getId (), CHUNK_SIZE));
-
-        this.chunk.setData (new byte [CHUNK_SIZE]);
+        super (RiffID.INST_ID, new byte [CHUNK_SIZE], CHUNK_SIZE);
     }
 
 
@@ -34,40 +31,39 @@ public class InstrumentChunk extends WavChunk
      * Constructor.
      *
      * @param chunk The RIFF chunk which contains the data
-     * @throws ParseException Length of data does not match the expected chunk size
      */
-    public InstrumentChunk (final RIFFChunk chunk) throws ParseException
+    public InstrumentChunk (final RIFFChunk chunk)
     {
-        super (RiffID.INST_ID, chunk, CHUNK_SIZE);
+        super (RiffID.INST_ID, chunk.getData (), CHUNK_SIZE);
     }
 
 
     /**
-     * The MIDI note number that corresponds to the unshifted pitch of the sample. Valid values
+     * The MIDI note number that corresponds to the un-shifted pitch of the sample. Valid values
      * range from 0 to 127.
      *
      * @return The MIDI note number
      */
     public int getUnshiftedNote ()
     {
-        return this.chunk.getByteAsUnsignedInt (0x00);
+        return this.getByteAsUnsignedInt (0x00);
     }
 
 
     /**
-     * Sets the MIDI note number that corresponds to the unshifted pitch of the sample. Valid values
-     * range from 0 to 127.
+     * Sets the MIDI note number that corresponds to the un-shifted pitch of the sample. Valid
+     * values range from 0 to 127.
      *
      * @param unshiftedNote The MIDI note number
      */
     public void setUnshiftedNote (final int unshiftedNote)
     {
-        this.chunk.setUnsignedIntAsByte (0x00, unshiftedNote);
+        this.setUnsignedIntAsByte (0x00, unshiftedNote);
     }
 
 
     /**
-     * The pitch shift adjustment in cents (100ths of a semitone) needed to hit UnshiftedNote value
+     * The pitch shift adjustment in cents (100ths of a semi-tone) needed to hit UnshiftedNote value
      * exactly. chFineTune can be used to compensate for tuning errors in the sampling process.
      * Valid values .
      *
@@ -75,12 +71,12 @@ public class InstrumentChunk extends WavChunk
      */
     public int getFineTune ()
     {
-        return this.chunk.getByteAsSignedInt (0x01);
+        return this.getByteAsSignedInt (0x01);
     }
 
 
     /**
-     * Set the pitch shift adjustment in cents (100ths of a semitone) needed to hit UnshiftedNote
+     * Set the pitch shift adjustment in cents (100ths of a semi-tone) needed to hit UnshiftedNote
      * value exactly. Fine tune can be used to compensate for tuning errors in the sampling process.
      * Valid values range from -50 to 50.
      *
@@ -88,33 +84,33 @@ public class InstrumentChunk extends WavChunk
      */
     public void setFineTune (final int fineTune)
     {
-        this.chunk.setSignedIntAsByte (0x01, fineTune);
+        this.setSignedIntAsByte (0x01, fineTune);
     }
 
 
     /**
-     * The suggested volume setting for the sample in decibels. A value of zero decibels suggests no
-     * change in the volume. A value of -6 decibels suggests reducing the amplitude of the sample by
-     * two.
+     * The suggested volume setting for the sample in deci-bels. A value of zero deci-bels suggests
+     * no change in the volume. A value of -6 deci-bels suggests reducing the amplitude of the
+     * sample by two.
      *
      * @return The gain
      */
     public int getGain ()
     {
-        return this.chunk.getByteAsSignedInt (0x02);
+        return this.getByteAsSignedInt (0x02);
     }
 
 
     /**
-     * Set the volume setting for the sample in decibels. A value of zero decibels suggests no
-     * change in the volume. A value of -6 decibels suggests reducing the amplitude of the sample by
-     * two.
+     * Set the volume setting for the sample in deci-bels. A value of zero deci-bels suggests no
+     * change in the volume. A value of -6 deci-bels suggests reducing the amplitude of the sample
+     * by two.
      *
      * @param gain The gain
      */
     public void setGain (final int gain)
     {
-        this.chunk.setSignedIntAsByte (0x02, gain);
+        this.setSignedIntAsByte (0x02, gain);
     }
 
 
@@ -125,7 +121,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getLowNote ()
     {
-        return this.chunk.getByteAsUnsignedInt (0x03);
+        return this.getByteAsUnsignedInt (0x03);
     }
 
 
@@ -136,7 +132,7 @@ public class InstrumentChunk extends WavChunk
      */
     public void setLowNote (final int lowNote)
     {
-        this.chunk.setUnsignedIntAsByte (0x03, lowNote);
+        this.setUnsignedIntAsByte (0x03, lowNote);
     }
 
 
@@ -147,7 +143,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getHighNote ()
     {
-        return this.chunk.getByteAsUnsignedInt (0x04);
+        return this.getByteAsUnsignedInt (0x04);
     }
 
 
@@ -158,7 +154,7 @@ public class InstrumentChunk extends WavChunk
      */
     public void setHighNote (final int highNote)
     {
-        this.chunk.setUnsignedIntAsByte (0x04, highNote);
+        this.setUnsignedIntAsByte (0x04, highNote);
     }
 
 
@@ -169,7 +165,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getLowVelocity ()
     {
-        return this.chunk.getByteAsUnsignedInt (0x05);
+        return this.getByteAsUnsignedInt (0x05);
     }
 
 
@@ -180,7 +176,7 @@ public class InstrumentChunk extends WavChunk
      */
     public void setLowVelocity (final int lowVelocity)
     {
-        this.chunk.setUnsignedIntAsByte (0x05, lowVelocity);
+        this.setUnsignedIntAsByte (0x05, lowVelocity);
     }
 
 
@@ -191,7 +187,7 @@ public class InstrumentChunk extends WavChunk
      */
     public int getHighVelocity ()
     {
-        return this.chunk.getByteAsUnsignedInt (0x06);
+        return this.getByteAsUnsignedInt (0x06);
     }
 
 
@@ -202,7 +198,7 @@ public class InstrumentChunk extends WavChunk
      */
     public void setHighVelocity (final int highVelocity)
     {
-        this.chunk.setUnsignedIntAsByte (0x06, highVelocity);
+        this.setUnsignedIntAsByte (0x06, highVelocity);
     }
 
 

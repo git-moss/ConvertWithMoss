@@ -159,7 +159,8 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         if (name == null || !name.endsWith (ENDING_DSPRESET))
             return Collections.emptyList ();
 
-        String parent = new File (name).getParent ();
+        final File presetFile = new File (name);
+        String parent = presetFile.getParent ();
         if (parent == null)
             parent = "";
 
@@ -167,7 +168,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         {
             final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseMetadataFile (FileUtils.getNameWithoutType (name), file, parent, true, document);
+            return this.parseMetadataFile (FileUtils.getNameWithoutType (presetFile), file, parent, true, document);
         }
         catch (final SAXException ex)
         {

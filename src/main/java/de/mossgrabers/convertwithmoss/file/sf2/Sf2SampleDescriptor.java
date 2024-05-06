@@ -4,10 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.file.sf2;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -97,6 +101,48 @@ public class Sf2SampleDescriptor
         this.sampleType = chunk.getTwoBytesAsInt (offset + 44);
         if (this.sampleType >= LINKED)
             throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_UNSUPPORTED_SAMPLE_TYPE"));
+    }
+
+
+    /**
+     * Write the data to a sample header chunk.
+     * 
+     * @param out The output stream to write to
+     * @throws IOException Could not write the data
+     */
+    public void writeHeader (final ByteArrayOutputStream out) throws IOException
+    {
+        StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 20);
+        StreamUtils.writeUnsigned32 (out, this.start, false);
+        StreamUtils.writeUnsigned32 (out, this.end, false);
+        StreamUtils.writeUnsigned32 (out, this.startloop, false);
+        StreamUtils.writeUnsigned32 (out, this.endloop, false);
+        StreamUtils.writeUnsigned32 (out, this.sampleRate, false);
+        out.write (this.originalPitch);
+        out.write (this.pitchCorrection);
+        StreamUtils.writeUnsigned16 (out, this.sampleLink, false);
+        StreamUtils.writeUnsigned16 (out, this.sampleType, false);
+    }
+
+
+    /**
+     * Write the terminal sample header chunk.
+     * 
+     * @param out The output stream to write to
+     * @throws IOException Could not write the data
+     */
+    public static void writeLastHeader (final ByteArrayOutputStream out) throws IOException
+    {
+        StreamUtils.writeASCII (out, "EOS", 20);
+        StreamUtils.writeUnsigned32 (out, 0, false);
+        StreamUtils.writeUnsigned32 (out, 0, false);
+        StreamUtils.writeUnsigned32 (out, 0, false);
+        StreamUtils.writeUnsigned32 (out, 0, false);
+        StreamUtils.writeUnsigned32 (out, 0, false);
+        out.write (0);
+        out.write (0);
+        StreamUtils.writeUnsigned16 (out, 0, false);
+        StreamUtils.writeUnsigned16 (out, 0, false);
     }
 
 

@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 
 /**
@@ -27,11 +26,14 @@ public abstract class AbstractZone
     protected final int             numberOfModulators;
 
     /** If true, this is a global zone which applies to the whole preset. */
-    protected boolean               isGlobal   = false;
+    protected boolean               isGlobal       = false;
 
     /** The generators assigned to the zone. */
-    protected Map<Integer, Integer> generators = new HashMap<> ();
-    protected List<Sf2Modulator>    modulators = new ArrayList<> ();
+    protected Map<Integer, Integer> generators     = new HashMap<> ();
+    protected List<Sf2Modulator>    modulators     = new ArrayList<> ();
+
+    /** The order of generators in a SF2 file has some restrictions and therefore is important! */
+    protected List<Integer>         generatorOrder = new ArrayList<> ();
 
 
     /**
@@ -96,28 +98,6 @@ public abstract class AbstractZone
 
 
     /**
-     * Get the index to the first modulator of the zone in the PMOD list.
-     *
-     * @return The index
-     */
-    public int getFirstModulator ()
-    {
-        return this.firstModulator;
-    }
-
-
-    /**
-     * Get the number of modulators in this zone.
-     *
-     * @return The number of modulators in this zone
-     */
-    public int getNumberOfModulators ()
-    {
-        return this.numberOfModulators;
-    }
-
-
-    /**
      * Get all generators of the zone.
      *
      * @return The generators
@@ -129,6 +109,17 @@ public abstract class AbstractZone
 
 
     /**
+     * Get the order of all generators of the zone.
+     *
+     * @return The generator order
+     */
+    public List<Integer> getGeneratorOrder ()
+    {
+        return this.generatorOrder;
+    }
+
+
+    /**
      * Add a generator to the zone.
      *
      * @param generator The ID of the generator
@@ -136,7 +127,9 @@ public abstract class AbstractZone
      */
     public void addGenerator (final int generator, final int value)
     {
-        this.generators.put (Integer.valueOf (generator), Integer.valueOf (value));
+        final Integer generatorID = Integer.valueOf (generator);
+        this.generators.put (generatorID, Integer.valueOf (value));
+        this.generatorOrder.add (generatorID);
     }
 
 
@@ -165,6 +158,28 @@ public abstract class AbstractZone
 
 
     /**
+     * Get the index to the first modulator of the zone in the PMOD list.
+     *
+     * @return The index
+     */
+    public int getFirstModulator ()
+    {
+        return this.firstModulator;
+    }
+
+
+    /**
+     * Get the number of modulators in this zone.
+     *
+     * @return The number of modulators in this zone
+     */
+    public int getNumberOfModulators ()
+    {
+        return this.numberOfModulators;
+    }
+
+
+    /**
      * Add a modulator to the zone.
      *
      * @param sourceModulator The ID of the source modulator
@@ -186,13 +201,25 @@ public abstract class AbstractZone
      * Get a specific modulator if present.
      *
      * @param modulatorID The ID of the modulator to get
-     * @return The optional result
+     * @return The result
      */
-    public Optional<Sf2Modulator> getModulator (final Integer modulatorID)
+    public List<Sf2Modulator> getModulators (final Integer modulatorID)
     {
+        final List<Sf2Modulator> result = new ArrayList<> ();
         for (final Sf2Modulator modulator: this.modulators)
             if (modulator.getControllerSource () == modulatorID.intValue ())
-                return Optional.of (modulator);
-        return Optional.empty ();
+                result.add (modulator);
+        return result;
+    }
+
+
+    /**
+     * Get all modulators.
+     * 
+     * @return The modulators
+     */
+    public List<Sf2Modulator> getModulators ()
+    {
+        return this.modulators;
     }
 }
