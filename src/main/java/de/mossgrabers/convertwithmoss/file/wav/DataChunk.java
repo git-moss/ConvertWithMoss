@@ -5,17 +5,16 @@
 package de.mossgrabers.convertwithmoss.file.wav;
 
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
- * Accessor for a data chunk ("data") in a WAV file.
+ * Wrapper of a data chunk ("data") in a WAV file.
  *
  * @author Jürgen Moßgraber
  */
-public class DataChunk extends WavChunk
+public class DataChunk extends RIFFChunk
 {
     /**
      * Constructor. Creates an empty data chunk.
@@ -26,9 +25,7 @@ public class DataChunk extends WavChunk
      */
     public DataChunk (final FormatChunk formatChunk, final int lengthInSamples)
     {
-        super (RiffID.DATA_ID, new RIFFChunk (0, RiffID.DATA_ID.getId (), calculateDataSize (formatChunk, lengthInSamples)));
-
-        this.chunk.setData (new byte [calculateDataSize (formatChunk, lengthInSamples)]);
+        super (RiffID.DATA_ID, new byte [calculateDataSize (formatChunk, lengthInSamples)], calculateDataSize (formatChunk, lengthInSamples));
     }
 
 
@@ -36,11 +33,10 @@ public class DataChunk extends WavChunk
      * Constructor.
      *
      * @param chunk The RIFF chunk which contains the data
-     * @throws ParseException Length of data does not match the expected chunk size
      */
-    public DataChunk (final RIFFChunk chunk) throws ParseException
+    public DataChunk (final RIFFChunk chunk)
     {
-        super (RiffID.DATA_ID, chunk, chunk.getData ().length);
+        super (RiffID.DATA_ID, chunk.getData (), chunk.getData ().length);
     }
 
 
@@ -58,14 +54,14 @@ public class DataChunk extends WavChunk
         final int compressionCode = formatChunk.getCompressionCode ();
 
         if (compressionCode == FormatChunk.WAVE_FORMAT_PCM || compressionCode == FormatChunk.WAVE_FORMAT_IEEE_FLOAT)
-            return calculateLength (formatChunk, this.chunk.getData ());
+            return calculateLength (formatChunk, this.getData ());
 
         if (compressionCode == FormatChunk.WAVE_FORMAT_EXTENSIBLE)
         {
             final int numberOfChannels = formatChunk.getNumberOfChannels ();
             if (numberOfChannels > 2)
                 throw new CompressionNotSupportedException ("WAV files in Extensible format are only supported for stereo files.");
-            return calculateLength (formatChunk, this.chunk.getData ());
+            return calculateLength (formatChunk, this.getData ());
         }
 
         throw new CompressionNotSupportedException ("Unsupported data compression: " + FormatChunk.getCompression (compressionCode));
@@ -100,15 +96,12 @@ public class DataChunk extends WavChunk
     }
 
 
-    /**
-     * Sets the data.
-     *
-     * Note: The array will not be cloned for performance reasons.
-     *
-     * @param data The data to set
-     */
-    public void setData (final byte [] data)
+    /** {@inheritDoc} */
+    @Override
+    public String infoText ()
     {
-        this.chunk.setData (data);
+        final StringBuilder sb = new StringBuilder ();
+        sb.append ("Size: ").append (this.getData ().length + " Bytes");
+        return sb.toString ();
     }
 }

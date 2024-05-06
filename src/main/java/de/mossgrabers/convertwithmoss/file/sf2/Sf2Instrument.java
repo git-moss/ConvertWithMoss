@@ -4,11 +4,15 @@
 
 package de.mossgrabers.convertwithmoss.file.sf2;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -51,6 +55,17 @@ public class Sf2Instrument
 
 
     /**
+     * Set the index of the first zone of the preset.
+     *
+     * @param firstZoneIndex The index
+     */
+    public void setFirstZoneIndex (final int firstZoneIndex)
+    {
+        this.firstZoneIndex = firstZoneIndex;
+    }
+
+
+    /**
      * Reads the data from a preset header chunk.
      *
      * @param offset The offset to start reading
@@ -65,9 +80,33 @@ public class Sf2Instrument
             pos++;
         this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
         this.firstZoneIndex = chunk.getTwoBytesAsInt (offset + 20);
+    }
 
-        // The DWORDs dwLibrary, dwGenre and dwMorphology are reserved for future implementation in
-        // a preset library management function
+
+    /**
+     * Write the data to a preset header chunk.
+     * 
+     * @param out The output stream to write to
+     * @throws IOException Could not write the data
+     */
+    public void writeHeader (final ByteArrayOutputStream out) throws IOException
+    {
+        StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 20);
+        StreamUtils.writeUnsigned16 (out, this.firstZoneIndex, false);
+    }
+
+
+    /**
+     * Write the data to a preset header chunk.
+     * 
+     * @param out The output stream to write to
+     * @param lastZoneIndex The last (unused) zone index
+     * @throws IOException Could not write the data
+     */
+    public static void writeLastHeader (final ByteArrayOutputStream out, final int lastZoneIndex) throws IOException
+    {
+        StreamUtils.writeASCII (out, "EOI", 20);
+        StreamUtils.writeUnsigned16 (out, lastZoneIndex, false);
     }
 
 

@@ -382,18 +382,21 @@ public class TagDetector
             "Str.",
             "Fiddle",
             "Bowed",
-            "Score"
+            "Score",
+            "Solina"
         });
         CATEGORIES.put (CATEGORY_SYNTH, new String []
         {
             "Electronic-Music",
             "Sequence",
             "Trance",
+            "Analog",
             "Sweep",
             "Swell",
             "Mini",
             "Moog",
             "Syn",
+            "SAW",
             "DJ"
         });
         CATEGORIES.put (CATEGORY_WINDS, new String []

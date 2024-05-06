@@ -4,6 +4,10 @@
 
 package de.mossgrabers.convertwithmoss.file;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
+
 /**
  * Interface to a chunk.
  *
@@ -26,6 +30,15 @@ public interface IChunk
      *         to be modified from wrapper classes!
      */
     byte [] getData ();
+
+
+    /**
+     * Write the chunk to an output stream.
+     * 
+     * @param out The stream to write to
+     * @throws IOException Could not write the data
+     */
+    void write (OutputStream out) throws IOException;
 
 
     /**

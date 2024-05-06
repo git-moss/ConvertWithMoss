@@ -17,11 +17,11 @@ import de.mossgrabers.tools.StringUtils;
 
 
 /**
- * Accessor for an broadcast audio extension chunk ("bext") in a WAV file.
+ * Wrapper of a broadcast audio extension chunk ("bext") in a WAV file.
  *
  * @author Jürgen Moßgraber
  */
-public class BroadcastAudioExtensionChunk extends WavChunk
+public class BroadcastAudioExtensionChunk extends RIFFChunk
 {
     // Not fully correct; last field has variable size (note counted in this value)
     private static final int       CHUNK_SIZE          = 602;
@@ -35,9 +35,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public BroadcastAudioExtensionChunk ()
     {
-        super (RiffID.BEXT_ID, new RIFFChunk (0, RiffID.BEXT_ID.getId (), CHUNK_SIZE));
-
-        this.chunk.setData (new byte [CHUNK_SIZE]);
+        super (RiffID.BEXT_ID, new byte [CHUNK_SIZE], CHUNK_SIZE);
     }
 
 
@@ -49,7 +47,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public BroadcastAudioExtensionChunk (final RIFFChunk chunk) throws ParseException
     {
-        super (RiffID.BEXT_ID, chunk, CHUNK_SIZE);
+        super (RiffID.BEXT_ID, chunk.getData (), CHUNK_SIZE);
     }
 
 
@@ -64,7 +62,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public String getDescription ()
     {
-        return this.chunk.getNullTerminatedString (0, 256, "");
+        return this.getNullTerminatedString (0, 256, "");
     }
 
 
@@ -75,7 +73,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public void setDescription (final String description)
     {
-        this.chunk.setNullTerminatedString (0, 256, StringUtils.fixASCII (description));
+        this.setNullTerminatedString (0, 256, StringUtils.fixASCII (description));
     }
 
 
@@ -88,7 +86,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public String getOriginator ()
     {
-        return this.chunk.getNullTerminatedString (256, 32, "");
+        return this.getNullTerminatedString (256, 32, "");
     }
 
 
@@ -99,7 +97,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public void setOriginator (final String originator)
     {
-        this.chunk.setNullTerminatedString (256, 32, StringUtils.fixASCII (originator));
+        this.setNullTerminatedString (256, 32, StringUtils.fixASCII (originator));
     }
 
 
@@ -112,7 +110,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public String getOriginatorReference ()
     {
-        return this.chunk.getNullTerminatedString (288, 32, "");
+        return this.getNullTerminatedString (288, 32, "");
     }
 
 
@@ -123,8 +121,8 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public void setOriginationDateTime (final Date originationDateTime)
     {
-        this.chunk.setNullTerminatedString (320, 10, this.simpleDateFormatter.format (originationDateTime));
-        this.chunk.setNullTerminatedString (330, 8, this.simpleTimeFormatter.format (originationDateTime));
+        this.setNullTerminatedString (320, 10, this.simpleDateFormatter.format (originationDateTime));
+        this.setNullTerminatedString (330, 8, this.simpleTimeFormatter.format (originationDateTime));
     }
 
 
@@ -173,7 +171,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public String getOriginationDate ()
     {
-        return this.chunk.getNullTerminatedString (320, 10, "");
+        return this.getNullTerminatedString (320, 10, "");
     }
 
 
@@ -188,7 +186,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public String getOriginationTime ()
     {
-        return this.chunk.getNullTerminatedString (330, 8, "");
+        return this.getNullTerminatedString (330, 8, "");
     }
 
 
@@ -201,7 +199,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getTimeReference ()
     {
-        return (this.chunk.getFourBytesAsInt (342) << 32) + this.chunk.getFourBytesAsInt (338);
+        return (this.getFourBytesAsInt (342) << 32) + this.getFourBytesAsInt (338);
     }
 
 
@@ -214,7 +212,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getVersion ()
     {
-        return this.chunk.getTwoBytesAsInt (346);
+        return this.getTwoBytesAsInt (346);
     }
 
 
@@ -228,7 +226,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
     public byte [] getUMID ()
     {
         final byte [] umid = new byte [64];
-        System.arraycopy (this.chunk.getData (), 348, umid, 0, 64);
+        System.arraycopy (this.getData (), 348, umid, 0, 64);
         return umid;
     }
 
@@ -241,7 +239,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getLoudnessValue ()
     {
-        return this.chunk.getTwoBytesAsInt (412);
+        return this.getTwoBytesAsInt (412);
     }
 
 
@@ -252,7 +250,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getLoudnessRange ()
     {
-        return this.chunk.getTwoBytesAsInt (414);
+        return this.getTwoBytesAsInt (414);
     }
 
 
@@ -264,7 +262,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getMaxTruePeakLevel ()
     {
-        return this.chunk.getTwoBytesAsInt (416);
+        return this.getTwoBytesAsInt (416);
     }
 
 
@@ -276,7 +274,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getMaxMomentaryLoudness ()
     {
-        return this.chunk.getTwoBytesAsInt (418);
+        return this.getTwoBytesAsInt (418);
     }
 
 
@@ -288,7 +286,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public int getMaxShortTermLoudness ()
     {
-        return this.chunk.getTwoBytesAsInt (420);
+        return this.getTwoBytesAsInt (420);
     }
 
 
@@ -301,7 +299,7 @@ public class BroadcastAudioExtensionChunk extends WavChunk
      */
     public String getCodingHistory ()
     {
-        final byte [] data = this.chunk.getData ();
+        final byte [] data = this.getData ();
         final int offset = 422 + 180;
         return new String (data, offset, data.length - offset);
     }

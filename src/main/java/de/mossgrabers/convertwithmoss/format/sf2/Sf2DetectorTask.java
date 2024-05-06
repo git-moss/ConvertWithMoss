@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -31,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2File;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Instrument;
@@ -114,7 +114,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             metadata.detectMetadata (this.metadataConfig, parts);
             metadata.setCreator (sf2File.getSoundDesigner ());
             metadata.setCreationDateTime (sf2File.getParsedCreationDate ());
-            metadata.setDescription (createDescription (sf2File));
+            metadata.setDescription (sf2File.formatInfoFields (RiffID.INFO_CMNT, RiffID.INFO_ICMT, RiffID.INFO_COMM, RiffID.INFO_ICOP, RiffID.INFO_IMIT, RiffID.INFO_IMIU, RiffID.INFO_TORG, RiffID.INFO_TORG));
 
             final GeneratorHierarchy generators = new GeneratorHierarchy ();
 
@@ -163,12 +163,11 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
     private static void parseModulators (final ISampleZone sampleZone, final Sf2PresetZone zone, final Sf2InstrumentZone instrZone)
     {
-        Optional<Sf2Modulator> modulator = instrZone.getModulator (Sf2Modulator.MODULATOR_PITCH_BEND);
-        if (modulator.isEmpty ())
-            modulator = zone.getModulator (Sf2Modulator.MODULATOR_PITCH_BEND);
-        if (!modulator.isEmpty ())
+        List<Sf2Modulator> modulators = instrZone.getModulators (Sf2Modulator.MODULATOR_PITCH_BEND);
+        if (modulators.isEmpty ())
+            modulators = zone.getModulators (Sf2Modulator.MODULATOR_PITCH_BEND);
+        for (final Sf2Modulator sf2Modulator: modulators)
         {
-            final Sf2Modulator sf2Modulator = modulator.get ();
             if (sf2Modulator.getDestinationGenerator () == Generator.FINE_TUNE)
             {
                 final int amount = sf2Modulator.getModulationAmount ();
@@ -542,29 +541,6 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         // This is likely not correct but since there is also no documentation what the percentage
         // volume values mean in dB it is the best we can do...
         return Math.max (0, Math.min (1.0, 1.0 - v / 1000.0));
-    }
-
-
-    /**
-     * Create the description field from several single fields which do not translate to other
-     * formats.
-     *
-     * @param sf2File The source file
-     * @return The description text
-     */
-    private static String createDescription (final Sf2File sf2File)
-    {
-        final StringBuilder sb = new StringBuilder ();
-        final String copyright = sf2File.getCopyright ();
-        if (copyright != null)
-            sb.append ("Copyright: ").append (copyright).append ('\n');
-        final String comment = sf2File.getComment ();
-        if (comment != null)
-            sb.append (comment).append ('\n');
-        final String creationTool = sf2File.getCreationTool ();
-        if (creationTool != null)
-            sb.append ("Creation Tool: ").append (creationTool).append ('\n');
-        return sb.toString ();
     }
 
 

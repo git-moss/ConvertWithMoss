@@ -1,5 +1,15 @@
 # Changes
 
+## 9.0.2 (unreleased)
+
+* DecentSampler - Read
+  * Fixed: The sub-folder which contains the library/preset was added to the name which could cause issues in the destination format.
+* WAV - Read
+  * New: Metadata is now read from info sub-chunks and stored in the Comment metadata field.
+* WAV - Write
+  * Fixed: Update of Broadcast Audio chunk did fail if no date/time metadata was set.
+  * Fixed: Destination file name could be empty if 'prefer folder name' was selected.
+
 ## 9.0.1
 
 * Ableton - Read/Write

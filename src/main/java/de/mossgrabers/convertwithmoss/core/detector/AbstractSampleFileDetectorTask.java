@@ -16,6 +16,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -146,7 +147,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
                 final List<String> filenames = new ArrayList<> (sampleData.size ());
                 for (final IFileBasedSampleData fileSampleData: sampleData)
                 {
-                    final DefaultSampleZone sampleZone = new DefaultSampleZone (FileUtils.getNameWithoutType (fileSampleData.getFilename ()), fileSampleData);
+                    final DefaultSampleZone sampleZone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (fileSampleData.getFilename ())), fileSampleData);
                     group.addSampleZone (sampleZone);
                     fillInstrumentData (sampleZone, fileSampleData);
                     filenames.add (new File (fileSampleData.getFilename ()).getName ());
@@ -158,11 +159,18 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
             else
             {
                 final KeyMapping keyMapping = new KeyMapping (new ArrayList<> (sampleData), this.isAscending, this.crossfadeNotes, this.crossfadeVelocities, this.groupPatterns, this.monoSplitPatterns);
-                name = this.metadataConfig.isPreferFolderName () ? folder.getName () : keyMapping.getName ();
+                if (this.metadataConfig.isPreferFolderName ())
+                {
+                    name = cleanupName (folder.getName (), this.postfixTexts);
+                    if (name.isBlank ())
+                        name = keyMapping.getName ();
+                }
+                else
+                    name = keyMapping.getName ();
                 groups = keyMapping.getSampleMetadata ();
             }
 
-            if (name.isEmpty ())
+            if (name.isBlank ())
             {
                 this.notifier.logError ("IDS_NOTIFY_NO_NAME");
                 return Collections.emptyList ();
@@ -172,7 +180,9 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
 
             final String [] parts = this.createParts (folder, name);
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (folder, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, folder));
-            this.createMetadata (multisampleSource.getMetadata (), sampleData, parts);
+            final IMetadata metadata = multisampleSource.getMetadata ();
+            this.createMetadata (metadata, sampleData, parts);
+            this.updateCreationDateTime (metadata, new File (sampleData.get (0).getFilename ()));
             multisampleSource.setGroups (groups);
 
             for (final IGroup group: groups)
@@ -213,7 +223,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
                 break;
             }
         n = n.trim ();
-        if (n.endsWith ("-"))
+        if (n.endsWith ("-") || n.endsWith ("_"))
             n = n.substring (0, n.length () - 1);
         return n;
     }

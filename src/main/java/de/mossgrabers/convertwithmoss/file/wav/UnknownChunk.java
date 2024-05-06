@@ -13,7 +13,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  *
  * @author Jürgen Moßgraber
  */
-public class UnknownChunk extends WavChunk
+public class UnknownChunk extends RIFFChunk
 {
     /**
      * Constructor.
@@ -23,14 +23,6 @@ public class UnknownChunk extends WavChunk
      */
     public UnknownChunk (final RiffID riffId, final RIFFChunk chunk)
     {
-        super (riffId, chunk);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public int getId ()
-    {
-        return this.chunk.getId ();
+        super (riffId, chunk.getData (), chunk.getData ().length);
     }
 }

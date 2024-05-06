@@ -149,6 +149,17 @@ public class Sf2Modulator
 
 
     /**
+     * Get the amount source operand.
+     *
+     * @return The value
+     */
+    public int getAmountSourceOperand ()
+    {
+        return this.amountSourceOperand;
+    }
+
+
+    /**
      * Get the transformation operand.
      *
      * @return The transform operand

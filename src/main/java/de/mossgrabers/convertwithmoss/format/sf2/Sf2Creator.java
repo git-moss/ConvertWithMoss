@@ -5,11 +5,16 @@
 package de.mossgrabers.convertwithmoss.format.sf2;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.convertwithmoss.file.sf2.Sf2File;
+import de.mossgrabers.convertwithmoss.file.wav.InfoChunk;
 
 
 /**
@@ -53,14 +58,30 @@ public class Sf2Creator extends AbstractCreator
 
     private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile) throws IOException
     {
+
+        final Sf2File sf2File = new Sf2File ();
+
+        // Write metadata to info sub-chunks
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        final InfoChunk infoChunk = sf2File.getInfoChunk ();
+
+        storeMetadata (multisampleSource, metadata, infoChunk);
+
+        // // Copy sample data
+        // sf2FileCopy.getDataChunk ().getSubChunks ().addAll (sf2File.getDataChunk ().getSubChunks
+        // ());
+        //
+        // // Copy preset chunks
+        // sf2FileCopy.getPresets ().addAll (sf2File.getPresets ());
+
+        try (final FileOutputStream out = new FileOutputStream (multiFile))
+        {
+            sf2File.createPresetDataChunks ();
+            sf2File.write (out);
+        }
+
         // TODO Mono/stereo files need to be handled differently!
 
-        // final boolean isBigEndian = true;
-        //
-        // final List<EXS24Zone> exsZones = new ArrayList<> ();
-        // final List<EXS24Sample> exsSamples = new ArrayList<> ();
-        // final List<EXS24Group> exsGroups = new ArrayList<> ();
-        //
         // final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
         // for (final IGroup group: groups)
         // {
@@ -153,5 +174,25 @@ public class Sf2Creator extends AbstractCreator
         //
         // writeAllBlocks (multiFile, exsZones, exsSamples, exsGroups, exsInstrument, exsParameters,
         // isBigEndian);
+    }
+
+
+    private static void storeMetadata (final IMultisampleSource multisampleSource, final IMetadata metadata, final InfoChunk infoChunk)
+    {
+        // Version number
+        infoChunk.addInfoField (RiffID.SF_IFIL_ID, new byte []
+        {
+            2,
+            0,
+            1,
+            0
+        });
+
+        // Wave-table sound engine
+        infoChunk.addInfoField (RiffID.SF_ISNG_ID, "EMU8000");
+        infoChunk.addInfoField (RiffID.INFO_INAM, multisampleSource.getName ());
+        infoChunk.addCreationDate (metadata.getCreationDateTime ());
+        infoChunk.addInfoField (RiffID.INFO_IENG, metadata.getCreator ());
+        infoChunk.addInfoField (RiffID.INFO_CMNT, metadata.getDescription ());
     }
 }
