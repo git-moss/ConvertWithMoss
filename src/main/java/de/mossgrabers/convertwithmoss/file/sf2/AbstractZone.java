@@ -18,12 +18,12 @@ import java.util.Map;
 public abstract class AbstractZone
 {
     /** Index to the first generator of the zone in the PGEN list. */
-    protected final int             firstGenerator;
-    protected final int             numberOfGenerators;
+    protected int                   firstGenerator;
+    protected int                   numberOfGenerators;
 
     /** Index to the first modulator of the zone in the PMOD list. */
-    protected final int             firstModulator;
-    protected final int             numberOfModulators;
+    protected int                   firstModulator;
+    protected int                   numberOfModulators;
 
     /** If true, this is a global zone which applies to the whole preset. */
     protected boolean               isGlobal       = false;
@@ -34,6 +34,15 @@ public abstract class AbstractZone
 
     /** The order of generators in a SF2 file has some restrictions and therefore is important! */
     protected List<Integer>         generatorOrder = new ArrayList<> ();
+
+
+    /**
+     * Default Constructor.
+     */
+    protected AbstractZone ()
+    {
+        // Intentionally empty
+    }
 
 
     /**
@@ -120,6 +129,19 @@ public abstract class AbstractZone
 
 
     /**
+     * Add a signed generator to the zone. Converts the integer to the generator signed integer
+     * format.
+     *
+     * @param generator The ID of the generator
+     * @param value The value
+     */
+    public void addSignedGenerator (final int generator, final int value)
+    {
+        this.addGenerator (generator, toSigned (value));
+    }
+
+
+    /**
      * Add a generator to the zone.
      *
      * @param generator The ID of the generator
@@ -128,8 +150,23 @@ public abstract class AbstractZone
     public void addGenerator (final int generator, final int value)
     {
         final Integer generatorID = Integer.valueOf (generator);
+        if (this.generators.containsKey (generatorID))
+            return;
         this.generators.put (generatorID, Integer.valueOf (value));
         this.generatorOrder.add (generatorID);
+    }
+
+
+    /**
+     * Add a generator with a combined value to the zone.
+     *
+     * @param generator The ID of the generator
+     * @param lowValue The low byte of the value
+     * @param highValue The high byte of the value
+     */
+    public void addGenerator (final int generator, final int lowValue, final int highValue)
+    {
+        this.addGenerator (generator, highValue << 8 | lowValue & 0xFF);
     }
 
 
@@ -215,11 +252,41 @@ public abstract class AbstractZone
 
     /**
      * Get all modulators.
-     * 
+     *
      * @return The modulators
      */
     public List<Sf2Modulator> getModulators ()
     {
         return this.modulators;
+    }
+
+
+    /**
+     * Converts a signed integer into a two complement short value.
+     *
+     * @param value The signed integer
+     * @return The 2 byte two complement value
+     */
+    private static int toSigned (final int value)
+    {
+        if (value >= 0)
+            return value & 0x7FFF;
+        final int v = (~Math.abs (value) & 0x7FFF) + 1;
+        return v | 0x8000;
+    }
+
+
+    /**
+     * Update the counts of generators and modulators.
+     *
+     * @param firstGenerator The index of the first generator of this zone
+     * @param firstModulator The index of the first modulator of this zone
+     */
+    public void updateCounts (final int firstGenerator, final int firstModulator)
+    {
+        this.firstGenerator = firstGenerator;
+        this.firstModulator = firstModulator;
+        this.numberOfGenerators = this.generators.size ();
+        this.numberOfModulators = this.modulators.size ();
     }
 }

@@ -7,8 +7,6 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
@@ -20,49 +18,10 @@ import de.mossgrabers.tools.StringUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class Sf2Instrument
+public class Sf2Instrument extends AbstractGroupedZones<Sf2InstrumentZone>
 {
     /** The length of the preset header */
-    public static final int               LENGTH_INSTRUMENT = 22;
-
-    private String                        name;
-    /** Pointer into IBAG list. */
-    private int                           firstZoneIndex;
-
-    private final List<Sf2InstrumentZone> zones             = new ArrayList<> ();
-
-
-    /**
-     * Get the name of the instrument.
-     *
-     * @return The name
-     */
-    public String getName ()
-    {
-        return this.name;
-    }
-
-
-    /**
-     * Get the index in the IBAG structure (the first zone of the preset).
-     *
-     * @return The index
-     */
-    public int getFirstZoneIndex ()
-    {
-        return this.firstZoneIndex;
-    }
-
-
-    /**
-     * Set the index of the first zone of the preset.
-     *
-     * @param firstZoneIndex The index
-     */
-    public void setFirstZoneIndex (final int firstZoneIndex)
-    {
-        this.firstZoneIndex = firstZoneIndex;
-    }
+    public static final int LENGTH_INSTRUMENT = 22;
 
 
     /**
@@ -85,7 +44,7 @@ public class Sf2Instrument
 
     /**
      * Write the data to a preset header chunk.
-     * 
+     *
      * @param out The output stream to write to
      * @throws IOException Could not write the data
      */
@@ -98,7 +57,7 @@ public class Sf2Instrument
 
     /**
      * Write the data to a preset header chunk.
-     * 
+     *
      * @param out The output stream to write to
      * @param lastZoneIndex The last (unused) zone index
      * @throws IOException Could not write the data
@@ -107,40 +66,6 @@ public class Sf2Instrument
     {
         StreamUtils.writeASCII (out, "EOI", 20);
         StreamUtils.writeUnsigned16 (out, lastZoneIndex, false);
-    }
-
-
-    /**
-     * Adds a zone to the preset.
-     *
-     * @param zone The zone to add
-     */
-    public void addZone (final Sf2InstrumentZone zone)
-    {
-        this.zones.add (zone);
-    }
-
-
-    /**
-     * Get the zone at the given index.
-     *
-     * @param zoneIndex The index of the zone
-     * @return The zone
-     */
-    public Sf2InstrumentZone getZone (final int zoneIndex)
-    {
-        return this.zones.get (zoneIndex);
-    }
-
-
-    /**
-     * Get the number of zones.
-     *
-     * @return The number of zones
-     */
-    public int getZoneCount ()
-    {
-        return this.zones.size ();
     }
 
 

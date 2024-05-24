@@ -259,7 +259,7 @@ public final class AudioFileUtils
 
             int sampleRate = (int) audioFormat.getSampleRate ();
             final int maxSampleRate = destinationFormat.getMaxSampleRate ();
-            if (sampleRate > maxSampleRate || destinationFormat.isUpSample ())
+            if (maxSampleRate != -1 && (sampleRate > maxSampleRate || destinationFormat.isUpSample ()))
                 sampleRate = maxSampleRate;
 
             final AudioFormat newAudioFormat = new AudioFormat (sampleRate, bitResolution, audioFormat.getChannels (), audioFormat.getEncoding () == Encoding.PCM_SIGNED, audioFormat.isBigEndian ());

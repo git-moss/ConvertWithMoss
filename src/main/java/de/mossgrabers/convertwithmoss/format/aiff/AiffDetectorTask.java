@@ -51,7 +51,7 @@ public class AiffDetectorTask extends AbstractSampleFileDetectorTask
     @Override
     protected void fillInstrumentData (final ISampleZone zone, final IFileBasedSampleData sampleData)
     {
-        if (sampleData instanceof AiffFileSampleData sd)
+        if (sampleData instanceof final AiffFileSampleData sd)
         {
             final AiffInstrumentChunk instrumentChunk = sd.getAiffFile ().getInstrumentChunk ();
             zone.setKeyRoot (instrumentChunk.getBaseNote ());
@@ -70,7 +70,7 @@ public class AiffDetectorTask extends AbstractSampleFileDetectorTask
     protected boolean hasInstrumentData (final List<IFileBasedSampleData> sampleData)
     {
         for (final IFileBasedSampleData sampleFileData: sampleData)
-            if (sampleFileData instanceof AiffFileSampleData sd && sd.getAiffFile ().getInstrumentChunk () == null)
+            if (sampleFileData instanceof final AiffFileSampleData sd && sd.getAiffFile ().getInstrumentChunk () == null)
                 return false;
         return true;
     }

@@ -21,6 +21,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -712,8 +713,8 @@ public class KeyMapping
                 previousZone.setNoteCrossfadeHigh (range);
                 zone.setNoteCrossfadeLow (range);
 
-                zone.setKeyLow (zone.getKeyLow () - crossfadeLow - 1);
-                previousZone.setKeyHigh (previousZone.getKeyHigh () + crossfadeHigh - 1);
+                zone.setKeyLow (AbstractCreator.limitToDefault (zone.getKeyLow (), 0) - crossfadeLow - 1);
+                previousZone.setKeyHigh (AbstractCreator.limitToDefault (previousZone.getKeyHigh (), 127) + crossfadeHigh - 1);
             }
             previousZone = zone;
         }
@@ -722,7 +723,7 @@ public class KeyMapping
 
     /**
      * Find the common prefix among all given names.
-     * 
+     *
      * @param names The names
      * @return The common prefix
      */
@@ -732,10 +733,8 @@ public class KeyMapping
             return "";
         String prefix = names.get (0);
         for (int i = 1; i < names.size (); i++)
-        {
             while (!names.get (i).startsWith (prefix))
                 prefix = prefix.substring (0, prefix.length () - 1);
-        }
         return prefix;
     }
 }

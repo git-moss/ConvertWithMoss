@@ -79,7 +79,7 @@ public class Music1010Tag
     /** The modulation amount. */
     public static final String ATTR_MOD_AMOUNT            = "amount";
 
-    /** The attribute for multisample mode. */
+    /** The attribute for multi-sample mode. */
     public static final String ATTR_MULTISAMPLE_MODE      = "multisammode";
     /** The attribute for cell mode. */
     public static final String ATTR_CELL_MODE             = "cellmode";
@@ -90,6 +90,9 @@ public class Music1010Tag
     public static final String ATTR_SAMPLE_START          = "samstart";
     /** The attribute for the sample length. */
     public static final String ATTR_SAMPLE_LENGTH         = "samlen";
+    /** The attribute for the sample trigger type: 0 (Trigger), 1 (Normal),2 (Toggle). */
+    public static final String ATTR_SAMPLE_TRIGGER_TYPE   = "samtrigtype";
+
     /** The attribute for the sample pitch. */
     public static final String ATTR_PITCH                 = "pitch";
     /** The attribute for the sample panorama. */

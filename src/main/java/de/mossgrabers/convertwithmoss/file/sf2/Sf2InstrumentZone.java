@@ -18,6 +18,15 @@ public class Sf2InstrumentZone extends AbstractZone
 
 
     /**
+     * Default Constructor.
+     */
+    public Sf2InstrumentZone ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Constructor.
      *
      * @param firstGenerator Index to the first generator of the zone in the IGEN list
@@ -76,7 +85,7 @@ public class Sf2InstrumentZone extends AbstractZone
         {
             sb.append ("           - Sample: " + this.sampleDescriptor.getName () + "\n");
             sb.append ("             * Range:" + this.sampleDescriptor.getStart () + "-" + this.sampleDescriptor.getEnd () + "\n");
-            sb.append ("             * Loop :" + this.sampleDescriptor.getStartloop () + "-" + this.sampleDescriptor.getEndloop () + "\n");
+            sb.append ("             * Loop :" + this.sampleDescriptor.getLoopStart () + "-" + this.sampleDescriptor.getLoopEnd () + "\n");
             sb.append ("             * Pitch:" + this.sampleDescriptor.getOriginalPitch () + " : " + this.sampleDescriptor.getPitchCorrection () + "\n");
             sb.append ("             * Type :" + this.sampleDescriptor.getSampleType () + " : " + this.sampleDescriptor.getSampleRate () + " Hz\n");
         }

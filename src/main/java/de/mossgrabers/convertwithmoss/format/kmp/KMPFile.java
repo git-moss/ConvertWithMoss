@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -204,7 +205,7 @@ public class KMPFile
             zone.setKeyRoot (originalKey & 0x7F);
             zone.setKeyLow (lowerKey);
             zone.setKeyHigh (in.read ());
-            lowerKey = zone.getKeyHigh () + 1;
+            lowerKey = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127) + 1;
             zone.setTune (in.readByte () / 100.0);
             zone.setGain (in.readByte () / 100.0 * 12.0);
 
@@ -340,7 +341,7 @@ public class KMPFile
                 originalKey |= 0x80;
             out.write (originalKey);
 
-            out.write (zone.getKeyHigh ());
+            out.write (AbstractCreator.limitToDefault (zone.getKeyHigh (), 127));
             out.writeByte ((byte) Math.round (zone.getTune () * 100.0));
             out.writeByte ((byte) Math.round (zone.getGain () * 100.0 / 12.0));
 

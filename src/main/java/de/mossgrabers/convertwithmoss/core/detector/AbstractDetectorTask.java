@@ -468,7 +468,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
     /**
      * Update the metadata creation date/time from the source file.
-     * 
+     *
      * @param metadata The metadata to update
      * @param sourceFile The source file from which to get the creation date/time
      */

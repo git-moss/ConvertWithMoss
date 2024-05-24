@@ -368,13 +368,7 @@ public class DefaultEnvelope implements IEnvelope
         if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final DefaultEnvelope other = (DefaultEnvelope) obj;
-        if (Double.doubleToLongBits (this.delayTime) != Double.doubleToLongBits (other.delayTime))
-            return false;
-        if (Double.doubleToLongBits (this.attackTime) != Double.doubleToLongBits (other.attackTime))
-            return false;
-        if (Double.doubleToLongBits (this.holdTime) != Double.doubleToLongBits (other.holdTime))
-            return false;
-        if (Double.doubleToLongBits (this.decayTime) != Double.doubleToLongBits (other.decayTime))
+        if ((Double.doubleToLongBits (this.delayTime) != Double.doubleToLongBits (other.delayTime)) || (Double.doubleToLongBits (this.attackTime) != Double.doubleToLongBits (other.attackTime)) || (Double.doubleToLongBits (this.holdTime) != Double.doubleToLongBits (other.holdTime)) || (Double.doubleToLongBits (this.decayTime) != Double.doubleToLongBits (other.decayTime)))
             return false;
         if (Double.doubleToLongBits (this.releaseTime) != Double.doubleToLongBits (other.releaseTime))
             return false;

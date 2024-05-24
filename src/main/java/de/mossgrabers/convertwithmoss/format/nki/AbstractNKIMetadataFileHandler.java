@@ -274,7 +274,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
         zoneContent = zoneContent.replace ("%ZONE_SAMPLE_START%", Integer.toString (zone.getStart ()));
         zoneContent = zoneContent.replace ("%ZONE_SAMPLE_END%", Integer.toString (zone.getStop ()));
-        zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (limitToDefault (zone.getVelocityLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (limitToDefault (zone.getVelocityLow (), 1)));
         zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (limitToDefault (zone.getVelocityHigh (), 127)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (limitToDefault (zone.getKeyLow (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (limitToDefault (zone.getKeyHigh (), 127)));
@@ -1258,14 +1258,12 @@ public abstract class AbstractNKIMetadataFileHandler
     {
         final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.extModulatorsElement ());
         if (modulatorsElement != null)
-        {
             for (final Element modulator: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.extModulatorElement ()))
             {
                 final int pitchBend = this.getPitchBendFromModulator (modulator);
                 if (pitchBend >= 0)
                     return pitchBend;
             }
-        }
         return -1;
     }
 

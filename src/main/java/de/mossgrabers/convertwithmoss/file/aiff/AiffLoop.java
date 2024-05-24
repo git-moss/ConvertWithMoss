@@ -31,7 +31,7 @@ public class AiffLoop
 
     /**
      * Read a loop.
-     * 
+     *
      * @param in The input stream to read from
      * @throws IOException Could not read
      */

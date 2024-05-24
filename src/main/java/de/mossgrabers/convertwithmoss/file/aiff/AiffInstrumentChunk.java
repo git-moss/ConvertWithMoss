@@ -55,7 +55,7 @@ public class AiffInstrumentChunk extends AiffChunk
 
     /**
      * Get the de-tuning.
-     * 
+     *
      * @return Value in the range of -50 to 50 cents
      */
     public int getDetune ()
@@ -66,7 +66,7 @@ public class AiffInstrumentChunk extends AiffChunk
 
     /**
      * Get the low key range note.
-     * 
+     *
      * @return The low note
      */
     public int getLowNote ()
@@ -77,7 +77,7 @@ public class AiffInstrumentChunk extends AiffChunk
 
     /**
      * Get the high key range note.
-     * 
+     *
      * @return The high note
      */
     public int getHighNote ()
@@ -88,7 +88,7 @@ public class AiffInstrumentChunk extends AiffChunk
 
     /**
      * Get the low velocity range.
-     * 
+     *
      * @return The low velocity
      */
     public int getLowVelocity ()
@@ -99,7 +99,7 @@ public class AiffInstrumentChunk extends AiffChunk
 
     /**
      * Get the high velocity range.
-     * 
+     *
      * @return The high velocity
      */
     public int getHighVelocity ()
@@ -110,7 +110,7 @@ public class AiffInstrumentChunk extends AiffChunk
 
     /**
      * Get the gain.
-     * 
+     *
      * @return Value in dB
      */
     public int getGain ()
@@ -121,7 +121,7 @@ public class AiffInstrumentChunk extends AiffChunk
 
     /**
      * Get the loop in the sustain.
-     * 
+     *
      * @return The loop
      */
     public AiffLoop getSustainLoop ()
@@ -132,7 +132,7 @@ public class AiffInstrumentChunk extends AiffChunk
 
     /**
      * Get the loop in the release.
-     * 
+     *
      * @return The loop
      */
     public AiffLoop getReleaseLoop ()

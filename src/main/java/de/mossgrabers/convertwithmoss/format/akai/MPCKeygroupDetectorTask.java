@@ -263,7 +263,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
             final Element layersElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LAYERS);
             if (layersElement != null)
-            {
                 for (final Element layerElement: XMLUtils.getChildElementsByName (layersElement, MPCKeygroupTag.LAYERS_LAYER))
                 {
                     final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
@@ -294,7 +293,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
                     this.readMissingData (isDrum, isOneShot, sampleMetadata);
                 }
-            }
         }
 
         return groupIntoLayers (samples);

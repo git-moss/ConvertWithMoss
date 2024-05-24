@@ -52,7 +52,7 @@ public class AiffChunk implements IChunk
 
     /**
      * Get the name (the ID in text form) of the chunk.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -87,7 +87,7 @@ public class AiffChunk implements IChunk
 
     /** {@inheritDoc} */
     @Override
-    public void write (OutputStream out) throws IOException
+    public void write (final OutputStream out) throws IOException
     {
         // Not used
     }

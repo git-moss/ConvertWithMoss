@@ -215,7 +215,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
     /**
      * Load and parse the metadata description file.
-     * 
+     *
      * @param presetName The name to use for the preset
      * @param multiSampleFile The preset or library file
      * @param basePath The parent folder, in case of a library the relative folder in the ZIP

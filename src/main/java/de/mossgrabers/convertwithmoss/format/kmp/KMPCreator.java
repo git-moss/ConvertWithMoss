@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,39 +47,34 @@ public class KMPCreator extends AbstractCreator
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
-        // Create a sub-folder for the KMP files (one for each group) and all samples
-        final Set<String> createdKMPNames = new HashSet<> ();
-        final File subFolder = new File (destinationFolder, FileUtils.createDOSFileName (sampleName, createdKMPNames));
+        // Create a sub-folder for the KMP file(s) and all samples
+        final File subFolder = new File (destinationFolder, FileUtils.createDOSFileName (sampleName, Collections.emptySet ()));
         if (!subFolder.exists () && !subFolder.mkdirs ())
         {
             this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
             return;
         }
 
-        // Korg KMP format supports only 1 group. Therefore, create 1 output file for each group
+        // KMP format supports only 1 group. Therefore, create 1 KMP file for each group
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
-        final int size = groups.size ();
-        final boolean needsSubDir = size > 1;
-        final Set<String> createdKSFNames = new HashSet<> (size);
-        for (int i = 0; i < size; i++)
+        final boolean needsMultipleKMPs = groups.size () > 1;
+        final Set<String> createdKMPNames = new HashSet<> ();
+        for (final IGroup group: groups)
         {
-            final IGroup group = groups.get (i);
             final ISampleZone zone = group.getSampleZones ().get (0);
-            final String groupName = size > 1 ? String.format ("%d-%s", Integer.valueOf (zone.getVelocityHigh ()), sampleName) : sampleName;
-            final String dosFileName = FileUtils.createDOSFileName (groupName, createdKSFNames) + ".KMP";
-            final File groupSubFolder;
-            if (needsSubDir)
+            final String groupName = needsMultipleKMPs ? String.format ("%d-%s", Integer.valueOf (zone.getVelocityHigh ()), sampleName) : sampleName;
+            final String kmpFileName = FileUtils.createDOSFileName (groupName, createdKMPNames) + ".KMP";
+            File groupSubFolder = subFolder;
+            if (needsMultipleKMPs)
             {
-                groupSubFolder = new File (subFolder, dosFileName);
+                groupSubFolder = new File (subFolder, kmpFileName);
                 if (!groupSubFolder.exists () && !groupSubFolder.mkdirs ())
                 {
                     this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", groupSubFolder.getAbsolutePath ());
                     return;
                 }
             }
-            else
-                groupSubFolder = subFolder;
-            final File multiFile = new File (groupSubFolder, dosFileName);
+            final File multiFile = new File (groupSubFolder, kmpFileName);
             if (multiFile.exists ())
             {
                 this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
@@ -86,7 +82,7 @@ public class KMPCreator extends AbstractCreator
             }
 
             this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
-            this.storeMultisample (multiFile, dosFileName, groupName, group);
+            this.storeKMP (multiFile, kmpFileName, groupName, group);
 
             this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
         }
@@ -96,13 +92,13 @@ public class KMPCreator extends AbstractCreator
     /**
      * Create a KMP file.
      *
-     * @param multiFile The file of the korgmultisample
+     * @param multiFile The KMP file to create
      * @param dosFilename Classic 8.3 file name
      * @param groupName The name to use for the group
      * @param group The group to store
      * @throws IOException Could not store the file
      */
-    private void storeMultisample (final File multiFile, final String dosFilename, final String groupName, final IGroup group) throws IOException
+    private void storeKMP (final File multiFile, final String dosFilename, final String groupName, final IGroup group) throws IOException
     {
         try (final OutputStream out = new FileOutputStream (multiFile))
         {

@@ -90,7 +90,7 @@ public class NcwFileSampleData extends AbstractFileSampleData
 
     /** {@inheritDoc} */
     @Override
-    public void updateMetadata (IMetadata metadata)
+    public void updateMetadata (final IMetadata metadata)
     {
         // No metadata available
     }

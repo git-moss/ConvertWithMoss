@@ -96,10 +96,8 @@ public class Kontakt5Type extends AbstractKontaktType
 
         final List<IMultisampleSource> sources = this.readNIContainer (inputStream, sourceFile, metadataConfig, monolithSamples != null);
         for (final IMultisampleSource multisampleSource: sources)
-        {
             if (monolithSamples != null)
                 replaceSamples (multisampleSource, monolithSamples);
-        }
         return sources;
     }
 

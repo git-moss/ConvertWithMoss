@@ -34,7 +34,7 @@ public interface IChunk
 
     /**
      * Write the chunk to an output stream.
-     * 
+     *
      * @param out The stream to write to
      * @throws IOException Could not write the data
      */

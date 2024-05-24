@@ -23,7 +23,7 @@ public class IffChunk
 
     /**
      * Constructor.
-     * 
+     *
      * @param id The local chunk or group type ID
      * @param data The data stored in the chunk
      */
@@ -36,7 +36,7 @@ public class IffChunk
 
     /**
      * Returns an input stream to read the data.
-     * 
+     *
      * @return The input stream
      */
     public InputStream streamData ()
@@ -61,7 +61,7 @@ public class IffChunk
 
     /**
      * Get the local chunk or group type ID.
-     * 
+     *
      * @return The ID
      */
     public String getId ()

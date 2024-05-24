@@ -404,13 +404,13 @@ public class AbletonDetectorTask extends AbstractDetectorTask
                 type = FilterType.LOW_PASS;
 
             final Element slopeElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_SLOPE);
-            int poles = getBooleanValueAttribute (slopeElement, AbletonTag.TAG_MANUAL) ? 4 : 2;
+            final int poles = getBooleanValueAttribute (slopeElement, AbletonTag.TAG_MANUAL) ? 4 : 2;
 
             final Element freqElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_FREQUENCY);
-            double cutoff = getDoubleValueAttribute (freqElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY);
+            final double cutoff = getDoubleValueAttribute (freqElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY);
 
             final Element resElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_RESONANCE);
-            double resonance = getDoubleValueAttribute (resElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY) / 1.25;
+            final double resonance = getDoubleValueAttribute (resElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY) / 1.25;
 
             final DefaultFilter filter = new DefaultFilter (type, poles, cutoff, resonance);
 
@@ -545,7 +545,6 @@ public class AbletonDetectorTask extends AbstractDetectorTask
             }
 
             for (final IGroup group: multisampleSource.getGroups ())
-            {
                 for (final ISampleZone zone: group.getSampleZones ())
                 {
                     zone.getAmplitudeModulator ().setSource (ampEnvelope);
@@ -556,7 +555,6 @@ public class AbletonDetectorTask extends AbstractDetectorTask
                         pitchModulator.setSource (auxEnvelope);
                     }
                 }
-            }
         }
         catch (final IOException ex)
         {

@@ -60,7 +60,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
      */
@@ -197,6 +197,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
             final DefaultSampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
 
             // No trigger
+            final boolean isOneShot = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0;
 
             final int start = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0);
             sampleZone.setStart (start);
@@ -222,15 +223,18 @@ public class Music1010DetectorTask extends AbstractDetectorTask
             /////////////////////////////////////////////////////
             // Loops
 
-            final int loopMode = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_MODE, -1);
-            if (loopMode > 0)
+            if (!isOneShot)
             {
-                final ISampleLoop loop = new DefaultSampleLoop ();
-                loop.setType (loopMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
-                loop.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, 0));
-                loop.setEnd (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0));
-                loop.setCrossfade (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0) / 1000.0);
-                sampleZone.addLoop (loop);
+                final int loopMode = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_MODE, -1);
+                if (loopMode > 0)
+                {
+                    final ISampleLoop loop = new DefaultSampleLoop ();
+                    loop.setType (loopMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
+                    loop.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, 0));
+                    loop.setEnd (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0));
+                    loop.setCrossfade (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0) / 1000.0);
+                    sampleZone.addLoop (loop);
+                }
             }
 
             /////////////////////////////////////////////////////

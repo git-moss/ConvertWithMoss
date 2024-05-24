@@ -447,10 +447,10 @@ public class TX16WxCreator extends AbstractCreator
         final int velocityCrossfadeLow = zone.getVelocityCrossfadeLow ();
         final int velocityCrossfadeHigh = zone.getVelocityCrossfadeHigh ();
 
-        XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.LO_NOTE, check (keyLow, 0));
-        XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.HI_NOTE, check (keyHigh, 127));
-        XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.LO_VEL, check (velocityLow, 0));
-        XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.HI_VEL, check (velocityHigh, 127));
+        XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.LO_NOTE, limitToDefault (keyLow, 0));
+        XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.HI_NOTE, limitToDefault (keyHigh, 127));
+        XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.LO_VEL, limitToDefault (velocityLow, 1));
+        XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.HI_VEL, limitToDefault (velocityHigh, 127));
 
         if (noteCrossfadeLow > 0)
             XMLUtils.setIntegerAttribute (fadesElement, TX16WxTag.LO_NOTE, Math.max (0, keyLow - noteCrossfadeLow));

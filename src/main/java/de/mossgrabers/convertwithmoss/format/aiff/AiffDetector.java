@@ -32,7 +32,7 @@ public class AiffDetector extends AbstractSampleFileDetector<AiffDetectorTask>
 
     /** {@inheritDoc} */
     @Override
-    protected AiffDetectorTask createDetectorTask (final File folder, final Consumer<IMultisampleSource> consumer, final boolean isAscending, final String [] groupPatterns, final String [] monoSplitPatterns, final String [] postfixTexts, int crossfadeNotes, int crossfadeVelocities)
+    protected AiffDetectorTask createDetectorTask (final File folder, final Consumer<IMultisampleSource> consumer, final boolean isAscending, final String [] groupPatterns, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities)
     {
         return new AiffDetectorTask (this.notifier, consumer, folder, groupPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane);
     }
