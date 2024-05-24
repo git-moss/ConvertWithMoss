@@ -1,7 +1,10 @@
 # Changes
 
-## 9.0.2 (unreleased)
+## 9.5.0
 
+* Added support to write Soundfont 2.
+* All formats
+  * Fixed: In rare cases key-ranges could be stored incorrectly if not fully present in the source file
 * 1010music format - Writing
   * New: Set samtrigtype to zero if one-shot.
   * Fixed: Writing sample start, length and reverse were missing.
@@ -9,6 +12,8 @@
   * Fixed: The sub-folder which contains the library/preset was added to the name which could cause issues in the destination format.
 * Sf2 - Reading
   * Fixed: Pitch envelope was only set when a filter was present as well.
+* TX16Wx - Read
+  * Fixed: samples could sometimes not be found on Macos/Linux
 * WAV - Read
   * New: Metadata is now read from info sub-chunks and stored in the Comment metadata field.
 * WAV - Write
