@@ -189,7 +189,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
             final ISampleZone sampleZone;
             try
             {
-                sampleName = URLDecoder.decode (sampleName, StandardCharsets.UTF_8);
+                sampleName = URLDecoder.decode (sampleName, StandardCharsets.UTF_8).replace ("\\", File.separator);
 
                 final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
                 final File sampleFile = findSampleFile (parentFile, sampleName, height);
