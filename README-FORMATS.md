@@ -225,8 +225,6 @@ A SoundFont can contain several presets grouped into banks. Presets refer to one
 
 The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
 
-SF2 is currently only supported as a source format.
-
 There are metadata fields for creator and some description specified in the format. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ## TAL Sampler
