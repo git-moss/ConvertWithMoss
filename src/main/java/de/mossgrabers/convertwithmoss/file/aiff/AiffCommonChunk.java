@@ -28,7 +28,7 @@ public class AiffCommonChunk extends AiffChunk
 
     /**
      * Constructor.
-     * 
+     *
      * @param chunk The IFF chunk
      */
     protected AiffCommonChunk (final IffChunk chunk)

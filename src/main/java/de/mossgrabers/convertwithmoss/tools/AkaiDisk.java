@@ -97,7 +97,7 @@ public class AkaiDisk
     }
 
 
-    public static String akaiToAscii (String str)
+    public static String akaiToAscii (final String str)
     {
         final StringBuilder sb = new StringBuilder ();
         for (int i = 0; i < str.length (); i++)
@@ -261,7 +261,7 @@ public class AkaiDisk
     };
 
 
-    public static char mapNumberToAscii (int number)
+    public static char mapNumberToAscii (final int number)
     {
         if (number >= 0x00 && number <= 0x28)
             return mapping[number];

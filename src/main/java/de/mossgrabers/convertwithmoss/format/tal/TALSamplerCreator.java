@@ -238,12 +238,12 @@ public class TALSamplerCreator extends AbstractCreator
         // Key & Velocity attributes
 
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, zone.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, check (zone.getKeyLow (), 0));
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, check (zone.getKeyHigh (), 127));
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, check (zone.getVelocityLow (), 0));
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, check (zone.getVelocityHigh (), 127));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, limitToDefault (zone.getKeyLow (), 0));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, limitToDefault (zone.getKeyHigh (), 127));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, limitToDefault (zone.getVelocityLow (), 1));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, limitToDefault (zone.getVelocityHigh (), 127));
 
-        // No note and velocity crossfades
+        // No note and velocity cross-fades
 
         /////////////////////////////////////////////////////
         // Loops
@@ -255,10 +255,10 @@ public class TALSamplerCreator extends AbstractCreator
         {
             final ISampleLoop sampleLoop = loops.get (0);
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ENABLED, 1);
-            XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_START, check (sampleLoop.getStart (), 0));
-            XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_END, check (sampleLoop.getEnd (), stop));
+            XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_START, limitToDefault (sampleLoop.getStart (), 0));
+            XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_END, limitToDefault (sampleLoop.getEnd (), stop));
 
-            // No loop crossfade
+            // No loop cross-fade
 
             final LoopType type = sampleLoop.getType ();
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ALTERNATE, type == LoopType.ALTERNATING ? 1 : 0);
@@ -435,19 +435,19 @@ public class TALSamplerCreator extends AbstractCreator
      */
     private static boolean hasOverlappingSample (final IGroup group, final ISampleZone sampleMetadata)
     {
-        final int keyLow = sampleMetadata.getKeyLow ();
-        final int keyHigh = sampleMetadata.getKeyHigh ();
-        final int velLow = sampleMetadata.getVelocityLow ();
-        final int velHigh = sampleMetadata.getVelocityHigh ();
+        final int keyLow = limitToDefault (sampleMetadata.getKeyLow (), 0);
+        final int keyHigh = limitToDefault (sampleMetadata.getKeyHigh (), 127);
+        final int velLow = limitToDefault (sampleMetadata.getVelocityLow (), 1);
+        final int velHigh = limitToDefault (sampleMetadata.getVelocityHigh (), 127);
 
         for (final ISampleZone otherSampleMetadata: group.getSampleZones ())
         {
-            final int keyLow2 = otherSampleMetadata.getKeyLow ();
-            final int keyHigh2 = otherSampleMetadata.getKeyHigh ();
+            final int keyLow2 = limitToDefault (otherSampleMetadata.getKeyLow (), 0);
+            final int keyHigh2 = limitToDefault (otherSampleMetadata.getKeyHigh (), 127);
             if (keyLow2 >= keyLow && keyLow2 <= keyHigh || keyHigh2 >= keyLow && keyHigh2 <= keyHigh)
             {
-                final int velLow2 = otherSampleMetadata.getVelocityLow ();
-                final int velHigh2 = otherSampleMetadata.getVelocityHigh ();
+                final int velLow2 = limitToDefault (otherSampleMetadata.getVelocityLow (), 1);
+                final int velHigh2 = limitToDefault (otherSampleMetadata.getVelocityHigh (), 127);
                 if (velLow2 >= velLow && velLow2 <= velHigh || velHigh2 >= velLow && velHigh2 <= velHigh)
                     return true;
             }

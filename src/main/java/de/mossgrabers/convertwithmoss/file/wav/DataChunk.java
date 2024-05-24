@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
- * Wrapper of a data chunk ("data") in a WAV file.
+ * Wrapper of a data chunk ("data") in a WAV file. Data is stored stereo interleaved little-endian.
  *
  * @author Jürgen Moßgraber
  */

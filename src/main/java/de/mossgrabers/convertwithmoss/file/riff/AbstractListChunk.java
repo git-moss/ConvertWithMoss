@@ -25,7 +25,7 @@ public abstract class AbstractListChunk extends RIFFChunk
 
     /**
      * Constructor.
-     * 
+     *
      * @param type The type of the list chunk
      */
     public AbstractListChunk (final int type)
@@ -47,7 +47,7 @@ public abstract class AbstractListChunk extends RIFFChunk
 
     /**
      * Get all sub-chunks.
-     * 
+     *
      * @return The sub-chunks
      */
     public List<IChunk> getSubChunks ()

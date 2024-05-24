@@ -57,7 +57,7 @@ public class DestinationAudioFormat
      *
      * @param bitResolutions The resolutions to set
      */
-    public void setBitResolutions (final int [] bitResolutions)
+    public void setBitResolutions (final int... bitResolutions)
     {
         this.bitResolutions = bitResolutions;
     }

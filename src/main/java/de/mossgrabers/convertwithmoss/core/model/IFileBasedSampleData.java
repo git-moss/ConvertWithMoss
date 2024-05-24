@@ -21,7 +21,7 @@ public interface IFileBasedSampleData extends ISampleData
 
     /**
      * Update the metadata from data available in the file.
-     * 
+     *
      * @param metadata The metadata
      */
     void updateMetadata (IMetadata metadata);

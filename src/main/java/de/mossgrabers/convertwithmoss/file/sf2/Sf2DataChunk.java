@@ -35,9 +35,10 @@ public class Sf2DataChunk extends AbstractListChunk
     {
         super.add (chunk);
 
-        if (chunk.getRiffID () == RiffID.SMPL_ID)
+        final RiffID riffID = chunk.getRiffID ();
+        if (riffID == RiffID.SMPL_ID)
             this.sampleDataChunk = chunk;
-        else if (chunk.getRiffID () == RiffID.SF_SM24_ID)
+        else if (riffID == RiffID.SF_SM24_ID)
             this.sampleData24Chunk = chunk;
     }
 
@@ -48,7 +49,7 @@ public class Sf2DataChunk extends AbstractListChunk
      * first) words. Each sample is followed by a minimum of forty-six zero valued sample data
      * points. These zero valued data points are necessary to guarantee that any reasonable upward
      * pitch shift using any reasonable interpolator can loop on zero data at the end of the sound.
-     * 
+     *
      * @return The data
      */
     public byte [] getSampleData ()
@@ -61,7 +62,7 @@ public class Sf2DataChunk extends AbstractListChunk
      * The sm24 sub-chunk, if present, contains the least significant byte counterparts to each
      * sample data point contained in the smpl chunk. Note this means for every two bytes in the
      * [smpl] sub-chunk there is a 1-byte counterpart in [sm24] sub-chunk.
-     * 
+     *
      * @return The data
      */
     public byte [] getSample24Data ()

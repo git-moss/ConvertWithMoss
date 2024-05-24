@@ -435,7 +435,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             return;
 
         final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
-        if ((selectedDetector < 0) || !this.detectors[selectedDetector].checkSettings ())
+        if (selectedDetector < 0 || !this.detectors[selectedDetector].checkSettings ())
             return;
 
         this.loggingArea.clear ();

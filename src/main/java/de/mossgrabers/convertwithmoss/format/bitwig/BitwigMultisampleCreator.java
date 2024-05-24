@@ -164,11 +164,11 @@ public class BitwigMultisampleCreator extends AbstractCreator
         // Key element and attributes
 
         final Element keyElement = XMLUtils.addElement (document, sampleElement, "key");
-        XMLUtils.setIntegerAttribute (keyElement, "low", check (zone.getKeyLow (), 0));
-        XMLUtils.setIntegerAttribute (keyElement, "low-fade", check (zone.getNoteCrossfadeLow (), 0));
+        XMLUtils.setIntegerAttribute (keyElement, "low", limitToDefault (zone.getKeyLow (), 0));
+        XMLUtils.setIntegerAttribute (keyElement, "low-fade", limitToDefault (zone.getNoteCrossfadeLow (), 0));
         XMLUtils.setIntegerAttribute (keyElement, "root", zone.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (keyElement, "high", check (zone.getKeyHigh (), 127));
-        XMLUtils.setIntegerAttribute (keyElement, "high-fade", check (zone.getNoteCrossfadeHigh (), 0));
+        XMLUtils.setIntegerAttribute (keyElement, "high", limitToDefault (zone.getKeyHigh (), 127));
+        XMLUtils.setIntegerAttribute (keyElement, "high-fade", limitToDefault (zone.getNoteCrossfadeHigh (), 0));
         XMLUtils.setDoubleAttribute (keyElement, "track", zone.getKeyTracking (), 4);
         final double tune = zone.getTune ();
         if (tune != 0)
@@ -178,10 +178,10 @@ public class BitwigMultisampleCreator extends AbstractCreator
         // Key element and attributes
 
         final Element velocityElement = XMLUtils.addElement (document, sampleElement, "velocity");
-        XMLUtils.setIntegerAttribute (velocityElement, "low", check (zone.getVelocityLow (), 0));
-        XMLUtils.setIntegerAttribute (velocityElement, "low-fade", check (zone.getVelocityCrossfadeLow (), 0));
-        XMLUtils.setIntegerAttribute (velocityElement, "high", check (zone.getVelocityHigh (), 127));
-        XMLUtils.setIntegerAttribute (velocityElement, "high-fade", check (zone.getVelocityCrossfadeHigh (), 0));
+        XMLUtils.setIntegerAttribute (velocityElement, "low", limitToDefault (zone.getVelocityLow (), 1));
+        XMLUtils.setIntegerAttribute (velocityElement, "low-fade", limitToDefault (zone.getVelocityCrossfadeLow (), 0));
+        XMLUtils.setIntegerAttribute (velocityElement, "high", limitToDefault (zone.getVelocityHigh (), 127));
+        XMLUtils.setIntegerAttribute (velocityElement, "high-fade", limitToDefault (zone.getVelocityCrossfadeHigh (), 0));
 
         /////////////////////////////////////////////////////
         // Loops
@@ -194,8 +194,8 @@ public class BitwigMultisampleCreator extends AbstractCreator
 
             final Element loopElement = XMLUtils.addElement (document, sampleElement, "loop");
             loopElement.setAttribute ("mode", type);
-            XMLUtils.setDoubleAttribute (loopElement, "start", check (sampleLoop.getStart (), 0), 3);
-            XMLUtils.setDoubleAttribute (loopElement, "stop", check (sampleLoop.getEnd (), stop), 3);
+            XMLUtils.setDoubleAttribute (loopElement, "start", limitToDefault (sampleLoop.getStart (), 0), 3);
+            XMLUtils.setDoubleAttribute (loopElement, "stop", limitToDefault (sampleLoop.getEnd (), stop), 3);
 
             final double crossfade = sampleLoop.getCrossfade ();
             if (crossfade > 0)

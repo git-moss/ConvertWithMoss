@@ -25,7 +25,7 @@ public class AiffMarkerChunk extends AiffChunk
 
     /**
      * Constructor.
-     * 
+     *
      * @param chunk The IFF chunk
      */
     protected AiffMarkerChunk (final IffChunk chunk)
@@ -36,7 +36,7 @@ public class AiffMarkerChunk extends AiffChunk
 
     /**
      * Get the markers.
-     * 
+     *
      * @return The markers
      */
     public Map<Integer, AiffMarker> getMarkers ()

@@ -65,9 +65,9 @@ public class AiffFile
     private AiffSoundDataChunk    soundDataChunk    = null;
     private AiffMarkerChunk       markerChunk       = null;
     private AiffInstrumentChunk   instrumentChunk   = null;
-    private List<IffChunk>        unprocessedChunks = new ArrayList<> ();
+    private final List<IffChunk>        unprocessedChunks = new ArrayList<> ();
     private final List<AiffChunk> chunkStack        = new ArrayList<> ();
-    private Map<String, String>   metadata          = new TreeMap<> ();
+    private final Map<String, String>   metadata          = new TreeMap<> ();
 
 
     /**
@@ -96,7 +96,7 @@ public class AiffFile
 
     /**
      * Get the metadata.
-     * 
+     *
      * @return The metadata
      */
     public Map<String, String> getMetadata ()
@@ -107,7 +107,7 @@ public class AiffFile
 
     /**
      * Is the audio data compressed?
-     * 
+     *
      * @return True if compressed
      */
     public boolean isCompressed ()
@@ -118,7 +118,7 @@ public class AiffFile
 
     /**
      * Get the common chunk.
-     * 
+     *
      * @return The common chunk if present
      */
     public AiffCommonChunk getCommonChunk ()
@@ -129,7 +129,7 @@ public class AiffFile
 
     /**
      * Get the marker chunk.
-     * 
+     *
      * @return The marker chunk if present
      */
     public AiffMarkerChunk getMarkerChunk ()
@@ -140,7 +140,7 @@ public class AiffFile
 
     /**
      * Get the instrument chunk.
-     * 
+     *
      * @return The instrument chunk if present
      */
     public AiffInstrumentChunk getInstrumentChunk ()

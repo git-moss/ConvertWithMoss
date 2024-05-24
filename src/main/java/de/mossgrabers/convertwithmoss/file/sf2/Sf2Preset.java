@@ -7,8 +7,6 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
@@ -16,32 +14,38 @@ import de.mossgrabers.tools.StringUtils;
 
 
 /**
- * A SF2 preset.
+ * A SF2 preset. A preset is a setup of several instruments with potentially different key-ranges
+ * and other settings. Since there is no concept of groups, SF2 presets are treated as multi-sample
+ * sources and SF2 instruments are treated as groups.
  *
  * @author Jürgen Moßgraber
  */
-public class Sf2Preset
+public class Sf2Preset extends AbstractGroupedZones<Sf2PresetZone>
 {
     /** The length of the preset header */
-    public static final int           LENGTH_PRESET_HEADER = 38;
+    public static final int LENGTH_PRESET_HEADER = 38;
 
-    private String                    name;
-    private int                       number;
-    private int                       bankNumber;
-    /** Pointer into PBAG list. */
-    private int                       firstZoneIndex;
-
-    private final List<Sf2PresetZone> zones                = new ArrayList<> ();
+    private int             programNumber        = 0;
+    private int             bankNumber           = 0;
 
 
     /**
-     * Get the name of the preset.
-     *
-     * @return The name
+     * Default constructor.
      */
-    public String getName ()
+    public Sf2Preset ()
     {
-        return this.name;
+        super ();
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param name The name of the preset
+     */
+    public Sf2Preset (final String name)
+    {
+        super (name);
     }
 
 
@@ -50,9 +54,20 @@ public class Sf2Preset
      *
      * @return The program number
      */
-    public int getNumber ()
+    public int getProgramNumber ()
     {
-        return this.number;
+        return this.programNumber;
+    }
+
+
+    /**
+     * Set the program number of the preset in the bank.
+     *
+     * @param programNumber The program number
+     */
+    public void setProgramNumber (final int programNumber)
+    {
+        this.programNumber = programNumber;
     }
 
 
@@ -68,24 +83,13 @@ public class Sf2Preset
 
 
     /**
-     * Get the index in the PBAG structure (the first zone of the preset).
+     * Set the index of the bank to which the preset belongs.
      *
-     * @return The index
+     * @param bankNumber The bank index
      */
-    public int getFirstZoneIndex ()
+    public void setBankNumber (final int bankNumber)
     {
-        return this.firstZoneIndex;
-    }
-
-
-    /**
-     * Set the index of the first zone of the preset.
-     *
-     * @param firstZoneIndex The index
-     */
-    public void setFirstZoneIndex (final int firstZoneIndex)
-    {
-        this.firstZoneIndex = firstZoneIndex;
+        this.bankNumber = bankNumber;
     }
 
 
@@ -103,7 +107,7 @@ public class Sf2Preset
         while (pos < 20 && data[offset + pos] != 0)
             pos++;
         this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
-        this.number = chunk.getTwoBytesAsInt (offset + 20);
+        this.programNumber = chunk.getTwoBytesAsInt (offset + 20);
         this.bankNumber = chunk.getTwoBytesAsInt (offset + 22);
         this.firstZoneIndex = chunk.getTwoBytesAsInt (offset + 24);
 
@@ -114,7 +118,7 @@ public class Sf2Preset
 
     /**
      * Write the data to a preset header chunk.
-     * 
+     *
      * @param out The output stream to write to
      * @throws IOException Could not write the data
      */
@@ -122,7 +126,7 @@ public class Sf2Preset
     {
         StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 20);
 
-        StreamUtils.writeUnsigned16 (out, this.number, false);
+        StreamUtils.writeUnsigned16 (out, this.programNumber, false);
         StreamUtils.writeUnsigned16 (out, this.bankNumber, false);
         StreamUtils.writeUnsigned16 (out, this.firstZoneIndex, false);
 
@@ -135,40 +139,6 @@ public class Sf2Preset
 
 
     /**
-     * Adds a zone to the preset.
-     *
-     * @param zone The zone to add
-     */
-    public void addZone (final Sf2PresetZone zone)
-    {
-        this.zones.add (zone);
-    }
-
-
-    /**
-     * Get the zone at the given index.
-     *
-     * @param zoneIndex The index of the zone
-     * @return The zone
-     */
-    public Sf2PresetZone getZone (final int zoneIndex)
-    {
-        return this.zones.get (zoneIndex);
-    }
-
-
-    /**
-     * Get the number of zones.
-     *
-     * @return The number of zones
-     */
-    public int getZoneCount ()
-    {
-        return this.zones.size ();
-    }
-
-
-    /**
      * Format all parameters into a string.
      *
      * @return The formatted string
@@ -176,7 +146,7 @@ public class Sf2Preset
     public String printInfo ()
     {
         final StringBuilder sb = new StringBuilder ();
-        sb.append (" - ").append (this.name).append (" (").append (this.number).append (':').append (this.bankNumber);
+        sb.append (" - ").append (this.name).append (" (").append (this.programNumber).append (':').append (this.bankNumber);
         sb.append (", Zone index: ").append (this.firstZoneIndex).append (")\n");
         for (int zoneIndex = 0; zoneIndex < this.getZoneCount (); zoneIndex++)
         {

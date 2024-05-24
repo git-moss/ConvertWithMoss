@@ -114,12 +114,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     }
 
 
-    protected static int check (final int value, final int defaultValue)
-    {
-        return value < 0 ? defaultValue : value;
-    }
-
-
     /**
      * Removes illegal characters from file names.
      *
@@ -679,9 +673,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         instrumentChunk.setFineTune (MathUtils.clamp ((int) (zone.getTune () * 100), -50, 50));
         instrumentChunk.setGain (MathUtils.clamp ((int) zone.getGain (), -127, 127));
         instrumentChunk.setLowNote (MathUtils.clamp (zone.getKeyLow (), 0, 127));
-        instrumentChunk.setHighNote (MathUtils.clamp (zone.getKeyHigh (), 0, 127));
+        instrumentChunk.setHighNote (MathUtils.clamp (limitToDefault (zone.getKeyHigh (), 127), 0, 127));
         instrumentChunk.setLowVelocity (MathUtils.clamp (zone.getVelocityLow (), 0, 127));
-        instrumentChunk.setHighVelocity (MathUtils.clamp (zone.getVelocityHigh (), 0, 127));
+        instrumentChunk.setHighVelocity (MathUtils.clamp (limitToDefault (zone.getVelocityHigh (), 127), 0, 127));
     }
 
 
@@ -915,7 +909,14 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     }
 
 
-    protected static int limitToDefault (final int value, final int defaultValue)
+    /**
+     * If the value is negative the given default value is returned otherwise the unchanged value.
+     * 
+     * @param value The value to check
+     * @param defaultValue The default value if negative
+     * @return The value or default value
+     */
+    public static int limitToDefault (final int value, final int defaultValue)
     {
         return value < 0 ? defaultValue : value;
     }

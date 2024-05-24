@@ -264,8 +264,8 @@ public class SfzCreator extends AbstractCreator
         else
         {
             addIntegerAttribute (buffer, SfzOpcode.PITCH_KEY_CENTER, keyRoot, true);
-            addIntegerAttribute (buffer, SfzOpcode.LO_KEY, check (keyLow, 0), false);
-            addIntegerAttribute (buffer, SfzOpcode.HI_KEY, check (keyHigh, 127), true);
+            addIntegerAttribute (buffer, SfzOpcode.LO_KEY, limitToDefault (keyLow, 0), false);
+            addIntegerAttribute (buffer, SfzOpcode.HI_KEY, limitToDefault (keyHigh, 127), true);
         }
 
         final int crossfadeLow = zone.getNoteCrossfadeLow ();
@@ -287,9 +287,9 @@ public class SfzCreator extends AbstractCreator
         final int velocityLow = zone.getVelocityLow ();
         final int velocityHigh = zone.getVelocityHigh ();
         if (velocityLow > 1)
-            addIntegerAttribute (buffer, SfzOpcode.LO_VEL, velocityLow, velocityHigh == 127);
+            addIntegerAttribute (buffer, SfzOpcode.LO_VEL, limitToDefault (velocityLow, 1), velocityHigh == 127);
         if (velocityHigh > 0 && velocityHigh < 127)
-            addIntegerAttribute (buffer, SfzOpcode.HI_VEL, velocityHigh, true);
+            addIntegerAttribute (buffer, SfzOpcode.HI_VEL, limitToDefault (velocityHigh, 127), true);
 
         final int crossfadeVelocityLow = zone.getVelocityCrossfadeLow ();
         if (crossfadeVelocityLow > 0)

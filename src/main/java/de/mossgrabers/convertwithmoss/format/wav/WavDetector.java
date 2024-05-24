@@ -32,7 +32,7 @@ public class WavDetector extends AbstractSampleFileDetector<WavDetectorTask>
 
     /** {@inheritDoc} */
     @Override
-    protected WavDetectorTask createDetectorTask (final File folder, final Consumer<IMultisampleSource> consumer, final boolean isAscending, final String [] groupPatterns, final String [] monoSplitPatterns, final String [] postfixTexts, int crossfadeNotes, int crossfadeVelocities)
+    protected WavDetectorTask createDetectorTask (final File folder, final Consumer<IMultisampleSource> consumer, final boolean isAscending, final String [] groupPatterns, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities)
     {
         return new WavDetectorTask (this.notifier, consumer, folder, groupPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane);
     }

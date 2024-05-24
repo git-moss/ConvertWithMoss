@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.file.wav;
 
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -24,7 +25,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  */
 public class InfoChunk extends AbstractListChunk
 {
-    private SimpleDateFormat          standardDateFormat  = new SimpleDateFormat ("MMMM d, yyyy", Locale.ENGLISH);
+    private final SimpleDateFormat          standardDateFormat  = new SimpleDateFormat ("MMMM d, yyyy", Locale.ENGLISH);
 
     private final SimpleDateFormat [] creationDateParsers = new SimpleDateFormat []
     {
@@ -59,7 +60,7 @@ public class InfoChunk extends AbstractListChunk
 
     /**
      * Get all info fields from the sub-chunks.
-     * 
+     *
      * @return The sub-chunk content with their descriptive name as the key
      */
     public Map<String, String> getInfoFields ()
@@ -73,25 +74,23 @@ public class InfoChunk extends AbstractListChunk
 
     /**
      * Get the value of 1 info sub-chunks.
-     * 
+     *
      * @param infoChunkID The ID of the info chunk to get
      * @return The sub-chunk content as an ASCII string
      */
     public String getInfoField (final RiffID infoChunkID)
     {
-        int id = infoChunkID.getId ();
+        final int id = infoChunkID.getId ();
         for (final IChunk chunk: this.subChunks)
-        {
             if (chunk.getId () == id)
                 return new String (chunk.getData (), StandardCharsets.US_ASCII);
-        }
         return null;
     }
 
 
     /**
      * Get the value of an info field.
-     * 
+     *
      * @param riffIDs The IDs of the info fields to check
      * @return The first present value of the given IDs is returned
      */
@@ -109,20 +108,30 @@ public class InfoChunk extends AbstractListChunk
 
     /**
      * Create a new info-sub-chunk and add it to this info chunk.
-     * 
+     *
      * @param infoChunkID The ID of the info sub-chunk to create
      * @param value The sub-chunk content
+     * @param maxLength The maximum text length including 2 zero bytes at the end
      */
-    public void addInfoField (final RiffID infoChunkID, final String value)
+    public void addInfoTextField (final RiffID infoChunkID, final String value, final int maxLength)
     {
-        final byte [] content = value.getBytes (StandardCharsets.US_ASCII);
-        addInfoField (infoChunkID, content);
+        byte [] content = value.getBytes (StandardCharsets.US_ASCII);
+
+        final int paddingLength = content.length % 2 == 0 ? 2 : 1;
+        final int fullLength = content.length + paddingLength;
+
+        final int diff = fullLength - maxLength;
+        if (diff > 0)
+            content = Arrays.copyOf (content, fullLength - diff);
+
+        content = Arrays.copyOf (content, content.length + paddingLength);
+        this.addInfoField (infoChunkID, content);
     }
 
 
     /**
      * Create a new info-sub-chunk and add it to this info chunk.
-     * 
+     *
      * @param infoChunkID The ID of the info sub-chunk to create
      * @param content The sub-chunk content
      */
@@ -163,7 +172,7 @@ public class InfoChunk extends AbstractListChunk
      */
     public void addCreationDate (final Date date)
     {
-        this.addInfoField (RiffID.INFO_ICRD, this.standardDateFormat.format (date));
+        this.addInfoTextField (RiffID.INFO_ICRD, this.standardDateFormat.format (date), 256);
     }
 
 

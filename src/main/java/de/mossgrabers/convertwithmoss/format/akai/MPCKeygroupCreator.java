@@ -237,10 +237,10 @@ public class MPCKeygroupCreator extends AbstractCreator
         // First multiply with 100 to prevent rounding error!
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_FINE_TUNE, Integer.toString ((int) (tuneCent * 100.0 - tuneCentInteger * 100.0)));
 
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (zone.getVelocityLow ()));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_END, Integer.toString (zone.getVelocityHigh ()));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (limitToDefault (zone.getVelocityLow (), 1)));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_END, Integer.toString (limitToDefault (zone.getVelocityHigh (), 127)));
 
-        // Add the name of the multisample to the wave file to make it 'more unique' if
+        // Add the name of the multi-sample to the wave file to make it 'more unique' if
         // necessary
         String zoneName = zone.getName ();
         if (!zoneName.startsWith (sampleName))
@@ -304,8 +304,8 @@ public class MPCKeygroupCreator extends AbstractCreator
 
     private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleZone zone, final Document document, final Element instrumentsElement, final TriggerType trigger)
     {
-        final int keyLow = zone.getKeyLow ();
-        final int keyHigh = zone.getKeyHigh ();
+        final int keyLow = limitToDefault (zone.getKeyLow (), 0);
+        final int keyHigh = limitToDefault (zone.getKeyHigh (), 127);
         final String rangeKey = keyLow + "-" + keyHigh;
         final boolean isSequence = zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
         final List<Keygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, key -> new ArrayList<> ());
@@ -316,7 +316,7 @@ public class MPCKeygroupCreator extends AbstractCreator
             if (keygroup.isSequence () == isSequence)
             {
                 // Velocity range must match as well for sequences
-                if (keygroup.isSequence () && isSequence && (zone.getVelocityLow () != keygroup.getVelocityLow () || zone.getVelocityHigh () != keygroup.getVelocityHigh ()))
+                if (keygroup.isSequence () && isSequence && (limitToDefault (zone.getVelocityLow (), 1) != limitToDefault (keygroup.getVelocityLow (), 1) || limitToDefault (zone.getVelocityHigh (), 127) != limitToDefault (keygroup.getVelocityHigh (), 127)))
                     continue;
 
                 // Matching keygroup with free layer found
@@ -400,7 +400,7 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         if (trigger == TriggerType.RELEASE)
             triggerMode = SamplePlay.NOTE_OFF;
-        else if (amplitudeEnvelope.getSustainLevel () <= 0 && zone.getKeyLow () == zone.getKeyHigh ())
+        else if (amplitudeEnvelope.getSustainLevel () <= 0 && limitToDefault (zone.getKeyLow (), 0) == limitToDefault (zone.getKeyHigh (), 127))
             triggerMode = SamplePlay.ONE_SHOT;
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode.ordinal ()));
@@ -411,7 +411,7 @@ public class MPCKeygroupCreator extends AbstractCreator
 
         final Keygroup keygroup;
         if (isSequence)
-            keygroup = new Keygroup (layersElement, zone.getVelocityLow (), zone.getVelocityHigh ());
+            keygroup = new Keygroup (layersElement, limitToDefault (zone.getVelocityLow (), 1), limitToDefault (zone.getVelocityHigh (), 127));
         else
             keygroup = new Keygroup (layersElement);
         keygroups.add (keygroup);

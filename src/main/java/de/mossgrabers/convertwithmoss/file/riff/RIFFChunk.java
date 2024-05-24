@@ -65,7 +65,7 @@ public class RIFFChunk implements IChunk
 
     /**
      * Constructor. Use for sub-class wrappers
-     * 
+     *
      * @param riffID The RIFF ID
      * @param data The data of the chunk
      * @param size The expected size of the chunk
@@ -102,7 +102,7 @@ public class RIFFChunk implements IChunk
 
     /**
      * Get the RIFF ID.
-     * 
+     *
      * @return The RIFF ID
      */
     public RiffID getRiffID ()

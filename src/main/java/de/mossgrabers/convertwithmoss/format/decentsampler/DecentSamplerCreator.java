@@ -328,15 +328,15 @@ public class DecentSamplerCreator extends AbstractCreator
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
 
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_NOTE, check (zone.getKeyLow (), 0));
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_NOTE, limitToDefault (zone.getKeyLow (), 0));
         // No fades info.getNoteCrossfadeLow ()
         XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE, zone.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_NOTE, check (zone.getKeyHigh (), 127));
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_NOTE, limitToDefault (zone.getKeyHigh (), 127));
         // No fades info.getNoteCrossfadeHigh ()
         XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, zone.getKeyTracking (), 4);
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_VEL, check (zone.getVelocityLow (), 0));
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_VEL, limitToDefault (zone.getVelocityLow (), 1));
         // No fades info.getVelocityCrossfadeLow ()
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, check (zone.getVelocityHigh (), 127));
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, limitToDefault (zone.getVelocityHigh (), 127));
         // No fades info.getVelocityCrossfadeHigh ()
 
         /////////////////////////////////////////////////////
@@ -348,8 +348,8 @@ public class DecentSamplerCreator extends AbstractCreator
 
             final ISampleLoop sampleLoop = loops.get (0);
             sampleElement.setAttribute (DecentSamplerTag.LOOP_ENABLED, "true");
-            XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, check (sampleLoop.getStart (), 0), 3);
-            XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, check (sampleLoop.getEnd (), stop), 3);
+            XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, limitToDefault (sampleLoop.getStart (), 0), 3);
+            XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, limitToDefault (sampleLoop.getEnd (), stop), 3);
 
             // Calculate the cross-fade in frames/samples from a percentage of the loop length
             final int crossfade = sampleLoop.getCrossfadeInSamples ();

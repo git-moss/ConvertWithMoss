@@ -46,8 +46,8 @@ public class Sf2SampleDescriptor
     private String          name;
     private long            start;
     private long            end;
-    private long            startloop;
-    private long            endloop;
+    private long            startLoop;
+    private long            endLoop;
     private long            sampleRate;
     private int             originalPitch;
     private int             pitchCorrection;
@@ -88,8 +88,8 @@ public class Sf2SampleDescriptor
 
         this.start = chunk.getFourBytesAsInt (offset + 20);
         this.end = chunk.getFourBytesAsInt (offset + 24);
-        this.startloop = chunk.getFourBytesAsInt (offset + 28);
-        this.endloop = chunk.getFourBytesAsInt (offset + 32);
+        this.startLoop = chunk.getFourBytesAsInt (offset + 28);
+        this.endLoop = chunk.getFourBytesAsInt (offset + 32);
 
         this.sampleRate = chunk.getFourBytesAsInt (offset + 36);
 
@@ -106,7 +106,7 @@ public class Sf2SampleDescriptor
 
     /**
      * Write the data to a sample header chunk.
-     * 
+     *
      * @param out The output stream to write to
      * @throws IOException Could not write the data
      */
@@ -115,8 +115,8 @@ public class Sf2SampleDescriptor
         StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 20);
         StreamUtils.writeUnsigned32 (out, this.start, false);
         StreamUtils.writeUnsigned32 (out, this.end, false);
-        StreamUtils.writeUnsigned32 (out, this.startloop, false);
-        StreamUtils.writeUnsigned32 (out, this.endloop, false);
+        StreamUtils.writeUnsigned32 (out, this.startLoop, false);
+        StreamUtils.writeUnsigned32 (out, this.endLoop, false);
         StreamUtils.writeUnsigned32 (out, this.sampleRate, false);
         out.write (this.originalPitch);
         out.write (this.pitchCorrection);
@@ -127,7 +127,7 @@ public class Sf2SampleDescriptor
 
     /**
      * Write the terminal sample header chunk.
-     * 
+     *
      * @param out The output stream to write to
      * @throws IOException Could not write the data
      */
@@ -169,6 +169,17 @@ public class Sf2SampleDescriptor
 
 
     /**
+     * Set the name of the sample.
+     *
+     * @param name The name
+     */
+    public void setName (final String name)
+    {
+        this.name = name;
+    }
+
+
+    /**
      * The index, in sample data points, from the beginning of the sample data field to the first
      * data point of this sample.
      *
@@ -177,6 +188,18 @@ public class Sf2SampleDescriptor
     public long getStart ()
     {
         return this.start;
+    }
+
+
+    /**
+     * The index, in sample data points, from the beginning of the sample data field to the first
+     * data point of this sample.
+     *
+     * @param start The start index
+     */
+    public void setStart (final long start)
+    {
+        this.start = start;
     }
 
 
@@ -193,14 +216,38 @@ public class Sf2SampleDescriptor
 
 
     /**
+     * Set the index, in sample data points, from the beginning of the sample data field to the
+     * first of the set of 46 zero valued data points following this sample.
+     *
+     * @param end The end index
+     */
+    public void setEnd (final long end)
+    {
+        this.end = end;
+    }
+
+
+    /**
      * The index, in sample data points, from the beginning of the sample data field to the first
      * data point in the loop of this sample.
      *
      * @return The start loop index
      */
-    public long getStartloop ()
+    public long getLoopStart ()
     {
-        return this.startloop;
+        return this.startLoop;
+    }
+
+
+    /**
+     * Set the index, in sample data points, from the beginning of the sample data field to the
+     * first data point in the loop of this sample.
+     *
+     * @param startLoop The start loop index
+     */
+    public void setLoopStart (final long startLoop)
+    {
+        this.startLoop = startLoop;
     }
 
 
@@ -210,14 +257,26 @@ public class Sf2SampleDescriptor
      *
      * @return The end loop index
      */
-    public long getEndloop ()
+    public long getLoopEnd ()
     {
-        return this.endloop;
+        return this.endLoop;
     }
 
 
     /**
-     * The sample rate, in hertz, at which this sample was acquired or to which it was most recently
+     * Set the index, in sample data points, from the beginning of the sample data field to the
+     * first data point following the loop of this sample.
+     *
+     * @param endLoop The end loop index
+     */
+    public void setLoopEnd (final long endLoop)
+    {
+        this.endLoop = endLoop;
+    }
+
+
+    /**
+     * The sample rate, in Hertz, at which this sample was acquired or to which it was most recently
      * converted.
      *
      * @return The sample rate
@@ -225,6 +284,18 @@ public class Sf2SampleDescriptor
     public long getSampleRate ()
     {
         return this.sampleRate;
+    }
+
+
+    /**
+     * set the sample rate, in Hertz, at which this sample was acquired or to which it was most
+     * recently converted.
+     *
+     * @param sampleRate The sample rate
+     */
+    public void setSampleRate (final long sampleRate)
+    {
+        this.sampleRate = sampleRate;
     }
 
 
@@ -240,6 +311,17 @@ public class Sf2SampleDescriptor
 
 
     /**
+     * Set the MIDI key number of the recorded pitch of the sample.
+     *
+     * @param pitch The MIDI number (0-127)
+     */
+    public void setOriginalPitch (final int pitch)
+    {
+        this.originalPitch = pitch;
+    }
+
+
+    /**
      * Get the pitch correction in cents that should be applied to the sample on playback.
      *
      * @return The pitch correction
@@ -247,6 +329,17 @@ public class Sf2SampleDescriptor
     public int getPitchCorrection ()
     {
         return this.pitchCorrection;
+    }
+
+
+    /**
+     * Set the pitch correction in cents that should be applied to the sample on playback.
+     *
+     * @param pitchCorrection The pitch correction
+     */
+    public void setPitchCorrection (final int pitchCorrection)
+    {
+        this.pitchCorrection = pitchCorrection;
     }
 
 
@@ -262,7 +355,18 @@ public class Sf2SampleDescriptor
 
 
     /**
-     * The type of the sample.
+     * Set the ID of the linked left or right sample, if any.
+     *
+     * @param linkedID The ID of the linked sample
+     */
+    public void setLinkedSample (final int linkedID)
+    {
+        this.sampleLink = linkedID;
+    }
+
+
+    /**
+     * Get the type of the sample.
      *
      * @return monoSample = 1, rightSample = 2, leftSample = 4, all other types are not supported
      *         (linked and ROM)
@@ -270,6 +374,18 @@ public class Sf2SampleDescriptor
     public int getSampleType ()
     {
         return this.sampleType;
+    }
+
+
+    /**
+     * Set the type of the sample.
+     *
+     * @param sampleType monoSample = 1, rightSample = 2, leftSample = 4, all other types are not
+     *            supported (linked and ROM)
+     */
+    public void setSampleType (final int sampleType)
+    {
+        this.sampleType = sampleType;
     }
 
 

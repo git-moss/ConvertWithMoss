@@ -25,7 +25,7 @@ public class AiffSoundDataChunk extends AiffChunk
 
     /**
      * Constructor.
-     * 
+     *
      * @param chunk The IFF chunk
      */
     protected AiffSoundDataChunk (final IffChunk chunk)

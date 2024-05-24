@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -167,14 +168,12 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         if (modulators.isEmpty ())
             modulators = zone.getModulators (Sf2Modulator.MODULATOR_PITCH_BEND);
         for (final Sf2Modulator sf2Modulator: modulators)
-        {
             if (sf2Modulator.getDestinationGenerator () == Generator.FINE_TUNE)
             {
                 final int amount = sf2Modulator.getModulationAmount ();
                 sampleZone.setBendUp (amount);
                 sampleZone.setBendDown (-amount);
             }
-        }
     }
 
 
@@ -308,10 +307,10 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
         for (final ISampleZone panLeftSampleZone: panLeftSamples)
         {
-            final int keyLow = panLeftSampleZone.getKeyLow ();
-            final int keyHigh = panLeftSampleZone.getKeyHigh ();
-            final int velocityLow = panLeftSampleZone.getVelocityLow ();
-            final int velocityHigh = panLeftSampleZone.getVelocityHigh ();
+            final int keyLow = AbstractCreator.limitToDefault (panLeftSampleZone.getKeyLow (), 0);
+            final int keyHigh = AbstractCreator.limitToDefault (panLeftSampleZone.getKeyHigh (), 127);
+            final int velocityLow = AbstractCreator.limitToDefault (panLeftSampleZone.getVelocityLow (), 1);
+            final int velocityHigh = AbstractCreator.limitToDefault (panLeftSampleZone.getVelocityHigh (), 127);
 
             ISampleZone panRightSampleZone;
             boolean found = false;
@@ -319,7 +318,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             {
                 panRightSampleZone = panRightSamples.get (i);
                 // Match by the key and velocity range
-                if (keyLow == panRightSampleZone.getKeyLow () && keyHigh == panRightSampleZone.getKeyHigh () && velocityLow == panRightSampleZone.getVelocityLow () && velocityHigh == panRightSampleZone.getVelocityHigh ())
+                if (keyLow == AbstractCreator.limitToDefault (panRightSampleZone.getKeyLow (), 0) && keyHigh == AbstractCreator.limitToDefault (panRightSampleZone.getKeyHigh (), 127) && velocityLow == AbstractCreator.limitToDefault (panRightSampleZone.getVelocityLow (), 1) && velocityHigh == AbstractCreator.limitToDefault (panRightSampleZone.getVelocityHigh (), 127))
                 {
                     if (this.compareSampleFormat (panLeftSampleZone, panRightSampleZone))
                     {
@@ -366,10 +365,10 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         }
 
         // Loops must have the same start and length
-        final long leftStart = left.getStartloop () - left.getStart ();
-        final long rightStart = right.getStartloop () - right.getStart ();
-        final long leftLoopLength = left.getEndloop () - left.getStartloop ();
-        final long rightLoopLength = right.getEndloop () - right.getStartloop ();
+        final long leftStart = left.getLoopStart () - left.getStart ();
+        final long rightStart = right.getLoopStart () - right.getStart ();
+        final long leftLoopLength = left.getLoopEnd () - left.getLoopStart ();
+        final long rightLoopLength = right.getLoopEnd () - right.getLoopStart ();
         if (!leftSampleZone.getLoops ().isEmpty () && (leftStart != rightStart || leftLoopLength != rightLoopLength))
             this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_LOOP_LENGTH", left.getName (), right.getName (), Long.toString (leftStart), Long.toString (leftLoopLength), Long.toString (rightStart), Long.toString (rightLoopLength));
 
@@ -433,8 +432,8 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             if ((generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue () & 1) > 0)
             {
                 final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
-                sampleLoop.setStart ((int) (sample.getStartloop () - sampleStart));
-                sampleLoop.setEnd ((int) (sample.getEndloop () - sampleStart));
+                sampleLoop.setStart ((int) (sample.getLoopStart () - sampleStart));
+                sampleLoop.setEnd ((int) (sample.getLoopEnd () - sampleStart));
                 zone.addLoop (sampleLoop);
             }
 
@@ -460,8 +459,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 if (initialCutoff >= 1500 && initialCutoff < 13500)
                 {
                     // Convert cents to Hertz: f2 is the minimum supported frequency, cents is
-                    // always a
-                    // relation of two frequencies, 1200 cents are one octave:
+                    // always a relation of two frequencies, 1200 cents are one octave:
                     // cents = 1200 * log2 (f1 / f2), f2 = 8.176 => f1 = f2 * 2^(cents / 1200)
                     final double frequency = 8.176 * Math.pow (2, initialCutoff / 1200.0);
 
@@ -490,21 +488,21 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                     }
 
                     zone.setFilter (filter);
-
-                    final IModulator pitchModulator = zone.getPitchModulator ();
-                    final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
-                    pitchModulator.setDepth (pitchModDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
-                    if (pitchModDepth != 0)
-                    {
-                        final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-                        pitchEnvelope.setDelayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
-                        pitchEnvelope.setAttackTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
-                        pitchEnvelope.setHoldTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
-                        pitchEnvelope.setDecayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
-                        pitchEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
-                        pitchEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
-                    }
                 }
+            }
+
+            final IModulator pitchModulator = zone.getPitchModulator ();
+            final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
+            pitchModulator.setDepth (pitchModDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
+            if (pitchModDepth != 0)
+            {
+                final IEnvelope pitchEnvelope = pitchModulator.getSource ();
+                pitchEnvelope.setDelayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DELAY)));
+                pitchEnvelope.setAttackTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_ATTACK)));
+                pitchEnvelope.setHoldTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_HOLD)));
+                pitchEnvelope.setDecayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
+                pitchEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
+                pitchEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
             }
 
             return zone;

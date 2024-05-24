@@ -50,7 +50,7 @@ public class FlacFileSampleData extends AbstractFileSampleData
 
     /** {@inheritDoc} */
     @Override
-    public void updateMetadata (IMetadata metadata)
+    public void updateMetadata (final IMetadata metadata)
     {
         // Could be implemented with e.g. JAudioTagger
     }

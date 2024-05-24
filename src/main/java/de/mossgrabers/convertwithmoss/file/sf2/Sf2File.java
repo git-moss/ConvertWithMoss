@@ -7,10 +7,8 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -166,7 +164,7 @@ public class Sf2File extends AbstractRIFFFile
 
     /**
      * Get the data chunk.
-     * 
+     *
      * @return The data chunk
      */
     public Sf2DataChunk getDataChunk ()
@@ -177,7 +175,7 @@ public class Sf2File extends AbstractRIFFFile
 
     /**
      * Get the preset data chunk.
-     * 
+     *
      * @return The preset data chunk
      */
     public Sf2PresetDataChunk getPresetDataChunk ()
@@ -300,10 +298,8 @@ public class Sf2File extends AbstractRIFFFile
                 if (chunk.getType () == RiffID.INFO_ID.getId ())
                     this.infoChunk.add (chunk);
                 else
-                {
                     // Ignore other chunks
                     this.ignoredChunks.add (RiffID.toASCII (chunk.getId ()));
-                }
                 break;
         }
     }
@@ -311,7 +307,7 @@ public class Sf2File extends AbstractRIFFFile
 
     /**
      * Parse all presets from the preset header chunk (PHDR).
-     * 
+     *
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
@@ -685,7 +681,7 @@ public class Sf2File extends AbstractRIFFFile
 
     /**
      * Creates all preset data sub-chunks from the preset list.
-     * 
+     *
      * @throws IOException Could not write the preset chunks
      */
     public void createPresetDataChunks () throws IOException
@@ -701,6 +697,35 @@ public class Sf2File extends AbstractRIFFFile
             zoneCount += sf2Preset.getZoneCount ();
         }
 
+        // Create data chunk
+        // Collect all sample data from the sample zones
+        final ByteArrayOutputStream sampleOut = new ByteArrayOutputStream ();
+        final ByteArrayOutputStream sample24Out = new ByteArrayOutputStream ();
+        for (final Sf2Preset sf2Preset: this.presets)
+            for (int presetZoneIndex = 0; presetZoneIndex < sf2Preset.getZoneCount (); presetZoneIndex++)
+            {
+                final Sf2PresetZone zone = sf2Preset.getZone (presetZoneIndex);
+                final Sf2Instrument instrument = zone.getInstrument ();
+                for (int instZoneIndex = 0; instZoneIndex < instrument.getZoneCount (); instZoneIndex++)
+                {
+                    final Sf2SampleDescriptor sample = instrument.getZone (instZoneIndex).getSample ();
+                    sampleOut.writeBytes (sample.getSampleData ());
+                    sample24Out.writeBytes (sample.getSample24Data ());
+                }
+            }
+        // Fill data chunk
+        final byte [] sampleData = sampleOut.toByteArray ();
+        final byte [] sample24Data = sample24Out.toByteArray ();
+        final RIFFChunk sampleChunk = new RIFFChunk (0, RiffID.SMPL_ID.getId (), sampleData.length);
+        sampleChunk.setData (sampleData);
+        this.dataChunk.add (sampleChunk);
+        if (sample24Data.length > 0)
+        {
+            final RIFFChunk sample24Chunk = new RIFFChunk (0, RiffID.SF_SM24_ID.getId (), sample24Data.length);
+            sample24Chunk.setData (sample24Data);
+            this.dataChunk.add (sample24Chunk);
+        }
+
         // Create PHDR chunk
         try (final ByteArrayOutputStream out = new ByteArrayOutputStream ())
         {
@@ -712,7 +737,7 @@ public class Sf2File extends AbstractRIFFFile
             subChunks.add (chunk);
         }
 
-        createPresetZonesChunk (subChunks);
+        this.createPresetZonesChunk (subChunks);
     }
 
 
@@ -894,37 +919,5 @@ public class Sf2File extends AbstractRIFFFile
             this.chunkStack.add (this.dataChunk);
         if (this.presetDataChunk != null)
             this.chunkStack.add (this.presetDataChunk);
-    }
-
-
-    public static void main (String [] arguments)
-    {
-        String inputFile = "C:\\Users\\mos\\Desktop\\TEST\\Analog Saw.sf2";
-        String outputFile = "C:\\Users\\mos\\Desktop\\TEST\\Analog Saw-COPY.sf2";
-        try (final FileInputStream in = new FileInputStream (inputFile); final FileOutputStream out = new FileOutputStream (outputFile))
-        {
-            Sf2File sf2File = new Sf2File (in);
-            InfoChunk sourceInfoChunk = sf2File.getInfoChunk ();
-
-            Sf2File sf2FileCopy = new Sf2File ();
-
-            // Copy all info chunks
-            InfoChunk destInfoChunk = sf2FileCopy.getInfoChunk ();
-            for (final IChunk subChunk: sourceInfoChunk.getSubChunks ())
-                destInfoChunk.addInfoField (RiffID.fromId (subChunk.getId ()), new String (subChunk.getData (), StandardCharsets.US_ASCII));
-
-            // Copy sample data
-            sf2FileCopy.getDataChunk ().getSubChunks ().addAll (sf2File.getDataChunk ().getSubChunks ());
-
-            // Copy preset chunks
-            sf2FileCopy.getPresets ().addAll (sf2File.getPresets ());
-            sf2FileCopy.createPresetDataChunks ();
-
-            sf2FileCopy.write (out);
-        }
-        catch (final ParseException | IOException ex)
-        {
-            ex.printStackTrace ();
-        }
     }
 }

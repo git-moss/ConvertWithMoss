@@ -205,7 +205,7 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
 
     /**
      * Create the detector task.
-     * 
+     *
      * @param consumer The consumer that handles the detected multi-sample sources
      * @param folder The top source folder for the detection
      * @param isAscending Are groups ordered ascending?

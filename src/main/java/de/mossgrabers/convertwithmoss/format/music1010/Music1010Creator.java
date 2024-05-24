@@ -46,15 +46,20 @@ import javafx.scene.control.ToggleGroup;
  */
 public class Music1010Creator extends AbstractCreator
 {
-    private static final String              MUSIC_1010_INTERPOLATION_QUALITY = "Music1010InterpolationQuality";
-    private static final String              MUSIC_1010_RESAMPLE_TO_24_48     = "Music1010ResampleTo2448";
+    private static final String                 MUSIC_1010_INTERPOLATION_QUALITY = "Music1010InterpolationQuality";
+    private static final String                 MUSIC_1010_RESAMPLE_TO_24_48     = "Music1010ResampleTo2448";
+    private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT           = new DestinationAudioFormat (new int []
+    {
+        24
+    }, 48000, true);
+    private static final DestinationAudioFormat DEFEAULT_AUDIO_FORMAT            = new DestinationAudioFormat ();
 
-    private ToggleGroup                      interpolationQualityGroup;
-    private boolean                          isInterpolationQualityHigh;
-    private CheckBox                         resampleTo2448;
+    private ToggleGroup                         interpolationQualityGroup;
+    private boolean                             isInterpolationQualityHigh;
+    private CheckBox                            resampleTo2448;
 
-    private static final Map<String, String> EMPTY_PARAM_ATTRIBUTES           = new HashMap<> ();
-    private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES     = new HashMap<> ();
+    private static final Map<String, String>    EMPTY_PARAM_ATTRIBUTES           = new HashMap<> ();
+    private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES     = new HashMap<> ();
     static
     {
         EMPTY_PARAM_ATTRIBUTES.put ("gaindb", "0");
@@ -256,19 +261,10 @@ public class Music1010Creator extends AbstractCreator
         }
 
         // Store all samples
-        final DestinationAudioFormat destinationAudioFormat = new DestinationAudioFormat ();
-        if (this.resampleTo2448.isSelected ())
-        {
+        final boolean resample = this.resampleTo2448.isSelected ();
+        if (resample)
             AbstractCreator.recalculateSamplePositions (multisampleSource, 48000);
-
-            destinationAudioFormat.setBitResolutions (new int []
-            {
-                24
-            });
-            destinationAudioFormat.setMaxSampleRate (48000);
-            destinationAudioFormat.setUpSample (true);
-        }
-        this.writeSamples (destinationFolder, multisampleSource, destinationAudioFormat);
+        this.writeSamples (destinationFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT);
     }
 
 
@@ -411,22 +407,28 @@ public class Music1010Creator extends AbstractCreator
         paramsElement.setAttribute (Music1010Tag.ATTR_ASSET_SOURCE_COLUMN, "0");
 
         // Stored in WAV file: zone.getGain (), zone.getTune ()
-        // No zone.getStart ()
-        // No zone.getStop (),
+
+        final int start = limitToDefault (zone.getStart (), 0);
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, start);
+        final int stop = zone.getStop ();
+        if (stop > 0)
+            XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, start + stop);
+
         // No zone.getTrigger ();
-        // No info.isReversed ()
+
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_REVERSE, zone.isReversed () ? 1 : 0);
 
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
 
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_ROOT_NOTE, zone.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_NOTE, check (zone.getKeyLow (), 0));
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_HI_NOTE, check (zone.getKeyHigh (), 127));
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_NOTE, limitToDefault (zone.getKeyLow (), 0));
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_HI_NOTE, limitToDefault (zone.getKeyHigh (), 127));
         // No fades info.getNoteCrossfadeLow ()
         // No fades info.getNoteCrossfadeHigh ()
         // No zone.getKeyTracking ()
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_VEL, check (zone.getVelocityLow (), 0));
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_HI_VEL, check (zone.getVelocityHigh (), 127));
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_VEL, limitToDefault (zone.getVelocityLow (), 1));
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_HI_VEL, limitToDefault (zone.getVelocityHigh (), 127));
         // No fades info.getVelocityCrossfadeLow ()
         // No fades info.getVelocityCrossfadeHigh ()
 
@@ -434,6 +436,10 @@ public class Music1010Creator extends AbstractCreator
         // Loops
 
         // ... are stored in the WAV files
+
+        // Set to one-shot if there are no loops
+        if (zone.getLoops ().isEmpty ())
+            XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 0);
     }
 
 

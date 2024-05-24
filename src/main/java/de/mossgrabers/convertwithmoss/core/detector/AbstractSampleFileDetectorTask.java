@@ -101,7 +101,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
 
         // Analyze all files
         final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.length);
-        for (int i = 0; i < files.length; i++)
+        for (final File file: files)
         {
             // Check for task cancellation
             if (this.isCancelled ())
@@ -109,11 +109,11 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
 
             try
             {
-                sampleData.add (this.createSampleData (files[i]));
+                sampleData.add (this.createSampleData (file));
             }
             catch (final IOException ex)
             {
-                this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), files[i].getAbsolutePath (), ex.getMessage ());
+                this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), file.getAbsolutePath (), ex.getMessage ());
                 return Collections.emptyList ();
             }
         }
@@ -149,7 +149,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
                 {
                     final DefaultSampleZone sampleZone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (fileSampleData.getFilename ())), fileSampleData);
                     group.addSampleZone (sampleZone);
-                    fillInstrumentData (sampleZone, fileSampleData);
+                    this.fillInstrumentData (sampleZone, fileSampleData);
                     filenames.add (new File (fileSampleData.getFilename ()).getName ());
                 }
                 name = KeyMapping.findCommonPrefix (filenames);
@@ -186,10 +186,8 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
             multisampleSource.setGroups (groups);
 
             for (final IGroup group: groups)
-            {
                 for (final ISampleZone zone: group.getSampleZones ())
                     zone.getSampleData ().addZoneData (zone, true, true);
-            }
 
             this.notifier.log ("IDS_NOTIFY_DETECTED_GROUPS", Integer.toString (groups.size ()));
             if (this.waitForDelivery ())
@@ -213,7 +211,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
      * @param postfixTexts The post-fix texts to remove
      * @return The cleaned up name or null if it is empty
      */
-    private static String cleanupName (final String name, final String [] postfixTexts)
+    private static String cleanupName (final String name, final String... postfixTexts)
     {
         String n = name;
         for (final String pt: postfixTexts)
@@ -244,7 +242,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
 
     /**
      * Checks if the file has data about an instrument zone (e.g. key/velocity range and loops).
-     * 
+     *
      * @param sampleData The sample files to check
      * @return True if instrument data is available
      */
@@ -253,7 +251,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
 
     /**
      * Set the zone data (e.g. key/velocity range and loops) from the given file based sample data.
-     * 
+     *
      * @param zone The zone to fill
      * @param sampleData The source data
      */

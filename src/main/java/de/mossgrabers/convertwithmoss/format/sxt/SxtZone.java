@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -611,10 +612,10 @@ class SxtZone
      */
     public void fillFrom (final ISampleZone zone) throws IOException
     {
-        this.keyRangeStart = zone.getKeyLow ();
-        this.keyRangeEnd = zone.getKeyHigh ();
+        this.keyRangeStart = AbstractCreator.limitToDefault (zone.getKeyLow (), 0);
+        this.keyRangeEnd = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127);
         this.velocityRangeStart = MathUtils.clamp (zone.getVelocityLow (), 1, 127);
-        this.velocityRangeEnd = MathUtils.clamp (zone.getVelocityHigh (), 1, 127);
+        this.velocityRangeEnd = MathUtils.clamp (AbstractCreator.limitToDefault (zone.getVelocityHigh (), 127), 1, 127);
         this.velocityFadeIn = zone.getVelocityCrossfadeLow ();
         final int velocityCrossfadeHigh = zone.getVelocityCrossfadeHigh ();
         this.velocityFadeOut = velocityCrossfadeHigh == 0 ? 0x80 : MathUtils.clamp (127 - velocityCrossfadeHigh, 1, 127);

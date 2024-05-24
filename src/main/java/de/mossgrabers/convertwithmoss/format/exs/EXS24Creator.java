@@ -142,11 +142,11 @@ public class EXS24Creator extends AbstractCreator
                 exs24Zone.name = zone.getName ();
 
                 exs24Zone.key = zone.getKeyRoot ();
-                exs24Zone.keyLow = zone.getKeyLow ();
-                exs24Zone.keyHigh = zone.getKeyHigh ();
+                exs24Zone.keyLow = limitToDefault (zone.getKeyLow (), 0);
+                exs24Zone.keyHigh = limitToDefault (zone.getKeyHigh (), 127);
                 exs24Zone.velocityRangeOn = true;
-                exs24Zone.velocityLow = zone.getVelocityLow ();
-                exs24Zone.velocityHigh = zone.getVelocityHigh ();
+                exs24Zone.velocityLow = limitToDefault (zone.getVelocityLow (), 1);
+                exs24Zone.velocityHigh = limitToDefault (zone.getVelocityHigh (), 127);
                 exs24Zone.sampleStart = zone.getStart ();
                 exs24Zone.sampleEnd = zone.getStop ();
                 exs24Zone.reverse = zone.isReversed ();

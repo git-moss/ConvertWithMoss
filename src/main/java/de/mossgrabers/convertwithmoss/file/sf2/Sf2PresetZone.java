@@ -34,6 +34,21 @@ public class Sf2PresetZone extends AbstractZone
 
 
     /**
+     * Constructor.
+     *
+     * @param instrument The instrument to assign to the zone
+     * @param instrumentIndex The index of the instrument
+     */
+    public Sf2PresetZone (final Sf2Instrument instrument, final int instrumentIndex)
+    {
+        super (0, 0, 0, 0);
+
+        this.instrument = instrument;
+        this.addGenerator (Generator.INSTRUMENT, instrumentIndex);
+    }
+
+
+    /**
      * Get the instrument which is assigned to this zone.
      *
      * @return The instrument

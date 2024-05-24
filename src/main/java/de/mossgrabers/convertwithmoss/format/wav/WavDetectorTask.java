@@ -50,7 +50,7 @@ public class WavDetectorTask extends AbstractSampleFileDetectorTask
     @Override
     protected void fillInstrumentData (final ISampleZone zone, final IFileBasedSampleData sampleData)
     {
-        if (sampleData instanceof WavFileSampleData sd)
+        if (sampleData instanceof final WavFileSampleData sd)
         {
             final InstrumentChunk instrumentChunk = sd.getWaveFile ().getInstrumentChunk ();
             zone.setKeyRoot (instrumentChunk.getUnshiftedNote ());
@@ -69,7 +69,7 @@ public class WavDetectorTask extends AbstractSampleFileDetectorTask
     protected boolean hasInstrumentData (final List<IFileBasedSampleData> sampleData)
     {
         for (final IFileBasedSampleData sampleFileData: sampleData)
-            if (sampleFileData instanceof WavFileSampleData sd && sd.getWaveFile ().getInstrumentChunk () == null)
+            if (sampleFileData instanceof final WavFileSampleData sd && sd.getWaveFile ().getInstrumentChunk () == null)
                 return false;
         return true;
     }

@@ -35,7 +35,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
 
     /**
      * Constructor.
-     * 
+     *
      * @param topRiffID The top RIFF ID of the file
      */
     protected AbstractRIFFFile (final RiffID topRiffID)
@@ -136,7 +136,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
 
     /**
      * Format all info values as a string.
-     * 
+     *
      * @param riffIDs The IDs of the info RIFFs to format
      * @return The formatted string
      */
@@ -144,7 +144,6 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
     {
         final StringBuilder sb = new StringBuilder ();
         if (this.infoChunk != null)
-        {
             for (final RiffID riffID: riffIDs)
             {
                 final String value = this.infoChunk.getInfoField (riffID);
@@ -154,7 +153,6 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
                     sb.append ('\n');
                 sb.append (riffID.getName ()).append (": ").append (value.trim ());
             }
-        }
         return sb.toString ();
     }
 
