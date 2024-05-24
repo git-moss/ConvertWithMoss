@@ -57,7 +57,7 @@ jobs:
     - name: Publish jpackage result
       uses: actions/upload-artifact@v4
       with:
-        name: ConvertWithMoss-Installers-${{ matrix.runs-on }}
+        name: ConvertWithMoss-Installers-${{ matrix.os }}
         path: target/release/${{ matrix.artifact_name }}
 
   merge:
