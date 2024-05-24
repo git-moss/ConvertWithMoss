@@ -26,7 +26,7 @@ jobs:
       - name: Publish result
         uses: actions/upload-artifact@v4
         with:
-          name: ConvertWithMoss-Installers
+          name: ConvertWithMoss-Installers-Manual
           path: output/ConvertWithMoss-Manual.pdf
 
   build:
