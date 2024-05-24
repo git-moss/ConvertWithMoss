@@ -4,20 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.exs;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.function.Consumer;
-
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -37,7 +23,22 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
+
 import javafx.scene.control.ComboBox;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.function.Consumer;
 
 
 /**
@@ -50,7 +51,6 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     private static final String     ENDING_EXS = ".exs";
 
     private final ComboBox<Integer> levelsOfDirectorySearch;
-
 
     /**
      * Constructor.
@@ -170,7 +170,8 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      * Create a multi-sample from the read EXS information.
      *
      * @param file The source file
-     * @param exs24Groups All .doubleValue () / 127.0 * 10.0 * @param exs24Zones All read EXS zones
+     * @param exs24Groups All read EXS groups
+     * @param exs24Zones All read EXS zones
      * @param exs24Samples All read EXS samples
      * @param parameters The global parameters
      * @return The multi-sample source
