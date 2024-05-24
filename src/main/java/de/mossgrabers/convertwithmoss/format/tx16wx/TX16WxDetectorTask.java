@@ -4,26 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.tx16wx;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.StringReader;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
@@ -49,7 +29,28 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import javafx.scene.control.ComboBox;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 
 /**
@@ -83,7 +84,6 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
     }
 
     protected final ComboBox<Integer> levelsOfDirectorySearch;
-
 
     /**
      * Constructor.
@@ -168,7 +168,8 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
     /**
      * Parse all sample (wave) tags.
-     *
+     * 
+     * @param topElement The top element
      * @param basePath The base path of the samples
      * @return All parsed samples
      */
@@ -555,6 +556,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * element.
      *
      * @param soundShapeElement The sound shape element
+     * @return The optional pitch modulator
      */
     private static Optional<IModulator> parsePitchModulator (final Element soundShapeElement)
     {
