@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -66,6 +67,7 @@ public class TagDetector
         "analog",
         "arp",
         "arpeggiated",
+        "atmo",
         "bright",
         "channel",
         "chord",
@@ -458,12 +460,36 @@ public class TagDetector
 
 
     /**
+     * Detect a category in the given strings.
+     *
+     * @param texts The texts
+     * @return The detected tag
+     */
+    public static String detectCategory (final List<String> texts)
+    {
+        return detect (texts, CATEGORY_LOOKUP, "Unknown");
+    }
+
+
+    /**
      * Detect keywords in the given strings.
      *
      * @param texts The texts
      * @return The detected keywords
      */
     public static String [] detectKeywords (final String [] texts)
+    {
+        return detectKeywords (Arrays.asList (texts));
+    }
+
+
+    /**
+     * Detect keywords in the given strings.
+     *
+     * @param texts The texts
+     * @return The detected keywords
+     */
+    public static String [] detectKeywords (final List<String> texts)
     {
         final Set<String> keywords = new HashSet<> ();
         for (final String text: texts)
@@ -510,6 +536,20 @@ public class TagDetector
      * @return The detected tag
      */
     public static String detect (final String [] texts, final Map<String, String> lookupMap, final String defaultTag)
+    {
+        return detect (Arrays.asList (texts), lookupMap, defaultTag);
+    }
+
+
+    /**
+     * Detect a tag in the given strings.
+     *
+     * @param texts The texts
+     * @param lookupMap The map with the tag lookups
+     * @param defaultTag The tag to return if none matched
+     * @return The detected tag
+     */
+    public static String detect (final List<String> texts, final Map<String, String> lookupMap, final String defaultTag)
     {
         for (final String text: texts)
         {

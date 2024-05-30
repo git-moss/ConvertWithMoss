@@ -86,7 +86,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     /**
      * Constructor.
      *
-     * @param name The name of the object.
+     * @param name The name of the creator.
      * @param notifier The notifier
      */
     protected AbstractCreator (final String name, final INotifier notifier)
@@ -485,9 +485,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
         int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
-            for (final ISampleZone zone: group.getSampleZones ())
+        {
+            final List<ISampleZone> sampleZones = group.getSampleZones ();
+            for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
             {
-                final File file = new File (sampleFolder, zone.getName () + fileEnding);
+                final ISampleZone zone = sampleZones.get (zoneIndex);
+
+                final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
                 try (final FileOutputStream fos = new FileOutputStream (file))
                 {
                     this.notifyProgress ();
@@ -508,8 +512,23 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 }
                 writtenFiles.add (file);
             }
+        }
 
         return writtenFiles;
+    }
+
+
+    /**
+     * Create the name of the sample file.
+     * 
+     * @param zone The sample zone
+     * @param zoneIndex The index of the zone in the group
+     * @param fileEnding The file ending to use for the file
+     * @return The sample file name
+     */
+    protected String createSampleFilename (final ISampleZone zone, final int zoneIndex, final String fileEnding)
+    {
+        return zone.getName () + fileEnding;
     }
 
 
@@ -530,9 +549,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
         int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
-            for (final ISampleZone zone: group.getSampleZones ())
+        {
+            final List<ISampleZone> sampleZones = group.getSampleZones ();
+            for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
             {
-                final File file = new File (sampleFolder, zone.getName () + extension);
+                final ISampleZone zone = sampleZones.get (zoneIndex);
+
+                final File file = new File (sampleFolder, createSampleFilename (zone, zoneIndex, extension));
                 try (final FileOutputStream fos = new FileOutputStream (file))
                 {
                     this.notifyProgress ();
@@ -547,6 +570,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 }
                 writtenFiles.add (file);
             }
+        }
 
         return writtenFiles;
     }

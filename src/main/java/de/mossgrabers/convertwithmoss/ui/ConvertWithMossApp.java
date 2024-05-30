@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.disting.DistingCreator;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Creator;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Detector;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
@@ -47,6 +48,7 @@ import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxCreator;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxDetector;
+import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.wav.WavDetector;
 import de.mossgrabers.tools.ui.AbstractFrame;
@@ -163,6 +165,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new SfzDetector (this),
             new Sf2Detector (this),
             new TALSamplerDetector (this),
+            new WaldorfQpatDetector (this),
             new WavDetector (this)// ,
                 // new YamahaYsfcDetector (this)
         };
@@ -175,6 +178,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new BitwigMultisampleCreator (this),
             new TX16WxCreator (this),
             new DecentSamplerCreator (this),
+            new DistingCreator (this),
             new NkiCreator (this),
             new KMPCreator (this),
             new KorgmultisampleCreator (this),

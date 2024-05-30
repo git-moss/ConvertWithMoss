@@ -30,7 +30,19 @@ public class WavCreator extends AbstractCreator
      */
     public WavCreator (final INotifier notifier)
     {
-        super ("WAV", notifier);
+        this ("WAV", notifier);
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param name The name of the creator.
+     * @param notifier The notifier
+     */
+    protected WavCreator (final String name, final INotifier notifier)
+    {
+        super (name, notifier);
 
         this.configureWavChunkUpdates (true, true, true, true);
     }

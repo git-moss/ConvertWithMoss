@@ -231,7 +231,7 @@ public class DecentSamplerCreator extends AbstractCreator
             final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
 
             final PlayLogic playLogic = zone.getPlayLogic ();
-            hasRoundRobin = playLogic != PlayLogic.ALWAYS;
+            hasRoundRobin = playLogic == PlayLogic.ROUND_ROBIN;
             if (hasRoundRobin)
                 groupsElement.setAttribute (DecentSamplerTag.SEQ_MODE, "round_robin");
         }

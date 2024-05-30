@@ -101,7 +101,7 @@ public class DefaultMetadata implements IMetadata
 
     /** {@inheritDoc} */
     @Override
-    public void setKeywords (final String [] keywords)
+    public void setKeywords (final String... keywords)
     {
         this.keywords = keywords;
     }

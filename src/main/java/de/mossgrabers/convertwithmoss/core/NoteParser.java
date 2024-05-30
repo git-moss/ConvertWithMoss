@@ -100,6 +100,20 @@ public class NoteParser
 
 
     /**
+     * Format a note using only sharps.
+     * 
+     * @param note The MIDI note
+     * @return The formatted text
+     */
+    public static String formatNoteSharps (final int note)
+    {
+        final int n = Math.abs (note % 12);
+        final String octave = Integer.toString (note / 12 - 2);
+        return NOTE_NAMES_SHARP[n] + octave;
+    }
+
+
+    /**
      * Private due to helper class.
      */
     private NoteParser ()
