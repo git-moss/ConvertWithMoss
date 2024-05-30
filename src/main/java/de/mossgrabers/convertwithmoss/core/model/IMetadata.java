@@ -93,7 +93,7 @@ public interface IMetadata
      *
      * @param keywords The keywords of the multi-sample
      */
-    void setKeywords (String [] keywords);
+    void setKeywords (String... keywords);
 
 
     /**
