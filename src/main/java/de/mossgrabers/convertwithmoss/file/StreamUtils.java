@@ -563,6 +563,29 @@ public class StreamUtils
 
 
     /**
+     * Reads bytes from an input stream until a zero appears or the maximum length is reached and
+     * interprets it as ASCII text.
+     *
+     * @param in The stream to read from
+     * @param maxLength The maximum number of ASCII characters to read
+     * @return The read text
+     * @throws IOException Could not read
+     */
+    public static String readNullTerminatedASCIIMax (final InputStream in, final int maxLength) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        int b;
+        while ((b = in.read ()) != 0)
+        {
+            out.write (b);
+            if (out.size () == maxLength)
+                break;
+        }
+        return new String (out.toByteArray (), StandardCharsets.US_ASCII);
+    }
+
+
+    /**
      * Reads a fixed number of bytes from an input stream and interprets it as ASCII text.
      *
      * @param in The stream to read from
@@ -872,5 +895,19 @@ public class StreamUtils
             throw new IOException (error);
         fileAccess.seek (fileAccess.getFilePointer () - numBytes);
         return buffer;
+    }
+
+
+    /**
+     * Write N null bytes into the output stream.
+     *
+     * @param out The output stream
+     * @param count The number of empty bytes to write
+     * @throws IOException Could not write
+     */
+    public static void writeEmpty (final OutputStream out, final int count) throws IOException
+    {
+        for (int i = 0; i < count; i++)
+            out.write (0);
     }
 }

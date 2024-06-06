@@ -60,14 +60,14 @@ public class AiffFile
         AIFF_TYPES.add (FORM_TYPE_AIFC);
     }
 
-    private boolean               isCompressed      = false;
-    private AiffCommonChunk       commonChunk       = null;
-    private AiffSoundDataChunk    soundDataChunk    = null;
-    private AiffMarkerChunk       markerChunk       = null;
-    private AiffInstrumentChunk   instrumentChunk   = null;
-    private final List<IffChunk>        unprocessedChunks = new ArrayList<> ();
-    private final List<AiffChunk> chunkStack        = new ArrayList<> ();
-    private final Map<String, String>   metadata          = new TreeMap<> ();
+    private boolean                   isCompressed      = false;
+    private AiffCommonChunk           commonChunk       = null;
+    private AiffSoundDataChunk        soundDataChunk    = null;
+    private AiffMarkerChunk           markerChunk       = null;
+    private AiffInstrumentChunk       instrumentChunk   = null;
+    private final List<IffChunk>      unprocessedChunks = new ArrayList<> ();
+    private final List<AiffChunk>     chunkStack        = new ArrayList<> ();
+    private final Map<String, String> metadata          = new TreeMap<> ();
 
 
     /**

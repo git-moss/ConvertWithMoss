@@ -26,7 +26,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -284,7 +284,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                 final double filterModDepth = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, 0);
                 if (filterModDepth > 0)
                 {
-                    final IModulator cutoffModulator = filter.getCutoffModulator ();
+                    final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                     cutoffModulator.setDepth (filterModDepth);
 
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
@@ -321,7 +321,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                 zone.setBendUp (bend);
                 zone.setBendDown (bend);
 
-                final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
+                final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
                 amplitudeEnvelope.setAttackTime (ampAttach);
                 amplitudeEnvelope.setHoldTime (ampHold);
                 amplitudeEnvelope.setDecayTime (ampDecay);
@@ -330,7 +330,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
 
                 if (globalPitchEnvelopeDepth > 0)
                 {
-                    final IModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
                     pitchModulator.setDepth (globalPitchEnvelopeDepth);
 
                     final IEnvelope pitchEnvelope = pitchModulator.getSource ();

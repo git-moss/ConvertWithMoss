@@ -38,9 +38,9 @@ public interface IFilter
 
 
     /**
-     * The cutoff in Hertz.
+     * Get the cutoff frequency.
      *
-     * @return The cutoff
+     * @return The cutoff in Hertz
      */
     double getCutoff ();
 
@@ -54,9 +54,17 @@ public interface IFilter
 
 
     /**
-     * Get the filter cutoff modulator.
+     * Get the velocity modulator for filter cutoff.
      *
      * @return The modulator
      */
-    IModulator getCutoffModulator ();
+    IModulator getCutoffVelocityModulator ();
+
+
+    /**
+     * Get the envelope modulator for filter cutoff.
+     *
+     * @return The modulator
+     */
+    IEnvelopeModulator getCutoffEnvelopeModulator ();
 }

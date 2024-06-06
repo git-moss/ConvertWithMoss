@@ -20,9 +20,9 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -237,8 +237,9 @@ public class TALSamplerCreator extends AbstractCreator
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
 
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, zone.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, limitToDefault (zone.getKeyLow (), 0));
+        final int keyLow = limitToDefault (zone.getKeyLow (), 0);
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, limitToDefault (zone.getKeyRoot (), keyLow));
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, keyLow);
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, limitToDefault (zone.getKeyHigh (), 127));
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, limitToDefault (zone.getVelocityLow (), 1));
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, limitToDefault (zone.getVelocityHigh (), 127));
@@ -291,7 +292,7 @@ public class TALSamplerCreator extends AbstractCreator
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (groups);
 
         // Add amplitude envelope
-        final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
+        final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttackTime (), 0, maxEnvelopeTime);
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHoldTime (), 0, maxEnvelopeTime);
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecayTime (), 0, maxEnvelopeTime);
@@ -313,7 +314,7 @@ public class TALSamplerCreator extends AbstractCreator
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, cutoff, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, filter.getResonance (), 4);
 
-            final IModulator cutoffModulator = filter.getCutoffModulator ();
+            final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
             final double filterModDepth = cutoffModulator.getDepth ();
             if (filterModDepth > 0)
             {
@@ -331,7 +332,7 @@ public class TALSamplerCreator extends AbstractCreator
         }
 
         // Add pitch envelope
-        final IModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
         final double pitchModDepth = pitchModulator.getDepth ();
         if (pitchModDepth > 0)
         {

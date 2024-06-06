@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.tools.Pair;
 
@@ -145,7 +146,7 @@ public class GeneratorHierarchy
                 return Generator.getDefaultValue (key);
         }
 
-        int v = toSigned (value);
+        int v = MathUtils.fromSignedComplement (value.intValue ());
 
         if (!Generator.isOnlyInstrument (generator))
         {
@@ -153,7 +154,7 @@ public class GeneratorHierarchy
             if (offset == null)
                 offset = this.presetZoneGlobal.get (key);
             if (offset != null)
-                v = v + toSigned (offset);
+                v = v + MathUtils.fromSignedComplement (offset.intValue ());
         }
 
         return Integer.valueOf (v);
@@ -211,24 +212,6 @@ public class GeneratorHierarchy
             return DEFAULT_RANGE;
         final int r = rangeValue.intValue ();
         return new Pair<> (Integer.valueOf (r & 0xFF), Integer.valueOf (r >> 8));
-    }
-
-
-    /**
-     * Converts a two complement short value into a signed integer.
-     *
-     * @param value The 2 byte two complement value
-     * @return The signed integer
-     */
-    private static int toSigned (final Integer value)
-    {
-        final int v = value.intValue ();
-        if ((v & 0x8000) > 0)
-        {
-            final int i = ~(v - 1) & 0x7FFF;
-            return -i;
-        }
-        return v & 0x7FFF;
     }
 
 

@@ -52,6 +52,38 @@ public class MathUtils
 
 
     /**
+     * Converts a signed integer into a two complement short value.
+     *
+     * @param value The signed integer
+     * @return The 2 byte two complement value
+     */
+    public static int toSignedComplement (final int value)
+    {
+        if (value >= 0)
+            return value & 0x7FFF;
+        final int v = (~Math.abs (value) & 0x7FFF) + 1;
+        return v | 0x8000;
+    }
+
+
+    /**
+     * Converts a two complement short value into a signed integer.
+     *
+     * @param value The 2 byte two complement value
+     * @return The signed integer
+     */
+    public static int fromSignedComplement (final int value)
+    {
+        if ((value & 0x8000) > 0)
+        {
+            final int i = ~(value - 1) & 0x7FFF;
+            return -i;
+        }
+        return value & 0x7FFF;
+    }
+
+
+    /**
      * Convert continuous double value to dB.
      *
      * @param value The value to convert in the range of [0..1]

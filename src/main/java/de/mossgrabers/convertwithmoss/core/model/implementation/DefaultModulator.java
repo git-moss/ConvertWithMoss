@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
 import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 
 
@@ -16,8 +15,18 @@ import de.mossgrabers.convertwithmoss.core.model.IModulator;
  */
 public class DefaultModulator implements IModulator
 {
-    private double    depth  = -1;
-    private IEnvelope source = new DefaultEnvelope ();
+    protected double depth = 0;
+
+
+    /**
+     * Constructor.
+     *
+     * @param depth The modulation depth in the range of [-1,1]
+     */
+    public DefaultModulator (final double depth)
+    {
+        this.depth = MathUtils.clamp (depth, -1, 1);
+    }
 
 
     /** {@inheritDoc} */
@@ -38,22 +47,6 @@ public class DefaultModulator implements IModulator
 
     /** {@inheritDoc} */
     @Override
-    public IEnvelope getSource ()
-    {
-        return this.source;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setSource (final IEnvelope source)
-    {
-        this.source = source;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     public int hashCode ()
     {
         final int prime = 31;
@@ -61,7 +54,6 @@ public class DefaultModulator implements IModulator
         long temp;
         temp = Double.doubleToLongBits (this.depth);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        result = prime * result + (this.source == null ? 0 : this.source.hashCode ());
         return result;
     }
 
@@ -76,13 +68,6 @@ public class DefaultModulator implements IModulator
             return false;
         final DefaultModulator other = (DefaultModulator) obj;
         if (Double.doubleToLongBits (this.depth) != Double.doubleToLongBits (other.depth))
-            return false;
-        if (this.source == null)
-        {
-            if (other.source != null)
-                return false;
-        }
-        else if (!this.source.equals (other.source))
             return false;
         return true;
     }

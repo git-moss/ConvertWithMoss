@@ -4,28 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.exs;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
-import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-import de.mossgrabers.tools.FileUtils;
-
-import javafx.scene.control.ComboBox;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,6 +18,27 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.FileUtils;
+import javafx.scene.control.ComboBox;
+
 
 /**
  * Detects recursively Logic EXS24 files in folders. Files must end with <i>.exs</i>.
@@ -51,6 +50,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     private static final String     ENDING_EXS = ".exs";
 
     private final ComboBox<Integer> levelsOfDirectorySearch;
+
 
     /**
      * Constructor.
@@ -311,6 +311,8 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final double tuneOffset = coarseTune + fineTune / 100.0;
 
         final IEnvelope globalAmplitudeEnvelope = createEnvelope (parameters, 1);
+        final Integer env1Velocity = parameters.get (EXS24Parameters.ENV1_VEL_SENS);
+        final double velocityModulation = env1Velocity == null ? 1 : 1 - MathUtils.clamp (env1Velocity.intValue () / -60.0, 0, 1);
 
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
@@ -319,9 +321,11 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                 zone.setBendDown (bendDown);
                 zone.setTune (zone.getTune () + tuneOffset);
 
-                final IModulator amplitudeModulator = zone.getAmplitudeModulator ();
+                final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
                 amplitudeModulator.setDepth (1.0);
                 amplitudeModulator.setSource (globalAmplitudeEnvelope);
+
+                zone.getAmplitudeVelocityModulator ().setDepth (velocityModulation);
             }
     }
 
@@ -401,7 +405,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
         final double cutoff = MathUtils.denormalize (frequency / 1000.0, 0, IFilter.MAX_FREQUENCY);
         final IFilter filter = new DefaultFilter (filterType, poles, cutoff, MathUtils.clamp (resonance / 1000.0, 0, 1));
-        final IModulator cutoffModulator = filter.getCutoffModulator ();
+        final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         cutoffModulator.setDepth (1.0);
         cutoffModulator.setSource (globalFilterEnvelope);
         multisampleSource.setGlobalFilter (filter);

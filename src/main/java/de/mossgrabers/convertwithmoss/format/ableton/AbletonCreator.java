@@ -18,12 +18,13 @@ import java.util.zip.GZIPOutputStream;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -120,6 +121,8 @@ public class AbletonCreator extends AbstractCreator
             return;
         }
 
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+
         final Map<String, File> writtenSamples = new HashMap<> ();
         for (final File sampleFile: this.writeSamples (sampleFolder, multisampleSource))
             writtenSamples.put (sampleFile.getName (), sampleFile);
@@ -127,8 +130,6 @@ public class AbletonCreator extends AbstractCreator
         final Optional<String> metadata = this.createMetadata (multiFile.getName (), multisampleSource, writtenSamples);
         if (metadata.isEmpty ())
             return;
-
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final GZIPOutputStream gos = new GZIPOutputStream (new FileOutputStream (multiFile)))
         {
@@ -168,7 +169,7 @@ public class AbletonCreator extends AbstractCreator
                     pitchBend = zone.getBendUp ();
 
                     // Amplitude envelope
-                    final IModulator ampModulator = zone.getAmplitudeModulator ();
+                    final IEnvelopeModulator ampModulator = zone.getAmplitudeEnvelopeModulator ();
                     final IEnvelope ampEnvelope = ampModulator.getSource ();
                     text = text.replace ("%AMP_EG_ATTACK_TIME%", formatEnvTime (ampEnvelope.getAttackTime ()));
                     text = text.replace ("%AMP_EG_DECAY_TIME%", formatEnvTime (ampEnvelope.getDecayTime ()));
@@ -184,7 +185,7 @@ public class AbletonCreator extends AbstractCreator
                     text = text.replace ("%AMP_EG_RELEASE_SLOPE%", formatDouble (-ampEnvelope.getReleaseSlope ()));
 
                     // Pitch Envelope
-                    final IModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
                     final double pitchModDepth = pitchModulator.getDepth ();
                     text = text.replace ("%PITCH_EG_ENABLED%", pitchModDepth != 0 ? "true" : "false");
 
@@ -203,6 +204,13 @@ public class AbletonCreator extends AbstractCreator
                     text = text.replace ("%PITCH_EG_ATTACK_SLOPE%", formatDouble (-pitchEnvelope.getAttackSlope ()));
                     text = text.replace ("%PITCH_EG_DECAY_SLOPE%", formatDouble (-pitchEnvelope.getDecaySlope ()));
                     text = text.replace ("%PITCH_EG_RELEASE_SLOPE%", formatDouble (-pitchEnvelope.getReleaseSlope ()));
+
+                    // Velocity modulation
+                    final Optional<Double> globalAmplitudeVelocity = multisampleSource.getGlobalAmplitudeVelocity ();
+                    double depth = 1;
+                    if (globalAmplitudeVelocity.isPresent ())
+                        depth = globalAmplitudeVelocity.get ().doubleValue ();
+                    text = text.replace ("%VOLUME_VELOCITY_MOD%", formatDouble (depth));
                 }
             }
 
@@ -235,7 +243,7 @@ public class AbletonCreator extends AbstractCreator
         text = text.replace ("%FILTER_RES%", formatDouble (filter.getResonance () * 1.25));
 
         // Filter envelope
-        final IModulator cutoffModulator = filter.getCutoffModulator ();
+        final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final double filterModDepth = cutoffModulator.getDepth ();
         text = text.replace ("%FILTER_EG_ENABLED%", filterModDepth != 0 ? "true" : "false");
         text = text.replace ("%FILTER_EG_AMOUNT%", Integer.toString ((int) (filterModDepth * 72)));
@@ -254,6 +262,10 @@ public class AbletonCreator extends AbstractCreator
         text = text.replace ("%FILTER_EG_ATTACK_SLOPE%", formatDouble (-filterEnvelope.getAttackSlope ()));
         text = text.replace ("%FILTER_EG_DECAY_SLOPE%", formatDouble (-filterEnvelope.getDecaySlope ()));
         text = text.replace ("%FILTER_EG_RELEASE_SLOPE%", formatDouble (-filterEnvelope.getReleaseSlope ()));
+
+        // Filter cutoff velocity modulation
+        final double depth = filter.getCutoffVelocityModulator ().getDepth ();
+        text = text.replace ("%FILTER_VELOCITY_MOD%", formatDouble (depth));
 
         return text;
     }
@@ -323,7 +335,7 @@ public class AbletonCreator extends AbstractCreator
             cents += 100;
         }
 
-        zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (zone.getKeyRoot () - semitones));
+        zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (MathUtils.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - semitones, 0, 127)));
         zoneContent = zoneContent.replace ("%DETUNE%", Integer.toString (cents));
         zoneContent = zoneContent.replace ("%TUNE_SCALE%", Integer.toString ((int) (zone.getKeyTracking () * 100)));
         zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getPanorama ()));

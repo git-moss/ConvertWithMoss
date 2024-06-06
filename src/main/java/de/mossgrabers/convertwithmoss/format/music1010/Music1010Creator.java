@@ -297,7 +297,7 @@ public class Music1010Creator extends AbstractCreator
         final String presetPath = "\\Presets\\" + multisampleSource.getName ();
         firstSlot.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath);
 
-        createModulationWheel (document, firstSlot);
+        createModulators (document, firstSlot, multisampleSource);
 
         // Add all groups
         int sampleIndex = 0;
@@ -314,7 +314,7 @@ public class Music1010Creator extends AbstractCreator
         if (!groups.isEmpty ())
         {
             final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
-            final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
+            final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
 
             final double sustainVal = amplitudeEnvelope.getSustainLevel ();
             final int sustain = sustainVal < 0 ? 1000 : (int) Math.round (sustainVal * 1000.0);
@@ -331,19 +331,36 @@ public class Music1010Creator extends AbstractCreator
     }
 
 
-    private static void createModulationWheel (final Document document, final Element firstSlot)
+    private static void createModulators (final Document document, final Element firstSlot, final IMultisampleSource multisampleSource)
     {
-        final Element modSource1Element = XMLUtils.addElement (document, firstSlot, Music1010Tag.MOD_SOURCE);
-        modSource1Element.setAttribute (Music1010Tag.ATTR_MOD_DESTINATION, "pitch");
-        modSource1Element.setAttribute (Music1010Tag.ATTR_MOD_SOURCE, "lfo1");
-        modSource1Element.setAttribute (Music1010Tag.ATTR_MOD_SLOT, "0");
-        modSource1Element.setAttribute (Music1010Tag.ATTR_MOD_AMOUNT, "128");
+        createModulator (document, firstSlot, "lfo1", "pitch", 128);
+        createModulator (document, firstSlot, "modwheel", "lfoamount", 328);
 
-        final Element modSource2Element = XMLUtils.addElement (document, firstSlot, Music1010Tag.MOD_SOURCE);
-        modSource2Element.setAttribute (Music1010Tag.ATTR_MOD_DESTINATION, "lfoamount");
-        modSource2Element.setAttribute (Music1010Tag.ATTR_MOD_SOURCE, "modwheel");
-        modSource2Element.setAttribute (Music1010Tag.ATTR_MOD_SLOT, "0");
-        modSource2Element.setAttribute (Music1010Tag.ATTR_MOD_AMOUNT, "328");
+        final Optional<Double> globalAmplitudeVelocity = multisampleSource.getGlobalAmplitudeVelocity ();
+        if (globalAmplitudeVelocity.isPresent ())
+        {
+            final double depth = globalAmplitudeVelocity.get ().doubleValue ();
+            if (depth != 0)
+                createModulator (document, firstSlot, "velocity", "gaindb", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
+        }
+
+        final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
+        if (globalFilter.isPresent ())
+        {
+            final double depth = globalFilter.get ().getCutoffVelocityModulator ().getDepth ();
+            if (depth != 0)
+                createModulator (document, firstSlot, "velocity", "dualfilcutoff", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
+        }
+    }
+
+
+    private static void createModulator (final Document document, final Element firstSlot, final String source, final String destination, final int modAmount)
+    {
+        final Element modSourceElement = XMLUtils.addElement (document, firstSlot, Music1010Tag.MOD_SOURCE);
+        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_DESTINATION, destination);
+        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_SOURCE, source);
+        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_SLOT, "0");
+        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_AMOUNT, Integer.toString (modAmount));
     }
 
 
@@ -421,8 +438,9 @@ public class Music1010Creator extends AbstractCreator
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
 
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_ROOT_NOTE, zone.getKeyRoot ());
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_NOTE, limitToDefault (zone.getKeyLow (), 0));
+        final int keyLow = limitToDefault (zone.getKeyLow (), 0);
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_ROOT_NOTE, limitToDefault (zone.getKeyRoot (), keyLow));
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_NOTE, keyLow);
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_HI_NOTE, limitToDefault (zone.getKeyHigh (), 127));
         // No fades info.getNoteCrossfadeLow ()
         // No fades info.getNoteCrossfadeHigh ()

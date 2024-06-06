@@ -28,7 +28,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -273,14 +273,14 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                         continue;
                     samples.add (sampleMetadata);
 
-                    final IModulator amplitudeModulator = sampleMetadata.getAmplitudeModulator ();
+                    final IEnvelopeModulator amplitudeModulator = sampleMetadata.getAmplitudeEnvelopeModulator ();
                     amplitudeModulator.setDepth (1.0);
                     amplitudeModulator.getSource ().set (volumeEnvelope);
 
                     final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
                     if (pitchEnvAmount != 0.5)
                     {
-                        final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+                        final IEnvelopeModulator pitchModulator = sampleMetadata.getPitchModulator ();
                         pitchModulator.setDepth ((pitchEnvAmount - 0.5) * 2.0);
                         pitchModulator.getSource ().set (pitchEnvelope);
                     }
@@ -319,7 +319,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         final double filterAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, 0);
         if (filterAmount > 0)
         {
-            final IModulator cutoffModulator = filter.getCutoffModulator ();
+            final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
             cutoffModulator.setDepth (filterAmount);
             cutoffModulator.getSource ().set (parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK_CURVE, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY_CURVE, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE_CURVE));
         }

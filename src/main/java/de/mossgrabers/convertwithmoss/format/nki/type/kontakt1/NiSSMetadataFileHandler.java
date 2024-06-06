@@ -98,6 +98,19 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
+    protected String readAmplitudeVelocityIntensity (final Element modulator)
+    {
+        if (this.hasNameValuePairs (modulator, this.tags.targetParam (), this.tags.volumeValue ()))
+        {
+            final Map<String, String> targetElementParams = this.readValueMap (modulator);
+            return targetElementParams.get (this.tags.intensityParam ());
+        }
+        return null;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     protected TriggerType getTriggerTypeFromGroupElement (final Map<String, String> groupParameters)
     {
         return TriggerType.ATTACK;

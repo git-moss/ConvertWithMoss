@@ -19,9 +19,9 @@ import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -141,9 +141,9 @@ public class EXS24Creator extends AbstractCreator
                 exs24Zone.groupIndex = exsGroups.size () - 1;
                 exs24Zone.name = zone.getName ();
 
-                exs24Zone.key = zone.getKeyRoot ();
                 exs24Zone.keyLow = limitToDefault (zone.getKeyLow (), 0);
                 exs24Zone.keyHigh = limitToDefault (zone.getKeyHigh (), 127);
+                exs24Zone.key = limitToDefault (zone.getKeyRoot (), exs24Zone.keyLow);
                 exs24Zone.velocityRangeOn = true;
                 exs24Zone.velocityLow = limitToDefault (zone.getVelocityLow (), 1);
                 exs24Zone.velocityHigh = limitToDefault (zone.getVelocityHigh (), 127);
@@ -205,7 +205,11 @@ public class EXS24Creator extends AbstractCreator
                 exsParameters.put (EXS24Parameters.PITCH_BEND_UP, zone.getBendUp () / 100);
                 exsParameters.put (EXS24Parameters.PITCH_BEND_DOWN, Math.abs (zone.getBendDown () / 100));
 
-                createEnvelope (exsParameters, 1, zone.getAmplitudeModulator ());
+                final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
+                final int velocityModulation = (int) Math.round (MathUtils.clamp ((1 - velocityDepth) * -60.0, -60, 0));
+                exsParameters.put (EXS24Parameters.ENV1_VEL_SENS, velocityModulation);
+
+                createEnvelope (exsParameters, 1, zone.getAmplitudeEnvelopeModulator ());
                 applyFilterParameters (exsParameters, multisampleSource.getGlobalFilter ());
             }
         }
@@ -214,18 +218,19 @@ public class EXS24Creator extends AbstractCreator
     }
 
 
-    private static void createEnvelope (final EXS24Parameters parameters, final int envelopeIndex, final IModulator modulator)
+    private static void createEnvelope (final EXS24Parameters parameters, final int envelopeIndex, final IEnvelopeModulator modulator)
     {
         final IEnvelope envelope = modulator.getSource ();
         final double depth = modulator.getDepth ();
+        if (depth == 0)
+            return;
 
-        // Maximum time for each step are 10 seconds
-        final int delay = (int) (envelope.getDelayTime () / 10.0 * 127.0);
-        final int attack = (int) (envelope.getAttackTime () / 10.0 * 127.0);
-        final int hold = (int) (envelope.getHoldTime () / 10.0 * 127.0);
-        final int decay = (int) (envelope.getDecayTime () / 10.0 * 127.0);
-        final int sustain = (int) (envelope.getSustainLevel () * 127.0 * depth);
-        final int release = (int) (envelope.getReleaseTime () / 10.0 * 127.0);
+        final int delay = formatEnvTime (envelope.getDelayTime ());
+        final int attack = formatEnvTime (envelope.getAttackTime ());
+        final int hold = formatEnvTime (envelope.getHoldTime ());
+        final int decay = formatEnvTime (envelope.getDecayTime ());
+        final int sustain = formatEnvVolume (envelope.getSustainLevel (), depth);
+        final int release = formatEnvTime (envelope.getReleaseTime ());
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DELAY_START : EXS24Parameters.ENV2_DELAY_START, delay);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_HI_VEL : EXS24Parameters.ENV2_ATK_HI_VEL, attack);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_HOLD : EXS24Parameters.ENV2_HOLD, hold);
@@ -281,9 +286,9 @@ public class EXS24Creator extends AbstractCreator
         }
         parameters.put (EXS24Parameters.FILTER1_TYPE, filterTypeIndex);
 
-        createEnvelope (parameters, 2, filter.getCutoffModulator ());
+        createEnvelope (parameters, 2, filter.getCutoffEnvelopeModulator ());
 
-        parameters.put (EXS24Parameters.FILTER1_CUTOFF, (int) MathUtils.normalize (filter.getCutoff () * 1000.0, 0, IFilter.MAX_FREQUENCY));
+        parameters.put (EXS24Parameters.FILTER1_CUTOFF, (int) Math.round (MathUtils.normalize (filter.getCutoff (), 0, IFilter.MAX_FREQUENCY) * 1000.0));
         parameters.put (EXS24Parameters.FILTER1_RESO, (int) (filter.getResonance () * 1000));
     }
 
@@ -326,5 +331,18 @@ public class EXS24Creator extends AbstractCreator
             final EXS24Block parameterBlock = exsParameters.write (isBigEndian);
             parameterBlock.write (out);
         }
+    }
+
+
+    private static int formatEnvTime (final double time)
+    {
+        // Maximum time for each step are 10 seconds
+        return time < 0 ? 0 : (int) Math.round (time / 10.0 * 127.0);
+    }
+
+
+    private static int formatEnvVolume (final double volume, final double depth)
+    {
+        return (int) Math.round ((volume < 0 ? 127 : volume * 127.0) * depth);
     }
 }

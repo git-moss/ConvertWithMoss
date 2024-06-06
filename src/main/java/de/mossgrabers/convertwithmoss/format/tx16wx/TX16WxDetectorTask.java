@@ -4,39 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.tx16wx;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
-import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
-import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultModulator;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.XMLUtils;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import javafx.scene.control.ComboBox;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -51,6 +18,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.XMLUtils;
+import javafx.scene.control.ComboBox;
 
 
 /**
@@ -84,6 +83,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
     }
 
     protected final ComboBox<Integer> levelsOfDirectorySearch;
+
 
     /**
      * Constructor.
@@ -168,7 +168,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
     /**
      * Parse all sample (wave) tags.
-     * 
+     *
      * @param topElement The top element
      * @param basePath The base path of the samples
      * @return All parsed samples
@@ -284,7 +284,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
             group.setTrigger (TriggerType.RELEASE);
 
         Optional<IFilter> filter = Optional.empty ();
-        Optional<IModulator> pitchModulator = Optional.empty ();
+        Optional<IEnvelopeModulator> pitchModulator = Optional.empty ();
         int pitchbend = -1;
 
         IEnvelope ampEnvelope = null;
@@ -332,8 +332,8 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
                 if (pitchModulator.isPresent ())
                 {
-                    final IModulator modulator = pitchModulator.get ();
-                    final IModulator zonePitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator modulator = pitchModulator.get ();
+                    final IEnvelopeModulator zonePitchModulator = zone.getPitchModulator ();
                     zonePitchModulator.setDepth (modulator.getDepth ());
                     zonePitchModulator.setSource (modulator.getSource ());
                 }
@@ -344,7 +344,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                     zone.setBendDown (pitchbend);
                 }
 
-                zone.getAmplitudeModulator ().setSource (ampEnvelope);
+                zone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
             }
         }
 
@@ -524,7 +524,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 final String modAmount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
                 if (modAmount.endsWith ("Ct"))
                 {
-                    final IModulator cutoffModulator = filter.getCutoffModulator ();
+                    final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                     final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
                     cutoffModulator.setDepth (MathUtils.clamp (amount, -1, 1));
 
@@ -558,7 +558,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * @param soundShapeElement The sound shape element
      * @return The optional pitch modulator
      */
-    private static Optional<IModulator> parsePitchModulator (final Element soundShapeElement)
+    private static Optional<IEnvelopeModulator> parsePitchModulator (final Element soundShapeElement)
     {
         final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
         if (modulationElement == null)
@@ -574,7 +574,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 final String modAmount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
                 if (modAmount.endsWith ("Ct"))
                 {
-                    final IModulator pitchModulator = new DefaultModulator ();
+                    final IEnvelopeModulator pitchModulator = new DefaultEnvelopeModulator (0);
                     final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
                     pitchModulator.setDepth (MathUtils.clamp (amount, -1, 1));
 

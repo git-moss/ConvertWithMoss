@@ -102,6 +102,10 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
         for (final File file: this.listFiles (folder, this.fileEndings))
         {
+            // Ignore MacOS crap
+            if (file.getName ().startsWith ("._"))
+                continue;
+
             this.notifier.log ("IDS_NOTIFY_ANALYZING", file.getAbsolutePath ());
 
             if (this.waitForDelivery ())
