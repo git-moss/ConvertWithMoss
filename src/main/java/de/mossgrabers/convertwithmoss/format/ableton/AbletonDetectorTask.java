@@ -31,10 +31,10 @@ import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -433,7 +433,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
                 final Element decaySlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_DECAY_SLOPE);
                 final Element releaseSlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_SLOPE);
 
-                final IModulator cutoffModulator = filter.getCutoffModulator ();
+                final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                 cutoffModulator.setDepth (Math.abs (getDoubleValueAttribute (amountElement, AbletonTag.TAG_MANUAL, 0) / 72.0));
 
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
@@ -450,6 +450,14 @@ public class AbletonDetectorTask extends AbstractDetectorTask
                 filterEnvelope.setReleaseSlope (-getDoubleValueAttribute (releaseSlopeElement, AbletonTag.TAG_MANUAL, 0));
             }
 
+            // Read the velocity modulation
+            final Element modByVelocityElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_MOD_BY_VELOCITY);
+            if (modByVelocityElement != null)
+            {
+                final double modDepth = getDoubleValueAttribute (modByVelocityElement, AbletonTag.TAG_MANUAL, 0);
+                filter.getCutoffVelocityModulator ().setDepth (modDepth);
+            }
+
             return filter;
         }
         catch (final IOException ex)
@@ -464,8 +472,13 @@ public class AbletonDetectorTask extends AbstractDetectorTask
     {
         try
         {
-            // Read the amplitude envelope
             final Element volAndPanElement = getRequiredElement (deviceElement, AbletonTag.TAG_VOLUME_AND_PAN);
+
+            // Read the velocity depth
+            final Element velocityDepthElement = getRequiredElement (volAndPanElement, AbletonTag.TAG_VOLUME_VEL_SCALE);
+            final double velocityDepth = getDoubleValueAttribute (velocityDepthElement, AbletonTag.TAG_MANUAL, 0);
+
+            // Read the amplitude envelope
             final Element envelopeElement = getRequiredElement (volAndPanElement, AbletonTag.TAG_ENVELOPE);
 
             final Element attackTimeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_ATTACK_TIME);
@@ -547,10 +560,12 @@ public class AbletonDetectorTask extends AbstractDetectorTask
             for (final IGroup group: multisampleSource.getGroups ())
                 for (final ISampleZone zone: group.getSampleZones ())
                 {
-                    zone.getAmplitudeModulator ().setSource (ampEnvelope);
+                    zone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
+                    zone.getAmplitudeVelocityModulator ().setDepth (velocityDepth);
+
                     if (auxEnvelope != null)
                     {
-                        final IModulator pitchModulator = zone.getPitchModulator ();
+                        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
                         pitchModulator.setDepth (auxDepth);
                         pitchModulator.setSource (auxEnvelope);
                     }

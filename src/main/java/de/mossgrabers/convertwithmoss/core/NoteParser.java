@@ -101,7 +101,7 @@ public class NoteParser
 
     /**
      * Format a note using only sharps.
-     * 
+     *
      * @param note The MIDI note
      * @return The formatted text
      */

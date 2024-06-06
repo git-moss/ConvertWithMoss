@@ -27,7 +27,8 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
-import de.mossgrabers.convertwithmoss.format.disting.DistingCreator;
+import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
+import de.mossgrabers.convertwithmoss.format.disting.DistingExDetector;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Creator;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Detector;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
@@ -157,6 +158,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new BitwigMultisampleDetector (this),
             new TX16WxDetector (this),
             new DecentSamplerDetector (this),
+            new DistingExDetector (this),
             new NkiDetector (this),
             new KMPDetector (this),
             new KorgmultisampleDetector (this),
@@ -178,7 +180,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new BitwigMultisampleCreator (this),
             new TX16WxCreator (this),
             new DecentSamplerCreator (this),
-            new DistingCreator (this),
+            new DistingExCreator (this),
             new NkiCreator (this),
             new KMPCreator (this),
             new KorgmultisampleCreator (this),
@@ -611,7 +613,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         for (final IGroup layer: multisampleSource.getGroups ())
             for (final ISampleZone zone: layer.getSampleZones ())
             {
-                final IEnvelope volumeEnvelope = zone.getAmplitudeModulator ().getSource ();
+                final IEnvelope volumeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
                 if (!volumeEnvelope.isSet ())
                 {
                     volumeEnvelope.set (defaultEnvelope);

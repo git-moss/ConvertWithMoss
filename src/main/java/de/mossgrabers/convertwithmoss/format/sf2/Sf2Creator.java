@@ -18,10 +18,10 @@ import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -292,7 +292,7 @@ public class Sf2Creator extends AbstractCreator
         instrumentZone.addGenerator (Generator.INITIAL_ATTENUATION, (int) (-sampleZone.getGain () * 10.0));
 
         // Volume envelope
-        final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeModulator ().getSource ();
+        final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
 
         setEnvelopeTime (instrumentZone, Generator.VOL_ENV_DELAY, amplitudeEnvelope.getDelayTime ());
         setEnvelopeTime (instrumentZone, Generator.VOL_ENV_ATTACK, amplitudeEnvelope.getAttackTime ());
@@ -303,7 +303,7 @@ public class Sf2Creator extends AbstractCreator
 
         // Set the pitch envelope. It might be overwritten in the filter section since Sf2 only
         // supports one modulation envelope
-        final IModulator pitchModulator = sampleZone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = sampleZone.getPitchModulator ();
         final double pitchModDepth = pitchModulator.getDepth ();
         if (pitchModDepth > 0)
         {
@@ -334,7 +334,7 @@ public class Sf2Creator extends AbstractCreator
                 instrumentZone.addGenerator (Generator.INITIAL_FILTER_CUTOFF, (int) MathUtils.clamp (initialCutoff, 1500, 13500));
                 instrumentZone.addSignedGenerator (Generator.INITIAL_FILTER_RESONANCE, (int) (MathUtils.clamp (resonance, 0, 960) * 100.0));
 
-                final IModulator cutoffModulator = filter.getCutoffModulator ();
+                final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                 final double cutoffModDepth = cutoffModulator.getDepth ();
                 if (cutoffModDepth > 0)
                 {
@@ -417,7 +417,7 @@ public class Sf2Creator extends AbstractCreator
 
         sampleDescriptor.setSampleType (sampleType);
         sampleDescriptor.setSampleRate (formatChunk.getSampleRate ());
-        sampleDescriptor.setOriginalPitch (sampleZone.getKeyRoot ());
+        sampleDescriptor.setOriginalPitch (MathUtils.clamp (sampleZone.getKeyRoot (), 0, 127));
         sampleDescriptor.setPitchCorrection ((int) (sampleZone.getTune () * 100));
 
         String name = sampleZone.getName ();

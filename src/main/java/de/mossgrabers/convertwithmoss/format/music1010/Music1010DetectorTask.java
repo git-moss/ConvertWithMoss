@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -240,7 +241,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
             /////////////////////////////////////////////////////
             // Volume envelope
 
-            final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeModulator ().getSource ();
+            final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
             amplitudeEnvelope.setAttackTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0));
             amplitudeEnvelope.setDecayTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0));
             amplitudeEnvelope.setSustainLevel (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0);
@@ -270,26 +271,65 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         multisampleSource.setGroups (Collections.singletonList (group));
 
         final Element paramsElement = XMLUtils.getChildElementByName (sampleElement, Music1010Tag.PARAMS);
-        if (paramsElement == null)
-            return Optional.empty ();
-
-        final double ampEnvAttack = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0);
-        final double ampEnvDecay = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0);
-        final double ampEnvSustain = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0;
-        final double ampEnvRelease = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_RELEASE, 0), 38.0);
-
-        for (final Element assetElement: assetElements)
+        if (paramsElement != null)
         {
-            final String filename = assetElement.getAttribute (Music1010Tag.ATTR_FILENAME);
-            if (filename != null && !filename.isBlank () && filename.startsWith (pathPrefix))
-                this.parseSampleData (group, assetElement, basePath, filename, ampEnvAttack, ampEnvDecay, ampEnvSustain, ampEnvRelease);
+            final double ampEnvAttack = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0);
+            final double ampEnvDecay = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0);
+            final double ampEnvSustain = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0;
+            final double ampEnvRelease = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_RELEASE, 0), 38.0);
+
+            for (final Element assetElement: assetElements)
+            {
+                final String filename = assetElement.getAttribute (Music1010Tag.ATTR_FILENAME);
+                if (filename != null && !filename.isBlank ())
+                    this.parseSampleData (group, assetElement, basePath, filename, ampEnvAttack, ampEnvDecay, ampEnvSustain, ampEnvRelease);
+            }
+
+            parseEffects (paramsElement, multisampleSource);
         }
 
+        readVelocityModulators (sampleElement, group);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
-
-        parseEffects (paramsElement, multisampleSource);
-
         return Optional.of (multisampleSource);
+    }
+
+
+    private static void readVelocityModulators (final Element sampleElement, final IGroup group)
+    {
+        Double gainMod = null;
+        Double cutoffMod = null;
+        for (final Element modElement: XMLUtils.getChildElementsByName (sampleElement, Music1010Tag.MOD_SOURCE))
+        {
+            final String source = modElement.getAttribute (Music1010Tag.ATTR_MOD_SOURCE);
+            if ("velocity".equals (source))
+            {
+                final int amount = XMLUtils.getIntegerAttribute (modElement, Music1010Tag.ATTR_MOD_AMOUNT, 0);
+                if (amount != 0)
+                {
+                    final double normalizedAmount = MathUtils.normalize (amount, -1000, 1000);
+                    final String destination = modElement.getAttribute (Music1010Tag.ATTR_MOD_DESTINATION);
+                    if ("gaindb".equals (destination))
+                        gainMod = Double.valueOf (normalizedAmount);
+                    else if ("dualfilcutoff".equals (destination))
+                        cutoffMod = Double.valueOf (normalizedAmount);
+                }
+            }
+        }
+
+        if (gainMod == null && cutoffMod == null)
+            return;
+
+        for (final ISampleZone zone: group.getSampleZones ())
+        {
+            if (gainMod != null)
+                zone.getAmplitudeVelocityModulator ().setDepth (gainMod.doubleValue ());
+            if (cutoffMod != null)
+            {
+                final Optional<IFilter> optFilter = zone.getFilter ();
+                if (optFilter.isPresent ())
+                    optFilter.get ().getCutoffVelocityModulator ().setDepth (cutoffMod.doubleValue ());
+            }
+        }
     }
 
 
@@ -370,7 +410,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         /////////////////////////////////////////////////////
         // Volume envelope
 
-        final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeModulator ().getSource ();
+        final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
         amplitudeEnvelope.setAttackTime (ampEnvAttack);
         amplitudeEnvelope.setDecayTime (ampEnvDecay);
         amplitudeEnvelope.setSustainLevel (ampEnvSustain);

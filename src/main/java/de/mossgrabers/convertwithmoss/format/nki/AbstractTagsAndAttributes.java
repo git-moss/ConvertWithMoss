@@ -99,8 +99,14 @@ public abstract class AbstractTagsAndAttributes
     /** The pitch bend value. */
     private static final String PITCH_BEND_VALUE           = "pitchBend";
 
+    /** The velocity value. */
+    private static final String VELOCITY_VALUE             = "velocity";
+
     /** The pitch value. */
     private static final String PITCH_VALUE                = "pitch";
+
+    /** The volume value. */
+    private static final String VOLUME_VALUE               = "volume";
 
     /** The intensity value. */
     private static final String INTENSITY_VALUE            = "intensity";
@@ -565,6 +571,17 @@ public abstract class AbstractTagsAndAttributes
 
 
     /**
+     * Get the velocity value tag.
+     *
+     * @return The tag
+     */
+    public String velocityValue ()
+    {
+        return VELOCITY_VALUE;
+    }
+
+
+    /**
      * Get the pitch value tag.
      *
      * @return The tag
@@ -572,6 +589,17 @@ public abstract class AbstractTagsAndAttributes
     public String pitchValue ()
     {
         return PITCH_VALUE;
+    }
+
+
+    /**
+     * Get the volume value tag.
+     *
+     * @return The tag
+     */
+    public String volumeValue ()
+    {
+        return VOLUME_VALUE;
     }
 
 

@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.mossgrabers.convertwithmoss.core.MathUtils;
+
 
 /**
  * Base class for SF2 zones.
@@ -137,7 +139,7 @@ public abstract class AbstractZone
      */
     public void addSignedGenerator (final int generator, final int value)
     {
-        this.addGenerator (generator, toSigned (value));
+        this.addGenerator (generator, MathUtils.toSignedComplement (value));
     }
 
 
@@ -258,21 +260,6 @@ public abstract class AbstractZone
     public List<Sf2Modulator> getModulators ()
     {
         return this.modulators;
-    }
-
-
-    /**
-     * Converts a signed integer into a two complement short value.
-     *
-     * @param value The signed integer
-     * @return The 2 byte two complement value
-     */
-    private static int toSigned (final int value)
-    {
-        if (value >= 0)
-            return value & 0x7FFF;
-        final int v = (~Math.abs (value) & 0x7FFF) + 1;
-        return v | 0x8000;
     }
 
 

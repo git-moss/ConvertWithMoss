@@ -137,6 +137,8 @@ public class AbletonTag
     public static final String TAG_RELEASE_SLOPE           = "ReleaseSlope";
     /** The Amount tag. */
     public static final String TAG_AMOUNT                  = "Amount";
+    /** The modulate by velocity tag. */
+    public static final String TAG_MOD_BY_VELOCITY         = "ModByVelocity";
 
     /** The Auxiliary Envelope tag. */
     public static final String TAG_SIMPLER_AUX_ENVELOPE    = "SimplerAuxEnvelope";
@@ -151,6 +153,9 @@ public class AbletonTag
 
     /** The Volume and Panorama tag. */
     public static final String TAG_VOLUME_AND_PAN          = "VolumeAndPan";
+    /** The Volume Velocity scale tag. */
+    public static final String TAG_VOLUME_VEL_SCALE        = "VolumeVelScale";
+
     /** The Auxiliary Envelope tag. */
     public static final String TAG_AUX_ENVELOPE            = "AuxEnv";
 

@@ -520,7 +520,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
     /**
      * Create the name of the sample file.
-     * 
+     *
      * @param zone The sample zone
      * @param zoneIndex The index of the zone in the group
      * @param fileEnding The file ending to use for the file
@@ -555,7 +555,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
             {
                 final ISampleZone zone = sampleZones.get (zoneIndex);
 
-                final File file = new File (sampleFolder, createSampleFilename (zone, zoneIndex, extension));
+                final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, extension));
                 try (final FileOutputStream fos = new FileOutputStream (file))
                 {
                     this.notifyProgress ();
@@ -935,7 +935,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
     /**
      * If the value is negative the given default value is returned otherwise the unchanged value.
-     * 
+     *
      * @param value The value to check
      * @param defaultValue The default value if negative
      * @return The value or default value

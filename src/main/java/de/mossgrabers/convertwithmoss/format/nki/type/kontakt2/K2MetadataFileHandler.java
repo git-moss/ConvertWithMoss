@@ -122,6 +122,27 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
+    protected String readAmplitudeVelocityIntensity (final Element modulator)
+    {
+        final Element targetsElement = XMLUtils.getChildElementByName (modulator, K2Tag.K2_TARGETS_ELEMENT);
+        if (targetsElement == null)
+            return null;
+
+        final List<Element> targetElements = XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false);
+        if (targetElements.isEmpty ())
+            return null;
+
+        final Element targetElement = this.findElementWithParameters (targetsElement, K2Tag.K2_TARGET_ELEMENT, this.tags.targetParam (), this.tags.volumeValue ());
+        if (targetElement == null)
+            return null;
+
+        final Map<String, String> targetElementParams = this.readValueMap (targetElement);
+        return targetElementParams.get (this.tags.intensityParam ());
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     protected TriggerType getTriggerTypeFromGroupElement (final Map<String, String> groupParameters)
     {
         final String releaseTrigParam = groupParameters.get (K2Tag.K2_RELEASE_TRIGGER_PARAM);

@@ -149,13 +149,15 @@ public class SfzOpcode
     public static final String AMP_SUSTAIN           = "amp_sustain";
     /** Cakewalk alias. The EG release time. */
     public static final String AMP_RELEASE           = "amp_release";
+    /** Amplifier velocity tracking. */
+    public static final String AMP_VELOCITY_TRACK    = "amp_veltrack";
 
     ////////////////////////////////////////////////////////////////
     // Filter opcodes
 
     /** SFZ v1. The cutoff frequency (Hz) of the 1st filter specified in Hertz. */
     public static final String CUTOFF                = "cutoff";
-    /** SFZ v1. The filter cutoff resonance value, in decibels. */
+    /** SFZ v1. The filter cutoff resonance value, in decibel. */
     public static final String RESONANCE             = "resonance";
     /** SFZ v1. The type of filter. */
     public static final String FILTER_TYPE           = "fil_type";
@@ -199,6 +201,8 @@ public class SfzOpcode
     public static final String FIL_SUSTAIN           = "fil_sustain";
     /** Cakewalk alias. The EG release time. */
     public static final String FIL_RELEASE           = "fil_release";
+    /** Filter cutoff velocity tracking. */
+    public static final String FIL_VELOCITY_TRACK    = "fil_veltrack";
 
     ////////////////////////////////////////////////////////////////
     // Pitch opcodes

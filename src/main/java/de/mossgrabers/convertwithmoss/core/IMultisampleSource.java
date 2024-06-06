@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -124,4 +125,22 @@ public interface IMultisampleSource
      * @param filter The filter to set
      */
     void setGlobalFilter (IFilter filter);
+
+
+    /**
+     * Checks all samples in all groups for velocity modulation on the amplitude settings. Only if
+     * all samples contain the same modulation value a result is returned.
+     *
+     * @return The modulation value
+     */
+    Optional<Double> getGlobalAmplitudeVelocity ();
+
+
+    /**
+     * Checks all samples in all groups for amplitude envelope modulation settings. Only if all
+     * samples contain the same settings a result is returned.
+     *
+     * @return The amplitude if a global envelope setting is found
+     */
+    Optional<IEnvelopeModulator> getGlobalAmplitudeModulator ();
 }

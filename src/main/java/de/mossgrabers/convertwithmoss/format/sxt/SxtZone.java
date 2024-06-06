@@ -14,8 +14,8 @@ import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -508,7 +508,7 @@ class SxtZone
         // Pitch Modulation envelope
         if (this.modEnvToPitch > 0)
         {
-            final IModulator pitchModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
             pitchModulator.setDepth (this.modEnvToPitch / 1000.0);
             final IEnvelope modEnvelope = pitchModulator.getSource ();
             if (this.modEnvDelayIsOff == 0)
@@ -568,7 +568,7 @@ class SxtZone
             zone.setFilter (filter);
             if (this.modEnvToFilterFreq != 0)
             {
-                final IModulator cutoffModulator = filter.getCutoffModulator ();
+                final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                 cutoffModulator.setDepth (this.modEnvToFilterFreq / 1000.0);
                 final IEnvelope modEnvelope = cutoffModulator.getSource ();
                 if (this.modEnvDelayIsOff == 0)
@@ -584,7 +584,7 @@ class SxtZone
         }
 
         // Set amplitude envelope
-        final IModulator amplitudeModulator = zone.getAmplitudeModulator ();
+        final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
         final IEnvelope ampEnvelope = amplitudeModulator.getSource ();
         if (this.ampEnvDelayIsOff == 0)
             ampEnvelope.setDelayTime (envelopeTimeCentsToSeconds (this.ampEnvDelay));
@@ -597,9 +597,7 @@ class SxtZone
         ampEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.ampEnvRelease));
 
         // Set gain and panorama
-        final double gain = Math.pow ((this.ampEnvGain + 1440) / 1440, 3);
-        final double dBValue = 20 * Math.log10 (gain);
-        zone.setGain (dBValue);
+        zone.setGain (20 * Math.log10 (Math.pow ((this.ampEnvGain + 1440) / 1440, 3)));
         zone.setPanorama (this.pan / 1000.0);
     }
 
@@ -619,7 +617,7 @@ class SxtZone
         this.velocityFadeIn = zone.getVelocityCrossfadeLow ();
         final int velocityCrossfadeHigh = zone.getVelocityCrossfadeHigh ();
         this.velocityFadeOut = velocityCrossfadeHigh == 0 ? 0x80 : MathUtils.clamp (127 - velocityCrossfadeHigh, 1, 127);
-        this.rootKey = zone.getKeyRoot ();
+        this.rootKey = AbstractCreator.limitToDefault (zone.getKeyRoot (), this.keyRangeStart);
         this.sampleStart = zone.getStart ();
         this.sampleEnd = zone.getStop ();
         final IAudioMetadata audioMetadata = zone.getSampleData ().getAudioMetadata ();
@@ -652,7 +650,7 @@ class SxtZone
             this.alternateMode = 1;
 
         // Pitch Modulation envelope
-        final IModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
         final double depth = pitchModulator.getDepth ();
         if (depth > 0)
         {
@@ -719,7 +717,7 @@ class SxtZone
                     break;
             }
 
-            final IModulator cutoffModulator = filter.getCutoffModulator ();
+            final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
             final double modEnvDepth = cutoffModulator.getDepth ();
             if (modEnvDepth > 0)
             {
@@ -751,7 +749,7 @@ class SxtZone
         }
 
         // Set amplitude envelope
-        final IModulator amplitudeModulator = zone.getAmplitudeModulator ();
+        final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
         final IEnvelope ampEnvelope = amplitudeModulator.getSource ();
         final double delay = ampEnvelope.getDelayTime ();
         if (delay >= 0)

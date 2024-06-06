@@ -22,7 +22,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -443,7 +443,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 zone.setGain (-initialAttenuation / 10.0);
 
             // Volume envelope
-            final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
+            final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
             amplitudeEnvelope.setDelayTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DELAY)));
             amplitudeEnvelope.setAttackTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_ATTACK)));
             amplitudeEnvelope.setHoldTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_HOLD)));
@@ -473,7 +473,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                     }
 
                     final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance / IFilter.MAX_RESONANCE);
-                    final IModulator cutoffModulator = filter.getCutoffModulator ();
+                    final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                     final int cutoffModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_FILTER_CUTOFF).intValue ();
                     cutoffModulator.setDepth (cutoffModDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
                     if (cutoffModDepth != 0)
@@ -491,7 +491,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 }
             }
 
-            final IModulator pitchModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
             final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
             pitchModulator.setDepth (pitchModDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
             if (pitchModDepth != 0)

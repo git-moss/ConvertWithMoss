@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -25,35 +26,36 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
  */
 public class DefaultSampleZone implements ISampleZone
 {
-    protected String            name;
-    protected PlayLogic         playLogic             = PlayLogic.ALWAYS;
-    protected TriggerType       triggerType           = TriggerType.ATTACK;
-    protected int               start                 = -1;
-    protected int               stop                  = -1;
-    protected int               keyRoot               = -1;
-    protected int               keyLow                = 0;
-    protected int               keyHigh               = 127;
-    protected int               noteCrossfadeLow      = 0;
-    protected int               noteCrossfadeHigh     = 0;
-    protected int               velocityLow           = 1;
-    protected int               velocityHigh          = 127;
-    protected int               velocityCrossfadeLow  = 0;
-    protected int               velocityCrossfadeHigh = 0;
+    protected String             name;
+    protected PlayLogic          playLogic                  = PlayLogic.ALWAYS;
+    protected TriggerType        triggerType                = TriggerType.ATTACK;
+    protected int                start                      = -1;
+    protected int                stop                       = -1;
+    protected int                keyRoot                    = -1;
+    protected int                keyLow                     = 0;
+    protected int                keyHigh                    = 127;
+    protected int                noteCrossfadeLow           = 0;
+    protected int                noteCrossfadeHigh          = 0;
+    protected int                velocityLow                = 1;
+    protected int                velocityHigh               = 127;
+    protected int                velocityCrossfadeLow       = 0;
+    protected int                velocityCrossfadeHigh      = 0;
 
-    protected double            gain                  = 0;
-    protected double            panorama              = 0;
-    protected double            tune                  = 0;
-    protected double            keyTracking           = 1.0;
-    protected int               bendUp                = 0;
-    protected int               bendDown              = 0;
-    protected boolean           isReversed            = false;
-    protected IModulator        amplitudeModulator    = new DefaultModulator ();
-    protected IModulator        pitchModulator        = new DefaultModulator ();
-    protected IFilter           filter                = null;
+    protected double             gain                       = 0;
+    protected double             panorama                   = 0;
+    protected double             tune                       = 0;
+    protected double             keyTracking                = 1.0;
+    protected int                bendUp                     = 0;
+    protected int                bendDown                   = 0;
+    protected boolean            isReversed                 = false;
+    protected IModulator         amplitudeVelocityModulator = new DefaultModulator (1);
+    protected IEnvelopeModulator amplitudeEnvelopeModulator = new DefaultEnvelopeModulator (1);
+    protected IEnvelopeModulator pitchModulator             = new DefaultEnvelopeModulator (0);
+    protected IFilter            filter                     = null;
 
-    protected List<ISampleLoop> loops                 = new ArrayList<> (1);
+    protected List<ISampleLoop>  loops                      = new ArrayList<> (1);
 
-    private ISampleData         sampleData;
+    private ISampleData          sampleData;
 
 
     /**
@@ -448,15 +450,23 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public IModulator getAmplitudeModulator ()
+    public IModulator getAmplitudeVelocityModulator ()
     {
-        return this.amplitudeModulator;
+        return this.amplitudeVelocityModulator;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public IModulator getPitchModulator ()
+    public IEnvelopeModulator getAmplitudeEnvelopeModulator ()
+    {
+        return this.amplitudeEnvelopeModulator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IEnvelopeModulator getPitchModulator ()
     {
         return this.pitchModulator;
     }
@@ -502,7 +512,7 @@ public class DefaultSampleZone implements ISampleZone
         this.bendUp = other.getBendUp ();
         this.bendDown = other.getBendDown ();
         this.isReversed = other.isReversed ();
-        this.amplitudeModulator = other.getAmplitudeModulator ();
+        this.amplitudeEnvelopeModulator = other.getAmplitudeEnvelopeModulator ();
         this.pitchModulator = other.getPitchModulator ();
         final Optional<IFilter> filterOpt = other.getFilter ();
         this.filter = filterOpt.isPresent () ? filterOpt.get () : null;

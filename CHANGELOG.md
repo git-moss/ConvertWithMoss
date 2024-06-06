@@ -1,5 +1,20 @@
 # Changes
 
+## 9.5.1 (unreleased)
+
+* Added support for disting EX multi-sample preset format.
+* All formats
+  * New: Added support for amplitude and filter velocity modulation (1010music, Ableton ADV, SFZ). Only amplitude: DecentSampler, EXS24.
+  * Fixed: Improved handling of missing root note information.
+* 1010music format - Reading
+  * Fixed: Samples could not always be found.
+* EXS - Writing
+  * Fixed: Filter cutoff was calculated incorrectly and could lead to silent patches.
+  * Fixed: Envelope parts which were not set were handled incorrectly.
+* SFZ - Reading
+  * Fixed: Attributes of previous converted SFZ did leak into next conversion.
+  * Fixed: Only create a filter when there is at least a cutoff or filter type attribute present.
+
 ## 9.5.0
 
 * Added support to write Soundfont 2.

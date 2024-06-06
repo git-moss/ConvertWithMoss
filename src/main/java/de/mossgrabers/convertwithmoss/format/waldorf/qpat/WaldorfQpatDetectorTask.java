@@ -255,8 +255,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             if (params.length <= 4)
                 continue;
             final double gain = Double.parseDouble (params[4]);
-            final double gaindB = gain == 0 ? -12.0 : MathUtils.clamp (Math.floor (20.0 * Math.log10 (gain) * 100.0 + 0.5) * 0.01, -12.0, 12.0);
-            zone.setGain (gaindB);
+            zone.setGain (Math.floor (20.0 * Math.log10 (gain) * 100.0 + 0.5) * 0.01);
 
             // FromVelo
             if (params.length <= 5)

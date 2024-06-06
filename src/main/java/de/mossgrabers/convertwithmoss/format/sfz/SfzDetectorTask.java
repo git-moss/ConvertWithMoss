@@ -26,10 +26,10 @@ import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -101,6 +101,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         try
         {
             final String content = this.loadTextFile (file);
+            this.clearAttributes ();
             return this.parseMetadataFile (file, content);
         }
         catch (final IOException ex)
@@ -108,6 +109,17 @@ public class SfzDetectorTask extends AbstractDetectorTask
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Collections.emptyList ();
         }
+    }
+
+
+    private void clearAttributes ()
+    {
+        this.globalAttributes = Collections.emptyMap ();
+        this.masterAttributes = Collections.emptyMap ();
+        this.groupAttributes = Collections.emptyMap ();
+        this.regionAttributes = Collections.emptyMap ();
+        this.processedOpcodes.clear ();
+        this.allOpcodes.clear ();
     }
 
 
@@ -327,7 +339,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
             sampleMetadata.setKeyHigh (key);
         }
 
-        // Lower bounds including crossfade
+        // Lower bounds including cross-fade
         int lowKey = this.getKeyValue (SfzOpcode.XF_IN_LO_KEY);
         if (lowKey < 0)
             lowKey = this.getKeyValue (SfzOpcode.LO_KEY);
@@ -361,7 +373,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         ////////////////////////////////////////////////////////////
         // Velocity
 
-        // Lower bounds including crossfade
+        // Lower bounds including cross-fade
         int lowVel = this.getIntegerValue (SfzOpcode.XF_IN_LO_VEL);
         if (lowVel < 0)
             lowVel = this.getIntegerValue (SfzOpcode.LO_VEL);
@@ -409,7 +421,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
         int envelopeDepth = this.getIntegerValue (SfzOpcode.PITCHEG_DEPTH, 0);
         if (envelopeDepth == 0)
             envelopeDepth = this.getIntegerValue (SfzOpcode.PITCH_DEPTH, 0);
-        final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = sampleMetadata.getPitchModulator ();
         pitchModulator.setDepth (envelopeDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
 
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
@@ -440,14 +452,19 @@ public class SfzDetectorTask extends AbstractDetectorTask
     }
 
 
-    private void parseFilter (final ISampleZone sampleMetadata)
+    private void parseFilter (final ISampleZone sampleZone)
     {
         double cutoff = this.getDoubleValue (SfzOpcode.CUTOFF, -1);
+        final Optional<String> filterTypeAttribute = this.getAttribute (SfzOpcode.FILTER_TYPE);
+
+        // Don't create a filter if there is no cutoff and no filter type
+        if (cutoff < 0 && filterTypeAttribute.isEmpty ())
+            return;
+
         if (cutoff < 0)
             cutoff = IFilter.MAX_FREQUENCY;
 
-        final Optional<String> attribute = this.getAttribute (SfzOpcode.FILTER_TYPE);
-        final String filterTypeStr = attribute.isEmpty () ? "lpf_2p" : attribute.get ();
+        final String filterTypeStr = filterTypeAttribute.isEmpty () ? "lpf_2p" : filterTypeAttribute.get ();
         if (filterTypeStr.length () < 6)
             return;
 
@@ -473,9 +490,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
             envelopeDepth = this.getIntegerValue (SfzOpcode.FIL_DEPTH, 0);
 
         final IFilter filter = new DefaultFilter (filterType, poles, cutoff, resonance / IFilter.MAX_RESONANCE);
-        sampleMetadata.setFilter (filter);
+        sampleZone.setFilter (filter);
 
-        final IModulator cutoffModulator = filter.getCutoffModulator ();
+        final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         cutoffModulator.setDepth (envelopeDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
 
         // Filter envelope
@@ -494,6 +511,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
         filterEnvelope.setAttackSlope (this.getDoubleValue (SfzOpcode.FILEG_ATTACK_SHAPE, 0) / 10.0);
         filterEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.FILEG_DECAY_SHAPE, 0) / 10.0);
         filterEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.FILEG_RELEASE_SHAPE, 0) / 10.0);
+
+        // Filter velocity modulation
+        final int filterVelocity = this.getIntegerValue (SfzOpcode.FIL_VELOCITY_TRACK, 0);
+        filter.getCutoffVelocityModulator ().setDepth (filterVelocity / 9600.0);
     }
 
 
@@ -553,16 +574,17 @@ public class SfzDetectorTask extends AbstractDetectorTask
     /**
      * Parse the parameters of the volume and amplitude envelope.
      *
-     * @param sampleMetadata Where to store the data
+     * @param sampleZone Where to store the data
      */
-    private void parseVolume (final ISampleZone sampleMetadata)
+    private void parseVolume (final ISampleZone sampleZone)
     {
-        final double volume = this.getDoubleValue (SfzOpcode.VOLUME, 0);
-        sampleMetadata.setGain (MathUtils.clamp (volume, -12, 12));
+        sampleZone.setGain (this.getDoubleValue (SfzOpcode.VOLUME, 0));
         final double panorama = this.getDoubleValue (SfzOpcode.PANORAMA, 0);
-        sampleMetadata.setPanorama (MathUtils.clamp (panorama, -100, 100) / 100.0);
+        sampleZone.setPanorama (MathUtils.clamp (panorama, -100, 100) / 100.0);
 
-        final IEnvelope amplitudeEnvelope = sampleMetadata.getAmplitudeModulator ().getSource ();
+        // Amplitude envelope
+
+        final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
         amplitudeEnvelope.setDelayTime (this.getDoubleValue (SfzOpcode.AMPEG_DELAY, SfzOpcode.AMP_DELAY));
         amplitudeEnvelope.setAttackTime (this.getDoubleValue (SfzOpcode.AMPEG_ATTACK, SfzOpcode.AMP_ATTACK));
         amplitudeEnvelope.setHoldTime (this.getDoubleValue (SfzOpcode.AMPEG_HOLD, SfzOpcode.AMP_HOLD));
@@ -577,6 +599,11 @@ public class SfzDetectorTask extends AbstractDetectorTask
         amplitudeEnvelope.setAttackSlope (this.getDoubleValue (SfzOpcode.AMPEG_ATTACK_SHAPE, 0) / 10.0);
         amplitudeEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.AMPEG_DECAY_SHAPE, 0) / 10.0);
         amplitudeEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.AMPEG_RELEASE_SHAPE, 0) / 10.0);
+
+        // Amplitude velocity modulation
+
+        final double ampVelTrack = this.getDoubleValue (SfzOpcode.AMP_VELOCITY_TRACK, 100);
+        sampleZone.getAmplitudeVelocityModulator ().setDepth (ampVelTrack / 100.0);
     }
 
 

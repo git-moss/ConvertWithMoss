@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -197,5 +198,41 @@ public class DefaultMultisampleSource implements IMultisampleSource
         for (final IGroup group: this.groups)
             for (final ISampleZone zone: group.getSampleZones ())
                 zone.setFilter (filter);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<Double> getGlobalAmplitudeVelocity ()
+    {
+        Double globalVelocity = null;
+        for (final IGroup group: this.groups)
+            for (final ISampleZone sampleMetadata: group.getSampleZones ())
+            {
+                final double depth = sampleMetadata.getAmplitudeVelocityModulator ().getDepth ();
+                if (globalVelocity == null)
+                    globalVelocity = Double.valueOf (depth);
+                else if (globalVelocity.doubleValue () != depth)
+                    return Optional.empty ();
+            }
+        return Optional.ofNullable (globalVelocity);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<IEnvelopeModulator> getGlobalAmplitudeModulator ()
+    {
+        IEnvelopeModulator modulator = null;
+        for (final IGroup group: this.groups)
+            for (final ISampleZone sampleMetadata: group.getSampleZones ())
+            {
+                final IEnvelopeModulator ampModulator = sampleMetadata.getAmplitudeEnvelopeModulator ();
+                if (modulator == null)
+                    modulator = ampModulator;
+                else if (modulator.getDepth () != ampModulator.getDepth () || !modulator.getSource ().equals (ampModulator.getSource ()))
+                    return Optional.empty ();
+            }
+        return modulator == null ? Optional.empty () : Optional.ofNullable (modulator);
     }
 }

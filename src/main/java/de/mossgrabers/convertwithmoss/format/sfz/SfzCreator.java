@@ -22,10 +22,10 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -259,11 +259,15 @@ public class SfzCreator extends AbstractCreator
         final int keyLow = zone.getKeyLow ();
         final int keyHigh = zone.getKeyHigh ();
         if (keyRoot == keyLow && keyLow == keyHigh)
+        {
             // Pitch and range are the same, use single key attribute
-            addIntegerAttribute (buffer, SfzOpcode.KEY, keyRoot, true);
+            if (keyRoot >= 0)
+                addIntegerAttribute (buffer, SfzOpcode.KEY, keyRoot, true);
+        }
         else
         {
-            addIntegerAttribute (buffer, SfzOpcode.PITCH_KEY_CENTER, keyRoot, true);
+            if (keyRoot >= 0)
+                addIntegerAttribute (buffer, SfzOpcode.PITCH_KEY_CENTER, keyRoot, true);
             addIntegerAttribute (buffer, SfzOpcode.LO_KEY, limitToDefault (keyLow, 0), false);
             addIntegerAttribute (buffer, SfzOpcode.HI_KEY, limitToDefault (keyHigh, 127), true);
         }
@@ -337,7 +341,7 @@ public class SfzCreator extends AbstractCreator
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final IModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
         final double envelopeDepth = pitchModulator.getDepth ();
         if (envelopeDepth != 0)
         {
@@ -431,15 +435,19 @@ public class SfzCreator extends AbstractCreator
     private static void createVolume (final StringBuilder buffer, final ISampleZone zone)
     {
         final double volume = zone.getGain ();
+        final double velAmpDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
         if (volume != 0)
-            addAttribute (buffer, SfzOpcode.VOLUME, formatDouble (volume, 2), true);
+            addAttribute (buffer, SfzOpcode.VOLUME, formatDouble (volume, 2), velAmpDepth == 1);
+        if (velAmpDepth < 1)
+            addAttribute (buffer, SfzOpcode.AMP_VELOCITY_TRACK, formatDouble (velAmpDepth * 100.0, 2), true);
+
         final double pan = zone.getPanorama ();
         if (pan != 0)
             addAttribute (buffer, SfzOpcode.PANORAMA, Integer.toString ((int) Math.round (pan * 100)), true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
+        final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
 
         addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DELAY, amplitudeEnvelope.getDelayTime ());
         addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK, amplitudeEnvelope.getAttackTime ());
@@ -475,11 +483,18 @@ public class SfzCreator extends AbstractCreator
         final String type = FILTER_TYPE_MAP.get (filter.getType ());
         addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + MathUtils.clamp (filter.getPoles (), 1, 4) + "p", false);
         addAttribute (buffer, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
+
+        final double velFilterDepth = filter.getCutoffVelocityModulator ().getDepth ();
+        if (velFilterDepth != 0)
+            addAttribute (buffer, SfzOpcode.FIL_VELOCITY_TRACK, Integer.toString ((int) Math.round (velFilterDepth * 9600.0)), false);
+
         addAttribute (buffer, SfzOpcode.RESONANCE, formatDouble (filter.getResonance () * IFilter.MAX_RESONANCE, 2), true);
+
+        // Envelope modulation
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final IModulator cutoffModulator = filter.getCutoffModulator ();
+        final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final double envelopeDepth = cutoffModulator.getDepth ();
         if (envelopeDepth > 0)
         {

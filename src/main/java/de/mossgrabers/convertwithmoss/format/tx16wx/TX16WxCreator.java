@@ -25,9 +25,9 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -393,6 +393,15 @@ public class TX16WxCreator extends AbstractCreator
      */
     private static void createSample (final Document document, final String folderName, final Element programElement, final Element groupElement, final ISampleZone zone, final int zoneIndex)
     {
+        final int keyLow = zone.getKeyLow ();
+        final int keyHigh = zone.getKeyHigh ();
+        final int velocityLow = zone.getVelocityLow ();
+        final int velocityHigh = zone.getVelocityHigh ();
+        final int noteCrossfadeLow = zone.getNoteCrossfadeLow ();
+        final int noteCrossfadeHigh = zone.getNoteCrossfadeHigh ();
+        final int velocityCrossfadeLow = zone.getVelocityCrossfadeLow ();
+        final int velocityCrossfadeHigh = zone.getVelocityCrossfadeHigh ();
+
         // The wave description
         final Element waveElement = XMLUtils.addElement (document, programElement, TX16WxTag.SAMPLE);
         waveElement.setAttribute (TX16WxTag.PATH, AbstractCreator.formatFileName (folderName, zone.getName () + ".wav"));
@@ -401,7 +410,7 @@ public class TX16WxCreator extends AbstractCreator
         final int stop = zone.getStop ();
         if (stop >= 0)
             XMLUtils.setIntegerAttribute (waveElement, TX16WxTag.END, stop);
-        XMLUtils.setIntegerAttribute (waveElement, TX16WxTag.ROOT, zone.getKeyRoot ());
+        XMLUtils.setIntegerAttribute (waveElement, TX16WxTag.ROOT, limitToDefault (zone.getKeyRoot (), keyLow));
 
         // The loop info of the wave description
         final Element loopElement = XMLUtils.addElement (document, waveElement, TX16WxTag.SAMPLE_LOOP);
@@ -437,15 +446,6 @@ public class TX16WxCreator extends AbstractCreator
 
         final Element boundsElement = XMLUtils.addElement (document, regionElement, TX16WxTag.BOUNDS);
         final Element fadesElement = XMLUtils.addElement (document, regionElement, TX16WxTag.FADE_BOUNDS);
-
-        final int keyLow = zone.getKeyLow ();
-        final int keyHigh = zone.getKeyHigh ();
-        final int velocityLow = zone.getVelocityLow ();
-        final int velocityHigh = zone.getVelocityHigh ();
-        final int noteCrossfadeLow = zone.getNoteCrossfadeLow ();
-        final int noteCrossfadeHigh = zone.getNoteCrossfadeHigh ();
-        final int velocityCrossfadeLow = zone.getVelocityCrossfadeLow ();
-        final int velocityCrossfadeHigh = zone.getVelocityCrossfadeHigh ();
 
         XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.LO_NOTE, limitToDefault (keyLow, 0));
         XMLUtils.setIntegerAttribute (boundsElement, TX16WxTag.HI_NOTE, limitToDefault (keyHigh, 127));
@@ -494,7 +494,7 @@ public class TX16WxCreator extends AbstractCreator
         if (zone != null)
         {
             // Add amplitude envelope
-            final IEnvelope amplitudeEnvelope = zone.getAmplitudeModulator ().getSource ();
+            final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
             final Element aegElement = XMLUtils.addElement (document, soundshapeElement, TX16WxTag.AMP_ENVELOPE);
 
             // The whole group can be delayed which is basically the same as the amplitude delay
@@ -537,7 +537,7 @@ public class TX16WxCreator extends AbstractCreator
                 if (slopeValue != null)
                     filterElement.setAttribute (TX16WxTag.FILTER_SLOPE, slopeValue);
 
-                final IModulator cutoffModulator = filter.getCutoffModulator ();
+                final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                 final double filterModDepth = cutoffModulator.getDepth ();
                 if (filterModDepth != 0)
                 {
@@ -558,7 +558,7 @@ public class TX16WxCreator extends AbstractCreator
             }
 
             // Add pitch modulator
-            final IModulator pitchModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
             final double pitchModDepth = pitchModulator.getDepth ();
             if (pitchModDepth != 0)
             {

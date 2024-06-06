@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -16,12 +17,13 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
  */
 public class DefaultFilter implements IFilter
 {
-    protected FilterType type;
-    protected int        poles;
-    protected double     cutoff;
-    protected double     resonance;
-    protected int        envelopeDepth;
-    protected IModulator cutoffModulator = new DefaultModulator ();
+    protected FilterType         type;
+    protected int                poles;
+    protected double             cutoff;
+    protected double             resonance;
+    protected int                envelopeDepth;
+    protected IEnvelopeModulator cutoffEnvelopeModulator = new DefaultEnvelopeModulator (1);
+    protected IModulator         cutoffVelocityModulator = new DefaultModulator (1);
 
 
     /**
@@ -75,9 +77,17 @@ public class DefaultFilter implements IFilter
 
     /** {@inheritDoc} */
     @Override
-    public IModulator getCutoffModulator ()
+    public IModulator getCutoffVelocityModulator ()
     {
-        return this.cutoffModulator;
+        return this.cutoffVelocityModulator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IEnvelopeModulator getCutoffEnvelopeModulator ()
+    {
+        return this.cutoffEnvelopeModulator;
     }
 
 
@@ -90,7 +100,8 @@ public class DefaultFilter implements IFilter
         long temp;
         temp = Double.doubleToLongBits (this.cutoff);
         result = prime * result + (int) (temp ^ temp >>> 32);
-        result = prime * result + (this.cutoffModulator == null ? 0 : this.cutoffModulator.hashCode ());
+        result = prime * result + (this.cutoffVelocityModulator == null ? 0 : this.cutoffVelocityModulator.hashCode ());
+        result = prime * result + (this.cutoffEnvelopeModulator == null ? 0 : this.cutoffEnvelopeModulator.hashCode ());
         result = prime * result + this.envelopeDepth;
         result = prime * result + this.poles;
         temp = Double.doubleToLongBits (this.resonance);
@@ -111,12 +122,19 @@ public class DefaultFilter implements IFilter
         final DefaultFilter other = (DefaultFilter) obj;
         if (Double.doubleToLongBits (this.cutoff) != Double.doubleToLongBits (other.cutoff))
             return false;
-        if (this.cutoffModulator == null)
+        if (this.cutoffVelocityModulator == null)
         {
-            if (other.cutoffModulator != null)
+            if (other.cutoffVelocityModulator != null)
                 return false;
         }
-        else if (!this.cutoffModulator.equals (other.cutoffModulator))
+        else if (!this.cutoffVelocityModulator.equals (other.cutoffVelocityModulator))
+            return false;
+        if (this.cutoffVelocityModulator == null)
+        {
+            if (other.cutoffVelocityModulator != null)
+                return false;
+        }
+        else if (!this.cutoffEnvelopeModulator.equals (other.cutoffEnvelopeModulator))
             return false;
         if (this.envelopeDepth != other.envelopeDepth || this.poles != other.poles || Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance))
             return false;

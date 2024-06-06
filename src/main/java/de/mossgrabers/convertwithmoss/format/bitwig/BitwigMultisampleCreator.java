@@ -164,9 +164,10 @@ public class BitwigMultisampleCreator extends AbstractCreator
         // Key element and attributes
 
         final Element keyElement = XMLUtils.addElement (document, sampleElement, "key");
-        XMLUtils.setIntegerAttribute (keyElement, "low", limitToDefault (zone.getKeyLow (), 0));
+        final int keyLow = limitToDefault (zone.getKeyLow (), 0);
+        XMLUtils.setIntegerAttribute (keyElement, "low", keyLow);
         XMLUtils.setIntegerAttribute (keyElement, "low-fade", limitToDefault (zone.getNoteCrossfadeLow (), 0));
-        XMLUtils.setIntegerAttribute (keyElement, "root", zone.getKeyRoot ());
+        XMLUtils.setIntegerAttribute (keyElement, "root", limitToDefault (zone.getKeyRoot (), keyLow));
         XMLUtils.setIntegerAttribute (keyElement, "high", limitToDefault (zone.getKeyHigh (), 127));
         XMLUtils.setIntegerAttribute (keyElement, "high-fade", limitToDefault (zone.getNoteCrossfadeHigh (), 0));
         XMLUtils.setDoubleAttribute (keyElement, "track", zone.getKeyTracking (), 4);

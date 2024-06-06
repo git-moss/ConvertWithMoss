@@ -87,7 +87,7 @@
       <ExtModulators>
         <NiSS_ExtMod index="0" version="0.80">
           <V name="target" value="volume"/>
-          <V name="intensity" value="1"/>
+          <V name="intensity" value="%AMP_VELOCITY_MOD%"/>
           <V name="bypass" value="no"/>
           <V name="delay" value="0"/>
           <V name="source" value="velocity"/>

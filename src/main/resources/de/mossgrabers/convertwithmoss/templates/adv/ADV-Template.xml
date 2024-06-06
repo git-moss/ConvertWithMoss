@@ -598,7 +598,7 @@
 						</ModByPitch>
 						<ModByVelocity>
 							<LomId Value="0" />
-							<Manual Value="0.796875" />
+							<Manual Value="%FILTER_VELOCITY_MOD%" />
 							<MidiControllerRange>
 								<Min Value="0" />
 								<Max Value="1" />
@@ -661,7 +661,7 @@
 			</Volume>
 			<VolumeVelScale>
 				<LomId Value="0" />
-				<Manual Value="0.328125" />
+				<Manual Value="%VOLUME_VELOCITY_MOD%" />
 				<MidiControllerRange>
 					<Min Value="0" />
 					<Max Value="1" />

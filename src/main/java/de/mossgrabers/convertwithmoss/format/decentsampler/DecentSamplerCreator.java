@@ -9,9 +9,11 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.zip.ZipOutputStream;
 
 import org.w3c.dom.Document;
@@ -21,9 +23,9 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -129,6 +131,8 @@ public class DecentSamplerCreator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        this.seqPosition = 1;
+
         this.setOutputToLibrary (this.isOutputFormatLibrary ());
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
@@ -261,9 +265,15 @@ public class DecentSamplerCreator extends AbstractCreator
             if (triggerType != TriggerType.ATTACK)
                 groupElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
+            final Set<Double> ampVelDepths = new HashSet<> ();
             final List<ISampleZone> zones = group.getSampleZones ();
-            for (final ISampleZone sample: zones)
-                createSample (document, folderName, groupElement, sample);
+            for (final ISampleZone zone: zones)
+            {
+                ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
+                createSample (document, folderName, groupElement, zone);
+            }
+            if (ampVelDepths.size () == 1)
+                groupElement.setAttribute (DecentSamplerTag.AMP_VELOCITY_TRACK, Double.toString (ampVelDepths.iterator ().next ().doubleValue ()));
 
             createFilter (document, modulatorsElement, multisampleSource, groupElement, i);
             if (!zones.isEmpty ())
@@ -302,7 +312,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.SAMPLE);
-        addVolumeEnvelope (zone.getAmplitudeModulator ().getSource (), sampleElement);
+        addVolumeEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource (), sampleElement);
 
         final String filename = zone.getName () + ".wav";
         sampleElement.setAttribute (DecentSamplerTag.PATH, AbstractCreator.formatFileName (folderName, filename));
@@ -328,9 +338,10 @@ public class DecentSamplerCreator extends AbstractCreator
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
 
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_NOTE, limitToDefault (zone.getKeyLow (), 0));
+        final int keyLow = limitToDefault (zone.getKeyLow (), 0);
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LO_NOTE, keyLow);
         // No fades info.getNoteCrossfadeLow ()
-        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE, zone.getKeyRoot ());
+        XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE, limitToDefault (zone.getKeyRoot (), keyLow));
         XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_NOTE, limitToDefault (zone.getKeyHigh (), 127));
         // No fades info.getNoteCrossfadeHigh ()
         XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, zone.getKeyTracking (), 4);
@@ -432,7 +443,7 @@ public class DecentSamplerCreator extends AbstractCreator
         filterElement.setAttribute ("resonance", formatDouble (filter.getResonance () + 0.7, 3));
         filterElement.setAttribute (isNotch ? "q" : "frequency", formatDouble (filter.getCutoff (), 2));
 
-        final IModulator cutoffModulator = filter.getCutoffModulator ();
+        final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final double envelopeDepth = cutoffModulator.getDepth ();
         if (envelopeDepth > 0)
         {
@@ -476,9 +487,10 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private static void createPitchModulator (final Document document, final Element modulatorsElement, final IModulator pitchModulator, final int groupIndex)
+    private static void createPitchModulator (final Document document, final Element modulatorsElement, final IEnvelopeModulator pitchModulator, final int groupIndex)
     {
         final double envelopeDepth = pitchModulator.getDepth ();
+        // Only positive values allowed in Decent Sampler
         if (envelopeDepth <= 0)
             return;
 

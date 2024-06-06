@@ -277,7 +277,7 @@ public interface ISampleZone
     /**
      * Get the gain of the sample.
      *
-     * @return The gain in the range of [-12 .. 12] dB
+     * @return The gain in dB, assume the range to be -Inf to 24dB
      */
     double getGain ();
 
@@ -285,7 +285,7 @@ public interface ISampleZone
     /**
      * Set the gain of the sample.
      *
-     * @param gain The gain in the range of [-12 .. 12] dB
+     * @param gain The gain in dB, assume the range to be -Inf to 24dB
      */
     void setGain (double gain);
 
@@ -307,19 +307,19 @@ public interface ISampleZone
 
 
     /**
-     * Get the key tracking of the sample.
+     * Get the coarse and fine tuning of the sample.
      *
-     * @return The tuning positive or negative semitones, which means that 0.01 represents 1 cent (1
-     *         semitone is 100 cent)
+     * @return The tuning positive or negative semi-tones, which means that 0.01 represents 1 cent
+     *         (1 semi-tone is 100 cent)
      */
     double getTune ();
 
 
     /**
-     * Set the fine tuning of the sample.
+     * Set the coarse and fine tuning of the sample.
      *
-     * @param tune The tuning positive or negative semitones, which means that 0.01 represents 1
-     *            cent (1 semitone is 100 cent)
+     * @param tune The tuning positive or negative semi-tones, which means that 0.01 represents 1
+     *            cent (1 semi-tone is 100 cent)
      */
     void setTune (double tune);
 
@@ -359,11 +359,19 @@ public interface ISampleZone
 
 
     /**
-     * Get the amplitude modulator.
+     * Get the velocity modulator for the amplitude.
+     *
+     * @return The modulator
+     */
+    IModulator getAmplitudeVelocityModulator ();
+
+
+    /**
+     * Get the envelope modulator for the amplitude.
      *
      * @return The modulator, never null
      */
-    IModulator getAmplitudeModulator ();
+    IEnvelopeModulator getAmplitudeEnvelopeModulator ();
 
 
     /**
@@ -371,7 +379,7 @@ public interface ISampleZone
      *
      * @return The modulator, never null
      */
-    IModulator getPitchModulator ();
+    IEnvelopeModulator getPitchModulator ();
 
 
     /**

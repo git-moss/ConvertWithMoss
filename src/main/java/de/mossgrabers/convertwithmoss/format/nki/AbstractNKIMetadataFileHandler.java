@@ -35,19 +35,19 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
@@ -251,11 +251,13 @@ public abstract class AbstractNKIMetadataFileHandler
 
             // These parameters can only be set on the group. This implementation uses the first
             // found
-            final ISampleZone sampleMetadata = zones.isEmpty () ? null : zones.get (0);
-            final double pitchBendUp = sampleMetadata == null ? 0 : sampleMetadata.getBendUp ();
-            final boolean keyTracking = sampleMetadata == null || sampleMetadata.getKeyTracking () > 0;
-            final boolean isReleaseTrigger = sampleMetadata != null && sampleMetadata.getTrigger () == TriggerType.RELEASE;
-            groupContent = addModulators (sampleMetadata, groupContent);
+            final ISampleZone firstZone = zones.isEmpty () ? null : zones.get (0);
+            final double pitchBendUp = firstZone == null ? 0 : firstZone.getBendUp ();
+            final double ampVelocityMod = firstZone == null ? 1 : firstZone.getAmplitudeVelocityModulator ().getDepth ();
+            final boolean keyTracking = firstZone == null || firstZone.getKeyTracking () > 0;
+            final boolean isReleaseTrigger = firstZone != null && firstZone.getTrigger () == TriggerType.RELEASE;
+            groupContent = addModulators (firstZone, groupContent);
+            groupContent = groupContent.replace ("%AMP_VELOCITY_MOD%", formatDouble (ampVelocityMod));
             groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
             groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
@@ -271,18 +273,19 @@ public abstract class AbstractNKIMetadataFileHandler
     {
         String zoneContent = zoneTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%ZONE_INDEX%", Integer.toString (sampleCount));
         final String zoneName = zone.getName ();
+        final int keyLow = limitToDefault (zone.getKeyLow (), 0);
 
         zoneContent = zoneContent.replace ("%ZONE_SAMPLE_START%", Integer.toString (zone.getStart ()));
         zoneContent = zoneContent.replace ("%ZONE_SAMPLE_END%", Integer.toString (zone.getStop ()));
         zoneContent = zoneContent.replace ("%ZONE_VEL_LOW%", Integer.toString (limitToDefault (zone.getVelocityLow (), 1)));
         zoneContent = zoneContent.replace ("%ZONE_VEL_HIGH%", Integer.toString (limitToDefault (zone.getVelocityHigh (), 127)));
-        zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (limitToDefault (zone.getKeyLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (keyLow));
         zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (limitToDefault (zone.getKeyHigh (), 127)));
         zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (limitToDefault (zone.getVelocityCrossfadeLow (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getVelocityCrossfadeLow (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (limitToDefault (zone.getNoteCrossfadeLow (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getNoteCrossfadeHigh (), 0)));
-        zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (zone.getKeyRoot ()));
+        zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (limitToDefault (zone.getKeyRoot (), keyLow)));
         zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, zone.getGain () / 20.0d)));
         zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (zone.getTune () / 0.12d * Math.log (2))));
         zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (zone.getPanorama ())));
@@ -308,9 +311,9 @@ public abstract class AbstractNKIMetadataFileHandler
 
     private static String addModulators (final ISampleZone sampleMetadata, final String groupContentTemplate)
     {
-        final IModulator amplitudeModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getAmplitudeModulator ();
+        final IEnvelopeModulator amplitudeModulator = sampleMetadata == null ? new DefaultEnvelopeModulator (1) : sampleMetadata.getAmplitudeEnvelopeModulator ();
         final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
-        String groupContent = groupContentTemplate.replace ("%ENVELOPE_INTENSITY%", formatDouble (limitToDefault (amplitudeModulator.getDepth (), 1)));
+        String groupContent = groupContentTemplate.replace ("%ENVELOPE_INTENSITY%", formatDouble (amplitudeModulator.getDepth ()));
         groupContent = groupContent.replace ("%ENVELOPE_ATTACK_CURVE%", formatDouble (-amplitudeEnvelope.getAttackSlope ()));
         groupContent = groupContent.replace ("%ENVELOPE_ATTACK%", formatDouble (limitToDefault (amplitudeEnvelope.getAttackTime (), 0) * 1000.0d));
         groupContent = groupContent.replace ("%ENVELOPE_DECAY%", formatDouble (limitToDefault (amplitudeEnvelope.getDecayTime (), 0) * 1000.0d));
@@ -318,9 +321,9 @@ public abstract class AbstractNKIMetadataFileHandler
         groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getReleaseTime (), 1) * 1000.0d));
         groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustainLevel (), 1)));
 
-        final IModulator pitchModulator = sampleMetadata == null ? new DefaultModulator () : sampleMetadata.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = sampleMetadata == null ? new DefaultEnvelopeModulator (0) : sampleMetadata.getPitchModulator ();
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (pitchModulator.getDepth (), 1)));
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (pitchModulator.getDepth ()));
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK_CURVE%", formatDouble (-pitchEnvelope.getAttackSlope ()));
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (limitToDefault (pitchEnvelope.getAttackTime (), 0) * 1000.0d));
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getDecayTime (), 0) * 1000.0d));
@@ -334,9 +337,9 @@ public abstract class AbstractNKIMetadataFileHandler
         groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (filter.getCutoff () / IFilter.MAX_FREQUENCY));
         groupContent = groupContent.replace ("%FILTER_RESONANCE%", formatDouble (filter.getResonance ()));
 
-        final IModulator filterCutoffModulator = filter.getCutoffModulator ();
+        final IEnvelopeModulator filterCutoffModulator = filter.getCutoffEnvelopeModulator ();
         final IEnvelope filterCutoffEnvelope = filterCutoffModulator.getSource ();
-        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_INTENSITY%", formatDouble (limitToDefault (filterCutoffModulator.getDepth (), 1)));
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_INTENSITY%", formatDouble (filterCutoffModulator.getDepth ()));
         groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_ATTACK_CURVE%", formatDouble (-filterCutoffEnvelope.getAttackSlope ()));
         groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_ATTACK%", formatDouble (limitToDefault (filterCutoffEnvelope.getAttackTime (), 0) * 1000.0d));
         groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_DECAY%", formatDouble (limitToDefault (filterCutoffEnvelope.getDecayTime (), 0) * 1000.0d));
@@ -507,7 +510,7 @@ public abstract class AbstractNKIMetadataFileHandler
         final LinkedList<IGroup> groups = new LinkedList<> ();
         for (final Element groupElement: groupElements)
         {
-            final IGroup group = this.getGroups (programParameters, groupElement, zoneElements, sourcePath, monolithSamples);
+            final IGroup group = this.getGroup (programParameters, groupElement, zoneElements, sourcePath, monolithSamples);
             if (group != null)
                 groups.add (group);
         }
@@ -527,7 +530,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The group created from the zone element (null, if there is no group element)
      * @throws IOException Could not get sample file(s)
      */
-    private IGroup getGroups (final Map<String, String> programParameters, final Element groupElement, final List<Element> zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
+    private IGroup getGroup (final Map<String, String> programParameters, final Element groupElement, final List<Element> zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         if (groupElement == null)
             return null;
@@ -536,11 +539,12 @@ public abstract class AbstractNKIMetadataFileHandler
         group.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
         final IFilter filter = this.readFilter (groupElement);
-        final Map<String, IModulator> groupModulators = this.readGroupModulators (groupElement);
+        final Map<String, IEnvelopeModulator> groupModulators = this.readGroupModulators (groupElement);
         final int pitchBend = this.readGroupPitchBend (groupElement);
+        final double ampVelocityMod = this.readGroupAmplitudeVelocityModulator (groupElement);
         group.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-        group.setSampleZones (this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, sourcePath, monolithSamples, filter));
+        group.setSampleZones (this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter));
         return group;
     }
 
@@ -554,6 +558,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param groupElement The group element from which the metadata is created
      * @param groupZones The zone elements belonging to the group
      * @param pitchBend The pitchbend range (half tone steps)
+     * @param ampVelocityMod The amplitude modulation by velocity
      * @param sourcePath The canonical path which contains the NKI file
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @param filter The filter or null if none is applied
@@ -561,7 +566,7 @@ public abstract class AbstractNKIMetadataFileHandler
      *         returned.
      * @throws IOException Could not get sample file
      */
-    private List<ISampleZone> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final String sourcePath, final Map<String, ISampleData> monolithSamples, final IFilter filter) throws IOException
+    private List<ISampleZone> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IEnvelopeModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final double ampVelocityMod, final String sourcePath, final Map<String, ISampleData> monolithSamples, final IFilter filter) throws IOException
     {
         if (groupElement == null || groupZones == null)
             return Collections.emptyList ();
@@ -580,7 +585,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
                 if (filter != null)
                     zone.setFilter (filter);
-                this.readMetadata (programParameters, groupParameters, groupModulators, pitchBend, sampleMetadataList, zoneElement, zone);
+                this.readMetadata (programParameters, groupParameters, groupModulators, pitchBend, ampVelocityMod, sampleMetadataList, zoneElement, zone);
             }
         }
 
@@ -619,7 +624,7 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private void readMetadata (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IModulator> groupModulators, final int pitchBend, final LinkedList<ISampleZone> sampleMetadataList, final Element zoneElement, final ISampleZone zone)
+    private void readMetadata (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IEnvelopeModulator> groupModulators, final int pitchBend, final double ampVelocityMod, final LinkedList<ISampleZone> sampleMetadataList, final Element zoneElement, final ISampleZone zone)
     {
         try
         {
@@ -672,6 +677,9 @@ public abstract class AbstractNKIMetadataFileHandler
             final double progPan = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progPanParam ());
             final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
             zone.setPanorama (MathUtils.clamp (totalPan, -1.0d, 1.0d));
+
+            if (ampVelocityMod >= 0)
+                zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityMod);
         }
         catch (final ValueNotAvailableException e)
         {
@@ -699,13 +707,13 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private void setModulators (final Map<String, IModulator> groupEnvelopes, final ISampleZone sampleMetadata)
+    private void setModulators (final Map<String, IEnvelopeModulator> groupEnvelopes, final ISampleZone sampleMetadata)
     {
-        final IModulator groupAmpModulator = groupEnvelopes.get (this.tags.targetVolValue ());
+        final IEnvelopeModulator groupAmpModulator = groupEnvelopes.get (this.tags.targetVolValue ());
         if (groupAmpModulator != null)
         {
             final IEnvelope source = groupAmpModulator.getSource ();
-            final IModulator amplitudeModulator = sampleMetadata.getAmplitudeModulator ();
+            final IEnvelopeModulator amplitudeModulator = sampleMetadata.getAmplitudeEnvelopeModulator ();
             amplitudeModulator.setDepth (groupAmpModulator.getDepth ());
 
             final IEnvelope amplitudeEnvelope = amplitudeModulator.getSource ();
@@ -717,11 +725,11 @@ public abstract class AbstractNKIMetadataFileHandler
             amplitudeEnvelope.setReleaseTime (source.getReleaseTime ());
         }
 
-        final IModulator groupPitchModulator = groupEnvelopes.get (this.tags.targetPitchValue ());
+        final IEnvelopeModulator groupPitchModulator = groupEnvelopes.get (this.tags.targetPitchValue ());
         if (groupPitchModulator != null)
         {
             final IEnvelope source = groupPitchModulator.getSource ();
-            final IModulator pitchModulator = sampleMetadata.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = sampleMetadata.getPitchModulator ();
             pitchModulator.setDepth (groupPitchModulator.getDepth ());
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
@@ -736,13 +744,13 @@ public abstract class AbstractNKIMetadataFileHandler
         final Optional<IFilter> filterOpt = sampleMetadata.getFilter ();
         if (filterOpt.isPresent ())
         {
-            final IModulator groupFilterCutoffModulator = groupEnvelopes.get (this.tags.targetFilterCutoffValue ());
+            final IEnvelopeModulator groupFilterCutoffModulator = groupEnvelopes.get (this.tags.targetFilterCutoffValue ());
             if (groupFilterCutoffModulator != null)
             {
                 final IFilter filter = filterOpt.get ();
 
                 final IEnvelope source = groupFilterCutoffModulator.getSource ();
-                final IModulator filterCutoffModulator = filter.getCutoffModulator ();
+                final IEnvelopeModulator filterCutoffModulator = filter.getCutoffEnvelopeModulator ();
                 filterCutoffModulator.setDepth (groupFilterCutoffModulator.getDepth ());
 
                 final IEnvelope filterCutoffEnvelope = filterCutoffModulator.getSource ();
@@ -1009,13 +1017,13 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param groupElement The group element
      * @return The found envelopes
      */
-    private Map<String, IModulator> readGroupModulators (final Element groupElement)
+    private Map<String, IEnvelopeModulator> readGroupModulators (final Element groupElement)
     {
         final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.intModulatorsElement ());
         if (modulatorsElement == null)
             return Collections.emptyMap ();
 
-        final Map<String, IModulator> modulators = new HashMap<> ();
+        final Map<String, IEnvelopeModulator> modulators = new HashMap<> ();
         for (final Element modulatorElement: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement ()))
         {
             final Element envElement = XMLUtils.getChildElementByName (modulatorElement, this.tags.envelopeElement ());
@@ -1027,7 +1035,7 @@ public abstract class AbstractNKIMetadataFileHandler
                     final double modulationIntensity = this.getModulationIntensity (modulatorElement);
                     if (modulationIntensity != 0)
                     {
-                        final IModulator modulator = this.readModulatorFromElement (envElement);
+                        final IEnvelopeModulator modulator = this.readModulatorFromElement (envElement);
                         if (modulator != null)
                         {
                             modulator.setDepth (modulationIntensity);
@@ -1094,7 +1102,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param envElement The modulator XML element
      * @return The IModulator, if modulator could be read successfully, otherwise null
      */
-    private IModulator readModulatorFromElement (final Element envElement)
+    private IEnvelopeModulator readModulatorFromElement (final Element envElement)
     {
         final String envType = envElement.getAttribute (this.tags.envTypeAttribute ());
         if (envType == null)
@@ -1102,7 +1110,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
         try
         {
-            final DefaultModulator modulator = new DefaultModulator ();
+            final DefaultEnvelopeModulator modulator = new DefaultEnvelopeModulator (0);
             final IEnvelope env = modulator.getSource ();
 
             final Map<String, String> envParams = this.readValueMap (envElement);
@@ -1306,6 +1314,54 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
+     * Reads the value by which the amplitude is modulated by the velocity from a group element.
+     *
+     * @param groupElement The group element
+     * @return The number of modulation (0..1)
+     */
+    private double readGroupAmplitudeVelocityModulator (final Element groupElement)
+    {
+        final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.extModulatorsElement ());
+        if (modulatorsElement != null)
+            for (final Element modulator: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.extModulatorElement ()))
+            {
+                final double ampVelocityMod = this.getAmplitudeVelocityModulator (modulator);
+                if (ampVelocityMod >= 0)
+                    return ampVelocityMod;
+            }
+        return -1;
+    }
+
+
+    /**
+     * Reads the value by which the amplitude is modulated by the velocity from a modulator Element.
+     *
+     * @param modulator The modulator Element
+     * @return The pitch bend value. If none could be found, a -1 is returned.
+     */
+    private double getAmplitudeVelocityModulator (final Element modulator)
+    {
+        double ampVelocityMod = -1;
+
+        final Map<String, String> modulatorParams = this.readValueMap (modulator);
+        if (modulatorParams == null || !modulatorParams.containsKey (this.tags.sourceParam ()))
+            return ampVelocityMod;
+
+        final String source = modulatorParams.get (this.tags.sourceParam ());
+
+        if (!source.equals (this.tags.velocityValue ()))
+            return ampVelocityMod;
+
+        final String intensity = this.readAmplitudeVelocityIntensity (modulator);
+
+        if (intensity == null)
+            return ampVelocityMod;
+
+        return Double.parseDouble (intensity);
+    }
+
+
+    /**
      * Finds a group's zone elements.
      *
      * @param groupElement The group element
@@ -1336,6 +1392,15 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The pitch bend intensity value or null, if intensity couldn't be read.
      */
     protected abstract String readPitchBendIntensity (final Element modulator);
+
+
+    /**
+     * Reads the volume intensity value from a modulator element.
+     *
+     * @param modulator The modulator element
+     * @return The volume intensity value or null, if intensity couldn't be read.
+     */
+    protected abstract String readAmplitudeVelocityIntensity (final Element modulator);
 
 
     private static String formatDouble (final double value)
