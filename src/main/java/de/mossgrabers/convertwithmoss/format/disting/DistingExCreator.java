@@ -20,6 +20,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -29,6 +30,11 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.control.TitledSeparator;
+import de.mossgrabers.tools.ui.panel.BoxPanel;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
+import javafx.scene.control.CheckBox;
 
 
 /**
@@ -39,8 +45,16 @@ import de.mossgrabers.tools.ui.BasicConfig;
  */
 public class DistingExCreator extends WavCreator
 {
-    private final Map<Integer, Integer> velocityLayerIndices = new HashMap<> ();
-    private String                      filenamePrefix;
+    private static final String                 DEX_LIMIT_TO_16_441    = "DistingLimitTo16441";
+    private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
+    {
+        16
+    }, 44100, true);
+    private static final DestinationAudioFormat DEFEAULT_AUDIO_FORMAT  = new DestinationAudioFormat ();
+
+    private final Map<Integer, Integer>         velocityLayerIndices   = new HashMap<> ();
+    private String                              filenamePrefix;
+    private CheckBox                            limitTo16441;
 
 
     /**
@@ -56,8 +70,27 @@ public class DistingExCreator extends WavCreator
 
     /** {@inheritDoc} */
     @Override
+    public Node getEditPane ()
+    {
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+
+        panel.createSeparator ("@IDS_DEX_SEPARATOR");
+
+        this.limitTo16441 = panel.createCheckBox ("@IDS_DEX_LIMIT_TO_16_441");
+
+        final TitledSeparator separator = this.addWavChunkOptions (panel);
+        separator.getStyleClass ().add ("titled-separator-pane");
+
+        return panel.getPane ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void loadSettings (final BasicConfig config)
     {
+        this.limitTo16441.setSelected (config.getBoolean (DEX_LIMIT_TO_16_441, true));
+
         this.loadWavChunkSettings (config, "Disting");
     }
 
@@ -66,6 +99,8 @@ public class DistingExCreator extends WavCreator
     @Override
     public void saveSettings (final BasicConfig config)
     {
+        config.setBoolean (DEX_LIMIT_TO_16_441, this.limitTo16441.isSelected ());
+
         this.saveWavChunkSettings (config, "Disting");
     }
 
@@ -93,7 +128,11 @@ public class DistingExCreator extends WavCreator
         // Store all samples
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource);
+
+        final boolean doLimit = this.limitTo16441.isSelected ();
+        if (doLimit)
+            recalculateSamplePositions (multisampleSource, 44100);
+        this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -346,7 +385,7 @@ public class DistingExCreator extends WavCreator
         parameters[65] = 0; // Voice 8 bend input
         parameters[66] = 0; // Output mode
         parameters[67] = 0; // Input mode
-        parameters[68] = 0; // Sustain mode
+        parameters[68] = 1; // Sustain mode -> Piano mode
         parameters[69] = 0; // MIDI velocity curve
         parameters[70] = 0; // Arp reset input
         parameters[71] = 0; // Gate offset

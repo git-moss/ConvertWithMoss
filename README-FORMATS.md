@@ -8,16 +8,17 @@ The following multisample formats are supported:
 4. [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
 5. [CWITEC TX16Wx](#cwitec-tx16wx)
 6. [DecentSampler](#decentsampler)
-7. [Korg KMP/KSF](#korg-kmpksf)
-8. [Korg wavestate/modwave](#korg-wavestatemodwave)
-9. [Logic EXS24](#logic-exs24)
-10. [Multisample Format (Bitwig Studio, Presonus Studio One)](#multisample-format-bitwig-studio-presonus-studio-one)
-11. [Native Instruments Kontakt NKI/NKM](#kontakt-nkinkm)
-12. [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
-13. [SFZ](#sfz)
-14. [SoundFont 2](#soundfont-2)
-15. [TAL Sampler](#tal-sampler)
-16. [WAV files](#wav-files)
+7. [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
+8. [Korg KMP/KSF](#korg-kmpksf)
+9. [Korg wavestate/modwave](#korg-wavestatemodwave)
+10. [Logic EXS24](#logic-exs24)
+11. [Multisample Format (Bitwig Studio, Presonus Studio One)](#multisample-format-bitwig-studio-presonus-studio-one)
+12. [Native Instruments Kontakt NKI/NKM](#kontakt-nkinkm)
+13. [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+14. [SFZ](#sfz)
+15. [SoundFont 2](#soundfont-2)
+16. [TAL Sampler](#tal-sampler)
+17. [WAV files](#wav-files)
 
 ## Automatic Metadata detection
 
@@ -145,6 +146,16 @@ If selected as a destination, a NKI file is written and all samples are placed i
 
 * Currently, only the Kontakt 1 format is supported which sadly does not contain any metadata information.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
+
+## Expert Sleepers disting EX
+
+The disting EX is a multifunction Eurorack module which provides many different algorithms. On of them is the SD Multisample algorithm which is an eight voice polyphonic, three part multitimbral, sample playback instrument, playing WAV files from the MicroSD card. It can have up to 3 input CV/gate pairs, or can be played via MIDI or I2C. It supports both velocity switches and round robins per sample.
+The basic multi-sample setup is encoded in the file-names of the samples. Further information like the amplitude envelope are stored in a preset (*.dexpreset). The preset references only the name of the folder which contains the related samples. All samples in the folder considered to be belonging to the multi-sample.
+
+### Destination Options
+
+* 'Limit sample resolution and rate to 16bit/44.1kHz': If enabled samples of a high resolution will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it decrease the number of voices it can play.
+* Options to write/update [WAV Chunk Information](#wav-chunk-information). Writing the Sample chunk is important since the disting EX reads the loop information from it.
 
 ## Korg KMP/KSF
 
