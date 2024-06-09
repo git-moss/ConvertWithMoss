@@ -263,7 +263,7 @@ public class Music1010Creator extends AbstractCreator
         // Store all samples
         final boolean resample = this.resampleTo2448.isSelected ();
         if (resample)
-            AbstractCreator.recalculateSamplePositions (multisampleSource, 48000);
+            recalculateSamplePositions (multisampleSource, 48000);
         this.writeSamples (destinationFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT);
     }
 
