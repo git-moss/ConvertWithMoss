@@ -370,13 +370,9 @@ public class DefaultEnvelope implements IEnvelope
         final DefaultEnvelope other = (DefaultEnvelope) obj;
         if (Double.doubleToLongBits (this.delayTime) != Double.doubleToLongBits (other.delayTime) || Double.doubleToLongBits (this.attackTime) != Double.doubleToLongBits (other.attackTime) || Double.doubleToLongBits (this.holdTime) != Double.doubleToLongBits (other.holdTime) || Double.doubleToLongBits (this.decayTime) != Double.doubleToLongBits (other.decayTime))
             return false;
-        if ((Double.doubleToLongBits (this.releaseTime) != Double.doubleToLongBits (other.releaseTime)) || (Double.doubleToLongBits (this.startLevel) != Double.doubleToLongBits (other.startLevel)) || (Double.doubleToLongBits (this.holdLevel) != Double.doubleToLongBits (other.holdLevel)) || (Double.doubleToLongBits (this.sustainLevel) != Double.doubleToLongBits (other.sustainLevel)))
+        if (Double.doubleToLongBits (this.releaseTime) != Double.doubleToLongBits (other.releaseTime) || Double.doubleToLongBits (this.startLevel) != Double.doubleToLongBits (other.startLevel) || Double.doubleToLongBits (this.holdLevel) != Double.doubleToLongBits (other.holdLevel) || Double.doubleToLongBits (this.sustainLevel) != Double.doubleToLongBits (other.sustainLevel))
             return false;
-        if (Double.doubleToLongBits (this.attackSlope) != Double.doubleToLongBits (other.attackSlope))
-            return false;
-        if (Double.doubleToLongBits (this.decaySlope) != Double.doubleToLongBits (other.decaySlope))
-            return false;
-        if (Double.doubleToLongBits (this.releaseSlope) != Double.doubleToLongBits (other.releaseSlope))
+        if ((Double.doubleToLongBits (this.attackSlope) != Double.doubleToLongBits (other.attackSlope)) || (Double.doubleToLongBits (this.decaySlope) != Double.doubleToLongBits (other.decaySlope)) || (Double.doubleToLongBits (this.releaseSlope) != Double.doubleToLongBits (other.releaseSlope)))
             return false;
         return Double.doubleToLongBits (this.endLevel) == Double.doubleToLongBits (other.endLevel);
     }

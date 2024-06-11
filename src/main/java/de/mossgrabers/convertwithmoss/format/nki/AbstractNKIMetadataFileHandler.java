@@ -1341,7 +1341,7 @@ public abstract class AbstractNKIMetadataFileHandler
      */
     private double getAmplitudeVelocityModulator (final Element modulator)
     {
-        double ampVelocityMod = -1;
+        final double ampVelocityMod = -1;
 
         final Map<String, String> modulatorParams = this.readValueMap (modulator);
         if (modulatorParams == null || !modulatorParams.containsKey (this.tags.sourceParam ()))
@@ -1353,7 +1353,6 @@ public abstract class AbstractNKIMetadataFileHandler
             return ampVelocityMod;
 
         final String intensity = this.readAmplitudeVelocityIntensity (modulator);
-
         if (intensity == null)
             return ampVelocityMod;
 

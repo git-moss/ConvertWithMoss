@@ -25,7 +25,7 @@ public class WaldorfQpatParameter
 
     /**
      * Read the parameter.
-     * 
+     *
      * @param in The input stream
      * @throws IOException Could not read the parameter attributes
      */
@@ -39,14 +39,13 @@ public class WaldorfQpatParameter
 
     /**
      * Write the parameter.
-     * 
+     *
      * @param out The output stream
      * @throws IOException Could not write the parameter attributes
      */
     public void write (final OutputStream out) throws IOException
     {
-        // TODO
-        // StreamUtils.writeFloatLE (out, this.value);
+        StreamUtils.writeFloatLE (out, this.value);
         StreamUtils.writeASCII (out, this.name, WaldorfQpatConstants.MAX_STRING_LENGTH);
         StreamUtils.writeASCII (out, this.hint, WaldorfQpatConstants.MAX_STRING_LENGTH);
     }

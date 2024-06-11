@@ -25,7 +25,7 @@ public class WaldorfQpatResourceHeader
 
     /**
      * Read the resource attributes.
-     * 
+     *
      * @param in THe input stream
      * @throws IOException Could not read the resource attributes
      */

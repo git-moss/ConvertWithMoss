@@ -113,7 +113,7 @@ public class DistingExCreator extends WavCreator
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
         this.filenamePrefix = StringUtils.fixASCII (sampleName);
-        final String safeSampleFolderName = sampleName.length () > 20 ? sampleName.substring (0, 20) : sampleName;
+        final String safeSampleFolderName = sampleName.length () > 20 ? sampleName.substring (0, 20).trim () : sampleName;
 
         final File multiFile = new File (destinationFolder, sampleName + ".dexpreset");
         if (multiFile.exists ())
@@ -182,6 +182,10 @@ public class DistingExCreator extends WavCreator
                 if (!zones.isEmpty ())
                 {
                     final ISampleZone zone = zones.get (0);
+
+                    // Limit maximum notes if stereo
+                    parameters[17] = zone.getSampleData ().getAudioMetadata ().isMono () ? 8 : 5;
+
                     final int bendUp = zone.getBendUp ();
                     parameters[18] = bendUp > 0 ? bendUp : 2;
 
@@ -221,12 +225,10 @@ public class DistingExCreator extends WavCreator
             final byte [] byteArray = byteOut.toByteArray ();
             boolean makeFF = false;
             for (int i = 0; i < byteArray.length; i++)
-            {
                 if (makeFF)
                     byteArray[i] = (byte) 0xFF;
                 else if (byteArray[i] == 0)
                     makeFF = true;
-            }
             out.write (byteArray);
 
             // Unknown
