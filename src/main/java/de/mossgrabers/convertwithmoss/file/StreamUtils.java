@@ -425,7 +425,7 @@ public class StreamUtils
 
 
     /**
-     * Converts a 4 byte float value.
+     * Reads and converts a 4 byte float value.
      *
      * @param in The input stream to read from
      * @return The float value
@@ -435,6 +435,19 @@ public class StreamUtils
     {
         final byte [] data = in.readNBytes (4);
         return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getFloat ();
+    }
+
+
+    /**
+     * Converts and writes a 4 byte float value.
+     *
+     * @param out The output stream to write to
+     * @param value The float value
+     * @throws IOException Data could not be written
+     */
+    public static void writeFloatLE (final OutputStream out, final float value) throws IOException
+    {
+        out.write (ByteBuffer.allocate (4).order (ByteOrder.LITTLE_ENDIAN).putFloat (value).array ());
     }
 
 
