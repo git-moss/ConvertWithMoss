@@ -1,6 +1,6 @@
 # Changes
 
-## 9.5.1 (unreleased)
+## 10.0.0
 
 * Added support for disting EX multi-sample preset format.
 * All formats
