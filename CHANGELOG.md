@@ -1,5 +1,13 @@
 # Changes
 
+## 10.0.1 (unreleased)
+
+* disting EX
+  * Fixed: The MIDI note for the switch (SW) was off by 1 octave (disting assumes C3 as MIDI note 48 instead of 60). This caused playback issues.
+  * Fixed: Release trigger groups are now removed from the output since the distingEX does not support release triggers.
+* SFZ
+  * Fixed: Pitch bend was by factor 100 too small (semi-tones instead of cents).
+
 ## 10.0.0
 
 * Added support for disting EX multi-sample preset format.

@@ -161,10 +161,10 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected static void safeCreateDirectory (final File folder) throws IOException
     {
-        if (folder.exists () || folder.mkdir ())
+        if (folder.exists () || folder.mkdirs ())
             return;
 
-        // A parallel thread might already have created the directory and mkdir did return
+        // A parallel thread might already have created the directory and mkdirs did return
         // false. Therefore check again before throwing an exception
         if (!folder.exists ())
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERROR_SAMPLE_FOLDER", folder.getAbsolutePath ()));

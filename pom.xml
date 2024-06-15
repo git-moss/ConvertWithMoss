@@ -34,12 +34,12 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>23-ea+20</version>
+			<version>23-ea+22</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-web</artifactId>
-			<version>23-ea+20</version>
+			<version>23-ea+22</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.trilarion</groupId>
@@ -131,7 +131,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.6.1</version>
+				<version>3.7.0</version>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>
@@ -154,11 +154,14 @@
 			<plugin>
 				<groupId>org.panteleyev</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
-				<version>1.6.4</version>
+				<version>1.6.5</version>
 				<configuration>
 					<input>target/lib</input>
 					<destination>target/release</destination>
-					<mainJar>convertwithmoss-${project.version}.jar</mainJar>
+					<javaOptions>
+						<option>-Xmx64G</option>
+					</javaOptions>
+        			<mainJar>convertwithmoss-${project.version}.jar</mainJar>
 					<mainClass>${main.class}</mainClass>
 					<appVersion>${project.version}</appVersion>
 					<copyright>(c) 2021-2024 by ${project.organization.name}</copyright>
@@ -236,7 +239,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.2.5</version>
+				<version>3.3.0</version>
 			</plugin>
 
 		</plugins>

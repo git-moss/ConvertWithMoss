@@ -24,9 +24,36 @@ public class WaldorfQpatParameter
 
 
     /**
-     * Read the parameter.
+     * Constructor.
+     * 
+     * @param name The name of the parameter
+     * @param hint The descriptive text of the value
+     * @param value The value of the parameter
+     */
+    public WaldorfQpatParameter (final String name, final String hint, final float value)
+    {
+        this.name = name;
+        this.hint = hint;
+        this.value = value;
+    }
+
+
+    /**
+     * Constructor. Reads the parameter from the input stream.
      *
      * @param in The input stream
+     * @throws IOException Could not read the parameter attributes
+     */
+    public WaldorfQpatParameter (final InputStream in) throws IOException
+    {
+        this.read (in);
+    }
+
+
+    /**
+     * Read the parameter.
+     *
+     * @param in The input stream to read from
      * @throws IOException Could not read the parameter attributes
      */
     public void read (final InputStream in) throws IOException

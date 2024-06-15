@@ -175,16 +175,13 @@ public class DistingExCreator extends WavCreator
 
             // Fill parameters
             final int [] parameters = createDefaultParameters ();
-            final List<IGroup> groups = multisampleSource.getGroups ();
+            final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
             if (!groups.isEmpty ())
             {
                 final List<ISampleZone> zones = groups.get (0).getSampleZones ();
                 if (!zones.isEmpty ())
                 {
                     final ISampleZone zone = zones.get (0);
-
-                    // Limit maximum notes if stereo
-                    parameters[17] = zone.getSampleData ().getAudioMetadata ().isMono () ? 8 : 5;
 
                     final int bendUp = zone.getBendUp ();
                     parameters[18] = bendUp > 0 ? bendUp : 2;
@@ -273,7 +270,7 @@ public class DistingExCreator extends WavCreator
     {
         this.velocityLayerIndices.clear ();
         final Set<Integer> highVelocities = new TreeSet<> ();
-        for (final IGroup group: multisampleSource.getGroups ())
+        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
             for (final ISampleZone sampleZone: group.getSampleZones ())
                 highVelocities.add (Integer.valueOf (limitToDefault (sampleZone.getVelocityHigh (), 127)));
         int index = 0;
@@ -297,7 +294,8 @@ public class DistingExCreator extends WavCreator
             sb.append ('_').append (NoteParser.formatNoteSharps (keyRoot));
 
         final int keyHigh = limitToDefault (zone.getKeyHigh (), 127);
-        sb.append ("_SW").append (keyHigh);
+        // Need to subtract 12 since C3 is MIDI note 48 and not 60!
+        sb.append ("_SW").append (keyHigh - 12);
 
         if (this.velocityLayerIndices.size () > 1)
         {

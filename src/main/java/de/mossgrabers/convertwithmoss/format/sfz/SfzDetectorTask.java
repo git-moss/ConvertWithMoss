@@ -415,8 +415,8 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final double pitchKeytrack = this.getDoubleValue (SfzOpcode.PITCH_KEYTRACK, 100);
         sampleMetadata.setKeyTracking (MathUtils.clamp (pitchKeytrack, 0, 100) / 100.0);
 
-        sampleMetadata.setBendUp (this.getIntegerValue (SfzOpcode.BEND_UP, 0));
-        sampleMetadata.setBendDown (this.getIntegerValue (SfzOpcode.BEND_DOWN, 0));
+        sampleMetadata.setBendUp ((int) (this.getIntegerValue (SfzOpcode.BEND_UP, 0) / 100.0));
+        sampleMetadata.setBendDown ((int) (this.getIntegerValue (SfzOpcode.BEND_DOWN, 0) / 100.0));
 
         int envelopeDepth = this.getIntegerValue (SfzOpcode.PITCHEG_DEPTH, 0);
         if (envelopeDepth == 0)
