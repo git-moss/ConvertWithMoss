@@ -334,10 +334,10 @@ public class SfzCreator extends AbstractCreator
 
         final int bendUp = zone.getBendUp ();
         if (bendUp != 0)
-            addIntegerAttribute (buffer, SfzOpcode.BEND_UP, bendUp, true);
+            addIntegerAttribute (buffer, SfzOpcode.BEND_UP, bendUp * 100, true);
         final int bendDown = zone.getBendDown ();
         if (bendDown != 0)
-            addIntegerAttribute (buffer, SfzOpcode.BEND_DOWN, bendDown, true);
+            addIntegerAttribute (buffer, SfzOpcode.BEND_DOWN, bendDown * 100, true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 

@@ -147,6 +147,10 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         {
             this.notifier.logError (ex);
         }
+        catch (final OutOfMemoryError err)
+        {
+            this.notifier.logError (err);
+        }
         final boolean cancelled = this.isCancelled ();
         this.notifier.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");
         return Boolean.valueOf (cancelled);

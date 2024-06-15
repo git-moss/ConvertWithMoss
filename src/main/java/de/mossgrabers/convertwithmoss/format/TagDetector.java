@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -551,14 +552,20 @@ public class TagDetector
      */
     public static String detect (final List<String> texts, final Map<String, String> lookupMap, final String defaultTag)
     {
+        final Map<String, String> results = new HashMap<> ();
         for (final String text: texts)
         {
             final String t = text.toUpperCase (Locale.US);
             for (final Map.Entry<String, String> e: lookupMap.entrySet ())
-                if (t.contains (e.getKey ()))
-                    return e.getValue ();
+            {
+                final String key = e.getKey ();
+                if (t.contains (key))
+                    results.put (key, e.getValue ());
+            }
         }
-        return defaultTag;
+        if (results.isEmpty ())
+            return defaultTag;
+        return Collections.max (results.entrySet (), (entry1, entry2) -> entry1.getKey ().length () - entry2.getKey ().length ()).getValue ();
     }
 
 

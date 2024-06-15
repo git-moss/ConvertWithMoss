@@ -185,7 +185,7 @@ public class DistingExDetectorTask extends AbstractDetectorTask
                 if (note != null)
                     zone.setKeyRoot (NoteParser.parseNote (note));
                 if (keySwitch != null)
-                    zone.setKeyHigh (Integer.parseInt (keySwitch));
+                    zone.setKeyHigh (Integer.parseInt (keySwitch) + 12);
                 if (velocityIndex != null)
                     velocity = Integer.parseInt (velocityIndex);
                 if (roundrobinIndex != null)

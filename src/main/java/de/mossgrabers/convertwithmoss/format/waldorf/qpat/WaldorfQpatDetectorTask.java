@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -22,12 +24,18 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -46,14 +54,19 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class WaldorfQpatDetectorTask extends AbstractDetectorTask
 {
-    private static final String         ENDING_QPAT = ".qpat";
+    private static final String                         ENDING_QPAT = ".qpat";
 
-    private static Map<Integer, String> SYNTH_CODES = new HashMap<> (3);
+    private static Map<Integer, String>                 SYNTH_CODES = new HashMap<> (3);
+    private static Map<WaldorfQpatResourceType, String> GROUP_NAMES = new HashMap<> (3);
     static
     {
         SYNTH_CODES.put (Integer.valueOf (0), "Quantum");
         SYNTH_CODES.put (Integer.valueOf (1), "Iridium");
         SYNTH_CODES.put (Integer.valueOf (2), "IridiumCore");
+
+        GROUP_NAMES.put (WaldorfQpatResourceType.USER_SAMPLE_MAP1, "Sample Map 1");
+        GROUP_NAMES.put (WaldorfQpatResourceType.USER_SAMPLE_MAP2, "Sample Map 2");
+        GROUP_NAMES.put (WaldorfQpatResourceType.USER_SAMPLE_MAP3, "Sample Map 3");
     }
 
 
@@ -106,9 +119,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
     {
         final String name = FileUtils.getNameWithoutType (file);
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
-
-        final List<IGroup> groups = new ArrayList<> ();
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
 
         final long version = readHeader (in, multisampleSource);
 
@@ -116,54 +127,295 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
         // Skip padding
         in.skipNBytes (2);
 
-        final List<WaldorfQpatResourceHeader> resources = new ArrayList<> (WaldorfQpatConstants.MAX_RESOURCES);
+        final WaldorfQpatResourceHeader [] resources = new WaldorfQpatResourceHeader [3];
         for (int i = 0; i < WaldorfQpatConstants.MAX_RESOURCES; i++)
         {
             final WaldorfQpatResourceHeader resourceHeader = new WaldorfQpatResourceHeader ();
             resourceHeader.read (in);
-            if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP1 || resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP2 || resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP3)
-                resources.add (resourceHeader);
+            if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP1)
+                resources[0] = resourceHeader;
+            else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP2)
+                resources[1] = resourceHeader;
+            else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP3)
+                resources[2] = resourceHeader;
         }
 
         final int flags = StreamUtils.readUnsigned16 (in, false);
 
-        // TODO
-        final boolean multiFlag = (flags & 1) > 0;
-        // Single / Split / Layered
+        // True, if a 2nd layer is present
+        final boolean isMulti = (flags & 1) > 0;
+        // Multi-mode, only valid when multi-flag is set: Single / Split / Layered
         final int timbreMode = StreamUtils.readUnsigned16 (in, false);
+        // For multi-layer patches the alternate layer is stored directly after the main layer.
+        // This points to the beginning byte of the alternate layer.
         final long altTimbreOffset = StreamUtils.readUnsigned32 (in, false);
 
         // Available from version 9 onwards. Instrument type on which the patch was saved last.
-        final int synthCode = in.read ();
+        int synthCode = in.read ();
+        if (version < 9)
+            synthCode = 0;
         this.notifier.log ("IDS_QPAT_VERSION", Long.toString (version), SYNTH_CODES.get (Integer.valueOf (synthCode)));
 
         // Padding up to 512 bytes.
         in.skipNBytes (75);
 
-        final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
+        // Read all parameters
+        final Map<String, WaldorfQpatParameter> parameters = new TreeMap<> ();
         for (int i = 0; i < numParams; i++)
         {
-            final WaldorfQpatParameter param = new WaldorfQpatParameter ();
-            param.read (in);
-            parameters.add (param);
+            final WaldorfQpatParameter param = new WaldorfQpatParameter (in);
+            parameters.put (param.name, param);
         }
 
+        // Read all sample maps (max. 3, one for each oscillator)
         final byte [] resourcesData = in.readAllBytes ();
-        for (final WaldorfQpatResourceHeader resourceHeader: resources)
+        final IGroup [] groupsArray = new IGroup [3];
+        final List<IGroup> groups = new ArrayList<> ();
+        for (int i = 0; i < 3; i++)
         {
-            final String sampleMap = new String (resourcesData, resourceHeader.offset, resourceHeader.length, StandardCharsets.US_ASCII);
-            final IGroup group = this.parseSampleMap (sampleMap, file.getParentFile ());
-            if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP1)
-                group.setName ("Sample Map 1");
-            else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP2)
-                group.setName ("Sample Map 2");
-            else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP3)
-                group.setName ("Sample Map 3");
-            groups.add (group);
+            if (resources[i] == null)
+                continue;
+            final String sampleMap = new String (resourcesData, resources[i].offset, resources[i].length, StandardCharsets.US_ASCII);
+            groupsArray[i] = this.parseSampleMap (sampleMap, file.getParentFile ());
+            final String groupName = GROUP_NAMES.get (resources[i].type);
+            if (groupName != null)
+                groupsArray[i].setName (groupName);
+            groups.add (groupsArray[i]);
+        }
+        if (groups.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_QPAT_NOT_SAMPLE_BASED"));
+        multisampleSource.setGroups (groups);
+
+        this.applyParameters (groupsArray, parameters);
+
+        if (isMulti)
+        {
+            // TODO read the 2nd layer
         }
 
-        multisampleSource.setGroups (groups);
         return Collections.singletonList (multisampleSource);
+    }
+
+
+    /**
+     * Apply all parameters to the groups/zones.
+     *
+     * @param groups The 3 groups, might contain null entries!
+     * @param parameters The parameters to apply
+     */
+    private void applyParameters (final IGroup [] groups, final Map<String, WaldorfQpatParameter> parameters)
+    {
+        for (int i = 0; i < groups.length; i++)
+        {
+            final IGroup group = groups[i];
+            if (group == null)
+                continue;
+
+            final int groupIndex = i + 1;
+
+            // Osc1CoarsePitch: [0..48] ~ [-24..24]
+            double tune = 0;
+            final WaldorfQpatParameter coarseParameter = parameters.get ("Osc" + groupIndex + "CoarsePitch");
+            if (coarseParameter != null)
+                tune = (int) coarseParameter.value - 24;
+
+            // Osc1FinePitch: [0..1] ~ [-100..100]
+            final WaldorfQpatParameter fineParameter = parameters.get ("Osc" + groupIndex + "FinePitch");
+            if (fineParameter != null)
+                tune += fineParameter.value * 2.0 - 1.0;
+
+            // Osc1PitchBendRange: [0..48] ~ [-24..24]
+            int pitchbend = 0;
+            final WaldorfQpatParameter pitchbendParameter = parameters.get ("Osc" + groupIndex + "PitchBendRange");
+            if (pitchbendParameter != null)
+                pitchbend = (int) pitchbendParameter.value - 24;
+
+            // Osc1Keytrack: [0..1] ~ [-200..200]
+            double keyTracking = 100;
+            final WaldorfQpatParameter keyTrackingParameter = parameters.get ("Osc" + groupIndex + "Keytrack");
+            if (keyTrackingParameter != null)
+                keyTracking = MathUtils.clamp (keyTrackingParameter.value * 400.0 - 200.0, 0, 100) / 100.0;
+
+            // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB]
+            double volume = 0;
+            final WaldorfQpatParameter volumeParameter = parameters.get ("Osc" + groupIndex + "Vol");
+            if (volumeParameter != null)
+            {
+                volume = convertToDecibels (volumeParameter.value);
+                if (volume == Double.NEGATIVE_INFINITY)
+                    this.notifier.logError ("IDS_QPAT_OSC_SILENCED", Integer.toString (groupIndex));
+            }
+
+            // Osc1Pan: [0..1] ~ [L..R]
+            double panorama = 0.5;
+            final WaldorfQpatParameter panoramaParameter = parameters.get ("Osc" + groupIndex + "Pan");
+            if (panoramaParameter != null)
+                panorama = panoramaParameter.value * 2.0 - 1.0;
+
+            // Osc1MinNote - C-2 - 0.0 -> Only relevant for splits!
+            // Osc1MaxNote - G8 - 127.0 -> Only relevant for splits!
+
+            final Optional<IFilter> filter = parseFilter (parameters);
+
+            final IEnvelope ampEnvelope = parseAmpEnvelope (parameters);
+            // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+            double ampVeloAmount = 1;
+            final WaldorfQpatParameter ampVeloAmountParameter = parameters.get ("AmpVeloAmount");
+            if (ampVeloAmountParameter != null)
+                ampVeloAmount = ampVeloAmountParameter.value * 2.0 - 1.0;
+
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                zone.setTune (zone.getTune () + tune);
+                zone.setKeyTracking (keyTracking);
+                zone.setBendUp (pitchbend);
+                zone.setBendDown (-pitchbend);
+                zone.setGain (volume);
+                zone.setPanorama (panorama);
+                zone.getAmplitudeVelocityModulator ().setDepth (ampVeloAmount);
+                zone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
+                if (filter.isPresent ())
+                    zone.setFilter (filter.get ());
+            }
+        }
+    }
+
+
+    /**
+     * Parse all filter parameters.
+     *
+     * @param parameters The parameters
+     * @return The parsed filter
+     */
+    private static Optional<IFilter> parseFilter (final Map<String, WaldorfQpatParameter> parameters)
+    {
+        // FilterState: [0] "Active" [1] "Bypass" [2] "Off"
+        final WaldorfQpatParameter filterStateParameter = parameters.get ("FilterState");
+        if (filterStateParameter == null || filterStateParameter.value != 0)
+            return Optional.empty ();
+
+        // Filter12Type: [0] "12dB LP" [1] "12dB sat. LP" [2] "12dB dirty LP" [3] "24dB LP" [4]
+        // "24dB sat. LP" [5] "24dB dirty LP"
+        int poles = 2;
+        final WaldorfQpatParameter filterTypeParameter = parameters.get ("Filter12Type");
+        if (filterTypeParameter != null)
+            poles = filterTypeParameter.value < 3 ? 2 : 4;
+
+        // Filter1CutOff: [0.00] "8.1758 Hz" ... [1.00] "19912.2 Hz"
+        double cutoff = 19912.2;
+        final WaldorfQpatParameter filterCutoffParameter = parameters.get ("Filter1CutOff");
+        if (filterCutoffParameter != null)
+            cutoff = Math.round (8.1758 * Math.pow (2, 11.25 * filterCutoffParameter.value));
+
+        // Filter1Reso: [0.00] "0.00 %" ... [1.00] "100.00 %"
+        double resonance = 0;
+        final WaldorfQpatParameter filterResonanceParameter = parameters.get ("Filter1Reso");
+        if (filterResonanceParameter != null)
+            resonance = filterResonanceParameter.value;
+
+        final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, poles, cutoff, resonance);
+
+        // Filter1EnvAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+        final WaldorfQpatParameter filterVeloAmountParameter = parameters.get ("Filter1VeloAmount");
+        if (filterVeloAmountParameter != null)
+            filter.getCutoffVelocityModulator ().setDepth (filterVeloAmountParameter.value * 2.0 - 1.0);
+
+        final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+        final WaldorfQpatParameter filterEnvAmountParameter = parameters.get ("Filter1EnvAmount");
+        if (filterEnvAmountParameter != null)
+            cutoffEnvelopeModulator.setDepth (filterEnvAmountParameter.value * 2.0 - 1.0);
+
+        final IEnvelope envelope = cutoffEnvelopeModulator.getSource ();
+
+        // Filter1EnvDelay
+        final WaldorfQpatParameter envDelayParameter = parameters.get ("Filter1EnvDelay");
+        if (envDelayParameter != null)
+            envelope.setDelayTime (convertDelayTime (envDelayParameter.value));
+        // Filter1EnvAttack
+        final WaldorfQpatParameter envAttackParameter = parameters.get ("Filter1EnvAttack");
+        if (envAttackParameter != null)
+            envelope.setAttackTime (convertTime (envAttackParameter.value));
+        // Filter1EnvDecay
+        final WaldorfQpatParameter envDecayParameter = parameters.get ("Filter1EnvDecay");
+        if (envDecayParameter != null)
+            envelope.setDecayTime (convertTime (envDecayParameter.value));
+        // Filter1EnvRelease
+        final WaldorfQpatParameter envReleaseParameter = parameters.get ("Filter1EnvRelease");
+        if (envReleaseParameter != null)
+            envelope.setReleaseTime (convertTime (envReleaseParameter.value));
+
+        // Filter1EnvSustain
+        final WaldorfQpatParameter envSustainParameter = parameters.get ("Filter1EnvSustain");
+        if (envSustainParameter != null)
+            envelope.setSustainLevel (envSustainParameter.value);
+
+        // Filter1AttackCurve: [0] "Exp" [1] "RC" [2] "Lin"
+        final WaldorfQpatParameter envAttackCurveParameter = parameters.get ("Filter1AttackCurve");
+        if (envAttackCurveParameter != null && envAttackCurveParameter.value != 2)
+            envelope.setAttackSlope (envAttackCurveParameter.value == 0 ? 1 : -1);
+
+        // Filter1DecayCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
+        final WaldorfQpatParameter envDecayCurveParameter = parameters.get ("Filter1DecayCurve");
+        if (envDecayCurveParameter != null && envDecayCurveParameter.value != 2)
+            envelope.setDecaySlope (envDecayCurveParameter.value == 0 ? 1 : 0.5);
+
+        // Filter1ReleaseCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
+        final WaldorfQpatParameter envReleaseCurveParameter = parameters.get ("Filter1ReleaseCurve");
+        if (envReleaseCurveParameter != null && envReleaseCurveParameter.value != 2)
+            envelope.setReleaseSlope (envReleaseCurveParameter.value == 0 ? 1 : 0.5);
+
+        return Optional.of (filter);
+    }
+
+
+    /**
+     * Parse the amplitude envelope.
+     *
+     * @param parameters The parameters
+     * @return The parsed amplitude envelope
+     */
+    private static IEnvelope parseAmpEnvelope (final Map<String, WaldorfQpatParameter> parameters)
+    {
+        final IEnvelope envelope = new DefaultEnvelope ();
+
+        // AmpEnvDelay
+        final WaldorfQpatParameter envDelayParameter = parameters.get ("AmpEnvDelay");
+        if (envDelayParameter != null)
+            envelope.setDelayTime (convertDelayTime (envDelayParameter.value));
+        // AmpEnvAttack
+        final WaldorfQpatParameter envAttackParameter = parameters.get ("AmpEnvAttack");
+        if (envAttackParameter != null)
+            envelope.setAttackTime (convertTime (envAttackParameter.value));
+        // AmpEnvDecay
+        final WaldorfQpatParameter envDecayParameter = parameters.get ("AmpEnvDecay");
+        if (envDecayParameter != null)
+            envelope.setDecayTime (convertTime (envDecayParameter.value));
+        // AmpEnvRelease
+        final WaldorfQpatParameter envReleaseParameter = parameters.get ("AmpEnvRelease");
+        if (envReleaseParameter != null)
+            envelope.setReleaseTime (convertTime (envReleaseParameter.value));
+
+        // AmpEnvSustain
+        final WaldorfQpatParameter envSustainParameter = parameters.get ("AmpEnvSustain");
+        if (envSustainParameter != null)
+            envelope.setSustainLevel (envSustainParameter.value);
+
+        // AmpAttackCurve: [0] "Exp" [1] "RC" [2] "Lin"
+        final WaldorfQpatParameter envAttackCurveParameter = parameters.get ("AmpEnvAttackCurve");
+        if (envAttackCurveParameter != null && envAttackCurveParameter.value != 2)
+            envelope.setAttackSlope (envAttackCurveParameter.value == 0 ? 1 : -1);
+
+        // AmpDecayCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
+        final WaldorfQpatParameter envDecayCurveParameter = parameters.get ("AmpEnvDecayCurve");
+        if (envDecayCurveParameter != null && envDecayCurveParameter.value != 2)
+            envelope.setDecaySlope (envDecayCurveParameter.value == 0 ? 1 : 0.5);
+
+        // AmpReleaseCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
+        final WaldorfQpatParameter envReleaseCurveParameter = parameters.get ("AmpEnvReleaseCurve");
+        if (envReleaseCurveParameter != null && envReleaseCurveParameter.value != 2)
+            envelope.setReleaseSlope (envReleaseCurveParameter.value == 0 ? 1 : 0.5);
+
+        return envelope;
     }
 
 
@@ -175,7 +427,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
      * @throws IOException Could not read
      * @throws FormatException Found unexpected format of the file
      */
-    private static long readHeader (final InputStream in, final DefaultMultisampleSource multisampleSource) throws IOException, FormatException
+    private static long readHeader (final InputStream in, final IMultisampleSource multisampleSource) throws IOException, FormatException
     {
         final long magic = StreamUtils.readUnsigned32 (in, false);
         if (magic != WaldorfQpatConstants.MAGIC)
@@ -206,6 +458,14 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
     }
 
 
+    /**
+     * Parses the sample map.
+     *
+     * @param sampleMap The sample map to parse
+     * @param parentFolder The parent folder which contains the relative sample paths
+     * @return A group with all parsed zones
+     * @throws IOException Could not parse the sample map
+     */
     private IGroup parseSampleMap (final String sampleMap, final File parentFolder) throws IOException
     {
         final IGroup group = new DefaultGroup ();
@@ -221,7 +481,8 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
                 samplePath = samplePath.substring (1);
             if (samplePath.endsWith ("\""))
                 samplePath = samplePath.substring (0, samplePath.length () - 1);
-            if (samplePath.startsWith ("3:"))
+            // "3:" references the internal partition, "4:" is the USB drive
+            if (samplePath.length () > 2 && samplePath.charAt (1) == ':')
                 samplePath = samplePath.substring (2);
             if (samplePath.length () == 0)
                 break;
@@ -317,5 +578,27 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
         }
 
         return group;
+    }
+
+
+    private static double convertToDecibels (final double x)
+    {
+        if (x == 0)
+            return Double.NEGATIVE_INFINITY;
+        return 40 * Math.log10 (x);
+    }
+
+
+    private static double convertDelayTime (final double x)
+    {
+        // Converts [0..1] to [0..2] seconds
+        return 2 * Math.pow (x, 2);
+    }
+
+
+    private static double convertTime (final double x)
+    {
+        // Converts [0..1] to [0..60] seconds
+        return 0.06 * Math.pow (1000, x);
     }
 }
