@@ -1,8 +1,14 @@
 # Changes
 
-## 10.0.1 (unreleased)
+## 10.1.0
 
-* disting EX
+* All formats
+  * Fixed: Increased the heap memory to 64GB to support larger source files.
+  * Fixed: WAV files in 32-bit float can now be converted to 16-bit PCM (workaround for bug in Java AudioSystem).
+* 1010music format - Writing
+  * New: Added an option to trim samples with a delayed start.
+* disting EX - Writing
+  * New: Added an option to trim samples with a delayed start.
   * Fixed: The MIDI note for the switch (SW) was off by 1 octave (disting assumes C3 as MIDI note 48 instead of 60). This caused playback issues.
   * Fixed: Release trigger groups are now removed from the output since the distingEX does not support release triggers.
 * SFZ

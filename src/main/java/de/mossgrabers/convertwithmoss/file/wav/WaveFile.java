@@ -130,11 +130,9 @@ public class WaveFile extends AbstractRIFFFile
      */
     public void setBroadcastAudioExtensionChunk (final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk)
     {
-        if (this.broadcastAudioExtensionChunk != null)
-            this.chunkStack.remove (this.broadcastAudioExtensionChunk);
         this.broadcastAudioExtensionChunk = broadcastAudioExtensionChunk;
-        if (this.broadcastAudioExtensionChunk != null)
-            this.chunkStack.add (this.broadcastAudioExtensionChunk);
+        this.chunkStack.clear ();
+        fillChunkStack ();
     }
 
 
@@ -156,11 +154,9 @@ public class WaveFile extends AbstractRIFFFile
      */
     public void setInstrumentChunk (final InstrumentChunk instrumentChunk)
     {
-        if (this.instrumentChunk != null)
-            this.chunkStack.remove (this.instrumentChunk);
         this.instrumentChunk = instrumentChunk;
-        if (this.instrumentChunk != null)
-            this.chunkStack.add (this.instrumentChunk);
+        this.chunkStack.clear ();
+        fillChunkStack ();
     }
 
 
@@ -182,11 +178,9 @@ public class WaveFile extends AbstractRIFFFile
      */
     public void setSampleChunk (final SampleChunk sampleChunk)
     {
-        if (this.sampleChunk != null)
-            this.chunkStack.remove (this.sampleChunk);
         this.sampleChunk = sampleChunk;
-        if (this.sampleChunk != null)
-            this.chunkStack.add (this.sampleChunk);
+        this.chunkStack.clear ();
+        fillChunkStack ();
     }
 
 
@@ -198,6 +192,19 @@ public class WaveFile extends AbstractRIFFFile
     public FormatChunk getFormatChunk ()
     {
         return this.formatChunk;
+    }
+
+
+    /**
+     * Get the data chunk.
+     *
+     * @param dataChunk The data chunk
+     */
+    public void setDataChunk (final DataChunk dataChunk)
+    {
+        this.dataChunk = dataChunk;
+        this.chunkStack.clear ();
+        fillChunkStack ();
     }
 
 
@@ -240,7 +247,7 @@ public class WaveFile extends AbstractRIFFFile
 
         final int length = Math.max (leftData.length, rightData.length);
         final byte [] combinedData = new byte [length * 2];
-        final int blockSize = this.formatChunk.getSignicantBitsPerSample () / 8;
+        final int blockSize = this.formatChunk.getSignificantBitsPerSample () / 8;
         for (int count = 0; count < length; count += blockSize)
         {
             if (count < leftData.length)

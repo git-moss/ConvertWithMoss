@@ -42,6 +42,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
@@ -450,7 +452,23 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        return this.writeSamples (sampleFolder, multisampleSource, ".wav", destinationFormat);
+        return this.writeSamples (sampleFolder, multisampleSource, ".wav", destinationFormat, false);
+    }
+
+
+    /**
+     * Writes all samples in WAV format from all groups into the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multi-sample
+     * @param destinationFormat The destination audio format
+     * @param trim Trim the sample from zone start to end if enabled
+     * @return The written files
+     * @throws IOException Could not store the samples
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
+    {
+        return this.writeSamples (sampleFolder, multisampleSource, ".wav", destinationFormat, trim);
     }
 
 
@@ -465,7 +483,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final String fileEnding) throws IOException
     {
-        return this.writeSamples (sampleFolder, multisampleSource, fileEnding, DESTINATION_FORMAT);
+        return this.writeSamples (sampleFolder, multisampleSource, fileEnding, DESTINATION_FORMAT, false);
     }
 
 
@@ -476,10 +494,11 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param multisampleSource The multi-sample
      * @param fileEnding The suffix to use for the file
      * @param destinationFormat The destination audio format
+     * @param trim Trim the sample from zone start to end if enabled
      * @return The written files
      * @throws IOException Could not store the samples
      */
-    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final String fileEnding, final DestinationAudioFormat destinationFormat) throws IOException
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final String fileEnding, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
         final List<File> writtenFiles = new ArrayList<> ();
 
@@ -499,8 +518,8 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                     if (outputCount % 80 == 0)
                         this.notifyNewline ();
 
-                    if (this.requiresRewrite (destinationFormat))
-                        this.rewriteFile (multisampleSource.getMetadata (), zone, fos, destinationFormat);
+                    if (this.requiresRewrite (destinationFormat) || trim)
+                        this.rewriteFile (multisampleSource.getMetadata (), zone, fos, destinationFormat, trim);
                     else
                     {
                         final ISampleData sampleData = zone.getSampleData ();
@@ -612,29 +631,75 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param zone The zone from which to take the data to store into the chunks
      * @param outputStream Where to write the result
      * @param destinationFormat The destination audio format
+     * @param trim Trim the sample from zone start to end if enabled
      * @throws IOException Could not store the samples
      */
-    private void rewriteFile (final IMetadata metadata, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat) throws IOException
+    private void rewriteFile (final IMetadata metadata, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
         final ISampleData sampleData = zone.getSampleData ();
         if (sampleData == null)
             return;
+
+        // Convert resolution
         final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
 
+        // Trim sample from zone start to end
+        if (trim)
+            trimStartToEnd (wavFile, zone);
+
+        // Update information chunks
         if (this.isUpdateBroadcastAudioChunk ())
             updateBroadcastAudioChunk (metadata, wavFile);
-
         final int unityNote = MathUtils.clamp (zone.getKeyRoot (), 0, 127);
         if (this.isUpdateInstrumentChunk ())
             updateInstrumentChunk (zone, wavFile, unityNote);
-
         if (this.isUpdateSampleChunk ())
             updateSampleChunk (zone, wavFile, unityNote);
-
         if (this.isRemoveJunkChunks ())
             wavFile.removeChunks (RiffID.JUNK_ID, RiffID.JUNK2_ID, RiffID.FILLER_ID, RiffID.MD5_ID);
 
         wavFile.write (outputStream);
+    }
+
+
+    /**
+     * Trims the data of the wave file to the part from the zone start and zone end. The zone is
+     * updated accordingly.
+     * 
+     * @param wavFile The WAV file to trim
+     * @param zone The zone
+     */
+    private static void trimStartToEnd (final WaveFile wavFile, final ISampleZone zone)
+    {
+        final FormatChunk formatChunk = wavFile.getFormatChunk ();
+
+        // Create the truncated data array
+        final DataChunk dataChunk = wavFile.getDataChunk ();
+        final byte [] data = dataChunk.getData ();
+        final int start = zone.getStart ();
+        final int stop = zone.getStop ();
+        final int lengthInSamples = stop - start;
+        final int numBytesPerSample = formatChunk.calculateBytesPerSample ();
+        final int startByte = start * numBytesPerSample;
+        final int newLength = lengthInSamples * numBytesPerSample;
+        final byte [] truncatedData = new byte [newLength];
+        System.arraycopy (data, startByte, truncatedData, 0, Math.min (newLength, data.length - startByte));
+
+        // Replace the previous data chunk
+        final DataChunk truncatedDataChunk = new DataChunk (formatChunk, lengthInSamples);
+        truncatedDataChunk.setData (truncatedData);
+        wavFile.setDataChunk (truncatedDataChunk);
+
+        // Update the zone values - necessary for follow-up instrument/sample chunks!
+        zone.setStart (0);
+        zone.setStop (lengthInSamples);
+        final List<ISampleLoop> loops = zone.getLoops ();
+        if (!loops.isEmpty ())
+        {
+            final ISampleLoop loop = loops.get (0);
+            loop.setStart (Math.max (loop.getStart () - start, 0));
+            loop.setEnd (Math.min (loop.getEnd () - start, lengthInSamples));
+        }
     }
 
 

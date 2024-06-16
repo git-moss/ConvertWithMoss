@@ -46,6 +46,7 @@ import javafx.scene.control.CheckBox;
 public class DistingExCreator extends WavCreator
 {
     private static final String                 DEX_LIMIT_TO_16_441    = "DistingLimitTo16441";
+    private static final String                 DEX_TRIM_START_TO_END  = "DistingTrimStartToEnd";
     private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16
@@ -55,6 +56,7 @@ public class DistingExCreator extends WavCreator
     private final Map<Integer, Integer>         velocityLayerIndices   = new HashMap<> ();
     private String                              filenamePrefix;
     private CheckBox                            limitTo16441;
+    private CheckBox                            trimStartToEnd;
 
 
     /**
@@ -77,6 +79,7 @@ public class DistingExCreator extends WavCreator
         panel.createSeparator ("@IDS_DEX_SEPARATOR");
 
         this.limitTo16441 = panel.createCheckBox ("@IDS_DEX_LIMIT_TO_16_441");
+        this.trimStartToEnd = panel.createCheckBox ("@IDS_DEX_TRIM_START_TO_END");
 
         final TitledSeparator separator = this.addWavChunkOptions (panel);
         separator.getStyleClass ().add ("titled-separator-pane");
@@ -90,6 +93,7 @@ public class DistingExCreator extends WavCreator
     public void loadSettings (final BasicConfig config)
     {
         this.limitTo16441.setSelected (config.getBoolean (DEX_LIMIT_TO_16_441, true));
+        this.trimStartToEnd.setSelected (config.getBoolean (DEX_TRIM_START_TO_END, true));
 
         this.loadWavChunkSettings (config, "Disting");
     }
@@ -100,6 +104,7 @@ public class DistingExCreator extends WavCreator
     public void saveSettings (final BasicConfig config)
     {
         config.setBoolean (DEX_LIMIT_TO_16_441, this.limitTo16441.isSelected ());
+        config.setBoolean (DEX_TRIM_START_TO_END, this.trimStartToEnd.isSelected ());
 
         this.saveWavChunkSettings (config, "Disting");
     }
@@ -109,6 +114,8 @@ public class DistingExCreator extends WavCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        final boolean trim = this.trimStartToEnd.isSelected ();
+
         this.prepareKeyAndVelocityRanges (multisampleSource);
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
@@ -121,6 +128,8 @@ public class DistingExCreator extends WavCreator
             this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
             return;
         }
+        // Note: trim doesn't need to be used in the preset since the loop information is stored in
+        // the sample chunk!
         storeMultisample (multisampleSource, multiFile, safeSampleFolderName);
 
         this.notifier.log ("IDS_NOTIFY_STORING", safeSampleFolderName);
@@ -132,7 +141,7 @@ public class DistingExCreator extends WavCreator
         final boolean doLimit = this.limitTo16441.isSelected ();
         if (doLimit)
             recalculateSamplePositions (multisampleSource, 44100);
-        this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT);
+        this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }

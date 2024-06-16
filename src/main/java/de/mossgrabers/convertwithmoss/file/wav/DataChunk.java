@@ -25,7 +25,7 @@ public class DataChunk extends RIFFChunk
      */
     public DataChunk (final FormatChunk formatChunk, final int lengthInSamples)
     {
-        super (RiffID.DATA_ID, new byte [calculateDataSize (formatChunk, lengthInSamples)], calculateDataSize (formatChunk, lengthInSamples));
+        super (RiffID.DATA_ID, new byte [formatChunk.calculateDataSize (lengthInSamples)], formatChunk.calculateDataSize (lengthInSamples));
     }
 
 
@@ -54,45 +54,17 @@ public class DataChunk extends RIFFChunk
         final int compressionCode = formatChunk.getCompressionCode ();
 
         if (compressionCode == FormatChunk.WAVE_FORMAT_PCM || compressionCode == FormatChunk.WAVE_FORMAT_IEEE_FLOAT)
-            return calculateLength (formatChunk, this.getData ());
+            return formatChunk.calculateLength (this.getData ());
 
         if (compressionCode == FormatChunk.WAVE_FORMAT_EXTENSIBLE)
         {
             final int numberOfChannels = formatChunk.getNumberOfChannels ();
             if (numberOfChannels > 2)
                 throw new CompressionNotSupportedException ("WAV files in Extensible format are only supported for stereo files.");
-            return calculateLength (formatChunk, this.getData ());
+            return formatChunk.calculateLength (this.getData ());
         }
 
         throw new CompressionNotSupportedException ("Unsupported data compression: " + FormatChunk.getCompression (compressionCode));
-    }
-
-
-    /**
-     * Calculates the length of the data in samples.
-     *
-     * @param chunk The format chunk, necessary for the calculation (sample size and number of
-     *            channels
-     * @param data The data
-     * @return The length of the sample in samples (frames) of 1 channel
-     */
-    private static int calculateLength (final FormatChunk chunk, final byte [] data)
-    {
-        return data.length / (chunk.getNumberOfChannels () * chunk.getSignicantBitsPerSample () / 8);
-    }
-
-
-    /**
-     * Calculates the data size.
-     *
-     * @param chunk The format chunk, necessary for the calculation (sample size and number of
-     *            channels
-     * @param lengthInSamples The length of the sample (number of samples)
-     * @return The size of the data block
-     */
-    private static int calculateDataSize (final FormatChunk chunk, final int lengthInSamples)
-    {
-        return lengthInSamples * (chunk.getNumberOfChannels () * chunk.getSignicantBitsPerSample () / 8);
     }
 
 

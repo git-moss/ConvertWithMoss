@@ -11,6 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -252,7 +254,13 @@ public final class AudioFileUtils
      */
     private static byte [] convertToWav (final byte [] inputData, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (new ByteArrayInputStream (inputData)))
+        return convertToWav (new ByteArrayInputStream (inputData), destinationFormat);
+    }
+
+
+    private static byte [] convertToWav (final InputStream inputStream, final DestinationAudioFormat destinationFormat) throws IOException
+    {
+        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputStream))
         {
             final AudioFormat audioFormat = audioInputStream.getFormat ();
             final int bitResolution = getMatchingBitResolution (audioFormat.getSampleSizeInBits (), destinationFormat.getBitResolutions ());
@@ -262,25 +270,64 @@ public final class AudioFileUtils
             if (maxSampleRate != -1 && (sampleRate > maxSampleRate || destinationFormat.isUpSample ()))
                 sampleRate = maxSampleRate;
 
-            final AudioFormat newAudioFormat = new AudioFormat (sampleRate, bitResolution, audioFormat.getChannels (), audioFormat.getEncoding () == Encoding.PCM_SIGNED, audioFormat.isBigEndian ());
-            File tempFile = null;
-            try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (newAudioFormat, audioInputStream))
+            final Encoding encoding = audioFormat.getEncoding ();
+            final boolean is32BitFloat = encoding == Encoding.PCM_FLOAT && audioFormat.getSampleSizeInBits () == 32;
+            final AudioFormat newAudioFormat = new AudioFormat (sampleRate, is32BitFloat ? 16 : bitResolution, audioFormat.getChannels (), encoding == Encoding.PCM_SIGNED || is32BitFloat, audioFormat.isBigEndian ());
+
+            // AudioSystem handles 32bit float values incorrect. We need our own implementation.
+            if (is32BitFloat)
             {
-                // Cannot write to a stream since the length is not known and therefore the WAV
-                // header cannot be written and write method crashes
-                tempFile = File.createTempFile ("wav", "tmp");
-                AudioSystem.write (convertedAudioInputStream, AudioFileFormat.Type.WAVE, tempFile);
-                return Files.readAllBytes (tempFile.toPath ());
+                try (AudioInputStream convertedAudioInputStream = convertAudioStreamFrom32BitFloatTo16BitPCM (audioInputStream, audioFormat, newAudioFormat))
+                {
+                    return doConvertToWav (convertedAudioInputStream, newAudioFormat);
+                }
             }
-            finally
-            {
-                if (tempFile != null)
-                    tempFile.delete ();
-            }
+
+            return doConvertToWav (audioInputStream, newAudioFormat);
         }
         catch (final UnsupportedAudioFileException ex)
         {
             throw new IOException (ex);
+        }
+    }
+
+
+    private static AudioInputStream convertAudioStreamFrom32BitFloatTo16BitPCM (final AudioInputStream inputStream, final AudioFormat sourceAudioFormat, final AudioFormat destinationAudioFormat) throws IOException
+    {
+        if (destinationAudioFormat.getSampleSizeInBits () != 16)
+            throw new IOException (Functions.getMessage ("IDS_WAV_ONLY_16_BIT_SUPPORTED", Integer.toString (destinationAudioFormat.getSampleSizeInBits ())));
+
+        final byte [] sourceData = inputStream.readAllBytes ();
+        final ByteBuffer inputBuffer = ByteBuffer.wrap (sourceData).order (sourceAudioFormat.isBigEndian () ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer outputBuffer = ByteBuffer.allocate (sourceData.length / 2).order (destinationAudioFormat.isBigEndian () ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+
+        for (int i = 0; i < sourceData.length; i += 4)
+        {
+            float floatValue = inputBuffer.getFloat (i);
+
+            // Convert float to 16-bit PCM
+            outputBuffer.putShort ((short) (floatValue * Short.MAX_VALUE));
+        }
+
+        return new AudioInputStream (new ByteArrayInputStream (outputBuffer.array ()), destinationAudioFormat, inputStream.getFrameLength ());
+    }
+
+
+    private static byte [] doConvertToWav (final AudioInputStream audioInputStream, final AudioFormat newAudioFormat) throws IOException
+    {
+        File tempFile = null;
+        try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (newAudioFormat, audioInputStream))
+        {
+            // Cannot write to a stream since the length is not known and therefore the WAV
+            // header cannot be written and write method crashes
+            tempFile = File.createTempFile ("wav", "tmp");
+            AudioSystem.write (convertedAudioInputStream, AudioFileFormat.Type.WAVE, tempFile);
+            return Files.readAllBytes (tempFile.toPath ());
+        }
+        finally
+        {
+            if (tempFile != null)
+                tempFile.delete ();
         }
     }
 
