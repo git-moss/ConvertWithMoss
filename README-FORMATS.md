@@ -57,6 +57,7 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 ### Destination Options
 
 * Option to set the *Interpolation Quality*. Setting it to *High* requires a bit more processing power on the 1010music devices.
+* Option to trim sample to range of zone start to end. Since the format does not support a sample start attribute for multi-sample, this fixes the issue.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
 ## AIFF
@@ -155,6 +156,7 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 ### Destination Options
 
 * 'Limit sample resolution and rate to 16bit/44.1kHz': If enabled samples of a high resolution will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it decrease the number of voices it can play.
+* Option to trim sample to range of zone start to end. Since the format does not support a sample start attribute, this fixes the issue.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information). Writing the Sample chunk is important since the disting EX reads the loop information from it.
 
 ## Korg KMP/KSF

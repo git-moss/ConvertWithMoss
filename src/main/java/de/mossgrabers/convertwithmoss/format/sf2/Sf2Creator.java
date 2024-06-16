@@ -211,7 +211,7 @@ public class Sf2Creator extends AbstractCreator
 
                 final byte [] data = dataChunk.getData ();
 
-                final boolean is24Bit = formatChunk.getSignicantBitsPerSample () == 24;
+                final boolean is24Bit = formatChunk.getSignificantBitsPerSample () == 24;
                 final boolean isStereo = formatChunk.getNumberOfChannels () == 2;
 
                 final List<byte []> sampleDataList = convertData (data, numSamples, is24Bit, isStereo);

@@ -250,7 +250,7 @@ public class KSFFile
 
         out.write (formatChunk.getNumberOfChannels ());
         // 8/16
-        final int bits = formatChunk.getSignicantBitsPerSample ();
+        final int bits = formatChunk.getSignificantBitsPerSample ();
         if (bits != 8 && bits != 16)
             throw new IOException (Functions.getMessage ("IDS_KMP_BIT_SIZE_NOT_SUPPORTED", Integer.toString (bits)));
         out.write (bits);

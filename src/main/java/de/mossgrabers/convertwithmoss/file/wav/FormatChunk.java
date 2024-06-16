@@ -101,7 +101,7 @@ public class FormatChunk extends RIFFChunk
         this.setCompressionCode (WAVE_FORMAT_PCM);
         this.setNumberOfChannels (numberOfChannels);
         this.setSampleRate (sampleRate);
-        this.setSignicantBitsPerSample (bitsPerSample);
+        this.setSignificantBitsPerSample (bitsPerSample);
     }
 
 
@@ -251,7 +251,7 @@ public class FormatChunk extends RIFFChunk
      */
     private void updateBlockAlign ()
     {
-        final int bitsPerSample = this.getSignicantBitsPerSample ();
+        final int bitsPerSample = this.getSignificantBitsPerSample ();
         final int numberOfChannels = this.getNumberOfChannels ();
         final int blockAlign = bitsPerSample / 8 * numberOfChannels;
         this.setIntAsTwoBytes (0x0C, blockAlign);
@@ -269,7 +269,7 @@ public class FormatChunk extends RIFFChunk
      *
      * @return The four bytes converted to an integer
      */
-    public int getSignicantBitsPerSample ()
+    public int getSignificantBitsPerSample ()
     {
         if (0x0E < this.getData ().length)
             return this.getTwoBytesAsInt (0x0E);
@@ -286,11 +286,47 @@ public class FormatChunk extends RIFFChunk
      *
      * @param bitsPerSample The bits per sample
      */
-    public void setSignicantBitsPerSample (final int bitsPerSample)
+    public void setSignificantBitsPerSample (final int bitsPerSample)
     {
         this.setIntAsTwoBytes (0x0E, bitsPerSample);
 
         this.updateBlockAlign ();
+    }
+
+
+    /**
+     * Calculates the length of the data in samples.
+     *
+     * @param data The data
+     * @return The length of the sample in samples (frames) of 1 channel
+     */
+    public int calculateLength (final byte [] data)
+    {
+        return data.length / calculateBytesPerSample ();
+    }
+
+
+    /**
+     * Calculates the data size.
+     *
+     * @param lengthInSamples The length of the sample (number of samples)
+     * @return The size of the data block
+     */
+    public int calculateDataSize (final int lengthInSamples)
+    {
+        return lengthInSamples * calculateBytesPerSample ();
+    }
+
+
+    /**
+     * Calculate the number of bytes which are used for one sample depending on the significant bite
+     * per sample and the number of channels.
+     * 
+     * @return The number of bytes
+     */
+    public int calculateBytesPerSample ()
+    {
+        return this.getNumberOfChannels () * this.getSignificantBitsPerSample () / 8;
     }
 
 
@@ -304,7 +340,7 @@ public class FormatChunk extends RIFFChunk
         sb.append ("Sample Rate: ").append (this.getSampleRate ()).append ('\n');
         sb.append ("Average bytes per second: ").append (this.getAverageBytesPerSecond ()).append ('\n');
         sb.append ("Block align: ").append (this.getBlockAlign ()).append ('\n');
-        sb.append ("Significant bits per sample: ").append (this.getSignicantBitsPerSample ()).append ('\n');
+        sb.append ("Significant bits per sample: ").append (this.getSignificantBitsPerSample ()).append ('\n');
         sb.append ("Extra bytes: ").append (this.getSize () - CHUNK_SIZE);
         return sb.toString ();
     }

@@ -48,15 +48,12 @@ public class Music1010Creator extends AbstractCreator
 {
     private static final String                 MUSIC_1010_INTERPOLATION_QUALITY = "Music1010InterpolationQuality";
     private static final String                 MUSIC_1010_RESAMPLE_TO_24_48     = "Music1010ResampleTo2448";
+    private static final String                 MUSIC_1010_TRIM_START_TO_END     = "Music1010TrimStartToEnd";
     private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT           = new DestinationAudioFormat (new int []
     {
         24
     }, 48000, true);
     private static final DestinationAudioFormat DEFEAULT_AUDIO_FORMAT            = new DestinationAudioFormat ();
-
-    private ToggleGroup                         interpolationQualityGroup;
-    private boolean                             isInterpolationQualityHigh;
-    private CheckBox                            resampleTo2448;
 
     private static final Map<String, String>    EMPTY_PARAM_ATTRIBUTES           = new HashMap<> ();
     private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES     = new HashMap<> ();
@@ -155,6 +152,11 @@ public class Music1010Creator extends AbstractCreator
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("recmonoutbus", "0");
     }
 
+    private ToggleGroup interpolationQualityGroup;
+    private boolean     isInterpolationQualityHigh;
+    private CheckBox    resampleTo2448;
+    private CheckBox    trimStartToEnd;
+
 
     /**
      * Constructor.
@@ -184,6 +186,7 @@ public class Music1010Creator extends AbstractCreator
         order2.setToggleGroup (this.interpolationQualityGroup);
 
         this.resampleTo2448 = panel.createCheckBox ("@IDS_1010_MUSIC_CONVERT_TO_24_48");
+        this.trimStartToEnd = panel.createCheckBox ("@IDS_1010_MUSIC_TRIM_START_TO_END");
 
         final TitledSeparator separator = this.addWavChunkOptions (panel);
         separator.getStyleClass ().add ("titled-separator-pane");
@@ -198,6 +201,7 @@ public class Music1010Creator extends AbstractCreator
     {
         this.interpolationQualityGroup.selectToggle (this.interpolationQualityGroup.getToggles ().get (config.getBoolean (MUSIC_1010_INTERPOLATION_QUALITY, false) ? 1 : 0));
         this.resampleTo2448.setSelected (config.getBoolean (MUSIC_1010_RESAMPLE_TO_24_48, true));
+        this.trimStartToEnd.setSelected (config.getBoolean (MUSIC_1010_TRIM_START_TO_END, true));
 
         this.loadWavChunkSettings (config, "Music1010");
     }
@@ -209,6 +213,7 @@ public class Music1010Creator extends AbstractCreator
     {
         config.setBoolean (MUSIC_1010_INTERPOLATION_QUALITY, this.isHighInterpolationQuality ());
         config.setBoolean (MUSIC_1010_RESAMPLE_TO_24_48, this.resampleTo2448.isSelected ());
+        config.setBoolean (MUSIC_1010_TRIM_START_TO_END, this.trimStartToEnd.isSelected ());
 
         this.saveWavChunkSettings (config, "Music1010");
     }
@@ -218,6 +223,9 @@ public class Music1010Creator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        final boolean resample = this.resampleTo2448.isSelected ();
+        final boolean trim = this.trimStartToEnd.isSelected ();
+
         this.setInterpolationQuality (this.isHighInterpolationQuality ());
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
@@ -232,13 +240,18 @@ public class Music1010Creator extends AbstractCreator
             return;
         }
 
-        final Optional<String> metadata = this.createMetadata (sampleName, multisampleSource);
+        final Optional<String> metadata = this.createMetadata (sampleName, multisampleSource, trim);
         if (metadata.isEmpty ())
             return;
 
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
-        this.storePreset (presetFolder, multisampleSource, multiFile, metadata.get ());
+        storePreset (presetFolder, multisampleSource, multiFile, metadata.get ());
+
+        // Store all samples
+        if (resample)
+            recalculateSamplePositions (multisampleSource, 48000);
+        this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -253,18 +266,12 @@ public class Music1010Creator extends AbstractCreator
      * @param metadata The preset metadata description file
      * @throws IOException Could not store the file
      */
-    private void storePreset (final File destinationFolder, final IMultisampleSource multisampleSource, final File multiFile, final String metadata) throws IOException
+    private static void storePreset (final File destinationFolder, final IMultisampleSource multisampleSource, final File multiFile, final String metadata) throws IOException
     {
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
         {
             writer.write (metadata);
         }
-
-        // Store all samples
-        final boolean resample = this.resampleTo2448.isSelected ();
-        if (resample)
-            recalculateSamplePositions (multisampleSource, 48000);
-        this.writeSamples (destinationFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT);
     }
 
 
@@ -273,9 +280,10 @@ public class Music1010Creator extends AbstractCreator
      *
      * @param folderName The name to use for the sample folder
      * @param multisampleSource The multi-sample
+     * @param trim Trim to start/end if true
      * @return The XML structure
      */
-    private Optional<String> createMetadata (final String folderName, final IMultisampleSource multisampleSource)
+    private Optional<String> createMetadata (final String folderName, final IMultisampleSource multisampleSource, final boolean trim)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -304,7 +312,7 @@ public class Music1010Creator extends AbstractCreator
         for (final IGroup group: groups)
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                createSample (document, folderName, presetPath, sessionElement, zone, sampleIndex);
+                createSample (document, folderName, presetPath, sessionElement, zone, sampleIndex, trim);
                 sampleIndex++;
             }
 
@@ -407,8 +415,9 @@ public class Music1010Creator extends AbstractCreator
      * @param groupElement The element where to add the sample information
      * @param zone Where to get the sample info from
      * @param sampleIndex The index of the sample
+     * @param trim Trim to start/end if true
      */
-    private static void createSample (final Document document, final String folderName, final String presetPath, final Element groupElement, final ISampleZone zone, final int sampleIndex)
+    private static void createSample (final Document document, final String folderName, final String presetPath, final Element groupElement, final ISampleZone zone, final int sampleIndex, final boolean trim)
     {
         /////////////////////////////////////////////////////
         // Sample element and attributes
@@ -425,11 +434,15 @@ public class Music1010Creator extends AbstractCreator
 
         // Stored in WAV file: zone.getGain (), zone.getTune ()
 
-        final int start = limitToDefault (zone.getStart (), 0);
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, start);
-        final int stop = zone.getStop ();
+        // Music1010Tag.ATTR_SAMPLE_START is not supported for multi-samples! Therefore, the sample
+        // needs to be truncated instead!
+        int stop = zone.getStop ();
         if (stop > 0)
-            XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, start + stop);
+        {
+            if (trim)
+                stop -= zone.getStart ();
+            XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, stop);
+        }
 
         // No zone.getTrigger ();
 
