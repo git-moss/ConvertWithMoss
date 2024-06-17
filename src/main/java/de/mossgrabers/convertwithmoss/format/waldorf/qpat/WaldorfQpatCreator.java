@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -44,9 +45,15 @@ import javafx.scene.Node;
  */
 public class WaldorfQpatCreator extends AbstractCreator
 {
+    private static final String                                SLOPE_RC              = "RC";
+    private static final String                                SLOPE_LINEAR          = "Lin";
+    private static final String                                SLOPE_EXP             = "Exp";
+    private static final String                                SLOPE_EXP_ALT         = "Exp alt";
+
+    private static final String                                FORMAT_SECONDS        = "%.2f secs";
     private static final int                                   PRESET_VERSION        = 14;
     private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER = new WaldorfQpatResourceHeader ();
-    private static final Map<Integer, WaldorfQpatResourceType> TYPE_LOOKUP           = new HashMap<> (3);
+    private static final Map<Integer, WaldorfQpatResourceType> TYPE_LOOKUP           = HashMap.newHashMap (3);
 
     static
     {
@@ -196,48 +203,53 @@ public class WaldorfQpatCreator extends AbstractCreator
                 sb.append ('"').append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
 
                 // Pitch
-                sb.append (zone.getKeyRoot () + zone.getTune ()).append ('\t');
+                double tune = zone.getTune ();
+                // Add only the fractions
+                tune -= (int) tune;
+                sb.append (formatMapDouble (zone.getKeyRoot () + tune)).append ('\t');
 
                 // FromNote / ToNote
                 sb.append (zone.getKeyLow ()).append ('\t').append (zone.getKeyHigh ()).append ('\t');
 
                 // Gain
-                sb.append (Math.pow (10, (zone.getGain () - 0.005) / 2.0)).append ('\t');
+                final double v = Math.clamp (zone.getGain (), Double.NEGATIVE_INFINITY, 20);
+                sb.append (formatMapDouble (Math.pow (10, v / 20))).append ('\t');
 
                 // FromVelo / ToVelo
                 sb.append (zone.getVelocityLow ()).append ('\t').append (zone.getVelocityHigh ()).append ('\t');
 
                 // Pan
-                sb.append ((zone.getPanorama () + 1.0) / 2.0).append ('\t');
+                sb.append (formatMapDouble ((zone.getPanorama () + 1.0) / 2.0)).append ('\t');
 
                 // Start / End
-                sb.append (zone.getStart () / numSampleFrames).append ('\t').append (zone.getStop () / numSampleFrames).append ('\t');
+                sb.append (formatMapDouble (zone.getStart () / (double) numSampleFrames)).append ('\t');
+                sb.append (formatMapDouble (zone.getStop () / (double) numSampleFrames)).append ('\t');
 
                 // Loop mode, start, stop
                 final List<ISampleLoop> loops = zone.getLoops ();
                 if (loops.isEmpty ())
-                    sb.append ("0\t0\t").append (zone.getStop () / numSampleFrames).append ('\t');
+                    sb.append ("0\t0\t").append (formatMapDouble (zone.getStop () / numSampleFrames)).append ('\t');
                 else
                 {
                     final ISampleLoop loop = loops.get (0);
                     sb.append (loop.getType () == LoopType.FORWARDS ? 1 : 2).append ('\t');
-                    sb.append (loop.getStart () / numSampleFrames).append ('\t');
-                    sb.append (loop.getEnd () / numSampleFrames).append ('\t');
+                    sb.append (formatMapDouble (loop.getStart () / (double) numSampleFrames)).append ('\t');
+                    sb.append (formatMapDouble (loop.getEnd () / (double) numSampleFrames)).append ('\t');
                 }
 
                 // Direction
-                sb.append (zone.isReversed () ? 1 : 0);
+                sb.append (zone.isReversed () ? 1 : 0).append ('\t');
 
                 if (loops.isEmpty ())
                     sb.append ("0\t");
                 else
                 {
                     final ISampleLoop loop = loops.get (0);
-                    sb.append (loop.getCrossfade ());
+                    sb.append (formatMapDouble (loop.getCrossfade ())).append ('\t');
                 }
 
                 // TrackPitch
-                sb.append (zone.getKeyTracking ()).append ('\n');
+                sb.append (zone.getKeyTracking () == 0 ? "0" : "1");
             }
 
             sampleMaps.add (sb.toString ());
@@ -284,6 +296,9 @@ public class WaldorfQpatCreator extends AbstractCreator
             // Empty groups are already removed!
             final ISampleZone firstZone = sampleZones.get (0);
 
+            // Particle
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Type", "Particle", 2));
+
             // Osc1CoarsePitch / Osc1FinePitch: already set in the sample maps!
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "CoarsePitch", "+0 semi", 24));
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "FinePitch", "+0.0 cents", 0.5f));
@@ -300,7 +315,11 @@ public class WaldorfQpatCreator extends AbstractCreator
             // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB]
             final double volumeDB = firstZone.getGain ();
             final double volume = convertFromDecibels (volumeDB);
-            final String volumeStr = volumeDB == Double.NEGATIVE_INFINITY ? "-inf dB" : ((volumeDB < 0 ? "-" : "+") + String.format ("%.3f dB", Double.valueOf (volumeDB)));
+            final String volumeStr;
+            if (volumeDB == Double.NEGATIVE_INFINITY)
+                volumeStr = "-inf dB";
+            else
+                volumeStr = ((volumeDB < 0 ? "-" : "+") + String.format ("%.3f dB", Double.valueOf (volumeDB)));
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Vol", volumeStr, (float) volume));
 
             // Osc1Pan: [0..1] ~ [L..R]
@@ -326,7 +345,7 @@ public class WaldorfQpatCreator extends AbstractCreator
 
                 // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
                 final double ampVeloAmount = firstZone.getAmplitudeVelocityModulator ().getDepth ();
-                parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", String.format ("%.2f %", Double.valueOf (ampVeloAmount * 100.0)), (float) ((ampVeloAmount + 1.0) / 2.0)));
+                parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", String.format ("%.2f", Double.valueOf (ampVeloAmount * 100.0)) + " %", (float) ((ampVeloAmount + 1.0) / 2.0)));
             }
         }
 
@@ -364,80 +383,80 @@ public class WaldorfQpatCreator extends AbstractCreator
 
         // Filter1Reso: [0.00] "0.00 %" ... [1.00] "100.00 %"
         final double resonance = filter.getResonance ();
-        parameters.add (new WaldorfQpatParameter ("Filter1Reso", String.format ("%.2f %", Double.valueOf (resonance * 100.0)), (float) resonance));
+        parameters.add (new WaldorfQpatParameter ("Filter1Reso", String.format ("%.2f", Double.valueOf (resonance * 100.0)) + " %", (float) resonance));
 
         // Filter1EnvAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
         final double filterVeloAmount = filter.getCutoffVelocityModulator ().getDepth ();
-        parameters.add (new WaldorfQpatParameter ("Filter1VeloAmount", String.format ("%.2f %", Double.valueOf (filterVeloAmount * 100.0)), (float) ((filterVeloAmount + 1.0) / 2.0)));
+        parameters.add (new WaldorfQpatParameter ("Filter1VeloAmount", String.format ("%.2f", Double.valueOf (filterVeloAmount * 100.0)) + " %", (float) ((filterVeloAmount + 1.0) / 2.0)));
 
         final IEnvelopeModulator modulator = filter.getCutoffEnvelopeModulator ();
         final double filterEnvAmount = modulator.getDepth ();
-        parameters.add (new WaldorfQpatParameter ("Filter1EnvAmount", String.format ("%.2f %", Double.valueOf (filterEnvAmount * 100.0)), (float) ((filterEnvAmount + 1.0) / 2.0)));
+        parameters.add (new WaldorfQpatParameter ("Filter1EnvAmount", String.format ("%.2f", Double.valueOf (filterEnvAmount * 100.0)) + " %", (float) ((filterEnvAmount + 1.0) / 2.0)));
 
         final IEnvelope envelope = modulator.getSource ();
 
         // Filter1EnvDelay
         final double delayTime = MathUtils.clamp (envelope.getDelayTime (), 0, 2);
-        parameters.add (new WaldorfQpatParameter ("Filter1EnvDelay", String.format ("%.2f secs", Double.valueOf (delayTime)), (float) (convertFromDelayTime (delayTime))));
+        parameters.add (new WaldorfQpatParameter ("Filter1EnvDelay", String.format (FORMAT_SECONDS, Double.valueOf (delayTime)), (float) (convertFromDelayTime (delayTime))));
 
         // Filter1EnvAttack
         final double attackTime = MathUtils.clamp (envelope.getAttackTime (), 0, 60);
-        parameters.add (new WaldorfQpatParameter ("Filter1EnvAttack", String.format ("%.2f secs", Double.valueOf (attackTime)), (float) (convertFromTime (attackTime))));
+        parameters.add (new WaldorfQpatParameter ("Filter1EnvAttack", String.format (FORMAT_SECONDS, Double.valueOf (attackTime)), (float) (convertFromTime (attackTime))));
         // Filter1EnvDecay
         final double decayTime = MathUtils.clamp (envelope.getDecayTime (), 0, 60);
-        parameters.add (new WaldorfQpatParameter ("Filter1EnvDecay", String.format ("%.2f secs", Double.valueOf (decayTime)), (float) (convertFromTime (decayTime))));
+        parameters.add (new WaldorfQpatParameter ("Filter1EnvDecay", String.format (FORMAT_SECONDS, Double.valueOf (decayTime)), (float) (convertFromTime (decayTime))));
         // Filter1EnvRelease
         final double releaseTime = MathUtils.clamp (envelope.getReleaseTime (), 0, 60);
-        parameters.add (new WaldorfQpatParameter ("Filter1EnvRelease", String.format ("%.2f secs", Double.valueOf (releaseTime)), (float) (convertFromTime (releaseTime))));
+        parameters.add (new WaldorfQpatParameter ("Filter1EnvRelease", String.format (FORMAT_SECONDS, Double.valueOf (releaseTime)), (float) (convertFromTime (releaseTime))));
 
         // Filter1EnvSustain
         final double sustainLevel = envelope.getSustainLevel ();
-        parameters.add (new WaldorfQpatParameter ("Filter1EnvSustain", String.format ("%.2f %", Double.valueOf (sustainLevel * 100.0)), (float) (sustainLevel)));
+        parameters.add (new WaldorfQpatParameter ("Filter1EnvSustain", String.format ("%.2f", Double.valueOf (sustainLevel * 100.0)) + " %", (float) (sustainLevel)));
 
         // Filter1AttackCurve: [0] "Exp" [1] "RC" [2] "Lin"
         final double attackSlope = envelope.getAttackSlope ();
-        String attackSlopeStr = "Lin";
+        String attackSlopeStr = SLOPE_LINEAR;
         double attackSlopeValue = 2;
         if (attackSlope > 0)
         {
-            attackSlopeStr = "Exp";
+            attackSlopeStr = SLOPE_EXP;
             attackSlopeValue = 0;
         }
         else if (attackSlope < 0)
         {
-            attackSlopeStr = "RC";
+            attackSlopeStr = SLOPE_RC;
             attackSlopeValue = 1;
         }
         parameters.add (new WaldorfQpatParameter ("Filter1AttackCurve", attackSlopeStr, (float) attackSlopeValue));
 
         // Filter1DecayCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
         final double decaySlope = envelope.getDecaySlope ();
-        String decaySlopeStr = "Lin";
+        String decaySlopeStr = SLOPE_LINEAR;
         double decaySlopeValue = 2;
         if (decaySlope > 0.5)
         {
-            decaySlopeStr = "Exp";
+            decaySlopeStr = SLOPE_EXP;
             decaySlopeValue = 0;
         }
         else if (decaySlope > 0)
         {
-            decaySlopeStr = "Exp alt";
+            decaySlopeStr = SLOPE_EXP_ALT;
             decaySlopeValue = 0.5;
         }
         parameters.add (new WaldorfQpatParameter ("Filter1DecayCurve", decaySlopeStr, (float) decaySlopeValue));
 
         // Filter1ReleaseCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
         final double releaseSlope = envelope.getReleaseSlope ();
-        String releaseSlopeStr = "Lin";
+        String releaseSlopeStr = SLOPE_LINEAR;
         double releaseSlopeValue = 2;
         if (releaseSlope > 0.5)
         {
-            releaseSlopeStr = "Exp";
+            releaseSlopeStr = SLOPE_EXP;
             releaseSlopeValue = 0;
         }
         else if (releaseSlope > 0)
         {
-            releaseSlopeStr = "Exp alt";
+            releaseSlopeStr = SLOPE_EXP_ALT;
             releaseSlopeValue = 0.5;
         }
         parameters.add (new WaldorfQpatParameter ("Filter1ReleaseCurve", releaseSlopeStr, (float) releaseSlopeValue));
@@ -456,66 +475,66 @@ public class WaldorfQpatCreator extends AbstractCreator
 
         // AmpEnvDelay
         final double delayTime = MathUtils.clamp (envelope.getDelayTime (), 0, 2);
-        parameters.add (new WaldorfQpatParameter ("AmpEnvDelay", String.format ("%.2f secs", Double.valueOf (delayTime)), (float) (convertFromDelayTime (delayTime))));
+        parameters.add (new WaldorfQpatParameter ("AmpEnvDelay", String.format (FORMAT_SECONDS, Double.valueOf (delayTime)), (float) (convertFromDelayTime (delayTime))));
 
         // AmpEnvAttack
         final double attackTime = MathUtils.clamp (envelope.getAttackTime (), 0, 60);
-        parameters.add (new WaldorfQpatParameter ("AmpEnvAttack", String.format ("%.2f secs", Double.valueOf (attackTime)), (float) (convertFromTime (attackTime))));
+        parameters.add (new WaldorfQpatParameter ("AmpEnvAttack", String.format (FORMAT_SECONDS, Double.valueOf (attackTime)), (float) (convertFromTime (attackTime))));
         // AmpEnvDecay
         final double decayTime = MathUtils.clamp (envelope.getDecayTime (), 0, 60);
-        parameters.add (new WaldorfQpatParameter ("AmpEnvDecay", String.format ("%.2f secs", Double.valueOf (decayTime)), (float) (convertFromTime (decayTime))));
+        parameters.add (new WaldorfQpatParameter ("AmpEnvDecay", String.format (FORMAT_SECONDS, Double.valueOf (decayTime)), (float) (convertFromTime (decayTime))));
         // AmpEnvRelease
         final double releaseTime = MathUtils.clamp (envelope.getReleaseTime (), 0, 60);
-        parameters.add (new WaldorfQpatParameter ("AmpEnvRelease", String.format ("%.2f secs", Double.valueOf (releaseTime)), (float) (convertFromTime (releaseTime))));
+        parameters.add (new WaldorfQpatParameter ("AmpEnvRelease", String.format (FORMAT_SECONDS, Double.valueOf (releaseTime)), (float) (convertFromTime (releaseTime))));
 
         // AmpEnvSustain
         final double sustainLevel = envelope.getSustainLevel ();
-        parameters.add (new WaldorfQpatParameter ("AmpEnvSustain", String.format ("%.2f %", Double.valueOf (sustainLevel * 100.0)), (float) (sustainLevel)));
+        parameters.add (new WaldorfQpatParameter ("AmpEnvSustain", String.format ("%.2f", Double.valueOf (sustainLevel * 100.0)) + " %", (float) (sustainLevel)));
 
         // AmpAttackCurve: [0] "Exp" [1] "RC" [2] "Lin"
         final double attackSlope = envelope.getAttackSlope ();
-        String attackSlopeStr = "Lin";
+        String attackSlopeStr = SLOPE_LINEAR;
         double attackSlopeValue = 2;
         if (attackSlope > 0)
         {
-            attackSlopeStr = "Exp";
+            attackSlopeStr = SLOPE_EXP;
             attackSlopeValue = 0;
         }
         else if (attackSlope < 0)
         {
-            attackSlopeStr = "RC";
+            attackSlopeStr = SLOPE_RC;
             attackSlopeValue = 1;
         }
         parameters.add (new WaldorfQpatParameter ("AmpAttackCurve", attackSlopeStr, (float) attackSlopeValue));
 
         // AmpDecayCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
         final double decaySlope = envelope.getDecaySlope ();
-        String decaySlopeStr = "Lin";
+        String decaySlopeStr = SLOPE_LINEAR;
         double decaySlopeValue = 2;
         if (decaySlope > 0.5)
         {
-            decaySlopeStr = "Exp";
+            decaySlopeStr = SLOPE_EXP;
             decaySlopeValue = 0;
         }
         else if (decaySlope > 0)
         {
-            decaySlopeStr = "Exp alt";
+            decaySlopeStr = SLOPE_EXP_ALT;
             decaySlopeValue = 0.5;
         }
         parameters.add (new WaldorfQpatParameter ("AmpDecayCurve", decaySlopeStr, (float) decaySlopeValue));
 
         // AmpReleaseCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
         final double releaseSlope = envelope.getReleaseSlope ();
-        String releaseSlopeStr = "Lin";
+        String releaseSlopeStr = SLOPE_LINEAR;
         double releaseSlopeValue = 2;
         if (releaseSlope > 0.5)
         {
-            releaseSlopeStr = "Exp";
+            releaseSlopeStr = SLOPE_EXP;
             releaseSlopeValue = 0;
         }
         else if (releaseSlope > 0)
         {
-            releaseSlopeStr = "Exp alt";
+            releaseSlopeStr = SLOPE_EXP_ALT;
             releaseSlopeValue = 0.5;
         }
         parameters.add (new WaldorfQpatParameter ("AmpReleaseCurve", releaseSlopeStr, (float) releaseSlopeValue));
@@ -566,5 +585,11 @@ public class WaldorfQpatCreator extends AbstractCreator
     private static double convertFromTime (final double y)
     {
         return Math.log (y / 0.06) / Math.log (1000);
+    }
+
+
+    private static String formatMapDouble (final double value)
+    {
+        return String.format (Locale.US, "%.8f", Double.valueOf (value));
     }
 }
