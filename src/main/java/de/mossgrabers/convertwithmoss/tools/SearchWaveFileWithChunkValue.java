@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
 
+import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
@@ -69,13 +70,15 @@ public class SearchWaveFileWithChunkValue
                 if (sampleChunk == null)
                     continue;
 
-                final int pitchFraction = sampleChunk.getMIDIPitchFraction ();
+                final long pitchFraction = sampleChunk.getMIDIPitchFraction ();
                 if (pitchFraction == 0)
                     continue;
 
                 log (file.getAbsolutePath ());
-                log ("  Unity Note    : " + sampleChunk.getMIDIUnityNote ());
-                log ("  Pitch Fraction: " + pitchFraction + " (= " + sampleChunk.getMIDIPitchFractionAsCents () + " cents)");
+
+                final int midiUnityNote = sampleChunk.getMIDIUnityNote ();
+                log ("  Sample Chunk: Unity Note    : " + midiUnityNote + " " + NoteParser.formatNoteSharps (midiUnityNote));
+                log ("  Sample Chunk: Pitch Fraction: " + pitchFraction + " (= " + sampleChunk.getMIDIPitchFractionAsCents () + " cents)");
 
                 final InstrumentChunk instrumentChunk = sampleFile.getInstrumentChunk ();
                 if (instrumentChunk == null)
@@ -83,8 +86,8 @@ public class SearchWaveFileWithChunkValue
                 final int fineTune = instrumentChunk.getFineTune ();
                 if (fineTune != 0)
                 {
-                    log ("  Unshifted Note: " + instrumentChunk.getUnshiftedNote ());
-                    log ("  Fine Tune     : " + fineTune + " cents");
+                    log ("  Instrument Chunk: Unshifted Note: " + instrumentChunk.getUnshiftedNote ());
+                    log ("  Instrument Chunk: Fine Tune     : " + fineTune + " cents");
                 }
             }
             catch (final IOException | ParseException ex)

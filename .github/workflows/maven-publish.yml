@@ -37,7 +37,7 @@ jobs:
           - os: ubuntu-latest
             artifact_name: convertwithmoss*.deb
             build_name: linux
-          - os: macos-11
+          - os: macos-latest
             artifact_name: ConvertWithMoss*.dmg
             build_name: mac
           - os: windows-latest

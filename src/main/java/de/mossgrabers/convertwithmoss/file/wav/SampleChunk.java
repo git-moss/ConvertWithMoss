@@ -134,7 +134,7 @@ public class SampleChunk extends RIFFChunk
      *
      * @return The four bytes converted to an integer
      */
-    public int getMIDIUnityNote ()
+    public int getMIDIUnityNoteRaw ()
     {
         return this.getFourBytesAsInt (0x0C);
     }
@@ -145,9 +145,23 @@ public class SampleChunk extends RIFFChunk
      * field which specifies the musical note at which the sample will be played at it's original
      * sample rate (the sample rate specified in the format chunk).
      *
+     * @return The four bytes converted to an integer
+     */
+    public int getMIDIUnityNote ()
+    {
+        final int unityNote = this.getFourBytesAsInt (0x0C);
+        return getMIDIPitchFractionAsCents () < 0 ? unityNote + 1 : unityNote;
+    }
+
+
+    /**
+     * The MIDI unity note value has the same meaning as the instrument chunk's MIDI Unshifted Note
+     * field which specifies the musical note at which the sample will be played at it's original
+     * sample rate (the sample rate specified in the format chunk).
+     *
      * @param note The MIDI note
      */
-    public void setMIDIUnityNote (final int note)
+    private void setMIDIUnityNote (final int note)
     {
         this.setIntAsFourBytes (0x0C, note);
     }
@@ -165,9 +179,9 @@ public class SampleChunk extends RIFFChunk
      *
      * @return The four bytes converted to an integer
      */
-    public int getMIDIPitchFraction ()
+    public long getMIDIPitchFraction ()
     {
-        return this.getFourBytesAsInt (0x10);
+        return this.getFourBytesAsLong (0x10);
     }
 
 
@@ -178,19 +192,32 @@ public class SampleChunk extends RIFFChunk
      */
     public int getMIDIPitchFractionAsCents ()
     {
-        // 2147483648.0 = 0x80000000
-        return (int) Math.round (this.getMIDIPitchFraction () * 50.0 / 2147483648.0);
+        long midiPitchFraction = this.getMIDIPitchFraction ();
+        final int value = (int) Math.round (midiPitchFraction * 50.0 / 0x80000000L);
+        return value > 50 ? value - 100 : value;
     }
 
 
     /**
-     * Set the MIDI pitch fraction.
-     *
-     * @param pitchFraction The pitch fraction
+     * Sets the unity note and the pitch fraction. If the cents are negative the unity note and
+     * fraction are adapted accordingly.
+     * 
+     * @param unityNote The unity note to set
+     * @param cent The pitch adjustment in cents
      */
-    public void setMIDIPitchFraction (final int pitchFraction)
+    public void setPitch (final int unityNote, final int cent)
     {
-        this.setIntAsFourBytes (0x10, pitchFraction);
+        // Needs to be inverted since this is the play-back root!
+        int rootNote = unityNote - cent / 100;
+        int pitchOffset = cent % 100;
+        // Pitch fraction can only be positive (0-99 cents)!
+        if (pitchOffset < 0)
+        {
+            rootNote--;
+            pitchOffset += 100;
+        }
+        this.setMIDIUnityNote (rootNote);
+        this.setMIDIPitchFractionAsCents (pitchOffset);
     }
 
 
@@ -199,9 +226,20 @@ public class SampleChunk extends RIFFChunk
      *
      * @param cents The pitch fraction in cents
      */
-    public void setMIDIPitchFractionAsCents (final int cents)
+    private void setMIDIPitchFractionAsCents (final int cents)
     {
-        this.setMIDIPitchFraction ((int) Math.round (cents * 2147483648.0 / 50.0));
+        this.setMIDIPitchFraction ((int) Math.round (cents * 0x80000000L / 50.0));
+    }
+
+
+    /**
+     * Set the MIDI pitch fraction.
+     *
+     * @param pitchFraction The pitch fraction
+     */
+    private void setMIDIPitchFraction (final long pitchFraction)
+    {
+        this.setLongAsFourBytes (0x10, pitchFraction);
     }
 
 
@@ -297,7 +335,7 @@ public class SampleChunk extends RIFFChunk
         sb.append ("Manufacturer: ").append (String.format ("0x%X", Integer.valueOf (this.getManufacturer ()))).append ('\n');
         sb.append ("Product: ").append (this.getProduct ()).append ('\n');
         sb.append ("Sample Period: ").append (String.format ("0x%X", Integer.valueOf (this.getSamplePeriod ()))).append ('\n');
-        sb.append ("MIDI Unity Note: ").append (this.getMIDIUnityNote ()).append ('\n');
+        sb.append ("MIDI Unity Note: ").append (this.getMIDIUnityNoteRaw ()).append (" Adapted to Pitch Fraction: ").append (this.getMIDIUnityNote ()).append ('\n');
         sb.append ("MIDI Pitch Fraction: ").append (this.getMIDIPitchFraction ()).append (" (= ").append (this.getMIDIPitchFractionAsCents ()).append (" cents)\n");
         sb.append ("SMPTE Format: ").append (this.getSMPTEFormat ()).append ('\n');
         sb.append ("SMPTE Offset: ").append (this.getSMPTEOffset ()).append ('\n');

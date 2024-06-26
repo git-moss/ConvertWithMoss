@@ -325,16 +325,33 @@ public abstract class AbstractNKIMetadataFileHandler
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (pitchModulator.getDepth ()));
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK_CURVE%", formatDouble (-pitchEnvelope.getAttackSlope ()));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (limitToDefault (pitchEnvelope.getAttackTime (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getDecayTime (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_HOLD%", formatDouble (limitToDefault (pitchEnvelope.getHoldTime (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_RELEASE%", formatDouble (limitToDefault (pitchEnvelope.getReleaseTime (), 0) * 1000.0d));
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (pitchEnvelope.getSustainLevel (), 0)));
+
+        // If the start level is not 0 (which is normally the case for a pitch envelope, we assume
+        // it to be the attack level and then only use the decay value, since this is the most
+        // common application for pitch envelopes.
+        if (pitchEnvelope.getStartLevel () != 0)
+        {
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (0));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getAttackTime (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_HOLD%", formatDouble (0));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_RELEASE%", formatDouble (0));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_SUSTAIN%", formatDouble (0));
+        }
+        else
+        {
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (limitToDefault (pitchEnvelope.getAttackTime (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getDecayTime (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_HOLD%", formatDouble (limitToDefault (pitchEnvelope.getHoldTime (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_RELEASE%", formatDouble (limitToDefault (pitchEnvelope.getReleaseTime (), 0) * 1000.0d));
+            groupContent = groupContent.replace ("%PITCH_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (pitchEnvelope.getSustainLevel (), 0)));
+        }
 
         final Optional<IFilter> filterOpt = sampleMetadata == null ? Optional.empty () : sampleMetadata.getFilter ();
         final IFilter filter = filterOpt.isPresent () ? filterOpt.get () : new DefaultFilter (FilterType.LOW_PASS, 2, IFilter.MAX_FREQUENCY, 0);
         groupContent = groupContent.replace ("%FILTER_TYPE%", createFilterType (filter));
-        groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (filter.getCutoff () / IFilter.MAX_FREQUENCY));
+
+        final double legacyCutoff = MathUtils.normalizeFrequency (MathUtils.clamp (filter.getCutoff (), 43.6, 21800), 21800.0);
+        groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (legacyCutoff));
         groupContent = groupContent.replace ("%FILTER_RESONANCE%", formatDouble (filter.getResonance ()));
 
         final IEnvelopeModulator filterCutoffModulator = filter.getCutoffEnvelopeModulator ();

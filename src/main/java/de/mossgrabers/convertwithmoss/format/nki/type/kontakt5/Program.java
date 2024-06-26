@@ -267,7 +267,7 @@ public class Program
     {
         this.setMetadata (source);
 
-        final Map<Integer, Pair<DefaultGroup, Group>> indexedGroups = this.createGroups ();
+        final Map<Integer, Pair<IGroup, Group>> indexedGroups = this.createGroups ();
 
         for (final Zone kontaktZone: this.zones)
         {
@@ -276,15 +276,15 @@ public class Program
                 continue;
 
             final Integer groupIndex = Integer.valueOf (kontaktZone.getGroupIndex ());
-            final Pair<DefaultGroup, Group> groupPair = indexedGroups.get (groupIndex);
+            final Pair<IGroup, Group> groupPair = indexedGroups.get (groupIndex);
             if (groupPair == null)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_MISSING_GROUP", groupIndex.toString ()));
 
-            final DefaultGroup defaultGroup = groupPair.getKey ();
-            final Group group = groupPair.getValue ();
+            final IGroup group = groupPair.getKey ();
+            final Group kontaktGroup = groupPair.getValue ();
 
             final ISampleZone zone = this.createZone (source, kontaktZone);
-            defaultGroup.addSampleZone (zone);
+            group.addSampleZone (zone);
 
             zone.setStart (kontaktZone.getSampleStart ());
             zone.setStop (kontaktZone.getNumFrames () - kontaktZone.getSampleEnd ());
@@ -294,11 +294,12 @@ public class Program
             final int rootKey = kontaktZone.getRootKey ();
             zone.setKeyRoot (rootKey);
 
-            final float volume = this.instrumentVolume + kontaktZone.getZoneVolume ();
+            final float volume = this.instrumentVolume * kontaktGroup.getVolume () * kontaktZone.getZoneVolume ();
             zone.setGain (MathUtils.valueToDb (volume));
-            zone.setPanorama (MathUtils.clamp (this.instrumentPan + kontaktZone.getZonePan (), -1, 1));
+            zone.setPanorama (MathUtils.clamp (this.instrumentPan + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
 
-            zone.setTune (calculateTune (kontaktZone.getZoneTune (), group.getTune (), this.instrumentTune));
+            zone.setTune (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (), this.instrumentTune));
+            zone.setKeyTracking (kontaktGroup.isKeyTracking () ? 1 : 0);
 
             zone.setVelocityLow (kontaktZone.getLowVelocity ());
             zone.setVelocityHigh (kontaktZone.getHighVelocity ());
@@ -309,7 +310,7 @@ public class Program
             zone.setVelocityCrossfadeHigh (kontaktZone.getFadeHighVelocity ());
 
             // Only on a group level...
-            zone.setReversed (group.isReverse ());
+            zone.setReversed (kontaktGroup.isReverse ());
 
             // TODO fill missing info
             // sampleMetadata.setBendUp ();
@@ -333,10 +334,10 @@ public class Program
             }
         }
 
-        final List<IGroup> defaultGroups = new ArrayList<> ();
-        for (final Pair<DefaultGroup, Group> pair: indexedGroups.values ())
-            defaultGroups.add (pair.getKey ());
-        source.setGroups (defaultGroups);
+        final List<IGroup> groups = new ArrayList<> ();
+        for (final Pair<IGroup, Group> pair: indexedGroups.values ())
+            groups.add (pair.getKey ());
+        source.setGroups (groups);
     }
 
 
@@ -345,17 +346,17 @@ public class Program
      *
      * @return The indexed groups
      */
-    private Map<Integer, Pair<DefaultGroup, Group>> createGroups ()
+    private Map<Integer, Pair<IGroup, Group>> createGroups ()
     {
-        final Map<Integer, Pair<DefaultGroup, Group>> map = new TreeMap<> ();
+        final Map<Integer, Pair<IGroup, Group>> map = new TreeMap<> ();
         for (int i = 0; i < this.groups.size (); i++)
         {
-            final Group group = this.groups.get (i);
-            final DefaultGroup defaultGroup = new DefaultGroup ();
-            defaultGroup.setName (group.getName ());
-            if (group.isReleaseTrigger ())
-                defaultGroup.setTrigger (TriggerType.RELEASE);
-            map.put (Integer.valueOf (i), new Pair<> (defaultGroup, group));
+            final Group kontaktGroup = this.groups.get (i);
+            final IGroup group = new DefaultGroup ();
+            group.setName (kontaktGroup.getName ());
+            if (kontaktGroup.isReleaseTrigger ())
+                group.setTrigger (TriggerType.RELEASE);
+            map.put (Integer.valueOf (i), new Pair<> (group, kontaktGroup));
         }
         return map;
     }

@@ -37,6 +37,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.Pair;
 import javafx.scene.control.ComboBox;
 
 
@@ -187,15 +188,18 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final Map<Integer, IGroup> groupsMap = new TreeMap<> ();
         final Map<IGroup, EXS24Group> groupMapping = new HashMap<> ();
 
+        File previousFolder = null;
         for (final EXS24Zone exs24Zone: exs24Zones)
         {
             if (this.waitForDelivery ())
                 return Optional.empty ();
 
-            final ISampleZone zone = this.createAndCheckSampleZone (parentFile, exs24Zone, exs24Samples);
-            if (zone == null)
+            final Pair<ISampleZone, File> zonePair = this.createAndCheckSampleZone (parentFile, previousFolder, exs24Zone, exs24Samples);
+            if (zonePair == null)
                 continue;
+            previousFolder = zonePair.getValue ();
 
+            final ISampleZone zone = zonePair.getKey ();
             zone.setKeyRoot (exs24Zone.key);
             zone.setKeyLow (exs24Zone.keyLow);
             zone.setKeyHigh (exs24Zone.keyHigh);
@@ -258,7 +262,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
     }
 
 
-    private ISampleZone createAndCheckSampleZone (final File parentFile, final EXS24Zone exs24Zone, final List<EXS24Sample> exs24Samples) throws IOException
+    private Pair<ISampleZone, File> createAndCheckSampleZone (final File parentFile, final File previousFolder, final EXS24Zone exs24Zone, final List<EXS24Sample> exs24Samples) throws IOException
     {
         // If sample index is not set, use the zone id (index)
         int sampleIndex = exs24Zone.sampleIndex;
@@ -282,13 +286,13 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         }
 
         final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-        final File sampleFile = findSampleFile (parentFile, exs24Sample.fileName, height);
+        final File sampleFile = findSampleFile (parentFile, previousFolder, exs24Sample.fileName, height);
         if (!sampleFile.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
             return null;
         }
-        return this.createSampleZone (sampleFile);
+        return new Pair<> (this.createSampleZone (sampleFile), sampleFile.getParentFile ());
     }
 
 

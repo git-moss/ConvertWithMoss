@@ -18,7 +18,8 @@ The following multisample formats are supported:
 14. [SFZ](#sfz)
 15. [SoundFont 2](#soundfont-2)
 16. [TAL Sampler](#tal-sampler)
-17. [WAV files](#wav-files)
+17. [Waldorf Quantum MkI,MkII/Iridium/Iridium Core](#waldorf-quantum-mkimkiiiridiumiridium-core)
+18. [WAV files](#wav-files)
 
 ## Automatic Metadata detection
 
@@ -155,7 +156,7 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 
 ### Destination Options
 
-* 'Limit sample resolution and rate to 16bit/44.1kHz': If enabled samples of a high resolution will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it decrease the number of voices it can play.
+* 'Re-sample to 16bit/44.1kHz': If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it decrease the number of voices it can play.
 * Option to trim sample to range of zone start to end. Since the format does not support a sample start attribute, this fixes the issue.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information). Writing the Sample chunk is important since the disting EX reads the loop information from it.
 
@@ -248,6 +249,16 @@ Choosing TAL Sampler as the destination format, creates a *talsmpl*
 file and stores all samples in a sub-folder by the same name. The samples of the source groups are distributed across the 4 layers of TAL Sampler in such a way that the key and velocity splits do not overlap. This is a workaround for the fact that TAL Sampler does not support overlapping samples. Since groups have only the name and trigger type as attributes, which are not supported in TAL Sampler anyway, this should work in most cases. If there are still overlapping samples a warning is displayed.
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+
+### Destination Options
+
+* 'Re-sample to 16bit/44.1kHz': If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it might impact the performance.
+* Options to write/update [WAV Chunk Information](#wav-chunk-information)
+
+## Waldorf Quantum MkI,MkII/Iridium/Iridium Core
+
+This family of Waldorf synthesizers supports the playback of multi-samples. One preset can contain 2 layers. A layer is a complete preset in itself and simply concatenates 2 single presets. Each preset can have up to 3 oscillators of which each oscillator can contain its own multi-sample.
+If this format is used as the source it produces 1 or 2 output presets, one for each layer. If used as the destination format, each group of the source multi-sample is applied to one of the 3 oscillators. If the source contains more than 3 groups, all zones of the additional groups are added to the multi-sample of the 3rd oscillator.
 
 ### Destination Options
 
