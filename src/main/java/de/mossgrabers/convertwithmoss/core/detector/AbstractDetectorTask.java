@@ -525,15 +525,52 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * search recursively for the wave file.
      *
      * @param folder The folder where the sample is expected
+     * @param previousFolder The folder in which the previous sample was found, might be null
      * @param fileName The name of the sample file
      * @param levels The number of levels to move upwards to start the search
      * @return The sample file
      */
-    protected static File findSampleFile (final File folder, final String fileName, final int levels)
+    protected File findSampleFile (final File folder, final File previousFolder, final String fileName, final int levels)
     {
         final File file = new File (fileName);
-        File sampleFile;
 
+        // First search in the folder where the previous sample file was found
+        File sampleFile;
+        if (previousFolder != null)
+        {
+            sampleFile = findInTopFolder (previousFolder, fileName, file);
+            if (sampleFile.exists ())
+                return sampleFile;
+        }
+
+        // Now try the top folder
+        sampleFile = findInTopFolder (folder, fileName, file);
+        if (sampleFile.exists ())
+            return sampleFile;
+
+        // Now brute force: go n-levels up and start searching for the file
+        File startDirectory = folder;
+        for (int i = 0; i < levels; i++)
+        {
+            final File dir = startDirectory.getParentFile ();
+            if (dir.exists () && dir.isDirectory ())
+                startDirectory = dir;
+        }
+
+        // ... and search recursively...
+        final File found = findSampleFileRecursively (startDirectory, sampleFile.getName ());
+        // Returning the original file triggers the expected error...
+        if (found == null)
+            return sampleFile;
+
+        this.notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN_FOUND");
+        return found;
+    }
+
+
+    private static File findInTopFolder (final File folder, final String fileName, final File file)
+    {
+        File sampleFile;
         // First check if the filename is absolute, if the absolute path does not exist, try only
         // the name
         if (fileName.startsWith ("file:"))
@@ -547,30 +584,14 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
         else
             sampleFile = new File (folder, fileName);
-
-        if (sampleFile.exists ())
-            return sampleFile;
-
-        // Go n-levels up and start searching for the file
-        File startDirectory = null;
-        for (int i = 0; i < levels; i++)
-        {
-            final File dir = startDirectory == null ? folder.getParentFile () : startDirectory.getParentFile ();
-            if (dir.exists () && dir.isDirectory ())
-                startDirectory = dir;
-        }
-        if (startDirectory == null)
-            return sampleFile;
-
-        // Go one folder up and search recursively...
-        final File found = findSampleFileRecursively (startDirectory, sampleFile.getName ());
-        // Returning the original file triggers the expected error...
-        return found == null ? sampleFile : found;
+        return sampleFile;
     }
 
 
-    private static File findSampleFileRecursively (final File folder, final String fileName)
+    private File findSampleFileRecursively (final File folder, final String fileName)
     {
+        this.notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN", folder.getAbsolutePath ());
+
         File sampleFile = new File (folder, fileName);
         if (sampleFile.exists ())
             return sampleFile;

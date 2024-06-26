@@ -112,6 +112,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
 
         try (final InputStream chunkStream = iffChunk.streamData ())
         {
+            File previousFolder = null;
             final Map<Integer, File> samples = new HashMap<> ();
             while (chunkStream.available () > 0)
             {
@@ -128,8 +129,9 @@ public class SxtDetectorTask extends AbstractDetectorTask
                                 StreamUtils.checkTag (SxtChunkConstants.REFERENCE, referenceChunk.getId ());
                                 try (final InputStream referenceChunkStream = referenceChunk.streamData ())
                                 {
-                                    final File sampleFile = this.parseReference (referenceChunkStream, parentFile);
+                                    final File sampleFile = this.parseReference (referenceChunkStream, parentFile, previousFolder);
                                     samples.put (Integer.valueOf (sampleIndex), sampleFile);
+                                    previousFolder = sampleFile.getParentFile ();
                                     sampleIndex++;
                                 }
                             }
@@ -282,10 +284,11 @@ public class SxtDetectorTask extends AbstractDetectorTask
      *
      * @param in The input stream
      * @param parentFile The parent path of the SXT file
+     * @param previousFolder The folder in which the previous sample was found, might be null
      * @return The path to the sample file
      * @throws IOException Could not read the data or data is invalid
      */
-    private File parseReference (final InputStream in, final File parentFile) throws IOException
+    private File parseReference (final InputStream in, final File parentFile, final File previousFolder) throws IOException
     {
         final int version = readVersion (in);
         final boolean isReason3 = version == SxtChunkConstants.VERSION_1_3_0;
@@ -329,9 +332,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
 
         // Find the sample file
         final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-        final File sampleFile = findSampleFile (parentFile, sampleFileName, height);
-
-        return sampleFile;
+        return findSampleFile (parentFile, previousFolder, sampleFileName, height);
     }
 
 

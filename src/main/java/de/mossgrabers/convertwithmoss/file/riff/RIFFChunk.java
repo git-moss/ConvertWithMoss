@@ -251,6 +251,19 @@ public class RIFFChunk implements IChunk
      * @param offset The offset into the data array
      * @return The integer value
      */
+    public long getFourBytesAsLong (final int offset)
+    {
+        final byte [] d = this.getData ();
+        return Byte.toUnsignedLong (d[offset + 3]) << 24 | Byte.toUnsignedLong (d[offset + 2]) << 16 | Byte.toUnsignedLong (d[offset + 1]) << 8 | Byte.toUnsignedLong (d[offset + 0]);
+    }
+
+
+    /**
+     * Convert 4 bytes to an integer. MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @return The integer value
+     */
     public int getFourBytesAsInt (final int offset)
     {
         final byte [] d = this.getData ();
@@ -357,6 +370,22 @@ public class RIFFChunk implements IChunk
 
 
     /**
+     * Convert a long into 4 bytes. MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @param value The long to convert
+     */
+    public void setLongAsFourBytes (final int offset, final long value)
+    {
+        final byte [] d = this.getData ();
+        d[offset] = (byte) value;
+        d[offset + 1] = (byte) (value >> 8);
+        d[offset + 2] = (byte) (value >> 16);
+        d[offset + 3] = (byte) (value >> 24);
+    }
+
+
+    /**
      * Convert an integer into 4 bytes. MSB is first byte.
      *
      * @param offset The offset into the data array
@@ -396,7 +425,6 @@ public class RIFFChunk implements IChunk
     {
         final byte [] d = this.getData ();
         d[offset] = (byte) (value & 0xFF);
-
     }
 
 
@@ -440,11 +468,14 @@ public class RIFFChunk implements IChunk
     public void write (final OutputStream out) throws IOException
     {
         StreamUtils.writeUnsigned32 (out, this.id, true);
+
         final byte [] data = this.getData ();
-        StreamUtils.writeUnsigned32 (out, data.length, false);
+        final boolean needsPadByte = data.length % 2 == 1;
+        final int size = needsPadByte ? data.length + 1 : data.length;
+        StreamUtils.writeUnsigned32 (out, size, false);
         out.write (data);
-        // Padding
-        if (data.length % 2 == 1)
+
+        if (needsPadByte)
             out.write (0);
     }
 

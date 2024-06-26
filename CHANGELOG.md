@@ -2,7 +2,16 @@
 
 ## 10.5.0 (unreleased)
 
-
+* Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
+* Kontakt - Writing
+  * New: Improved pitch envelope.
+* Kontakt 4.2-7 - Reading
+  * Fixed: Group volume, panorama and key-tracking was not applied.
+* EXS, SXT, TX16Wx - Reading
+  * New: Speed up finding samples.
+  * Fixed: If levels to search upwards was set to 0, it did not search downwards.
+* WAV
+  * Fixed: Reading/writing the pitch fraction field of the sample chunk was not always correct.
 
 ## 10.1.0
 

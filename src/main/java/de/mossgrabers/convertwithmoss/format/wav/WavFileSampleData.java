@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -169,7 +170,13 @@ public class WavFileSampleData extends AbstractFileSampleData
             zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
 
         if (zone.getTune () == 0)
-            zone.setTune (Math.max (0, Math.min (0.5, sampleChunk.getMIDIPitchFractionAsCents () / 100.0)));
+        {
+            final double tune = MathUtils.clamp (sampleChunk.getMIDIPitchFractionAsCents () / 100.0, -0.5, 0.5);
+            zone.setTune (tune);
+            // Root note needs to be updated as well!
+            if (tune < 0)
+                zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
+        }
 
         if (addLoops)
             addLoops (sampleChunk, zone.getLoops ());

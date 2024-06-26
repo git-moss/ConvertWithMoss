@@ -31,18 +31,18 @@ import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -176,6 +176,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
     private Map<String, ISampleZone> parseSamples (final Element topElement, final String basePath)
     {
         final File parentFile = new File (basePath);
+        File previousFolder = null;
         final Map<String, ISampleZone> sampleZoneMap = new HashMap<> ();
         for (final Element waveElement: XMLUtils.getChildElementsByName (topElement, TX16WxTag.SAMPLE, false))
         {
@@ -192,12 +193,13 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 sampleName = URLDecoder.decode (sampleName, StandardCharsets.UTF_8).replace ("\\", File.separator);
 
                 final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-                final File sampleFile = findSampleFile (parentFile, sampleName, height);
+                final File sampleFile = findSampleFile (parentFile, previousFolder, sampleName, height);
                 if (!sampleFile.exists ())
                 {
                     this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
                     continue;
                 }
+                previousFolder = sampleFile.getParentFile ();
                 sampleZone = this.createSampleZone (sampleFile);
             }
             catch (final FileNotFoundException ex)
@@ -575,7 +577,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 if (modAmount.endsWith ("Ct"))
                 {
                     final IEnvelopeModulator pitchModulator = new DefaultEnvelopeModulator (0);
-                    final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
+                    final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / 4800.0;
                     pitchModulator.setDepth (MathUtils.clamp (amount, -1, 1));
 
                     final Element envElement = XMLUtils.getChildElementByName (soundShapeElement, isEnv1 ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);

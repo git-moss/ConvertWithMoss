@@ -708,20 +708,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         final List<ISampleLoop> loops = zone.getLoops ();
         final SampleChunk sampleChunk = new SampleChunk (loops.size ());
         sampleChunk.setSamplePeriod ((int) (1000000000.0 / wavFile.getFormatChunk ().getSampleRate ()));
-
-        final int cent = (int) (zone.getTune () * 100);
-
-        // Needs to be inverted since this is the playback root!
-        int rootNote = unityNote - cent / 100;
-        int pitchOffset = cent % 100;
-        // Pitch fraction can only be positive (0-99 cents)!
-        if (pitchOffset < 0)
-        {
-            rootNote++;
-            pitchOffset += 100;
-        }
-        sampleChunk.setMIDIUnityNote (rootNote);
-        sampleChunk.setMIDIPitchFractionAsCents (pitchOffset);
+        sampleChunk.setPitch (unityNote, (int) Math.round (zone.getTune () * 100.0));
 
         final List<SampleChunkLoop> chunkLoops = sampleChunk.getLoops ();
         for (int i = 0; i < loops.size (); i++)

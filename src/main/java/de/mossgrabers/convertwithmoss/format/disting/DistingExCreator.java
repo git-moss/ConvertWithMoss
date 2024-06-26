@@ -78,7 +78,7 @@ public class DistingExCreator extends WavCreator
 
         panel.createSeparator ("@IDS_DEX_SEPARATOR");
 
-        this.limitTo16441 = panel.createCheckBox ("@IDS_DEX_LIMIT_TO_16_441");
+        this.limitTo16441 = panel.createCheckBox ("@IDS_DEX_RESAMPLE_TO_16_441");
         this.trimStartToEnd = panel.createCheckBox ("@IDS_DEX_TRIM_START_TO_END");
 
         final TitledSeparator separator = this.addWavChunkOptions (panel);
