@@ -15,7 +15,6 @@ import java.io.OutputStream;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -349,7 +348,7 @@ public class KMPFile
 
             out.write (keyHigh);
             out.writeByte ((byte) Math.round (zone.getTune () * 100.0));
-            out.writeByte ((byte) MathUtils.clamp (Math.round (MathUtils.clamp (zone.getGain (), -12, 12) / 12.0 * 100.0), -99, 99));
+            out.writeByte ((byte) Math.clamp (Math.round (Math.clamp (zone.getGain (), -12, 12) / 12.0 * 100.0), -99, 99));
 
             // Panorama - unused in KMP itself, 64 is center
             out.write (64);

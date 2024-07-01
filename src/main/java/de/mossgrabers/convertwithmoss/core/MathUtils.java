@@ -24,34 +24,6 @@ public class MathUtils
 
 
     /**
-     * Limit the given value to the minimum/maximum range including minimum/maximum values.
-     *
-     * @param value The value to clamp
-     * @param minimum The minimum value
-     * @param maximum The maximum value
-     * @return The value clamped to the minimum/maximum range
-     */
-    public static double clamp (final double value, final double minimum, final double maximum)
-    {
-        return Math.max (minimum, Math.min (value, maximum));
-    }
-
-
-    /**
-     * Limit the given value to the minimum/maximum range including minimum/maximum values.
-     *
-     * @param value The value to clamp
-     * @param minimum The minimum value
-     * @param maximum The maximum value
-     * @return The value clamped to the minimum/maximum range
-     */
-    public static int clamp (final int value, final int minimum, final int maximum)
-    {
-        return Math.max (minimum, Math.min (value, maximum));
-    }
-
-
-    /**
      * Converts a signed integer into a two complement short value.
      *
      * @param value The signed integer
@@ -122,7 +94,7 @@ public class MathUtils
      */
     public static double normalizeFrequency (final double frequency, final double maxFrequency)
     {
-        return clamp (log2 (frequency) / log2 (maxFrequency), 0, 1);
+        return Math.clamp (log2 (frequency) / log2 (maxFrequency), 0, 1);
     }
 
 
@@ -147,7 +119,7 @@ public class MathUtils
      */
     public static double normalizeCutoff (final double cutoffInHertz)
     {
-        return MathUtils.clamp ((log2 (cutoffInHertz / (2 * 440.0)) * 12.0 + 57) / 140.0, 0, 1);
+        return Math.clamp ((log2 (cutoffInHertz / (2 * 440.0)) * 12.0 + 57) / 140.0, 0, 1);
     }
 
 
@@ -159,7 +131,7 @@ public class MathUtils
      */
     public static double denormalizeCutoff (final double normalizedValue)
     {
-        return MathUtils.clamp (2.0 * 440.0 * Math.pow (2, (normalizedValue * 140.0 - 57.0) / 12.0), 32.7, 106300);
+        return Math.clamp (2.0 * 440.0 * Math.pow (2, (normalizedValue * 140.0 - 57.0) / 12.0), 32.7, 106300);
     }
 
 
@@ -186,7 +158,7 @@ public class MathUtils
      */
     public static double normalize (final double value, final double minimum, final double maximum)
     {
-        return clamp (value, minimum, maximum) / maximum;
+        return Math.clamp (value, minimum, maximum) / maximum;
     }
 
 
@@ -200,7 +172,7 @@ public class MathUtils
      */
     public static double denormalize (final double value, final double minimum, final double maximum)
     {
-        return clamp (value * maximum, minimum, maximum);
+        return Math.clamp (value * maximum, minimum, maximum);
     }
 
 
@@ -267,7 +239,7 @@ public class MathUtils
     public static double normalizeTime (final double value, final double maxValue)
     {
         // value is negative if not set but 0 is fine then!
-        final double clamped = MathUtils.clamp (value, 0, maxValue);
+        final double clamped = Math.clamp (value, 0, maxValue);
         return Math.log (clamped + 1) / Math.log (maxValue + 1);
     }
 

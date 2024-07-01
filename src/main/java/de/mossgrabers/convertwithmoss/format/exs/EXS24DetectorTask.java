@@ -213,7 +213,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             if (exs24Zone.pitch && (exs24Zone.coarseTuning != 0 || exs24Zone.fineTuning != 0))
                 zone.setTune (exs24Zone.coarseTuning + exs24Zone.fineTuning / 100.0);
 
-            zone.setPanorama (MathUtils.clamp (exs24Zone.pan, -50, 50) / 50.0);
+            zone.setPanorama (Math.clamp (exs24Zone.pan, -50, 50) / 50.0);
 
             if (exs24Zone.loopOn)
             {
@@ -286,7 +286,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         }
 
         final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-        final File sampleFile = findSampleFile (parentFile, previousFolder, exs24Sample.fileName, height);
+        final File sampleFile = this.findSampleFile (parentFile, previousFolder, exs24Sample.fileName, height);
         if (!sampleFile.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
@@ -316,7 +316,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
         final IEnvelope globalAmplitudeEnvelope = createEnvelope (parameters, 1);
         final Integer env1Velocity = parameters.get (EXS24Parameters.ENV1_VEL_SENS);
-        final double velocityModulation = env1Velocity == null ? 1 : 1 - MathUtils.clamp (env1Velocity.intValue () / -60.0, 0, 1);
+        final double velocityModulation = env1Velocity == null ? 1 : 1 - Math.clamp (env1Velocity.intValue () / -60.0, 0, 1);
 
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
@@ -408,7 +408,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final int resonance = filterResonance == null ? 0 : filterResonance.intValue ();
 
         final double cutoff = MathUtils.denormalize (frequency / 1000.0, 0, IFilter.MAX_FREQUENCY);
-        final IFilter filter = new DefaultFilter (filterType, poles, cutoff, MathUtils.clamp (resonance / 1000.0, 0, 1));
+        final IFilter filter = new DefaultFilter (filterType, poles, cutoff, Math.clamp (resonance / 1000.0, 0, 1));
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         cutoffModulator.setDepth (1.0);
         cutoffModulator.setSource (globalFilterEnvelope);

@@ -15,6 +15,8 @@ import java.util.Map;
  */
 public class Sf2Modulator
 {
+    /** The ID for a Velocity modulator. */
+    public static final Integer               MODULATOR_VELOCITY   = Integer.valueOf (2);
     /** The ID for a Pitch Bend modulator. */
     public static final Integer               MODULATOR_PITCH_BEND = Integer.valueOf (14);
 
@@ -30,7 +32,7 @@ public class Sf2Modulator
          * The controller source to be used is the velocity value which is sent from the MIDI
          * note-on command which generated the given sound.
          */
-        MODULATOR_NAMES.put (Integer.valueOf (2), "Note-On Velocity");
+        MODULATOR_NAMES.put (MODULATOR_VELOCITY, "Note-On Velocity");
         /**
          * The controller source to be used is the key number value which was sent from the MIDI
          * note-on command which generated the given sound.

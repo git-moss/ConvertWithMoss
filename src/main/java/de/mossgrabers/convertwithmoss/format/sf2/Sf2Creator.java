@@ -14,7 +14,6 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -291,6 +290,10 @@ public class Sf2Creator extends AbstractCreator
         // Gain
         instrumentZone.addGenerator (Generator.INITIAL_ATTENUATION, (int) (-sampleZone.getGain () * 10.0));
 
+        final double ampDepth = sampleZone.getAmplitudeVelocityModulator ().getDepth ();
+        if (ampDepth != 0)
+            instrumentZone.addModulator (Sf2Modulator.MODULATOR_VELOCITY.intValue (), Generator.INITIAL_ATTENUATION, (int) Math.round (ampDepth * 960), 0, 0);
+
         // Volume envelope
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
 
@@ -331,8 +334,8 @@ public class Sf2Creator extends AbstractCreator
                 // always a relation of two frequencies, 1200 cents are one octave:
                 // cents = 1200 * log2 (f1 / f2), f2 = 8.176 => f1 = f2 * 2^(cents / 1200)
                 final double initialCutoff = Math.log (frequency / 8.176) * 1200.0 / Math.log (2);
-                instrumentZone.addGenerator (Generator.INITIAL_FILTER_CUTOFF, (int) MathUtils.clamp (initialCutoff, 1500, 13500));
-                instrumentZone.addSignedGenerator (Generator.INITIAL_FILTER_RESONANCE, (int) (MathUtils.clamp (resonance, 0, 960) * 100.0));
+                instrumentZone.addGenerator (Generator.INITIAL_FILTER_CUTOFF, (int) Math.clamp (initialCutoff, 1500, 13500));
+                instrumentZone.addSignedGenerator (Generator.INITIAL_FILTER_RESONANCE, (int) (Math.clamp (resonance, 0, 960) * 100.0));
 
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                 final double cutoffModDepth = cutoffModulator.getDepth ();
@@ -347,6 +350,10 @@ public class Sf2Creator extends AbstractCreator
                     setEnvelopeTime (instrumentZone, Generator.MOD_ENV_RELEASE, filterEnvelope.getReleaseTime ());
                     setEnvelopeLevel (instrumentZone, Generator.MOD_ENV_SUSTAIN, filterEnvelope.getSustainLevel ());
                 }
+
+                final double cutoffDepth = filter.getCutoffVelocityModulator ().getDepth ();
+                if (cutoffDepth != 0)
+                    instrumentZone.addModulator (Sf2Modulator.MODULATOR_VELOCITY.intValue (), Generator.INITIAL_FILTER_CUTOFF, (int) Math.round (cutoffDepth * -2400), 0, 0);
             }
         }
 
@@ -417,7 +424,7 @@ public class Sf2Creator extends AbstractCreator
 
         sampleDescriptor.setSampleType (sampleType);
         sampleDescriptor.setSampleRate (formatChunk.getSampleRate ());
-        sampleDescriptor.setOriginalPitch (MathUtils.clamp (sampleZone.getKeyRoot (), 0, 127));
+        sampleDescriptor.setOriginalPitch (Math.clamp (sampleZone.getKeyRoot (), 0, 127));
         sampleDescriptor.setPitchCorrection ((int) (sampleZone.getTune () * 100));
 
         String name = sampleZone.getName ();
@@ -460,7 +467,7 @@ public class Sf2Creator extends AbstractCreator
         // Attenuation is in centi-bel (dB / 10), so 0 is maximum volume, about 1000 is off
         // This is likely not correct but since there is also no documentation what the percentage
         // volume values mean in dB it is the best we can do...
-        return (int) MathUtils.clamp ((1.0 - value) * 1000.0, 0, 1000);
+        return (int) Math.clamp ((1.0 - value) * 1000.0, 0, 1000);
     }
 
 

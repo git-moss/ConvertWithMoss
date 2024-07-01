@@ -25,7 +25,7 @@ public class WaldorfQpatParameter
 
     /**
      * Constructor.
-     * 
+     *
      * @param name The name of the parameter
      * @param hint The descriptive text of the value
      * @param value The value of the parameter

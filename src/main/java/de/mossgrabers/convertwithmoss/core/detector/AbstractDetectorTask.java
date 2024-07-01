@@ -30,7 +30,6 @@ import org.w3c.dom.NamedNodeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -348,7 +347,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      */
     protected static double denormalizeValue (final double value, final double minimum, final double maximum)
     {
-        return minimum + MathUtils.clamp (value, 0, 1) * (maximum - minimum);
+        return minimum + Math.clamp (value, 0, 1) * (maximum - minimum);
     }
 
 
@@ -558,7 +557,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
 
         // ... and search recursively...
-        final File found = findSampleFileRecursively (startDirectory, sampleFile.getName ());
+        final File found = this.findSampleFileRecursively (startDirectory, sampleFile.getName ());
         // Returning the original file triggers the expected error...
         if (found == null)
             return sampleFile;
@@ -600,7 +599,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         if (children != null)
             for (final File subFolder: children)
             {
-                sampleFile = findSampleFileRecursively (subFolder, fileName);
+                sampleFile = this.findSampleFileRecursively (subFolder, fileName);
                 if (sampleFile != null)
                     return sampleFile;
             }

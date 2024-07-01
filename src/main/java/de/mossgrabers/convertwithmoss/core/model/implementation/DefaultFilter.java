@@ -22,8 +22,8 @@ public class DefaultFilter implements IFilter
     protected double             cutoff;
     protected double             resonance;
     protected int                envelopeDepth;
-    protected IEnvelopeModulator cutoffEnvelopeModulator = new DefaultEnvelopeModulator (1);
-    protected IModulator         cutoffVelocityModulator = new DefaultModulator (1);
+    protected IEnvelopeModulator cutoffEnvelopeModulator = new DefaultEnvelopeModulator (0);
+    protected IModulator         cutoffVelocityModulator = new DefaultModulator (0);
 
 
     /**

@@ -99,5 +99,12 @@
           <V name="delay" value="0"/>
           <V name="source" value="pitchBend"/>
         </NiSS_ExtMod>
+        <NiSS_ExtMod index="2" version="0.80">
+          <V name="target" value="filterCutoff"/>
+          <V name="intensity" value="%FILTER_CUTOFF_VELOCITY_MOD%"/>
+          <V name="bypass" value="no"/>
+          <V name="delay" value="0"/>
+          <V name="source" value="velocity"/>
+        </NiSS_ExtMod>
       </ExtModulators>
     </NiSS_Group>

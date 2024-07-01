@@ -302,7 +302,7 @@ public class FormatChunk extends RIFFChunk
      */
     public int calculateLength (final byte [] data)
     {
-        return data.length / calculateBytesPerSample ();
+        return data.length / this.calculateBytesPerSample ();
     }
 
 
@@ -314,14 +314,14 @@ public class FormatChunk extends RIFFChunk
      */
     public int calculateDataSize (final int lengthInSamples)
     {
-        return lengthInSamples * calculateBytesPerSample ();
+        return lengthInSamples * this.calculateBytesPerSample ();
     }
 
 
     /**
      * Calculate the number of bytes which are used for one sample depending on the significant bite
      * per sample and the number of channels.
-     * 
+     *
      * @return The number of bytes
      */
     public int calculateBytesPerSample ()

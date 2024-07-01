@@ -19,7 +19,6 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -481,7 +480,7 @@ public class SfzCreator extends AbstractCreator
 
         final IFilter filter = optFilter.get ();
         final String type = FILTER_TYPE_MAP.get (filter.getType ());
-        addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + MathUtils.clamp (filter.getPoles (), 1, 4) + "p", false);
+        addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + Math.clamp (filter.getPoles (), 1, 4) + "p", false);
         addAttribute (buffer, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
 
         final double velFilterDepth = filter.getCutoffVelocityModulator ().getDepth ();
@@ -539,7 +538,7 @@ public class SfzCreator extends AbstractCreator
             return;
         if (sb.length () > 0)
             sb.append (' ');
-        sb.append (opcode).append ('=').append (MathUtils.clamp (value, -10.0, 10.0));
+        sb.append (opcode).append ('=').append (Math.clamp (value, -10.0, 10.0));
     }
 
 
@@ -549,6 +548,6 @@ public class SfzCreator extends AbstractCreator
             return;
         if (sb.length () > 0)
             sb.append (' ');
-        sb.append (opcode).append ('=').append (MathUtils.clamp (value, 0.0, 100.0));
+        sb.append (opcode).append ('=').append (Math.clamp (value, 0.0, 100.0));
     }
 }

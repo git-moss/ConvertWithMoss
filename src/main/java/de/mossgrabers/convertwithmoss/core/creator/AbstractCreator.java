@@ -33,7 +33,6 @@ import org.w3c.dom.Document;
 import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -650,7 +649,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         // Update information chunks
         if (this.isUpdateBroadcastAudioChunk ())
             updateBroadcastAudioChunk (metadata, wavFile);
-        final int unityNote = MathUtils.clamp (zone.getKeyRoot (), 0, 127);
+        final int unityNote = Math.clamp (zone.getKeyRoot (), 0, 127);
         if (this.isUpdateInstrumentChunk ())
             updateInstrumentChunk (zone, wavFile, unityNote);
         if (this.isUpdateSampleChunk ())
@@ -665,7 +664,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     /**
      * Trims the data of the wave file to the part from the zone start and zone end. The zone is
      * updated accordingly.
-     * 
+     *
      * @param wavFile The WAV file to trim
      * @param zone The zone
      */
@@ -746,12 +745,12 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         }
 
         instrumentChunk.setUnshiftedNote (unityNote);
-        instrumentChunk.setFineTune (MathUtils.clamp ((int) (zone.getTune () * 100), -50, 50));
-        instrumentChunk.setGain (MathUtils.clamp ((int) zone.getGain (), -127, 127));
-        instrumentChunk.setLowNote (MathUtils.clamp (zone.getKeyLow (), 0, 127));
-        instrumentChunk.setHighNote (MathUtils.clamp (limitToDefault (zone.getKeyHigh (), 127), 0, 127));
-        instrumentChunk.setLowVelocity (MathUtils.clamp (zone.getVelocityLow (), 0, 127));
-        instrumentChunk.setHighVelocity (MathUtils.clamp (limitToDefault (zone.getVelocityHigh (), 127), 0, 127));
+        instrumentChunk.setFineTune (Math.clamp ((int) (zone.getTune () * 100), -50, 50));
+        instrumentChunk.setGain (Math.clamp ((int) zone.getGain (), -127, 127));
+        instrumentChunk.setLowNote (Math.clamp (zone.getKeyLow (), 0, 127));
+        instrumentChunk.setHighNote (Math.clamp (limitToDefault (zone.getKeyHigh (), 127), 0, 127));
+        instrumentChunk.setLowVelocity (Math.clamp (zone.getVelocityLow (), 0, 127));
+        instrumentChunk.setHighVelocity (Math.clamp (limitToDefault (zone.getVelocityHigh (), 127), 0, 127));
     }
 
 

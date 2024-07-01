@@ -193,7 +193,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 sampleName = URLDecoder.decode (sampleName, StandardCharsets.UTF_8).replace ("\\", File.separator);
 
                 final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-                final File sampleFile = findSampleFile (parentFile, previousFolder, sampleName, height);
+                final File sampleFile = this.findSampleFile (parentFile, previousFolder, sampleName, height);
                 if (!sampleFile.exists ())
                 {
                     this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
@@ -277,7 +277,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
     private Optional<IFilter> parseGroup (final DefaultGroup group, final Element groupElement, final Map<String, ISampleZone> sampleMap, final Map<String, Element> soundShapeElementMap)
     {
         final double groupVolumeOffset = this.parseVolume (groupElement, TX16WxTag.VOLUME);
-        final double groupPanoramaOffset = parsePanorama (groupElement, TX16WxTag.PANORAMA);
+        final double groupPanoramaOffset = parsePercentage (groupElement, TX16WxTag.PANORAMA);
         double groupTuningOffset = XMLUtils.getIntegerAttribute (groupElement, TX16WxTag.TUNING_COARSE, 0);
         groupTuningOffset += XMLUtils.getIntegerAttribute (groupElement, TX16WxTag.TUNING_FINE, 0) / 100.0;
 
@@ -290,12 +290,16 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         int pitchbend = -1;
 
         IEnvelope ampEnvelope = null;
+        double ampVelocity = 0;
         final String soundShape = groupElement.getAttribute (TX16WxTag.SOUND_SHAPE);
         if (soundShape != null && !soundShape.isBlank ())
         {
             final Element soundShapeElement = soundShapeElementMap.get (soundShape);
             if (soundShapeElement != null)
             {
+                // Velocity modulation for amplitude
+                ampVelocity = parsePercentage (soundShapeElement, TX16WxTag.AMP_VELOCITY);
+
                 // Amplitude envelope
                 final Element aegElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.AMP_ENVELOPE);
                 if (aegElement != null)
@@ -311,14 +315,16 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
                     ampEnvelope.setSustainLevel (parseNormalizedVolume (aegElement, TX16WxTag.AMP_ENV_SUSTAIN));
 
-                    ampEnvelope.setAttackSlope (parsePanorama (aegElement, TX16WxTag.AMP_ENV_ATTACK_SHAPE));
-                    ampEnvelope.setDecaySlope (parsePanorama (aegElement, TX16WxTag.AMP_ENV_DECAY2_SHAPE));
-                    ampEnvelope.setReleaseSlope (parsePanorama (aegElement, TX16WxTag.AMP_ENV_RELEASE_SHAPE));
+                    ampEnvelope.setAttackSlope (parsePercentage (aegElement, TX16WxTag.AMP_ENV_ATTACK_SHAPE));
+                    ampEnvelope.setDecaySlope (parsePercentage (aegElement, TX16WxTag.AMP_ENV_DECAY2_SHAPE));
+                    ampEnvelope.setReleaseSlope (parsePercentage (aegElement, TX16WxTag.AMP_ENV_RELEASE_SHAPE));
                 }
 
-                filter = this.parseFilter (soundShapeElement);
-                pitchModulator = parsePitchModulator (soundShapeElement);
-                final int bend = parsePitchbend (soundShapeElement);
+                final List<TX16WxModulator> modulators = parseModulators (soundShapeElement);
+
+                filter = this.parseFilter (soundShapeElement, modulators);
+                pitchModulator = parsePitchModulator (soundShapeElement, modulators);
+                final int bend = parsePitchbend (modulators);
                 if (bend > 0)
                     pitchbend = bend;
             }
@@ -346,6 +352,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                     zone.setBendDown (pitchbend);
                 }
 
+                zone.getAmplitudeVelocityModulator ().setDepth (ampVelocity);
                 zone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
             }
         }
@@ -366,7 +373,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
     private void parseZone (final ISampleZone zone, final Element regionElement, final double groupVolumeOffset, final double groupPanoramaOffset, final double groupTuningOffset)
     {
         zone.setGain (groupVolumeOffset + this.parseVolume (regionElement, TX16WxTag.ATTENUATION));
-        zone.setPanorama (groupPanoramaOffset + parsePanorama (regionElement, TX16WxTag.PANORAMA));
+        zone.setPanorama (groupPanoramaOffset + parsePercentage (regionElement, TX16WxTag.PANORAMA));
 
         double tuning = 0;
         final Element soundOffsetsElement = XMLUtils.getChildElementByName (regionElement, TX16WxTag.SOUND_OFFSETS);
@@ -452,9 +459,10 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * Parse the filter in the sound shape element.
      *
      * @param soundShapeElement The sound shape element
+     * @param modulators The already parsed modulators
      * @return The read filter
      */
-    private Optional<IFilter> parseFilter (final Element soundShapeElement)
+    private Optional<IFilter> parseFilter (final Element soundShapeElement, final List<TX16WxModulator> modulators)
     {
         Element filterElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.FILTER);
         if (filterElement == null)
@@ -499,55 +507,40 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         }
 
         final DefaultFilter filter = new DefaultFilter (filterType, poles, frequency, resonance);
-        parseFilterEnvelope (filter, soundShapeElement);
+        parseFilterModulation (filter, soundShapeElement, modulators);
         return Optional.of (filter);
     }
 
 
     /**
-     * Parse the filter envelope from the modulation section in the sound shape element.
+     * Parse the filter envelope and velocity modulation from the modulation section in the sound
+     * shape element.
      *
      * @param filter The filter for which to parse the envelope
      * @param soundShapeElement The sound shape element
+     * @param modulators The already parsed modulators
      */
-    private static void parseFilterEnvelope (final IFilter filter, final Element soundShapeElement)
+    private static void parseFilterModulation (final IFilter filter, final Element soundShapeElement, final List<TX16WxModulator> modulators)
     {
-        final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
-        if (modulationElement == null)
-            return;
-        for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TX16WxTag.MODULATION_ENTRY, false))
+        for (final TX16WxModulator modulator: modulators)
         {
-            final String modeSource = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_SOURCE);
-            final String modDestination = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_DESTINATION);
-            final boolean isEnv1 = "ENV1".equals (modeSource);
-            final boolean isEnv2 = "ENV2".equals (modeSource);
-            if ((isEnv1 || isEnv2) && "Filter 1 Freq".equals (modDestination))
+            if (!modulator.isDestination ("Filter 1 Freq"))
+                continue;
+
+            final Optional<Integer> modAmountAsCent = modulator.getModAmountAsCent ();
+            if (modAmountAsCent.isEmpty ())
+                continue;
+            final double amount = Math.clamp (modAmountAsCent.get ().intValue () / (double) IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1);
+
+            if (modulator.isSource ("Vel"))
+                filter.getCutoffVelocityModulator ().setDepth (amount);
+            else if (modulator.isSource ("ENV1", "ENV2"))
             {
-                final String modAmount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
-                if (modAmount.endsWith ("Ct"))
-                {
-                    final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-                    final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
-                    cutoffModulator.setDepth (MathUtils.clamp (amount, -1, 1));
-
-                    final Element envElement = XMLUtils.getChildElementByName (soundShapeElement, isEnv1 ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
-                    if (envElement != null)
-                    {
-                        final IEnvelope envEnvelope = cutoffModulator.getSource ();
-                        envEnvelope.setAttackTime (parseTime (envElement, TX16WxTag.ENV_TIME1));
-                        envEnvelope.setDecayTime (parseTime (envElement, TX16WxTag.ENV_TIME2));
-                        envEnvelope.setReleaseTime (parseTime (envElement, TX16WxTag.ENV_TIME3));
-
-                        envEnvelope.setStartLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL0));
-                        envEnvelope.setHoldLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
-                        envEnvelope.setSustainLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL2));
-                        envEnvelope.setEndLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL3));
-
-                        envEnvelope.setAttackSlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE1));
-                        envEnvelope.setDecaySlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE2));
-                        envEnvelope.setReleaseSlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE3));
-                    }
-                }
+                final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
+                cutoffModulator.setDepth (amount);
+                final Optional<IEnvelope> envelope = parseEnvelope (soundShapeElement, modulator.isSource ("ENV1") ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
+                if (envelope.isPresent ())
+                    cutoffModulator.setSource (envelope.get ());
             }
         }
     }
@@ -558,79 +551,85 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * element.
      *
      * @param soundShapeElement The sound shape element
+     * @param modulators The already parsed modulators
      * @return The optional pitch modulator
      */
-    private static Optional<IEnvelopeModulator> parsePitchModulator (final Element soundShapeElement)
+    private static Optional<IEnvelopeModulator> parsePitchModulator (final Element soundShapeElement, final List<TX16WxModulator> modulators)
     {
-        final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
-        if (modulationElement == null)
-            return null;
-        for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TX16WxTag.MODULATION_ENTRY, false))
-        {
-            final String modeSource = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_SOURCE);
-            final String modDestination = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_DESTINATION);
-            final boolean isEnv1 = "ENV1".equals (modeSource);
-            final boolean isEnv2 = "ENV2".equals (modeSource);
-            if ((isEnv1 || isEnv2) && ("Pitch".equals (modDestination) || "Pitch (Raw)".equals (modDestination)))
+        for (final TX16WxModulator modulator: modulators)
+            if (modulator.isSource ("ENV1", "ENV2") && modulator.isDestination ("Pitch", "Pitch (Raw)"))
             {
-                final String modAmount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
-                if (modAmount.endsWith ("Ct"))
+                final Optional<Integer> modAmoundAsCent = modulator.getModAmountAsCent ();
+                if (modAmoundAsCent.isPresent ())
                 {
                     final IEnvelopeModulator pitchModulator = new DefaultEnvelopeModulator (0);
-                    final double amount = Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()) / 4800.0;
-                    pitchModulator.setDepth (MathUtils.clamp (amount, -1, 1));
+                    final double amount = modAmoundAsCent.get ().intValue () / 4800.0;
+                    pitchModulator.setDepth (Math.clamp (amount, -1, 1));
 
-                    final Element envElement = XMLUtils.getChildElementByName (soundShapeElement, isEnv1 ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
-                    if (envElement != null)
+                    final Optional<IEnvelope> pitchEnvelope = parseEnvelope (soundShapeElement, modulator.isSource ("ENV1") ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
+                    if (pitchEnvelope.isPresent ())
                     {
-                        final IEnvelope envEnvelope = pitchModulator.getSource ();
-                        envEnvelope.setAttackTime (parseTime (envElement, TX16WxTag.ENV_TIME1));
-                        envEnvelope.setDecayTime (parseTime (envElement, TX16WxTag.ENV_TIME2));
-                        envEnvelope.setReleaseTime (parseTime (envElement, TX16WxTag.ENV_TIME3));
-
-                        envEnvelope.setStartLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL0));
-                        envEnvelope.setHoldLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
-                        envEnvelope.setSustainLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL2));
-                        envEnvelope.setEndLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL3));
-
-                        envEnvelope.setAttackSlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE1));
-                        envEnvelope.setDecaySlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE2));
-                        envEnvelope.setReleaseSlope (parsePanorama (envElement, TX16WxTag.ENV_SHAPE3));
-
+                        pitchModulator.setSource (pitchEnvelope.get ());
                         return Optional.of (pitchModulator);
                     }
                 }
             }
-        }
 
         return Optional.empty ();
+    }
+
+
+    private static Optional<IEnvelope> parseEnvelope (final Element parentElement, final String envelopeTag)
+    {
+        final Element envElement = XMLUtils.getChildElementByName (parentElement, envelopeTag);
+        if (envElement == null)
+            return Optional.empty ();
+
+        final IEnvelope envelope = new DefaultEnvelope ();
+        envelope.setAttackTime (parseTime (envElement, TX16WxTag.ENV_TIME1));
+        envelope.setDecayTime (parseTime (envElement, TX16WxTag.ENV_TIME2));
+        envelope.setReleaseTime (parseTime (envElement, TX16WxTag.ENV_TIME3));
+
+        envelope.setStartLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL0));
+        envelope.setHoldLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
+        envelope.setSustainLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL2));
+        envelope.setEndLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL3));
+
+        envelope.setAttackSlope (parsePercentage (envElement, TX16WxTag.ENV_SHAPE1));
+        envelope.setDecaySlope (parsePercentage (envElement, TX16WxTag.ENV_SHAPE2));
+        envelope.setReleaseSlope (parsePercentage (envElement, TX16WxTag.ENV_SHAPE3));
+
+        return Optional.of (envelope);
     }
 
 
     /**
      * Parse the pitch-bend from the modulation section in the sound shape element.
      *
-     * @param soundShapeElement The sound shape element
+     * @param modulators The already parsed modulators
      * @return The pitch-bend, negative if not found
      */
-    private static int parsePitchbend (final Element soundShapeElement)
+    private static int parsePitchbend (final List<TX16WxModulator> modulators)
     {
-        final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
-        if (modulationElement == null)
-            return -1;
-        for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TX16WxTag.MODULATION_ENTRY, false))
-        {
-            final String modeSource = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_SOURCE);
-            final String modDestination = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_DESTINATION);
-            if ("Pitchbend".equals (modeSource) && ("Pitch".equals (modDestination) || "Pitch (raw)".equals (modDestination)))
+        for (final TX16WxModulator modulator: modulators)
+            if (modulator.isSource ("Pitchbend") && modulator.isDestination ("Pitch", "Pitch (raw)"))
             {
-                final String modAmount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
-                if (modAmount.endsWith ("Ct"))
-                    return Math.abs (Integer.parseInt (modAmount.substring (0, modAmount.length () - 2).trim ()));
+                final Optional<Integer> modAmoundAsCent = modulator.getModAmountAsCent ();
+                if (modAmoundAsCent.isPresent ())
+                    return Math.abs (modAmoundAsCent.get ().intValue ());
             }
-        }
-
         return -1;
+    }
+
+
+    private static List<TX16WxModulator> parseModulators (final Element soundShapeElement)
+    {
+        final List<TX16WxModulator> modulators = new ArrayList<> ();
+        final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
+        if (modulationElement != null)
+            for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TX16WxTag.MODULATION_ENTRY, false))
+                modulators.add (new TX16WxModulator (modulationEntryElement));
+        return modulators;
     }
 
 
@@ -710,18 +709,18 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         }
 
         final double value = attribute.endsWith ("%") ? Double.parseDouble (attribute.substring (0, attribute.length () - 1).trim ()) / 100.0 : Double.parseDouble (attribute);
-        return MathUtils.clamp (value, 0, 1);
+        return Math.clamp (value, 0, 1);
     }
 
 
     /**
-     * Parses a panorama value from the given tag.
+     * Parses a percentage value from the given tag.
      *
-     * @param element The element which contains the volume attribute
-     * @param tag The tag name of the attribute containing the volume
-     * @return The panorama in the range of [-1..1]
+     * @param element The element which contains the percentage attribute
+     * @param tag The tag name of the attribute containing the percentage
+     * @return The percentage in the range of [-1..1]
      */
-    private static double parsePanorama (final Element element, final String tag)
+    private static double parsePercentage (final Element element, final String tag)
     {
         String attribute = element.getAttribute (tag);
         if (attribute == null)
@@ -738,7 +737,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         else
             // The value is in the range of [-1..1]
             value = Double.parseDouble (attribute);
-        return MathUtils.clamp (value, -1.0, 1.0);
+        return Math.clamp (value, -1.0, 1.0);
     }
 
 

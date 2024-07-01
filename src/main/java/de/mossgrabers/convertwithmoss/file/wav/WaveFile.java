@@ -132,7 +132,7 @@ public class WaveFile extends AbstractRIFFFile
     {
         this.broadcastAudioExtensionChunk = broadcastAudioExtensionChunk;
         this.chunkStack.clear ();
-        fillChunkStack ();
+        this.fillChunkStack ();
     }
 
 
@@ -156,7 +156,7 @@ public class WaveFile extends AbstractRIFFFile
     {
         this.instrumentChunk = instrumentChunk;
         this.chunkStack.clear ();
-        fillChunkStack ();
+        this.fillChunkStack ();
     }
 
 
@@ -180,7 +180,7 @@ public class WaveFile extends AbstractRIFFFile
     {
         this.sampleChunk = sampleChunk;
         this.chunkStack.clear ();
-        fillChunkStack ();
+        this.fillChunkStack ();
     }
 
 
@@ -204,7 +204,7 @@ public class WaveFile extends AbstractRIFFFile
     {
         this.dataChunk = dataChunk;
         this.chunkStack.clear ();
-        fillChunkStack ();
+        this.fillChunkStack ();
     }
 
 

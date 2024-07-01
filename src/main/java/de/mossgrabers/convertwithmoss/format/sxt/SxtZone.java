@@ -10,7 +10,6 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Optional;
 
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -505,7 +504,9 @@ class SxtZone
         if (this.alternateMode > 0)
             zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
 
-        // Pitch Modulation envelope
+        //////////////////////////////////////////////////////////
+        // Pitch
+
         if (this.modEnvToPitch > 0)
         {
             final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
@@ -522,7 +523,9 @@ class SxtZone
             modEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.modEnvRelease));
         }
 
-        // Set filter
+        //////////////////////////////////////////////////////////
+        // Filter
+
         if (this.filterIsOn > 0)
         {
             final double freqHz = 440 * Math.pow (2, (this.filterFreq - 6900) / 1200);
@@ -566,6 +569,7 @@ class SxtZone
             }
             final IFilter filter = new DefaultFilter (type, poles, freqHz, this.filterResonance / 1000.0);
             zone.setFilter (filter);
+
             if (this.modEnvToFilterFreq != 0)
             {
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
@@ -581,9 +585,17 @@ class SxtZone
                 modEnvelope.setSustainLevel (this.modEnvSustain / 1000.0);
                 modEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.modEnvRelease));
             }
+
+            if (this.velocityToFilterFreq != 0)
+                filter.getCutoffVelocityModulator ().setDepth (this.velocityToFilterFreq / 1000.0);
         }
 
-        // Set amplitude envelope
+        //////////////////////////////////////////////////////////
+        // Amplitude
+
+        if (this.velocityToAmpGain != 0)
+            zone.getAmplitudeVelocityModulator ().setDepth (this.velocityToAmpGain / 1000.0);
+
         final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
         final IEnvelope ampEnvelope = amplitudeModulator.getSource ();
         if (this.ampEnvDelayIsOff == 0)
@@ -612,11 +624,11 @@ class SxtZone
     {
         this.keyRangeStart = AbstractCreator.limitToDefault (zone.getKeyLow (), 0);
         this.keyRangeEnd = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127);
-        this.velocityRangeStart = MathUtils.clamp (zone.getVelocityLow (), 1, 127);
-        this.velocityRangeEnd = MathUtils.clamp (AbstractCreator.limitToDefault (zone.getVelocityHigh (), 127), 1, 127);
+        this.velocityRangeStart = Math.clamp (zone.getVelocityLow (), 1, 127);
+        this.velocityRangeEnd = Math.clamp (AbstractCreator.limitToDefault (zone.getVelocityHigh (), 127), 1, 127);
         this.velocityFadeIn = zone.getVelocityCrossfadeLow ();
         final int velocityCrossfadeHigh = zone.getVelocityCrossfadeHigh ();
-        this.velocityFadeOut = velocityCrossfadeHigh == 0 ? 0x80 : MathUtils.clamp (127 - velocityCrossfadeHigh, 1, 127);
+        this.velocityFadeOut = velocityCrossfadeHigh == 0 ? 0x80 : Math.clamp (127 - velocityCrossfadeHigh, 1, 127);
         this.rootKey = AbstractCreator.limitToDefault (zone.getKeyRoot (), this.keyRangeStart);
         this.sampleStart = zone.getStart ();
         this.sampleEnd = zone.getStop ();
@@ -632,7 +644,9 @@ class SxtZone
         this.pitchWheelRange = zone.getBendUp ();
         this.pitchWheelRange = zone.getBendDown ();
 
+        //////////////////////////////////////////////////////////
         // Loop
+
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
             this.playMode = 0;
@@ -649,7 +663,9 @@ class SxtZone
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
             this.alternateMode = 1;
 
-        // Pitch Modulation envelope
+        //////////////////////////////////////////////////////////
+        // Pitch
+
         final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
         final double depth = pitchModulator.getDepth ();
         if (depth > 0)
@@ -680,7 +696,9 @@ class SxtZone
             this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getReleaseTime ());
         }
 
-        // Set filter
+        //////////////////////////////////////////////////////////
+        // Filter
+
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isPresent ())
         {
@@ -746,9 +764,15 @@ class SxtZone
                 this.modEnvSustain = sustain < 0 ? 1000 : (int) (sustain * 1000);
                 this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getReleaseTime ());
             }
+
+            final double cutoffVelocityAmount = filter.getCutoffVelocityModulator ().getDepth ();
+            if (cutoffVelocityAmount != 0)
+                this.velocityToFilterFreq = (int) Math.round (cutoffVelocityAmount * 1000.0);
         }
 
-        // Set amplitude envelope
+        //////////////////////////////////////////////////////////
+        // Amplitude
+
         final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
         final IEnvelope ampEnvelope = amplitudeModulator.getSource ();
         final double delay = ampEnvelope.getDelayTime ();
@@ -773,6 +797,10 @@ class SxtZone
         final double sustain = ampEnvelope.getSustainLevel ();
         this.ampEnvSustain = sustain < 0 ? 1000 : (int) (sustain * 1000);
         this.ampEnvRelease = envelopeTimeSecondsToCents (ampEnvelope.getReleaseTime ());
+
+        final double ampVelocityAmount = zone.getAmplitudeVelocityModulator ().getDepth ();
+        if (ampVelocityAmount != 0)
+            this.velocityToAmpGain = (int) Math.round (ampVelocityAmount * 1000.0);
 
         // Set gain and panorama
         final double dBValue = zone.getGain ();

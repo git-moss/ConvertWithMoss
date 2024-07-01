@@ -18,7 +18,6 @@ import java.util.zip.GZIPOutputStream;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -335,7 +334,7 @@ public class AbletonCreator extends AbstractCreator
             cents += 100;
         }
 
-        zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (MathUtils.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - semitones, 0, 127)));
+        zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (Math.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - semitones, 0, 127)));
         zoneContent = zoneContent.replace ("%DETUNE%", Integer.toString (cents));
         zoneContent = zoneContent.replace ("%TUNE_SCALE%", Integer.toString ((int) (zone.getKeyTracking () * 100)));
         zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getPanorama ()));

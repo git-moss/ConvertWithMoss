@@ -296,7 +296,7 @@ public class Program
 
             final float volume = this.instrumentVolume * kontaktGroup.getVolume () * kontaktZone.getZoneVolume ();
             zone.setGain (MathUtils.valueToDb (volume));
-            zone.setPanorama (MathUtils.clamp (this.instrumentPan + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
+            zone.setPanorama (Math.clamp (this.instrumentPan + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
 
             zone.setTune (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (), this.instrumentTune));
             zone.setKeyTracking (kontaktGroup.isKeyTracking () ? 1 : 0);

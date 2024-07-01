@@ -22,13 +22,12 @@ import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -268,30 +267,40 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
                     final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
                     final int velEnd = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_END, 0);
 
-                    final DefaultSampleZone sampleMetadata = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
-                    if (sampleMetadata == null)
+                    final DefaultSampleZone zone = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
+                    if (zone == null)
                         continue;
-                    samples.add (sampleMetadata);
+                    samples.add (zone);
 
-                    final IEnvelopeModulator amplitudeModulator = sampleMetadata.getAmplitudeEnvelopeModulator ();
+                    /////////////////////////////////////////////////////////////
+                    // Amplitude
+
+                    final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
                     amplitudeModulator.setDepth (1.0);
                     amplitudeModulator.getSource ().set (volumeEnvelope);
+
+                    final double ampVelocityAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_AMP_AMOUNT, 0);
+                    if (ampVelocityAmount > 0)
+                        zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityAmount);
+
+                    /////////////////////////////////////////////////////////////
+                    // Pitch
 
                     final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
                     if (pitchEnvAmount != 0.5)
                     {
-                        final IEnvelopeModulator pitchModulator = sampleMetadata.getPitchModulator ();
+                        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
                         pitchModulator.setDepth ((pitchEnvAmount - 0.5) * 2.0);
                         pitchModulator.getSource ().set (pitchEnvelope);
                     }
 
                     // No loop if it is a one-shot
                     if (!isOneShot)
-                        parseLoop (layerElement, sampleMetadata);
+                        parseLoop (layerElement, zone);
 
-                    sampleMetadata.setFilter (filter);
+                    zone.setFilter (filter);
 
-                    this.readMissingData (isDrum, isOneShot, sampleMetadata);
+                    this.readMissingData (isDrum, isOneShot, zone);
                 }
         }
 
@@ -323,6 +332,11 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
             cutoffModulator.setDepth (filterAmount);
             cutoffModulator.getSource ().set (parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK, MPCKeygroupTag.INSTRUMENT_FILTER_HOLD, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY, MPCKeygroupTag.INSTRUMENT_FILTER_SUSTAIN, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE, MPCKeygroupTag.INSTRUMENT_FILTER_ATTACK_CURVE, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY_CURVE, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE_CURVE));
         }
+
+        final double filterCutoffVelocityAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_FILTER_AMOUNT, 0);
+        if (filterCutoffVelocityAmount > 0)
+            filter.getCutoffVelocityModulator ().setDepth (filterCutoffVelocityAmount);
+
         return filter;
     }
 
@@ -390,7 +404,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         final String panStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PAN);
         if (panStr != null && !panStr.isBlank ())
-            sampleMetadata.setPanorama (MathUtils.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
+            sampleMetadata.setPanorama (Math.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
 
         final String pitchStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PITCH);
         if (pitchStr != null && !pitchStr.isBlank ())
@@ -576,9 +590,9 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         envelope.setSustainLevel (getEnvelopeAttribute (element, sustainTag, 0, 1, 1, false));
 
-        envelope.setAttackSlope (MathUtils.clamp (XMLUtils.getChildElementDoubleContent (element, attackCurveTag, 0.5) * 2.0 - 1.0, -1.0, 1.0));
-        envelope.setDecaySlope (MathUtils.clamp (XMLUtils.getChildElementDoubleContent (element, decayCurveTag, 0.5) * 2.0 - 1.0, -1.0, 1.0));
-        envelope.setReleaseSlope (MathUtils.clamp (XMLUtils.getChildElementDoubleContent (element, releaseCurveTag, 0.5) * 2.0 - 1.0, -1.0, 1.0));
+        envelope.setAttackSlope (Math.clamp (XMLUtils.getChildElementDoubleContent (element, attackCurveTag, 0.5) * 2.0 - 1.0, -1.0, 1.0));
+        envelope.setDecaySlope (Math.clamp (XMLUtils.getChildElementDoubleContent (element, decayCurveTag, 0.5) * 2.0 - 1.0, -1.0, 1.0));
+        envelope.setReleaseSlope (Math.clamp (XMLUtils.getChildElementDoubleContent (element, releaseCurveTag, 0.5) * 2.0 - 1.0, -1.0, 1.0));
 
         return envelope;
     }
@@ -595,6 +609,6 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
     private static double denormalizeLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
     {
-        return minimum * Math.exp (MathUtils.clamp (value, 0, 1) * Math.log (maximum / minimum));
+        return minimum * Math.exp (Math.clamp (value, 0, 1) * Math.log (maximum / minimum));
     }
 }

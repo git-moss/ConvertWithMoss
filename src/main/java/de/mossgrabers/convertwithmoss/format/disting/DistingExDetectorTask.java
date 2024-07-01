@@ -222,7 +222,7 @@ public class DistingExDetectorTask extends AbstractDetectorTask
         {
             final IGroup group = groupsList.get (i);
             final int velocityLow = 1 + i * velocitySteps;
-            int velocityHigh = MathUtils.clamp ((i + 1) * velocitySteps, 1, 127);
+            int velocityHigh = Math.clamp ((i + 1) * velocitySteps, 1, 127);
             // Ensure that the last step reaches till the highest velocity
             if (i == size - 1)
                 velocityHigh = 127;

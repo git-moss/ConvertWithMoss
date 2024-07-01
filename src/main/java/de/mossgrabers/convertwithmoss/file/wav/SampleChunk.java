@@ -150,7 +150,7 @@ public class SampleChunk extends RIFFChunk
     public int getMIDIUnityNote ()
     {
         final int unityNote = this.getFourBytesAsInt (0x0C);
-        return getMIDIPitchFractionAsCents () < 0 ? unityNote + 1 : unityNote;
+        return this.getMIDIPitchFractionAsCents () < 0 ? unityNote + 1 : unityNote;
     }
 
 
@@ -192,7 +192,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getMIDIPitchFractionAsCents ()
     {
-        long midiPitchFraction = this.getMIDIPitchFraction ();
+        final long midiPitchFraction = this.getMIDIPitchFraction ();
         final int value = (int) Math.round (midiPitchFraction * 50.0 / 0x80000000L);
         return value > 50 ? value - 100 : value;
     }
@@ -201,7 +201,7 @@ public class SampleChunk extends RIFFChunk
     /**
      * Sets the unity note and the pitch fraction. If the cents are negative the unity note and
      * fraction are adapted accordingly.
-     * 
+     *
      * @param unityNote The unity note to set
      * @param cent The pitch adjustment in cents
      */
