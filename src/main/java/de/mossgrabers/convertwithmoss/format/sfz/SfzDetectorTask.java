@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
@@ -410,10 +409,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
         if (tune == 0)
             tune = this.getDoubleValue (SfzOpcode.PITCH, 0);
-        sampleMetadata.setTune (MathUtils.clamp (tune, -3600, 3600) / 100.0);
+        sampleMetadata.setTune (Math.clamp (tune, -3600, 3600) / 100.0);
 
         final double pitchKeytrack = this.getDoubleValue (SfzOpcode.PITCH_KEYTRACK, 100);
-        sampleMetadata.setKeyTracking (MathUtils.clamp (pitchKeytrack, 0, 100) / 100.0);
+        sampleMetadata.setKeyTracking (Math.clamp (pitchKeytrack, 0, 100) / 100.0);
 
         sampleMetadata.setBendUp ((int) (this.getIntegerValue (SfzOpcode.BEND_UP, 0) / 100.0));
         sampleMetadata.setBendDown ((int) (this.getIntegerValue (SfzOpcode.BEND_DOWN, 0) / 100.0));
@@ -580,7 +579,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
     {
         sampleZone.setGain (this.getDoubleValue (SfzOpcode.VOLUME, 0));
         final double panorama = this.getDoubleValue (SfzOpcode.PANORAMA, 0);
-        sampleZone.setPanorama (MathUtils.clamp (panorama, -100, 100) / 100.0);
+        sampleZone.setPanorama (Math.clamp (panorama, -100, 100) / 100.0);
 
         // Amplitude envelope
 

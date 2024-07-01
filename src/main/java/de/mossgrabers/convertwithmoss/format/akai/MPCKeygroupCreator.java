@@ -226,7 +226,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ACTIVE, MPCKeygroupTag.TRUE);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (zone.getGain ())));
 
-        final double pan = (MathUtils.clamp (zone.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
+        final double pan = (Math.clamp (zone.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, String.format (Locale.US, "%.6f", Double.valueOf (pan)));
 
         final double tuneCent = zone.getTune ();
@@ -334,6 +334,9 @@ public class MPCKeygroupCreator extends AbstractCreator
         instrumentElement.setAttribute ("number", Integer.toString (calcInstrumentNumber (keygroupsMap)));
         instrumentsElement.appendChild (instrumentElement);
 
+        /////////////////////////////////////////////////////////////
+        // Filter
+
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isPresent ())
         {
@@ -359,11 +362,25 @@ public class MPCKeygroupCreator extends AbstractCreator
                 setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_DECAY_CURVE, filterEnvelope.getDecaySlope ());
                 setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RELEASE_CURVE, filterEnvelope.getReleaseSlope ());
             }
+
+            final double filterCutoffVelocityAmount = filter.getCutoffVelocityModulator ().getDepth ();
+            if (filterCutoffVelocityAmount > 0)
+                XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_FILTER_AMOUNT, formatDouble (filterCutoffVelocityAmount, 2));
         }
+
+        /////////////////////////////////////////////////////////////
+        // Range
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, Integer.toString (keyLow));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, zone.getKeyTracking () == 0 ? "True" : "False");
+
+        /////////////////////////////////////////////////////////////
+        // Amplitude
+
+        final double ampVelocityAmount = zone.getAmplitudeVelocityModulator ().getDepth ();
+        if (ampVelocityAmount > 0)
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_AMP_AMOUNT, formatDouble (ampVelocityAmount, 2));
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         setEnvelopeAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, amplitudeEnvelope.getAttackTime (), MPCKeygroupConstants.MIN_ENV_TIME_SECONDS, MPCKeygroupConstants.MAX_ENV_TIME_SECONDS, MPCKeygroupConstants.DEFAULT_ATTACK_TIME, true);
@@ -374,6 +391,9 @@ public class MPCKeygroupCreator extends AbstractCreator
         setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK_CURVE, amplitudeEnvelope.getAttackSlope ());
         setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY_CURVE, amplitudeEnvelope.getDecaySlope ());
         setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE_CURVE, amplitudeEnvelope.getReleaseSlope ());
+
+        /////////////////////////////////////////////////////////////
+        // Pitch
 
         final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
         final double pitchDepth = pitchModulator.getDepth ();
@@ -458,7 +478,7 @@ public class MPCKeygroupCreator extends AbstractCreator
      */
     private static double normalizeLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
     {
-        return Math.log (MathUtils.clamp (value, minimum, maximum) / minimum) / Math.log (maximum / minimum);
+        return Math.log (Math.clamp (value, minimum, maximum) / minimum) / Math.log (maximum / minimum);
     }
 
 
@@ -478,7 +498,7 @@ public class MPCKeygroupCreator extends AbstractCreator
 
     private static void setEnvelopeCurveAttribute (final Document document, final Element element, final String curveTag, final double slopeValue)
     {
-        final double value = MathUtils.clamp ((slopeValue + 1.0) / 2.0, 0, 1);
+        final double value = Math.clamp ((slopeValue + 1.0) / 2.0, 0, 1);
         XMLUtils.addTextElement (document, element, curveTag, String.format (Locale.US, "%.6f", Double.valueOf (value)));
     }
 }

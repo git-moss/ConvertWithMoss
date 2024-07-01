@@ -24,9 +24,9 @@ import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -254,19 +254,30 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
 
     private static Optional<IFilter> parseModulationAttributes (final Element programElement, final DefaultMultisampleSource multisampleSource) throws IOException
     {
-        // Pitch-bend
-        final int bend = (int) MathUtils.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, 1.0) * 1200.0, 0.0, 1200.0);
+        final List<TALSamplerModulator> modulators = parseModulators (programElement);
 
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (multisampleSource.getGroups ());
 
-        // Add amplitude envelope
-        final double ampAttach = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, 0, maxEnvelopeTime, 0);
+        //////////////////////////////////////////////////
+        // Amplitude
+
+        final double ampAttack = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, 0, maxEnvelopeTime, 0);
         final double ampHold = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, 0, maxEnvelopeTime, 0);
         final double ampDecay = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, 0, maxEnvelopeTime, 0);
         final double ampSustain = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, 0, 1, 1);
         final double ampRelease = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, 0, maxEnvelopeTime, 0);
 
-        // Get filter settings
+        double ampVelocityModAmount = 0.5;
+        for (final TALSamplerModulator modulator: modulators)
+            if (modulator.isDestination (TALSamplerModulator.DEST_ID_VOLUME_A) && modulator.isSource (TALSamplerModulator.SOURCE_ID_VELOCITY))
+            {
+                ampVelocityModAmount = modulator.getModAmount ();
+                break;
+            }
+
+        //////////////////////////////////////////////////
+        // Filter
+
         // We only have a global filter, therefore take only values from the 1st layer
         Optional<IFilter> optFilter = Optional.empty ();
         if (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_LAYER_ON + TALSamplerConstants.LAYERS[0], 0) > 0)
@@ -294,10 +305,23 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                     filterEnvelope.setSustainLevel (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, 0, 1, 1));
                     filterEnvelope.setReleaseTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, 0, maxEnvelopeTime, 0));
                 }
+
+                for (final TALSamplerModulator modulator: modulators)
+                    if (modulator.isDestination (TALSamplerModulator.DEST_ID_CUTOFF) && modulator.isSource (TALSamplerModulator.SOURCE_ID_VELOCITY))
+                    {
+                        filter.getCutoffVelocityModulator ().setDepth (modulator.getModAmount ());
+                        break;
+                    }
             }
         }
 
-        // Get pitch (modulation) envelope
+        //////////////////////////////////////////////////
+        // Pitch
+
+        // Pitch-bend
+        final int bend = (int) Math.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, 1.0) * 1200.0, 0.0, 1200.0);
+
+        // Envelope
         final double pitchAttack = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, 0, maxEnvelopeTime, 0);
         final double pitchHold = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, 0, maxEnvelopeTime, 0);
         final double pitchDecay = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, 0, maxEnvelopeTime, 0);
@@ -305,16 +329,15 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
         final double pitchRelease = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, 0, maxEnvelopeTime, 0);
 
         // Envelope 3 needs to be set to modulate the global pitch
-        final Element modMatrixElement = XMLUtils.getChildElementByName (programElement, "modmatrix");
         double globalPitchEnvelopeDepth = -1;
-        if (modMatrixElement != null)
-            for (final Element entryElement: XMLUtils.getChildElementsByName (modMatrixElement, "entry", false))
-                if (XMLUtils.getIntegerAttribute (entryElement, "parameterid", -1) == 164 && XMLUtils.getIntegerAttribute (entryElement, "modmatrixsourceid", -1) == 2)
-                {
-                    globalPitchEnvelopeDepth = XMLUtils.getDoubleAttribute (entryElement, "modmatrixamount", 1.0);
-                    break;
-                }
+        for (final TALSamplerModulator modulator: modulators)
+            if (modulator.isSource (TALSamplerModulator.SOURCE_ID_ENV3) || modulator.isDestination (TALSamplerModulator.DEST_ID_TUNE_A, TALSamplerModulator.DEST_ID_MASTER_TUNE))
+            {
+                globalPitchEnvelopeDepth = modulator.getModAmount ();
+                break;
+            }
 
+        // Set all zones of all groups to the same amplitude and pitch envelope
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
             {
@@ -322,11 +345,13 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
                 zone.setBendDown (bend);
 
                 final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
-                amplitudeEnvelope.setAttackTime (ampAttach);
+                amplitudeEnvelope.setAttackTime (ampAttack);
                 amplitudeEnvelope.setHoldTime (ampHold);
                 amplitudeEnvelope.setDecayTime (ampDecay);
                 amplitudeEnvelope.setSustainLevel (ampSustain);
                 amplitudeEnvelope.setReleaseTime (ampRelease);
+
+                zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityModAmount);
 
                 if (globalPitchEnvelopeDepth > 0)
                 {
@@ -343,6 +368,17 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
             }
 
         return optFilter;
+    }
+
+
+    private static List<TALSamplerModulator> parseModulators (final Element soundShapeElement)
+    {
+        final List<TALSamplerModulator> modulators = new ArrayList<> ();
+        final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TALSamplerTag.MOD_MATRIX);
+        if (modulationElement != null)
+            for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TALSamplerTag.MOD_MATRIX_ENTRY, false))
+                modulators.add (new TALSamplerModulator (modulationEntryElement));
+        return modulators;
     }
 
 

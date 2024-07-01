@@ -205,7 +205,7 @@ public class DistingExCreator extends WavCreator
                     parameters[13] = (int) (tune * 100.0);
 
                     // Gain in the range of -40..24 dB
-                    parameters[14] = MathUtils.clamp ((int) Math.round (zone.getGain ()), -40, 24);
+                    parameters[14] = Math.clamp ((int) Math.round (zone.getGain ()), -40, 24);
 
                     final Optional<IEnvelopeModulator> modulator = multisampleSource.getGlobalAmplitudeModulator ();
                     if (modulator.isPresent ())
@@ -214,9 +214,9 @@ public class DistingExCreator extends WavCreator
                         if (envelopeModulator.hashCode () > 0)
                         {
                             final IEnvelope envelope = envelopeModulator.getSource ();
-                            parameters[7] = MathUtils.clamp ((int) Math.round (Math.log (envelope.getAttackTime () / 0.001) / 0.0757), 0, 127);
-                            parameters[8] = MathUtils.clamp ((int) Math.round (Math.log (envelope.getDecayTime () / 0.02) / 0.0521), 0, 127);
-                            parameters[10] = MathUtils.clamp ((int) Math.round (Math.log (envelope.getReleaseTime () / 0.01) / 0.0630), 0, 127);
+                            parameters[7] = Math.clamp ((int) Math.round (Math.log (envelope.getAttackTime () / 0.001) / 0.0757), 0, 127);
+                            parameters[8] = Math.clamp ((int) Math.round (Math.log (envelope.getDecayTime () / 0.02) / 0.0521), 0, 127);
+                            parameters[10] = Math.clamp ((int) Math.round (Math.log (envelope.getReleaseTime () / 0.01) / 0.0630), 0, 127);
                         }
                     }
                 }

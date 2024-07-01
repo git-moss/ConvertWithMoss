@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -119,7 +118,7 @@ public class TALSamplerConstants
      */
     public static Optional<IFilter> getFilterType (final double value)
     {
-        final int filterIndex = MathUtils.clamp ((int) Math.round (value / INDEX_OFFSET), 0, 12);
+        final int filterIndex = Math.clamp ((int) Math.round (value / INDEX_OFFSET), 0, 12);
         switch (filterIndex)
         {
             case 0, 1, 2, 3, 4, 5, 6:

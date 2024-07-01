@@ -96,6 +96,8 @@ public class TX16WxTag
     /** The high velocity tag sample attribute. */
     public static final String HI_VEL                 = "tx:high-vel";
 
+    /** The amplitude velocity modulation tag. */
+    public static final String AMP_VELOCITY           = "tx:velocity";
     /** The amplitude envelope tag. */
     public static final String AMP_ENVELOPE           = "tx:aeg";
     /** The amplitude envelope attack attribute. */

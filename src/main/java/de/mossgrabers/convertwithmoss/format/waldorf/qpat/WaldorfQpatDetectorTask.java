@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -123,7 +122,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
      */
     private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws FormatException, IOException
     {
-        String name = FileUtils.getNameWithoutType (file);
+        final String name = FileUtils.getNameWithoutType (file);
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
 
         in.mark (in.available () + 1);
@@ -213,7 +212,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
 
     /**
      * Read all 3 resource headers.
-     * 
+     *
      * @param in The input stream to read from
      * @return The resource headers
      * @throws IOException Could not read the headers
@@ -273,7 +272,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             double keyTracking = 100;
             final WaldorfQpatParameter keyTrackingParameter = parameters.get ("Osc" + groupIndex + "Keytrack");
             if (keyTrackingParameter != null)
-                keyTracking = MathUtils.clamp (keyTrackingParameter.value * 400.0 - 200.0, 0, 100) / 100.0;
+                keyTracking = Math.clamp (keyTrackingParameter.value * 400.0 - 200.0, 0, 100) / 100.0;
 
             // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB]
             double volume = 0;
@@ -533,12 +532,12 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             // FromNote
             if (params.length <= 2)
                 continue;
-            zone.setKeyLow (MathUtils.clamp (Integer.parseInt (params[2]), 0, 127));
+            zone.setKeyLow (Math.clamp (Integer.parseInt (params[2]), 0, 127));
 
             // ToNote
             if (params.length <= 3)
                 continue;
-            zone.setKeyHigh (MathUtils.clamp (Integer.parseInt (params[3]), 0, 127));
+            zone.setKeyHigh (Math.clamp (Integer.parseInt (params[3]), 0, 127));
 
             // Gain
             if (params.length <= 4)
@@ -549,17 +548,17 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             // FromVelo
             if (params.length <= 5)
                 continue;
-            zone.setVelocityLow (MathUtils.clamp (Integer.parseInt (params[5]), 1, 127));
+            zone.setVelocityLow (Math.clamp (Integer.parseInt (params[5]), 1, 127));
 
             // ToVelo
             if (params.length <= 6)
                 continue;
-            zone.setVelocityHigh (MathUtils.clamp (Integer.parseInt (params[6]), 1, 127));
+            zone.setVelocityHigh (Math.clamp (Integer.parseInt (params[6]), 1, 127));
 
             // Pan
             if (params.length <= 7)
                 continue;
-            zone.setPanorama (MathUtils.clamp (Double.parseDouble (params[7]) * 2.0 - 1.0, -1.0, 1.0));
+            zone.setPanorama (Math.clamp (Double.parseDouble (params[7]) * 2.0 - 1.0, -1.0, 1.0));
 
             // Start
             if (params.length <= 8)
@@ -624,7 +623,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             {
                 // MatrixDstX: [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
                 final WaldorfQpatParameter destParam = parameters.get ("MatrixDst" + i);
-                if (destParam != null && (destParam.value == oscIndex + 1.0))
+                if (destParam != null && destParam.value == oscIndex + 1.0)
                 {
                     // MatrixAmount1
                     final WaldorfQpatParameter amountParam = parameters.get ("MatrixAmount" + i);

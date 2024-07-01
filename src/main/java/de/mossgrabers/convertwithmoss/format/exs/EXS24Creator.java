@@ -206,7 +206,7 @@ public class EXS24Creator extends AbstractCreator
                 exsParameters.put (EXS24Parameters.PITCH_BEND_DOWN, Math.abs (zone.getBendDown () / 100));
 
                 final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
-                final int velocityModulation = (int) Math.round (MathUtils.clamp ((1 - velocityDepth) * -60.0, -60, 0));
+                final int velocityModulation = (int) Math.round (Math.clamp ((1 - velocityDepth) * -60.0, -60, 0));
                 exsParameters.put (EXS24Parameters.ENV1_VEL_SENS, velocityModulation);
 
                 createEnvelope (exsParameters, 1, zone.getAmplitudeEnvelopeModulator ());

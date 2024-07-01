@@ -276,12 +276,10 @@ public final class AudioFileUtils
 
             // AudioSystem handles 32bit float values incorrect. We need our own implementation.
             if (is32BitFloat)
-            {
                 try (AudioInputStream convertedAudioInputStream = convertAudioStreamFrom32BitFloatTo16BitPCM (audioInputStream, audioFormat, newAudioFormat))
                 {
                     return doConvertToWav (convertedAudioInputStream, newAudioFormat);
                 }
-            }
 
             return doConvertToWav (audioInputStream, newAudioFormat);
         }
@@ -303,7 +301,7 @@ public final class AudioFileUtils
 
         for (int i = 0; i < sourceData.length; i += 4)
         {
-            float floatValue = inputBuffer.getFloat (i);
+            final float floatValue = inputBuffer.getFloat (i);
 
             // Convert float to 16-bit PCM
             outputBuffer.putShort ((short) (floatValue * Short.MAX_VALUE));

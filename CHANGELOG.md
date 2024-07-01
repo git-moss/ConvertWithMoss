@@ -1,8 +1,9 @@
 # Changes
 
-## 10.5.0 (unreleased)
+## 10.2.0
 
-* Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
+* Kontakt 1-4, MPC Keygroups, Soundfont 2, TAL Sampler, TX16Wx
+  * New: Added support for amplitude and filter velocity modulation.
 * Kontakt - Writing
   * New: Improved pitch envelope.
 * Kontakt 4.2-7 - Reading

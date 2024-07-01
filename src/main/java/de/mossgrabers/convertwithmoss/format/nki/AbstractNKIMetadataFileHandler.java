@@ -350,7 +350,7 @@ public abstract class AbstractNKIMetadataFileHandler
         final IFilter filter = filterOpt.isPresent () ? filterOpt.get () : new DefaultFilter (FilterType.LOW_PASS, 2, IFilter.MAX_FREQUENCY, 0);
         groupContent = groupContent.replace ("%FILTER_TYPE%", createFilterType (filter));
 
-        final double legacyCutoff = MathUtils.normalizeFrequency (MathUtils.clamp (filter.getCutoff (), 43.6, 21800), 21800.0);
+        final double legacyCutoff = MathUtils.normalizeFrequency (Math.clamp (filter.getCutoff (), 43.6, 21800), 21800.0);
         groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (legacyCutoff));
         groupContent = groupContent.replace ("%FILTER_RESONANCE%", formatDouble (filter.getResonance ()));
 
@@ -363,6 +363,10 @@ public abstract class AbstractNKIMetadataFileHandler
         groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_HOLD%", formatDouble (limitToDefault (filterCutoffEnvelope.getHoldTime (), 0) * 1000.0d));
         groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_RELEASE%", formatDouble (limitToDefault (filterCutoffEnvelope.getReleaseTime (), 1) * 1000.0d));
         groupContent = groupContent.replace ("%FILTER_CUTOFF_ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (filterCutoffEnvelope.getSustainLevel (), 1)));
+
+        final double cutoffVelocityDepth = filter.getCutoffVelocityModulator ().getDepth ();
+        groupContent = groupContent.replace ("%FILTER_CUTOFF_VELOCITY_MOD%", formatDouble (limitToDefault (cutoffVelocityDepth, 0)));
+
         return groupContent;
     }
 
@@ -693,7 +697,7 @@ public abstract class AbstractNKIMetadataFileHandler
             final double groupPan = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ());
             final double progPan = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progPanParam ());
             final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
-            zone.setPanorama (MathUtils.clamp (totalPan, -1.0d, 1.0d));
+            zone.setPanorama (Math.clamp (totalPan, -1.0d, 1.0d));
 
             if (ampVelocityMod >= 0)
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityMod);

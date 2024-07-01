@@ -14,15 +14,14 @@ import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -162,18 +161,37 @@ public class Sf2DetectorTask extends AbstractDetectorTask
     }
 
 
-    private static void parseModulators (final ISampleZone sampleZone, final Sf2PresetZone zone, final Sf2InstrumentZone instrZone)
+    private static void parseModulators (final ISampleZone zone, final Sf2PresetZone sf2Zone, final Sf2InstrumentZone instrZone)
     {
-        List<Sf2Modulator> modulators = instrZone.getModulators (Sf2Modulator.MODULATOR_PITCH_BEND);
-        if (modulators.isEmpty ())
-            modulators = zone.getModulators (Sf2Modulator.MODULATOR_PITCH_BEND);
-        for (final Sf2Modulator sf2Modulator: modulators)
+        for (final Sf2Modulator sf2Modulator: getModulators (sf2Zone, instrZone, Sf2Modulator.MODULATOR_PITCH_BEND))
             if (sf2Modulator.getDestinationGenerator () == Generator.FINE_TUNE)
             {
                 final int amount = sf2Modulator.getModulationAmount ();
-                sampleZone.setBendUp (amount);
-                sampleZone.setBendDown (-amount);
+                zone.setBendUp (amount);
+                zone.setBendDown (-amount);
             }
+
+        for (final Sf2Modulator sf2Modulator: getModulators (sf2Zone, instrZone, Sf2Modulator.MODULATOR_VELOCITY))
+        {
+            final int destinationGenerator = sf2Modulator.getDestinationGenerator ();
+            if (destinationGenerator == Generator.INITIAL_ATTENUATION)
+            {
+                final int amount = sf2Modulator.getModulationAmount ();
+                zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (amount / 960, 0, 1));
+            }
+            else if (destinationGenerator == Generator.INITIAL_FILTER_CUTOFF)
+            {
+                final int amount = sf2Modulator.getModulationAmount ();
+                zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (amount / -2400, 0, 1));
+            }
+        }
+    }
+
+
+    private static List<Sf2Modulator> getModulators (final Sf2PresetZone zone, final Sf2InstrumentZone instrZone, final Integer modulatorID)
+    {
+        final List<Sf2Modulator> modulators = instrZone.getModulators (modulatorID);
+        return modulators.isEmpty () ? zone.getModulators (modulatorID) : modulators;
     }
 
 
@@ -271,7 +289,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         // Store the matching right side sample with the left side one
                         leftSampleData.setRightSample (sample);
                         updateFilename (leftSampleZone, rightSampleZone);
-                        leftSampleZone.setPanorama (MathUtils.clamp (leftSampleZone.getPanorama () + rightSampleZone.getPanorama (), -1.0, 1.0));
+                        leftSampleZone.setPanorama (Math.clamp (leftSampleZone.getPanorama () + rightSampleZone.getPanorama (), -1.0, 1.0));
                         resultSamples.add (leftSampleZone);
                         rightSampleZones.remove (i);
                         found = true;
@@ -326,7 +344,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         final Sf2SampleData leftSampleData = (Sf2SampleData) panLeftSampleZone.getSampleData ();
                         updateFilename (panLeftSampleZone, panRightSampleZone);
                         leftSampleData.setRightSample (((Sf2SampleData) panRightSampleZone.getSampleData ()).getSample ());
-                        panLeftSampleZone.setPanorama (MathUtils.clamp (panLeftSampleZone.getPanorama () + panRightSampleZone.getPanorama (), -1.0, 1.0));
+                        panLeftSampleZone.setPanorama (Math.clamp (panLeftSampleZone.getPanorama () + panRightSampleZone.getPanorama (), -1.0, 1.0));
                         resultSamples.add (panLeftSampleZone);
                         panRightSamples.remove (i);
                         found = true;
@@ -408,10 +426,10 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             zone.setKeyRoot (pitch);
             final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
             final int pitchCorrection = sample.getPitchCorrection ();
-            final double tune = Math.min (1, Math.max (-1, (pitchCorrection + (double) fineTune) / 100));
+            final double tune = Math.clamp ((pitchCorrection + (double) fineTune) / 100, -1, 1);
             zone.setTune (tune);
             final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
-            zone.setKeyTracking (Math.min (100, Math.max (0, scaleTuning)) / 100.0);
+            zone.setKeyTracking (Math.clamp (scaleTuning / 100.0, 0, 100));
 
             // Set the key range
             final Pair<Integer, Integer> keyRangeValue = generators.getRangeValue (Generator.KEY_RANGE);
@@ -538,7 +556,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
         // This is likely not correct but since there is also no documentation what the percentage
         // volume values mean in dB it is the best we can do...
-        return Math.max (0, Math.min (1.0, 1.0 - v / 1000.0));
+        return Math.clamp (1.0 - v / 1000.0, 0, 1);
     }
 
 

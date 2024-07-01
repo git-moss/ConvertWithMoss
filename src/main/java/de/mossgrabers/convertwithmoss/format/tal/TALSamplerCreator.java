@@ -159,11 +159,9 @@ public class TALSamplerCreator extends AbstractCreator
         programElement.setAttribute (TALSamplerTag.PROGRAM_NAME, multisampleSource.getName ());
         programElement.setAttribute (TALSamplerTag.PROGRAM_NUM_VOICES, "1.0");
 
-        final List<IGroup> groups = this.optimizeGroups (multisampleSource.getNonEmptyGroups (true));
-        addModulationAttributes (document, groups, programElement, multisampleSource.getGlobalFilter ());
-
         // Add up to 4 groups
         int groupCounter = 0;
+        final List<IGroup> groups = this.optimizeGroups (multisampleSource.getNonEmptyGroups (true));
         for (final IGroup group: groups)
         {
             final Element groupElement = XMLUtils.addElement (document, programElement, TALSamplerTag.SAMPLE_LAYER + groupCounter);
@@ -180,6 +178,8 @@ public class TALSamplerCreator extends AbstractCreator
             if (groupCounter == 4)
                 break;
         }
+
+        addModulationAttributes (document, groups, programElement, multisampleSource.getGlobalFilter ());
 
         return this.createXMLString (document);
     }
@@ -215,18 +215,18 @@ public class TALSamplerCreator extends AbstractCreator
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.END_SAMPLE, stop);
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.REVERSE, zone.isReversed () ? 1 : 0);
 
-        // transpose // tune in semitones = floor((48.0f * transpose + 0.5f) - 24.0f)
+        // transpose // tune in semi-tones = floor((48.0f * transpose + 0.5f) - 24.0f)
         final double tune = zone.getTune ();
         if (tune != 0)
         {
-            // transpose and de-tune are both +-24 semitones, fine tuning is set on the program with
-            // +-100 cent
+            // transpose and de-tune are both +-24 semi-tones, fine tuning is set on the program
+            // with +-100 cent
 
             final int transpose = (int) tune;
             final double fine = tune - transpose;
             int detune = 0;
             if (transpose > 24 || transpose < -24)
-                detune = MathUtils.clamp (transpose > 24 ? transpose - 24 : transpose + 24, -24, 24);
+                detune = Math.clamp (transpose > 24 ? transpose - 24 : transpose + 24, -24, 24);
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, (transpose + 24.0) / 48.0, 4);
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, (detune + 24.0) / 48.0, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], (fine + 1.0) / 2.0, 4);
@@ -283,15 +283,18 @@ public class TALSamplerCreator extends AbstractCreator
             return;
 
         final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
+        final List<TALSamplerModulator> modulators = new ArrayList<> (10);
 
         // Pitch-bend
         final int bendUp = Math.abs (zone.getBendUp ());
-        final double bendUpValue = bendUp == 0 ? 0.16 : MathUtils.clamp (bendUp / 1200.0, 0, 1.0);
+        final double bendUpValue = bendUp == 0 ? 0.16 : Math.clamp (bendUp / 1200.0, 0, 1.0);
         XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, bendUpValue, 3);
 
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (groups);
 
-        // Add amplitude envelope
+        //////////////////////////////////////////////////
+        // Amplitude
+
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttackTime (), 0, maxEnvelopeTime);
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHoldTime (), 0, maxEnvelopeTime);
@@ -299,7 +302,13 @@ public class TALSamplerCreator extends AbstractCreator
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, amplitudeEnvelope.getSustainLevel (), 0, 1);
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
 
-        // Add filter settings
+        final double ampModDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
+        if (ampModDepth != 0)
+            modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_VELOCITY, TALSamplerModulator.DEST_ID_VOLUME_A, ampModDepth));
+
+        //////////////////////////////////////////////////
+        // Filter
+
         if (optFilter.isPresent ())
         {
             final IFilter filter = optFilter.get ();
@@ -329,9 +338,15 @@ public class TALSamplerCreator extends AbstractCreator
 
                 // TALSamplerTag.FILTER_KEYBOARD not supported
             }
+
+            final double cutoffModDepth = filter.getCutoffVelocityModulator ().getDepth ();
+            if (cutoffModDepth != 0)
+                modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_VELOCITY, TALSamplerModulator.DEST_ID_CUTOFF, cutoffModDepth));
         }
 
-        // Add pitch envelope
+        //////////////////////////////////////////////////
+        // Pitch
+
         final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
         final double pitchModDepth = pitchModulator.getDepth ();
         if (pitchModDepth > 0)
@@ -344,19 +359,15 @@ public class TALSamplerCreator extends AbstractCreator
             setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, pitchEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
 
             // Envelope 3 needs to be set to modulate the global pitch
-            final Element modMatrixElement = XMLUtils.addElement (document, programElement, "modmatrix");
-            Element entryElement = XMLUtils.addElement (document, modMatrixElement, "entry");
-            entryElement.setAttribute ("parameterid", "164");
-            entryElement.setAttribute ("modmatrixsourceid", "2");
-            XMLUtils.setDoubleAttribute (entryElement, "modmatrixamount", pitchModDepth, 16);
-            for (int i = 0; i < 9; i++)
-            {
-                entryElement = XMLUtils.addElement (document, modMatrixElement, "entry");
-                entryElement.setAttribute ("parameterid", "-1");
-                entryElement.setAttribute ("modmatrixsourceid", "0");
-                entryElement.setAttribute ("modmatrixamount", "0.5");
-            }
+            modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_ENV3, TALSamplerModulator.DEST_ID_MASTER_TUNE, pitchModDepth));
         }
+
+        // Create modulator matrix
+        while (modulators.size () != 10)
+            modulators.add (new TALSamplerModulator ());
+        final Element modMatrixElement = XMLUtils.addElement (document, programElement, TALSamplerTag.MOD_MATRIX);
+        for (final TALSamplerModulator modulator: modulators)
+            modulator.createModElements (document, modMatrixElement);
     }
 
 

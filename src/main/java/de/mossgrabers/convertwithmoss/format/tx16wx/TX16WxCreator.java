@@ -22,7 +22,6 @@ import org.w3c.dom.Element;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -500,9 +499,11 @@ public class TX16WxCreator extends AbstractCreator
             // The whole group can be delayed which is basically the same as the amplitude delay
             soundshapeElement.setAttribute (TX16WxTag.GROUP_DELAY, formatTime (amplitudeEnvelope.getDelayTime ()));
 
-            final double sustain = amplitudeEnvelope.getSustainLevel ();
-            final String sustainLevel = sustain < 0 ? "1" : Double.toString (MathUtils.clamp (sustain, 0, 1));
+            //////////////////////////////////////////////
+            // Amplitude
 
+            final double sustain = amplitudeEnvelope.getSustainLevel ();
+            final String sustainLevel = sustain < 0 ? "1" : Double.toString (Math.clamp (sustain, 0, 1));
             aegElement.setAttribute (TX16WxTag.AMP_ENV_ATTACK, formatTime (amplitudeEnvelope.getAttackTime ()));
             aegElement.setAttribute (TX16WxTag.AMP_ENV_LEVEL1, "0 dB");
             aegElement.setAttribute (TX16WxTag.AMP_ENV_DECAY1, formatTime (amplitudeEnvelope.getHoldTime ()));
@@ -514,12 +515,18 @@ public class TX16WxCreator extends AbstractCreator
             XMLUtils.setDoubleAttribute (aegElement, TX16WxTag.AMP_ENV_DECAY2_SHAPE, amplitudeEnvelope.getDecaySlope (), 6);
             XMLUtils.setDoubleAttribute (aegElement, TX16WxTag.AMP_ENV_RELEASE_SHAPE, amplitudeEnvelope.getReleaseSlope (), 6);
 
+            final double ampVelocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
+            if (ampVelocityDepth != 0)
+                XMLUtils.setDoubleAttribute (soundshapeElement, TX16WxTag.AMP_VELOCITY, ampVelocityDepth, 6);
+
             // Pitch-bend
             int pitchbend = Math.abs (zone.getBendUp ());
             pitchbend = pitchbend <= 0 ? 200 : pitchbend;
             addModulationEntry (document, modulationElement, "Pitchbend", "Pitch", pitchbend + "Ct");
 
-            // Add filter settings
+            //////////////////////////////////////////////
+            // Filter
+
             final Optional<IFilter> optFilter = zone.getFilter ();
             if (optFilter.isPresent ())
             {
@@ -555,9 +562,15 @@ public class TX16WxCreator extends AbstractCreator
                     XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);
                     addModulationEntry (document, modulationElement, "ENV1", "Filter 1 Freq", (int) (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
                 }
+
+                final double filterVelocityDepth = filter.getCutoffVelocityModulator ().getDepth ();
+                if (filterVelocityDepth != 0)
+                    addModulationEntry (document, modulationElement, "Vel", "Filter 1 Freq", (int) (filterVelocityDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
 
-            // Add pitch modulator
+            //////////////////////////////////////////////
+            // Pitch
+
             final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
             final double pitchModDepth = pitchModulator.getDepth ();
             if (pitchModDepth != 0)
