@@ -1,8 +1,7 @@
 # Changes
 
-## 10.5.0 (unreleased)
+## 10.5.0
 
-* Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
 * Several accessibility improvements and fixes: 
   * Button mnemonics were partially broken.
   * Improved order of tabulator traversal.

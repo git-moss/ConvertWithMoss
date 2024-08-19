@@ -432,8 +432,8 @@ public class KeyMapping
             {
                 final String number = matcher.group ("value");
                 final Integer id = Integer.valueOf (number);
-                final String prefix = matcher.group ("prefix");
-                final String postfix = matcher.group ("postfix");
+                // Not used: matcher.group ("prefix");
+                // Not used: matcher.group ("postfix");
                 final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (filename)), si);
                 groups.computeIfAbsent (id, key -> new ArrayList<> ()).add (zone);
             }
