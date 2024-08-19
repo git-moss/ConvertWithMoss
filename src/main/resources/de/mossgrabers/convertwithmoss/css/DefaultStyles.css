@@ -46,6 +46,10 @@
 	-fx-border-color: rgb(200, 0, 0) black rgb(45, 45, 46) black;
 }
 
+.horizontal-tab-pane:focused {
+	-fx-border-color: -fx-focus-color;
+}
+
 .titled-pane>*.content {
 	-fx-background-insets: 0.0;
 	-fx-padding: 0.0;

@@ -36,6 +36,8 @@ public class DefaultEnvelopeModulator extends DefaultModulator implements IEnvel
     @Override
     public IEnvelope getSource ()
     {
+        if (this.source == null)
+            this.source = new DefaultEnvelope ();
         return this.source;
     }
 

@@ -18,6 +18,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt1.Kontakt1Type;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.Kontakt2Type;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
@@ -60,8 +61,10 @@ public class NkiCreator extends AbstractCreator
 
         this.outputFormatGroup = new ToggleGroup ();
         final RadioButton order1 = panel.createRadioButton ("@IDS_NKI_KONTAKT_1");
+        order1.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order1.setToggleGroup (this.outputFormatGroup);
         final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_2");
+        order2.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order2.setToggleGroup (this.outputFormatGroup);
         order2.setDisable (true);
 

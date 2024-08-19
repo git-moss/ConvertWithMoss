@@ -32,6 +32,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
@@ -86,8 +87,10 @@ public class DecentSamplerCreator extends AbstractCreator
 
         this.outputFormatGroup = new ToggleGroup ();
         final RadioButton order1 = panel.createRadioButton ("@IDS_DS_PRESET");
+        order1.setAccessibleHelp (Functions.getMessage ("IDS_DS_OUTPUT_FORMAT"));
         order1.setToggleGroup (this.outputFormatGroup);
         final RadioButton order2 = panel.createRadioButton ("@IDS_DS_LIBRARY");
+        order2.setAccessibleHelp (Functions.getMessage ("IDS_DS_OUTPUT_FORMAT"));
         order2.setToggleGroup (this.outputFormatGroup);
 
         this.makeMonophonicBox = panel.createCheckBox ("@IDS_DS_MAKE_MONOPHONIC");
