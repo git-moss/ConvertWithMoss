@@ -49,12 +49,15 @@ import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxCreator;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxDetector;
+import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatCreator;
+import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.wav.WavDetector;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.DefaultApplication;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.tools.ui.TraversalManager;
 import de.mossgrabers.tools.ui.control.LoggerBox;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BasePanel;
@@ -66,6 +69,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -73,12 +77,14 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -90,42 +96,47 @@ import javafx.stage.Stage;
  */
 public class ConvertWithMossApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {
-    private static final String ENABLE_DARK_MODE                    = "EnableDarkMode";
-    private static final String DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
-    private static final String DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
-    private static final String DESTINATION_PATH                    = "DestinationPath";
-    private static final String DESTINATION_TYPE                    = "DestinationType";
-    private static final String SOURCE_PATH                         = "SourcePath";
-    private static final String SOURCE_TYPE                         = "SourceType";
-    private static final String RENAMING_CSV_FILE                   = "RenamingCSVFile";
-    private static final String RENAMING_SOURCE_ENABLED             = "EnableRenaming";
+    private static final String    ENABLE_DARK_MODE                    = "EnableDarkMode";
+    private static final String    DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
+    private static final String    DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
+    private static final String    DESTINATION_PATH                    = "DestinationPath";
+    private static final String    DESTINATION_TYPE                    = "DestinationType";
+    private static final String    SOURCE_PATH                         = "SourcePath";
+    private static final String    SOURCE_TYPE                         = "SourceType";
+    private static final String    RENAMING_CSV_FILE                   = "RenamingCSVFile";
+    private static final String    RENAMING_SOURCE_ENABLED             = "EnableRenaming";
 
-    private final IDetector []  detectors;
-    private final ICreator []   creators;
+    private final IDetector []     detectors;
+    private final ICreator []      creators;
 
-    private BorderPane          mainPane;
-    private BorderPane          executePane;
-    private final TextField     sourcePathField                     = new TextField ();
-    private final TextField     destinationPathField                = new TextField ();
-    private File                sourceFolder;
-    private File                outputFolder;
-    private CheckBox            createFolderStructure;
-    private CheckBox            addNewFiles;
-    private CheckBox            enableDarkMode;
+    private BorderPane             mainPane;
+    private BorderPane             executePane;
+    private final TextField        sourcePathField                     = new TextField ();
+    private final TextField        destinationPathField                = new TextField ();
+    private File                   sourceFolder;
+    private File                   outputFolder;
+    private Button                 convertButton;
+    private Button                 analyseButton;
+    private Button                 sourceFolderSelectButton;
+    private Button                 destinationFolderSelectButton;
+    private CheckBox               createFolderStructure;
+    private CheckBox               addNewFiles;
+    private CheckBox               enableDarkMode;
 
-    private final TabPane       sourceTabPane                       = new TabPane ();
-    private final TabPane       destinationTabPane                  = new TabPane ();
+    private final TabPane          sourceTabPane                       = new TabPane ();
+    private final TabPane          destinationTabPane                  = new TabPane ();
 
-    private boolean             onlyAnalyse                         = true;
-    private Button              closeButton;
-    private Button              cancelButton;
+    private boolean                onlyAnalyse                         = true;
+    private Button                 closeButton;
+    private Button                 cancelButton;
 
-    private CheckBox            renameCheckbox;
-    private final TextField     renameFilePathField                 = new TextField ();
-    private Button              renameFilePathSelectButton;
+    private CheckBox               renameCheckbox;
+    private final TextField        renameFilePathField                 = new TextField ();
+    private Button                 renameFilePathSelectButton;
 
-    private final CSVRenameFile csvRenameFile                       = new CSVRenameFile ();
-    private final LoggerBox     loggingArea                         = new LoggerBox ();
+    private final CSVRenameFile    csvRenameFile                       = new CSVRenameFile ();
+    private final LoggerBox        loggingArea                         = new LoggerBox ();
+    private final TraversalManager traversalManager                    = new TraversalManager ();
 
 
     /**
@@ -166,7 +177,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new SfzDetector (this),
             new Sf2Detector (this),
             new TALSamplerDetector (this),
-            // new WaldorfQpatDetector (this),
+            new WaldorfQpatDetector (this),
             new WavDetector (this)// ,
                 // new YamahaYsfcDetector (this)
         };
@@ -188,7 +199,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new SfzCreator (this),
             new Sf2Creator (this),
             new TALSamplerCreator (this),
-            // new WaldorfQpatCreator (this),
+            new WaldorfQpatCreator (this),
             new WavCreator (this)
         };
     }
@@ -213,17 +224,18 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         // The main button panel
         final ButtonPanel buttonPanel = new ButtonPanel (Orientation.VERTICAL);
-
-        final Button convertButton = setupButton (buttonPanel, "Convert", "@IDS_MAIN_CONVERT");
-        convertButton.setOnAction (event -> this.execute (false));
-        final Button analyseButton = setupButton (buttonPanel, "Analyse", "@IDS_MAIN_ANALYSE");
-        analyseButton.setOnAction (event -> this.execute (true));
+        this.convertButton = setupButton (buttonPanel, "Convert", "@IDS_MAIN_CONVERT", "@IDS_MAIN_CONVERT_TOOLTIP");
+        this.convertButton.setDefaultButton (true);
+        this.convertButton.setOnAction (event -> this.execute (false));
+        this.analyseButton = setupButton (buttonPanel, "Analyse", "@IDS_MAIN_ANALYSE", "@IDS_MAIN_ANALYSE_TOOLTIP");
+        this.analyseButton.setOnAction (event -> this.execute (true));
 
         /////////////////////////////////////////////////////////////////////////////
         // Source pane
 
-        final Button sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
-        sourceFolderSelectButton.setOnAction (event -> {
+        this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
+        this.sourceFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_TOOLTIP")));
+        this.sourceFolderSelectButton.setOnAction (event -> {
 
             final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_SOURCE_HEADER");
             if (file.isPresent ())
@@ -231,8 +243,10 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         });
         final BoxPanel sourceUpperPart = new BoxPanel (Orientation.VERTICAL);
-        sourceUpperPart.addComponent (new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER")));
-        sourceUpperPart.addComponent (new BorderPane (this.sourcePathField, null, sourceFolderSelectButton, null, null));
+        final TitledSeparator sourceTitle = new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER"));
+        sourceTitle.setLabelFor (this.sourcePathField);
+        sourceUpperPart.addComponent (sourceTitle);
+        sourceUpperPart.addComponent (new BorderPane (this.sourcePathField, null, this.sourceFolderSelectButton, null, null));
 
         this.sourceTabPane.getStyleClass ().add ("paddingLeftBottomRight");
         final ObservableList<Tab> tabs = this.sourceTabPane.getTabs ();
@@ -269,18 +283,21 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         final BorderPane destinationFolderPanel = new BorderPane (this.destinationPathField);
 
-        final Button destinationFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION"));
-        destinationFolderSelectButton.setOnAction (event -> {
+        this.destinationFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION"));
+        this.destinationFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION_TOOLTIP")));
+        this.destinationFolderSelectButton.setOnAction (event -> {
 
             final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_DESTINATION_HEADER");
             if (file.isPresent ())
                 this.destinationPathField.setText (file.get ().getAbsolutePath ());
 
         });
-        destinationFolderPanel.setRight (destinationFolderSelectButton);
+        destinationFolderPanel.setRight (this.destinationFolderSelectButton);
 
         final BoxPanel destinationUpperPart = new BoxPanel (Orientation.VERTICAL);
-        destinationUpperPart.addComponent (new TitledSeparator ("@IDS_MAIN_DESTINATION_HEADER"));
+        final TitledSeparator destinationHeader = new TitledSeparator ("@IDS_MAIN_DESTINATION_HEADER");
+        destinationHeader.setLabelFor (this.destinationPathField);
+        destinationUpperPart.addComponent (destinationHeader);
         destinationUpperPart.addComponent (destinationFolderPanel);
 
         this.destinationTabPane.getStyleClass ().add ("paddingLeftBottomRight");
@@ -300,7 +317,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         final BoxPanel bottomRight = new BoxPanel (Orientation.HORIZONTAL);
         this.enableDarkMode = bottomRight.createCheckBox ("@IDS_MAIN_ENABLE_DARK_MODE", "@IDS_MAIN_ENABLE_DARK_MODE_TOOLTIP");
-        this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> this.updateLogger (isSelected.booleanValue ()));
+        this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> this.setDarkMode (isSelected.booleanValue ()));
 
         final BorderPane destinationPane = new BorderPane (this.destinationTabPane);
         destinationPane.setTop (destinationUpperPart.getPane ());
@@ -323,12 +340,14 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         // The execution button panel
         final ButtonPanel exButtonPanel = new ButtonPanel (Orientation.VERTICAL);
 
-        this.cancelButton = setupButton (exButtonPanel, "Cancel", "@IDS_EXEC_CANCEL");
+        this.cancelButton = setupButton (exButtonPanel, "Cancel", "@IDS_EXEC_CANCEL", "@IDS_EXEC_CANCEL_TOOLTIP");
         this.cancelButton.setOnAction (event -> this.cancelExecution ());
-        this.closeButton = setupButton (exButtonPanel, "Close", "@IDS_EXEC_CLOSE");
+        this.closeButton = setupButton (exButtonPanel, "Close", "@IDS_EXEC_CLOSE", "@IDS_EXEC_CLOSE_TOOLTIP");
         this.closeButton.setOnAction (event -> this.closeExecution ());
 
-        this.executePane.setCenter (this.loggingArea.getWebView ());
+        final WebView webView = this.loggingArea.getWebView ();
+        webView.setAccessibleRole (AccessibleRole.TEXT_AREA);
+        this.executePane.setCenter (webView);
         this.executePane.setRight (exButtonPanel.getPane ());
         this.executePane.setVisible (false);
 
@@ -338,17 +357,61 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.loadConfig ();
 
         this.updateTitle (null);
+        this.sourcePathField.requestFocus ();
+
+        this.configureTraversalManager ();
     }
 
 
-    private void updateLogger (final boolean isSelected)
+    private void configureTraversalManager ()
+    {
+        this.traversalManager.add (this.sourcePathField);
+        this.traversalManager.add (this.sourceFolderSelectButton);
+        this.traversalManager.add (this.sourceTabPane);
+        for (final Tab tab: this.sourceTabPane.getTabs ())
+        {
+            if (tab.getContent () instanceof Parent content)
+                this.traversalManager.addChildren (content);
+        }
+
+        this.traversalManager.add (this.destinationPathField);
+        this.traversalManager.add (this.destinationFolderSelectButton);
+        this.traversalManager.add (this.destinationTabPane);
+        for (final Tab tab: this.destinationTabPane.getTabs ())
+        {
+            if (tab.getContent () instanceof Parent content)
+                this.traversalManager.addChildren (content);
+        }
+
+        this.traversalManager.add (this.convertButton);
+        this.traversalManager.add (this.analyseButton);
+
+        this.traversalManager.add (this.renameCheckbox);
+        this.traversalManager.add (this.renameFilePathField);
+        this.traversalManager.add (this.renameFilePathSelectButton);
+        this.traversalManager.add (this.createFolderStructure);
+        this.traversalManager.add (this.addNewFiles);
+        this.traversalManager.add (this.enableDarkMode);
+
+        this.traversalManager.add (this.cancelButton);
+        this.traversalManager.add (this.closeButton);
+        this.traversalManager.add (this.loggingArea.getWebView ());
+
+        this.traversalManager.register (this.getStage ());
+    }
+
+
+    private void setDarkMode (final boolean isSelected)
     {
         final ObservableList<String> stylesheets = this.scene.getStylesheets ();
         final String stylesheet = this.startPath + "/css/Darkmode.css";
         if (isSelected)
         {
-            stylesheets.add (stylesheet);
-            this.loggingArea.getWebView ().setBlendMode (BlendMode.OVERLAY);
+            if (!stylesheets.contains (stylesheet))
+            {
+                stylesheets.add (stylesheet);
+                this.loggingArea.getWebView ().setBlendMode (BlendMode.OVERLAY);
+            }
         }
         else
         {
@@ -379,7 +442,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.addNewFiles.setSelected (this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false));
         final boolean isDarkmode = this.config.getBoolean (ENABLE_DARK_MODE, false);
         this.enableDarkMode.setSelected (isDarkmode);
-        this.updateLogger (isDarkmode);
+        this.setDarkMode (isDarkmode);
         this.renameCheckbox.setSelected (this.config.getBoolean (RENAMING_SOURCE_ENABLED, false));
 
         this.updateRenamingControls ();
@@ -731,13 +794,28 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     public void updateButtonStates (final boolean canClose)
     {
         Platform.runLater ( () -> {
+
+            final WebView webView = this.loggingArea.getWebView ();
             this.cancelButton.setDisable (canClose);
             this.closeButton.setDisable (!canClose);
+            if (!this.cancelButton.isDisabled ())
+            {
+                this.cancelButton.setDefaultButton (true);
+                this.cancelButton.requestFocus ();
+                webView.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_PROCESSING"));
+            }
+            else
+            {
+                this.closeButton.setDefaultButton (true);
+                this.closeButton.requestFocus ();
+                webView.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_FINISHED"));
+            }
+
         });
     }
 
 
-    private static Button setupButton (final BasePanel panel, final String iconName, final String labelName) throws EndApplicationException
+    private static Button setupButton (final BasePanel panel, final String iconName, final String labelName, final String mnemonic) throws EndApplicationException
     {
         Image icon;
         try
@@ -748,7 +826,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         {
             throw new EndApplicationException (ex);
         }
-        final Button button = panel.createButton (icon, labelName);
+        final Button button = panel.createButton (icon, labelName, mnemonic);
         button.alignmentProperty ().set (Pos.CENTER_LEFT);
         button.graphicTextGapProperty ().set (12);
         return button;

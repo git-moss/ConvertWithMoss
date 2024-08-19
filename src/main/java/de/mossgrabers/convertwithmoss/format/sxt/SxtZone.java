@@ -219,7 +219,7 @@ class SxtZone
         this.velocityRangeStart = in.read ();
         this.velocityRangeEnd = in.read ();
         this.rootKey = in.read ();
-        this.sampleTune = StreamUtils.readUnsigned16 (in, true);
+        this.sampleTune = StreamUtils.readSigned16 (in, true);
         this.sampleStart = StreamUtils.readUnsigned32 (in, true);
         this.sampleEnd = StreamUtils.readUnsigned32 (in, true);
         this.sampleLoopStart = StreamUtils.readUnsigned32 (in, true);
@@ -339,7 +339,7 @@ class SxtZone
         out.write (this.velocityRangeStart);
         out.write (this.velocityRangeEnd);
         out.write (this.rootKey);
-        StreamUtils.writeUnsigned16 (out, this.sampleTune, true);
+        StreamUtils.writeSigned16 (out, this.sampleTune, true);
         StreamUtils.writeUnsigned32 (out, this.sampleStart, true);
         StreamUtils.writeUnsigned32 (out, this.sampleEnd, true);
         StreamUtils.writeUnsigned32 (out, this.sampleLoopStart, true);

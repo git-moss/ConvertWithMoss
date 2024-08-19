@@ -1,5 +1,21 @@
 # Changes
 
+## 10.5.0 (unreleased)
+
+* Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
+* Several accessibility improvements and fixes: 
+  * Button mnemonics were partially broken.
+  * Improved order of tabulator traversal.
+  * Added more tooltip info
+  * Set default button states, can be execute by pressing *Return*.
+* Fixed: Switching off dark mode required a restart.
+* All formats
+  * Fixed: Fixed a crash when envelope was not set.
+* AIFF/WAV
+  * Fixed: Velocity layer information was removed from file names which lead to duplicate filenames.
+* Reason NN-XT
+  * Fixed: Reading/Writing negative tunings was broken.
+
 ## 10.2.0
 
 * Kontakt 1-4, MPC Keygroups, Soundfont 2, TAL Sampler, TX16Wx

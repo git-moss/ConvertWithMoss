@@ -112,9 +112,11 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
         final BoxPanel orderPanel = new BoxPanel (Orientation.HORIZONTAL);
         this.sortAscendingGroup = new ToggleGroup ();
         final RadioButton order1 = orderPanel.createRadioButton ("@IDS_FILE_GROUPS_DESC");
+        order1.setAccessibleHelp (Functions.getMessage ("IDS_FILE_GROUP_NUMBERING"));
         order1.setToggleGroup (this.sortAscendingGroup);
         final RadioButton order2 = orderPanel.createRadioButton ("@IDS_FILE_GROUPS_ASC");
         order2.setToggleGroup (this.sortAscendingGroup);
+        order2.setAccessibleHelp (Functions.getMessage ("IDS_FILE_GROUP_NUMBERING"));
         final BorderPane borderPane = new BorderPane ();
         final Label orderLabel = orderPanel.createLabel ("@IDS_FILE_GROUP_NUMBERING");
         borderPane.setLeft (orderLabel);

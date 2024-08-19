@@ -28,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
@@ -181,8 +182,10 @@ public class Music1010Creator extends AbstractCreator
 
         this.interpolationQualityGroup = new ToggleGroup ();
         final RadioButton order1 = panel.createRadioButton ("@IDS_1010_MUSIC_INTERPOLATION_QUALITY_NORMAL");
+        order1.setAccessibleHelp (Functions.getMessage ("IDS_1010_MUSIC_INTER_QUALITY"));
         order1.setToggleGroup (this.interpolationQualityGroup);
         final RadioButton order2 = panel.createRadioButton ("@IDS_1010_MUSIC_INTERPOLATION_QUALITY_HIGH");
+        order2.setAccessibleHelp (Functions.getMessage ("IDS_1010_MUSIC_INTER_QUALITY"));
         order2.setToggleGroup (this.interpolationQualityGroup);
 
         this.resampleTo2448 = panel.createCheckBox ("@IDS_1010_MUSIC_CONVERT_TO_24_48");

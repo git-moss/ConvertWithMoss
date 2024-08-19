@@ -383,9 +383,22 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         {
             IFileBasedSampleData sampleData = null;
 
-            if (fileEnding.endsWith (".aiff"))
-                // Note: only AIF ending is picked up as correct ending below
+            // Note: only AIF ending is picked up as correct ending below and it also does not
+            // accept all AIFF files
+            if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
+            {
+                // Check if it is a compressed (= encrypted) AIFC file and report accordingly
+                final AiffFile aiffFile = new AiffFile (sampleFile);
+                final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
+                if (commonChunk != null)
+                {
+                    final String compressionType = commonChunk.getCompressionType ();
+                    if (compressionType != null)
+                        throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), compressionType));
+                }
+
                 sampleData = new AiffFileSampleData (sampleFile);
+            }
             else
             {
                 final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
@@ -409,20 +422,6 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
         catch (final UnsupportedAudioFileException | IOException ex)
         {
-            // Check if the error is caused by a compressed (= encrypted) AIFC file and report
-            // accordingly
-            if (sampleFile.getName ().toLowerCase ().endsWith (".aif"))
-            {
-                final AiffFile aiffFile = new AiffFile (sampleFile);
-                final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
-                if (commonChunk != null)
-                {
-                    final String compressionType = commonChunk.getCompressionType ();
-                    if (compressionType != null)
-                        throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), compressionType));
-                }
-            }
-
             throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ()), ex);
         }
     }
