@@ -1,5 +1,14 @@
 # Changes
 
+## 10.6.0 (unreleased)
+
+* Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
+* All formats
+  * New: If multi-samples with the same name are created during a conversion process, unique postfixes are now appended.
+  * Fixed: Average bytes per second was not stored correctly in WAV files.
+* Kontakt - Reading
+  * New: Support for NCW files with 32-bit float samples.
+
 ## 10.5.0
 
 * Several accessibility improvements and fixes: 
