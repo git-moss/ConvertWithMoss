@@ -1003,4 +1003,29 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
             return "0";
         return String.format (Locale.US, "%.8f", Double.valueOf (value));
     }
+
+
+    /**
+     * Creates a unique file name in the given folder. If the file does already exists a unique
+     * prefix is appended.
+     * 
+     * @param destinationFolder The folder in which to create the file
+     * @param sampleName The name for the file
+     * @param extension The extension for the file
+     * @return A unique name
+     */
+    protected File createUniqueFilename (final File destinationFolder, final String sampleName, final String extension)
+    {
+        File multiFile;
+
+        int counter = 0;
+        do
+        {
+            counter++;
+            final String prefix = counter == 1 ? "" : " (" + counter + ")";
+            multiFile = new File (destinationFolder, sampleName + prefix + extension);
+        } while (multiFile.exists ());
+
+        return multiFile;
+    }
 }

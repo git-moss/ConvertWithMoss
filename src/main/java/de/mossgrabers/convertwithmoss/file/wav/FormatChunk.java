@@ -224,9 +224,8 @@ public class FormatChunk extends RIFFChunk
     private void updateAverageBytesPerSecond ()
     {
         final int sampleRate = this.getSampleRate ();
-        final int numberOfChannels = this.getNumberOfChannels ();
         final int blockAlign = this.getBlockAlign ();
-        final int averageBytesPerSecond = sampleRate * blockAlign * numberOfChannels;
+        final int averageBytesPerSecond = sampleRate * blockAlign;
         this.setIntAsFourBytes (0x08, averageBytesPerSecond);
     }
 

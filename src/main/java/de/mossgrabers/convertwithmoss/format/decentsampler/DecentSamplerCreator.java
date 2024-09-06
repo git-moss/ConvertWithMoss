@@ -139,19 +139,12 @@ public class DecentSamplerCreator extends AbstractCreator
         this.setOutputToLibrary (this.isOutputFormatLibrary ());
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File multiFile = new File (destinationFolder, sampleName + (this.isOutputFormatLibrary ? ".dslibrary" : ".dspreset"));
-        if (multiFile.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
-            return;
-        }
-
         final String relativeFolderName = this.isOutputFormatLibrary ? FOLDER_POSTFIX.trim () : sampleName + FOLDER_POSTFIX;
-
         final Optional<String> metadata = this.createMetadata (relativeFolderName, multisampleSource);
         if (metadata.isEmpty ())
             return;
 
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, this.isOutputFormatLibrary ? ".dslibrary" : ".dspreset");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         if (this.isOutputFormatLibrary)

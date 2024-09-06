@@ -232,21 +232,15 @@ public class Music1010Creator extends AbstractCreator
         this.setInterpolationQuality (this.isHighInterpolationQuality ());
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File presetFolder = new File (destinationFolder, sampleName);
+        final File presetFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         if (!presetFolder.mkdir ())
             this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", presetFolder.getAbsolutePath ());
-
-        final File multiFile = new File (presetFolder, "preset.xml");
-        if (multiFile.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
-            return;
-        }
 
         final Optional<String> metadata = this.createMetadata (sampleName, multisampleSource, trim);
         if (metadata.isEmpty ())
             return;
 
+        final File multiFile = new File (presetFolder, "preset.xml");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         storePreset (presetFolder, multisampleSource, multiFile, metadata.get ());

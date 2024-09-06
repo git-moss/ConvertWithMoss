@@ -6,10 +6,8 @@ package de.mossgrabers.convertwithmoss.file.ncw;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -140,10 +138,9 @@ public class NcwFile
         final ByteArrayOutputStream bout = new ByteArrayOutputStream (this.channels * (this.bitsPerSample / 8) * this.numberOfSamples);
         if (isFloat)
         {
-            final DataOutputStream out = new DataOutputStream (bout);
             for (int i = 0; i < this.numberOfSamples; i++)
                 for (int channel = 0; channel < this.channels; channel++)
-                    out.writeFloat (this.channelDataFloat[channel][i]);
+                    StreamUtils.writeFloatLE (bout, this.channelDataFloat[channel][i]);
         }
         else
             for (int i = 0; i < this.numberOfSamples; i++)
@@ -289,14 +286,15 @@ public class NcwFile
         if (isFloat)
         {
             if (this.channelDataFloat == null)
+            {
                 this.channelDataFloat = new float [this.channels] [];
+                for (int channel = 0; channel < this.channels; channel++)
+                    this.channelDataFloat[channel] = new float [this.numberOfSamples];
+            }
 
             for (int channel = 0; channel < this.channels; channel++)
-            {
-                this.channelDataFloat[channel] = new float [this.numberOfSamples];
                 for (int i = 0; i < length; i++)
-                    this.channelDataFloat[channel][offset + i] = Float.intBitsToFloat (Integer.reverse (this.channelData[channel][offset + i]));
-            }
+                    this.channelDataFloat[channel][offset + i] = Float.intBitsToFloat (this.channelData[channel][offset + i]);
         }
 
         // Convert mid/side sample data into left/right sample data
@@ -405,10 +403,29 @@ public class NcwFile
             final int byteOffset = bitOffset / 8;
             final int bitRemainder = bitOffset % 8;
 
-            int temp = 0;
-            for (int i = 0; i < (precisionInBits + 7) / 8; i++)
-                temp |= (data[byteOffset + i] & 0xFF) << i * 8;
-            final int value = temp >> bitRemainder & (1 << precisionInBits) - 1;
+            int value = 0;
+
+            if (precisionInBits == 32)
+            {
+                // Calculate with long to prevent overflow
+
+                long temp = 0;
+                for (int i = 0; i < (precisionInBits + 7) / 8; i++)
+                    temp |= (data[byteOffset + i] & 0xFF) << i * 8;
+
+                value = (int) (temp >> bitRemainder & (1L << precisionInBits) - 1);
+            }
+            else
+            {
+                int temp = 0;
+                for (int i = 0; i < (precisionInBits + 7) / 8; i++)
+                    temp |= (data[byteOffset + i] & 0xFF) << i * 8;
+
+                value = temp >> bitRemainder & (1 << precisionInBits) - 1;
+                if ((value & 1 << precisionInBits - 1) != 0)
+                    value |= ~0 << precisionInBits;
+            }
+
             samples[count] = value;
             count++;
 
@@ -416,38 +433,5 @@ public class NcwFile
         }
 
         return samples;
-    }
-
-
-    /**
-     * TODO remove, when finished
-     *
-     * @param attributes None
-     */
-    public static void main (final String [] attributes)
-    {
-        // Stereo 16bit
-        // String pathname = "C:/Privat/Programming/ConvertWithMoss/Testdateien/Kontakt/Kontakt
-        // Container Format/6.8.0 - Compressed/T3 Aeroglide Samples/Aeroglid A4.ncw";
-
-        // Mono 16bit
-        // final String pathname =
-        // "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\NCW\\16-bit.ncw";
-
-        // Stereo 24bit
-        final String pathname = "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\Kontakt\\NCW\\32-bit-float.ncw";
-
-        final File testNCW = new File (pathname);
-
-        try (final FileOutputStream out = new FileOutputStream ("C:/Users/mos/Desktop/test.wav"))
-        {
-            final NcwFile ncwFile = new NcwFile (testNCW);
-            ncwFile.writeWAV (out);
-        }
-        catch (final IOException ex)
-        {
-            // TODO Auto-generated catch block
-            ex.printStackTrace ();
-        }
     }
 }
