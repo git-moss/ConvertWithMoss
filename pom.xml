@@ -156,7 +156,6 @@
 				<artifactId>jpackage-maven-plugin</artifactId>
 				<version>1.6.5</version>
 				<configuration>
-					<name>ConvertWithMoss-${project.version}-${os.arch}</name>
 					<input>target/lib</input>
 					<destination>target/release</destination>
 					<javaOptions>

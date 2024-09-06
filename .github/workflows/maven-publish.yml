@@ -74,3 +74,4 @@ jobs:
       with:
         name: ConvertWithMoss-Installers
         pattern: ConvertWithMoss-Installers-*
+        separate-directories: true
