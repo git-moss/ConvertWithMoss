@@ -98,12 +98,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
         // Store all samples and metadata file in one folder
-        final File sampleFolder = new File (destinationFolder, sampleName);
-        if (sampleFolder.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", sampleFolder.getAbsolutePath ());
-            return;
-        }
+        final File sampleFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         safeCreateDirectory (sampleFolder);
 
         // Create the metadata file

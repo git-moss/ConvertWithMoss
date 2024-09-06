@@ -75,14 +75,7 @@ public class Sf2Creator extends AbstractCreator
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-
-        final File multiFile = new File (destinationFolder, sampleName + ".sf2");
-        if (multiFile.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
-            return;
-        }
-
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".sf2");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         storeMultisample (multisampleSource, multiFile);

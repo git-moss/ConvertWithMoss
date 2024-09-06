@@ -110,13 +110,7 @@ public class NkiCreator extends AbstractCreator
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt2Type (this.notifier, false);
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File multiFile = new File (destinationFolder, sampleName + ".nki");
-        if (multiFile.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
-            return;
-        }
-
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".nki");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         // First, store all samples

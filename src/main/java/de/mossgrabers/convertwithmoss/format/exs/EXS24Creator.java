@@ -84,24 +84,14 @@ public class EXS24Creator extends AbstractCreator
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
         // Create a sub-folder to have the EXS file together with the samples
-        final File subFolder = new File (destinationFolder, sampleName);
-        if (subFolder.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", subFolder.getAbsolutePath ());
-            return;
-        }
+        final File subFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         if (!subFolder.exists () && !subFolder.mkdirs ())
         {
             this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
             return;
         }
-        final File multiFile = new File (subFolder, sampleName + ".exs");
-        if (multiFile.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
-            return;
-        }
 
+        final File multiFile = this.createUniqueFilename (subFolder, sampleName, ".exs");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final Map<String, File> writtenSamples = new HashMap<> ();

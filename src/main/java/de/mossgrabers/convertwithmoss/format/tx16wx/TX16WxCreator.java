@@ -257,19 +257,13 @@ public class TX16WxCreator extends AbstractCreator
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File multiFile = new File (destinationFolder, sampleName + ".txprog");
-        if (multiFile.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", multiFile.getAbsolutePath ());
-            return;
-        }
-
         final String relativeFolderName = sampleName + FOLDER_POSTFIX;
 
         final Optional<String> metadata = this.createMetadata (relativeFolderName, multisampleSource);
         if (metadata.isEmpty ())
             return;
 
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".txprog");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());
