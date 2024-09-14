@@ -12,7 +12,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * .
+ * An item in an YSFC entry block.
  *
  * @author Jürgen Moßgraber
  */
@@ -76,7 +76,7 @@ public class YamahaYsfcEntry
      *
      * @return The title
      */
-    public String getTitle ()
+    public String getItemTitle ()
     {
         return this.itemTitle;
     }

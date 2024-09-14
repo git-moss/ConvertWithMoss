@@ -114,6 +114,17 @@ public class YamahaYsfcChunk
 
 
     /**
+     * Get the data arrays in the chunk, if any.
+     *
+     * @return The data arrays
+     */
+    public List<byte []> getDataArrays ()
+    {
+        return this.dataArrays;
+    }
+
+
+    /**
      * Get the first data array in the chunk, if any.
      *
      * @return The data array
