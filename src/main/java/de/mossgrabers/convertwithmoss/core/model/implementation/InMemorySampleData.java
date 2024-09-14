@@ -22,7 +22,7 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 public class InMemorySampleData implements ISampleData
 {
     private final IAudioMetadata audioMetadata;
-    private final byte []        sampleData;
+    private byte []              sampleData;
 
 
     /**
@@ -61,6 +61,17 @@ public class InMemorySampleData implements ISampleData
     @Override
     public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        // Not further info available
+        // No further info available
+    }
+
+
+    /**
+     * Set the sample data.
+     * 
+     * @param sampleData The sample data
+     */
+    public void setSampleData (final byte [] sampleData)
+    {
+        this.sampleData = sampleData;
     }
 }

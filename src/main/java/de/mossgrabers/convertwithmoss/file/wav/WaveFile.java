@@ -240,14 +240,23 @@ public class WaveFile extends AbstractRIFFFile
             throw new CombinationNotPossibleException ("Can only combine mono files.");
 
         this.formatChunk.setNumberOfChannels (2);
+        this.dataChunk.setData (interleaveChannels (this.dataChunk.getData (), otherWave.dataChunk.getData (), this.formatChunk.getSignificantBitsPerSample ()));
+    }
 
-        // Interleave left and right channel
-        final byte [] leftData = this.dataChunk.getData ();
-        final byte [] rightData = otherWave.dataChunk.getData ();
 
+    /**
+     * Interleave left and right channel.
+     * 
+     * @param leftData The data array of the left channel
+     * @param rightData The data array of the right channel
+     * @param bitsPerSample The bits per sample, e.g. 8, 16, 24, ...
+     * @return The interleaved array (1 sample left, 1 sample right)
+     */
+    public static byte [] interleaveChannels (final byte [] leftData, final byte [] rightData, final int bitsPerSample)
+    {
         final int length = Math.max (leftData.length, rightData.length);
         final byte [] combinedData = new byte [length * 2];
-        final int blockSize = this.formatChunk.getSignificantBitsPerSample () / 8;
+        final int blockSize = bitsPerSample / 8;
         for (int count = 0; count < length; count += blockSize)
         {
             if (count < leftData.length)
@@ -255,7 +264,7 @@ public class WaveFile extends AbstractRIFFFile
             if (count < rightData.length)
                 System.arraycopy (rightData, count, combinedData, count * 2 + blockSize, Math.min (blockSize, rightData.length - count));
         }
-        this.dataChunk.setData (combinedData);
+        return combinedData;
     }
 
 

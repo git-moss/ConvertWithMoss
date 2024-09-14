@@ -1,5 +1,9 @@
 # Changes
 
+## 10.7.0 (unreleased)
+
+* Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
+
 ## 10.6.0
 
 * All formats

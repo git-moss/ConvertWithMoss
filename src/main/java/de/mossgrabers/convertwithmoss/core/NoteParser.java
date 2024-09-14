@@ -100,7 +100,7 @@ public class NoteParser
 
 
     /**
-     * Format a note using only sharps.
+     * Format a note using only sharps. Expects C3 (= 60) as middle C.
      *
      * @param note The MIDI note
      * @return The formatted text
