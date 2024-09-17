@@ -190,7 +190,8 @@ public class Kontakt5Type extends AbstractKontaktType
         final List<IMultisampleSource> results = new ArrayList<> ();
         for (final Program program: presetChunkData.parsePrograms ())
         {
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + program.getName ();
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
             program.fillInto (multisampleSource);
             results.add (multisampleSource);
         }

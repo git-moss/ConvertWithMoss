@@ -70,7 +70,7 @@ public class YamahaYsfcWaveData
 
     /**
      * Create a text description of the object.
-     * 
+     *
      * @return The text
      */
     public String infoText ()
@@ -83,7 +83,7 @@ public class YamahaYsfcWaveData
 
     /**
      * Get the data.
-     * 
+     *
      * @return The data
      */
     public byte [] getData ()
@@ -94,7 +94,7 @@ public class YamahaYsfcWaveData
 
     /**
      * Set the data.
-     * 
+     *
      * @param data The data
      */
     public void setData (final byte [] data)

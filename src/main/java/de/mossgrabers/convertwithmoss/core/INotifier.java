@@ -69,4 +69,12 @@ public interface INotifier
      * @param canClose Execution can be closed
      */
     void updateButtonStates (boolean canClose);
+
+
+    /**
+     * Signal that the detection has finished.
+     *
+     * @param cancelled True if cancelled otherwise finished normally
+     */
+    void finished (boolean cancelled);
 }

@@ -25,6 +25,10 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.panel.BoxPanel;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
 
 
 /**
@@ -43,6 +47,32 @@ public class BitwigMultisampleCreator extends AbstractCreator
     public BitwigMultisampleCreator (final INotifier notifier)
     {
         super ("Bitwig Multisample", notifier);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Node getEditPane ()
+    {
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        this.addWavChunkOptions (panel);
+        return panel.getPane ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void loadSettings (final BasicConfig config)
+    {
+        this.loadWavChunkSettings (config, "Bitwig");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void saveSettings (final BasicConfig config)
+    {
+        this.saveWavChunkSettings (config, "Bitwig");
     }
 
 

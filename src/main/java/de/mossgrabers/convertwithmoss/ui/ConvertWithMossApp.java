@@ -6,6 +6,8 @@ package de.mossgrabers.convertwithmoss.ui;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -51,6 +53,7 @@ import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxCreator;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.wav.WavDetector;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.DefaultApplication;
@@ -95,47 +98,48 @@ import javafx.stage.Stage;
  */
 public class ConvertWithMossApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {
-    private static final String    ENABLE_DARK_MODE                    = "EnableDarkMode";
-    private static final String    DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
-    private static final String    DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
-    private static final String    DESTINATION_PATH                    = "DestinationPath";
-    private static final String    DESTINATION_TYPE                    = "DestinationType";
-    private static final String    SOURCE_PATH                         = "SourcePath";
-    private static final String    SOURCE_TYPE                         = "SourceType";
-    private static final String    RENAMING_CSV_FILE                   = "RenamingCSVFile";
-    private static final String    RENAMING_SOURCE_ENABLED             = "EnableRenaming";
+    private static final String            ENABLE_DARK_MODE                    = "EnableDarkMode";
+    private static final String            DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
+    private static final String            DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
+    private static final String            DESTINATION_PATH                    = "DestinationPath";
+    private static final String            DESTINATION_TYPE                    = "DestinationType";
+    private static final String            SOURCE_PATH                         = "SourcePath";
+    private static final String            SOURCE_TYPE                         = "SourceType";
+    private static final String            RENAMING_CSV_FILE                   = "RenamingCSVFile";
+    private static final String            RENAMING_SOURCE_ENABLED             = "EnableRenaming";
 
-    private final IDetector []     detectors;
-    private final ICreator []      creators;
+    private final IDetector []             detectors;
+    private final ICreator []              creators;
 
-    private BorderPane             mainPane;
-    private BorderPane             executePane;
-    private final TextField        sourcePathField                     = new TextField ();
-    private final TextField        destinationPathField                = new TextField ();
-    private File                   sourceFolder;
-    private File                   outputFolder;
-    private Button                 convertButton;
-    private Button                 analyseButton;
-    private Button                 sourceFolderSelectButton;
-    private Button                 destinationFolderSelectButton;
-    private CheckBox               createFolderStructure;
-    private CheckBox               addNewFiles;
-    private CheckBox               enableDarkMode;
+    private BorderPane                     mainPane;
+    private BorderPane                     executePane;
+    private final TextField                sourcePathField                     = new TextField ();
+    private final TextField                destinationPathField                = new TextField ();
+    private File                           sourceFolder;
+    private File                           outputFolder;
+    private Button                         convertButton;
+    private Button                         analyseButton;
+    private Button                         sourceFolderSelectButton;
+    private Button                         destinationFolderSelectButton;
+    private CheckBox                       createFolderStructure;
+    private CheckBox                       addNewFiles;
+    private CheckBox                       enableDarkMode;
 
-    private final TabPane          sourceTabPane                       = new TabPane ();
-    private final TabPane          destinationTabPane                  = new TabPane ();
+    private final TabPane                  sourceTabPane                       = new TabPane ();
+    private final TabPane                  destinationTabPane                  = new TabPane ();
 
-    private boolean                onlyAnalyse                         = true;
-    private Button                 closeButton;
-    private Button                 cancelButton;
+    private boolean                        onlyAnalyse                         = true;
+    private Button                         closeButton;
+    private Button                         cancelButton;
 
-    private CheckBox               renameCheckbox;
-    private final TextField        renameFilePathField                 = new TextField ();
-    private Button                 renameFilePathSelectButton;
+    private CheckBox                       renameCheckbox;
+    private final TextField                renameFilePathField                 = new TextField ();
+    private Button                         renameFilePathSelectButton;
 
-    private final CSVRenameFile    csvRenameFile                       = new CSVRenameFile ();
-    private final LoggerBox        loggingArea                         = new LoggerBox ();
-    private final TraversalManager traversalManager                    = new TraversalManager ();
+    private final CSVRenameFile            csvRenameFile                       = new CSVRenameFile ();
+    private final LoggerBox                loggingArea                         = new LoggerBox ();
+    private final TraversalManager         traversalManager                    = new TraversalManager ();
+    private final List<IMultisampleSource> collectedSources                    = new ArrayList<> ();
 
 
     /**
@@ -199,7 +203,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new Sf2Creator (this),
             new TALSamplerCreator (this),
             // new WaldorfQpatCreator (this),
-            new WavCreator (this)
+            new WavCreator (this),
+            new YamahaYsfcCreator (this)
         };
     }
 
@@ -368,19 +373,15 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.traversalManager.add (this.sourceFolderSelectButton);
         this.traversalManager.add (this.sourceTabPane);
         for (final Tab tab: this.sourceTabPane.getTabs ())
-        {
-            if (tab.getContent () instanceof Parent content)
+            if (tab.getContent () instanceof final Parent content)
                 this.traversalManager.addChildren (content);
-        }
 
         this.traversalManager.add (this.destinationPathField);
         this.traversalManager.add (this.destinationFolderSelectButton);
         this.traversalManager.add (this.destinationTabPane);
         for (final Tab tab: this.destinationTabPane.getTabs ())
-        {
-            if (tab.getContent () instanceof Parent content)
+            if (tab.getContent () instanceof final Parent content)
                 this.traversalManager.addChildren (content);
-        }
 
         this.traversalManager.add (this.convertButton);
         this.traversalManager.add (this.analyseButton);
@@ -498,6 +499,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private void execute (final boolean onlyAnalyse)
     {
         this.onlyAnalyse = onlyAnalyse;
+        this.collectedSources.clear ();
 
         if (!this.verifyFolders () || !this.verifyRenameFile ())
             return;
@@ -641,19 +643,28 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         if (selectedCreator < 0)
             return;
 
-        this.log ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ());
-
         this.applyRenaming (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
 
+        final ICreator creator = this.creators[selectedCreator];
+        if (creator.wantsMultipleFiles ())
+        {
+            if (!this.onlyAnalyse)
+                this.collectedSources.add (multisampleSource);
+            this.log ("IDS_NOTIFY_COLLECTING", multisampleSource.getMappingName ());
+            return;
+        }
+
+        this.log ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ());
+
+        if (this.onlyAnalyse)
+            return;
+
         try
         {
-            if (this.onlyAnalyse)
-                return;
-
             final boolean createStructure = this.createFolderStructure.isSelected ();
             final File multisampleOutputFolder = calcOutputFolder (this.outputFolder, multisampleSource.getSubPath (), createStructure);
-            this.creators[selectedCreator].create (multisampleOutputFolder, multisampleSource);
+            creator.create (multisampleOutputFolder, multisampleSource);
         }
         catch (final IOException | RuntimeException ex)
         {
@@ -811,6 +822,32 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             }
 
         });
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void finished (final boolean cancelled)
+    {
+        if (!this.collectedSources.isEmpty ())
+        {
+            final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
+            if (selectedCreator < 0 || this.onlyAnalyse)
+                return;
+
+            try
+            {
+                this.creators[selectedCreator].create (this.outputFolder, this.collectedSources);
+            }
+            catch (final IOException | RuntimeException ex)
+            {
+                this.logError ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ());
+            }
+
+            return;
+        }
+
+        this.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");
     }
 
 

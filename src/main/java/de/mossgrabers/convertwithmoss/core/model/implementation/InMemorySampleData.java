@@ -67,7 +67,7 @@ public class InMemorySampleData implements ISampleData
 
     /**
      * Set the sample data.
-     * 
+     *
      * @param sampleData The sample data
      */
     public void setSampleData (final byte [] sampleData)

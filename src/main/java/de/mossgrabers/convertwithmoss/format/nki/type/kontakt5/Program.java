@@ -67,6 +67,17 @@ public class Program
 
 
     /**
+     * Get the name of the program.
+     * 
+     * @return The name
+     */
+    public String getName ()
+    {
+        return this.name;
+    }
+
+
+    /**
      * Parse the program data from a Program preset chunk.
      *
      * Known versions (chunk.getVersion()):

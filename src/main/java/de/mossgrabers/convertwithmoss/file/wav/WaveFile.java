@@ -246,7 +246,7 @@ public class WaveFile extends AbstractRIFFFile
 
     /**
      * Interleave left and right channel.
-     * 
+     *
      * @param leftData The data array of the left channel
      * @param rightData The data array of the right channel
      * @param bitsPerSample The bits per sample, e.g. 8, 16, 24, ...

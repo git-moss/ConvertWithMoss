@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.core.creator;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -26,4 +27,22 @@ public interface ICreator extends ICoreTask
      * @throws IOException Could not store the file
      */
     void create (File destinationFolder, IMultisampleSource multisampleSource) throws IOException;
+
+
+    /**
+     * Combines several multi-samples input files and stores them into one multi-sample file.
+     *
+     * @param destinationFolder Where to store the created file
+     * @param multisampleSources The multi-sample sources from which to create
+     * @throws IOException Could not store the file
+     */
+    void create (File destinationFolder, List<IMultisampleSource> multisampleSources) throws IOException;
+
+
+    /**
+     * Check if the creator supports to combine several multi-samples into one file.
+     *
+     * @return Returns true if the creator wants to combine several files
+     */
+    boolean wantsMultipleFiles ();
 }

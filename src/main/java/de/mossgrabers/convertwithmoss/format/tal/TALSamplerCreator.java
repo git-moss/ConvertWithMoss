@@ -107,8 +107,8 @@ public class TALSamplerCreator extends AbstractCreator
      * @param relativeFolderName A relative path for the samples
      * @param destinationFolder Where to store the preset file
      * @param multisampleSource The multi-sample to store in the library
-     * @param multiFile The file of the dslibrary
-     * @param metadata The dspreset metadata description file
+     * @param multiFile The output file
+     * @param metadata The metadata description file
      * @throws IOException Could not store the file
      */
     private void storePreset (final String relativeFolderName, final File destinationFolder, final IMultisampleSource multisampleSource, final File multiFile, final String metadata) throws IOException

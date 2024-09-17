@@ -30,7 +30,7 @@ public class DefaultMultisampleSource implements IMultisampleSource
     private File            sourceFile;
     private String []       subPath;
     private String          name;
-    private final String    mappingName;
+    private String          mappingName;
     private List<IGroup>    groups   = Collections.emptyList ();
     private final IMetadata metadata = new DefaultMetadata ();
 
@@ -166,6 +166,17 @@ public class DefaultMultisampleSource implements IMultisampleSource
     public String getMappingName ()
     {
         return this.mappingName;
+    }
+
+
+    /**
+     * Set the mapping name.
+     * 
+     * @param mappingName The mapping name
+     */
+    public void setMappingName (final String mappingName)
+    {
+        this.mappingName = mappingName;
     }
 
 

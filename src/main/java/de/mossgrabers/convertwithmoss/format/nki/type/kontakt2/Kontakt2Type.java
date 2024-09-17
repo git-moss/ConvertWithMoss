@@ -167,7 +167,8 @@ public class Kontakt2Type extends AbstractKontaktType
         final List<IMultisampleSource> results = new ArrayList<> ();
         for (final Program program: programs)
         {
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+            final String mappingName = AudioFileUtils.subtractPaths (sourceFolder, sourceFile) + " : " + program.getName ();
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
             program.fillInto (multisampleSource);
             results.add (multisampleSource);
         }
