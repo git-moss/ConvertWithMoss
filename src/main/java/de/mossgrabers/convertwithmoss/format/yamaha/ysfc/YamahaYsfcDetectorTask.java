@@ -4,19 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -34,7 +28,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
-import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -58,8 +51,6 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         ".x8l",
         ".x8a"
     };
-    private static final String    YAMAHA_YSFC       = "YAMAHA-YSFC";
-    private static final int       HEADER_SIZE       = 64;
     private static final int       SAMPLE_RESOLUTION = 16;
 
 
@@ -84,11 +75,13 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         if (this.waitForDelivery ())
             return Collections.emptyList ();
 
-        try (final InputStream in = new BufferedInputStream (new FileInputStream (file)))
+        try
         {
-            return this.processFile (in, file);
+            final YsfcFile ysfcFile = new YsfcFile (file);
+            this.notifier.log ("IDS_YSFC_FOUND_TYPE", ysfcFile.getVersion () < 400 ? "Motif" : "Montage/MODX", ysfcFile.getVersionStr ());
+            return this.createMultisample (ysfcFile);
         }
-        catch (final IOException | FormatException ex)
+        catch (final IOException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
         }
@@ -97,59 +90,28 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Process one YSFC file.
-     *
-     * @param in The input stream to read from
-     * @param file The YSFC source file
-     * @return The parsed multi-samples
-     * @throws IOException Could not process the file
-     * @throws FormatException Found unexpected format of the file
-     */
-    private List<IMultisampleSource> processFile (final InputStream in, final File file) throws IOException, FormatException
-    {
-        final String headerTag = StreamUtils.readASCII (in, 16);
-        StreamUtils.checkTag (YAMAHA_YSFC, headerTag.trim ());
-
-        // The version in the form of 'A.B.C', e.g. '1.0.2'. Older versions may have appended 0xFF
-        // instead of 0x00
-        final String versionStr = createAsciiString (in.readNBytes (16));
-        final int version = parseVersion (versionStr.trim ());
-        this.notifier.log ("IDS_YSFC_FOUND_TYPE", version < 400 ? "Motif" : "Montage/MODX", versionStr);
-
-        // The size of the chunk catalog block
-        final int catalogueSize = (int) StreamUtils.readUnsigned32 (in, true);
-
-        // Padding
-        in.skipNBytes (12);
-
-        // The size of the library block
-        long librarySize = StreamUtils.readUnsigned32 (in, true);
-        // Library data present?
-        if (librarySize >= 0xFFFFFFFFL)
-            librarySize = 0;
-
-        // Padding
-        in.skipNBytes (12);
-
-        readCatalog (in, HEADER_SIZE + catalogueSize + librarySize, catalogueSize);
-
-        // Library data currently not used
-        in.skipNBytes (librarySize);
-
-        return this.createMultisample (file, readChunks (in));
-    }
-
-
-    /**
      * Create a multi-sample from the chunk data.
      *
-     * @param file The YSFC source file
-     * @param chunks The YSFC chunks
+     * @param ysfcFile The YSFC source file
      * @return The multi-sample(s)
      * @throws IOException COuld not read the multi-sample
      */
-    private List<IMultisampleSource> createMultisample (final File file, final Map<String, YamahaYsfcChunk> chunks) throws IOException
+    private List<IMultisampleSource> createMultisample (final YsfcFile ysfcFile) throws IOException
     {
+        final Map<String, YamahaYsfcChunk> chunks = ysfcFile.getChunks ();
+
+        // TODO Remove dumping performance chunk
+        final YamahaYsfcChunk dpfmChunk = chunks.get ("DPFM");
+        if (dpfmChunk != null)
+        {
+            // final List<byte []> dataArrays = dpfmChunk.getDataArrays ();
+            // for (int i = 0; i < dataArrays.size (); i++)
+            // {
+            // Files.write (new File ("C:/Users/mos/Desktop/" + ysfcFile.getSourceFile ().getName ()
+            // + "DPFM-" + i + ".bin").toPath (), dataArrays.get (i));
+            // }
+        }
+
         // Waveform Metadata
         final YamahaYsfcChunk ewfmChunk = chunks.get ("EWFM");
         final YamahaYsfcChunk dwfmChunk = chunks.get ("DWFM");
@@ -186,7 +148,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
                 name = split[1];
                 categoryValue = Integer.parseInt (split[0]);
             }
-            final IMultisampleSource multisampleSource = this.createMultisampleSource (file, name, categoryValue);
+            final IMultisampleSource multisampleSource = this.createMultisampleSource (ysfcFile, name, categoryValue);
 
             // There are no groups
             final DefaultGroup group = new DefaultGroup ("Layer");
@@ -250,21 +212,20 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     }
 
 
-    private IMultisampleSource createMultisampleSource (final File file, final String name, final int categoryValue)
+    private IMultisampleSource createMultisampleSource (final YsfcFile ysfcFile, final String name, final int categoryValue)
     {
-        final File folder = file.getParentFile ();
+        final File sourceFile = ysfcFile.getSourceFile ();
+        final File folder = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (folder, this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, folder));
+        final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + name;
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, mappingName);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         if (categoryValue > 0)
         {
-            final String category = YamahaYsfcCategories.getCategory (categoryValue);
+            final String category = YamahaYsfcCategories.getWaveformCategory (categoryValue);
             if (!YamahaYsfcCategories.NO_ASSIGN.equals (category))
                 metadata.setCategory (category);
-            final String subCategory = YamahaYsfcCategories.getSubCategory (categoryValue);
-            if (!YamahaYsfcCategories.NO_ASSIGN.equals (subCategory))
-                metadata.setKeywords (subCategory);
         }
         else
             metadata.detectMetadata (this.metadataConfig, parts);
@@ -306,77 +267,6 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         for (int k = 0; k < numberOfKeyBanks; k++)
             keyBanks.add (new YamahaYsfcKeybank (dwfmContentStream));
         return keyBanks;
-    }
-
-
-    /**
-     * Read all chunks.
-     *
-     * @param in The input stream to read from
-     * @return The chunks
-     * @throws IOException Could not read the chunks
-     */
-    private static Map<String, YamahaYsfcChunk> readChunks (final InputStream in) throws IOException
-    {
-        final Map<String, YamahaYsfcChunk> chunks = new HashMap<> ();
-        while (in.available () > 0)
-        {
-            final YamahaYsfcChunk chunk = new YamahaYsfcChunk ();
-            chunk.read (in);
-            chunks.put (chunk.getChunkID (), chunk);
-        }
-        return chunks;
-    }
-
-
-    /**
-     * Read the catalog block which consists of tuples of chunk IDs and their offset into the file.
-     *
-     * @param in The input stream to read from
-     * @param startOfChunks The start of the chunks in the file counted from the start of the file
-     * @param catalogueSize The size of the chunk catalog
-     * @return A map where the key is the offset and the value if the chunk ordered by the offset
-     * @throws IOException Could not process the block
-     */
-    private static Map<Long, String> readCatalog (final InputStream in, final long startOfChunks, final int catalogueSize) throws IOException
-    {
-        final int count = catalogueSize / 8;
-        final Map<Long, String> chunkOffsets = new TreeMap<> ();
-        for (int i = 0; i < count; i++)
-        {
-            final String chunkID = StreamUtils.readASCII (in, 4);
-            final long offset = StreamUtils.readUnsigned32 (in, true);
-            chunkOffsets.put (Long.valueOf (offset - startOfChunks), chunkID);
-        }
-        return chunkOffsets;
-    }
-
-
-    /**
-     * Parse the version in the form of 'A.B.C' (e.g. '1.0.2') into an integer ABC (e.g. 102).
-     *
-     * @param versionStr The version to parse
-     * @return The version as an integer
-     */
-    private static int parseVersion (final String versionStr)
-    {
-        try
-        {
-            return Integer.parseInt ("" + versionStr.charAt (0) + versionStr.charAt (2) + versionStr.charAt (4));
-        }
-        catch (final NumberFormatException | IndexOutOfBoundsException ex)
-        {
-            return 100;
-        }
-    }
-
-
-    private static String createAsciiString (final byte [] byteArray)
-    {
-        int lastAsciiIndex = byteArray.length - 1;
-        while (lastAsciiIndex >= 0 && (byteArray[lastAsciiIndex] < 0 || byteArray[lastAsciiIndex] > 127))
-            lastAsciiIndex--;
-        return new String (byteArray, 0, lastAsciiIndex + 1, StandardCharsets.US_ASCII);
     }
 
 

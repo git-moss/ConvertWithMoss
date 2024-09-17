@@ -576,6 +576,20 @@ public class StreamUtils
 
 
     /**
+     * Writes the bytes of an ASCII text and appends them with a null byte.
+     *
+     * @param out The stream to write to
+     * @param text The text to write
+     * @throws IOException Could not write
+     */
+    public static void writeNullTerminatedASCII (final OutputStream out, final String text) throws IOException
+    {
+        out.write (text.getBytes (StandardCharsets.US_ASCII));
+        out.write (0);
+    }
+
+
+    /**
      * Reads bytes from an input stream until a zero appears or the maximum length is reached and
      * interprets it as ASCII text.
      *
@@ -856,8 +870,22 @@ public class StreamUtils
      */
     public static void padBytes (final OutputStream out, final int numBytes) throws IOException
     {
+        padBytes (out, numBytes, 0);
+    }
+
+
+    /**
+     * Writes a number of identical bytes to the given output stream.
+     *
+     * @param out The stream to write to
+     * @param numBytes The number of bytes to write
+     * @param value The value of all bytes
+     * @throws IOException Could not read
+     */
+    public static void padBytes (final OutputStream out, final int numBytes, final int value) throws IOException
+    {
         for (int i = 0; i < numBytes; i++)
-            out.write (0);
+            out.write (value);
     }
 
 

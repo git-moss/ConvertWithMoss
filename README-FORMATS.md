@@ -2,24 +2,23 @@
 
 The following multisample formats are supported:
 
-1. [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
-2. [Ableton Sampler](#ableton-sampler)
-3. [AIFF](#aiff)
-4. [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
-5. [CWITEC TX16Wx](#cwitec-tx16wx)
-6. [DecentSampler](#decentsampler)
-7. [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
-8. [Korg KMP/KSF](#korg-kmpksf)
-9. [Korg wavestate/modwave](#korg-wavestatemodwave)
-10. [Logic EXS24](#logic-exs24)
-11. [Multisample Format (Bitwig Studio, Presonus Studio One)](#multisample-format-bitwig-studio-presonus-studio-one)
-12. [Native Instruments Kontakt NKI/NKM](#kontakt-nkinkm)
-13. [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
-14. [SFZ](#sfz)
-15. [SoundFont 2](#soundfont-2)
-16. [TAL Sampler](#tal-sampler)
-17. [Waldorf Quantum MkI,MkII/Iridium/Iridium Core](#waldorf-quantum-mkimkiiiridiumiridium-core)
-18. [WAV files](#wav-files)
+* [AIFF](#aiff)
+* [Ableton Sampler](#ableton-sampler)
+* [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
+* [CWITEC TX16Wx](#cwitec-tx16wx)
+* [DecentSampler](#decentsampler)
+* [Kontakt NKI/NKM](#kontakt-nkinkm)
+* [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
+* [Korg KMP/KSF](#korg-kmpksf)
+* [Korg wavestate/modwave](#korg-wavestatemodwave)
+* [Logic EXS24](#logic-exs24)
+* [Multisample Format (Bitwig Studio, Presonus Studio One)](#multisample-format-bitwig-studio-presonus-studio-one)
+* [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+* [SFZ](#sfz)
+* [SoundFont 2](#soundfont-2)
+* [TAL Sampler](#tal-sampler)
+* [WAV files](#wav-files)
+
 
 ## Automatic Metadata detection
 
@@ -212,6 +211,10 @@ The parser supports all information from the format except the group color and s
 
 This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
 
+### Destination Options
+
+* Options to write/update [WAV Chunk Information](#wav-chunk-information)
+
 ## Propellerhead Reason NN-XT
 
 The Propellerhead Reason NN-XT is a software sampler that is included in the Reason software package. Reason is a digital audio workstation (DAW) software developed by Propellerhead Software. It allows users to load and play back sampled sounds, such as instruments or drum hits. The file ending is *sxt*.
@@ -255,15 +258,6 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 * 'Re-sample to 16bit/44.1kHz': If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it might impact the performance.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
-## Waldorf Quantum MkI,MkII/Iridium/Iridium Core
-
-This family of Waldorf synthesizers supports the playback of multi-samples. One preset can contain 2 layers. A layer is a complete preset in itself and simply concatenates 2 single presets. Each preset can have up to 3 oscillators of which each oscillator can contain its own multi-sample.
-If this format is used as the source it produces 1 or 2 output presets, one for each layer. If used as the destination format, each group of the source multi-sample is applied to one of the 3 oscillators. If the source contains more than 3 groups, all zones of the additional groups are added to the multi-sample of the 3rd oscillator.
-
-### Destination Options
-
-* Options to write/update [WAV Chunk Information](#wav-chunk-information)
-
 ## WAV files
 
 If WAV is selected as the source format, all WAV files located in the same folder are considered as a part of one multisample. You can also select a top folder. If you do so, all sub-folders are checked for potential multisample folders.
@@ -298,3 +292,20 @@ WAV file can contain different sample formats. This converter supports (split) s
 ### Destination Options
 
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
+
+## Yamaha YSFC
+
+This format is used in most of the Yamaha Workstation. While the format is the same, the content is different.
+Currently, the formats of the Montage (not Montage M) and MODX/MODX+ are support both as source and destination format.
+That covers files with the endings X7L, X7U, X8L and X8U. As the source the backup formats X7A and X8A are supported as well.
+The wave files in professional Yamaha libraries often compressed. Such files are not supported.
+
+So far, only the basic multi-sample data is converted (which means that no performances are created and therefore no information about e.g. filter, envelope or effects is converted).
+
+Note: There are no checks that the created libraries stay in the bounds of the workstation (number of maximum samples or required memory size)!
+
+### Destination Options
+
+* Library Format: Chooses the output format which is created.
+* Combine all source multi-samples into one library: If this option is off, each source multi-sample is stored in a separate library which the name of the multi-sample. If this option is enabled, all source multi-samples are combined into 1 library.
+* Library Filename: If the previous option is enabled to combine all source multi-samples into one library, this name is used as the filename.

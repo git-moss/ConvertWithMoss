@@ -1,8 +1,10 @@
 # Changes
 
-## 10.7.0 (unreleased)
+## 11.0.0 (unreleased)
 
-* Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
+* Added support for Yamaha YSFC format (Montage, MODX/MODX+).
+* Bitwig Writing
+  * New: Support for RIFF chunk updates (fixes issues with certain MPC WAV files as source).
 
 ## 10.6.0
 

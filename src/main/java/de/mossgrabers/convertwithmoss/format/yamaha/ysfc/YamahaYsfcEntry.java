@@ -5,8 +5,11 @@
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
@@ -19,10 +22,35 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class YamahaYsfcEntry
 {
     private int     length;
-    private byte [] flags;
-    private String  itemName;
-    private String  itemTitle;
-    private byte [] additionalData;
+    private byte [] flags                   = new byte [6];
+    private String  itemName                = "";
+    private String  itemTitle               = "";
+    private byte [] additionalData          = new byte [0];
+    private int     correspondingDataSize   = 0;
+    private int     correspondingDataOffset = 0;
+    private int     specificValue           = 0;
+    private int     entryID                 = 0xFFFFFFFF;
+
+
+    /**
+     * Default constructor.
+     */
+    public YamahaYsfcEntry ()
+    {
+        Arrays.fill (this.flags, (byte) 0);
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param in The input stream
+     * @throws IOException Could not read the entry item
+     */
+    public YamahaYsfcEntry (final InputStream in) throws IOException
+    {
+        this.read (in);
+    }
 
 
     /**
@@ -40,23 +68,123 @@ public class YamahaYsfcEntry
         final ByteArrayInputStream contentStream = new ByteArrayInputStream (content);
 
         // Size of the item corresponding to this entry
-        StreamUtils.readUnsigned32 (contentStream, true);
+        this.correspondingDataSize = (int) StreamUtils.readUnsigned32 (contentStream, true);
         // Offset of the item chunk within the data block
-        StreamUtils.readUnsigned32 (contentStream, true);
-        // Type specific - e.g. Program number
-        StreamUtils.readUnsigned32 (contentStream, true);
+        this.correspondingDataOffset = (int) StreamUtils.readUnsigned32 (contentStream, true);
+        // Type specific - e.g. Program number 0x10001, 0x10002, ...
+        this.specificValue = (int) StreamUtils.readUnsigned32 (contentStream, true);
 
         // Flags - type specific
         this.flags = contentStream.readNBytes (6);
 
         // Pseudo-timestamp for date-ordering
-        StreamUtils.readUnsigned32 (contentStream, true);
+        this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
 
         this.itemName = StreamUtils.readNullTerminatedASCII (contentStream);
         this.itemTitle = StreamUtils.readNullTerminatedASCII (contentStream);
 
         // Optional additional data - type specific, only used by EPFM
         this.additionalData = contentStream.readAllBytes ();
+    }
+
+
+    /**
+     * Write an entry item to the output stream.
+     *
+     * @param out The output stream
+     * @throws IOException Could not write the entry item
+     */
+    public void write (final OutputStream out) throws IOException
+    {
+        final byte [] content = this.createContent ();
+        StreamUtils.writeUnsigned32 (out, content.length, true);
+        out.write (content);
+    }
+
+
+    private byte [] createContent () throws IOException
+    {
+        final ByteArrayOutputStream contentStream = new ByteArrayOutputStream ();
+
+        // Size of the item corresponding to this entry
+        StreamUtils.writeUnsigned32 (contentStream, this.correspondingDataSize, true);
+        // Offset of the item chunk within the data block
+        StreamUtils.writeUnsigned32 (contentStream, this.correspondingDataOffset, true);
+        // Type specific - e.g. Program number
+        StreamUtils.writeUnsigned32 (contentStream, this.specificValue, true);
+
+        // Flags - type specific
+        contentStream.write (this.flags);
+
+        // Pseudo-timestamp for date-ordering
+        StreamUtils.writeUnsigned32 (contentStream, this.entryID, true);
+
+        StreamUtils.writeNullTerminatedASCII (contentStream, this.itemName);
+        StreamUtils.writeNullTerminatedASCII (contentStream, this.itemTitle);
+
+        // Optional additional data - type specific, only used by EPFM
+        contentStream.write (this.additionalData);
+
+        // Finally, write the chunk
+        final byte [] content = contentStream.toByteArray ();
+        this.length = content.length;
+        return content;
+    }
+
+
+    /**
+     * Set the entry ID.
+     *
+     * @param entryID The entry ID
+     */
+    public void setEntryID (final int entryID)
+    {
+        this.entryID = entryID;
+    }
+
+
+    /**
+     * Set the size of the data block which is referenced from this entry.
+     *
+     * @param correspondingDataSize The size
+     */
+    public void setCorrespondingDataSize (final int correspondingDataSize)
+    {
+        this.correspondingDataSize = correspondingDataSize;
+    }
+
+
+    /**
+     * Set the offset to the data block in the data chunk.
+     *
+     * @param correspondingDataOffset The offset
+     */
+    public void setCorrespondingDataOffset (final int correspondingDataOffset)
+    {
+        this.correspondingDataOffset = correspondingDataOffset;
+    }
+
+
+    /**
+     * Get the length of the chunk.
+     *
+     * @return The length
+     * @throws IOException Could not calculate the length
+     */
+    public int getLength () throws IOException
+    {
+        return this.createContent ().length;
+    }
+
+
+    /**
+     * Set the specific value.
+     *
+     * @param specificValue The specific value
+     */
+    public void setSpecificValue (final int specificValue)
+    {
+        this.specificValue = specificValue;
     }
 
 
@@ -68,6 +196,17 @@ public class YamahaYsfcEntry
     public String getItemName ()
     {
         return this.itemName;
+    }
+
+
+    /**
+     * Set the name of the item to be found in the matching data item (normally a file name).
+     *
+     * @param itemName The filename
+     */
+    public void setItemName (final String itemName)
+    {
+        this.itemName = itemName;
     }
 
 

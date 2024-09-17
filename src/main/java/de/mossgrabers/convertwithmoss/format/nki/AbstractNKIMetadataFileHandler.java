@@ -133,9 +133,11 @@ public abstract class AbstractNKIMetadataFileHandler
             final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
             for (final Element programElement: programElements)
             {
-                final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+                final String mappingNameFolder = AudioFileUtils.subtractPaths (sourceFolder, sourceFile);
+                final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingNameFolder);
                 if (this.parseProgram (programElement, multisampleSource, monolithSamples))
                 {
+                    multisampleSource.setMappingName (mappingNameFolder + " : " + multisampleSource.getName ());
                     updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
                     multisampleSources.add (multisampleSource);
                 }

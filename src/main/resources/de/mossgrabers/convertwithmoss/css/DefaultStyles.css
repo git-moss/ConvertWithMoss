@@ -24,9 +24,9 @@
 
 .horizontal-tab-pane *.tab {
 	/* Determines the tab height */
-	-fx-pref-width: 50px; 
+	-fx-pref-width: 30px; 
 	/* Everything else is just aesthetics */
-	-fx-padding: 20px;
+	-fx-padding: 12px;
 	-fx-background-insets: 2 -1 -1 -1;
 	-fx-border-width: 1 0 1 1;
 	-fx-border-color: rgb(55, 55, 56) black black black;

@@ -137,11 +137,9 @@ public class NcwFile
 
         final ByteArrayOutputStream bout = new ByteArrayOutputStream (this.channels * (this.bitsPerSample / 8) * this.numberOfSamples);
         if (isFloat)
-        {
             for (int i = 0; i < this.numberOfSamples; i++)
                 for (int channel = 0; channel < this.channels; channel++)
                     StreamUtils.writeFloatLE (bout, this.channelDataFloat[channel][i]);
-        }
         else
             for (int i = 0; i < this.numberOfSamples; i++)
                 for (int channel = 0; channel < this.channels; channel++)

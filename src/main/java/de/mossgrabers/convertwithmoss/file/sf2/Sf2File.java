@@ -65,21 +65,6 @@ public class Sf2File extends AbstractRIFFFile
     /**
      * Constructor.
      *
-     * @param inputStream The input stream which provides the WAV file
-     * @throws IOException Could not read the file
-     * @throws ParseException Error parsing the chunks
-     */
-    public Sf2File (final InputStream inputStream) throws IOException, ParseException
-    {
-        super (RiffID.SF_SFBK_ID);
-
-        this.read (inputStream);
-    }
-
-
-    /**
-     * Constructor.
-     *
      * @param sf2File The SF2 file
      * @throws IOException Could not read the file
      * @throws ParseException Error parsing the chunks

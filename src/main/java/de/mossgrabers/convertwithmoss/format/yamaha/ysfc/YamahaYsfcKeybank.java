@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -111,11 +112,9 @@ public class YamahaYsfcKeybank
             throw new IOException ("Found unknown8 not to be 1 but " + unknown8);
 
         final byte [] compressionInfo = in.readNBytes (12);
-        for (int i = 0; i < compressionInfo.length; i++)
-        {
-            if (compressionInfo[i] != 0)
+        for (final byte element: compressionInfo)
+            if (element != 0)
                 throw new IOException (Functions.getMessage ("IDS_YSFC_ENCRYPTED_SAMPLES"));
-        }
 
         // Padding / reserved
         in.skipNBytes (4);
@@ -135,8 +134,67 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Write a key-bank to the output stream.
+     *
+     * @param out The output stream
+     * @throws IOException Could not write the entry item
+     */
+    public void write (final OutputStream out) throws IOException
+    {
+        out.write (this.keyRangeLower);
+        out.write (this.keyRangeUpper);
+        out.write (this.velocityRangeLower);
+        out.write (this.velocityRangeUpper);
+        out.write (this.level);
+        out.write (this.panorama);
+
+        // Unknown but should work
+        out.write (0x00);
+        out.write (0xFF);
+
+        out.write (this.rootNote);
+        out.write (this.coarseTune);
+        out.write (this.fineTune);
+        out.write (this.channels);
+
+        // Unknown but should work
+        out.write (0x00);
+        out.write (0x02);
+        out.write (0x05);
+
+        out.write (this.loopMode);
+
+        // Unknown but should be only padding
+        out.write (0x00);
+        out.write (0x00);
+
+        out.write (this.loopPoint % 16);
+
+        // Unknown but should work
+        out.write (1);
+
+        StreamUtils.padBytes (out, 12);
+
+        // Padding / reserved
+        StreamUtils.padBytes (out, 3);
+        out.write (0xFF);
+
+        StreamUtils.writeUnsigned32 (out, this.sampleFrequency, false);
+        StreamUtils.writeUnsigned32 (out, this.playStart, false);
+        StreamUtils.writeUnsigned32 (out, this.loopPoint / 16, false);
+        StreamUtils.writeUnsigned32 (out, this.playEnd, false);
+
+        // Padding / reserved
+        StreamUtils.padBytes (out, 4);
+
+        StreamUtils.writeUnsigned32 (out, this.number, false);
+        StreamUtils.writeUnsigned32 (out, this.sampleLength, false);
+    }
+
+
+    /**
      * Create a text description of the object.
-     * 
+     *
      * @return The text
      */
     public String infoText ()
@@ -165,7 +223,7 @@ public class YamahaYsfcKeybank
 
     /**
      * Get the lower bound of the key range.
-     * 
+     *
      * @return The lower bound as a MIDI note number [0..127]
      */
     public int getKeyRangeLower ()
@@ -175,8 +233,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the lower bound of the key range.
+     *
+     * @param keyRangeLower The lower bound as a MIDI note number [0..127]
+     */
+    public void setKeyRangeLower (final int keyRangeLower)
+    {
+        this.keyRangeLower = keyRangeLower;
+    }
+
+
+    /**
      * Get the upper bound of the key range.
-     * 
+     *
      * @return The upper bound as a MIDI note number [0..127]
      */
     public int getKeyRangeUpper ()
@@ -186,8 +255,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the upper bound of the key range.
+     *
+     * @param keyRangeUpper The upper bound as a MIDI note number [0..127]
+     */
+    public void setKeyRangeUpper (final int keyRangeUpper)
+    {
+        this.keyRangeUpper = keyRangeUpper;
+    }
+
+
+    /**
      * Get the lower bound of the velocity range.
-     * 
+     *
      * @return The lower bound in the range of [1..127]
      */
     public int getVelocityRangeLower ()
@@ -197,8 +277,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the lower bound of the velocity range.
+     *
+     * @param velocityRangeLower The lower bound in the range of [1..127]
+     */
+    public void setVelocityRangeLower (final int velocityRangeLower)
+    {
+        this.velocityRangeLower = velocityRangeLower;
+    }
+
+
+    /**
      * Get the upper bound of the velocity range.
-     * 
+     *
      * @return The upper bound in the range of [1..127]
      */
     public int getVelocityRangeUpper ()
@@ -208,8 +299,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Get the upper bound of the velocity range.
+     *
+     * @param velocityRangeUpper The upper bound in the range of [1..127]
+     */
+    public void setVelocityRangeUpper (final int velocityRangeUpper)
+    {
+        this.velocityRangeUpper = velocityRangeUpper;
+    }
+
+
+    /**
      * Get the level at which the sample should be played.
-     * 
+     *
      * @return The level in the range of [0..255]
      */
     public int getLevel ()
@@ -219,8 +321,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the level at which the sample should be played.
+     *
+     * @param level The level in the range of [0..255]
+     */
+    public void setLevel (final int level)
+    {
+        this.level = level;
+    }
+
+
+    /**
      * Get the panorama of the sample.
-     * 
+     *
      * @return The panorama in the range of [-64 to 63]
      */
     public int getPanorama ()
@@ -230,8 +343,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the panorama of the sample.
+     *
+     * @param panorama The panorama in the range of [-64 to 63]
+     */
+    public void setPanorama (final int panorama)
+    {
+        this.panorama = panorama + 64;
+    }
+
+
+    /**
      * Get the coarse tune.
-     * 
+     *
      * @return The coarse tune in semi-tones in the range of [-64...+63]
      */
     public int getCoarseTune ()
@@ -241,8 +365,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the coarse tune.
+     *
+     * @param coarseTune The coarse tune in semi-tones in the range of [-64...+63]
+     */
+    public void setCoarseTune (final int coarseTune)
+    {
+        this.coarseTune = coarseTune + 64;
+    }
+
+
+    /**
      * Get the fine tune.
-     * 
+     *
      * @return The fine tune in cents in the range of [-64...+63]
      */
     public int getFineTune ()
@@ -252,8 +387,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the fine tune.
+     *
+     * @param fineTune The fine tune in cents in the range of [-64...+63]
+     */
+    public void setFineTune (final int fineTune)
+    {
+        this.fineTune = fineTune + 64;
+    }
+
+
+    /**
      * Get the root note.
-     * 
+     *
      * @return The root note as a MIDI note number
      */
     public int getRootNote ()
@@ -263,8 +409,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the root note.
+     *
+     * @param rootNote The root note as a MIDI note number
+     */
+    public void setRootNote (final int rootNote)
+    {
+        this.rootNote = rootNote;
+    }
+
+
+    /**
      * Get the sample frequency in Hertz.
-     * 
+     *
      * @return E.g. 44100
      */
     public int getSampleFrequency ()
@@ -274,8 +431,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the sample frequency in Hertz.
+     *
+     * @param sampleFrequency E.g. 44100
+     */
+    public void setSampleFrequency (final int sampleFrequency)
+    {
+        this.sampleFrequency = sampleFrequency;
+    }
+
+
+    /**
      * Get the start of the sample play-back.
-     * 
+     *
      * @return The start in sample frames
      */
     public int getPlayStart ()
@@ -285,8 +453,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the start of the sample play-back.
+     *
+     * @param playStart The start in sample frames
+     */
+    public void setPlayStart (final int playStart)
+    {
+        this.playStart = playStart;
+    }
+
+
+    /**
      * Get the end of the sample play-back.
-     * 
+     *
      * @return The end in sample frames
      */
     public int getPlayEnd ()
@@ -296,8 +475,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the end of the sample play-back.
+     *
+     * @param playEnd The end in sample frames
+     */
+    public void setPlayEnd (final int playEnd)
+    {
+        this.playEnd = playEnd;
+    }
+
+
+    /**
      * Get the loop start.
-     * 
+     *
      * @return The start of the loop in sample frames
      */
     public int getLoopPoint ()
@@ -307,8 +497,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the loop start.
+     *
+     * @param loopPoint The start of the loop in sample frames
+     */
+    public void setLoopPoint (final int loopPoint)
+    {
+        this.loopPoint = loopPoint;
+    }
+
+
+    /**
      * Get the position of the sample in the device memory.
-     * 
+     *
      * @return The position
      */
     public int getNumber ()
@@ -318,8 +519,19 @@ public class YamahaYsfcKeybank
 
 
     /**
-     * The length of the sample.
-     * 
+     * Set the position of the sample in the device memory.
+     *
+     * @param number The position
+     */
+    public void setNumber (final int number)
+    {
+        this.number = number;
+    }
+
+
+    /**
+     * Get the length of the sample.
+     *
      * @return The length in sample frames
      */
     public int getSampleLength ()
@@ -329,8 +541,19 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the length of the sample.
+     *
+     * @param sampleLength The length in sample frames
+     */
+    public void setSampleLength (final int sampleLength)
+    {
+        this.sampleLength = sampleLength;
+    }
+
+
+    /**
      * Get the number of channels.
-     * 
+     *
      * @return The number of channels, 1 = Mono, 2 = Stereo
      */
     public int getChannels ()
@@ -340,12 +563,34 @@ public class YamahaYsfcKeybank
 
 
     /**
+     * Set the number of channels.
+     *
+     * @param channels The number of channels, 1 = Mono, 2 = Stereo
+     */
+    public void setChannels (final int channels)
+    {
+        this.channels = channels;
+    }
+
+
+    /**
      * Get the loop mode.
-     * 
+     *
      * @return The loop mode, 0 = normal, 1 = one-shot, 2 = reverse
      */
     public int getLoopMode ()
     {
         return this.loopMode;
+    }
+
+
+    /**
+     * Get the loop mode.
+     *
+     * @param loopMode The loop mode, 0 = normal, 1 = one-shot, 2 = reverse
+     */
+    public void setLoopMode (final int loopMode)
+    {
+        this.loopMode = loopMode;
     }
 }

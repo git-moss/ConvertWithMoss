@@ -96,6 +96,23 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    public void create (final File destinationFolder, final List<IMultisampleSource> multisampleSources) throws IOException
+    {
+        // Overwrite as well as wantsMultipleFiles() to support
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean wantsMultipleFiles ()
+    {
+        // Overwrite and return true to support combining multi-sample files
+        return false;
+    }
+
+
     /**
      * Create a new XML document.
      *
@@ -377,23 +394,8 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 if (outputCount % 80 == 0)
                     this.notifyNewline ();
 
-                this.storeSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
+                this.storeSamplefile (alreadyStored, zipOutputStream, multisampleSource.getMetadata (), zone, relativeFolderName);
             }
-    }
-
-
-    /**
-     * Adds a sample file to an uncompressed ZIP output stream.
-     *
-     * @param alreadyStored Set with the already files to prevent trying to add duplicated files
-     * @param zipOutputStream The ZIP output stream
-     * @param zone The zone to add
-     * @param dateTime The date and time to set as the creation date of the file entry
-     * @throws IOException Could not read the file
-     */
-    protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime) throws IOException
-    {
-        this.storeSamplefile (alreadyStored, zipOutputStream, zone, null, null);
     }
 
 
@@ -402,26 +404,32 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      *
      * @param alreadyStored Set with the already files to prevent trying to add duplicated files
      * @param zipOutputStream The ZIP output stream
+     * @param metadata The multi-sample metadata
      * @param zone The zone to add
-     * @param dateTime The date and time to set as the creation date of the file entry
      * @param path Optional path (may be null), must not end with a slash
      * @throws IOException Could not read the file
      */
-    protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final ISampleZone zone, final Date dateTime, final String path) throws IOException
+    protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final IMetadata metadata, final ISampleZone zone, final String path) throws IOException
     {
         final String name = checkSampleName (alreadyStored, zone, path);
         if (name == null)
             return;
 
+        final ISampleData sampleData = zone.getSampleData ();
+        if (sampleData == null)
+        {
+            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
+            return;
+        }
+
         final CRC32 crc = new CRC32 ();
         try (final ByteArrayOutputStream bout = new ByteArrayOutputStream (); final OutputStream checkedOut = new CheckedOutputStream (bout, crc))
         {
-            final ISampleData sampleData = zone.getSampleData ();
-            if (sampleData == null)
-                this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
+            if (this.requiresRewrite (DESTINATION_FORMAT))
+                this.rewriteFile (metadata, zone, checkedOut, DESTINATION_FORMAT, false);
             else
                 sampleData.writeSample (checkedOut);
-            putUncompressedEntry (zipOutputStream, name, bout.toByteArray (), crc, dateTime);
+            putUncompressedEntry (zipOutputStream, name, bout.toByteArray (), crc, metadata.getCreationDateTime ());
         }
     }
 
@@ -1008,7 +1016,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     /**
      * Creates a unique file name in the given folder. If the file does already exists a unique
      * prefix is appended.
-     * 
+     *
      * @param destinationFolder The folder in which to create the file
      * @param sampleName The name for the file
      * @param extension The extension for the file
