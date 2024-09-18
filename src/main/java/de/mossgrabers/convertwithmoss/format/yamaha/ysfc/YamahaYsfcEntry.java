@@ -77,7 +77,7 @@ public class YamahaYsfcEntry
         // Flags - type specific
         this.flags = contentStream.readNBytes (6);
 
-        // Pseudo-timestamp for date-ordering
+        // ID of the entry object for ordering
         this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
 
         this.itemName = StreamUtils.readNullTerminatedASCII (contentStream);
@@ -116,7 +116,7 @@ public class YamahaYsfcEntry
         // Flags - type specific
         contentStream.write (this.flags);
 
-        // Pseudo-timestamp for date-ordering
+        // ID of the entry object for ordering
         StreamUtils.writeUnsigned32 (contentStream, this.entryID, true);
 
         StreamUtils.writeNullTerminatedASCII (contentStream, this.itemName);
