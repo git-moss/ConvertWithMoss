@@ -190,7 +190,7 @@ public class YamahaYsfcCreator extends AbstractCreator
         final YsfcFile ysfcFile = new YsfcFile ();
         ysfcFile.setVersionStr (VERSION_MAP.get (outputFormat));
 
-        final int libraryID = outputFormat == OutputFormat.MODX_USER || outputFormat == OutputFormat.MONTAGE_USER ? 0x10000 : 0x20000;
+        final int libraryID = 0x10001;
 
         // Numbering covers all(!) samples
         int sampleNumber = 1;
@@ -281,9 +281,7 @@ public class YamahaYsfcCreator extends AbstractCreator
                     }
                 }
 
-            // Note: if several multi-samples will be combined this number needs to be increased!
-            final int sampleIndex = libraryID + 1 + i;
-
+            final int sampleIndex = libraryID + i;
             final YamahaYsfcEntry keyBankEntry = new YamahaYsfcEntry ();
             keyBankEntry.setSpecificValue (sampleIndex);
 
