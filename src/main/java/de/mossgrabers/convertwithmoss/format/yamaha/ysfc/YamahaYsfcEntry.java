@@ -45,11 +45,12 @@ public class YamahaYsfcEntry
      * Constructor.
      *
      * @param in The input stream
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcEntry (final InputStream in) throws IOException
+    public YamahaYsfcEntry (final InputStream in, final int version) throws IOException
     {
-        this.read (in);
+        this.read (in, version);
     }
 
 
@@ -57,9 +58,10 @@ public class YamahaYsfcEntry
      * Read an entry item from the input stream.
      *
      * @param in The input stream
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the entry item
      */
-    public void read (final InputStream in) throws IOException
+    public void read (final InputStream in, final int version) throws IOException
     {
         // The length of the data to follow
         this.length = (int) StreamUtils.readUnsigned32 (in, true);
@@ -74,17 +76,24 @@ public class YamahaYsfcEntry
         // Type specific - e.g. Program number 0x10001, 0x10002, ...
         this.specificValue = (int) StreamUtils.readUnsigned32 (contentStream, true);
 
-        // Flags - type specific
-        this.flags = contentStream.readNBytes (6);
+        if (version >= 400)
+        {
+            // Flags - type specific
+            this.flags = contentStream.readNBytes (6);
 
-        // ID of the entry object for ordering
-        this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
+            // ID of the entry object for ordering
+            this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
+        }
 
         this.itemName = StreamUtils.readNullTerminatedASCII (contentStream);
-        this.itemTitle = StreamUtils.readNullTerminatedASCII (contentStream);
 
-        // Optional additional data - type specific, only used by EPFM
-        this.additionalData = contentStream.readAllBytes ();
+        if (contentStream.available () > 0)
+        {
+            this.itemTitle = StreamUtils.readNullTerminatedASCII (contentStream);
+
+            // Optional additional data - type specific, only used by EPFM
+            this.additionalData = contentStream.readAllBytes ();
+        }
     }
 
 

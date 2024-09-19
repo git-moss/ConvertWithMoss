@@ -231,47 +231,7 @@ public class YamahaYsfcCreator extends AbstractCreator
 
                     for (int channel = 0; channel < numberOfChannels; channel++)
                     {
-                        final YamahaYsfcKeybank keybank = new YamahaYsfcKeybank ();
-                        keybank.setNumber (sampleNumber);
-
-                        keybank.setChannels (numberOfChannels);
-                        keybank.setSampleFrequency (formatChunk.getSampleRate ());
-                        keybank.setSampleLength (numSamples);
-                        keybank.setRootNote (zone.getKeyRoot ());
-
-                        keybank.setKeyRangeLower (zone.getKeyLow ());
-                        keybank.setKeyRangeUpper (zone.getKeyHigh ());
-                        keybank.setVelocityRangeLower (zone.getVelocityLow ());
-                        keybank.setVelocityRangeUpper (zone.getVelocityHigh ());
-
-                        final double tune = zone.getTune ();
-                        final int semitones = (int) Math.floor (tune);
-                        keybank.setCoarseTune (semitones);
-                        keybank.setFineTune ((int) Math.floor ((tune - semitones) * 100.0));
-
-                        // The 0-255 range seems to be somehow logarithmically scaled and there is
-                        // not much happening below 200
-                        keybank.setLevel (207 + 2 * (int) (Math.round (Math.clamp (zone.getGain (), -12.0, 12.0)) + 12));
-
-                        final double panorama = zone.getPanorama ();
-                        keybank.setPanorama ((int) (panorama < 0 ? panorama * 64 : panorama * 63));
-
-                        keybank.setPlayStart (zone.getStart ());
-                        keybank.setPlayEnd (zone.getStop ());
-
-                        final List<ISampleLoop> loops = zone.getLoops ();
-                        if (loops.isEmpty ())
-                            keybank.setLoopMode (1);
-                        else
-                        {
-                            final ISampleLoop loop = loops.get (0);
-                            keybank.setLoopMode (loop.getType () == LoopType.BACKWARDS ? 2 : 0);
-                            keybank.setLoopPoint (loop.getStart ());
-                            if (loop.getEnd () < zone.getStop ())
-                                keybank.setPlayEnd (loop.getEnd ());
-                        }
-
-                        keybankList.add (keybank);
+                        keybankList.add (createKeybank (sampleNumber, zone, formatChunk, numSamples));
 
                         final YamahaYsfcWaveData waveData = new YamahaYsfcWaveData ();
                         waveDataList.add (waveData);
@@ -307,6 +267,51 @@ public class YamahaYsfcCreator extends AbstractCreator
         {
             ysfcFile.write (out);
         }
+    }
+
+
+    private static YamahaYsfcKeybank createKeybank (final int sampleNumber, final ISampleZone zone, final FormatChunk formatChunk, final int numSamples)
+    {
+        final YamahaYsfcKeybank keybank = new YamahaYsfcKeybank ();
+        keybank.setNumber (sampleNumber);
+
+        keybank.setChannels (formatChunk.getNumberOfChannels ());
+        keybank.setSampleFrequency (formatChunk.getSampleRate ());
+        keybank.setSampleLength (numSamples);
+        keybank.setRootNote (zone.getKeyRoot ());
+
+        keybank.setKeyRangeLower (zone.getKeyLow ());
+        keybank.setKeyRangeUpper (zone.getKeyHigh ());
+        keybank.setVelocityRangeLower (zone.getVelocityLow ());
+        keybank.setVelocityRangeUpper (zone.getVelocityHigh ());
+
+        final double tune = zone.getTune ();
+        final int semitones = (int) Math.floor (tune);
+        keybank.setCoarseTune (semitones);
+        keybank.setFineTune ((int) Math.floor ((tune - semitones) * 100.0));
+
+        // The 0-255 range seems to be somehow logarithmically scaled and there is
+        // not much happening below 200
+        keybank.setLevel (207 + 2 * (int) (Math.round (Math.clamp (zone.getGain (), -12.0, 12.0)) + 12));
+
+        final double panorama = zone.getPanorama ();
+        keybank.setPanorama ((int) (panorama < 0 ? panorama * 64 : panorama * 63));
+
+        keybank.setPlayStart (zone.getStart ());
+        keybank.setPlayEnd (zone.getStop ());
+
+        final List<ISampleLoop> loops = zone.getLoops ();
+        if (loops.isEmpty ())
+            keybank.setLoopMode (1);
+        else
+        {
+            final ISampleLoop loop = loops.get (0);
+            keybank.setLoopMode (loop.getType () == LoopType.BACKWARDS ? 2 : 0);
+            keybank.setLoopPoint (loop.getStart ());
+            if (loop.getEnd () < zone.getStop ())
+                keybank.setPlayEnd (loop.getEnd ());
+        }
+        return keybank;
     }
 
 

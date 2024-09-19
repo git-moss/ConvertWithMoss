@@ -44,6 +44,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
 {
     private static final String [] ENDINGS           =
     {
+        ".x6a",
         ".x7u",
         ".x7l",
         ".x7a",
@@ -78,7 +79,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         try
         {
             final YsfcFile ysfcFile = new YsfcFile (file);
-            this.notifier.log ("IDS_YSFC_FOUND_TYPE", ysfcFile.getVersion () < 400 ? "Motif" : "Montage/MODX", ysfcFile.getVersionStr ());
+            this.notifier.log ("IDS_YSFC_FOUND_TYPE", getWorkstationName (ysfcFile), ysfcFile.getVersionStr ());
             return this.createMultisample (ysfcFile);
         }
         catch (final IOException ex)
@@ -86,6 +87,21 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
         }
         return Collections.emptyList ();
+    }
+
+
+    private static String getWorkstationName (final YsfcFile ysfcFile)
+    {
+        final int version = ysfcFile.getVersion ();
+        if (version <= 101)
+            return "Motif XS";
+        if (version == 102)
+            return "Motif XF";
+        if (version == 103)
+            return "MOXF";
+        if (version >= 500)
+            return "MODX";
+        return "Montage";
     }
 
 
@@ -137,7 +153,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         for (int i = 0; i < ewfmListChunks.size (); i++)
         {
-            final List<YamahaYsfcKeybank> keyBanks = readKeyBanks (dwfmChunks.get (i));
+            final List<YamahaYsfcKeybank> keyBanks = readKeyBanks (dwfmChunks.get (i), ysfcFile.getVersion ());
             final List<YamahaYsfcWaveData> waveDataItems = readWaveData (dwimChunks.get (i));
 
             String name = ewfmListChunks.get (i).getItemName ();
@@ -256,16 +272,17 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
      * Reads all the key-bank data items from the given data array.
      *
      * @param dwfmDataArray The array to read from
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @return The parsed wave metadata items
      * @throws IOException Could not read the data
      */
-    private static List<YamahaYsfcKeybank> readKeyBanks (final byte [] dwfmDataArray) throws IOException
+    private static List<YamahaYsfcKeybank> readKeyBanks (final byte [] dwfmDataArray, final int version) throws IOException
     {
         final List<YamahaYsfcKeybank> keyBanks = new ArrayList<> ();
         final ByteArrayInputStream dwfmContentStream = new ByteArrayInputStream (dwfmDataArray);
         final int numberOfKeyBanks = (int) StreamUtils.readUnsigned32 (dwfmContentStream, false);
         for (int k = 0; k < numberOfKeyBanks; k++)
-            keyBanks.add (new YamahaYsfcKeybank (dwfmContentStream));
+            keyBanks.add (new YamahaYsfcKeybank (dwfmContentStream, version));
         return keyBanks;
     }
 

@@ -173,7 +173,7 @@ public class YsfcFile
         // Reference to uses library - only self-contained libraries are supported!
         inputStream.skipNBytes (librarySize);
 
-        this.readChunks (inputStream);
+        this.readChunks (inputStream, this.version);
     }
 
 
@@ -234,14 +234,15 @@ public class YsfcFile
      * Read all chunks.
      *
      * @param in The input stream to read from
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the chunks
      */
-    private void readChunks (final InputStream in) throws IOException
+    private void readChunks (final InputStream in, final int version) throws IOException
     {
         while (in.available () > 0)
         {
             final YamahaYsfcChunk chunk = new YamahaYsfcChunk ();
-            chunk.read (in);
+            chunk.read (in, version);
             this.chunks.put (chunk.getChunkID (), chunk);
         }
     }
