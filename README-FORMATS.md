@@ -151,7 +151,7 @@ If selected as a destination, a NKI file is written and all samples are placed i
 ## Expert Sleepers disting EX
 
 The disting EX is a multifunction Eurorack module which provides many different algorithms. On of them is the SD Multisample algorithm which is an eight voice polyphonic, three part multitimbral, sample playback instrument, playing WAV files from the MicroSD card. It can have up to 3 input CV/gate pairs, or can be played via MIDI or I2C. It supports both velocity switches and round robins per sample.
-The basic multi-sample setup is encoded in the file-names of the samples. Further information like the amplitude envelope are stored in a preset (*.dexpreset). The preset references only the name of the folder which contains the related samples. All samples in the folder considered to be belonging to the multi-sample. The disting EX supports up to 8 voices but only if mono samples are used. Therefore, the maximum voices are set to 5 if stereo samples are used in the source file.
+The basic multi-sample setup is encoded in the file-names of the samples. Further information like the amplitude envelope are stored in a preset (*.dexpreset). The preset references only the name of the folder which contains the related samples. All samples in the folder considered to be belonging to the multi-sample.
 
 ### Destination Options
 

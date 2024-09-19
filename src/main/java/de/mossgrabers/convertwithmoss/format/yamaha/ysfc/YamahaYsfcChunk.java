@@ -55,9 +55,10 @@ public class YamahaYsfcChunk
      * Read a chunk from the input stream.
      *
      * @param in The input stream
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the chunk
      */
-    public void read (final InputStream in) throws IOException
+    public void read (final InputStream in, final int version) throws IOException
     {
         this.chunkID = StreamUtils.readASCII (in, 4);
         this.chunkLength = (int) StreamUtils.readUnsigned32 (in, true);
@@ -69,7 +70,7 @@ public class YamahaYsfcChunk
             switch (magic)
             {
                 case MAGIC_ENTRY:
-                    this.entryListEntries.add (new YamahaYsfcEntry (in));
+                    this.entryListEntries.add (new YamahaYsfcEntry (in, version));
                     break;
 
                 case MAGIC_DATA:

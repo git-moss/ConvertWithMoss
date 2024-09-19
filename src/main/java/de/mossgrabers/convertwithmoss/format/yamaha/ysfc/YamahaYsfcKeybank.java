@@ -51,11 +51,12 @@ public class YamahaYsfcKeybank
      * Constructor which reads the wave metadata from the input stream.
      *
      * @param in The input stream
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcKeybank (final InputStream in) throws IOException
+    public YamahaYsfcKeybank (final InputStream in, final int version) throws IOException
     {
-        this.read (in);
+        this.read (in, version);
     }
 
 
@@ -63,15 +64,21 @@ public class YamahaYsfcKeybank
      * Read a key-bank from the input stream.
      *
      * @param in The input stream
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the entry item
      */
-    public void read (final InputStream in) throws IOException
+    public void read (final InputStream in, final int version) throws IOException
     {
+        final boolean isVersion1 = version < 400;
+
         this.keyRangeLower = in.read ();
         this.keyRangeUpper = in.read ();
         this.velocityRangeLower = in.read ();
         this.velocityRangeUpper = in.read ();
         this.level = in.read ();
+        // Range is only 0-128
+        if (isVersion1)
+            this.level = Math.clamp (2 * this.level, 0, 255);
         this.panorama = in.read ();
 
         final int unknown1 = in.read ();
@@ -93,17 +100,17 @@ public class YamahaYsfcKeybank
         if (unknown4 != 2 && unknown4 != 0)
             throw new IOException ("Found unknown4 not to be 2 but " + unknown4);
         final int unknown5 = in.read ();
-        if (unknown5 != 5 && unknown5 != 0 && unknown5 != 4)
+        if (unknown5 != 0 && unknown5 != 5 && unknown5 != 4 && unknown5 != 3)
             throw new IOException ("Found unknown5 not to be 5 but " + unknown5);
 
         this.loopMode = in.read ();
 
         final int unknown6 = in.read ();
-        if (unknown6 != 0)
-            throw new IOException ("Found unknown6 not to be 0 but " + unknown6);
+        // if (unknown6 != 0 && unknown6 != 8)
+        // throw new IOException ("Found unknown6 not to be 0 but " + unknown6);
         final int unknown7 = in.read ();
-        if (unknown7 != 0)
-            throw new IOException ("Found unknown7 not to be 0 but " + unknown7);
+        // if (unknown7 != 0)
+        // throw new IOException ("Found unknown7 not to be 0 but " + unknown7);
 
         final int loopPointRest = in.read ();
 
@@ -119,17 +126,28 @@ public class YamahaYsfcKeybank
         // Padding / reserved
         in.skipNBytes (4);
 
-        this.sampleFrequency = (int) StreamUtils.readUnsigned32 (in, false);
-        this.playStart = (int) StreamUtils.readUnsigned32 (in, false);
-        this.loopPoint = (int) StreamUtils.readUnsigned32 (in, false);
-        this.loopPoint = 16 * this.loopPoint + loopPointRest;
-        this.playEnd = (int) StreamUtils.readUnsigned32 (in, false);
+        this.sampleFrequency = (int) StreamUtils.readUnsigned32 (in, isVersion1);
+        this.playStart = (int) StreamUtils.readUnsigned32 (in, isVersion1);
+        this.loopPoint = (int) StreamUtils.readUnsigned32 (in, isVersion1);
+        if (!isVersion1)
+            this.loopPoint = 16 * this.loopPoint + loopPointRest;
+        this.playEnd = (int) StreamUtils.readUnsigned32 (in, isVersion1);
 
         // Padding / reserved
-        in.skipNBytes (4);
+        if (!isVersion1)
+        {
+            in.skipNBytes (4);
+            this.number = (int) StreamUtils.readUnsigned32 (in, false);
+        }
+        this.sampleLength = (int) StreamUtils.readUnsigned32 (in, isVersion1);
 
-        this.number = (int) StreamUtils.readUnsigned32 (in, false);
-        this.sampleLength = (int) StreamUtils.readUnsigned32 (in, false);
+        // No idea about these 20 bytes
+        // 40 0C 00 10 FF FF FF FF 00 01 00 00 00 02 20 30 00 00 00 00
+        // 40 0D 10 30 FF FF FF FF 00 02 00 00 00 02 15 24 00 00 00 00
+        // 40 0E 1A D0 FF FF FF FF 00 03 00 00 00 02 0C 60 00 00 00 00
+        // 40 0F 21 00 FF FF FF FF 00 04 00 00 00 02 02 74 00 00 00 00
+        if (isVersion1)
+            in.skip (20);
     }
 
 

@@ -569,7 +569,7 @@ public class StreamUtils
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         int b;
-        while ((b = in.read ()) != 0)
+        while ((b = in.read ()) > 0)
             out.write (b);
         return new String (out.toByteArray (), StandardCharsets.US_ASCII);
     }
