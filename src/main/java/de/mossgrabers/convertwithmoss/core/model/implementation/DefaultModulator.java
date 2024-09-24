@@ -66,8 +66,6 @@ public class DefaultModulator implements IModulator
         if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final DefaultModulator other = (DefaultModulator) obj;
-        if (Double.doubleToLongBits (this.depth) != Double.doubleToLongBits (other.depth))
-            return false;
-        return true;
+        return Double.doubleToLongBits (this.depth) == Double.doubleToLongBits (other.depth);
     }
 }

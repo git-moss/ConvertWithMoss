@@ -18,7 +18,15 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
 public class YamahaYsfcCategories
 {
     /** The 'No Assign' tag. */
-    public static String                      NO_ASSIGN                    = "No Assign";
+    public static final String                TAG_NO_ASSIGN                = "No Assign";
+
+    private static final String               TAG_ACOUSTIC                 = "Acoustic";
+    private static final String               TAG_ROCK_POP                 = "Rock / Pop";
+    private static final String               TAG_SYNTH                    = "Synth";
+    private static final String               TAG_R_B_HIP_HOP              = "R&B / Hip Hop";
+    private static final String               TAG_JAZZ_WORLD               = "Jazz / World";
+    private static final String               TAG_ELECTRONIC               = "Electronic";
+    private static final String               TAG_ANALOG                   = "Analog";
 
     private static final String []            WAVE_FORM_CATEGORIES         = new String []
     {
@@ -38,7 +46,7 @@ public class YamahaYsfcCategories
         TagDetector.CATEGORY_FX,
         TagDetector.CATEGORY_FX,
         TagDetector.CATEGORY_WORLD,
-        NO_ASSIGN
+        TAG_NO_ASSIGN
     };
 
     private static final Map<String, Integer> WAVE_FORM_INDICES            = new HashMap<> ();
@@ -80,149 +88,149 @@ public class YamahaYsfcCategories
         WAVE_FORM_INDICES.put (TagDetector.CATEGORY_LOOPS, Integer.valueOf (209));
         WAVE_FORM_INDICES.put (TagDetector.CATEGORY_WORLD, Integer.valueOf (240));
 
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (0), "Acoustic");
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (0), TAG_ACOUSTIC);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (1), "Layer");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (2), "Modern");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (3), "Vintage");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (4), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (5), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (6), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (7), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (8), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (4), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (5), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (6), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (7), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (8), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (16), "Electric Piano");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (17), "FM Piano");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (18), "Clavi");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (19), "Synth");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (20), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (21), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (22), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (23), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (24), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (19), TAG_SYNTH);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (20), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (21), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (22), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (23), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (24), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (32), "Tone Wheel");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (33), "Combo");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (34), "Pipe");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (35), "Synth");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (36), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (37), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (38), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (39), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (40), NO_ASSIGN);
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (48), "Acoustic");
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (35), TAG_SYNTH);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (36), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (37), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (38), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (39), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (40), TAG_NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (48), TAG_ACOUSTIC);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (49), "Electric Clean");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (50), "Distortion");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (51), "Synth");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (52), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (53), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (54), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (55), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (56), NO_ASSIGN);
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (64), "Acoustic");
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (51), TAG_SYNTH);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (52), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (53), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (54), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (55), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (56), TAG_NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (64), TAG_ACOUSTIC);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (65), "Electric");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (66), "Synth");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (67), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (68), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (69), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (70), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (71), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (66), TAG_SYNTH);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (67), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (68), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (69), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (70), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (71), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (80), "Solo");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (81), "Ensemble");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (82), "Pizzicato");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (83), "Synth");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (84), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (85), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (86), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (87), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (88), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (83), TAG_SYNTH);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (84), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (85), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (86), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (87), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (88), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (96), "Solo");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (97), "Ensemble");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (98), "Orchestra");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (99), "Synth");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (100), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (101), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (102), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (103), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (104), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (99), TAG_SYNTH);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (100), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (101), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (102), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (103), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (104), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (112), "Saxophone");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (113), "Flute");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (114), "Woodwind");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (115), "Reed / Pipe");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (116), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (117), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (118), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (119), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (120), NO_ASSIGN);
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (128), "Analog");
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (116), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (117), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (118), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (119), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (120), TAG_NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (128), TAG_ANALOG);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (129), "Digital");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (130), "Hip Hop");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (131), "Dance");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (132), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (133), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (134), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (135), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (136), NO_ASSIGN);
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (144), "Analog");
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (132), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (133), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (134), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (135), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (136), TAG_NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (144), TAG_ANALOG);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (145), "Warm");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (146), "Bright");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (147), "Choir");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (148), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (149), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (150), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (151), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (152), NO_ASSIGN);
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (160), "Analog");
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (148), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (149), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (150), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (151), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (152), TAG_NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (160), TAG_ANALOG);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (161), "Digital");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (162), "Decay");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (163), "Hook");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (164), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (165), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (166), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (167), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (168), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (164), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (165), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (166), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (167), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (168), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (176), "Mallet");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (177), "Bell");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (178), "Synth Bell");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (179), "Pitched Drum");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (180), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (181), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (182), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (183), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (184), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (180), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (181), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (182), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (183), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (184), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (192), "Drums");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (193), "Percussion");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (194), "Synth");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (195), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (196), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (197), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (198), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (199), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (194), TAG_SYNTH);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (195), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (196), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (197), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (198), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (199), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (208), "Moving");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (209), "Ambient");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (210), "Nature");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (211), "Sci-Fi");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (212), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (213), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (214), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (215), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (216), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (212), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (213), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (214), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (215), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (216), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (224), "Moving");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (225), "Ambient");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (226), "Sweep");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (227), "Hit");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (228), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (229), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (230), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (231), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (232), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (228), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (229), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (230), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (231), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (232), TAG_NO_ASSIGN);
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (240), "Bowed");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (241), "Plucked");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (242), "Struck");
         PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (243), "Blown");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (244), "Rock / Pop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (245), "R&B / Hip Hop");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (246), "Electronic");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (247), "Jazz / World");
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (248), NO_ASSIGN);
-        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (256), NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (244), TAG_ROCK_POP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (245), TAG_R_B_HIP_HOP);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (246), TAG_ELECTRONIC);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (247), TAG_JAZZ_WORLD);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (248), TAG_NO_ASSIGN);
+        PERFORMANCE_SUB_CATEGORY_MAP.put (Integer.valueOf (256), TAG_NO_ASSIGN);
 
         PERFORMANCE_CATEGORY_MAP.put (Integer.valueOf (0x0001), "Piano");
         PERFORMANCE_CATEGORY_MAP.put (Integer.valueOf (0x0002), "Keyboard");
@@ -240,6 +248,15 @@ public class YamahaYsfcCategories
         PERFORMANCE_CATEGORY_MAP.put (Integer.valueOf (0x2000), "Sound FX");
         PERFORMANCE_CATEGORY_MAP.put (Integer.valueOf (0x4000), "Musical FX");
         PERFORMANCE_CATEGORY_MAP.put (Integer.valueOf (0x8000), "Ethnic");
+    }
+
+
+    /**
+     * Private due to constants class.
+     */
+    private YamahaYsfcCategories ()
+    {
+        // Intentionally empty
     }
 
 
@@ -278,7 +295,7 @@ public class YamahaYsfcCategories
         for (final Map.Entry<Integer, String> entry: PERFORMANCE_CATEGORY_MAP.entrySet ())
             if ((categoryFlagValue & entry.getKey ().intValue ()) > 0)
                 return entry.getValue ();
-        return NO_ASSIGN;
+        return TAG_NO_ASSIGN;
     }
 
 
@@ -291,6 +308,6 @@ public class YamahaYsfcCategories
     public static String getPerformanceSubCategory (final int categoryValue)
     {
         final String name = PERFORMANCE_SUB_CATEGORY_MAP.get (Integer.valueOf (categoryValue));
-        return name == null ? NO_ASSIGN : name;
+        return name == null ? TAG_NO_ASSIGN : name;
     }
 }

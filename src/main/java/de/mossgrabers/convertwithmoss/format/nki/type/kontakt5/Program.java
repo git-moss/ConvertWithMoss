@@ -68,7 +68,7 @@ public class Program
 
     /**
      * Get the name of the program.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -323,12 +323,8 @@ public class Program
             // Only on a group level...
             zone.setReversed (kontaktGroup.isReverse ());
 
-            // TODO fill missing info
-            // sampleMetadata.setBendUp ();
-            // sampleMetadata.setBendDown ();
-            // sampleMetadata.setFilter ();
-            // sampleMetadata.getAmplitudeModulator ()
-            // sampleMetadata.getPitchModulator ()
+            // Fill missing info, when understood where it is stored
+            // Bend Up / Down, Filter, Amplitude and Pitch Modulator
 
             for (final ZoneLoop zoneLoop: kontaktZone.getLoops ())
             {
@@ -345,10 +341,10 @@ public class Program
             }
         }
 
-        final List<IGroup> groups = new ArrayList<> ();
+        final List<IGroup> sampleGroups = new ArrayList<> ();
         for (final Pair<IGroup, Group> pair: indexedGroups.values ())
-            groups.add (pair.getKey ());
-        source.setGroups (groups);
+            sampleGroups.add (pair.getKey ());
+        source.setGroups (sampleGroups);
     }
 
 

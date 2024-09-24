@@ -19,4 +19,13 @@ public class WaldorfQpatConstants
 
     /** The maximum number of resources integrated in the patch. */
     public static final int  MAX_RESOURCES     = 16;
+
+
+    /**
+     * Private due to constants class.
+     */
+    private WaldorfQpatConstants ()
+    {
+        // Intentionally empty
+    }
 }

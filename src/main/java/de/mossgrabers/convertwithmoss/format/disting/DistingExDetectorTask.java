@@ -50,7 +50,7 @@ import de.mossgrabers.tools.ui.Functions;
 public class DistingExDetectorTask extends AbstractDetectorTask
 {
     private static final String  ENDING_DISTING_EX = ".dexpreset";
-    private static final Pattern FILE_NAME_QUERY   = Pattern.compile ("(.*)_(?<note>[A-Ga-g]#?\\d)((_SW(?<switch>\\d+))?(_V(?<velocity>\\d+))?(_R(?<roundrobin>\\d+))?)?");
+    private static final Pattern FILE_NAME_QUERY   = Pattern.compile ("(.*)_(?<note>[A-Ga-g]#?\\d)(_SW(?<switch>\\d+))?(_V(?<velocity>\\d+))?(_R(?<roundrobin>\\d+))?");
 
 
     /**
@@ -222,7 +222,7 @@ public class DistingExDetectorTask extends AbstractDetectorTask
         {
             final IGroup group = groupsList.get (i);
             final int velocityLow = 1 + i * velocitySteps;
-            int velocityHigh = Math.clamp ((i + 1) * velocitySteps, 1, 127);
+            int velocityHigh = Math.clamp ((i + 1L) * velocitySteps, 1, 127);
             // Ensure that the last step reaches till the highest velocity
             if (i == size - 1)
                 velocityHigh = 127;
@@ -290,96 +290,6 @@ public class DistingExDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Print all parameter values to the console. Only for testing.
-     *
-     * @param parameters The 80 parameters
-     */
-    public static void printParameters (final int [] parameters)
-    {
-        System.out.println ("Attenuverter 1: " + parameters[0]);
-        System.out.println ("Attenuverter 2: " + parameters[1]);
-        System.out.println ("Attenuverter 3: " + parameters[2]);
-        System.out.println ("Attenuverter 4: " + parameters[3]);
-        System.out.println ("Attenuverter 5: " + parameters[4]);
-        System.out.println ("Attenuverter 6: " + parameters[5]);
-        System.out.println ("Folder: " + parameters[6]);
-        System.out.println ("Attack time: " + parameters[7]);
-        System.out.println ("Decay time: " + parameters[8]);
-        System.out.println ("Sustain level: " + parameters[9]);
-        System.out.println ("Release time: " + parameters[10]);
-        System.out.println ("Octave: " + parameters[11]);
-        System.out.println ("Transpose: " + parameters[12]);
-        System.out.println ("Fine tune: " + parameters[13]);
-        System.out.println ("Gain: " + parameters[14]);
-        System.out.println ("Saturation: " + parameters[15]);
-        System.out.println ("Sustain: " + parameters[16]);
-        System.out.println ("Max voices: " + parameters[17]);
-        System.out.println ("Bend range: " + parameters[18]);
-        System.out.println ("Pitch bend input: " + parameters[19]);
-        System.out.println ("Voice 1 detune: " + parameters[20]);
-        System.out.println ("Voice 2 detune: " + parameters[21]);
-        System.out.println ("Voice 3 detune: " + parameters[22]);
-        System.out.println ("Voice 4 detune: " + parameters[23]);
-        System.out.println ("Voice 5 detune: " + parameters[24]);
-        System.out.println ("Voice 6 detune: " + parameters[25]);
-        System.out.println ("Voice 7 detune: " + parameters[26]);
-        System.out.println ("Voice 8 detune: " + parameters[27]);
-        System.out.println ("Chord enable: " + parameters[28]);
-        System.out.println ("Chord key: " + parameters[29]);
-        System.out.println ("Chord scale: " + parameters[30]);
-        System.out.println ("Chord shape: " + parameters[31]);
-        System.out.println ("Chord inversion: " + parameters[32]);
-        System.out.println ("Arpeggio 1 mode: " + parameters[33]);
-        System.out.println ("Arpeggio 2 mode: " + parameters[34]);
-        System.out.println ("Arpeggio 3 mode: " + parameters[35]);
-        System.out.println ("Arpeggio 1 range: " + parameters[36]);
-        System.out.println ("Arpeggio 2 range: " + parameters[37]);
-        System.out.println ("Arpeggio 3 range: " + parameters[38]);
-        System.out.println ("Scala/MTS: " + parameters[39]);
-        System.out.println ("Scala KBM: " + parameters[40]);
-        System.out.println ("Folder 2: " + parameters[41]);
-        System.out.println ("Folder 3: " + parameters[42]);
-        System.out.println ("Min note 1: " + parameters[43]);
-        System.out.println ("Max note 1: " + parameters[44]);
-        System.out.println ("Min note 2: " + parameters[45]);
-        System.out.println ("Max note 2: " + parameters[46]);
-        System.out.println ("Min note 3: " + parameters[47]);
-        System.out.println ("Max note 3: " + parameters[48]);
-        System.out.println ("Output spread: " + parameters[49]);
-        System.out.println ("Delay mode: " + parameters[50]);
-        System.out.println ("Delay level: " + parameters[51]);
-        System.out.println ("Delay time: " + parameters[52]);
-        System.out.println ("Delay feedback: " + parameters[53]);
-        System.out.println ("Tone bass: " + parameters[54]);
-        System.out.println ("Tone treble: " + parameters[55]);
-        System.out.println ("Break time: " + parameters[56]);
-        System.out.println ("Break direction: " + parameters[57]);
-        System.out.println ("Voice 1 bend input: " + parameters[58]);
-        System.out.println ("Voice 2 bend input: " + parameters[59]);
-        System.out.println ("Voice 3 bend input: " + parameters[60]);
-        System.out.println ("Voice 4 bend input: " + parameters[61]);
-        System.out.println ("Voice 5 bend input: " + parameters[62]);
-        System.out.println ("Voice 6 bend input: " + parameters[63]);
-        System.out.println ("Voice 7 bend input: " + parameters[64]);
-        System.out.println ("Voice 8 bend input: " + parameters[65]);
-        System.out.println ("Output mode: " + parameters[66]);
-        System.out.println ("Input mode: " + parameters[67]);
-        System.out.println ("Sustain mode: " + parameters[68]);
-        System.out.println ("MIDI vel curve: " + parameters[69]);
-        System.out.println ("Arp reset input: " + parameters[70]);
-        System.out.println ("Gate offset: " + parameters[71]);
-        System.out.println ("Round robin mode: " + parameters[72]);
-        System.out.println (": " + parameters[73]);
-        System.out.println (": " + parameters[74]);
-        System.out.println (": " + parameters[75]);
-        System.out.println (": " + parameters[76]);
-        System.out.println (": " + parameters[77]);
-        System.out.println (": " + parameters[78]);
-        System.out.println (": " + parameters[79]);
-    }
-
-
-    /**
      * Read the short values of all 80 parameters from the input stream
      *
      * @param in The in put stream to read from
@@ -409,11 +319,6 @@ public class DistingExDetectorTask extends AbstractDetectorTask
         final File sampleFolder = new File (parentPath, subPath);
         if (!sampleFolder.exists ())
             throw new IOException (Functions.getMessage ("IDS_DEX_NO_SAMPLE_FOLDER", sampleFolder.getCanonicalPath ()));
-
-        final File [] wavFiles = sampleFolder.listFiles ( (parent, name) -> {
-            final File f = new File (parent, name);
-            return f.isFile () && name.toLowerCase (Locale.US).endsWith (".wav");
-        });
-        return wavFiles;
+        return sampleFolder.listFiles ( (parent, name) -> new File (parent, name).isFile () && name.toLowerCase (Locale.US).endsWith (".wav"));
     }
 }

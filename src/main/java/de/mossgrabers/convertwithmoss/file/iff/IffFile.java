@@ -27,7 +27,7 @@ public class IffFile
     /** ID for a a CAT chunk. */
     public static final String       CAT          = "CAT ";
 
-    private static final Set<String> GROUP_CHUNKS = new HashSet<> (3);
+    private static final Set<String> GROUP_CHUNKS = HashSet.newHashSet (3);
     static
     {
         GROUP_CHUNKS.add (FORM);
@@ -77,7 +77,7 @@ public class IffFile
     public static void writeGroupChunk (final OutputStream out, final String groupID, final String groupTypeID, final byte [] chunkData) throws IOException
     {
         StreamUtils.writeASCII (out, groupID, 4);
-        StreamUtils.writeUnsigned32 (out, chunkData.length + 4, true);
+        StreamUtils.writeUnsigned32 (out, chunkData.length + 4L, true);
         StreamUtils.writeASCII (out, groupTypeID, 4);
         writeChunkData (out, chunkData);
     }

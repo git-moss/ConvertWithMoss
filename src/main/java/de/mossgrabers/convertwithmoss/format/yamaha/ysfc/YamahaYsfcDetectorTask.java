@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -32,6 +33,8 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -44,7 +47,12 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
 {
     private static final String [] ENDINGS           =
     {
+        ".x0a",
+        ".x0w",
+        ".x3a",
+        ".x3w",
         ".x6a",
+        ".x6w",
         ".x7u",
         ".x7l",
         ".x7a",
@@ -116,18 +124,6 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     {
         final Map<String, YamahaYsfcChunk> chunks = ysfcFile.getChunks ();
 
-        // TODO Remove dumping performance chunk
-        final YamahaYsfcChunk dpfmChunk = chunks.get ("DPFM");
-        if (dpfmChunk != null)
-        {
-            // final List<byte []> dataArrays = dpfmChunk.getDataArrays ();
-            // for (int i = 0; i < dataArrays.size (); i++)
-            // {
-            // Files.write (new File ("C:/Users/mos/Desktop/" + ysfcFile.getSourceFile ().getName ()
-            // + "DPFM-" + i + ".bin").toPath (), dataArrays.get (i));
-            // }
-        }
-
         // Waveform Metadata
         final YamahaYsfcChunk ewfmChunk = chunks.get ("EWFM");
         final YamahaYsfcChunk dwfmChunk = chunks.get ("DWFM");
@@ -156,22 +152,22 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
             final List<YamahaYsfcKeybank> keyBanks = readKeyBanks (dwfmChunks.get (i), ysfcFile.getVersion ());
             final List<YamahaYsfcWaveData> waveDataItems = readWaveData (dwimChunks.get (i));
 
-            String name = ewfmListChunks.get (i).getItemName ();
-            final String [] split = name.split (":");
             int categoryValue = -1;
-            if (split.length == 2)
+            final YamahaYsfcEntry yamahaYsfcEntry = ewfmListChunks.get (i);
+            String name = yamahaYsfcEntry.getItemName ();
+            if (name.isBlank ())
+                name = FileUtils.getNameWithoutType (ysfcFile.getSourceFile ());
+            else
             {
-                name = split[1];
-                categoryValue = Integer.parseInt (split[0]);
+                final String [] split = name.split (":");
+                if (split.length == 2)
+                {
+                    name = split[1];
+                    categoryValue = Integer.parseInt (split[0]);
+                }
             }
             final IMultisampleSource multisampleSource = this.createMultisampleSource (ysfcFile, name, categoryValue);
-
-            // There are no groups
-            final DefaultGroup group = new DefaultGroup ("Layer");
-            final int size = keyBanks.size ();
-            for (int k = 0; k < size; k++)
-                k = createSampleZone (waveDataItems, keyBanks, keyBanks.get (k), group, name, k, size);
-
+            final IGroup group = createSampleZones (keyBanks, waveDataItems, name, ysfcFile.getVersion ());
             multisampleSource.setGroups (Collections.singletonList (group));
             multisampleSources.add (multisampleSource);
         }
@@ -180,51 +176,64 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     }
 
 
-    private static int createSampleZone (final List<YamahaYsfcWaveData> waveDataItems, final List<YamahaYsfcKeybank> keyBanks, final YamahaYsfcKeybank keybank, final DefaultGroup group, final String name, final int index, final int size)
+    private static IGroup createSampleZones (final List<YamahaYsfcKeybank> keyBanks, final List<YamahaYsfcWaveData> waveDataItems, final String name, final int version) throws IOException
     {
-        final int channels = keybank.getChannels ();
-        final byte [] data = waveDataItems.get (index).getData ();
-        final IAudioMetadata audioMetadata = new DefaultAudioMetadata (channels, keybank.getSampleFrequency (), SAMPLE_RESOLUTION, keybank.getSampleLength ());
-        final InMemorySampleData sampleData = new InMemorySampleData (audioMetadata, data);
+        final DefaultGroup group = new DefaultGroup ("Layer");
 
-        final int rootNote = keybank.getRootNote ();
-        final String sampleName = String.format ("%s_%d_%s", name.replace (':', '_'), Integer.valueOf (rootNote), NoteParser.formatNoteSharps (rootNote));
-
-        final ISampleZone zone = new DefaultSampleZone (sampleName, sampleData);
-        zone.setKeyRoot (rootNote);
-        zone.setKeyLow (keybank.getKeyRangeLower ());
-        zone.setKeyHigh (keybank.getKeyRangeUpper ());
-        zone.setVelocityLow (keybank.getVelocityRangeLower ());
-        zone.setVelocityHigh (keybank.getVelocityRangeUpper ());
-        zone.setTune (keybank.getCoarseTune () + keybank.getFineTune () / 100.0);
-        zone.setGain (20.0 * Math.log10 (keybank.getLevel () / 255.0));
-        zone.setPanorama (normalizePanorama (keybank.getPanorama ()));
-
-        final int loopMode = keybank.getLoopMode ();
-        if (loopMode != 1)
+        int keybankIndex = 0;
+        int waveDataIndex = 0;
+        while (keybankIndex < keyBanks.size ())
         {
-            final ISampleLoop loop = new DefaultSampleLoop ();
-            zone.getLoops ().add (loop);
-            loop.setStart (keybank.getLoopPoint ());
-            loop.setEnd (keybank.getPlayEnd ());
-            if (loopMode == 2)
-                loop.setType (LoopType.BACKWARDS);
+            final YamahaYsfcKeybank keyBank = keyBanks.get (keybankIndex);
+
+            final ISampleZone zone = createSampleZone (name, keyBank);
+            group.addSampleZone (zone);
+
+            final byte [] data = waveDataItems.get (waveDataIndex).getData ();
+            final int sampleLength = data.length / (SAMPLE_RESOLUTION / 8);
+
+            final int channels = keyBank.getChannels ();
+            if (channels == 1)
+            {
+                final IAudioMetadata audioMetadata = new DefaultAudioMetadata (channels, keyBank.getSampleFrequency (), SAMPLE_RESOLUTION, sampleLength);
+                zone.setSampleData (new InMemorySampleData (audioMetadata, data));
+                keybankIndex++;
+                waveDataIndex++;
+            }
+            else
+            {
+                // Combine the 2 left/right mono channels into a stereo one?
+                final int nextIndex = waveDataIndex + 1;
+                if (nextIndex >= waveDataItems.size ())
+                    throw new IOException (Functions.getMessage ("IDS_YSFC_MISSING_RIGHT_SAMPLE"));
+
+                int chns = 1;
+                final byte [] dataRight = waveDataItems.get (nextIndex).getData ();
+                if (data.length == dataRight.length)
+                    chns = 2;
+
+                final IAudioMetadata audioMetadata = new DefaultAudioMetadata (chns, keyBank.getSampleFrequency (), SAMPLE_RESOLUTION, sampleLength);
+                final InMemorySampleData sampleData = new InMemorySampleData (audioMetadata, data);
+                zone.setSampleData (sampleData);
+
+                if (chns == 1)
+                {
+                    // Left/right sample have different length. Therefore, keep mono samples and pan
+                    // them left/right
+                    final ISampleZone zoneRight = new DefaultSampleZone (zone);
+                    zoneRight.setSampleData (new InMemorySampleData (audioMetadata, dataRight));
+                    zone.setPanorama (-1.0);
+                    zoneRight.setPanorama (1.0);
+                    group.addSampleZone (zoneRight);
+                }
+                else
+                    sampleData.setSampleData (WaveFile.interleaveChannels (data, dataRight, SAMPLE_RESOLUTION));
+
+                keybankIndex += version < 400 ? 1 : 2;
+                waveDataIndex += 2;
+            }
         }
-
-        zone.setStart (keybank.getPlayStart ());
-        zone.setStop (keybank.getPlayEnd ());
-
-        group.addSampleZone (zone);
-
-        // Combine the 2 left/right mono channels into a stereo one
-        final int nextIndex = index + 1;
-        if (channels != 2 || nextIndex >= size)
-            return index;
-
-        final int panoramaRight = keyBanks.get (nextIndex).getPanorama ();
-        zone.setPanorama (normalizePanorama (Math.clamp (Math.round ((keybank.getPanorama () + panoramaRight) / 2.0), -64, 63)));
-        sampleData.setSampleData (WaveFile.interleaveChannels (data, waveDataItems.get (nextIndex).getData (), SAMPLE_RESOLUTION));
-        return nextIndex;
+        return group;
     }
 
 
@@ -240,13 +249,48 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         if (categoryValue > 0)
         {
             final String category = YamahaYsfcCategories.getWaveformCategory (categoryValue);
-            if (!YamahaYsfcCategories.NO_ASSIGN.equals (category))
+            if (!YamahaYsfcCategories.TAG_NO_ASSIGN.equals (category))
                 metadata.setCategory (category);
         }
         else
             metadata.detectMetadata (this.metadataConfig, parts);
 
         return multisampleSource;
+    }
+
+
+    private static ISampleZone createSampleZone (final String name, final YamahaYsfcKeybank keybank)
+    {
+        final int rootNote = keybank.getRootNote ();
+        final String sampleName = String.format ("%s_%d_%s", name.replace (':', '_'), Integer.valueOf (rootNote), NoteParser.formatNoteSharps (rootNote));
+
+        final ISampleZone zone = new DefaultSampleZone (sampleName, null);
+        zone.setKeyRoot (rootNote);
+        zone.setKeyLow (keybank.getKeyRangeLower ());
+        zone.setKeyHigh (keybank.getKeyRangeUpper ());
+        zone.setVelocityLow (keybank.getVelocityRangeLower ());
+        zone.setVelocityHigh (keybank.getVelocityRangeUpper ());
+        zone.setTune (keybank.getCoarseTune () + keybank.getFineTune () / 100.0);
+        final int level = keybank.getLevel ();
+        zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + (level - 1) * 0.375);
+        final int channels = keybank.getChannels ();
+        if (channels == 1)
+            zone.setPanorama (normalizePanorama (keybank.getPanorama ()));
+
+        final int loopMode = keybank.getLoopMode ();
+        if (loopMode != 1)
+        {
+            final ISampleLoop loop = new DefaultSampleLoop ();
+            zone.getLoops ().add (loop);
+            loop.setStart (keybank.getLoopPoint ());
+            loop.setEnd (keybank.getPlayEnd ());
+            if (loopMode == 2)
+                loop.setType (LoopType.BACKWARDS);
+        }
+
+        zone.setStart (keybank.getPlayStart ());
+        zone.setStop (keybank.getPlayEnd ());
+        return zone;
     }
 
 
@@ -280,8 +324,11 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     {
         final List<YamahaYsfcKeybank> keyBanks = new ArrayList<> ();
         final ByteArrayInputStream dwfmContentStream = new ByteArrayInputStream (dwfmDataArray);
-        final int numberOfKeyBanks = (int) StreamUtils.readUnsigned32 (dwfmContentStream, false);
-        for (int k = 0; k < numberOfKeyBanks; k++)
+        final boolean isVersion1 = version < 400;
+        // numberOfKeyBank
+        StreamUtils.readUnsigned16 (dwfmContentStream, isVersion1);
+        dwfmContentStream.skipNBytes (2);
+        while (dwfmContentStream.available () > 0)
             keyBanks.add (new YamahaYsfcKeybank (dwfmContentStream, version));
         return keyBanks;
     }
@@ -289,7 +336,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
 
     private static double normalizePanorama (final int panorama)
     {
-        final double p = panorama > 0 ? panorama / 63.0 : panorama / 64;
+        final double p = panorama > 0 ? panorama / 63.0 : panorama / 64.0;
         return Math.abs (p * 100) / 100.0;
     }
 }

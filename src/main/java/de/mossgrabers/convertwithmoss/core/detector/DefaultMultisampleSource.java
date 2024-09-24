@@ -171,7 +171,7 @@ public class DefaultMultisampleSource implements IMultisampleSource
 
     /**
      * Set the mapping name.
-     * 
+     *
      * @param mappingName The mapping name
      */
     public void setMappingName (final String mappingName)
