@@ -36,6 +36,8 @@ public class YamahaYsfcKeybank
     private int sampleLength;
     private int channels;
     private int loopMode;
+    private int fixedPitch = 0xFF;
+    private int loopTune;
 
 
     /**
@@ -70,6 +72,8 @@ public class YamahaYsfcKeybank
     public void read (final InputStream in, final int version) throws IOException
     {
         final boolean isVersion1 = version < 400;
+        final boolean isMotif = version < 103;
+        final boolean isBigEndian = isVersion1 && !isMotif;
 
         this.keyRangeLower = in.read ();
         this.keyRangeUpper = in.read ();
@@ -78,60 +82,50 @@ public class YamahaYsfcKeybank
         this.level = in.read ();
         // Range is only 0-128
         if (isVersion1)
-            this.level = Math.clamp (2 * this.level, 0, 255);
-        this.panorama = in.read ();
+            this.level = Math.clamp (2L * this.level, 0, 255);
+        this.panorama = in.read () & 0x7F;
 
-        final int unknown1 = in.read ();
-        if (unknown1 != 0 && unknown1 != 3)
-            throw new IOException ("Found unknown1 not to be 0 but " + unknown1);
-        final int unknown2 = in.read ();
-        if (unknown2 != 0xFF && unknown2 != 0x00)
-            throw new IOException ("Found unknown2 not to be 0xFF but " + unknown2);
+        // Reserved 00
+        in.skipNBytes (1);
+        // Always 0xFF on Montage
+        this.fixedPitch = in.read ();
 
         this.rootNote = in.read ();
         this.coarseTune = in.read ();
         this.fineTune = in.read ();
         this.channels = in.read ();
 
-        final int unknown3 = in.read ();
-        if (unknown3 != 0)
-            throw new IOException ("Found unknown3 not to be 0 but " + unknown3);
-        final int unknown4 = in.read ();
-        if (unknown4 != 2 && unknown4 != 0)
-            throw new IOException ("Found unknown4 not to be 2 but " + unknown4);
-        final int unknown5 = in.read ();
-        if (unknown5 != 0 && unknown5 != 5 && unknown5 != 4 && unknown5 != 3)
-            throw new IOException ("Found unknown5 not to be 5 but " + unknown5);
+        this.loopTune = in.read ();
+
+        // Ignore
+        in.skipNBytes (1);
+        final int waveFormat = in.read ();
+        if (waveFormat != 0 && waveFormat != 5)
+            throw new IOException (Functions.getMessage ("IDS_YSFC_WAVE_FORMAT_NOT_SUPPORTED", waveFormat == 4 ? " WXC" : Integer.toString (waveFormat)));
 
         this.loopMode = in.read ();
 
-        final int unknown6 = in.read ();
-        // if (unknown6 != 0 && unknown6 != 8)
-        // throw new IOException ("Found unknown6 not to be 0 but " + unknown6);
-        final int unknown7 = in.read ();
-        // if (unknown7 != 0)
-        // throw new IOException ("Found unknown7 not to be 0 but " + unknown7);
+        final int isEncrypted = in.read ();
+        if (isEncrypted > 0 && !isVersion1)
+            throw new IOException (Functions.getMessage ("IDS_YSFC_ENCRYPTED_SAMPLES"));
+        in.skipNBytes (1);
 
         final int loopPointRest = in.read ();
 
-        final int unknown8 = in.read ();
-        if (unknown8 != 1 && unknown8 != 255)
-            throw new IOException ("Found unknown8 not to be 1 but " + unknown8);
+        in.skipNBytes (1);
 
-        final byte [] compressionInfo = in.readNBytes (12);
-        for (final byte element: compressionInfo)
-            if (element != 0)
-                throw new IOException (Functions.getMessage ("IDS_YSFC_ENCRYPTED_SAMPLES"));
+        // Compression/Encryption information
+        in.skipNBytes (12);
 
-        // Padding / reserved
-        in.skipNBytes (4);
+        if (!isVersion1)
+            in.skipNBytes (4);
 
-        this.sampleFrequency = (int) StreamUtils.readUnsigned32 (in, isVersion1);
-        this.playStart = (int) StreamUtils.readUnsigned32 (in, isVersion1);
-        this.loopPoint = (int) StreamUtils.readUnsigned32 (in, isVersion1);
+        this.sampleFrequency = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        this.playStart = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        this.loopPoint = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         if (!isVersion1)
             this.loopPoint = 16 * this.loopPoint + loopPointRest;
-        this.playEnd = (int) StreamUtils.readUnsigned32 (in, isVersion1);
+        this.playEnd = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
 
         // Padding / reserved
         if (!isVersion1)
@@ -139,15 +133,35 @@ public class YamahaYsfcKeybank
             in.skipNBytes (4);
             this.number = (int) StreamUtils.readUnsigned32 (in, false);
         }
-        this.sampleLength = (int) StreamUtils.readUnsigned32 (in, isVersion1);
+        this.sampleLength = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
 
-        // No idea about these 20 bytes
-        // 40 0C 00 10 FF FF FF FF 00 01 00 00 00 02 20 30 00 00 00 00
-        // 40 0D 10 30 FF FF FF FF 00 02 00 00 00 02 15 24 00 00 00 00
-        // 40 0E 1A D0 FF FF FF FF 00 03 00 00 00 02 0C 60 00 00 00 00
-        // 40 0F 21 00 FF FF FF FF 00 04 00 00 00 02 02 74 00 00 00 00
-        if (isVersion1)
-            in.skip (20);
+        if (!isVersion1)
+            return;
+
+        if (isMotif)
+        {
+            // 00 00 00 00 - 00 00 00 00 - FF FF FF FF - FF FF FF FF
+            in.skipNBytes (16);
+            return;
+        }
+
+        // v1.0.3 MOXF
+
+        // Offset to something?!
+        StreamUtils.readUnsigned32 (in, true);
+        // Always FF FF FF FF
+        StreamUtils.readUnsigned32 (in, true);
+
+        this.number = StreamUtils.readUnsigned16 (in, true);
+
+        // Padding
+        in.skipNBytes (2);
+
+        // Size of something?!
+        StreamUtils.readUnsigned32 (in, true);
+
+        // Padding
+        in.skipNBytes (4);
     }
 
 
@@ -166,18 +180,18 @@ public class YamahaYsfcKeybank
         out.write (this.level);
         out.write (this.panorama);
 
-        // Unknown but should work
         out.write (0x00);
-        out.write (0xFF);
+        out.write (this.fixedPitch);
 
         out.write (this.rootNote);
         out.write (this.coarseTune);
         out.write (this.fineTune);
         out.write (this.channels);
 
-        // Unknown but should work
         out.write (0x00);
+        // Always 2 for Montage
         out.write (0x02);
+        // 16-bit linear
         out.write (0x05);
 
         out.write (this.loopMode);
@@ -231,6 +245,7 @@ public class YamahaYsfcKeybank
         sb.append ("Play End: ").append (this.playEnd).append ('\n');
         sb.append ("Loop Mode: ").append (this.loopMode).append ('\n');
         sb.append ("Loop Point: ").append (this.loopPoint).append ('\n');
+        sb.append ("Loop Tuning: ").append (this.loopTune).append ('\n');
         sb.append ("Coarse Tune: ").append (this.getCoarseTune ()).append (" (").append (this.coarseTune).append (")\n");
         sb.append ("Fine Tune: ").append (this.getFineTune ()).append (" (").append (this.fineTune).append (")\n");
         sb.append ("Level: ").append (this.level).append ('\n');
@@ -396,22 +411,22 @@ public class YamahaYsfcKeybank
     /**
      * Get the fine tune.
      *
-     * @return The fine tune in cents in the range of [-64...+63]
+     * @return The fine tune in cents in the range of [-100...+98.4375]
      */
     public int getFineTune ()
     {
-        return this.fineTune - 64;
+        return (int) Math.round ((this.fineTune - 64) * 1.5625); // 100/64
     }
 
 
     /**
      * Set the fine tune.
      *
-     * @param fineTune The fine tune in cents in the range of [-64...+63]
+     * @param fineTune The fine tune in cents in the range of [-100...+98.4375]
      */
     public void setFineTune (final int fineTune)
     {
-        this.fineTune = fineTune + 64;
+        this.fineTune = Math.clamp (Math.round (fineTune / 1.5625 + 64), 0, 127);
     }
 
 
@@ -577,6 +592,17 @@ public class YamahaYsfcKeybank
     public int getChannels ()
     {
         return this.channels;
+    }
+
+
+    /**
+     * Get the loop tuning.
+     *
+     * @return The loop tuning
+     */
+    public int getLoopTune ()
+    {
+        return this.loopTune;
     }
 
 

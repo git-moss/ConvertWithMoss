@@ -35,7 +35,7 @@ public class YsfcFile
     private String                             versionStr;
     private int                                version;
     private int                                maxEntryID  = 0xFFFFFFFF;
-    private final Map<String, YamahaYsfcChunk> chunks      = new HashMap<> (4);
+    private final Map<String, YamahaYsfcChunk> chunks      = HashMap.newHashMap (4);
 
 
     /**
@@ -350,7 +350,8 @@ public class YsfcFile
         this.chunks.get ("EWFM").addEntry (keyBankEntry);
         final YamahaYsfcChunk dwfm = this.chunks.get ("DWFM");
         final ByteArrayOutputStream dwfmContentOutput = new ByteArrayOutputStream ();
-        StreamUtils.writeUnsigned32 (dwfmContentOutput, keybankList.size (), false);
+        StreamUtils.writeUnsigned16 (dwfmContentOutput, keybankList.size (), false);
+        StreamUtils.padBytes (dwfmContentOutput, 2);
         for (int i = 0; i < keybankList.size (); i++)
         {
             final ByteArrayOutputStream dataOutput = new ByteArrayOutputStream ();

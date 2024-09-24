@@ -39,7 +39,7 @@ public abstract class AbstractGroupedZones<T extends AbstractZone>
      *
      * @param name The name of the grouped zones
      */
-    public AbstractGroupedZones (final String name)
+    protected AbstractGroupedZones (final String name)
     {
         this.name = name;
     }

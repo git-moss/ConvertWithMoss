@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -28,7 +29,7 @@ public abstract class AbstractListChunk extends RIFFChunk
      *
      * @param type The type of the list chunk
      */
-    public AbstractListChunk (final int type)
+    protected AbstractListChunk (final int type)
     {
         super (type, RiffID.LIST_ID.getId (), 0, null);
     }
@@ -74,5 +75,31 @@ public abstract class AbstractListChunk extends RIFFChunk
         }
 
         return super.getData ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode ()
+    {
+        final int prime = 31;
+        int result = super.hashCode ();
+        result = prime * result + Objects.hash (this.subChunks);
+        return result;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals (Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (!super.equals (obj))
+            return false;
+        if (getClass () != obj.getClass ())
+            return false;
+        AbstractListChunk other = (AbstractListChunk) obj;
+        return Objects.equals (this.subChunks, other.subChunks);
     }
 }

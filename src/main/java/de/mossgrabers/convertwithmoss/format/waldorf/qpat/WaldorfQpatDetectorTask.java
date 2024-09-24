@@ -39,7 +39,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
@@ -54,11 +53,11 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class WaldorfQpatDetectorTask extends AbstractDetectorTask
 {
-    private static final String                         ENDING_QPAT = ".qpat";
+    private static final String                               ENDING_QPAT = ".qpat";
 
-    private static Map<Integer, String>                 SYNTH_CODES = new HashMap<> (3);
-    private static Map<Integer, String>                 LAYER_CODES = new HashMap<> (3);
-    private static Map<WaldorfQpatResourceType, String> GROUP_NAMES = new HashMap<> (3);
+    private static final Map<Integer, String>                 SYNTH_CODES = HashMap.newHashMap (3);
+    private static final Map<Integer, String>                 LAYER_CODES = HashMap.newHashMap (3);
+    private static final Map<WaldorfQpatResourceType, String> GROUP_NAMES = HashMap.newHashMap (3);
     static
     {
         SYNTH_CODES.put (Integer.valueOf (0), "Quantum");
@@ -103,10 +102,6 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
         }
-        catch (final FormatException ex)
-        {
-            this.notifier.logError ("IDS_WS_EXPECTED_TAG", ex.getMessage ());
-        }
         return Collections.emptyList ();
     }
 
@@ -117,10 +112,9 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
      * @param in The input stream to read from
      * @param file The source file
      * @return The parsed multi-sample source
-     * @throws FormatException Error in the format of the file
      * @throws IOException Could not read from the file
      */
-    private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws FormatException, IOException
+    private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws IOException
     {
         final String name = FileUtils.getNameWithoutType (file);
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
@@ -129,7 +123,8 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
 
         boolean readSecondLayer = false;
-        while (true)
+        boolean isMulti = true;
+        while (isMulti)
         {
             final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
 
@@ -144,7 +139,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             final int flags = StreamUtils.readUnsigned16 (in, false);
 
             // True, if a 2nd layer is present
-            final boolean isMulti = (flags & 1) > 0;
+            isMulti = (flags & 1) > 0;
             // Multi-mode, only valid when multi-flag is set: Single / Split / Layered
             final int timbreMode = StreamUtils.readUnsigned16 (in, false);
             // For multi-layer patches the alternate layer is stored directly after the main layer.
@@ -169,26 +164,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
                 parameters.put (param.name, param);
             }
 
-            // Read all sample maps (max. 3, one for each oscillator)
-            final byte [] resourcesData = in.readAllBytes ();
-            final IGroup [] groupsArray = new IGroup [3];
-            final List<IGroup> groups = new ArrayList<> ();
-            for (int i = 0; i < 3; i++)
-            {
-                if (resources[i] == null)
-                    continue;
-                final String sampleMap = new String (resourcesData, resources[i].offset, resources[i].length, StandardCharsets.US_ASCII);
-                groupsArray[i] = this.parseSampleMap (sampleMap, file.getParentFile ());
-                final String groupName = GROUP_NAMES.get (resources[i].type);
-                if (groupName != null)
-                    groupsArray[i].setName (groupName);
-                groups.add (groupsArray[i]);
-            }
-            if (groups.isEmpty ())
-                throw new IOException (Functions.getMessage ("IDS_QPAT_NOT_SAMPLE_BASED"));
-            multisampleSource.setGroups (groups);
-
-            this.applyParameters (groupsArray, parameters);
+            readSampleMaps (in, file, multisampleSource, resources, parameters);
 
             multisampleSources.add (multisampleSource);
 
@@ -198,15 +174,40 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
                 break;
             }
 
-            if (!isMulti)
-                break;
-
-            readSecondLayer = true;
-            in.reset ();
-            in.skipNBytes (altTimbreOffset);
+            if (isMulti)
+            {
+                readSecondLayer = true;
+                in.reset ();
+                in.skipNBytes (altTimbreOffset);
+            }
         }
 
         return multisampleSources;
+    }
+
+
+    private void readSampleMaps (final InputStream in, final File file, final IMultisampleSource multisampleSource, final WaldorfQpatResourceHeader [] resources, final Map<String, WaldorfQpatParameter> parameters) throws IOException
+    {
+        // Read all sample maps (max. 3, one for each oscillator)
+        final byte [] resourcesData = in.readAllBytes ();
+        final IGroup [] groupsArray = new IGroup [3];
+        final List<IGroup> groups = new ArrayList<> ();
+        for (int i = 0; i < 3; i++)
+        {
+            if (resources[i] == null)
+                continue;
+            final String sampleMap = new String (resourcesData, resources[i].offset, resources[i].length, StandardCharsets.US_ASCII);
+            groupsArray[i] = this.parseSampleMap (sampleMap, file.getParentFile ());
+            final String groupName = GROUP_NAMES.get (resources[i].type);
+            if (groupName != null)
+                groupsArray[i].setName (groupName);
+            groups.add (groupsArray[i]);
+        }
+        if (groups.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_QPAT_NOT_SAMPLE_BASED"));
+        multisampleSource.setGroups (groups);
+
+        this.applyParameters (groupsArray, parameters);
     }
 
 
@@ -255,7 +256,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             double tune = 0;
             final WaldorfQpatParameter coarseParameter = parameters.get ("Osc" + groupIndex + "CoarsePitch");
             if (coarseParameter != null)
-                tune = (int) coarseParameter.value - 24;
+                tune = coarseParameter.value - 24.0;
 
             // Osc1FinePitch: [0..1] ~ [-100..100]
             final WaldorfQpatParameter fineParameter = parameters.get ("Osc" + groupIndex + "FinePitch");
@@ -452,9 +453,8 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
      * @param in The input stream to read from
      * @param multisampleSource The multi-sample source
      * @throws IOException Could not read
-     * @throws FormatException Found unexpected format of the file
      */
-    private static long readHeader (final InputStream in, final IMultisampleSource multisampleSource) throws IOException, FormatException
+    private static long readHeader (final InputStream in, final IMultisampleSource multisampleSource) throws IOException
     {
         final long magic = StreamUtils.readUnsigned32 (in, false);
         if (magic != WaldorfQpatConstants.MAGIC)
@@ -511,100 +511,105 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             // "3:" references the internal partition, "4:" is the USB drive
             if (samplePath.length () > 2 && samplePath.charAt (1) == ':')
                 samplePath = samplePath.substring (2);
-            if (samplePath.length () == 0)
-                break;
-            final File sampleFile = new File (parentFolder, samplePath);
-            final ISampleData sampleData = this.createSampleData (sampleFile);
-
-            final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
-            group.addSampleZone (zone);
-            final int numSampleFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
-
-            // Pitch
-            if (params.length <= 1)
-                continue;
-            final double pitch = Double.parseDouble (params[1]);
-            final int coarse = (int) Math.round (pitch);
-            final double fineTune = pitch - coarse;
-            zone.setKeyRoot (coarse);
-            zone.setTune (fineTune);
-
-            // FromNote
-            if (params.length <= 2)
-                continue;
-            zone.setKeyLow (Math.clamp (Integer.parseInt (params[2]), 0, 127));
-
-            // ToNote
-            if (params.length <= 3)
-                continue;
-            zone.setKeyHigh (Math.clamp (Integer.parseInt (params[3]), 0, 127));
-
-            // Gain
-            if (params.length <= 4)
-                continue;
-            final double gain = Double.parseDouble (params[4]);
-            zone.setGain (Math.floor (20.0 * Math.log10 (gain) * 100.0 + 0.5) * 0.01);
-
-            // FromVelo
-            if (params.length <= 5)
-                continue;
-            zone.setVelocityLow (Math.clamp (Integer.parseInt (params[5]), 1, 127));
-
-            // ToVelo
-            if (params.length <= 6)
-                continue;
-            zone.setVelocityHigh (Math.clamp (Integer.parseInt (params[6]), 1, 127));
-
-            // Pan
-            if (params.length <= 7)
-                continue;
-            zone.setPanorama (Math.clamp (Double.parseDouble (params[7]) * 2.0 - 1.0, -1.0, 1.0));
-
-            // Start
-            if (params.length <= 8)
-                continue;
-            zone.setStart ((int) (Double.parseDouble (params[8]) * numSampleFrames));
-
-            // End
-            if (params.length <= 9)
-                continue;
-            zone.setStop ((int) (Double.parseDouble (params[9]) * numSampleFrames));
-
-            // LoopMode
-            if (params.length <= 10)
-                continue;
-            final int loopMode = Integer.parseInt (params[10]);
-            if (loopMode == 1 || loopMode == 2)
-            {
-                final ISampleLoop loop = new DefaultSampleLoop ();
-                zone.getLoops ().add (loop);
-                loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.BACKWARDS);
-
-                // LoopStart
-                if (params.length > 11)
-                    loop.setStart ((int) (Double.parseDouble (params[11]) * numSampleFrames));
-
-                // LoopEnd
-                if (params.length > 12)
-                    loop.setEnd ((int) (Double.parseDouble (params[12]) * numSampleFrames));
-
-                // CrossFade
-                if (params.length > 14)
-                    loop.setCrossfade (Double.parseDouble (params[14]));
-            }
-
-            // Direction
-            if (params.length <= 13)
-                continue;
-            if (Integer.parseInt (params[13]) == 1)
-                zone.setReversed (true);
-
-            // TrackPitch
-            if (params.length > 15)
-                zone.setKeyTracking (Double.parseDouble (params[15]));
+            if (samplePath.length () > 0)
+                createSampleZone (parentFolder, group, params, samplePath);
         }
 
         return group;
+    }
+
+
+    private void createSampleZone (final File parentFolder, final IGroup group, final String [] params, String samplePath) throws IOException
+    {
+        final File sampleFile = new File (parentFolder, samplePath);
+        final ISampleData sampleData = this.createSampleData (sampleFile);
+
+        final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
+        group.addSampleZone (zone);
+        final int numSampleFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
+
+        // Pitch
+        if (params.length <= 1)
+            return;
+        final double pitch = Double.parseDouble (params[1]);
+        final int coarse = (int) Math.round (pitch);
+        final double fineTune = pitch - coarse;
+        zone.setKeyRoot (coarse);
+        zone.setTune (fineTune);
+
+        // FromNote
+        if (params.length <= 2)
+            return;
+        zone.setKeyLow (Math.clamp (Integer.parseInt (params[2]), 0, 127));
+
+        // ToNote
+        if (params.length <= 3)
+            return;
+        zone.setKeyHigh (Math.clamp (Integer.parseInt (params[3]), 0, 127));
+
+        // Gain
+        if (params.length <= 4)
+            return;
+        final double gain = Double.parseDouble (params[4]);
+        zone.setGain (Math.floor (20.0 * Math.log10 (gain) * 100.0 + 0.5) * 0.01);
+
+        // FromVelo
+        if (params.length <= 5)
+            return;
+        zone.setVelocityLow (Math.clamp (Integer.parseInt (params[5]), 1, 127));
+
+        // ToVelo
+        if (params.length <= 6)
+            return;
+        zone.setVelocityHigh (Math.clamp (Integer.parseInt (params[6]), 1, 127));
+
+        // Pan
+        if (params.length <= 7)
+            return;
+        zone.setPanorama (Math.clamp (Double.parseDouble (params[7]) * 2.0 - 1.0, -1.0, 1.0));
+
+        // Start
+        if (params.length <= 8)
+            return;
+        zone.setStart ((int) (Double.parseDouble (params[8]) * numSampleFrames));
+
+        // End
+        if (params.length <= 9)
+            return;
+        zone.setStop ((int) (Double.parseDouble (params[9]) * numSampleFrames));
+
+        // LoopMode
+        if (params.length <= 10)
+            return;
+        final int loopMode = Integer.parseInt (params[10]);
+        if (loopMode == 1 || loopMode == 2)
+        {
+            final ISampleLoop loop = new DefaultSampleLoop ();
+            zone.getLoops ().add (loop);
+            loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.BACKWARDS);
+
+            // LoopStart
+            if (params.length > 11)
+                loop.setStart ((int) (Double.parseDouble (params[11]) * numSampleFrames));
+
+            // LoopEnd
+            if (params.length > 12)
+                loop.setEnd ((int) (Double.parseDouble (params[12]) * numSampleFrames));
+
+            // CrossFade
+            if (params.length > 14)
+                loop.setCrossfade (Double.parseDouble (params[14]));
+        }
+
+        // Direction
+        if (params.length <= 13)
+            return;
+        if (Integer.parseInt (params[13]) == 1)
+            zone.setReversed (true);
+
+        // TrackPitch
+        if (params.length > 15)
+            zone.setKeyTracking (Double.parseDouble (params[15]));
     }
 
 

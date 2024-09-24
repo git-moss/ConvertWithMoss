@@ -2,7 +2,7 @@
 
 ## 11.0.0 (unreleased)
 
-* Added support for Yamaha YSFC format (Montage, MODX/MODX+).
+* Added support for Yamaha YSFC format (read/write: Montage, MODX/MODX+, read: Motif XS, Motif XF, MOXF).
 * Bitwig Writing
   * New: Support for RIFF chunk updates (fixes issues with certain MPC WAV files as source).
 

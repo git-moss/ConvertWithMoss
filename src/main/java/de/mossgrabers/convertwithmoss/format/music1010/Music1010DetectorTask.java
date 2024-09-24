@@ -95,7 +95,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
             // There is a null byte at the end of the which gets dropped by trim
             final String content = StreamUtils.readUTF8 (in).trim ();
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseMetadataFile (file, file.getParent (), false, document);
+            return this.parseMetadataFile (file, file.getParent (), document);
         }
         catch (final IOException | SAXException ex)
         {
@@ -111,11 +111,10 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      * @param multiSampleFile The preset or library file
      * @param basePath The parent folder, in case of a library the relative folder in the ZIP
      *            directory structure
-     * @param isLibrary If it is a library otherwise a preset
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String basePath, final boolean isLibrary, final Document document)
+    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String basePath, final Document document)
     {
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
@@ -139,8 +138,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         if (multisampleElements.isEmpty ())
         {
             this.notifier.log ("IDS_1010_MUSIC_NO_MULTISAMPLE");
-            final Optional<IMultisampleSource> multisample = this.parseAggregatedMultisample (multiSampleFile, sampleElements, basePath);
-            return multisample.isPresent () ? Collections.singletonList (multisample.get ()) : Collections.emptyList ();
+            return Collections.singletonList (this.parseAggregatedMultisample (multiSampleFile, sampleElements, basePath));
         }
 
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
@@ -154,105 +152,113 @@ public class Music1010DetectorTask extends AbstractDetectorTask
     }
 
 
-    private Optional<IMultisampleSource> parseAggregatedMultisample (final File multiSampleFile, final List<Element> sampleElements, final String basePath)
+    private IMultisampleSource parseAggregatedMultisample (final File multiSampleFile, final List<Element> sampleElements, final String basePath)
     {
         final File parentFile = multiSampleFile.getParentFile ();
         final String name = parentFile.getName ();
         final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
         final IGroup group = new DefaultGroup ("Group");
         multisampleSource.setGroups (Collections.singletonList (group));
 
         for (final Element sampleElement: sampleElements)
         {
-            final int sampleIndex = XMLUtils.getIntegerAttribute (sampleElement, Music1010Tag.ATTR_ROW, 0) * 4 + XMLUtils.getIntegerAttribute (sampleElement, Music1010Tag.ATTR_COLUMN, 0);
-
-            final Element paramsElement = XMLUtils.getChildElementByName (sampleElement, Music1010Tag.PARAMS);
-            if (paramsElement == null)
-                continue;
-
-            final String filename = sampleElement.getAttribute (Music1010Tag.ATTR_FILENAME);
-            if (filename == null || filename.isBlank ())
-                continue;
-
-            File sampleFile = new File (basePath, filename);
-            // If the file does not exist, try to find it outside of the Presets folder
-            if (!sampleFile.exists ())
-                sampleFile = new File (basePath + "/../..", filename);
-
-            final String zoneName = FileUtils.getNameWithoutType (sampleFile);
-            final ISampleData sampleData;
-            try
-            {
-                if (!AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                    continue;
-                sampleData = new WavFileSampleData (sampleFile);
-            }
-            catch (final IOException ex)
-            {
-                this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
-                continue;
-            }
-
-            final DefaultSampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
-
-            // No trigger
-            final boolean isOneShot = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0;
-
-            final int start = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0);
-            sampleZone.setStart (start);
-            sampleZone.setStop (start + XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, 0));
-            sampleZone.setReversed (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_REVERSE, 0) == 1);
-
-            // Gain - "gaindb" -> unknown conversion
-
-            sampleZone.setTune (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PITCH, 0) / 1000.0);
-            sampleZone.setPanorama (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PANORAMA, 0) / 1000.0);
-
-            // No zone logic
-
-            sampleZone.setKeyTracking (0);
-            final int rootNote = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_ROOT_NOTE, -1);
-            if (rootNote > 0)
-                sampleZone.setKeyRoot (rootNote);
-            sampleZone.setKeyLow (36 + sampleIndex);
-            sampleZone.setKeyHigh (36 + sampleIndex);
-            sampleZone.setVelocityLow (1);
-            sampleZone.setVelocityHigh (127);
-
-            /////////////////////////////////////////////////////
-            // Loops
-
-            if (!isOneShot)
-            {
-                final int loopMode = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_MODE, -1);
-                if (loopMode > 0)
-                {
-                    final ISampleLoop loop = new DefaultSampleLoop ();
-                    loop.setType (loopMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
-                    loop.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, 0));
-                    loop.setEnd (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0));
-                    loop.setCrossfade (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0) / 1000.0);
-                    sampleZone.addLoop (loop);
-                }
-            }
-
-            /////////////////////////////////////////////////////
-            // Volume envelope
-
-            final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
-            amplitudeEnvelope.setAttackTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0));
-            amplitudeEnvelope.setDecayTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0));
-            amplitudeEnvelope.setSustainLevel (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0);
-            amplitudeEnvelope.setReleaseTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_RELEASE, 0), 38.0));
-
-            parseEffects (paramsElement, multisampleSource);
-
-            group.addSampleZone (sampleZone);
+            final Optional<ISampleZone> optZone = createSampleZone (multisampleSource, sampleElement, basePath);
+            if (optZone.isPresent ())
+                group.addSampleZone (optZone.get ());
         }
 
-        return Optional.of (multisampleSource);
+        return multisampleSource;
+    }
+
+
+    private Optional<ISampleZone> createSampleZone (final IMultisampleSource multisampleSource, final Element sampleElement, final String basePath)
+    {
+        final int sampleIndex = XMLUtils.getIntegerAttribute (sampleElement, Music1010Tag.ATTR_ROW, 0) * 4 + XMLUtils.getIntegerAttribute (sampleElement, Music1010Tag.ATTR_COLUMN, 0);
+
+        final Element paramsElement = XMLUtils.getChildElementByName (sampleElement, Music1010Tag.PARAMS);
+        if (paramsElement == null)
+            return Optional.empty ();
+
+        final String filename = sampleElement.getAttribute (Music1010Tag.ATTR_FILENAME);
+        if (filename == null || filename.isBlank ())
+            return Optional.empty ();
+
+        File sampleFile = new File (basePath, filename);
+        // If the file does not exist, try to find it outside of the Presets folder
+        if (!sampleFile.exists ())
+            sampleFile = new File (basePath + "/../..", filename);
+
+        final String zoneName = FileUtils.getNameWithoutType (sampleFile);
+        final ISampleData sampleData;
+        try
+        {
+            if (!AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                return Optional.empty ();
+            sampleData = new WavFileSampleData (sampleFile);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
+            return Optional.empty ();
+        }
+
+        final ISampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
+
+        // No trigger
+        final boolean isOneShot = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0;
+
+        final int start = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0);
+        sampleZone.setStart (start);
+        sampleZone.setStop (start + XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, 0));
+        sampleZone.setReversed (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_REVERSE, 0) == 1);
+
+        // Gain - "gaindb" -> unknown conversion
+
+        sampleZone.setTune (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PITCH, 0) / 1000.0);
+        sampleZone.setPanorama (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PANORAMA, 0) / 1000.0);
+
+        // No zone logic
+
+        sampleZone.setKeyTracking (0);
+        final int rootNote = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_ROOT_NOTE, -1);
+        if (rootNote > 0)
+            sampleZone.setKeyRoot (rootNote);
+        sampleZone.setKeyLow (36 + sampleIndex);
+        sampleZone.setKeyHigh (36 + sampleIndex);
+        sampleZone.setVelocityLow (1);
+        sampleZone.setVelocityHigh (127);
+
+        /////////////////////////////////////////////////////
+        // Loops
+
+        if (!isOneShot)
+        {
+            final int loopMode = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_MODE, -1);
+            if (loopMode > 0)
+            {
+                final ISampleLoop loop = new DefaultSampleLoop ();
+                loop.setType (loopMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
+                loop.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, 0));
+                loop.setEnd (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0));
+                loop.setCrossfade (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0) / 1000.0);
+                sampleZone.addLoop (loop);
+            }
+        }
+
+        /////////////////////////////////////////////////////
+        // Volume envelope
+
+        final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
+        amplitudeEnvelope.setAttackTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0));
+        amplitudeEnvelope.setDecayTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0));
+        amplitudeEnvelope.setSustainLevel (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0);
+        amplitudeEnvelope.setReleaseTime (MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_RELEASE, 0), 38.0));
+
+        parseEffects (paramsElement, multisampleSource);
+
+        return Optional.of (sampleZone);
     }
 
 
@@ -426,9 +432,9 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      * @param paramsElement The parameter element of the sample cell
      * @param multisampleSource The multi-sample to fill
      */
-    private static void parseEffects (final Element paramsElement, final DefaultMultisampleSource multisampleSource)
+    private static void parseEffects (final Element paramsElement, final IMultisampleSource multisampleSource)
     {
-        if (multisampleSource.getGlobalFilter () != null)
+        if (multisampleSource.getGlobalFilter ().isPresent ())
             return;
 
         final int frequency = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_FILTER_CUTOFF, 0);

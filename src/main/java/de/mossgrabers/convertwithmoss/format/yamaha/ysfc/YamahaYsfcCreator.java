@@ -275,7 +275,8 @@ public class YamahaYsfcCreator extends AbstractCreator
         final YamahaYsfcKeybank keybank = new YamahaYsfcKeybank ();
         keybank.setNumber (sampleNumber);
 
-        keybank.setChannels (formatChunk.getNumberOfChannels ());
+        final int numberOfChannels = formatChunk.getNumberOfChannels ();
+        keybank.setChannels (numberOfChannels);
         keybank.setSampleFrequency (formatChunk.getSampleRate ());
         keybank.setSampleLength (numSamples);
         keybank.setRootNote (zone.getKeyRoot ());
@@ -290,12 +291,14 @@ public class YamahaYsfcCreator extends AbstractCreator
         keybank.setCoarseTune (semitones);
         keybank.setFineTune ((int) Math.floor ((tune - semitones) * 100.0));
 
-        // The 0-255 range seems to be somehow logarithmically scaled and there is
-        // not much happening below 200
-        keybank.setLevel (207 + 2 * (int) (Math.round (Math.clamp (zone.getGain (), -12.0, 12.0)) + 12));
+        final double gain = zone.getGain ();
+        keybank.setLevel (gain < -95.25 ? 0 : (int) Math.round ((Math.clamp (gain, -95.25, 0) + 95.25) / 0.375) + 1);
 
-        final double panorama = zone.getPanorama ();
-        keybank.setPanorama ((int) (panorama < 0 ? panorama * 64 : panorama * 63));
+        if (numberOfChannels == 1)
+        {
+            final double panorama = zone.getPanorama ();
+            keybank.setPanorama ((int) (panorama < 0 ? panorama * 64 : panorama * 63));
+        }
 
         keybank.setPlayStart (zone.getStart ());
         keybank.setPlayEnd (zone.getStop ());

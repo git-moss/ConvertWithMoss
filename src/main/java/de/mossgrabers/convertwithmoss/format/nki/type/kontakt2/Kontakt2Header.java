@@ -5,8 +5,6 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt2;
 
 import java.io.DataInput;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
@@ -187,9 +185,6 @@ public class Kontakt2Header
 
         // No idea yet about these 4 bytes...
         this.unknownA = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-        // TODO Remove
-        // if (this.unknownA != 0)
-        // System.out.println ("u_a: " + this.unknownA);
 
         this.zones = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
         this.groups = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
@@ -198,19 +193,13 @@ public class Kontakt2Header
         this.isMonolith = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian) == 1;
         this.minSupportedVersion = this.readVersion (fileAccess, this.minSupportedVersionBuffer);
 
-        // TODO No idea yet about these 4 bytes...
+        // No idea yet about these 4 bytes...
         this.unknownB = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-        // TODO Remove
-        // if (this.unknownB != 0)
-        // System.out.println ("u_c: " + this.unknownB);
 
         this.readMetadata (fileAccess);
 
-        // TODO seems to be some kind of flags in a bit array
+        // Seems to be some kind of flags in a bit array
         this.flags = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-        // TODO Remove
-        // if (this.flags != 0)
-        // System.out.println ("flags: " + this.flags);
 
         if (this.isFourDotTwo)
             this.md5Checksum = StreamUtils.readNBytes (fileAccess, 16);
@@ -234,7 +223,6 @@ public class Kontakt2Header
         StreamUtils.writeUnsigned32 (out, Magic.KONTAKT2_INSTRUMENT_HEADER_BE, this.isBigEndian);
         StreamUtils.writeUnsigned16 (out, this.patchType, this.isBigEndian);
 
-        // TODO
         out.write (this.kontaktVersionBuffer);
 
         StreamUtils.writeASCII (out, this.libraryID, 4, !this.isBigEndian);
@@ -249,15 +237,14 @@ public class Kontakt2Header
         StreamUtils.writeUnsigned32 (out, this.sampleSize, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, this.isMonolith ? 1 : 0, this.isBigEndian);
 
-        // TODO
         out.write (this.minSupportedVersionBuffer);
 
-        // TODO No idea yet about these 4 bytes...
+        // No idea yet about these 4 bytes...
         StreamUtils.writeUnsigned32 (out, this.unknownB, this.isBigEndian);
 
         this.writeMetadata (out);
 
-        // TODO seems to be some kind of flags in a bit array
+        // Seems to be some kind of flags in a bit array
         StreamUtils.writeUnsigned32 (out, this.flags, this.isBigEndian);
 
         if (this.isFourDotTwo)
@@ -639,47 +626,5 @@ public class Kontakt2Header
     public byte [] getChecksum ()
     {
         return this.md5Checksum;
-    }
-
-
-    /**
-     * Test to re-write the header - not working due to checksum.
-     *
-     * @param args Arguments
-     */
-    public static void main (final String [] args)
-    {
-        // TODO Remove
-
-        final String filename = "E:\\ConvertWithMoss-Testdateien\\Kontakt\\Kontakt 2-4 Format\\4.0.0.2475\\NKI\\Across The Pacific.nki";
-        final File sourceFile = new File (filename);
-        try (final RandomAccessFile fileAccess = new RandomAccessFile (sourceFile, "r"))
-        {
-            final int typeID = fileAccess.readInt ();
-            final boolean isBigEndian = typeID == Magic.KONTAKT2_INSTRUMENT_BE;
-
-            final Kontakt2Header header = new Kontakt2Header (null, isBigEndian);
-            header.read (fileAccess);
-
-            final int numOfPendingbytes = (int) (sourceFile.length () - fileAccess.getFilePointer ());
-            final byte [] rest = StreamUtils.readNBytes (fileAccess, numOfPendingbytes);
-
-            // header.setLibraryID ("Kon2");
-
-            try (final FileOutputStream out = new FileOutputStream (filename + ".x"))
-            {
-                StreamUtils.writeUnsigned32 (out, Magic.KONTAKT2_INSTRUMENT_BE, isBigEndian);
-                header.write (out);
-                out.write (rest);
-            }
-            catch (final IOException ex)
-            {
-                ex.printStackTrace ();
-            }
-        }
-        catch (final IOException ex)
-        {
-            ex.printStackTrace ();
-        }
     }
 }

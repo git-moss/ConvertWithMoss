@@ -61,7 +61,8 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AbletonDetectorTask extends AbstractDetectorTask
 {
-    private static final Map<String, FilterType> FILTER_TYPES = new HashMap<> ();
+    private static final String                  ERR_MISSING_TAG = "IDS_NOTIFY_ERR_MISSING_TAG";
+    private static final Map<String, FilterType> FILTER_TYPES    = new HashMap<> ();
     static
     {
         FILTER_TYPES.put ("0", FilterType.LOW_PASS);
@@ -141,7 +142,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
         final Element top = document.getDocumentElement ();
         if (!AbletonTag.TAG_ROOT.equals (top.getNodeName ()))
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_MISSING_TAG", AbletonTag.TAG_ROOT);
+            this.notifier.logError (ERR_MISSING_TAG, AbletonTag.TAG_ROOT);
             return Collections.emptyList ();
         }
 
@@ -191,7 +192,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
         final IMetadata metadata = multisampleSource.getMetadata ();
         parseMetadata (deviceElement, metadata, creator);
 
-        this.parseMultiSample (multiSampleFile, rootPath, multisampleSource, deviceElement);
+        this.parseMultiSample (rootPath, multisampleSource, deviceElement);
         this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
         return multisampleSource;
     }
@@ -235,7 +236,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
         }
         catch (final NumberFormatException ex)
         {
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_TAG", AbletonTag.TAG_RELATIVE_PATH_TYPE));
+            throw new IOException (Functions.getMessage (ERR_MISSING_TAG, AbletonTag.TAG_RELATIVE_PATH_TYPE));
         }
 
         switch (type)
@@ -258,13 +259,12 @@ public class AbletonDetectorTask extends AbstractDetectorTask
     /**
      * Parse all zone information from the XML code and store it in the multi-sample.
      *
-     * @param multiSampleFile The multi-sample file
      * @param rootPath The root path where the samples are located
      * @param multisampleSource Where to store the data
      * @param deviceElement The device element which contains the zone data
      * @throws IOException Could not access the sample
      */
-    private void parseMultiSample (final File multiSampleFile, final File rootPath, final IMultisampleSource multisampleSource, final Element deviceElement) throws IOException
+    private void parseMultiSample (final File rootPath, final IMultisampleSource multisampleSource, final Element deviceElement) throws IOException
     {
         final Element playerElement = getRequiredElement (deviceElement, AbletonTag.TAG_PLAYER);
         final Element mapElement = getRequiredElement (playerElement, AbletonTag.TAG_MULTI_SAMPLE_MAP);
@@ -280,7 +280,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
             final Element sampleRefElement = getRequiredElement (multiSamplePartElement, AbletonTag.TAG_SAMPLE_REF);
             final Element fileRefElement = getRequiredElement (sampleRefElement, AbletonTag.TAG_FILE_REF);
 
-            final ISampleData sampleData = this.getSampleData (multiSampleFile, fileRefElement, rootPath);
+            final ISampleData sampleData = this.getSampleData (fileRefElement, rootPath);
             if (sampleData != null)
             {
                 final String name = FileUtils.getNameWithoutType (new File (zoneName));
@@ -353,13 +353,12 @@ public class AbletonDetectorTask extends AbstractDetectorTask
     /**
      * Try to locate the sample and create a sample data object from it.
      *
-     * @param multiSampleFile The multi-sample file
      * @param fileRefElement The file reference element
      * @param rootPath The root path where the samples are located
      * @return The sample data or null is not found
      * @throws IOException Could not access the sample
      */
-    private ISampleData getSampleData (final File multiSampleFile, final Element fileRefElement, final File rootPath) throws IOException
+    private ISampleData getSampleData (final Element fileRefElement, final File rootPath) throws IOException
     {
         final String relativePath = AbletonDetectorTask.getValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH);
         return this.createSampleData (new File (rootPath, relativePath));
@@ -451,11 +450,8 @@ public class AbletonDetectorTask extends AbstractDetectorTask
 
             // Read the velocity modulation
             final Element modByVelocityElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_MOD_BY_VELOCITY);
-            if (modByVelocityElement != null)
-            {
-                final double modDepth = getDoubleValueAttribute (modByVelocityElement, AbletonTag.TAG_MANUAL, 0);
-                filter.getCutoffVelocityModulator ().setDepth (modDepth);
-            }
+            final double modDepth = getDoubleValueAttribute (modByVelocityElement, AbletonTag.TAG_MANUAL, 0);
+            filter.getCutoffVelocityModulator ().setDepth (modDepth);
 
             return filter;
         }
@@ -573,7 +569,6 @@ public class AbletonDetectorTask extends AbstractDetectorTask
         catch (final IOException ex)
         {
             // Ignore missing elements
-            return;
         }
     }
 
@@ -657,7 +652,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
     {
         final Element element = XMLUtils.getChildElementByName (parentElement, tagName);
         if (element == null)
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_TAG", tagName));
+            throw new IOException (Functions.getMessage (ERR_MISSING_TAG, tagName));
         return element;
     }
 

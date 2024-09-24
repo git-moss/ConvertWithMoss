@@ -325,7 +325,7 @@ public final class AudioFileUtils
         finally
         {
             if (tempFile != null)
-                tempFile.delete ();
+                Files.delete (tempFile.toPath ());
         }
     }
 

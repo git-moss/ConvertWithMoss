@@ -71,6 +71,18 @@ public class DefaultSampleZone implements ISampleZone
 
 
     /**
+     * Constructor. Copies all metadata from the given source zone.
+     *
+     * @param zone The zone from which to copy the metadata
+     */
+    public DefaultSampleZone (final ISampleZone zone)
+    {
+        this.name = zone.getName ();
+        this.fillMetadata (zone);
+    }
+
+
+    /**
      * Constructor for setting the sample data later.
      */
     public DefaultSampleZone ()

@@ -18,6 +18,7 @@ The following multisample formats are supported:
 * [SoundFont 2](#soundfont-2)
 * [TAL Sampler](#tal-sampler)
 * [WAV files](#wav-files)
+* [Yamaha YSFC](#yamaha-ysfc)
 
 
 ## Automatic Metadata detection
@@ -296,9 +297,15 @@ WAV file can contain different sample formats. This converter supports (split) s
 ## Yamaha YSFC
 
 This format is used in most of the Yamaha Workstation. While the format is the same, the content is different.
-Currently, the formats of the Montage (not Montage M) and MODX/MODX+ are support both as source and destination format.
-That covers files with the endings X7L, X7U, X8L and X8U. As the source the backup formats X7A and X8A are supported as well.
-The wave files in professional Yamaha libraries often compressed. Such files are not supported. Furthermore, only self-contained libraries (= libraries which do not reference samples in other libraries) are supported.
+Currently, the formats of the Montage (not Montage M) and MODX/MODX+ are support both as source and destination format. That covers files with the endings X7L, X7U, X8L and X8U. As the source the backup formats X7A and X8A are supported as well.
+
+Furthermore, the formats of older models are suppored for reading only:
+
+* X0A, X0W: Motif XS
+* X3A, X3W: Motif XF
+* X6A, X6W: MOXF
+
+The wave files in professional Yamaha libraries often are compressed. Such files are not supported. Furthermore, only self-contained libraries (= libraries which do not reference samples in other libraries) are supported.
 
 So far, only the basic multi-sample data is converted (which means that no performances are created and therefore no information about e.g. filter, envelope or effects is converted).
 

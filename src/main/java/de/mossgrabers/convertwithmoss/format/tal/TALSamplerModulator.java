@@ -18,16 +18,16 @@ import de.mossgrabers.tools.XMLUtils;
 public class TALSamplerModulator
 {
     /** Parameter ID for Cutoff. */
-    public static int       DEST_ID_CUTOFF      = 7;
+    public static final int DEST_ID_CUTOFF      = 7;
     /** Parameter ID for Volume of Layer A. */
-    public static int       DEST_ID_VOLUME_A    = 62;
+    public static final int DEST_ID_VOLUME_A    = 62;
     /** Parameter ID for Tune of Layer A. */
     public static final int DEST_ID_TUNE_A      = 71;
     /** Parameter ID for Master Tune. */
     public static final int DEST_ID_MASTER_TUNE = 164;
 
     /** Source ID for Velocity. */
-    public static int       SOURCE_ID_VELOCITY  = 6;
+    public static final int SOURCE_ID_VELOCITY  = 6;
     /** Source ID for Envelope 3 (Modulation Envelope). */
     public static final int SOURCE_ID_ENV3      = 2;
 
