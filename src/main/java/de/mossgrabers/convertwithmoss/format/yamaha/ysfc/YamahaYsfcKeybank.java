@@ -87,7 +87,7 @@ public class YamahaYsfcKeybank
 
         // Reserved 00
         in.skipNBytes (1);
-        // Always 0xFF on Montage
+        // Always 0xFF on Montage - 0: Normal, 1: Fixed
         this.fixedPitch = in.read ();
 
         this.rootNote = in.read ();
@@ -449,6 +449,17 @@ public class YamahaYsfcKeybank
     public void setRootNote (final int rootNote)
     {
         this.rootNote = rootNote;
+    }
+
+
+    /**
+     * Get if the samples pitch is fixed.
+     *
+     * @return 1 if fixed
+     */
+    public int getFixedPitch ()
+    {
+        return this.fixedPitch;
     }
 
 

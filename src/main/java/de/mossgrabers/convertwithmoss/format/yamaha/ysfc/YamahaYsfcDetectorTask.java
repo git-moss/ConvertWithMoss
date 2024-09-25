@@ -270,6 +270,8 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         zone.setKeyHigh (keybank.getKeyRangeUpper ());
         zone.setVelocityLow (keybank.getVelocityRangeLower ());
         zone.setVelocityHigh (keybank.getVelocityRangeUpper ());
+        if (keybank.getFixedPitch () == 1)
+            zone.setKeyTracking (0);
         zone.setTune (keybank.getCoarseTune () + keybank.getFineTune () / 100.0);
         final int level = keybank.getLevel ();
         zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + (level - 1) * 0.375);

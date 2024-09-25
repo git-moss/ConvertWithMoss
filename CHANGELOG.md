@@ -1,6 +1,6 @@
 # Changes
 
-## 11.0.0 (unreleased)
+## 11.0.0
 
 * Added support for Yamaha YSFC format (read/write: Montage, MODX/MODX+, read: Motif XS, Motif XF, MOXF).
 * Bitwig Writing
