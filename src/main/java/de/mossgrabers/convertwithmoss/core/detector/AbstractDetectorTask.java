@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.file.OggFileSampleData;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffCommonChunk;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffFile;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffFileSampleData;
+import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -61,7 +62,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     protected final INotifier                    notifier;
     protected final Consumer<IMultisampleSource> consumer;
     protected final File                         sourceFolder;
-    protected final String []                    fileEndings;
+    protected String []                          fileEndings;
 
     private final Map<String, Set<String>>       unsupportedElements   = new HashMap<> ();
     private final Map<String, Set<String>>       unsupportedAttributes = new HashMap<> ();
@@ -399,6 +400,10 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
                 sampleData = new AiffFileSampleData (sampleFile);
             }
+            else if (fileEnding.endsWith (".ncw"))
+            {
+                sampleData = new NcwFileSampleData (sampleFile);
+            }
             else
             {
                 final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
@@ -414,6 +419,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                     sampleData = new OggFileSampleData (sampleFile);
                 else if (FLAC_TYPE.equals (type))
                     sampleData = new FlacFileSampleData (sampleFile);
+
                 if (sampleData == null)
                     throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
             }

@@ -2,7 +2,7 @@
 // (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.core.detector;
+package de.mossgrabers.convertwithmoss.format.samplefile;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +14,8 @@ import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -35,14 +37,15 @@ import de.mossgrabers.tools.FileUtils;
  *
  * @author Jürgen Moßgraber
  */
-public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTask
+public class SampleFileDetectorTask extends AbstractDetectorTask
 {
-    protected final int       crossfadeNotes;
-    protected final int       crossfadeVelocities;
-    protected final String [] groupPatterns;
-    protected final boolean   isAscending;
-    protected final String [] monoSplitPatterns;
-    protected final String [] postfixTexts;
+    private final List<SampleFileType> sampleFileTypes;
+    private final int                  crossfadeNotes;
+    private final int                  crossfadeVelocities;
+    private final String []            groupPatterns;
+    private final boolean              isAscending;
+    private final String []            monoSplitPatterns;
+    private final String []            postfixTexts;
 
 
     /**
@@ -58,12 +61,13 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
      * @param crossfadeNotes Number of notes to cross-fade
      * @param crossfadeVelocities The number of velocity steps to cross-fade ranges
      * @param metadata Additional metadata configuration parameters
-     * @param fileEndings The file ending(s) identifying the files
+     * @param sampleFileTypes The file endings of the sample files to look for
      */
-    protected AbstractSampleFileDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] groupPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities, final IMetadataConfig metadata, final String... fileEndings)
+    public SampleFileDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] groupPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities, final IMetadataConfig metadata, final List<SampleFileType> sampleFileTypes)
     {
-        super (notifier, consumer, sourceFolder, metadata, fileEndings);
+        super (notifier, consumer, sourceFolder, metadata);
 
+        this.sampleFileTypes = sampleFileTypes;
         this.groupPatterns = groupPatterns;
         this.isAscending = isAscending;
         this.monoSplitPatterns = monoSplitPatterns;
@@ -95,41 +99,51 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
     @Override
     protected List<IMultisampleSource> readFile (final File folder)
     {
-        final File [] files = this.listFiles (folder, this.fileEndings);
-        if (files.length == 0)
-            return Collections.emptyList ();
+        final List<IMultisampleSource> sources = new ArrayList<> ();
 
-        // Analyze all files
-        final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.length);
-        for (final File file: files)
+        for (final SampleFileType sampleFileType: this.sampleFileTypes)
         {
-            // Check for task cancellation
-            if (this.isCancelled ())
+            this.fileEndings = sampleFileType.getFileEndings ();
+
+            final File [] files = this.listFiles (folder, this.fileEndings);
+            if (files.length == 0)
                 return Collections.emptyList ();
 
-            try
+            // Analyze all files
+            final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.length);
+            for (final File file: files)
             {
-                sampleData.add (this.createSampleData (file));
+                // Check for task cancellation
+                if (this.isCancelled ())
+                    return Collections.emptyList ();
+
+                try
+                {
+                    sampleData.add (this.createSampleData (file));
+                }
+                catch (final IOException ex)
+                {
+                    this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), file.getAbsolutePath (), ex.getMessage ());
+                    return Collections.emptyList ();
+                }
             }
-            catch (final IOException ex)
-            {
-                this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), file.getAbsolutePath (), ex.getMessage ());
-                return Collections.emptyList ();
-            }
+
+            sources.addAll (this.createMultisample (sampleFileType, folder, sampleData));
         }
 
-        return this.createMultisample (folder, sampleData);
+        return sources;
     }
 
 
     /**
      * Detect metadata, order samples and finally create the multi-sample.
-     *
+     * 
+     * @param sampleFileType The sample file type
      * @param folder The folder which contains the sample files
      * @param sampleData The detected sample files
      * @return The multi-sample
      */
-    private List<IMultisampleSource> createMultisample (final File folder, final List<IFileBasedSampleData> sampleData)
+    private List<IMultisampleSource> createMultisample (final SampleFileType sampleFileType, final File folder, final List<IFileBasedSampleData> sampleData)
     {
         if (sampleData.isEmpty ())
             return Collections.emptyList ();
@@ -140,7 +154,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
             // file names
             final List<IGroup> groups;
             String name;
-            if (this.hasInstrumentData (sampleData))
+            if (sampleFileType.hasInstrumentData (sampleData))
             {
                 final IGroup group = new DefaultGroup ("Group");
                 groups = Collections.singletonList (group);
@@ -149,7 +163,7 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
                 {
                     final DefaultSampleZone sampleZone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (fileSampleData.getFilename ())), fileSampleData);
                     group.addSampleZone (sampleZone);
-                    this.fillInstrumentData (sampleZone, fileSampleData);
+                    sampleFileType.fillInstrumentData (sampleZone, fileSampleData);
                     filenames.add (new File (fileSampleData.getFilename ()).getName ());
                 }
                 name = KeyMapping.findCommonPrefix (filenames);
@@ -238,22 +252,4 @@ public abstract class AbstractSampleFileDetectorTask extends AbstractDetectorTas
         subpaths.remove (1);
         return subpaths.toArray (new String [subpaths.size ()]);
     }
-
-
-    /**
-     * Checks if the file has data about an instrument zone (e.g. key/velocity range and loops).
-     *
-     * @param sampleData The sample files to check
-     * @return True if instrument data is available
-     */
-    protected abstract boolean hasInstrumentData (final List<IFileBasedSampleData> sampleData);
-
-
-    /**
-     * Set the zone data (e.g. key/velocity range and loops) from the given file based sample data.
-     *
-     * @param zone The zone to fill
-     * @param sampleData The source data
-     */
-    protected abstract void fillInstrumentData (final ISampleZone zone, final IFileBasedSampleData sampleData);
 }

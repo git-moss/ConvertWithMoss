@@ -69,7 +69,7 @@ public class EXS24Detector extends AbstractDetectorWithMetadataPane<EXS24Detecto
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
         panel.createSeparator ("@IDS_SAMPLE_FILE_SEARCH");
-        this.directorySearch = panel.createComboBox ("@IDS_DIRECTORY_SEARCH", Integer.valueOf (0), Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (3));
+        this.directorySearch = panel.createComboBox ("@IDS_DIRECTORY_SEARCH", Integer.valueOf (0), Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (3), Integer.valueOf (4), Integer.valueOf (5), Integer.valueOf (6));
         this.directorySearch.getSelectionModel ().select (Integer.valueOf (1));
 
         this.metadataPane.addTo (panel);

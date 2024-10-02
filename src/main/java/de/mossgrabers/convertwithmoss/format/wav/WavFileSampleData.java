@@ -37,8 +37,8 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class WavFileSampleData extends AbstractFileSampleData
 {
-    private final WaveFile waveFile;
-    private boolean        hasWavSourceFile = true;
+    private WaveFile waveFile         = null;
+    private boolean  hasWavSourceFile = true;
 
 
     /**
@@ -72,15 +72,6 @@ public class WavFileSampleData extends AbstractFileSampleData
     public WavFileSampleData (final File file) throws IOException
     {
         super (file);
-
-        try
-        {
-            this.waveFile = new WaveFile (file, true);
-        }
-        catch (final IOException | ParseException ex)
-        {
-            throw new IOException (ex);
-        }
     }
 
 
@@ -94,24 +85,6 @@ public class WavFileSampleData extends AbstractFileSampleData
     public WavFileSampleData (final File zipFile, final File zipEntry) throws IOException
     {
         super (zipFile, zipEntry);
-
-        this.waveFile = new WaveFile ();
-
-        try (final ZipFile zf = new ZipFile (this.zipFile))
-        {
-            final String path = this.zipEntry.getPath ().replace ('\\', '/');
-            final ZipEntry entry = zf.getEntry (path);
-            if (entry == null)
-                throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
-            try (final InputStream in = zf.getInputStream (entry))
-            {
-                this.waveFile.read (in, true);
-            }
-            catch (final ParseException ex)
-            {
-                throw new IOException (ex);
-            }
-        }
     }
 
 
@@ -123,7 +96,7 @@ public class WavFileSampleData extends AbstractFileSampleData
         if (this.hasWavSourceFile)
             super.writeSample (outputStream);
         else
-            this.waveFile.write (outputStream);
+            this.getWaveFile ().write (outputStream);
     }
 
 
@@ -135,7 +108,14 @@ public class WavFileSampleData extends AbstractFileSampleData
      */
     public void combine (final WavFileSampleData sample) throws CombinationNotPossibleException
     {
-        this.waveFile.combine (sample.waveFile);
+        try
+        {
+            this.getWaveFile ().combine (sample.waveFile);
+        }
+        catch (final IOException ex)
+        {
+            throw new CombinationNotPossibleException (this.filename);
+        }
     }
 
 
@@ -143,7 +123,8 @@ public class WavFileSampleData extends AbstractFileSampleData
     @Override
     public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
+        final WaveFile wavFile = this.getWaveFile ();
+        final FormatChunk formatChunk = wavFile.getFormatChunk ();
         final int numberOfChannels = formatChunk.getNumberOfChannels ();
         if (numberOfChannels > 2)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), this.sampleFile.getAbsolutePath ()));
@@ -153,14 +134,14 @@ public class WavFileSampleData extends AbstractFileSampleData
         try
         {
             if (zone.getStop () <= 0)
-                zone.setStop (this.waveFile.getDataChunk ().calculateLength (formatChunk));
+                zone.setStop (wavFile.getDataChunk ().calculateLength (formatChunk));
         }
         catch (final CompressionNotSupportedException ex)
         {
             throw new IOException (ex);
         }
 
-        final SampleChunk sampleChunk = this.waveFile.getSampleChunk ();
+        final SampleChunk sampleChunk = wavFile.getSampleChunk ();
         if (sampleChunk == null)
             return;
 
@@ -215,9 +196,47 @@ public class WavFileSampleData extends AbstractFileSampleData
      * Get the underlying WAV file.
      *
      * @return The wave file
+     * @throws IOException Could not read the file
      */
-    public WaveFile getWaveFile ()
+    public WaveFile getWaveFile () throws IOException
     {
+        if (this.waveFile == null)
+        {
+            // Lazy loading
+
+            if (this.zipFile == null)
+            {
+                try
+                {
+                    this.waveFile = new WaveFile (this.sampleFile, true);
+                }
+                catch (final ParseException ex)
+                {
+                    throw new IOException (ex);
+                }
+            }
+            else
+            {
+                this.waveFile = new WaveFile ();
+
+                try (final ZipFile zf = new ZipFile (this.zipFile))
+                {
+                    final String path = this.zipEntry.getPath ().replace ('\\', '/');
+                    final ZipEntry entry = zf.getEntry (path);
+                    if (entry == null)
+                        throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
+                    try (final InputStream in = zf.getInputStream (entry))
+                    {
+                        this.waveFile.read (in, true);
+                    }
+                    catch (final ParseException ex)
+                    {
+                        throw new IOException (ex);
+                    }
+                }
+            }
+        }
+
         return this.waveFile;
     }
 
@@ -226,9 +245,19 @@ public class WavFileSampleData extends AbstractFileSampleData
     @Override
     public void updateMetadata (final IMetadata metadata)
     {
-        final StringBuilder sb = new StringBuilder (this.waveFile.formatInfoFields ());
+        final WaveFile wavFile;
+        try
+        {
+            wavFile = this.getWaveFile ();
+        }
+        catch (final IOException ex)
+        {
+            return;
+        }
 
-        final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = this.waveFile.getBroadcastAudioExtensionChunk ();
+        final StringBuilder sb = new StringBuilder (wavFile.formatInfoFields ());
+
+        final BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = wavFile.getBroadcastAudioExtensionChunk ();
         if (broadcastAudioExtensionChunk != null)
         {
             final String originator = broadcastAudioExtensionChunk.getOriginator ();

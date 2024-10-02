@@ -26,4 +26,12 @@ public interface IDetector extends ICoreTask
      * @param consumer Where to report the found multi-samples
      */
     void detect (File folder, Consumer<IMultisampleSource> consumer);
+
+
+    /**
+     * Validate the source parameters.
+     * 
+     * @return Returns true if all parameters are valid
+     */
+    boolean validateParameters ();
 }

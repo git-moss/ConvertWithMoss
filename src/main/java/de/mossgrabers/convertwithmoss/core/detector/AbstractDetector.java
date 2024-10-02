@@ -71,4 +71,12 @@ public abstract class AbstractDetector<T extends AbstractDetectorTask> extends A
         detectorTask.setOnScheduled (event -> this.notifier.updateButtonStates (false));
         this.executor.execute (detectorTask);
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean validateParameters ()
+    {
+        return true;
+    }
 }
