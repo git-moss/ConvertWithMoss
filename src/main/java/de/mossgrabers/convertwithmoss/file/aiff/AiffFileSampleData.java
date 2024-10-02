@@ -37,8 +37,8 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AiffFileSampleData extends AbstractFileSampleData
 {
-    private File           sourceFile = null;
-    private final AiffFile aiffFile;
+    private File     sourceFile = null;
+    private AiffFile aiffFile   = null;
 
 
     /**
@@ -50,8 +50,6 @@ public class AiffFileSampleData extends AbstractFileSampleData
     public AiffFileSampleData (final File file) throws IOException
     {
         super (file);
-
-        this.aiffFile = new AiffFile (file);
 
         this.fixFileEnding ();
     }
@@ -107,7 +105,8 @@ public class AiffFileSampleData extends AbstractFileSampleData
     @Override
     public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        final AiffCommonChunk commonChunk = this.aiffFile.getCommonChunk ();
+        final AiffFile aifFile = getAiffFile ();
+        final AiffCommonChunk commonChunk = aifFile.getCommonChunk ();
         if (commonChunk == null)
             return;
 
@@ -120,7 +119,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
         if (zone.getStop () <= 0)
             zone.setStop ((int) commonChunk.numSampleFrames);
 
-        final AiffInstrumentChunk instrumentChunk = this.aiffFile.getInstrumentChunk ();
+        final AiffInstrumentChunk instrumentChunk = aifFile.getInstrumentChunk ();
         if (instrumentChunk == null)
             return;
 
@@ -132,7 +131,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
             zone.setTune (Math.clamp (instrumentChunk.detune / 100.0, -0.5, 0.5));
 
         if (addLoops)
-            addLoops (instrumentChunk, this.aiffFile.getMarkerChunk (), zone.getLoops ());
+            addLoops (instrumentChunk, aifFile.getMarkerChunk (), zone.getLoops ());
     }
 
 
@@ -174,9 +173,13 @@ public class AiffFileSampleData extends AbstractFileSampleData
      * Get the underlying AIFF file.
      *
      * @return The file
+     * @throws IOException Could not parse the file
      */
-    public AiffFile getAiffFile ()
+    public AiffFile getAiffFile () throws IOException
     {
+        if (this.aiffFile == null)
+            this.aiffFile = new AiffFile (this.sampleFile);
+
         return this.aiffFile;
     }
 
@@ -185,7 +188,17 @@ public class AiffFileSampleData extends AbstractFileSampleData
     @Override
     public void updateMetadata (final IMetadata metadata)
     {
-        final Map<String, String> aiffMetadata = this.aiffFile.getMetadata ();
+        final AiffFile aifFile;
+        try
+        {
+            aifFile = this.getAiffFile ();
+        }
+        catch (final IOException ex)
+        {
+            return;
+        }
+
+        final Map<String, String> aiffMetadata = aifFile.getMetadata ();
 
         final String author = aiffMetadata.get (AiffFile.AIFF_CHUNK_AUTHOR);
         if (author != null)

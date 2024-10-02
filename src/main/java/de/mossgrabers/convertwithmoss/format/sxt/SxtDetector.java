@@ -37,7 +37,7 @@ public class SxtDetector extends AbstractDetectorWithMetadataPane<SxtDetectorTas
      */
     public SxtDetector (final INotifier notifier)
     {
-        super ("Propellerhead Reason NN-XT", notifier, "SXT");
+        super ("Reason NN-XT", notifier, "SXT");
     }
 
 

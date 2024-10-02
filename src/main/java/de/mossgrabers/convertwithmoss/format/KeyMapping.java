@@ -21,6 +21,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -223,6 +224,9 @@ public class KeyMapping
         for (final Entry<Integer, List<ISampleZone>> entry: groups.entrySet ())
         {
             final List<ISampleZone> group = entry.getValue ();
+            for (final ISampleZone zone: group)
+                this.extractedNames.add (zone.getName ());
+
             final Map<Integer, List<ISampleZone>> noteMap = this.detectNotes (group);
             final Map<Integer, ISampleZone> groupNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
             sampleMetadata.put (entry.getKey (), createKeyMaps (groupNoteMap));
@@ -495,13 +499,12 @@ public class KeyMapping
      * @return The map with note and sample metadata pairs ordered by the note
      * @throws NoteNotDetectedException NOte could not be detected from filename
      */
-    private Map<Integer, List<ISampleZone>> createNoteMap (final List<ISampleZone> zones) throws NoteNotDetectedException
+    private static Map<Integer, List<ISampleZone>> createNoteMap (final List<ISampleZone> zones) throws NoteNotDetectedException
     {
         final Map<Integer, List<ISampleZone>> orderedNotes = new TreeMap<> ();
         for (final ISampleZone zone: zones)
         {
             final String filename = zone.getName ();
-            this.extractedNames.add (filename);
             final int midiNote = zone.getKeyRoot ();
             if (midiNote <= 0)
                 throw new NoteNotDetectedException (filename);
@@ -524,10 +527,8 @@ public class KeyMapping
      * @return The map with note and sample metadata pairs ordered by the note
      * @throws NoteNotDetectedException NOte could not be detected from filename
      */
-    private Map<Integer, List<ISampleZone>> createNoteMapFromNames (final List<ISampleZone> zones) throws NoteNotDetectedException
+    private static Map<Integer, List<ISampleZone>> createNoteMapFromNames (final List<ISampleZone> zones) throws NoteNotDetectedException
     {
-        this.extractedNames.clear ();
-
         if (zones.isEmpty ())
             return new TreeMap<> ();
 
@@ -541,9 +542,10 @@ public class KeyMapping
             for (final ISampleZone zone: zones)
             {
                 filename = zone.getName ();
-                midiNote = this.lookupMidiNote (keyMap, filename);
+                midiNote = lookupMidiNote (keyMap, filename);
                 if (midiNote < 0)
                     break;
+
             }
 
             // Did all sample names match?
@@ -563,12 +565,11 @@ public class KeyMapping
             final Map<String, Integer> keyMap = KEY_MAP.get (keyMapIndex.intValue ());
             for (final ISampleZone zone: zones)
             {
-                final int midiNote = this.lookupMidiNote (keyMap, zone.getName ());
+                final int midiNote = lookupMidiNote (keyMap, zone.getName ());
                 orderedByNote.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (zone);
             }
 
-            if (result == null || orderedByNote.size () > result.size ())
-                result = orderedByNote;
+            result = decidePreferred (result, orderedByNote);
         }
 
         // Can never happen
@@ -581,6 +582,46 @@ public class KeyMapping
                 zone.setKeyRoot (e.getKey ().intValue ());
 
         return result;
+    }
+
+
+    private static Map<Integer, List<ISampleZone>> decidePreferred (final Map<Integer, List<ISampleZone>> current, final Map<Integer, List<ISampleZone>> alternative)
+    {
+        if (current == null || alternative.size () > current.size ())
+            return alternative;
+
+        if (alternative.size () < current.size ())
+            return current;
+
+        // First check for number of channels consistency
+        if (!checkChannelConsistency (current) && checkChannelConsistency (alternative))
+            return alternative;
+
+        // Both are consistent, try note length texts
+        return calcNoteTextLenghts (current) > calcNoteTextLenghts (alternative) ? current : alternative;
+    }
+
+
+    private static int calcNoteTextLenghts (final Map<Integer, List<ISampleZone>> noteZoneMap)
+    {
+        int length = 0;
+        for (final Map.Entry<Integer, List<ISampleZone>> e: noteZoneMap.entrySet ())
+            length += NoteParser.formatNoteSharps (e.getKey ().intValue ()).length ();
+        return length;
+    }
+
+
+    private static boolean checkChannelConsistency (final Map<Integer, List<ISampleZone>> noteZoneMap)
+    {
+        int channels = -1;
+        for (final Map.Entry<Integer, List<ISampleZone>> e: noteZoneMap.entrySet ())
+        {
+            if (channels == -1)
+                channels = e.getValue ().size ();
+            else if (channels != e.getValue ().size ())
+                return false;
+        }
+        return true;
     }
 
 
@@ -597,14 +638,14 @@ public class KeyMapping
         // First try to detect the notes from the sample chunk
         try
         {
-            return this.createNoteMap (zones);
+            return createNoteMap (zones);
         }
         catch (final NoteNotDetectedException ex)
         {
             // Second try to parse the note from the filename in different variations
             try
             {
-                return this.createNoteMapFromNames (zones);
+                return createNoteMapFromNames (zones);
             }
             catch (final NoteNotDetectedException ex2)
             {
@@ -653,7 +694,7 @@ public class KeyMapping
      * @param filename The filename
      * @return The MIDI note value (0-127) or -1 if not found
      */
-    private int lookupMidiNote (final Map<String, Integer> keyMap, final String filename)
+    private static int lookupMidiNote (final Map<String, Integer> keyMap, final String filename)
     {
         String fn = FileUtils.getNameWithoutType (new File (filename));
         final String noteArea = fn.toUpperCase (Locale.US);
@@ -665,7 +706,7 @@ public class KeyMapping
         // Test if one of the notes is a part of the text
         for (final Map.Entry<String, Integer> e: keyMap.entrySet ())
         {
-            final String n = e.getKey ();
+            final String n = e.getKey ().toUpperCase (Locale.US);
             final int p = noteArea.lastIndexOf (n);
             if (p == -1)
                 continue;
@@ -674,7 +715,7 @@ public class KeyMapping
             // length
             final int keyLength = n.length ();
             final int strLength = str.length ();
-            if (p + keyLength > pos + strLength && keyLength >= strLength)
+            if (pos == -1 || keyLength > strLength || (keyLength == strLength && p + keyLength > pos + strLength))
             {
                 pos = p;
                 str = n;
@@ -682,13 +723,7 @@ public class KeyMapping
             }
         }
 
-        if (pos == -1)
-            return -1;
-
-        // Remove the detected note part from the name
-        fn = fn.substring (0, pos) + fn.substring (pos + str.length (), fn.length ());
-        this.extractedNames.add (fn.trim ());
-        return note;
+        return pos == -1 ? -1 : note;
     }
 
 

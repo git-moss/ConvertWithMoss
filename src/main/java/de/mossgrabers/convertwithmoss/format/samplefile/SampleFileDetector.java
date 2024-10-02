@@ -2,21 +2,24 @@
 // (c) 2019-2024
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.core.detector;
+package de.mossgrabers.convertwithmoss.format.samplefile;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadataPane;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
@@ -26,39 +29,46 @@ import javafx.scene.layout.BorderPane;
 
 
 /**
- * Base class for detector descriptors based on pure sample files.
- *
- * @param <T> The type of the descriptor task
+ * Detector for pure sample files (e.g. AIFF, WAV, ...).
  *
  * @author Jürgen Moßgraber
  */
-public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDetectorTask> extends AbstractDetectorWithMetadataPane<T>
+public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleFileDetectorTask>
 {
-    private static final String DETECTION_PATTERN    = "DetectionPattern";
-    private static final String IS_ASCENDING         = "IsAscending";
-    private static final String MONO_SPLITS_PATTERN  = "MonoSPlitPattern";
-    private static final String CROSSFADE_NOTES      = "CrossfadeNotes";
-    private static final String CROSSFADE_VELOCITIES = "CrossfadeVelocities";
-    private static final String POSTFIX              = "Postfix";
+    private static final String            SAMPLEFILE_TYPE          = "SamplefileType";
+    private static final String            DETECTION_PATTERN        = "DetectionPattern";
+    private static final String            IS_ASCENDING             = "IsAscending";
+    private static final String            MONO_SPLITS_PATTERN      = "MonoSPlitPattern";
+    private static final String            CROSSFADE_NOTES          = "CrossfadeNotes";
+    private static final String            CROSSFADE_VELOCITIES     = "CrossfadeVelocities";
+    private static final String            POSTFIX                  = "Postfix";
 
-    private TextField           detectionPatternField;
-    private ToggleGroup         sortAscendingGroup;
-    private TextField           monoSplitsField;
-    private TextField           crossfadeNotesField;
-    private TextField           crossfadeVelocitiesField;
-    private TextField           postfixField;
+    private static final SampleFileType [] FILE_TYPES               =
+    {
+        new AiffSampleFileType (),
+        new FlacSampleFileType (),
+        new NcwSampleFileType (),
+        new OggSampleFileType (),
+        new WavSampleFileType ()
+    };
+
+    private TextField                      detectionPatternField;
+    private ToggleGroup                    sortAscendingGroup;
+    private TextField                      monoSplitsField;
+    private TextField                      crossfadeNotesField;
+    private TextField                      crossfadeVelocitiesField;
+    private TextField                      postfixField;
+    private final CheckBox []              sampleFileTypeCheckBoxes = new CheckBox [FILE_TYPES.length];
 
 
     /**
      * Constructor.
      *
-     * @param name The name of the object.
      * @param notifier The notifier
-     * @param prefix The prefix to use for the metadata properties tags
      */
-    protected AbstractSampleFileDetector (final String name, final INotifier notifier, final String prefix)
+    public SampleFileDetector (final INotifier notifier)
     {
-        super (name, notifier, prefix);
+        super ("Sample Files", notifier, "samplefile");
     }
 
 
@@ -67,6 +77,9 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
     public void saveSettings (final BasicConfig config)
     {
         this.metadataPane.saveSettings (config);
+
+        for (int i = 0; i < FILE_TYPES.length; i++)
+            config.setBoolean (this.prefix + SAMPLEFILE_TYPE + i, this.sampleFileTypeCheckBoxes[i].isSelected ());
 
         config.setProperty (this.prefix + DETECTION_PATTERN, this.detectionPatternField.getText ());
         config.setProperty (this.prefix + IS_ASCENDING, Boolean.toString (this.sortAscendingGroup.getToggles ().get (1).isSelected ()));
@@ -82,6 +95,9 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
     public void loadSettings (final BasicConfig config)
     {
         this.metadataPane.loadSettings (config);
+
+        for (int i = 0; i < FILE_TYPES.length; i++)
+            this.sampleFileTypeCheckBoxes[i].setSelected (config.getBoolean (this.prefix + SAMPLEFILE_TYPE + i, true));
 
         this.detectionPatternField.setText (config.getProperty (this.prefix + DETECTION_PATTERN, "_ms*_,S_*_"));
         this.sortAscendingGroup.selectToggle (this.sortAscendingGroup.getToggles ().get (config.getBoolean (this.prefix + IS_ASCENDING, true) ? 1 : 0));
@@ -101,9 +117,16 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
         final String comma = Functions.getMessage ("IDS_NOTIFY_COMMA");
 
         ////////////////////////////////////////////////////////////
+        // Sample file types
+
+        panel.createSeparator ("@IDS_FILE_TYPES");
+        for (int i = 0; i < FILE_TYPES.length; i++)
+            this.sampleFileTypeCheckBoxes[i] = panel.createCheckBox (FILE_TYPES[i].getName ());
+
+        ////////////////////////////////////////////////////////////
         // Groups
 
-        panel.createSeparator ("@IDS_FILE_GROUPS");
+        panel.createSeparator ("@IDS_FILE_GROUPS").getStyleClass ().add ("titled-separator-pane");
 
         // Layer detection pattern
         this.detectionPatternField = panel.createField ("@IDS_FILE_DETECTION", comma, -1);
@@ -135,8 +158,7 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
         ////////////////////////////////////////////////////////////
         // Options
 
-        final TitledSeparator separator = panel.createSeparator ("@IDS_FILE_OPTIONS");
-        separator.getStyleClass ().add ("titled-separator-pane");
+        panel.createSeparator ("@IDS_FILE_OPTIONS").getStyleClass ().add ("titled-separator-pane");
 
         this.crossfadeNotesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_NOTES");
         this.crossfadeVelocitiesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_VELOCITIES");
@@ -151,9 +173,20 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
 
     /** {@inheritDoc} */
     @Override
-    public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
+    public boolean validateParameters ()
     {
-        final boolean isAscending = this.sortAscendingGroup.getToggles ().get (1).isSelected ();
+        boolean hasSampleFileTypeSelection = false;
+        for (int i = 0; i < FILE_TYPES.length; i++)
+            if (this.sampleFileTypeCheckBoxes[i].isSelected ())
+            {
+                hasSampleFileTypeSelection = true;
+                break;
+            }
+        if (!hasSampleFileTypeSelection)
+        {
+            Functions.message ("@IDS_NOTIFY_ERR_NO_TYPE_SELECTED");
+            return false;
+        }
 
         final String [] groupPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
         for (final String groupPattern: groupPatterns)
@@ -162,29 +195,50 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
                 Functions.message ("@IDS_NOTIFY_ERR_SPLIT_REGEX", groupPattern);
                 this.notifier.updateButtonStates (true);
                 this.detectionPatternField.selectAll ();
-                return;
+                return false;
             }
 
-        final String [] monoSplitPatterns = StringUtils.splitByComma (this.monoSplitsField.getText ());
-        final String [] postfixTexts = StringUtils.splitByComma (this.postfixField.getText ());
-
-        int crossfadeNotes;
-        try
-        {
-            crossfadeNotes = Integer.parseInt (this.crossfadeNotesField.getText ());
-        }
-        catch (final NumberFormatException ex)
-        {
-            crossfadeNotes = 0;
-        }
-        if (crossfadeNotes > 127)
+        if (this.getCrossfadeNotes () > 127)
         {
             Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_NOTES");
             this.notifier.updateButtonStates (true);
             this.crossfadeNotesField.selectAll ();
-            return;
+            return false;
         }
 
+        if (this.getCrossfadeVelocities () > 127)
+        {
+            this.notifier.updateButtonStates (true);
+            Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_VELOCITIES");
+            return false;
+        }
+
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
+    {
+        final List<SampleFileType> sampleFileTypes = new ArrayList<> ();
+        for (int i = 0; i < FILE_TYPES.length; i++)
+            if (this.sampleFileTypeCheckBoxes[i].isSelected ())
+                sampleFileTypes.add (FILE_TYPES[i]);
+
+        final boolean isAscending = this.sortAscendingGroup.getToggles ().get (1).isSelected ();
+        final String [] groupPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
+        final String [] monoSplitPatterns = StringUtils.splitByComma (this.monoSplitsField.getText ());
+        final String [] postfixTexts = StringUtils.splitByComma (this.postfixField.getText ());
+        final int crossfadeNotes = this.getCrossfadeNotes ();
+        final int crossfadeVelocities = this.getCrossfadeVelocities ();
+
+        this.startDetection (new SampleFileDetectorTask (this.notifier, consumer, folder, groupPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane, sampleFileTypes));
+    }
+
+
+    private int getCrossfadeVelocities ()
+    {
         int crossfadeVelocities;
         try
         {
@@ -194,29 +248,21 @@ public abstract class AbstractSampleFileDetector<T extends AbstractSampleFileDet
         {
             crossfadeVelocities = 0;
         }
-        if (crossfadeVelocities > 127)
-        {
-            this.notifier.updateButtonStates (true);
-            Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_VELOCITIES");
-            return;
-        }
-
-        this.startDetection (this.createDetectorTask (folder, consumer, isAscending, groupPatterns, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities));
+        return crossfadeVelocities;
     }
 
 
-    /**
-     * Create the detector task.
-     *
-     * @param consumer The consumer that handles the detected multi-sample sources
-     * @param folder The top source folder for the detection
-     * @param isAscending Are groups ordered ascending?
-     * @param groupPatterns Detection patterns for groups
-     * @param monoSplitPatterns Detection pattern for mono splits (to be combined to stereo files)
-     * @param postfixTexts Post-fix text to remove
-     * @param crossfadeNotes Number of notes to cross-fade
-     * @param crossfadeVelocities The number of velocity steps to cross-fade ranges
-     * @return The detector task
-     */
-    protected abstract T createDetectorTask (final File folder, final Consumer<IMultisampleSource> consumer, final boolean isAscending, final String [] groupPatterns, final String [] monoSplitPatterns, final String [] postfixTexts, int crossfadeNotes, int crossfadeVelocities);
+    private int getCrossfadeNotes ()
+    {
+        int crossfadeNotes;
+        try
+        {
+            crossfadeNotes = Integer.parseInt (this.crossfadeNotesField.getText ());
+        }
+        catch (final NumberFormatException ex)
+        {
+            crossfadeNotes = 0;
+        }
+        return crossfadeNotes;
+    }
 }

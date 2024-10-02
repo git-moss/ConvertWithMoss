@@ -84,7 +84,7 @@ public class NcwFileSampleData extends AbstractFileSampleData
         if (zone.getStop () <= 0)
             zone.setStop (this.ncwFile.getNumberOfSamples ());
 
-        // More info not available in NCW
+        // No more info available in NCW
     }
 
 

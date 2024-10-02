@@ -42,7 +42,7 @@ public class SxtCreator extends AbstractCreator
      */
     public SxtCreator (final INotifier notifier)
     {
-        super ("Propellerhead Reason NN-XT", notifier);
+        super ("Reason NN-XT", notifier);
     }
 
 
