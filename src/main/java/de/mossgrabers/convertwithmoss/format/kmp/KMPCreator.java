@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,7 +47,7 @@ public class KMPCreator extends AbstractCreator
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
         // Create a sub-folder for the KMP file(s) and all samples
-        final File subFolder = new File (destinationFolder, FileUtils.createDOSFileName (sampleName, Collections.emptySet ()));
+        final File subFolder = new File (destinationFolder, FileUtils.createDOSFileName (sampleName, new HashSet<> ()));
         if (!subFolder.exists () && !subFolder.mkdirs ())
         {
             this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
