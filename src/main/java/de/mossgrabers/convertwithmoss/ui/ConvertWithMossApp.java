@@ -669,7 +669,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         }
         catch (final IOException | RuntimeException ex)
         {
-            this.logError ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ());
+            this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
         }
     }
 
@@ -842,7 +842,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             }
             catch (final IOException | RuntimeException ex)
             {
-                this.logError ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ());
+                this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
             }
 
             return;

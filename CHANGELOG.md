@@ -1,10 +1,12 @@
 # Changes
 
-## 11.1.0 (unreleased)
+## 11.1.0
 
 * New: AIFF/WAV files are now lazy loaded which keeps the memory usage down.
 * EXS24
   * New: Increased the directories upwards search option to 6.
+* KMP
+  * Fixed: Creation did crash.
 * Sample Files
   * New: Aggregated AIFF and WAV sources into 'Sample Files' source. Added AIFF, FLAC, NCW and OGG files as well. All types can be selected and detected at once.
   * Fixed: Note detection from file names could be wrong when flat notes were part of it (e.g. Eb2 was detected as B2).

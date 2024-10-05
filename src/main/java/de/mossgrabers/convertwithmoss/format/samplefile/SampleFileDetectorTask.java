@@ -211,7 +211,7 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
         }
         catch (final IOException | MultisampleException | CombinationNotPossibleException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex.getMessage ());
+            this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
         }
 
         return Collections.emptyList ();
