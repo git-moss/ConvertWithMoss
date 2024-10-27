@@ -27,6 +27,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -86,6 +88,20 @@ public class AiffFileSampleData extends AbstractFileSampleData
         }
         catch (final UnsupportedAudioFileException ex)
         {
+            final String fileEnding = this.sampleFile.getName ().toLowerCase ();
+            if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
+            {
+                final AiffFile aiffFile = new AiffFile (this.sampleFile);
+                final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
+                final WaveFile wavFile = new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), (int) commonChunk.getNumSampleFrames ());
+                final DataChunk dataChunk = wavFile.getDataChunk ();
+                final byte [] soundData = aiffFile.getSoundDataChunk ().getData ();
+                final byte [] destinationData = dataChunk.getData ();
+                System.arraycopy (soundData, 0, destinationData, 0, Math.min (destinationData.length, soundData.length));
+                wavFile.write (outputStream);
+                return;
+            }
+
             throw new IOException (ex);
         }
         finally
@@ -105,7 +121,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
     @Override
     public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        final AiffFile aifFile = getAiffFile ();
+        final AiffFile aifFile = this.getAiffFile ();
         final AiffCommonChunk commonChunk = aifFile.getCommonChunk ();
         if (commonChunk == null)
             return;

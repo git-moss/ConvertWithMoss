@@ -367,6 +367,7 @@ public class TagDetector
             "Harp",
             "Koto",
             "Lyre",
+            "Erhu",
             "Oud"
         });
         CATEGORIES.put (CATEGORY_SNARE, new String []

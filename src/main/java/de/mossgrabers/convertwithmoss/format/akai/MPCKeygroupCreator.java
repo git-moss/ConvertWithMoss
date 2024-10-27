@@ -32,9 +32,13 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
 
 
 /**
@@ -46,12 +50,18 @@ import javafx.scene.Node;
  */
 public class MPCKeygroupCreator extends AbstractCreator
 {
+    private static final String MPC_LAYER_LIMIT_USE_8 = "MPCLayerLimitUse8";
+
+
     private enum SamplePlay
     {
         ONE_SHOT,
         NOTE_OFF,
         NOTE_ON
     }
+
+
+    private ToggleGroup layerLimitGroup;
 
 
     /**
@@ -70,7 +80,20 @@ public class MPCKeygroupCreator extends AbstractCreator
     public Node getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.addWavChunkOptions (panel);
+
+        panel.createSeparator ("@IDS_MPC_LAYER_LIMIT");
+
+        this.layerLimitGroup = new ToggleGroup ();
+        final RadioButton order1 = panel.createRadioButton ("@IDS_MPC_LAYER_LIMIT_4");
+        order1.setAccessibleHelp (Functions.getMessage ("IDS_MPC_LAYER_LIMIT"));
+        order1.setToggleGroup (this.layerLimitGroup);
+        final RadioButton order2 = panel.createRadioButton ("@IDS_MPC_LAYER_LIMIT_8");
+        order2.setAccessibleHelp (Functions.getMessage ("IDS_MPC_LAYER_LIMIT"));
+        order2.setToggleGroup (this.layerLimitGroup);
+
+        final TitledSeparator separator = this.addWavChunkOptions (panel);
+        separator.getStyleClass ().add ("titled-separator-pane");
+
         return panel.getPane ();
     }
 
@@ -79,6 +102,8 @@ public class MPCKeygroupCreator extends AbstractCreator
     @Override
     public void loadSettings (final BasicConfig config)
     {
+        this.layerLimitGroup.selectToggle (this.layerLimitGroup.getToggles ().get (config.getBoolean (MPC_LAYER_LIMIT_USE_8, false) ? 1 : 0));
+
         this.loadWavChunkSettings (config, "MPC");
     }
 
@@ -87,7 +112,20 @@ public class MPCKeygroupCreator extends AbstractCreator
     @Override
     public void saveSettings (final BasicConfig config)
     {
+        config.setBoolean (MPC_LAYER_LIMIT_USE_8, this.getLayerLimit () == 8);
+
         this.saveWavChunkSettings (config, "MPC");
+    }
+
+
+    /**
+     * Get the limit for the number of layers in key-groups.
+     *
+     * @return 8 or 4
+     */
+    private int getLayerLimit ()
+    {
+        return this.layerLimitGroup.getToggles ().get (1).isSelected () ? 8 : 4;
     }
 
 
@@ -154,10 +192,10 @@ public class MPCKeygroupCreator extends AbstractCreator
 
             for (final ISampleZone sampleMetadata: group.getSampleZones ())
             {
-                final Optional<Keygroup> keygroupOpt = getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger);
+                final Optional<Keygroup> keygroupOpt = this.getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger);
                 if (keygroupOpt.isEmpty ())
                 {
-                    this.notifier.logError ("IDS_MPC_MORE_THAN_4_LAYERS", Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
+                    this.notifier.logError ("IDS_MPC_MORE_THAN_N_LAYERS", Integer.toString (this.getLayerLimit ()), Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
                     continue;
                 }
 
@@ -297,7 +335,7 @@ public class MPCKeygroupCreator extends AbstractCreator
     }
 
 
-    private static Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleZone zone, final Document document, final Element instrumentsElement, final TriggerType trigger)
+    private Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleZone zone, final Document document, final Element instrumentsElement, final TriggerType trigger)
     {
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
         final int keyHigh = limitToDefault (zone.getKeyHigh (), 127);
@@ -305,25 +343,27 @@ public class MPCKeygroupCreator extends AbstractCreator
         final boolean isSequence = zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
         final List<Keygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, key -> new ArrayList<> ());
 
-        // Check if a keygroup exists to which the layer can be added
+        final int layerLimit = this.getLayerLimit ();
+
+        // Check if a key-group exists to which the layer can be added
         for (final Keygroup keygroup: keygroups)
-            // Look for velocity or sequence keygroups (type must match)
+            // Look for velocity or sequence key-groups (type must match)
             if (keygroup.isSequence () == isSequence)
             {
                 // Velocity range must match as well for sequences
                 if (keygroup.isSequence () && isSequence && (limitToDefault (zone.getVelocityLow (), 1) != limitToDefault (keygroup.getVelocityLow (), 1) || limitToDefault (zone.getVelocityHigh (), 127) != limitToDefault (keygroup.getVelocityHigh (), 127)))
                     continue;
 
-                // Matching keygroup with free layer found
-                if (keygroup.getLayerCount () < 4)
+                // Matching key-group with free layer found
+                if (keygroup.getLayerCount () < layerLimit)
                     return Optional.of (keygroup);
 
-                // Can only have 1 sequence keygroup since round robin is per keygroup
+                // Can only have 1 sequence key-group since round robin is per key-group
                 if (isSequence)
                     return Optional.empty ();
             }
 
-        // No existing keygroup found, create a new one (Instrument is a keygroup)
+        // No existing key-group found, create a new one (Instrument is a key-group)
 
         final Element instrumentElement = document.createElement ("Instrument");
         instrumentElement.setAttribute ("number", Integer.toString (calcInstrumentNumber (keygroupsMap)));

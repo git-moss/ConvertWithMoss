@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -51,8 +52,10 @@ import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
+import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.TextField;
 
 
 /**
@@ -67,13 +70,19 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
     private static final DestinationAudioFormat DESTINATION_FORMAT                 = new DestinationAudioFormat ();
     private static final String                 IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA = "IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA";
-    private static final String                 FORWARD_SLASH                      = "/";
+    protected static final String               FORWARD_SLASH                      = "/";
 
+    // Metadata constants
     private static final String                 WRITE_BROADCAST_AUDIO_CHUNK        = "WriteBroadcastAudioChunk";
     private static final String                 WRITE_INSTRUMENT_CHUNK             = "WriteInstrumentChunk";
     private static final String                 WRITE_SAMPLE_CHUNK                 = "WriteSampleChunk";
     private static final String                 REMOVE_JUNK_CHUNK                  = "RemoveJunkChunk";
 
+    // Combine into library constants
+    private static final String                 COMBINE_INTO_ONE_LIBRARY           = "CombineIntoOneLibrary";
+    private static final String                 COMBINE_FILENAME                   = "CombineFilename";
+
+    // Metadata options
     private CheckBox                            updateBroadcastAudioChunkBox       = null;
     private CheckBox                            updateInstrumentChunkBox           = null;
     private CheckBox                            updateSampleChunkBox               = null;
@@ -82,6 +91,10 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     private boolean                             updateInstrumentChunk              = false;
     private boolean                             updateSampleChunk                  = false;
     private boolean                             removeJunkChunks                   = false;
+
+    // Combine into library options
+    protected CheckBox                          combineIntoOneLibrary              = null;
+    protected TextField                         combinationFilename                = null;
 
 
     /**
@@ -110,6 +123,56 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     {
         // Overwrite and return true to support combining multi-sample files
         return false;
+    }
+
+
+    /**
+     * Add the UI elements for the combination of several multi-sample source into 1 library.
+     *
+     * @param panel The panel to add the widgets to
+     */
+    protected void addCombineToLibraryUI (final BasePanel panel)
+    {
+        final TitledSeparator separator = panel.createSeparator ("@IDS_COMBINE_OF_SOURCES");
+        separator.getStyleClass ().add ("titled-separator-pane");
+        this.combineIntoOneLibrary = panel.createCheckBox ("@IDS_COMBINE_IN_ONE_LIBRARY");
+        this.combinationFilename = panel.createField ("@IDS_COMBINE_LIBRARY_FILENAME");
+    }
+
+
+    protected void loadCombineToLibrarySettings (final String prefix, final BasicConfig config)
+    {
+        this.combineIntoOneLibrary.setSelected (config.getBoolean (prefix + COMBINE_INTO_ONE_LIBRARY, false));
+        this.combinationFilename.setText (config.getProperty (prefix + COMBINE_FILENAME, ""));
+    }
+
+
+    protected void saveCombineToLibrarySettings (final String prefix, final BasicConfig config)
+    {
+        config.setBoolean (prefix + COMBINE_INTO_ONE_LIBRARY, this.combineIntoOneLibrary.isSelected ());
+        config.setProperty (prefix + COMBINE_FILENAME, this.combinationFilename.getText ());
+    }
+
+
+    /**
+     * Get the library name to use for combine multi-sample sources.
+     *
+     * @param multisampleSources If no name was entered, the name of the first multi-sample is used,
+     *            if any
+     * @return The name
+     */
+    protected String getCombinationLibraryName (final List<IMultisampleSource> multisampleSources)
+    {
+        String name = multisampleSources.get (0).getName ();
+
+        if (this.wantsMultipleFiles ())
+        {
+            final String combinationName = this.combinationFilename.getText ().trim ();
+            if (combinationName.length () > 0)
+                name = combinationName;
+        }
+
+        return createSafeFilename (name);
     }
 
 
@@ -322,6 +385,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
                 this.zipSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
             }
+        this.notifyNewline ();
     }
 
 
@@ -539,6 +603,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 writtenFiles.add (file);
             }
         }
+        this.notifyNewline ();
 
         return writtenFiles;
     }
@@ -612,13 +677,32 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected static void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate) throws IOException
     {
+        recalculateSamplePositions (multisampleSource, newSampleRate, false);
+    }
+
+
+    /**
+     * Re-calculates the sample start, stop and loop start, stop positions for the given new sample
+     * rate of all samples/zones in the given multi-sample.
+     *
+     * @param multisampleSource The multi-sample source
+     * @param newSampleRate The new sample rate
+     * @param onlyIfLarger If true, the values are only re-calculated if the sample frequency is
+     *            larger than the new sample rate
+     * @throws IOException Could not retrieve the current sample rate
+     */
+    protected static void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate, final boolean onlyIfLarger) throws IOException
+    {
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 final ISampleData sampleData = zone.getSampleData ();
                 if (sampleData == null)
                     continue;
-                final double sampleRateRatio = newSampleRate / (double) sampleData.getAudioMetadata ().getSampleRate ();
+                final int sampleRate = sampleData.getAudioMetadata ().getSampleRate ();
+                if (onlyIfLarger && sampleRate <= newSampleRate)
+                    continue;
+                final double sampleRateRatio = newSampleRate / (double) sampleRate;
                 zone.setStart ((int) Math.round (zone.getStart () * sampleRateRatio));
                 zone.setStop ((int) Math.round (zone.getStop () * sampleRateRatio));
 
@@ -1024,16 +1108,65 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected File createUniqueFilename (final File destinationFolder, final String sampleName, final String extension)
     {
-        File multiFile;
-
-        int counter = 0;
-        do
+        File multiFile = new File (destinationFolder, sampleName + extension);
+        int counter = 1;
+        while (multiFile.exists ())
         {
             counter++;
-            final String prefix = counter == 1 ? "" : " (" + counter + ")";
-            multiFile = new File (destinationFolder, sampleName + prefix + extension);
-        } while (multiFile.exists ());
-
+            multiFile = new File (destinationFolder, sampleName + " (" + counter + ")" + extension);
+        }
         return multiFile;
+    }
+
+
+    /**
+     * Creates a unique file name which does not already exists in the list of the given ones.
+     *
+     * @param destinationFolder The folder in which to create the file
+     * @param sampleName The name for the file
+     * @param extension The extension for the file
+     * @param existingAbsoluteFilenames The list with existing absolute file names
+     * @return A unique name
+     */
+    protected File createUniqueFilename (final File destinationFolder, final String sampleName, final String extension, final List<String> existingAbsoluteFilenames)
+    {
+        File multiFile = new File (destinationFolder, sampleName + extension);
+        int counter = 1;
+        while (existingAbsoluteFilenames.contains (multiFile.getAbsolutePath ()))
+        {
+            counter++;
+            multiFile = new File (destinationFolder, sampleName + " (" + counter + ")" + extension);
+        }
+        return multiFile;
+    }
+
+
+    /**
+     * Creates a DOS file name with a maximum number of 8 characters. Adds numbers to make it unique
+     * among the given other file names.
+     *
+     * @param destinationFolder The target folder
+     * @param filename The filename to shorten
+     * @param extension The file extension
+     * @param createdNames Prevent conflicts with these file names
+     * @return The unique DOS file name
+     */
+    public static String createUniqueDOSFileName (final File destinationFolder, final String filename, final String extension, final Collection<String> createdNames)
+    {
+        String dosFilename = filename.toUpperCase ().replace (' ', '_');
+        if (dosFilename.length () > 8)
+            dosFilename = dosFilename.substring (0, 8);
+
+        int counter = 1;
+        while (createdNames.contains (dosFilename) || new File (destinationFolder, dosFilename + extension).exists ())
+        {
+            counter++;
+            final String counterStr = Integer.toString (counter);
+            dosFilename = dosFilename.substring (0, 8 - counterStr.length ()) + counterStr;
+        }
+
+        createdNames.add (dosFilename);
+
+        return dosFilename;
     }
 }

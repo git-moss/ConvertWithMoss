@@ -128,6 +128,17 @@ public class AiffFile
 
 
     /**
+     * Get the sound data chunk.
+     *
+     * @return The sound data chunk if present
+     */
+    public AiffSoundDataChunk getSoundDataChunk ()
+    {
+        return this.soundDataChunk;
+    }
+
+
+    /**
      * Get the marker chunk.
      *
      * @return The marker chunk if present
@@ -244,7 +255,7 @@ public class AiffFile
 
 
     /**
-     * Check if the chunk stack is already filled from reading the WAV file. Fill it if empty.
+     * Check if the chunk stack is already filled from reading the AIFF file. Fill it if empty.
      */
     private void fillChunkStack ()
     {

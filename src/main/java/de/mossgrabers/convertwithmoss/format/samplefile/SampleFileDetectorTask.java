@@ -137,7 +137,7 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
 
     /**
      * Detect metadata, order samples and finally create the multi-sample.
-     * 
+     *
      * @param sampleFileType The sample file type
      * @param folder The folder which contains the sample files
      * @param sampleData The detected sample files

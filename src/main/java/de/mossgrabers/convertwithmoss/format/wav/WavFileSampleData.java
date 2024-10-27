@@ -201,11 +201,7 @@ public class WavFileSampleData extends AbstractFileSampleData
     public WaveFile getWaveFile () throws IOException
     {
         if (this.waveFile == null)
-        {
-            // Lazy loading
-
             if (this.zipFile == null)
-            {
                 try
                 {
                     this.waveFile = new WaveFile (this.sampleFile, true);
@@ -214,7 +210,6 @@ public class WavFileSampleData extends AbstractFileSampleData
                 {
                     throw new IOException (ex);
                 }
-            }
             else
             {
                 this.waveFile = new WaveFile ();
@@ -235,7 +230,6 @@ public class WavFileSampleData extends AbstractFileSampleData
                     }
                 }
             }
-        }
 
         return this.waveFile;
     }

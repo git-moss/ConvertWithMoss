@@ -137,6 +137,11 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                     // No idea what that is but it is 4 bytes long...
                     break;
 
+                case EXS24Block.TYPE_UNKNOWN_2:
+                    // No idea what that is but it is 4 bytes long...
+                    java.nio.file.Files.write (java.nio.file.Paths.get ("C:/Users/mos/Desktop/filename.dat"), block.content);
+                    break;
+
                 default:
                     this.notifier.logError ("IDS_EXS_UNKNOWN_EXS_BLOCK_TYPE", Integer.toString (block.type));
                     break;

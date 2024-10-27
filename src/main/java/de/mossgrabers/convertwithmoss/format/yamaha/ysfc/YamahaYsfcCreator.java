@@ -29,13 +29,9 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 
 
@@ -46,11 +42,9 @@ import javafx.scene.control.ToggleGroup;
  */
 public class YamahaYsfcCreator extends AbstractCreator
 {
-    private static final String                 YSFC_OUTPUT_FORMAT_LIBRARY    = "YsfcOutputFormatPreset";
-    private static final String                 YSFC_COMBINE_INTO_ONE_LIBRARY = "YsfcCombineIntoOneLibrary";
-    private static final String                 YSFC_COMBINE_FILENAME         = "YsfcCombineFilename";
+    private static final String                 YSFC_OUTPUT_FORMAT_LIBRARY = "YsfcOutputFormatPreset";
 
-    private static final DestinationAudioFormat DESTINATION_AUDIO_FORMAT      = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat DESTINATION_AUDIO_FORMAT   = new DestinationAudioFormat (new int []
     {
         16
     }, -1, false);
@@ -82,8 +76,6 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
     private ToggleGroup outputFormatGroup;
-    private CheckBox    combineIntoOneLibrary;
-    private TextField   combinationFilename;
 
 
     /**
@@ -112,10 +104,7 @@ public class YamahaYsfcCreator extends AbstractCreator
             order.setToggleGroup (this.outputFormatGroup);
         }
 
-        panel.createSeparator ("@IDS_YSFC_SOURCE_COMBINATION");
-        this.combineIntoOneLibrary = panel.createCheckBox ("@IDS_YSFC_MULTI_SAMPLE_COMBINATION");
-        this.combinationFilename = panel.createField ("@IDS_YSFC_COMBINATION_FILENAME");
-
+        this.addCombineToLibraryUI (panel);
         return panel.getPane ();
     }
 
@@ -124,9 +113,9 @@ public class YamahaYsfcCreator extends AbstractCreator
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.outputFormatGroup.selectToggle (this.outputFormatGroup.getToggles ().get (config.getInteger (YSFC_OUTPUT_FORMAT_LIBRARY, 1)));
-        this.combineIntoOneLibrary.setSelected (config.getBoolean (YSFC_COMBINE_INTO_ONE_LIBRARY, false));
-        this.combinationFilename.setText (config.getProperty (YSFC_COMBINE_FILENAME, ""));
+        Functions.setSelectedToggleIndex (this.outputFormatGroup, config.getInteger (YSFC_OUTPUT_FORMAT_LIBRARY, 1));
+
+        this.loadCombineToLibrarySettings ("Ysfc", config);
     }
 
 
@@ -135,8 +124,8 @@ public class YamahaYsfcCreator extends AbstractCreator
     public void saveSettings (final BasicConfig config)
     {
         config.setInteger (YSFC_OUTPUT_FORMAT_LIBRARY, this.getSelectedOutputFormat ().ordinal ());
-        config.setBoolean (YSFC_COMBINE_INTO_ONE_LIBRARY, this.combineIntoOneLibrary.isSelected ());
-        config.setProperty (YSFC_COMBINE_FILENAME, this.combinationFilename.getText ());
+
+        this.saveCombineToLibrarySettings ("Ysfc", config);
     }
 
 
@@ -150,15 +139,20 @@ public class YamahaYsfcCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
+    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    {
+        this.create (destinationFolder, Collections.singletonList (multisampleSource));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void create (final File destinationFolder, final List<IMultisampleSource> multisampleSources) throws IOException
     {
         if (multisampleSources.isEmpty ())
             return;
 
-        final String combinationName = this.combinationFilename.getText ();
-        final String name = multisampleSources.size () > 1 && combinationName.length () > 0 ? combinationName : multisampleSources.get (0).getName ();
-        final String multiSampleName = createSafeFilename (name);
-
+        final String multiSampleName = this.getCombinationLibraryName (multisampleSources);
         final OutputFormat selectedOutputFormat = this.getSelectedOutputFormat ();
         final File multiFile = this.createUniqueFilename (destinationFolder, multiSampleName, ENDING_MAP.get (selectedOutputFormat));
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
@@ -166,14 +160,6 @@ public class YamahaYsfcCreator extends AbstractCreator
         storeMultisamples (multisampleSources, multiFile, selectedOutputFormat);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
-    {
-        this.create (destinationFolder, Collections.singletonList (multisampleSource));
     }
 
 
@@ -335,14 +321,7 @@ public class YamahaYsfcCreator extends AbstractCreator
 
     private OutputFormat getSelectedOutputFormat ()
     {
-        int selected = 1;
-        final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
-        for (int i = 0; i < toggles.size (); i++)
-            if (toggles.get (i).isSelected ())
-            {
-                selected = i;
-                break;
-            }
-        return OutputFormat.values ()[selected];
+        final int selected = Functions.getSelectedToggleIndex (this.outputFormatGroup);
+        return OutputFormat.values ()[selected < 0 ? 1 : selected];
     }
 }

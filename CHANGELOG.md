@@ -1,5 +1,30 @@
 # Changes
 
+## 11.2.0
+
+* New: Source and destination path stores now the last 20 selections.
+* New: Implemented loading of AIFF files since some crashed the Java Sound API.
+* DecentSampler
+  * New: Added option to create a dsbundle as output format.
+  * New: Added option to combine all detected multi-sample sources into one library or bundle.
+* Korg KMP
+  * New: Proper support for stereo files. Turns out these workstations cannot play back real stereo files, therefore, a stereo file needs to be split into 2 KMP files.
+  * New: Additionally, a KSC file is created to ease loading of stereo files.
+  * New: Added 2 options to increase the volume.
+  * New: Added option to split source groups into individual KMPs.
+  * New: Increased sample rate limit to 48kHz (was 44.1kHz).
+  * New: Improved creating unique folder names for KMP files.
+  * Fixed: Zones needed to be ordered by their upper key-limit otherwise the file did not work and could even crash the workstation.
+  * Fixed: Reverse playback state was not read correctly.
+  * Fixed: Prevent several characters in file names which could crash the workstation.
+* MPC Keygroups
+  * New: Added option to create up to 8 layers which is now supported with MPC Firmware 3.4.
+* SFZ
+  * New: Added support for reading SFZ files which reference other SFZ files with #include statements.
+  * New: Added option to (not) log unsupported SFZ opcodes. This is off by default since the warnings confused many users.
+* Soundfont 2
+  * New: Added options to add the filename and the preset number to the resulting destination file names.
+
 ## 11.1.0
 
 * New: AIFF/WAV files are now lazy loaded which keeps the memory usage down.

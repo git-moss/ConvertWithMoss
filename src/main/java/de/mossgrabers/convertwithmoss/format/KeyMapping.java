@@ -227,7 +227,7 @@ public class KeyMapping
             for (final ISampleZone zone: group)
                 this.extractedNames.add (zone.getName ());
 
-            final Map<Integer, List<ISampleZone>> noteMap = this.detectNotes (group);
+            final Map<Integer, List<ISampleZone>> noteMap = detectNotes (group);
             final Map<Integer, ISampleZone> groupNoteMap = convertSplitStereo (noteMap, leftChannelPatterns);
             sampleMetadata.put (entry.getKey (), createKeyMaps (groupNoteMap));
 
@@ -615,12 +615,10 @@ public class KeyMapping
     {
         int channels = -1;
         for (final Map.Entry<Integer, List<ISampleZone>> e: noteZoneMap.entrySet ())
-        {
             if (channels == -1)
                 channels = e.getValue ().size ();
             else if (channels != e.getValue ().size ())
                 return false;
-        }
         return true;
     }
 
@@ -633,7 +631,7 @@ public class KeyMapping
      * @return The key map
      * @throws MultisampleException Could not detect a note map
      */
-    private Map<Integer, List<ISampleZone>> detectNotes (final List<ISampleZone> zones) throws MultisampleException
+    private static Map<Integer, List<ISampleZone>> detectNotes (final List<ISampleZone> zones) throws MultisampleException
     {
         // First try to detect the notes from the sample chunk
         try
@@ -696,7 +694,7 @@ public class KeyMapping
      */
     private static int lookupMidiNote (final Map<String, Integer> keyMap, final String filename)
     {
-        String fn = FileUtils.getNameWithoutType (new File (filename));
+        final String fn = FileUtils.getNameWithoutType (new File (filename));
         final String noteArea = fn.toUpperCase (Locale.US);
 
         int pos = -1;
@@ -715,7 +713,7 @@ public class KeyMapping
             // length
             final int keyLength = n.length ();
             final int strLength = str.length ();
-            if (pos == -1 || keyLength > strLength || (keyLength == strLength && p + keyLength > pos + strLength))
+            if (pos == -1 || keyLength > strLength || keyLength == strLength && p + keyLength > pos + strLength)
             {
                 pos = p;
                 str = n;

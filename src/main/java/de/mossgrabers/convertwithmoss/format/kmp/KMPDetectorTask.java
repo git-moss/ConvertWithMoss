@@ -35,7 +35,7 @@ public class KMPDetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
      */
@@ -53,7 +53,7 @@ public class KMPDetectorTask extends AbstractDetectorTask
 
         try (final FileInputStream stream = new FileInputStream (sourceFile))
         {
-            new KMPFile (this.notifier, sourceFile, group).read (stream);
+            new KMPFile (this.notifier, sourceFile, group.getSampleZones ()).read (stream);
         }
         catch (final IOException | ParseException ex)
         {

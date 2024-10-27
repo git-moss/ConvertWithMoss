@@ -91,15 +91,13 @@ public abstract class AbstractListChunk extends RIFFChunk
 
     /** {@inheritDoc} */
     @Override
-    public boolean equals (Object obj)
+    public boolean equals (final Object obj)
     {
         if (this == obj)
             return true;
-        if (!super.equals (obj))
+        if (!super.equals (obj) || this.getClass () != obj.getClass ())
             return false;
-        if (getClass () != obj.getClass ())
-            return false;
-        AbstractListChunk other = (AbstractListChunk) obj;
+        final AbstractListChunk other = (AbstractListChunk) obj;
         return Objects.equals (this.subChunks, other.subChunks);
     }
 }

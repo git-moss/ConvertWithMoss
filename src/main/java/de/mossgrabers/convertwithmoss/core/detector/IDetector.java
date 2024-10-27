@@ -30,7 +30,7 @@ public interface IDetector extends ICoreTask
 
     /**
      * Validate the source parameters.
-     * 
+     *
      * @return Returns true if all parameters are valid
      */
     boolean validateParameters ();

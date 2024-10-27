@@ -35,6 +35,8 @@ class EXS24Block
     public static final int          TYPE_PARAMS               = 0x04;
     /** An unknown block. */
     public static final int          TYPE_UNKNOWN              = 0x08;
+    /** Another unknown block. */
+    public static final int          TYPE_UNKNOWN_2            = 0x0B;
 
     private static final String      BIG_ENDIAN_MAGIC          = "SOBT";
     private static final String      LITTLE_ENDIAN_MAGIC       = "TBOS";

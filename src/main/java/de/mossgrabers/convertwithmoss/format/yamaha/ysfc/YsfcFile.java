@@ -352,10 +352,10 @@ public class YsfcFile
         final ByteArrayOutputStream dwfmContentOutput = new ByteArrayOutputStream ();
         StreamUtils.writeUnsigned16 (dwfmContentOutput, keybankList.size (), false);
         StreamUtils.padBytes (dwfmContentOutput, 2);
-        for (int i = 0; i < keybankList.size (); i++)
+        for (final YamahaYsfcKeybank element: keybankList)
         {
             final ByteArrayOutputStream dataOutput = new ByteArrayOutputStream ();
-            keybankList.get (i).write (dataOutput);
+            element.write (dataOutput);
             dwfmContentOutput.write (dataOutput.toByteArray ());
         }
         dwfm.addDataArray (dwfmContentOutput.toByteArray ());
