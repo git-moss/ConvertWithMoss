@@ -74,6 +74,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -97,6 +98,8 @@ import javafx.stage.Stage;
  */
 public class ConvertWithMossApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {
+    private static final int               NUMBER_OF_DIRECTORIES               = 20;
+
     private static final String            ENABLE_DARK_MODE                    = "EnableDarkMode";
     private static final String            DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
     private static final String            DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
@@ -112,8 +115,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
     private BorderPane                     mainPane;
     private BorderPane                     executePane;
-    private final TextField                sourcePathField                     = new TextField ();
-    private final TextField                destinationPathField                = new TextField ();
+    private final ComboBox<String>         sourcePathField                     = new ComboBox<> ();
+    private final ComboBox<String>         destinationPathField                = new ComboBox<> ();
     private File                           sourceFolder;
     private File                           outputFolder;
     private Button                         convertButton;
@@ -126,6 +129,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
     private final TabPane                  sourceTabPane                       = new TabPane ();
     private final TabPane                  destinationTabPane                  = new TabPane ();
+
+    private final List<String>             sourcePathHistory                   = new ArrayList<> ();
+    private final List<String>             destinationPathHistory              = new ArrayList<> ();
 
     private boolean                        onlyAnalyse                         = true;
     private Button                         closeButton;
@@ -239,9 +245,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.sourceFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_TOOLTIP")));
         this.sourceFolderSelectButton.setOnAction (event -> {
 
+            final File currentSourcePath = new File (this.sourcePathField.getEditor ().getText ());
+            if (currentSourcePath.exists () && currentSourcePath.isDirectory ())
+                this.config.setActivePath (currentSourcePath);
             final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_SOURCE_HEADER");
             if (file.isPresent ())
-                this.sourcePathField.setText (file.get ().getAbsolutePath ());
+                this.sourcePathField.getEditor ().setText (file.get ().getAbsolutePath ());
 
         });
         final BoxPanel sourceUpperPart = new BoxPanel (Orientation.VERTICAL);
@@ -249,6 +258,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         sourceTitle.setLabelFor (this.sourcePathField);
         sourceUpperPart.addComponent (sourceTitle);
         sourceUpperPart.addComponent (new BorderPane (this.sourcePathField, null, this.sourceFolderSelectButton, null, null));
+        this.sourcePathField.setMaxWidth (Double.MAX_VALUE);
 
         this.sourceTabPane.getStyleClass ().add ("paddingLeftBottomRight");
         final ObservableList<Tab> tabs = this.sourceTabPane.getTabs ();
@@ -289,9 +299,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.destinationFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION_TOOLTIP")));
         this.destinationFolderSelectButton.setOnAction (event -> {
 
+            final File currentDestinationPath = new File (this.destinationPathField.getEditor ().getText ());
+            if (currentDestinationPath.exists () && currentDestinationPath.isDirectory ())
+                this.config.setActivePath (currentDestinationPath);
             final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_DESTINATION_HEADER");
             if (file.isPresent ())
-                this.destinationPathField.setText (file.get ().getAbsolutePath ());
+                this.destinationPathField.getEditor ().setText (file.get ().getAbsolutePath ());
 
         });
         destinationFolderPanel.setRight (this.destinationFolderSelectButton);
@@ -301,6 +314,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         destinationHeader.setLabelFor (this.destinationPathField);
         destinationUpperPart.addComponent (destinationHeader);
         destinationUpperPart.addComponent (destinationFolderPanel);
+        this.destinationPathField.setMaxWidth (Double.MAX_VALUE);
 
         this.destinationTabPane.getStyleClass ().add ("paddingLeftBottomRight");
         final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
@@ -356,7 +370,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final StackPane stackPane = new StackPane (this.mainPane, this.executePane);
         this.setCenterNode (stackPane);
 
-        this.loadConfig ();
+        this.loadConfiguration ();
 
         this.updateTitle (null);
         this.sourcePathField.requestFocus ();
@@ -422,15 +436,33 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     /**
      * Load configuration settings.
      */
-    private void loadConfig ()
+    private void loadConfiguration ()
     {
-        final String sourcePath = this.config.getProperty (SOURCE_PATH);
-        if (sourcePath != null)
-            this.sourcePathField.setText (sourcePath);
+        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
+        {
+            final String sourcePath = this.config.getProperty (SOURCE_PATH + i);
+            if (sourcePath == null || sourcePath.isBlank ())
+                break;
+            if (!this.sourcePathHistory.contains (sourcePath))
+                this.sourcePathHistory.add (sourcePath);
+        }
+        this.sourcePathField.getItems ().addAll (this.sourcePathHistory);
+        this.sourcePathField.setEditable (true);
+        if (!this.sourcePathHistory.isEmpty ())
+            this.sourcePathField.getEditor ().setText (this.sourcePathHistory.get (0));
 
-        final String destinationPath = this.config.getProperty (DESTINATION_PATH);
-        if (destinationPath != null)
-            this.destinationPathField.setText (destinationPath);
+        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
+        {
+            final String destinationPath = this.config.getProperty (DESTINATION_PATH + i);
+            if (destinationPath == null || destinationPath.isBlank ())
+                break;
+            if (!this.destinationPathHistory.contains (destinationPath))
+                this.destinationPathHistory.add (destinationPath);
+        }
+        this.destinationPathField.getItems ().addAll (this.destinationPathHistory);
+        this.destinationPathField.setEditable (true);
+        if (!this.destinationPathHistory.isEmpty ())
+            this.destinationPathField.getEditor ().setText (this.destinationPathHistory.get (0));
 
         final String renamingFilePath = this.config.getProperty (RENAMING_CSV_FILE);
         if (renamingFilePath != null)
@@ -464,8 +496,24 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         for (final IDetector detector: this.detectors)
             detector.shutdown ();
 
-        this.config.setProperty (SOURCE_PATH, this.sourcePathField.getText ());
-        this.config.setProperty (DESTINATION_PATH, this.destinationPathField.getText ());
+        this.saveConfiguration ();
+        Platform.exit ();
+    }
+
+
+    /**
+     * Save the configuration.
+     */
+    private void saveConfiguration ()
+    {
+        updateHistory (this.sourcePathField.getEditor ().getText (), this.sourcePathHistory);
+        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
+            this.config.setProperty (SOURCE_PATH + i, this.sourcePathHistory.size () > i ? this.sourcePathHistory.get (i) : "");
+
+        updateHistory (this.destinationPathField.getEditor ().getText (), this.destinationPathHistory);
+        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
+            this.config.setProperty (DESTINATION_PATH + i, this.destinationPathHistory.size () > i ? this.destinationPathHistory.get (i) : "");
+
         this.config.setProperty (RENAMING_CSV_FILE, this.renameFilePathField.getText ());
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure.isSelected ());
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles.isSelected ());
@@ -484,8 +532,6 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         // Store configuration
         super.exit ();
-
-        Platform.exit ();
     }
 
 
@@ -503,10 +549,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             return;
 
         final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
-        if (selectedDetector < 0 || !this.detectors[selectedDetector].checkSettings ())
-            return;
-
-        if (!this.detectors[selectedDetector].validateParameters ())
+        if (selectedDetector < 0 || !this.detectors[selectedDetector].checkSettings () || !this.detectors[selectedDetector].validateParameters ())
             return;
 
         this.loggingArea.clear ();
@@ -550,19 +593,20 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private boolean verifyFolders ()
     {
         // Check source folder
-        this.sourceFolder = new File (this.sourcePathField.getText ());
+        this.sourceFolder = new File (this.sourcePathField.getEditor ().getText ());
         if (!this.sourceFolder.exists () || !this.sourceFolder.isDirectory ())
         {
             Functions.message ("@IDS_NOTIFY_FOLDER_DOES_NOT_EXIST", this.sourceFolder.getAbsolutePath ());
             this.sourcePathField.requestFocus ();
             return false;
         }
+        this.sourcePathHistory.add (0, this.sourceFolder.getAbsolutePath ());
 
         if (this.onlyAnalyse)
             return true;
 
         // Check output folder
-        this.outputFolder = new File (this.destinationPathField.getText ());
+        this.outputFolder = new File (this.destinationPathField.getEditor ().getText ());
         if (!this.outputFolder.exists () && !this.outputFolder.mkdirs ())
         {
             Functions.message ("@IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", this.outputFolder.getAbsolutePath ());
@@ -575,6 +619,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             this.destinationPathField.requestFocus ();
             return false;
         }
+        this.destinationPathHistory.add (0, this.outputFolder.getAbsolutePath ());
 
         // Output folder must be empty or add new must be active
         if (!this.addNewFiles.isSelected ())
@@ -906,5 +951,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         // By default the display will originate from the center.
         // Applying a negative Y transformation will move it left.
         tabContainer.setTranslateY (-80);
+    }
+
+
+    private static void updateHistory (final String newItem, final List<String> history)
+    {
+        history.remove (newItem);
+        history.add (0, newItem);
     }
 }

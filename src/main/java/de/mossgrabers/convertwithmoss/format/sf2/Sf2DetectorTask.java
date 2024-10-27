@@ -51,6 +51,10 @@ import de.mossgrabers.tools.Pair;
  */
 public class Sf2DetectorTask extends AbstractDetectorTask
 {
+    private final boolean addFileName;
+    private final boolean addProgramNumber;
+
+
     /**
      * Constructor.
      *
@@ -58,10 +62,15 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadataConfig Additional metadata configuration parameters
+     * @param addFileName If true, add the filename to all multi-sample names
+     * @param addProgramNumber If true, add the program number to all multi-sample names
      */
-    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadataConfig)
+    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadataConfig, final boolean addFileName, final boolean addProgramNumber)
     {
         super (notifier, consumer, sourceFolder, metadataConfig, ".sf2");
+
+        this.addFileName = addFileName;
+        this.addProgramNumber = addProgramNumber;
     }
 
 
@@ -107,6 +116,8 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             // Little workaround for not set names...
             if ("NewInstr".equals (presetName))
                 presetName = parts[0];
+            if (this.addFileName || this.addProgramNumber)
+                presetName = this.addPrefixes (presetName, preset.getProgramNumber (), FileUtils.getNameWithoutType (sourceFile));
 
             final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + presetName;
             final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName, mappingName);
@@ -158,6 +169,17 @@ public class Sf2DetectorTask extends AbstractDetectorTask
         }
 
         return multisamples;
+    }
+
+
+    private String addPrefixes (final String presetName, final int programNumber, final String sf2FileName)
+    {
+        final StringBuilder sb = new StringBuilder ();
+        if (this.addFileName)
+            sb.append (sf2FileName).append (" - ");
+        if (this.addProgramNumber)
+            sb.append (String.format ("%03d", Integer.valueOf (programNumber))).append (" - ");
+        return sb.append (presetName).toString ();
     }
 
 

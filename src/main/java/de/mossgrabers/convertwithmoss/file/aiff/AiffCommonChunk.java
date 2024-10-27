@@ -87,7 +87,8 @@ public class AiffCommonChunk extends AiffChunk
 
 
     /**
-     * Get the size of the sample.
+     * Get the size of the sample. This is the number of bits in each sample point. It can be any
+     * number from 1 to 32.
      *
      * @return The size
      */

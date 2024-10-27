@@ -164,7 +164,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
 
         for (final Element sampleElement: sampleElements)
         {
-            final Optional<ISampleZone> optZone = createSampleZone (multisampleSource, sampleElement, basePath);
+            final Optional<ISampleZone> optZone = this.createSampleZone (multisampleSource, sampleElement, basePath);
             if (optZone.isPresent ())
                 group.addSampleZone (optZone.get ());
         }

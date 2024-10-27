@@ -5,11 +5,13 @@
 package de.mossgrabers.convertwithmoss.format.sfz;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +44,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -74,6 +77,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
     private Map<String, String> regionAttributes = Collections.emptyMap ();
     private final Set<String>   processedOpcodes = new HashSet<> ();
     private final Set<String>   allOpcodes       = new HashSet<> ();
+    private final boolean       logUnsupportedOpcodes;
 
 
     /**
@@ -83,10 +87,13 @@ public class SfzDetectorTask extends AbstractDetectorTask
      * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
+     * @param logUnsupportedOpcodes Logs unsupported SFZ opcodes which are contained in the file
      */
-    public SfzDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
+    public SfzDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final boolean logUnsupportedOpcodes)
     {
         super (notifier, consumer, sourceFolder, metadata, ".sfz");
+
+        this.logUnsupportedOpcodes = logUnsupportedOpcodes;
     }
 
 
@@ -99,7 +106,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
         try
         {
-            final String content = this.loadTextFile (file);
+            final String content = this.loadTextFileWithReferences (file);
             this.clearAttributes ();
             return this.parseMetadataFile (file, content);
         }
@@ -108,6 +115,76 @@ public class SfzDetectorTask extends AbstractDetectorTask
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Collections.emptyList ();
         }
+    }
+
+
+    /**
+     * Loads a text file in UTF-8 encoding. If UTF-8 fails a string is created anyway but with
+     * unspecified behavior. If the file contains #include statements the referenced file is loaded
+     * as well and included at the position.
+     *
+     * @param file The file to load
+     * @return The loaded text
+     * @throws IOException Could not load the file
+     */
+    private String loadTextFileWithReferences (final File file) throws IOException
+    {
+        final Map<String, String> cachedContents = new HashMap<> ();
+        final Set<String> processingFiles = new HashSet<> ();
+        return this.parseFile (file, cachedContents, processingFiles);
+    }
+
+
+    private String parseFile (final File file, final Map<String, String> cachedContents, final Set<String> processingFiles) throws IOException
+    {
+        final String absolutePath = file.getAbsolutePath ();
+
+        // Check if the content is already cached
+        if (cachedContents.containsKey (absolutePath))
+            return cachedContents.get (absolutePath);
+
+        // Check for endless loop
+        if (processingFiles.contains (absolutePath))
+            throw new IOException (Functions.getMessage ("IDS_SFZ_INCLUDE_LOOP_DETECTED", absolutePath));
+
+        // Mark the file as currently processing
+        processingFiles.add (absolutePath);
+
+        final StringBuilder content = new StringBuilder ();
+        final Iterator<String> iterator = this.loadTextFile (file).lines ().iterator ();
+        while (iterator.hasNext ())
+        {
+            final String line = iterator.next ();
+            if (line.startsWith ("#include"))
+            {
+                final String includedFilePath = extractIncludedFilePath (line);
+                if (includedFilePath == null)
+                    throw new IOException (Functions.getMessage ("IDS_SFZ_MALFORMED_INCLUDE", line));
+
+                // Recursively parse the included file
+                final File includedFile = new File (file.getParent (), includedFilePath);
+                content.append (this.parseFile (includedFile, cachedContents, processingFiles));
+            }
+            else
+                content.append (line).append ('\n');
+        }
+
+        // Cache the content of the current file in case it is included multiple times...
+        cachedContents.put (absolutePath, content.toString ());
+
+        // Mark the file as processed
+        processingFiles.remove (absolutePath);
+        return content.toString ();
+    }
+
+
+    private static String extractIncludedFilePath (final String line)
+    {
+        final int start = line.indexOf ('"');
+        final int end = line.lastIndexOf ('"');
+        if (start < 0 || end < 0 || start == end)
+            return null;
+        return line.substring (start + 1, end);
     }
 
 
@@ -133,13 +210,21 @@ public class SfzDetectorTask extends AbstractDetectorTask
     {
         final List<Pair<String, Map<String, String>>> result = parseSfz (content);
         if (result.isEmpty ())
+        {
+            this.notifier.logError ("IDS_ERR_COULD_NOT_DETECT_MULTI_SAMPLE");
             return Collections.emptyList ();
+        }
 
         String name = FileUtils.getNameWithoutType (multiSampleFile);
         final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
 
         final List<IGroup> groups = this.parseGroups (multiSampleFile.getParentFile (), result);
+        if (groups.isEmpty ())
+        {
+            this.notifier.logError ("IDS_ERR_COULD_NOT_DETECT_MULTI_SAMPLE");
+            return Collections.emptyList ();
+        }
 
         final Optional<String> globalName = this.getAttribute (SfzOpcode.GLOBAL_LABEL);
         if (globalName.isPresent ())
@@ -234,6 +319,10 @@ public class SfzDetectorTask extends AbstractDetectorTask
                         this.readMissingValues (sampleZone);
                         group.addSampleZone (sampleZone);
                     }
+                    catch (final FileNotFoundException ex)
+                    {
+                        this.notifier.logError ("IDS_ERR_COULD_NOT_CREATE_ZONE", ex.getMessage ());
+                    }
                     catch (final IOException ex)
                     {
                         this.notifier.logError (ex);
@@ -250,7 +339,8 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (!group.getSampleZones ().isEmpty ())
             groups.add (group);
 
-        this.printUnsupportedOpcodes (this.diffOpcodes ());
+        if (this.logUnsupportedOpcodes)
+            this.printUnsupportedOpcodes (this.diffOpcodes ());
 
         // Fix empty names
         for (int i = 0; i < groups.size (); i++)

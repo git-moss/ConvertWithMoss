@@ -54,7 +54,7 @@ public class Sf2DataChunk extends AbstractListChunk
      */
     public byte [] getSampleData ()
     {
-        return this.sampleDataChunk.getData ();
+        return this.sampleDataChunk == null ? null : this.sampleDataChunk.getData ();
     }
 
 

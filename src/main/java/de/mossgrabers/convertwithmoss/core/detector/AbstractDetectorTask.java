@@ -401,9 +401,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                 sampleData = new AiffFileSampleData (sampleFile);
             }
             else if (fileEnding.endsWith (".ncw"))
-            {
                 sampleData = new NcwFileSampleData (sampleFile);
-            }
             else
             {
                 final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);

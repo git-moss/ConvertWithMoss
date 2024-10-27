@@ -164,7 +164,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
                 parameters.put (param.name, param);
             }
 
-            readSampleMaps (in, file, multisampleSource, resources, parameters);
+            this.readSampleMaps (in, file, multisampleSource, resources, parameters);
 
             multisampleSources.add (multisampleSource);
 
@@ -512,14 +512,14 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             if (samplePath.length () > 2 && samplePath.charAt (1) == ':')
                 samplePath = samplePath.substring (2);
             if (samplePath.length () > 0)
-                createSampleZone (parentFolder, group, params, samplePath);
+                this.createSampleZone (parentFolder, group, params, samplePath);
         }
 
         return group;
     }
 
 
-    private void createSampleZone (final File parentFolder, final IGroup group, final String [] params, String samplePath) throws IOException
+    private void createSampleZone (final File parentFolder, final IGroup group, final String [] params, final String samplePath) throws IOException
     {
         final File sampleFile = new File (parentFolder, samplePath);
         final ISampleData sampleData = this.createSampleData (sampleFile);

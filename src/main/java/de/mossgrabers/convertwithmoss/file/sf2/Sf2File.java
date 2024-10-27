@@ -635,7 +635,10 @@ public class Sf2File extends AbstractRIFFFile
         final List<Sf2SampleDescriptor> samples = new ArrayList<> ();
         for (int i = 0; i < size / LENGTH_SHDR; i++)
         {
-            final Sf2SampleDescriptor sampleDescriptor = new Sf2SampleDescriptor (i, this.dataChunk.getSampleData (), this.dataChunk.getSample24Data ());
+            final byte [] sampleData = this.dataChunk.getSampleData ();
+            if (sampleData == null)
+                throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA_CHUNK"));
+            final Sf2SampleDescriptor sampleDescriptor = new Sf2SampleDescriptor (i, sampleData, this.dataChunk.getSample24Data ());
             sampleDescriptor.readHeader (i * LENGTH_SHDR, chunk);
             samples.add (sampleDescriptor);
         }

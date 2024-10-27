@@ -90,6 +90,7 @@ Other restrictions are:
 
 ### Destination Options
 
+* Limit layers to: MPC Firmware 3.4 increased the number of possible layers in a keygroup to 8. This option allows you to choose between 4 (for older firmware revisions) or 8.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
 ## CWITEC TX16Wx
@@ -116,9 +117,10 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 
 ### Destination Options
 
+* Output Format: Choose to create individual presets, libraries or bundles
+* Combine all source multi-samples into one library: If Library or Bundle is selected as output format, all detected source multi-samples are combined into one library or bundle. If the options is off, one library/bundle is created for each detected source multi-sample.
+* Library Filename: Enter a name to use for the library which contains all source multi-samples. If empty, the name of the first found source is used.
 * Make monophonic: Restricts the sound to 1 note, use e.g. for lead sounds.
-* Add envelope: Create 4 knobs to edit the amplitude envelope.
-* Add filter: Adds a low pass filter and creates a cutoff and resonance knob for it.
 * Add reverb: Adds a reverb effect and  creates two parameter knobs for it.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
@@ -173,11 +175,19 @@ The KMP/KSF format (*.KMP) was first introduced in the Korg Trinity workstation 
 * PA1X/PA800/PA2X/PA3X/PA4X
 * Nautilus
 
-The format is documented in detail in the appendix of the respective parameter guides. The KMP format contains only 1 group of a multisample, which means there are only key splits but no groups. The file references several KSF files which contain the sample data for each key region.
+The format is documented in detail (more or less) in the appendix of the respective parameter guides. The KMP format contains only 1 group of a multisample, which means there are only key splits but no groups. The file references several KSF files which contain the sample data for each key region.
 
-Since the KMP format can only contain 1 group of a multisample, sources with multiple groups are split into several destination KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported. Files in other formats are automatically converted.
+Since the KMP format can only contain 1 group of a multisample, sources with multiple groups can be optionally split into several destination KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported. Files in other formats are automatically converted.
+
+Even if the KSF files can store stereo files, they do not work. Therefore, they need to be split into 2 KMP files. To ease the use of these 2 files an additional KSC file is created, which loads all referenced files.
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+
+### Destination Options
+
+* Write group KMPs: Writes a KMP for each group in the source multi-sample. This option will be ignored for split stereo source files.
+* Enable the +12dB option: Increases the volume of each sample by +12dB. Use for low volume samples.
+* Set sample volume to +99: If enabled, sets all sample volumes to +99. Use for very low volume samples.
 
 ## Korg wavestate/modwave
 
@@ -230,6 +240,10 @@ The SFZ file contains only the description of the multisample. The related sampl
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
+### Source Options
+
+* Log unsupported SFZ opcodes: If enabled, opcodes which are found in the source but are not used (not supported) as input for the conversion are logged.
+
 ### Destination Options
 
 * Convert to FLAC format: If enabled, the sample files are converted to FLAC.
@@ -244,6 +258,11 @@ A SoundFont can contain several presets grouped into banks. Presets refer to one
 The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
 
 There are metadata fields for creator and some description specified in the format. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+
+### Source Options
+
+* Prefix with file name: If enabled, the name of the Soundfont file is added to all resulting destination files.
+* Prefix with program number: If enabled, the preset number of the preset is added to the resulting destination file.
 
 ## TAL Sampler
 

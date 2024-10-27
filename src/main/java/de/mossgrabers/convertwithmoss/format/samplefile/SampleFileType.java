@@ -14,7 +14,7 @@ public interface SampleFileType
 {
     /**
      * Get the name to display for this type.
-     * 
+     *
      * @return The name, e.g. "WAV"
      */
     String getName ();
@@ -22,7 +22,7 @@ public interface SampleFileType
 
     /**
      * Get the endings to look for.
-     * 
+     *
      * @return The endings, e.g. '.wav'
      */
     String [] getFileEndings ();

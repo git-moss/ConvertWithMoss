@@ -10,6 +10,12 @@ import java.util.function.Consumer;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadataPane;
+import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.panel.BoxPanel;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ScrollPane;
 
 
 /**
@@ -19,6 +25,13 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadata
  */
 public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTask>
 {
+    private static final String ADD_FILE_NAME_TAG      = "AddFileName";
+    private static final String ADD_PROGRAM_NUMBER_TAG = "AddProgramNumber";
+
+    private CheckBox            addFileName;
+    private CheckBox            addProgramNumber;
+
+
     /**
      * Constructor.
      *
@@ -34,6 +47,55 @@ public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTas
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.startDetection (new Sf2DetectorTask (this.notifier, consumer, folder, this.metadataPane));
+        this.startDetection (new Sf2DetectorTask (this.notifier, consumer, folder, this.metadataPane, this.addFileName.isSelected (), this.addProgramNumber.isSelected ()));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Node getEditPane ()
+    {
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+
+        ////////////////////////////////////////////////////////////
+        // Naming
+
+        panel.createSeparator ("@IDS_SF2_NAMING");
+
+        this.addFileName = panel.createCheckBox ("@IDS_SF2_NAMING_ADD_FILE_NAME");
+        this.addProgramNumber = panel.createCheckBox ("@IDS_SF2_NAMING_ADD_PROGRAM_NUMBER");
+
+        ////////////////////////////////////////////////////////////
+        // Metadata
+
+        this.metadataPane.addTo (panel);
+        this.metadataPane.getSeparator ().getStyleClass ().add ("titled-separator-pane");
+
+        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
+        scrollPane.fitToWidthProperty ().set (true);
+        scrollPane.fitToHeightProperty ().set (true);
+        return scrollPane;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void saveSettings (final BasicConfig config)
+    {
+        this.metadataPane.saveSettings (config);
+
+        config.setBoolean (this.prefix + ADD_FILE_NAME_TAG, this.addFileName.isSelected ());
+        config.setBoolean (this.prefix + ADD_PROGRAM_NUMBER_TAG, this.addProgramNumber.isSelected ());
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void loadSettings (final BasicConfig config)
+    {
+        this.metadataPane.loadSettings (config);
+
+        this.addFileName.setSelected (config.getBoolean (this.prefix + ADD_FILE_NAME_TAG, false));
+        this.addProgramNumber.setSelected (config.getBoolean (this.prefix + ADD_PROGRAM_NUMBER_TAG, false));
     }
 }
