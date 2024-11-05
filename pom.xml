@@ -37,11 +37,6 @@
 			<version>23.0.1</version>
 		</dependency>
 		<dependency>
-			<groupId>org.openjfx</groupId>
-			<artifactId>javafx-web</artifactId>
-			<version>23.0.1</version>
-		</dependency>
-		<dependency>
 			<groupId>com.github.trilarion</groupId>
 			<artifactId>java-vorbis-support</artifactId>
 			<version>1.2.1</version>
@@ -54,7 +49,7 @@
 		<dependency>
 			<artifactId>uitools</artifactId>
 			<groupId>de.mossgrabers</groupId>
-			<version>1.5.1</version>
+			<version>1.5.2</version>
 		</dependency>
 	</dependencies>
 
@@ -131,7 +126,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.8.0</version>
+				<version>3.8.1</version>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>
@@ -161,11 +156,12 @@
 					<javaOptions>
 						<option>-Xmx64G</option>
 					</javaOptions>
-        			<mainJar>convertwithmoss-${project.version}.jar</mainJar>
+					<mainJar>convertwithmoss-${project.version}.jar</mainJar>
 					<mainClass>${main.class}</mainClass>
 					<appVersion>${project.version}</appVersion>
 					<copyright>(c) 2021-2024 by ${project.organization.name}</copyright>
-					<description>A tool for converting multi-sample from one format to another.</description>
+					<description>A tool for converting multi-sample from one
+						format to another.</description>
 					<vendor>${project.organization.name}</vendor>
 					<licenseFile>LICENSE</licenseFile>
 				</configuration>
@@ -234,12 +230,12 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
-				<version>3.20.0</version>
+				<version>3.21.0</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.5.2</version>
 			</plugin>
 
 		</plugins>
