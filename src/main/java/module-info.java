@@ -9,11 +9,12 @@ module de.mossgrabers.convertwithmoss
     requires java.logging;
     requires transitive java.prefs;
     requires transitive javafx.controls;
-    requires transitive javafx.web;
     requires transitive java.xml;
     requires transitive de.mossgrabers.uitools;
     requires javafx.graphics;
     requires com.github.trilarion.sound;
+    requires org.fxmisc.richtext;
+    requires org.fxmisc.flowless;
 
 
     exports de.mossgrabers.convertwithmoss.ui;

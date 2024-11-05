@@ -7,13 +7,17 @@
 	<groupId>de.mossgrabers</groupId>
 	<packaging>jar</packaging>
 	<name>UiTools</name>
-	<version>1.5.1</version>
+	<version>1.5.2</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
 	<repositories>
+		<repository>
+			<id>maven-local-repository</id>
+			<url>file:///${project.basedir}/maven-local-repository</url>
+		</repository>
 		<repository>
 			<id>MavenCentral</id>
 			<name>Maven Central Repository</name>
@@ -28,9 +32,9 @@
 			<version>23.0.1</version>
 		</dependency>
 		<dependency>
-			<groupId>org.openjfx</groupId>
-			<artifactId>javafx-web</artifactId>
-			<version>23.0.1</version>
+			<groupId>org.fxmisc.richtext</groupId>
+			<artifactId>richtextfx</artifactId>
+			<version>0.11.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -130,12 +134,12 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
-				<version>3.20.0</version>
+				<version>3.21.0</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.5.2</version>
 			</plugin>
 
 		</plugins>

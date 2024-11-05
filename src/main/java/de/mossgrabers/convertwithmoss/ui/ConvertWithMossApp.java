@@ -70,7 +70,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
-import javafx.scene.AccessibleRole;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -85,8 +84,8 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -361,9 +360,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.closeButton = setupButton (exButtonPanel, "Close", "@IDS_EXEC_CLOSE", "@IDS_EXEC_CLOSE_TOOLTIP");
         this.closeButton.setOnAction (event -> this.closeExecution ());
 
-        final WebView webView = this.loggingArea.getWebView ();
-        webView.setAccessibleRole (AccessibleRole.TEXT_AREA);
-        this.executePane.setCenter (webView);
+        final Region loggerComponent = this.loggingArea.getComponent ();
+        this.executePane.setCenter (loggerComponent);
         this.executePane.setRight (exButtonPanel.getPane ());
         this.executePane.setVisible (false);
 
@@ -407,7 +405,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.traversalManager.add (this.cancelButton);
         this.traversalManager.add (this.closeButton);
-        this.traversalManager.add (this.loggingArea.getWebView ());
+        this.traversalManager.add (this.loggingArea.getComponent ());
 
         this.traversalManager.register (this.getStage ());
     }
@@ -422,13 +420,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             if (!stylesheets.contains (stylesheet))
             {
                 stylesheets.add (stylesheet);
-                this.loggingArea.getWebView ().setBlendMode (BlendMode.OVERLAY);
+                this.loggingArea.getComponent ().setBlendMode (BlendMode.OVERLAY);
             }
         }
         else
         {
             stylesheets.remove (stylesheet);
-            this.loggingArea.getWebView ().setBlendMode (BlendMode.DARKEN);
+            this.loggingArea.getComponent ().setBlendMode (BlendMode.DARKEN);
         }
     }
 
@@ -851,20 +849,20 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     {
         Platform.runLater ( () -> {
 
-            final WebView webView = this.loggingArea.getWebView ();
+            final Parent loggerComponent = this.loggingArea.getComponent ();
             this.cancelButton.setDisable (canClose);
             this.closeButton.setDisable (!canClose);
             if (!this.cancelButton.isDisabled ())
             {
                 this.cancelButton.setDefaultButton (true);
                 this.cancelButton.requestFocus ();
-                webView.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_PROCESSING"));
+                loggerComponent.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_PROCESSING"));
             }
             else
             {
                 this.closeButton.setDefaultButton (true);
                 this.closeButton.requestFocus ();
-                webView.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_FINISHED"));
+                loggerComponent.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_FINISHED"));
             }
 
         });
