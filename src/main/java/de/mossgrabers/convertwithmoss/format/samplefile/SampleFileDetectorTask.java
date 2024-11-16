@@ -107,7 +107,7 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
 
             final File [] files = this.listFiles (folder, this.fileEndings);
             if (files.length == 0)
-                return Collections.emptyList ();
+                continue;
 
             // Analyze all files
             final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.length);
@@ -187,7 +187,7 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
             if (name.isBlank ())
             {
                 this.notifier.logError ("IDS_NOTIFY_NO_NAME");
-                return Collections.emptyList ();
+                name = sampleData.get (0).getFilename ();
             }
 
             name = cleanupName (name, this.postfixTexts);

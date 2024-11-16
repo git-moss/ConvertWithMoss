@@ -93,10 +93,11 @@ public class WavFileSampleData extends AbstractFileSampleData
     public void writeSample (final OutputStream outputStream) throws IOException
     {
         // Use the original WAV file if possible
-        if (this.hasWavSourceFile)
+        final WaveFile sourceFile = this.getWaveFile ();
+        if (this.hasWavSourceFile && !sourceFile.doesRequireRewrite ())
             super.writeSample (outputStream);
         else
-            this.getWaveFile ().write (outputStream);
+            sourceFile.write (outputStream);
     }
 
 

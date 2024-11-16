@@ -118,8 +118,9 @@ public class KMPCreator extends AbstractCreator
         if (!this.writeGroupKmps.isSelected () || zoneChannels == ZoneChannels.SPLIT_STEREO)
         {
             final IGroup combinedGroup = new DefaultGroup ();
+            final List<ISampleZone> sampleZones = combinedGroup.getSampleZones ();
             for (final IGroup group: groups)
-                combinedGroup.getSampleZones ().addAll (group.getSampleZones ());
+                sampleZones.addAll (group.getSampleZones ());
             kmpIndex = this.storeKMP (subFolder, multiSampleName, combinedGroup, zoneChannels, kmpIndex, createdKMPNames);
         }
         else

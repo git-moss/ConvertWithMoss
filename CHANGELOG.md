@@ -1,5 +1,12 @@
 # Changes
 
+## 11.3.0 (unreleased)
+
+* Sample Files
+  * New: Implemented workaround for reading broken WAV files which have the wave data after the data chunk.
+  * Fixed: Sample detection stopped already when no files were found for one sample format.
+  * Fixed: Do not stop detection when no common name could be found among the input samples but use the name of the first sample.
+
 ## 11.2.0
 
 * New: Source and destination path stores now the last 20 selections.

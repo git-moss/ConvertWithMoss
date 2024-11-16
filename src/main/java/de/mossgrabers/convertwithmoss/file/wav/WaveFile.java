@@ -32,6 +32,8 @@ public class WaveFile extends AbstractRIFFFile
     InstrumentChunk              instrumentChunk              = null;
     SampleChunk                  sampleChunk                  = null;
 
+    private boolean              requiresRewrite              = true;
+
 
     /**
      * Constructor. Creates a new file in memory.
@@ -103,12 +105,30 @@ public class WaveFile extends AbstractRIFFFile
         riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
         riffParser.parse (inputStream, this, ignoreChunkErrors);
 
+        // Workaround for broken(?) WAV files which have the wave data after(!) the data chunk
+        if (this.formatChunk != null && this.dataChunk != null && this.dataChunk.getData ().length == 0 && inputStream.available () > 0)
+            this.dataChunk.setData (inputStream.readAllBytes ());
+        else
+            this.requiresRewrite = false;
+
         if (ignoreChunkErrors)
             return;
         if (this.formatChunk == null)
             throw new ParseException ("No format chunk found in WAV file.");
         if (this.dataChunk == null)
             throw new ParseException ("No data chunk found in WAV file.");
+    }
+
+
+    /**
+     * Returns true if the original source file (if any) needs to be rewritten since changes did
+     * happen to it.
+     * 
+     * @return True if rewrite is necessary
+     */
+    public boolean doesRequireRewrite ()
+    {
+        return this.requiresRewrite;
     }
 
 
