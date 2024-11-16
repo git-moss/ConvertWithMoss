@@ -47,6 +47,22 @@ public enum RiffID
     FMT_ID("Format", "fmt "),
     /** ID for "data" chunk. */
     DATA_ID("Data", "data"),
+    /** ID for "fact" chunk. */
+    FACT_ID("Fact", "fact"),
+    /** ID for "wavl" chunk. */
+    WAVL_ID("Wave List", "wavl"),
+    /** ID for "slnt" chunk. */
+    SLNT_ID("Silent", "slnt"),
+    /** ID for "cue " chunk. */
+    CUE_ID("Cue", "cue "),
+    /** ID for "plst" chunk. */
+    PLST_ID("Playlist", "plst"),
+    /** ID for "labl" chunk. */
+    LABL_ID("Label", "labl"),
+    /** ID for "note" chunk. */
+    NOTE_ID("Note", "note"),
+    /** ID for "ltxt" chunk. */
+    LTXT_ID("Labeled Text", "ltxt"),
 
     /** ID for INFO chunk. */
     INFO_ID("Info", "INFO"),

@@ -469,11 +469,11 @@ public class RIFFChunk implements IChunk
     {
         StreamUtils.writeUnsigned32 (out, this.id, true);
 
-        final byte [] data = this.getData ();
-        final boolean needsPadByte = data.length % 2 == 1;
-        final int size = needsPadByte ? data.length + 1 : data.length;
-        StreamUtils.writeUnsigned32 (out, size, false);
-        out.write (data);
+        final byte [] currentData = this.getData ();
+        final boolean needsPadByte = currentData.length % 2 == 1;
+        final int dataSize = needsPadByte ? currentData.length + 1 : currentData.length;
+        StreamUtils.writeUnsigned32 (out, dataSize, false);
+        out.write (currentData);
 
         if (needsPadByte)
             out.write (0);

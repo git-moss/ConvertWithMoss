@@ -25,23 +25,18 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<!-- 23.0.1 -->
-			<version>21</version>
+			<version>23.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-web</artifactId>
+			<version>23.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.fxmisc.richtext</groupId>
 			<artifactId>richtextfx</artifactId>
 			<version>0.11.3</version>
 		</dependency>
-
-		<dependency>
-			<groupId>org.reactfx</groupId>
-			<artifactId>reactfx</artifactId>
-			<version>2.0-M5</version>
-		</dependency>
-		
-		
-		
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
@@ -104,7 +99,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>versions-maven-plugin</artifactId>
-				<version>2.17.1</version>
+				<version>2.18.0</version>
 				<configuration>
 					<ignoredVersions>.*-M.*,.*-alpha.*,.*-beta.*,.*-ea.*</ignoredVersions>
 					<generateBackupPoms>false</generateBackupPoms>
