@@ -1,7 +1,13 @@
 # Changes
 
-## 11.3.0 (unreleased)
+## 11.3.0
 
+* Ableton ADV
+  * Fixed: Date of last sample change was in milli-seconds but needs to be seconds. Ableton 12 refused to load the file.
+* EXS24
+  * Fixed: Reading failed due to a not-removed log-output.
+* MPC Keygroups
+  * Fixed: The loop crossfade was not converted correctly in both directions.
 * Sample Files
   * New: Implemented workaround for reading broken WAV files which have the wave data after the data chunk.
   * Fixed: Sample detection stopped already when no files were found for one sample format.

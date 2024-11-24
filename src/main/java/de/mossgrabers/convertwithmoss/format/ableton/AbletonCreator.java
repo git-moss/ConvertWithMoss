@@ -296,7 +296,7 @@ public class AbletonCreator extends AbstractCreator
         zoneContent = zoneContent.replace ("%SAMPLE_END%", Integer.toString (zone.getStop ()));
 
         zoneContent = zoneContent.replace ("%SAMPLE_FILE_SIZE%", Long.toString (sampleFile.length ()));
-        zoneContent = zoneContent.replace ("%SAMPLE_FILE_TIMESTAMP%", Long.toString (sampleFile.lastModified ()));
+        zoneContent = zoneContent.replace ("%SAMPLE_FILE_TIMESTAMP%", Long.toString (sampleFile.lastModified () / 1000));
         zoneContent = zoneContent.replace ("%SAMPLE_RATE%", Integer.toString (audioMetadata.getSampleRate ()));
         zoneContent = zoneContent.replace ("%SAMPLE_DURATION%", Integer.toString (audioMetadata.getNumberOfSamples ()));
 

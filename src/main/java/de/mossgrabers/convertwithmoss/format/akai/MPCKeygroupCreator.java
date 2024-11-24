@@ -315,7 +315,9 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START, Integer.toString (sampleLoop.getStart ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleLoop.getEnd ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, zone.isReversed () ? "3" : "1");
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, Double.toString (sampleLoop.getCrossfade ()));
+
+        final int loopCrossfade = (int) Math.round (sampleLoop.getCrossfade () * sampleLoop.getLength ());
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, Integer.toString (loopCrossfade));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_POSITION, "0.500000");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_LENGTH, MPCKeygroupConstants.DOUBLE_ZERO);
 
