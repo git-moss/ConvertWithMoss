@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.ZoneChannels;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -61,7 +62,7 @@ public class WaldorfQpatCreator extends AbstractCreator
     {
         16
     }, 44100, true);
-    private static final DestinationAudioFormat                DEFEAULT_AUDIO_FORMAT  = new DestinationAudioFormat ();
+    private static final DestinationAudioFormat                DEFAULT_AUDIO_FORMAT   = new DestinationAudioFormat ();
 
     private static final Map<Integer, WaldorfQpatResourceType> TYPE_LOOKUP            = HashMap.newHashMap (3);
     static
@@ -131,7 +132,28 @@ public class WaldorfQpatCreator extends AbstractCreator
 
         final String relativeSamplePath = "samples/" + sampleName;
 
-        storeMultisample (multisampleSource, multiFile, relativeSamplePath);
+        final List<IGroup> groups = reduceGroups (multisampleSource.getNonEmptyGroups (true));
+
+        // Since panning is not working on the sample level, combine split stereo to stereo files
+        if (ZoneChannels.detectChannelConfiguration (groups) == ZoneChannels.SPLIT_STEREO)
+        {
+            // TODO Combine mono to stereo
+
+            // Find matching left/right samples
+            // They can be in different groups!
+            // Key-/velocity groups must match, as well as length and format settings
+
+            // First split into 2 groups for left and right
+            // final IGroup leftGroup = new DefaultGroup ();
+            // final IGroup rightGroup = new DefaultGroup ();
+            // for (final ISampleZone zone: group.getSampleZones ())
+            // if (zone.getPanorama () <= -1)
+            // leftGroup.addSampleZone (zone);
+            // else
+            // rightGroup.addSampleZone (zone);
+        }
+
+        storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath);
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeSamplePath);
@@ -140,9 +162,7 @@ public class WaldorfQpatCreator extends AbstractCreator
         final boolean doLimit = this.limitTo16441.isSelected ();
         if (doLimit)
             recalculateSamplePositions (multisampleSource, 44100);
-        this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT);
-
-        this.writeSamples (sampleFolder, multisampleSource);
+        this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -153,18 +173,18 @@ public class WaldorfQpatCreator extends AbstractCreator
      *
      * @param multisampleSource The multi-sample source
      * @param multiFile The file in which to store
+     * @param groups The pre-processed groups
      * @param relativeSamplePath The relative sample path
      * @throws IOException Could not store the file
      */
-    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final String relativeSamplePath) throws IOException
+    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<IGroup> groups, final String relativeSamplePath) throws IOException
     {
-        final List<IGroup> groups = reduceGroups (multisampleSource.getNonEmptyGroups (true));
         final List<WaldorfQpatParameter> parameters = createParameters (groups);
         final List<String> sampleMaps = createSampleMaps (groups, relativeSamplePath);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            writeHeader (out, multisampleSource);
+            writeHeader (out, multisampleSource.getMetadata (), multisampleSource.getName ());
 
             StreamUtils.writeUnsigned16 (out, parameters.size (), false);
             StreamUtils.padBytes (out, 2);
@@ -589,16 +609,15 @@ public class WaldorfQpatCreator extends AbstractCreator
      * Writes the header information preceding the actual data.
      *
      * @param out The output stream to write to
-     * @param multisampleSource The multi-sample source
+     * @param metadata The metadata
+     * @param name The name of the multi-sample
      * @throws IOException Could not write
      */
-    private static void writeHeader (final OutputStream out, final IMultisampleSource multisampleSource) throws IOException
+    private static void writeHeader (final OutputStream out, final IMetadata metadata, final String name) throws IOException
     {
-        final IMetadata metadata = multisampleSource.getMetadata ();
-
         StreamUtils.writeUnsigned32 (out, WaldorfQpatConstants.MAGIC, false);
         StreamUtils.writeUnsigned32 (out, PRESET_VERSION, false);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (multisampleSource.getName ()), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeASCII (out, StringUtils.fixASCII (name), WaldorfQpatConstants.MAX_STRING_LENGTH);
         StreamUtils.writeASCII (out, StringUtils.fixASCII (metadata.getCreator ()), WaldorfQpatConstants.MAX_STRING_LENGTH);
         StreamUtils.writeASCII (out, StringUtils.fixASCII (metadata.getDescription ()).replace ('\r', ' ').replace ('\n', ' '), WaldorfQpatConstants.MAX_STRING_LENGTH);
 

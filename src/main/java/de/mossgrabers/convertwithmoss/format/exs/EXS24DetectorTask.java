@@ -138,8 +138,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                     break;
 
                 case EXS24Block.TYPE_UNKNOWN_2:
-                    // No idea what that is but it is 4 bytes long...
-                    java.nio.file.Files.write (java.nio.file.Paths.get ("C:/Users/mos/Desktop/filename.dat"), block.content);
+                    // No idea what that is ('bplist00')
                     break;
 
                 default:

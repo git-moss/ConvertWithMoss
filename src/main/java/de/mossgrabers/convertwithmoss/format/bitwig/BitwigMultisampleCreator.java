@@ -224,7 +224,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
 
             final double crossfade = sampleLoop.getCrossfade ();
             if (crossfade > 0)
-                XMLUtils.setDoubleAttribute (loopElement, "fade", crossfade, 2);
+                XMLUtils.setDoubleAttribute (loopElement, "fade", crossfade, 4);
         }
     }
 }

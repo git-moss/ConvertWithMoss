@@ -484,7 +484,8 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         if (sliceLoopStart >= 0)
             sampleLoop.setStart (sliceLoopStart);
         sampleLoop.setEnd (sampleMetadata.getStop ());
-        sampleLoop.setCrossfade (XMLUtils.getChildElementDoubleContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, 0));
+        final int loopCrossfade = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, 0);
+        sampleLoop.setCrossfade (loopCrossfade / (double) sampleLoop.getLength ());
 
         sampleMetadata.getLoops ().add (sampleLoop);
     }

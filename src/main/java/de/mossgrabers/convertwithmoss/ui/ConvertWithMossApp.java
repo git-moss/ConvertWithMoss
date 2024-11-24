@@ -59,7 +59,7 @@ import de.mossgrabers.tools.ui.DefaultApplication;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.TraversalManager;
-import de.mossgrabers.tools.ui.control.LoggerBox;
+import de.mossgrabers.tools.ui.control.LoggerBoxWeb;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -84,7 +84,6 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -141,7 +140,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private Button                         renameFilePathSelectButton;
 
     private final CSVRenameFile            csvRenameFile                       = new CSVRenameFile ();
-    private final LoggerBox                loggingArea                         = new LoggerBox ();
+    private final LoggerBoxWeb             loggingArea                         = new LoggerBoxWeb ();
     private final TraversalManager         traversalManager                    = new TraversalManager ();
     private final List<IMultisampleSource> collectedSources                    = new ArrayList<> ();
 
@@ -242,16 +241,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         this.sourceFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_TOOLTIP")));
-        this.sourceFolderSelectButton.setOnAction (event -> {
-
-            final File currentSourcePath = new File (this.sourcePathField.getEditor ().getText ());
-            if (currentSourcePath.exists () && currentSourcePath.isDirectory ())
-                this.config.setActivePath (currentSourcePath);
-            final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_SOURCE_HEADER");
-            if (file.isPresent ())
-                this.sourcePathField.getEditor ().setText (file.get ().getAbsolutePath ());
-
-        });
+        this.sourceFolderSelectButton.setOnAction (event -> this.selectSourcePath ());
         final BoxPanel sourceUpperPart = new BoxPanel (Orientation.VERTICAL);
         final TitledSeparator sourceTitle = new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER"));
         sourceTitle.setLabelFor (this.sourcePathField);
@@ -296,16 +286,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.destinationFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION"));
         this.destinationFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION_TOOLTIP")));
-        this.destinationFolderSelectButton.setOnAction (event -> {
-
-            final File currentDestinationPath = new File (this.destinationPathField.getEditor ().getText ());
-            if (currentDestinationPath.exists () && currentDestinationPath.isDirectory ())
-                this.config.setActivePath (currentDestinationPath);
-            final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_DESTINATION_HEADER");
-            if (file.isPresent ())
-                this.destinationPathField.getEditor ().setText (file.get ().getAbsolutePath ());
-
-        });
+        this.destinationFolderSelectButton.setOnAction (event -> this.selectDestinationFolder ());
         destinationFolderPanel.setRight (this.destinationFolderSelectButton);
 
         final BoxPanel destinationUpperPart = new BoxPanel (Orientation.VERTICAL);
@@ -360,7 +341,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.closeButton = setupButton (exButtonPanel, "Close", "@IDS_EXEC_CLOSE", "@IDS_EXEC_CLOSE_TOOLTIP");
         this.closeButton.setOnAction (event -> this.closeExecution ());
 
-        final Region loggerComponent = this.loggingArea.getComponent ();
+        final Parent loggerComponent = this.loggingArea.getComponent ();
         this.executePane.setCenter (loggerComponent);
         this.executePane.setRight (exButtonPanel.getPane ());
         this.executePane.setVisible (false);
@@ -487,18 +468,6 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public void exit ()
-    {
-        for (final IDetector detector: this.detectors)
-            detector.shutdown ();
-
-        this.saveConfiguration ();
-        Platform.exit ();
-    }
-
-
     /**
      * Save the configuration.
      */
@@ -527,9 +496,21 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.config.setInteger (SOURCE_TYPE, sourceSelectedIndex);
         final int destinationSelectedIndex = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
         this.config.setInteger (DESTINATION_TYPE, destinationSelectedIndex);
+    }
 
+
+    /** {@inheritDoc} */
+    @Override
+    public void exit ()
+    {
+        for (final IDetector detector: this.detectors)
+            detector.shutdown ();
+
+        this.saveConfiguration ();
         // Store configuration
         super.exit ();
+
+        Platform.exit ();
     }
 
 
@@ -866,6 +847,28 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             }
 
         });
+    }
+
+
+    private void selectSourcePath ()
+    {
+        final File currentSourcePath = new File (this.sourcePathField.getEditor ().getText ());
+        if (currentSourcePath.exists () && currentSourcePath.isDirectory ())
+            this.config.setActivePath (currentSourcePath);
+        final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_SOURCE_HEADER");
+        if (file.isPresent ())
+            this.sourcePathField.getEditor ().setText (file.get ().getAbsolutePath ());
+    }
+
+
+    private void selectDestinationFolder ()
+    {
+        final File currentDestinationPath = new File (this.destinationPathField.getEditor ().getText ());
+        if (currentDestinationPath.exists () && currentDestinationPath.isDirectory ())
+            this.config.setActivePath (currentDestinationPath);
+        final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_DESTINATION_HEADER");
+        if (file.isPresent ())
+            this.destinationPathField.getEditor ().setText (file.get ().getAbsolutePath ());
     }
 
 
