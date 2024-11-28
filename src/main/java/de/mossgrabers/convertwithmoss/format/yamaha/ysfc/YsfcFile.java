@@ -12,10 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -30,6 +27,7 @@ public class YsfcFile
 {
     private static final String                YAMAHA_YSFC = "YAMAHA-YSFC";
     private static final int                   HEADER_SIZE = 64;
+    public static final String                 MOXF_LIBRARY_VERSION = "1.0.2";
 
     private File                               sourceFile;
     private String                             versionStr;
@@ -38,12 +36,16 @@ public class YsfcFile
     private final Map<String, YamahaYsfcChunk> chunks      = HashMap.newHashMap (4);
 
 
+    public static YsfcFile withChunks (String... chunkIDs) {
+        return new YsfcFile(chunkIDs);
+    }
+
     /**
      * Default constructor.
      */
-    public YsfcFile ()
+    private YsfcFile (final String... chunkIDs)
     {
-        this.createChunks ("EWFM", "DWFM", "EWIM", "DWIM");
+        this.createChunks (chunkIDs);
     }
 
 
@@ -191,21 +193,28 @@ public class YsfcFile
         StreamUtils.writeASCII (outputStream, YAMAHA_YSFC, 16);
         StreamUtils.writeASCII (outputStream, this.versionStr, 16);
         StreamUtils.writeUnsigned32 (outputStream, catalogSize, true);
-        StreamUtils.padBytes (outputStream, 12, 0xFF);
 
-        // The size of the library block - fixed
-        final int librarySize = 81;
-        StreamUtils.writeUnsigned32 (outputStream, librarySize, true);
+        if (!versionStr.equals(MOXF_LIBRARY_VERSION)) {
+            StreamUtils.padBytes(outputStream, 12, 0xFF);
 
-        StreamUtils.padBytes (outputStream, 8, 0xFF);
+            // The size of the library block - fixed
+            final int librarySize = 81;
+            StreamUtils.writeUnsigned32 (outputStream, librarySize, true);
 
-        StreamUtils.writeUnsigned32 (outputStream, this.maxEntryID, true);
+            StreamUtils.padBytes (outputStream, 8, 0xFF);
 
-        writeCatalog (outputStream, orderedChunks, HEADER_SIZE + catalogSize + librarySize);
+            StreamUtils.writeUnsigned32 (outputStream, this.maxEntryID, true);
 
-        // Write empty library references
-        StreamUtils.padBytes (outputStream, librarySize - 1, 0xFF);
-        StreamUtils.padBytes (outputStream, 1, 0x00);
+            writeCatalog (outputStream, orderedChunks, HEADER_SIZE + catalogSize + librarySize);
+
+            // Write empty library references
+            StreamUtils.padBytes (outputStream, librarySize - 1, 0xFF);
+            StreamUtils.padBytes (outputStream, 1, 0x00);
+        } else {
+            StreamUtils.padBytes(outputStream, 28, 0xFF);
+
+            writeCatalog (outputStream, orderedChunks, HEADER_SIZE + catalogSize);
+        }
 
         writeChunks (outputStream, orderedChunks);
     }
@@ -301,10 +310,20 @@ public class YsfcFile
         this.maxEntryID = 10001 + ewfm.getEntryListChunks ().size () * 2;
 
         final List<YamahaYsfcChunk> orderedChunks = new ArrayList<> ();
-        orderedChunks.add (ewfm);
-        orderedChunks.add (dwfm);
-        orderedChunks.add (ewim);
-        orderedChunks.add (dwim);
+
+        // both Montage and MOXF library have these sections first in this order
+        orderedChunks.add(ewfm);
+        orderedChunks.add(dwfm);
+        orderedChunks.add(ewim);
+        orderedChunks.add(dwim);
+
+        if (versionStr.equals(MOXF_LIBRARY_VERSION)) {
+            orderedChunks.add(chunks.get("EARP"));
+            orderedChunks.add(chunks.get("DARP"));
+            orderedChunks.add(chunks.get("EVCE"));
+            orderedChunks.add(chunks.get("DVCE"));
+        }
+
         return orderedChunks;
     }
 
@@ -316,7 +335,7 @@ public class YsfcFile
      * @param dataChunk The data chunk with the referenced data
      * @param entryID The entryID to start with
      */
-    private static void updateEntryReferences (final YamahaYsfcChunk entryChunk, final YamahaYsfcChunk dataChunk, final int entryID)
+    private void updateEntryReferences (final YamahaYsfcChunk entryChunk, final YamahaYsfcChunk dataChunk, final int entryID)
     {
         final List<YamahaYsfcEntry> entryListChunks = entryChunk.getEntryListChunks ();
         final List<byte []> dataArrays = dataChunk.getDataArrays ();
@@ -325,8 +344,12 @@ public class YsfcFile
         {
             final YamahaYsfcEntry ysfcEntry = entryListChunks.get (i);
             final byte [] dataArray = dataArrays.get (i);
+            if (!this.versionStr.equals(MOXF_LIBRARY_VERSION)) {
+                ysfcEntry.setEntryID (entryID + i * 2);
+            } else {
+                ysfcEntry.setEntryID(i + 1);
+            }
 
-            ysfcEntry.setEntryID (entryID + i * 2);
             ysfcEntry.setCorrespondingDataOffset (offset);
             ysfcEntry.setCorrespondingDataSize (dataArray.length);
 

@@ -19,6 +19,11 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class YamahaYsfcKeybank
 {
+
+    // output format for the case of writing
+    private int version1TotalSampleOffset = -1;
+    private int version1TotalChannelOffset = -1;
+    private boolean isVersion1;
     private int keyRangeLower;
     private int keyRangeUpper;
     private int velocityRangeLower;
@@ -96,7 +101,7 @@ public class YamahaYsfcKeybank
         this.channels = in.read ();
 
         this.loopTune = in.read ();
-
+        // one more byte for MOXF
         // Ignore
         in.skipNBytes (1);
         final int waveFormat = in.read ();
@@ -118,7 +123,7 @@ public class YamahaYsfcKeybank
         in.skipNBytes (12);
 
         if (!isVersion1)
-            in.skipNBytes (4);
+            in.skipNBytes (4); // 0x00 0x00 0x00 0xFF
 
         this.sampleFrequency = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         this.playStart = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
@@ -177,50 +182,102 @@ public class YamahaYsfcKeybank
         out.write (this.keyRangeUpper);
         out.write (this.velocityRangeLower);
         out.write (this.velocityRangeUpper);
-        out.write (this.level);
+        out.write (!this.isVersion1 ? this.level : this.level / 2);
         out.write (this.panorama);
 
         out.write (0x00);
-        out.write (this.fixedPitch);
+
+        if (!this.isVersion1) {
+            out.write(this.fixedPitch);
+        } else {
+            out.write(0x00);
+        }
 
         out.write (this.rootNote);
         out.write (this.coarseTune);
         out.write (this.fineTune);
         out.write (this.channels);
 
-        out.write (0x00);
-        // Always 2 for Montage
-        out.write (0x02);
+        out.write (0x00); // loopTune
+        // Always 2 for Montage, 0 for MOXF
+        out.write (!this.isVersion1 ? 0x02 : 0x00);
         // 16-bit linear
-        out.write (0x05);
+        out.write (!this.isVersion1 ? 0x05 : 0x00); // for Montage - 16-bit 0x05 , for MOXF - 16-bit 0x00, 8-bit 0x02
 
         out.write (this.loopMode);
 
         // Unknown but should be only padding
-        out.write (0x00);
-        out.write (0x00);
+        out.write (0x00); // isEncrypted
+        out.write (0x00); // padding
 
-        out.write (this.loopPoint % 16);
+        if (!this.isVersion1) {
+            out.write(this.loopPoint % 16); // loopPointRest
+        } else {
+            // MOXF has this 0
+            out.write(0x00);
+        }
 
         // Unknown but should work
-        out.write (1);
+        out.write (!this.isVersion1 ? 0x01 : 0xFF);
 
         StreamUtils.padBytes (out, 12);
 
         // Padding / reserved
-        StreamUtils.padBytes (out, 3);
-        out.write (0xFF);
+        if (!this.isVersion1) {
+            StreamUtils.padBytes(out, 3);
+            out.write(0xFF);
+        }
 
         StreamUtils.writeUnsigned32 (out, this.sampleFrequency, false);
         StreamUtils.writeUnsigned32 (out, this.playStart, false);
-        StreamUtils.writeUnsigned32 (out, this.loopPoint / 16, false);
+        if (!this.isVersion1) {
+            StreamUtils.writeUnsigned32(out, this.loopPoint / 16, false);
+        } else {
+            StreamUtils.writeUnsigned32(out, this.loopPoint, false);
+        }
         StreamUtils.writeUnsigned32 (out, this.playEnd, false);
 
         // Padding / reserved
-        StreamUtils.padBytes (out, 4);
+        if (!this.isVersion1) {
+            StreamUtils.padBytes(out, 4);
 
-        StreamUtils.writeUnsigned32 (out, this.number, false);
+            StreamUtils.writeUnsigned32(out, this.number, false);
+        }
         StreamUtils.writeUnsigned32 (out, this.sampleLength, false);
+
+        // TODO implement handling of MOTIF
+//        if (isMotif) {
+//            // 00 00 00 00 - 00 00 00 00 - FF FF FF FF - FF FF FF FF
+//
+//        }
+
+        if (this.isVersion1) {
+            StreamUtils.writeUnsigned16(out, this.version1TotalSampleOffset + this.sampleLength, false);
+            out.write(0x00);
+            out.write(0xC0);
+            if (this.channels == 2) {
+                StreamUtils.writeUnsigned16(out, this.version1TotalSampleOffset + this.sampleLength * 2, false);
+                out.write(0x00);
+                out.write(0xC0);
+            } else {
+                // 1 channel only, pad information for second channel wiwht 0xFF 0xFF 0xFF 0xFF
+                StreamUtils.padBytes(out, 4, 0xFF);
+            }
+
+            // Index of keygroup wave in DWIM block across all Data entries in the DWIM section.
+            // The code above supports single sample per keygroup and
+            // maximum of 2 channels.
+            // The indexing starts from 1.
+            StreamUtils.writeUnsigned16(out, version1TotalChannelOffset + 1, false);
+            StreamUtils.padBytes(out, 2);
+            if (channels == 2) {
+                StreamUtils.writeUnsigned16(out, version1TotalChannelOffset + 2, false);
+                StreamUtils.padBytes(out, 2);
+            } else {
+                // If mono, the second channel data is padded with 0xFF 0xFF 0xFF 0xFF
+                StreamUtils.padBytes(out, 4, 0xFF);
+            }
+        }
     }
 
 
@@ -264,6 +321,15 @@ public class YamahaYsfcKeybank
         return this.keyRangeLower;
     }
 
+    public void setVersion1TotalChannelOffset(int totalChannelOffset) {
+        this.isVersion1 = true;
+        this.version1TotalChannelOffset = totalChannelOffset;
+    }
+
+    public void setVersion1TotalSampleOffset(int totalSampleOffset) {
+        this.isVersion1 = true;
+        this.version1TotalSampleOffset = totalSampleOffset;
+    }
 
     /**
      * Set the lower bound of the key range.

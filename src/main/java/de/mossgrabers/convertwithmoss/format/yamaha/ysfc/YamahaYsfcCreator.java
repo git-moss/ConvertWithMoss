@@ -7,11 +7,7 @@ package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -35,6 +31,8 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 
 
+record MOXFData(int numberOfSamplesWritten, int numberOfChannelsWritten) {}
+
 /**
  * Creator for Yamaha YSFC files.
  *
@@ -55,7 +53,8 @@ public class YamahaYsfcCreator extends AbstractCreator
         MONTAGE_USER,
         MONTAGE_LIBRARY,
         MODX_USER,
-        MODX_LIBRARY
+        MODX_LIBRARY,
+        MOXF_LIBRARY
     }
 
 
@@ -68,11 +67,13 @@ public class YamahaYsfcCreator extends AbstractCreator
         ENDING_MAP.put (OutputFormat.MONTAGE_LIBRARY, ".X7L");
         ENDING_MAP.put (OutputFormat.MODX_USER, ".X8U");
         ENDING_MAP.put (OutputFormat.MODX_LIBRARY, ".X8L");
+        ENDING_MAP.put (OutputFormat.MOXF_LIBRARY, ".X3A");
 
         VERSION_MAP.put (OutputFormat.MONTAGE_USER, "4.0.5");
         VERSION_MAP.put (OutputFormat.MONTAGE_LIBRARY, "4.0.5");
         VERSION_MAP.put (OutputFormat.MODX_USER, "5.0.1");
         VERSION_MAP.put (OutputFormat.MODX_LIBRARY, "5.0.1");
+        VERSION_MAP.put (OutputFormat.MOXF_LIBRARY, "1.0.2");
     }
 
     private ToggleGroup outputFormatGroup;
@@ -97,7 +98,7 @@ public class YamahaYsfcCreator extends AbstractCreator
 
         panel.createSeparator ("@IDS_YSFC_LIBRARY_FORMAT");
         this.outputFormatGroup = new ToggleGroup ();
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 5; i++)
         {
             final RadioButton order = panel.createRadioButton ("@IDS_YSFC_OUTPUT_FORMAT_OPTION" + i);
             order.setAccessibleHelp (Functions.getMessage ("IDS_YSFC_LIBRARY_FORMAT"));
@@ -173,10 +174,28 @@ public class YamahaYsfcCreator extends AbstractCreator
      */
     private static void storeMultisamples (final List<IMultisampleSource> multisampleSources, final File multiFile, final OutputFormat outputFormat) throws IOException
     {
-        final YsfcFile ysfcFile = new YsfcFile ();
+        final YsfcFile ysfcFile;
+        if (!outputFormat.equals(OutputFormat.MOXF_LIBRARY)) {
+            ysfcFile = YsfcFile.withChunks ("EWFM", "DWFM", "EWIM", "DWIM");
+        } else {
+            ysfcFile = YsfcFile.withChunks ("EWFM", "DWFM", "EWIM", "DWIM", "EARP", "DARP", "EVCE", "DVCE");
+        }
+
         ysfcFile.setVersionStr (VERSION_MAP.get (outputFormat));
 
         final int libraryID = 0x10001;
+
+        Optional<MOXFData> moxfData;
+        if (outputFormat.equals(OutputFormat.MOXF_LIBRARY)) {
+            // Yamaha MOXF has following additional fields:
+            // - a field that for each keygroup (across all keybanks) stores total index of the samples in the library
+            // starting at 0x10.
+            // - a field that for each channel data stores its total index in DWIM block (counting channels of all
+            // samples in the library starting at 1.
+            moxfData = Optional.of(new MOXFData(16, 0));
+        } else {
+            moxfData = Optional.empty();
+        }
 
         // Numbering covers all(!) samples
         int sampleNumber = 1;
@@ -212,24 +231,36 @@ public class YamahaYsfcCreator extends AbstractCreator
                         throw new IOException (ex);
                     }
 
-                    final byte [] data = dataChunk.getData ();
+                    final byte[] data = dataChunk.getData();
                     final boolean isStereo = numberOfChannels == 2;
 
-                    for (int channel = 0; channel < numberOfChannels; channel++)
-                    {
-                        keybankList.add (createKeybank (sampleNumber, zone, formatChunk, numSamples));
-
-                        final YamahaYsfcWaveData waveData = new YamahaYsfcWaveData ();
-                        waveDataList.add (waveData);
-                        waveData.setData (isStereo ? getChannelData (channel, data) : data);
-
-                        sampleNumber++;
+                    keybankList.add(createKeybank(moxfData, sampleNumber, zone, formatChunk, numSamples));
+                    for (int channel = 0; channel < numberOfChannels; channel++) {
+                        final YamahaYsfcWaveData waveData = new YamahaYsfcWaveData();
+                        waveDataList.add(waveData);
+                        waveData.setData(isStereo ? getChannelData(channel, data) : data);
                     }
+                    sampleNumber++;
+
+                    // For MOXF:
+                    // - calculating total count of the samples + 0x10
+                    // - calculating total count of the channels across all samples
+                    moxfData = moxfData.map(storage -> new MOXFData(
+                            storage.numberOfSamplesWritten() + numSamples * numberOfChannels,
+                            storage.numberOfChannelsWritten() + numberOfChannels)
+                    );
+
                 }
 
             final int sampleIndex = libraryID + i;
-            final YamahaYsfcEntry keyBankEntry = new YamahaYsfcEntry ();
-            keyBankEntry.setSpecificValue (sampleIndex);
+            final YamahaYsfcEntry keyBankEntry;
+            if (!outputFormat.equals(OutputFormat.MOXF_LIBRARY)) {
+                keyBankEntry = new YamahaYsfcEntry ();
+                keyBankEntry.setSpecificValue (sampleIndex);
+            } else {
+                keyBankEntry = new YamahaMOXFEWFMEntry();
+                keyBankEntry.setSpecificValue (sampleIndex - libraryID + 1);
+            }
 
             // Set the category
             String n = multisampleName;
@@ -241,10 +272,22 @@ public class YamahaYsfcCreator extends AbstractCreator
                     n = categoryID.toString () + ":" + n;
             }
             keyBankEntry.setItemName (n);
+            if (outputFormat.equals(OutputFormat.MOXF_LIBRARY)) {
+                keyBankEntry.setItemTitle(String.format("%04d-Waveform.wfm", i + 1));
+            }
 
-            final YamahaYsfcEntry waveDataEntry = new YamahaYsfcEntry ();
+
+            final YamahaYsfcEntry waveDataEntry;
+            if (!outputFormat.equals(OutputFormat.MOXF_LIBRARY)) {
+                waveDataEntry = new YamahaYsfcEntry ();
+                waveDataEntry.setSpecificValue (sampleIndex);
+            } else {
+                waveDataEntry = new YamahaMOXFEWIMEntry();
+                waveDataEntry.setSpecificValue (sampleIndex - libraryID + 1);
+                waveDataEntry.setItemTitle(String.format("%04d-Waveform.wim", i + 1));
+            }
             waveDataEntry.setItemName (multisampleName);
-            waveDataEntry.setSpecificValue (sampleIndex);
+
 
             ysfcFile.fillWaveChunks (keyBankEntry, keybankList, waveDataEntry, waveDataList);
         }
@@ -256,10 +299,15 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
 
-    private static YamahaYsfcKeybank createKeybank (final int sampleNumber, final ISampleZone zone, final FormatChunk formatChunk, final int numSamples)
+    private static YamahaYsfcKeybank createKeybank (Optional<MOXFData> moxfData, int sampleNumber, final ISampleZone zone, final FormatChunk formatChunk, final int numSamples)
     {
         final YamahaYsfcKeybank keybank = new YamahaYsfcKeybank ();
         keybank.setNumber (sampleNumber);
+
+        moxfData.ifPresent(data -> {
+            keybank.setVersion1TotalSampleOffset(data.numberOfSamplesWritten());
+            keybank.setVersion1TotalChannelOffset(data.numberOfChannelsWritten());
+        });
 
         final int numberOfChannels = formatChunk.getNumberOfChannels ();
         keybank.setChannels (numberOfChannels);
@@ -280,11 +328,11 @@ public class YamahaYsfcCreator extends AbstractCreator
         final double gain = zone.getGain ();
         keybank.setLevel (gain < -95.25 ? 0 : (int) Math.round ((Math.clamp (gain, -95.25, 0) + 95.25) / 0.375) + 1);
 
-        if (numberOfChannels == 1)
-        {
-            final double panorama = zone.getPanorama ();
-            keybank.setPanorama ((int) (panorama < 0 ? panorama * 64 : panorama * 63));
-        }
+//        if (numberOfChannels == 1)
+//        {
+        final double panorama = zone.getPanorama ();
+        keybank.setPanorama ((int) (panorama < 0 ? panorama * 64 : panorama * 63));
+//        }
 
         keybank.setPlayStart (zone.getStart ());
         keybank.setPlayEnd (zone.getStop ());

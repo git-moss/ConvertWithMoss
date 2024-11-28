@@ -4,3 +4,7 @@
 /.classpath
 /.project
 /.DS_Store
+
+/.idea
+*.iml
+*.ipr
