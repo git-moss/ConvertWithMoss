@@ -101,7 +101,6 @@ public class YamahaYsfcKeybank
         this.channels = in.read ();
 
         this.loopTune = in.read ();
-        // one more byte for MOXF
         // Ignore
         in.skipNBytes (1);
         final int waveFormat = in.read ();
