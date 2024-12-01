@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.file.aiff;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,6 +16,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -57,6 +60,19 @@ public class AiffFileSampleData extends AbstractFileSampleData
     }
 
 
+    /**
+     * Constructor for a sample stored in a ZIP file.
+     *
+     * @param zipFile The ZIP file which contains the WAV files
+     * @param zipEntry The relative path in the ZIP where the file is stored
+     * @throws IOException Could not read the file
+     */
+    public AiffFileSampleData (final File zipFile, final File zipEntry) throws IOException
+    {
+        super (zipFile, zipEntry);
+    }
+
+
     private void fixFileEnding () throws IOException
     {
         if (!this.sampleFile.getName ().toLowerCase ().endsWith ("aiff"))
@@ -74,8 +90,33 @@ public class AiffFileSampleData extends AbstractFileSampleData
     @Override
     public void writeSample (final OutputStream outputStream) throws IOException
     {
+        if (this.zipFile == null)
+        {
+            try (final InputStream inputStream = new FileInputStream (this.sampleFile))
+            {
+                this.readConvertWrite (inputStream, outputStream);
+            }
+            return;
+        }
+
+        try (final ZipFile zf = new ZipFile (this.zipFile))
+        {
+            final String path = this.zipEntry.getPath ().replace ('\\', '/');
+            final ZipEntry entry = zf.getEntry (path);
+            if (entry == null)
+                throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
+            try (final InputStream inputStream = zf.getInputStream (entry))
+            {
+                this.readConvertWrite (inputStream, outputStream);
+            }
+        }
+    }
+
+
+    private void readConvertWrite (final InputStream inputStream, final OutputStream outputStream) throws IOException
+    {
         // Read the input AIFF file
-        try (final InputStream in = new BufferedInputStream (new FileInputStream (this.sampleFile)); final AudioInputStream audioIn = AudioSystem.getAudioInputStream (in))
+        try (final InputStream in = new BufferedInputStream (inputStream); final AudioInputStream audioIn = AudioSystem.getAudioInputStream (in))
         {
             // Obtains the file types that the system can write from the audio input stream
             // specified. Check if WAV can be written
@@ -194,7 +235,26 @@ public class AiffFileSampleData extends AbstractFileSampleData
     public AiffFile getAiffFile () throws IOException
     {
         if (this.aiffFile == null)
-            this.aiffFile = new AiffFile (this.sampleFile);
+        {
+            if (this.zipFile == null)
+                this.aiffFile = new AiffFile (this.sampleFile);
+            else
+            {
+                this.aiffFile = new AiffFile ();
+
+                try (final ZipFile zf = new ZipFile (this.zipFile))
+                {
+                    final String path = this.zipEntry.getPath ().replace ('\\', '/');
+                    final ZipEntry entry = zf.getEntry (path);
+                    if (entry == null)
+                        throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
+                    try (final InputStream in = zf.getInputStream (entry))
+                    {
+                        this.aiffFile.read (in);
+                    }
+                }
+            }
+        }
 
         return this.aiffFile;
     }

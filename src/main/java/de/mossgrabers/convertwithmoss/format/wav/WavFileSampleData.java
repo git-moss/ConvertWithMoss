@@ -225,7 +225,7 @@ public class WavFileSampleData extends AbstractFileSampleData
                     {
                         this.waveFile.read (in, true);
                     }
-                    catch (final ParseException ex)
+                    catch (final ParseException | RuntimeException ex)
                     {
                         throw new IOException (ex);
                     }

@@ -1,5 +1,24 @@
 # Changes
 
+## 11.4.0
+
+* Decent Sampler
+  * New: Added support dspresets using AIFF files.
+  * New: Added option to (not) log unused XML elements and attributes. This is off by default since the warnings confused many users.
+  * New: Tweaked envelope times a bit.
+  * New: Removed groups which are disabled (since there is no way to translate the modulated activation to other formats).
+  * New: Filters on group level are now read as well.
+  * New: Improved mapping of round-robin
+  * Fixed: Added support for note numbers with a prefixed 0 (e.g. '060').
+  * Fixed: Global filter was not read.
+* EXS24
+  * New: Removed excessive logging when searching for a sample.
+  * Fixed: Data chunk offset was mostly not correctly written to EXS.
+* Sample Files
+  * New: Implemented workaround for reading WAV files with a non-standard chunk at the end.
+* Sf2
+  * New: Added option to (not) log unused SF2 generators. This is off by default since the warnings confused many users.
+
 ## 11.3.0
 
 * Ableton ADV

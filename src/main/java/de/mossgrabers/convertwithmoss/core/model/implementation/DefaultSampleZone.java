@@ -27,6 +27,7 @@ public class DefaultSampleZone implements ISampleZone
 {
     protected String             name;
     protected PlayLogic          playLogic                  = PlayLogic.ALWAYS;
+    protected int                sequencePosition           = -1;
     protected TriggerType        triggerType                = TriggerType.ATTACK;
     protected int                start                      = -1;
     protected int                stop                       = -1;
@@ -136,6 +137,22 @@ public class DefaultSampleZone implements ISampleZone
     public void setPlayLogic (final PlayLogic playLogic)
     {
         this.playLogic = playLogic;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getSequencePosition ()
+    {
+        return this.sequencePosition;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSequencePosition (final int sequencePosition)
+    {
+        this.sequencePosition = sequencePosition;
     }
 
 

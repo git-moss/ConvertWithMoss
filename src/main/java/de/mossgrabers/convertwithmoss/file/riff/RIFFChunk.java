@@ -16,6 +16,7 @@ import java.util.Set;
 import de.mossgrabers.convertwithmoss.exception.NoDataInChunkException;
 import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -225,7 +226,7 @@ public class RIFFChunk implements IChunk
     {
         // Check expected length
         if (this.id != RiffID.LIST_ID.getId () && data.length < this.size)
-            throw new IllegalArgumentException (this.getRiffID ().getName () + " chunk too short. Corrupted file?!");
+            throw new IllegalArgumentException (Functions.getMessage ("IDS_WAV_ERR_IN_CHUNK", this.getRiffID ().getName (), RiffID.toASCII (this.id), Long.toString (this.size), Integer.toString (data.length)));
 
         this.data = data;
     }

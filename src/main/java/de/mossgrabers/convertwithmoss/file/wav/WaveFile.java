@@ -16,6 +16,7 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
+import de.mossgrabers.convertwithmoss.file.riff.RIFFVisitor;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -92,6 +93,34 @@ public class WaveFile extends AbstractRIFFFile
 
 
     /**
+     * Get the position of the start of the data of the data chunk in the wave file.
+     * 
+     * @param wavFile The wave file
+     * @return The position of the data chunk or -1 if no data chunk is present
+     * @throws IOException Could not read the file
+     */
+    public static long getPositionOfDataChunkData (final File wavFile) throws IOException
+    {
+        final RIFFParser riffParser = new RIFFParser ();
+        riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
+        try (final InputStream inputStream = new FileInputStream (wavFile))
+        {
+            final DataChunkPositionRIFFVisitor callback = new DataChunkPositionRIFFVisitor (riffParser);
+            try
+            {
+                riffParser.parse (inputStream, callback, true, true);
+            }
+            catch (final ParseException ex)
+            {
+                throw new IOException (ex);
+            }
+
+            return callback.dataChunkPosition;
+        }
+    }
+
+
+    /**
      * Reads a WAV file from a stream.
      *
      * @param inputStream The input stream which provides the WAV file
@@ -103,7 +132,7 @@ public class WaveFile extends AbstractRIFFFile
     {
         final RIFFParser riffParser = new RIFFParser ();
         riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
-        riffParser.parse (inputStream, this, ignoreChunkErrors);
+        riffParser.parse (inputStream, this, ignoreChunkErrors, ignoreChunkErrors);
 
         // Workaround for broken(?) WAV files which have the wave data after(!) the data chunk
         if (this.formatChunk != null && this.dataChunk != null && this.dataChunk.getData ().length == 0 && inputStream.available () > 0)
@@ -123,7 +152,7 @@ public class WaveFile extends AbstractRIFFFile
     /**
      * Returns true if the original source file (if any) needs to be rewritten since changes did
      * happen to it.
-     * 
+     *
      * @return True if rewrite is necessary
      */
     public boolean doesRequireRewrite ()
@@ -370,5 +399,52 @@ public class WaveFile extends AbstractRIFFFile
             this.chunkStack.add (this.instrumentChunk);
         if (this.sampleChunk != null)
             this.chunkStack.add (this.sampleChunk);
+    }
+
+
+    private static final class DataChunkPositionRIFFVisitor implements RIFFVisitor
+    {
+        private RIFFParser parser;
+        long               dataChunkPosition = -1;
+
+
+        public DataChunkPositionRIFFVisitor (final RIFFParser parser)
+        {
+            this.parser = parser;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean enteringGroup (final RIFFChunk group)
+        {
+            return false;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public void enterGroup (final RIFFChunk group) throws ParseException
+        {
+            // Intentionally empty
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public void leaveGroup (final RIFFChunk group) throws ParseException
+        {
+            // Intentionally empty
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
+        {
+            final RiffID riffID = RiffID.fromId (chunk.getId ());
+            if (riffID == RiffID.DATA_ID)
+                this.dataChunkPosition = this.parser.getPosition () - chunk.getSize ();
+        }
     }
 }
