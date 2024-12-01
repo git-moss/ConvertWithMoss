@@ -25,9 +25,11 @@ import javafx.scene.control.ScrollPane;
  */
 public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTask>
 {
-    private static final String ADD_FILE_NAME_TAG      = "AddFileName";
-    private static final String ADD_PROGRAM_NUMBER_TAG = "AddProgramNumber";
+    private static final String LOG_UNSUPPORTED_ATTRIBUTES = "LogUnsupportedAttributes";
+    private static final String ADD_FILE_NAME_TAG          = "AddFileName";
+    private static final String ADD_PROGRAM_NUMBER_TAG     = "AddProgramNumber";
 
+    private CheckBox            logUnsupportedAttributes;
     private CheckBox            addFileName;
     private CheckBox            addProgramNumber;
 
@@ -47,7 +49,7 @@ public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTas
     @Override
     public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
     {
-        this.startDetection (new Sf2DetectorTask (this.notifier, consumer, folder, this.metadataPane, this.addFileName.isSelected (), this.addProgramNumber.isSelected ()));
+        this.startDetection (new Sf2DetectorTask (this.notifier, consumer, folder, this.metadataPane, this.addFileName.isSelected (), this.addProgramNumber.isSelected (), this.logUnsupportedAttributes.isSelected ()));
     }
 
 
@@ -56,6 +58,13 @@ public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTas
     public Node getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+
+        ////////////////////////////////////////////////////////////
+        // Options
+
+        panel.createSeparator ("@IDS_SF2_OPTIONS");
+
+        this.logUnsupportedAttributes = panel.createCheckBox ("@IDS_SF2_LOG_UNSUPPORTED_ATTRIBUTES");
 
         ////////////////////////////////////////////////////////////
         // Naming
@@ -84,6 +93,7 @@ public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTas
     {
         this.metadataPane.saveSettings (config);
 
+        config.setBoolean (this.prefix + LOG_UNSUPPORTED_ATTRIBUTES, this.logUnsupportedAttributes.isSelected ());
         config.setBoolean (this.prefix + ADD_FILE_NAME_TAG, this.addFileName.isSelected ());
         config.setBoolean (this.prefix + ADD_PROGRAM_NUMBER_TAG, this.addProgramNumber.isSelected ());
     }
@@ -95,6 +105,7 @@ public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTas
     {
         this.metadataPane.loadSettings (config);
 
+        this.logUnsupportedAttributes.setSelected (config.getBoolean (this.prefix + LOG_UNSUPPORTED_ATTRIBUTES, false));
         this.addFileName.setSelected (config.getBoolean (this.prefix + ADD_FILE_NAME_TAG, false));
         this.addProgramNumber.setSelected (config.getBoolean (this.prefix + ADD_PROGRAM_NUMBER_TAG, false));
     }

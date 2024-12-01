@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -64,8 +65,8 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     protected final File                         sourceFolder;
     protected String []                          fileEndings;
 
-    private final Map<String, Set<String>>       unsupportedElements   = new HashMap<> ();
-    private final Map<String, Set<String>>       unsupportedAttributes = new HashMap<> ();
+    protected final Map<String, Set<String>>     unsupportedElements   = new HashMap<> ();
+    protected final Map<String, Set<String>>     unsupportedAttributes = new HashMap<> ();
 
     protected final IMetadataConfig              metadataConfig;
 
@@ -368,6 +369,30 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
     /**
      * Check the type of the source sample for compatibility and handle them accordingly. This
+     * method supports WAV, AIF, AIFF, OGG and FLAC files. The file is compressed in a ZIP file.
+     * 
+     * @param zipFile The ZIP file which contains the sample file
+     * @param sampleFile The sample file for which to create sample metadata
+     * @return The matching sample metadata, support is WAV and AIFF
+     * @throws IOException Unsupported sample file type
+     */
+    protected ISampleData createSampleData (final File zipFile, final File sampleFile) throws IOException
+    {
+        final String fileEnding = sampleFile.getName ().toLowerCase ();
+
+        if (fileEnding.endsWith (".wav"))
+            return new WavFileSampleData (zipFile, sampleFile);
+
+        if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
+            return new AiffFileSampleData (zipFile, sampleFile);
+
+        throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ()));
+
+    }
+
+
+    /**
+     * Check the type of the source sample for compatibility and handle them accordingly. This
      * method supports WAV, AIF, AIFF, OGG and FLAC files.
      *
      * @param sampleFile The sample file for which to create sample metadata
@@ -560,6 +585,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
 
         // ... and search recursively...
+        this.notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN", startDirectory.getAbsolutePath ());
         final File found = this.findSampleFileRecursively (startDirectory, sampleFile.getName ());
         // Returning the original file triggers the expected error...
         if (found == null)
@@ -592,8 +618,6 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
     private File findSampleFileRecursively (final File folder, final String fileName)
     {
-        this.notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN", folder.getAbsolutePath ());
-
         File sampleFile = new File (folder, fileName);
         if (sampleFile.exists ())
             return sampleFile;
@@ -602,6 +626,9 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         if (children != null)
             for (final File subFolder: children)
             {
+                if (subFolder.isHidden () || subFolder.getName ().startsWith ("."))
+                    continue;
+
                 sampleFile = this.findSampleFileRecursively (subFolder, fileName);
                 if (sampleFile != null)
                     return sampleFile;

@@ -95,8 +95,6 @@ public class DecentSamplerCreator extends AbstractCreator
     private CheckBox            addReverbBox;
     private CheckBox            makeMonophonicBox;
 
-    private int                 seqPosition               = 1;
-
 
     /**
      * Constructor.
@@ -201,8 +199,6 @@ public class DecentSamplerCreator extends AbstractCreator
         final List<PresetResult> results = new ArrayList<> ();
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            this.seqPosition = 1;
-
             final PresetResult presetResult = new PresetResult ();
             presetResult.sampleSource = multisampleSource;
 
@@ -347,17 +343,6 @@ public class DecentSamplerCreator extends AbstractCreator
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-        boolean hasRoundRobin = false;
-
-        if (!groups.isEmpty ())
-        {
-            final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
-
-            final PlayLogic playLogic = zone.getPlayLogic ();
-            hasRoundRobin = playLogic == PlayLogic.ROUND_ROBIN;
-            if (hasRoundRobin)
-                groupsElement.setAttribute (DecentSamplerTag.SEQ_MODE, "round_robin");
-        }
         this.createUI (document, multisampleElement);
 
         // Add all groups
@@ -367,14 +352,7 @@ public class DecentSamplerCreator extends AbstractCreator
         for (int i = 0; i < groups.size (); i++)
         {
             final IGroup group = groups.get (i);
-
             final Element groupElement = XMLUtils.addElement (document, groupsElement, DecentSamplerTag.GROUP);
-
-            if (hasRoundRobin)
-            {
-                groupElement.setAttribute (DecentSamplerTag.SEQ_POSITION, Integer.toString (this.seqPosition));
-                this.seqPosition++;
-            }
 
             final String name = group.getName ();
             if (name != null && !name.isBlank ())
@@ -453,6 +431,13 @@ public class DecentSamplerCreator extends AbstractCreator
             sampleElement.setAttribute (DecentSamplerTag.TRIGGER, triggerType.name ().toLowerCase (Locale.ENGLISH));
 
         // No info.isReversed ()
+
+        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+        {
+            final int seqPos = zone.getSequencePosition ();
+            if (seqPos >= 1)
+                sampleElement.setAttribute (DecentSamplerTag.SEQ_POSITION, Integer.toString (seqPos));
+        }
 
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
@@ -560,10 +545,10 @@ public class DecentSamplerCreator extends AbstractCreator
             envelopeElement.setAttribute ("scope", "voice");
 
             final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, filterEnvelope.getAttackTime ());
-            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, filterEnvelope.getDecayTime ());
+            setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, filterEnvelope.getAttackTime ());
+            setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, filterEnvelope.getDecayTime ());
             setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_SUSTAIN, filterEnvelope.getSustainLevel ());
-            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, filterEnvelope.getReleaseTime ());
+            setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, filterEnvelope.getReleaseTime ());
 
             final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
             bindingElement.setAttribute ("type", "effect");
@@ -606,10 +591,10 @@ public class DecentSamplerCreator extends AbstractCreator
         XMLUtils.setDoubleAttribute (envelopeElement, DecentSamplerTag.MOD_AMOUNT, envelopeDepth, 2);
 
         final IEnvelope envelope = pitchModulator.getSource ();
-        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, envelope.getAttackTime ());
-        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, envelope.getDecayTime ());
+        setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, envelope.getAttackTime ());
+        setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, envelope.getDecayTime ());
         setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_SUSTAIN, envelope.getSustainLevel ());
-        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, envelope.getReleaseTime ());
+        setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, envelope.getReleaseTime ());
 
         final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", "amp");
@@ -688,14 +673,22 @@ public class DecentSamplerCreator extends AbstractCreator
      */
     private static void addVolumeEnvelope (final IEnvelope amplitudeEnvelope, final Element element)
     {
-        setEnvelopeAttribute (element, DecentSamplerTag.ENV_ATTACK, amplitudeEnvelope.getAttackTime ());
-        setEnvelopeAttribute (element, DecentSamplerTag.ENV_DECAY, amplitudeEnvelope.getDecayTime ());
+        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_ATTACK, amplitudeEnvelope.getAttackTime ());
+        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_DECAY, amplitudeEnvelope.getDecayTime ());
         setEnvelopeAttribute (element, DecentSamplerTag.ENV_SUSTAIN, amplitudeEnvelope.getSustainLevel ());
-        setEnvelopeAttribute (element, DecentSamplerTag.ENV_RELEASE, amplitudeEnvelope.getReleaseTime ());
+        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_RELEASE, amplitudeEnvelope.getReleaseTime ());
 
         setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_ATTACK_CURVE, amplitudeEnvelope.getAttackSlope () * 100.0);
         setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_DECAY_CURVE, amplitudeEnvelope.getDecaySlope () * 100.0);
         setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_RELEASE_CURVE, amplitudeEnvelope.getReleaseSlope () * 100.0);
+    }
+
+
+    private static void setEnvelopeTimeAttribute (final Element element, final String attribute, final double value)
+    {
+        // Adjust the seconds by factor 2 which seems more fitting!
+        if (value >= 0)
+            setEnvelopeAttribute (element, attribute, value / 2.0);
     }
 
 

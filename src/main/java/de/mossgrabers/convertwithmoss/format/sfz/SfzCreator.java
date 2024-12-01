@@ -191,29 +191,24 @@ public class SfzCreator extends AbstractCreator
                 continue;
 
             // Check for any sample which play round-robin
-            int sequence = 0;
+            int maxSequence = -1;
             for (final ISampleZone zone: zones)
                 if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
-                    sequence++;
+                    maxSequence = Math.max (maxSequence, zone.getSequencePosition ());
 
             sb.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
             final String groupName = group.getName ();
             if (groupName != null && !groupName.isBlank ())
                 addAttribute (sb, SfzOpcode.GROUP_LABEL, groupName, true);
-            if (sequence > 0)
-                addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, sequence, true);
+            if (maxSequence > 0)
+                addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, maxSequence, true);
 
             final TriggerType trigger = group.getTrigger ();
             if (trigger != null && trigger != TriggerType.ATTACK)
                 addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
 
-            sequence = 1;
             for (final ISampleZone zone: zones)
-            {
-                this.createSample (safeSampleFolderName, sb, zone, sequence);
-                if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
-                    sequence++;
-            }
+                this.createSample (safeSampleFolderName, sb, zone);
         }
 
         return sb.toString ();
@@ -226,9 +221,8 @@ public class SfzCreator extends AbstractCreator
      * @param safeSampleFolderName The safe sample folder name
      * @param buffer Where to add the XML code
      * @param zone The sample zone
-     * @param sequenceNumber The number in the sequence for round-robin playback
      */
-    private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone, final int sequenceNumber)
+    private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone)
     {
         final String ending = this.convertToFlac.isSelected () ? ".flac" : ".wav";
 
@@ -243,7 +237,7 @@ public class SfzCreator extends AbstractCreator
         if (zone.isReversed ())
             addAttribute (buffer, SfzOpcode.DIRECTION, "reverse", true);
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
-            addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, sequenceNumber, true);
+            addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
         ////////////////////////////////////////////////////////////
         // Key range

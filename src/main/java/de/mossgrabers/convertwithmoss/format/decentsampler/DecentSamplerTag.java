@@ -59,6 +59,8 @@ public class DecentSamplerTag
     public static final String                    GROUP_TUNING       = "groupTuning";
     /** The group name tag. */
     public static final String                    GROUP_NAME         = "name";
+    /** The group enabled tag. */
+    public static final String                    GROUP_ENABLED      = "enabled";
 
     /** The sample path attribute. */
     public static final String                    PATH               = "path";
@@ -133,7 +135,7 @@ public class DecentSamplerTag
     {
         ATTRIBUTES.put (DECENTSAMPLER, Collections.emptySet ());
         ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, SEQ_MODE, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE));
-        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANORAMA, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER));
+        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANORAMA, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER));
         ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANORAMA, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE));
     }
 

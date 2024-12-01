@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -163,7 +164,7 @@ public class EXS24Creator extends AbstractCreator
                 final String name = zone.getName () + ".wav";
                 final File sampleFile = writtenSamples.get (name);
                 exs24Sample.name = name;
-                exs24Sample.waveDataStart = 88;
+                exs24Sample.waveDataStart = (int) WaveFile.getPositionOfDataChunkData (sampleFile);
                 exs24Sample.length = audioMetadata.getNumberOfSamples ();
                 exs24Sample.sampleRate = audioMetadata.getSampleRate ();
                 exs24Sample.bitDepth = audioMetadata.getBitResolution ();

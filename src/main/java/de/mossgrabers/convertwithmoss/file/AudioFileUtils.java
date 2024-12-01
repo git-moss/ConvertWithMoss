@@ -163,9 +163,9 @@ public final class AudioFileUtils
             final WaveFile waveFile = new WaveFile (wavFile, true);
             checkSampleFile (wavFile.getAbsolutePath (), waveFile, notifier);
         }
-        catch (final IOException | ParseException ex)
+        catch (final IOException | ParseException | RuntimeException ex)
         {
-            notifier.logError (BROKEN_WAV, ex);
+            notifier.logError (BROKEN_WAV, wavFile.getAbsolutePath (), ex.getMessage ());
             return false;
         }
 
@@ -186,7 +186,7 @@ public final class AudioFileUtils
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
         if (formatChunk == null)
         {
-            notifier.logError (BROKEN_WAV, filename);
+            notifier.logError (BROKEN_WAV, filename, "Missing format chunk.");
             return false;
         }
 

@@ -95,6 +95,8 @@ public class NoteParser
             KEY_MAP.put (NOTE_NAMES_FLAT_GERMAN[n] + octave, ni);
             KEY_MAP.put (NOTE_NAMES_SHARP_GERMAN[n] + octave, ni);
             KEY_MAP.put (String.format ("%d", ni), ni);
+            if (note < 100)
+                KEY_MAP.put (String.format ("%03d", ni), ni);
         }
     }
 

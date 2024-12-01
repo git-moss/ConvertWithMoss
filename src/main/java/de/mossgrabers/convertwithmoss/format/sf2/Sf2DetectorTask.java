@@ -53,6 +53,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 {
     private final boolean addFileName;
     private final boolean addProgramNumber;
+    private final boolean logUnsupportedAttributes;
 
 
     /**
@@ -64,11 +65,13 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * @param metadataConfig Additional metadata configuration parameters
      * @param addFileName If true, add the filename to all multi-sample names
      * @param addProgramNumber If true, add the program number to all multi-sample names
+     * @param logUnsupportedAttributes Log unsupported attributes if enabled
      */
-    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadataConfig, final boolean addFileName, final boolean addProgramNumber)
+    public Sf2DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadataConfig, final boolean addFileName, final boolean addProgramNumber, final boolean logUnsupportedAttributes)
     {
         super (notifier, consumer, sourceFolder, metadataConfig, ".sf2");
 
+        this.logUnsupportedAttributes = logUnsupportedAttributes;
         this.addFileName = addFileName;
         this.addProgramNumber = addProgramNumber;
     }
@@ -161,7 +164,8 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 groups.add (group);
             }
 
-            this.printUnsupportedGenerators (generators.diffGenerators ());
+            if (this.logUnsupportedAttributes)
+                this.printUnsupportedGenerators (generators.diffGenerators ());
 
             source.setGroups (this.combineToStereo (groups));
 

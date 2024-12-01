@@ -194,7 +194,7 @@ public class Sf2File extends AbstractRIFFFile
         riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
         riffParser.declareGroupChunk (RiffID.SF_DATA_ID.getId (), RiffID.LIST_ID.getId ());
         riffParser.declareGroupChunk (RiffID.SF_PDTA_ID.getId (), RiffID.LIST_ID.getId ());
-        riffParser.parse (inputStream, this, true);
+        riffParser.parse (inputStream, this, true, true);
     }
 
 

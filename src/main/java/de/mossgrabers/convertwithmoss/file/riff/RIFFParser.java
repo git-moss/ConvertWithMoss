@@ -54,16 +54,17 @@ public class RIFFParser
      * @param in The input stream for getting the data to parse
      * @param callback The callback interface
      * @param ignoreUnknownChunks Ignores unknown chunks if true otherwise raises an exception
+     * @param ignoreChunkErrors Ignores chunk errors like incorrect size of data
      * @return The number of parsed bytes
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    public long parse (final InputStream in, final RIFFVisitor callback, final boolean ignoreUnknownChunks) throws ParseException, IOException
+    public long parse (final InputStream in, final RIFFVisitor callback, final boolean ignoreUnknownChunks, final boolean ignoreChunkErrors) throws ParseException, IOException
     {
         this.in = new RIFFPrimitivesInputStream (in);
         this.visitor = callback;
-        this.parseFile (ignoreUnknownChunks);
-        return this.getPosition (this.in);
+        this.parseFile (ignoreUnknownChunks, ignoreChunkErrors);
+        return this.getPosition ();
     }
 
 
@@ -71,10 +72,11 @@ public class RIFFParser
      * Parses a RIFF file.
      *
      * @param ignoreUnknownChunks Ignores unknown chunks if true otherwise raises an exception
+     * @param ignoreChunkErrors Ignores chunk errors like incorrect size of data
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseFile (final boolean ignoreUnknownChunks) throws ParseException, IOException
+    private void parseFile (final boolean ignoreUnknownChunks, final boolean ignoreChunkErrors) throws ParseException, IOException
     {
         final int id = this.in.readFourCC ();
 
@@ -82,11 +84,11 @@ public class RIFFParser
         switch (riffID)
         {
             case RIFF_ID:
-                this.parseFORM (ignoreUnknownChunks, null);
+                this.parseFORM (ignoreUnknownChunks, ignoreChunkErrors, null);
                 break;
 
             case JUNK_ID:
-                this.parseLocalChunk (null, id);
+                this.parseLocalChunk (null, id, ignoreChunkErrors);
                 break;
 
             case NULL_NUL_ID, NULL_ID:
@@ -105,12 +107,11 @@ public class RIFFParser
     /**
      * Get the current parsing position in the stream.
      *
-     * @param in The input stream
      * @return The position
      */
-    private long getPosition (final RIFFPrimitivesInputStream in)
+    public long getPosition ()
     {
-        return in.getPosition () + this.streamOffset;
+        return this.in.getPosition () + this.streamOffset;
     }
 
 
@@ -118,14 +119,15 @@ public class RIFFParser
      * Parses a FORM group.
      *
      * @param ignoreUnknownChunks Ignores unknown chunks if true otherwise raises an exception
+     * @param ignoreChunkErrors Ignores chunk errors like incorrect size of data
      * @param props The property chunks
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseFORM (final boolean ignoreUnknownChunks, final Map<Integer, RIFFChunk> props) throws ParseException, IOException
+    private void parseFORM (final boolean ignoreUnknownChunks, final boolean ignoreChunkErrors, final Map<Integer, RIFFChunk> props) throws ParseException, IOException
     {
         final long size = this.in.readUDWORD ();
-        final long offset = this.getPosition (this.in);
+        final long offset = this.getPosition ();
         final int type = this.in.readFourCC ();
         if (!isGroupType (type))
             throw new ParseException ("Invalid FORM Type: \"" + RiffID.toASCII (type) + "\"");
@@ -144,17 +146,17 @@ public class RIFFParser
         try
         {
             final long finish = offset + size;
-            while (this.getPosition (this.in) < finish)
+            while (this.getPosition () < finish)
             {
-                final long idscan = this.getPosition (this.in);
+                final long idscan = this.getPosition ();
                 final int id = this.in.readFourCC ();
 
                 if (id == RiffID.RIFF_ID.getId ())
-                    this.parseFORM (ignoreUnknownChunks, props);
+                    this.parseFORM (ignoreUnknownChunks, ignoreChunkErrors, props);
                 else if (id == RiffID.LIST_ID.getId ())
-                    this.parseLIST (props);
+                    this.parseLIST (props, ignoreChunkErrors);
                 else if (isLocalChunkID (id))
-                    this.parseLocalChunk (chunk, id);
+                    this.parseLocalChunk (chunk, id, ignoreChunkErrors);
                 else if (ignoreUnknownChunks)
                 {
                     final long longSize = this.in.readUDWORD ();
@@ -172,7 +174,7 @@ public class RIFFParser
         }
         catch (final EOFException e)
         {
-            chunk.setParserMessage ("Unexpected EOF after " + NumberFormat.getInstance ().format (this.getPosition (this.in) - offset) + " bytes");
+            chunk.setParserMessage ("Unexpected EOF after " + NumberFormat.getInstance ().format (this.getPosition () - offset) + " bytes");
         }
         finally
         {
@@ -186,13 +188,14 @@ public class RIFFParser
      * Parses a LIST group.
      *
      * @param props The property chunks
+     * @param ignoreChunkErrors Ignores chunk errors like incorrect size of data
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseLIST (final Map<Integer, RIFFChunk> props) throws ParseException, IOException
+    private void parseLIST (final Map<Integer, RIFFChunk> props, final boolean ignoreChunkErrors) throws ParseException, IOException
     {
         final long size = this.in.readUDWORD ();
-        final long scan = this.getPosition (this.in);
+        final long scan = this.getPosition ();
         final int type = this.in.readFourCC ();
 
         if (!isGroupType (type))
@@ -214,17 +217,17 @@ public class RIFFParser
             if (visitorWantsToEnterGroup)
             {
                 final long finish = scan + size;
-                while (this.getPosition (this.in) < finish)
+                while (this.getPosition () < finish)
                 {
-                    final long idscan = this.getPosition (this.in);
+                    final long idscan = this.getPosition ();
                     final int id = this.in.readFourCC ();
                     if (id == RiffID.LIST_ID.getId ())
-                        this.parseLIST (props);
+                        this.parseLIST (props, ignoreChunkErrors);
                     else if (isLocalChunkID (id))
-                        this.parseLocalChunk (chunk, id);
+                        this.parseLocalChunk (chunk, id, ignoreChunkErrors);
                     else
                     {
-                        this.parseGarbage (chunk, id, finish - this.getPosition (this.in));
+                        this.parseGarbage (chunk, id, finish - this.getPosition ());
                         final ParseException pex = new ParseException ("Invalid Chunk: \"" + RiffID.toASCII (id) + "\" (" + id + ") at offset:" + idscan);
                         chunk.setParserMessage (pex.getMessage ());
                     }
@@ -251,10 +254,11 @@ public class RIFFParser
      *
      * @param parent The parent chunk
      * @param id The chunk ID
+     * @param ignoreChunkErrors Ignores chunk errors like incorrect size of data
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseLocalChunk (final RIFFChunk parent, final int id) throws ParseException, IOException
+    private void parseLocalChunk (final RIFFChunk parent, final int id, final boolean ignoreChunkErrors) throws ParseException, IOException
     {
         final long longSize = this.in.readUDWORD ();
         final RIFFChunk chunk = new RIFFChunk (parent == null ? 0 : parent.getType (), id, longSize);
@@ -265,7 +269,7 @@ public class RIFFParser
             if (size < 0)
                 throw new ParseException ("Found negative chunk length. File is broken?!");
 
-            if (this.handleChunks (parent, chunk, size))
+            if (this.handleChunks (parent, chunk, size, ignoreChunkErrors))
                 return;
         }
         else
@@ -283,22 +287,29 @@ public class RIFFParser
      * @param parent The parent chunk
      * @param chunk The chunk to handle
      * @param size The size of the chunk
+     * @param ignoreChunkErrors Ignores chunk errors like incorrect size of data
      * @return True if handled
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private boolean handleChunks (final RIFFChunk parent, final RIFFChunk chunk, final int size) throws IOException, ParseException
+    private boolean handleChunks (final RIFFChunk parent, final RIFFChunk chunk, final int size, final boolean ignoreChunkErrors) throws IOException, ParseException
     {
         if (this.isDataChunk (chunk))
         {
-            chunk.setData (this.in.readNBytes (size));
+            final byte [] chunkData = this.in.readNBytes (size);
+            if (chunkData.length != size && ignoreChunkErrors)
+                return true;
+            chunk.setData (chunkData);
             this.visitor.visitChunk (parent, chunk);
             return true;
         }
 
         if (this.isPropertyChunk (chunk))
         {
-            chunk.setData (this.in.readNBytes (size));
+            final byte [] chunkData = this.in.readNBytes (size);
+            if (chunkData.length != size && ignoreChunkErrors)
+                return true;
+            chunk.setData (chunkData);
             if (parent != null)
                 parent.putPropertyChunk (chunk);
             return true;
@@ -306,7 +317,10 @@ public class RIFFParser
 
         if (this.isCollectionChunk (chunk))
         {
-            chunk.setData (this.in.readNBytes (size));
+            final byte [] chunkData = this.in.readNBytes (size);
+            if (chunkData.length != size && ignoreChunkErrors)
+                return true;
+            chunk.setData (chunkData);
             if (parent != null)
                 parent.addCollectionChunk (chunk);
             return true;
