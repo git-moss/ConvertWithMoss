@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -751,6 +752,20 @@ public class KeyMapping
             }
             previousZone = zone;
         }
+    }
+
+
+    /**
+     * Find the common prefix among all given names.
+     *
+     * @param names The names
+     * @return The common prefix
+     */
+    public static String findCommonPrefix (final String... names)
+    {
+        final List<String> namesList = new ArrayList<> ();
+        Collections.addAll (namesList, names);
+        return findCommonPrefix (namesList);
     }
 
 

@@ -18,6 +18,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
@@ -53,8 +54,10 @@ public class WavFileSampleData extends AbstractFileSampleData
         try
         {
             this.waveFile.read (inputStream, true);
+            final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
+            this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), this.waveFile.getDataChunk ().calculateLength (formatChunk));
         }
-        catch (final ParseException ex)
+        catch (final ParseException | CompressionNotSupportedException ex)
         {
             throw new IOException (ex);
         }

@@ -132,27 +132,21 @@ public class WaldorfQpatCreator extends AbstractCreator
 
         final String relativeSamplePath = "samples/" + sampleName;
 
-        final List<IGroup> groups = reduceGroups (multisampleSource.getNonEmptyGroups (true));
+        List<IGroup> groups = reduceGroups (multisampleSource.getNonEmptyGroups (true));
 
         // Since panning is not working on the sample level, combine split stereo to stereo files
+        // If the combination fails, the file is created anyway but might contain wrong panning.
         if (ZoneChannels.detectChannelConfiguration (groups) == ZoneChannels.SPLIT_STEREO)
         {
-            // TODO Combine mono to stereo
-
-            // Find matching left/right samples
-            // They can be in different groups!
-            // Key-/velocity groups must match, as well as length and format settings
-
-            // First split into 2 groups for left and right
-            // final IGroup leftGroup = new DefaultGroup ();
-            // final IGroup rightGroup = new DefaultGroup ();
-            // for (final ISampleZone zone: group.getSampleZones ())
-            // if (zone.getPanorama () <= -1)
-            // leftGroup.addSampleZone (zone);
-            // else
-            // rightGroup.addSampleZone (zone);
+            final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
+            if (stereoGroup.isPresent ())
+            {
+                this.notifier.log ("IDS_QPAT_COMBINED_TO_STEREO");
+                groups = Collections.singletonList (stereoGroup.get ());
+            }
         }
 
+        multisampleSource.setGroups (groups);
         storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath);
 
         // Store all samples
@@ -189,7 +183,7 @@ public class WaldorfQpatCreator extends AbstractCreator
             StreamUtils.writeUnsigned16 (out, parameters.size (), false);
             StreamUtils.padBytes (out, 2);
 
-            // Write up to 3 sample maps ...
+            // Write up to 3 sample maps (groups have already been reduced to a max. of 3) ...
             for (int i = 0; i < sampleMaps.size (); i++)
             {
                 final String sampleMap = sampleMaps.get (i);
@@ -223,6 +217,15 @@ public class WaldorfQpatCreator extends AbstractCreator
     }
 
 
+    /**
+     * Create a sample map for each group. A sample map is a text file which describes a basic
+     * multi-sample configuration.
+     *
+     * @param groups The groups
+     * @param relativeSamplePath The relative path to the samples
+     * @return The sample maps
+     * @throws IOException Could not read the necessary audio metadata of a sample
+     */
     private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath) throws IOException
     {
         final List<String> sampleMaps = new ArrayList<> ();
@@ -239,8 +242,9 @@ public class WaldorfQpatCreator extends AbstractCreator
                 final ISampleData sampleData = zone.getSampleData ();
                 final double numSampleFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
 
-                // Sample Path
-                sb.append ("\"").append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
+                // Sample Path - '4:' refers to the USB drive. This is required to trigger the
+                // copying of the samples to the internal memory
+                sb.append ("\"4:").append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
 
                 // Pitch
                 double tune = zone.getTune ();
@@ -258,7 +262,7 @@ public class WaldorfQpatCreator extends AbstractCreator
                 // FromVelo / ToVelo
                 sb.append (zone.getVelocityLow ()).append ('\t').append (zone.getVelocityHigh ()).append ('\t');
 
-                // Pan
+                // Pan - CURRENTLY IGNORED
                 sb.append (formatMapDouble ((zone.getPanorama () + 1.0) / 2.0)).append ('\t');
 
                 // Start / End
@@ -347,39 +351,16 @@ public class WaldorfQpatCreator extends AbstractCreator
             final int pitchbend = Math.clamp (firstZone.getBendUp (), -24, 24);
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24));
 
-            // Osc1Keytrack: [0..1] ~ [-200..200]
-            // TODO Evtl. entfernen da schon in Samplemap
-            final double keyTracking = firstZone.getKeyTracking () * 100.0;
-            final String keyTrackingStr = (keyTracking < 0 ? "-" : "+") + String.format (Locale.US, "%.2f", Double.valueOf (keyTracking)) + " %";
+            // Osc1Keytrack: [0..1] ~ [-200..200] - already set in the sample maps
+            final double keyTracking = 100.0;
+            final String keyTrackingStr = "+" + String.format (Locale.US, "%.2f", Double.valueOf (keyTracking)) + " %";
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Keytrack", keyTrackingStr, (float) ((keyTracking + 200.0) / 400.0)));
 
-            // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB]
-            // TODO Evtl. entfernen da schon in Samplemap
-            final double volumeDB = firstZone.getGain ();
-            final double volume = convertFromDecibels (volumeDB);
-            final String volumeStr;
-            if (volumeDB == Double.NEGATIVE_INFINITY)
-                volumeStr = "-inf dB";
-            else
-                volumeStr = (volumeDB < 0 ? "-" : "+") + String.format (Locale.US, "%.3f dB", Double.valueOf (volumeDB));
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Vol", volumeStr, (float) volume));
+            // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB] - already set in the sample maps
+            final String volumeStr = "+" + String.format (Locale.US, "%.3f dB", Double.valueOf (0));
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Vol", volumeStr, (float) convertFromDecibels (0)));
 
-            // Osc1Pan: [0..1] ~ [L..R]
-            // TODO Panorama is already set in the sample maps
-            // final double panorama = firstZone.getPanorama ();
-            // final String panoramaStr;
-            // if (panorama == -1)
-            // panoramaStr = "L";
-            // else if (panorama == 1)
-            // panoramaStr = "R";
-            // else if (panorama == 0)
-            // panoramaStr = "Center";
-            // else if (panorama < 0)
-            // panoramaStr = (int) (panorama * 100.0) + "% L";
-            // else
-            // panoramaStr = (int) (panorama * 100.0) + "% R";
-            // parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Pan", panoramaStr,
-            // (float) ((panorama + 1.0) / 2.0)));
+            // Osc1Pan: [0..1] ~ [L..R] - already set in the sample maps
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Pan", "Center", 0.5f));
 
             createPitchEnvelopeModulator (parameters, firstZone.getPitchModulator (), i + 1);

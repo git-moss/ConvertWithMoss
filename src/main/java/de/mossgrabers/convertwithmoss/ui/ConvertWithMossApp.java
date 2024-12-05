@@ -51,6 +51,8 @@ import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxCreator;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxDetector;
+import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatCreator;
+import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
@@ -183,7 +185,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new SfzDetector (this),
             new Sf2Detector (this),
             new TALSamplerDetector (this),
-            // new WaldorfQpatDetector (this),
+            new WaldorfQpatDetector (this),
             new YamahaYsfcDetector (this)
         };
 
@@ -204,7 +206,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             new SfzCreator (this),
             new Sf2Creator (this),
             new TALSamplerCreator (this),
-            // new WaldorfQpatCreator (this),
+            new WaldorfQpatCreator (this),
             new WavCreator (this),
             new YamahaYsfcCreator (this)
         };
