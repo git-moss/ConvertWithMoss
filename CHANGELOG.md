@@ -1,5 +1,11 @@
 # Changes
 
+## 11.5.0 (unreleased)
+
+* Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
+* Decent Sampler
+  * New: Added logging of line/column numbers with the error if the dspreset file cannot be parsed.
+
 ## 11.4.0
 
 * Decent Sampler

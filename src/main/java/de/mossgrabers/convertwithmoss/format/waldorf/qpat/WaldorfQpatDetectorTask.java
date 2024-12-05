@@ -508,7 +508,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
                 samplePath = samplePath.substring (1);
             if (samplePath.endsWith ("\""))
                 samplePath = samplePath.substring (0, samplePath.length () - 1);
-            // "3:" references the internal partition, "4:" is the USB drive
+            // "3:" or empty references the internal partition, "4:" is the USB drive
             if (samplePath.length () > 2 && samplePath.charAt (1) == ':')
                 samplePath = samplePath.substring (2);
             if (samplePath.length () > 0)

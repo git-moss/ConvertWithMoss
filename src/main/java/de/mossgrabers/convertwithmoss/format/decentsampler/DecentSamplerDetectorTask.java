@@ -25,6 +25,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -216,11 +217,15 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (file), file, file.getParent (), false, document);
         }
+        catch (final SAXParseException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_COULD_NOT_PARSE_XML", Integer.toString (ex.getLineNumber ()), Integer.toString (ex.getColumnNumber ()), ex.getLocalizedMessage ());
+        }
         catch (final IOException | SAXException ex)
         {
             this.notifier.logError (ERR_LOAD_FILE, ex);
-            return Collections.emptyList ();
         }
+        return Collections.emptyList ();
     }
 
 
