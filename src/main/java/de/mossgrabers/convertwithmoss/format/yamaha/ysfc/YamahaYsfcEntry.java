@@ -21,15 +21,15 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class YamahaYsfcEntry
 {
-    private int     length;
-    private byte [] flags                   = new byte [6];
-    private String  itemName                = "";
-    private String  itemTitle               = "";
-    private byte [] additionalData          = new byte [0];
-    private int     correspondingDataSize   = 0;
-    private int     correspondingDataOffset = 0;
-    private int     specificValue           = 0;
-    private int     entryID                 = 0xFFFFFFFF;
+    protected int     length;
+    private byte []   flags                   = new byte [6];
+    protected String  itemName                = "";
+    protected String  itemTitle               = "";
+    protected byte [] additionalData          = new byte [0];
+    protected int     correspondingDataSize   = 0;
+    protected int     correspondingDataOffset = 0;
+    protected int     specificValue           = 0;
+    protected int     entryID                 = 0xFFFFFFFF;
 
 
     /**
@@ -111,7 +111,7 @@ public class YamahaYsfcEntry
     }
 
 
-    private byte [] createContent () throws IOException
+    protected byte [] createContent () throws IOException
     {
         final ByteArrayOutputStream contentStream = new ByteArrayOutputStream ();
 
@@ -227,6 +227,16 @@ public class YamahaYsfcEntry
     public String getItemTitle ()
     {
         return this.itemTitle;
+    }
+
+    /**
+     * Set the title of the item. Used by Yamaha MOXF
+     *
+     * @param itemTitle The filename
+     */
+    public void setItemTitle (final String itemTitle)
+    {
+        this.itemTitle = itemTitle;
     }
 
 
