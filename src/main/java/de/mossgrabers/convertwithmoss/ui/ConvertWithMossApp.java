@@ -6,10 +6,14 @@ package de.mossgrabers.convertwithmoss.ui;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -605,8 +609,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         // Output folder must be empty or add new must be active
         if (!this.addNewFiles.isSelected ())
         {
-            final String [] content = this.outputFolder.list ();
-            if (content == null || content.length > 0)
+            if (!isEmptyFolder(this.outputFolder.getPath()))
             {
                 Functions.message ("@IDS_NOTIFY_FOLDER_MUST_BE_EMPTY");
                 this.destinationPathField.requestFocus ();
@@ -962,4 +965,30 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         history.remove (newItem);
         history.add (0, newItem);
     }
+
+    /**
+     * Checks if folder is empty, ignores OS folder attributes or thumbnail files (eg. MAC: .DS_Store, WIN: Thumbs.db)
+     * 
+     * @param directoryPath Path of folder to check
+     * @return true - directory is empty
+     */
+    private static boolean isEmptyFolder(String directoryPath) {
+        try (Stream<Path> paths = Files.list(Path.of(directoryPath)))
+        {
+            long fileCount =
+            paths
+                .filter(path -> !Pattern.matches("^(\\.(DS_Store|desktop)|Thumbs.db)$", path.getFileName().toString()))
+                // Ignore hidden files if desired
+                //  .filter(path -> {try {return !Files.isHidden(path);} catch (Exception e1) {return false;} })
+                .count();
+            return fileCount == 0 ? true : false;
+        }
+        catch (Exception e)
+        {
+            // TODO Need static logging member function, singleton, service locator pattern or convert EndApplicationException
+            //      to a RuntimeException and throw
+            return false;
+        }
+    }
+
 }
