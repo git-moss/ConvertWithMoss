@@ -14,12 +14,12 @@ The following multisample formats are supported:
 * [Logic EXS24](#logic-exs24)
 * [Multisample Format (Bitwig Studio, Presonus Studio One)](#multisample-format-bitwig-studio-presonus-studio-one)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+* [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
 * [TAL Sampler](#tal-sampler)
-* [WAV files](#wav-files)
+* [Waldorf Quantum MkI,MkII/Iridium/Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
-
 
 ## Automatic Metadata detection
 
@@ -275,10 +275,19 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 
 ### Destination Options
 
-* 'Re-sample to 16bit/44.1kHz': If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it might impact the performance.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
-## WAV files
+## Waldorf Quantum MkI, MkII / Iridium / Iridium Core
+
+This family of Waldorf synthesizers supports the playback of multi-samples. One preset can contain 2 layers. A layer is a complete preset in itself and simply concatenates 2 single presets. Each preset can have up to 3 oscillators of which each oscillator can contain its own multi-sample.
+If this format is used as the source it produces 1 or 2 output presets, one for each layer. If used as the destination format, each group of the source multi-sample is applied to one of the 3 oscillators. If the source contains more than 3 groups, all zones of the additional groups are added to the multi-sample of the 3rd oscillator.
+
+### Destination Options
+
+* Re-sample to 16bit/44.1kHz: If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it might impact the performance.
+* Options to write/update [WAV Chunk Information](#wav-chunk-information)
+
+## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
 If WAV is selected as the source format, all WAV files located in the same folder are considered as a part of one multisample. You can also select a top folder. If you do so, all sub-folders are checked for potential multisample folders.
 

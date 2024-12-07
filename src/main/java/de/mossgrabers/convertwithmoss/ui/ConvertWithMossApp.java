@@ -607,14 +607,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.destinationPathHistory.add (0, this.outputFolder.getAbsolutePath ());
 
         // Output folder must be empty or add new must be active
-        if (!this.addNewFiles.isSelected ())
+        if (!this.addNewFiles.isSelected () && !isEmptyFolder (this.outputFolder.getPath ()))
         {
-            if (!isEmptyFolder(this.outputFolder.getPath()))
-            {
-                Functions.message ("@IDS_NOTIFY_FOLDER_MUST_BE_EMPTY");
-                this.destinationPathField.requestFocus ();
-                return false;
-            }
+            Functions.message ("@IDS_NOTIFY_FOLDER_MUST_BE_EMPTY");
+            this.destinationPathField.requestFocus ();
+            return false;
         }
 
         return true;
@@ -966,29 +963,24 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         history.add (0, newItem);
     }
 
+
     /**
-     * Checks if folder is empty, ignores OS folder attributes or thumbnail files (eg. MAC: .DS_Store, WIN: Thumbs.db)
-     * 
+     * Checks if folder is empty. Ignores OS thumbnail files like .DS_Store on MAC and Thumbs.db on
+     * Windows.
+     *
      * @param directoryPath Path of folder to check
-     * @return true - directory is empty
+     * @return True if directory is empty
      */
-    private static boolean isEmptyFolder(String directoryPath) {
-        try (Stream<Path> paths = Files.list(Path.of(directoryPath)))
+    private static boolean isEmptyFolder (final String directoryPath)
+    {
+        try (final Stream<Path> paths = Files.list (Path.of (directoryPath)))
         {
-            long fileCount =
-            paths
-                .filter(path -> !Pattern.matches("^(\\.(DS_Store|desktop)|Thumbs.db)$", path.getFileName().toString()))
-                // Ignore hidden files if desired
-                //  .filter(path -> {try {return !Files.isHidden(path);} catch (Exception e1) {return false;} })
-                .count();
-            return fileCount == 0 ? true : false;
+            return paths.filter (path -> !Pattern.matches ("^(\\.(DS_Store|desktop)|Thumbs.db)$", path.getFileName ().toString ())).count () == 0;
         }
-        catch (Exception e)
+        catch (final IOException ex)
         {
-            // TODO Need static logging member function, singleton, service locator pattern or convert EndApplicationException
-            //      to a RuntimeException and throw
+            Functions.message (Functions.getMessage ("@IDS_NOTIFY_FOLDER_MUST_BE_EMPTY", ex));
             return false;
         }
     }
-
 }

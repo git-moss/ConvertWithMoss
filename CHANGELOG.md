@@ -3,6 +3,7 @@
 ## 11.5.0 (unreleased)
 
 * Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
+* Checking if destination folder is empty ignores now OS thumbnail files like .DS_Store on MAC and Thumbs.db on Windows.
 * Decent Sampler
   * New: Added logging of line/column numbers with the error if the dspreset file cannot be parsed.
 
