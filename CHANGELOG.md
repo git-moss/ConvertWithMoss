@@ -6,6 +6,8 @@
 * Checking if destination folder is empty ignores now OS thumbnail files like .DS_Store on MAC and Thumbs.db on Windows.
 * Decent Sampler
   * New: Added logging of line/column numbers with the error if the dspreset file cannot be parsed.
+* EXS24
+  * Fixed: Parameters were not correctly read/written. Already created files should be created again.
 
 ## 11.4.0
 

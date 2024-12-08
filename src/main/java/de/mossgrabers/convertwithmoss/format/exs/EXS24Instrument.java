@@ -68,6 +68,8 @@ class EXS24Instrument extends EXS24Object
 
         // No idea about this value, maybe there are more unknown block types
         StreamUtils.readUnsigned32 (in, isBigEndian);
+
+        // There can be more bytes...
     }
 
 

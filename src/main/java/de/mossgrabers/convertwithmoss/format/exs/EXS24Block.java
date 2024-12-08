@@ -36,7 +36,7 @@ class EXS24Block
     /** An unknown block. */
     public static final int          TYPE_UNKNOWN              = 0x08;
     /** Another unknown block. */
-    public static final int          TYPE_UNKNOWN_2            = 0x0B;
+    public static final int          TYPE_BPLIST               = 0x0B;
 
     private static final String      BIG_ENDIAN_MAGIC          = "SOBT";
     private static final String      LITTLE_ENDIAN_MAGIC       = "TBOS";
@@ -52,6 +52,7 @@ class EXS24Block
     int     type;
     int     index       = 0;
     String  name;
+    String  extension   = "exs";
     byte [] content;
 
 
@@ -72,12 +73,14 @@ class EXS24Block
      *
      * @param type The type of the block
      * @param content The content of the block
+     * @param isBigEndian True if it is big-endian
      * @throws IOException Could not read the data
      */
-    public EXS24Block (final int type, final byte [] content) throws IOException
+    public EXS24Block (final int type, final byte [] content, final boolean isBigEndian) throws IOException
     {
         this.type = type;
         this.content = content;
+        this.isBigEndian = isBigEndian;
     }
 
 
@@ -108,7 +111,11 @@ class EXS24Block
         if (!(this.isBigEndian ? BIG_ENDIAN_MAGIC_BYTES : LITTLE_ENDIAN_MAGIC_BYTES).contains (magic))
             throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_MAGIC", magic));
 
-        this.name = StringUtils.removeCharactersAfterZero (StreamUtils.readASCII (in, 64));
+        final String ascii = StreamUtils.readASCII (in, 64);
+        final String [] split = ascii.split ("\0");
+        this.name = split.length == 0 ? "" : split[0];
+        this.extension = split.length < 2 ? "" : split[1];
+
         this.content = in.readNBytes (size);
     }
 
@@ -130,7 +137,11 @@ class EXS24Block
         StreamUtils.writeUnsigned32 (out, this.index, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, 0, this.isBigEndian);
         StreamUtils.writeASCII (out, this.isBigEndian ? BIG_ENDIAN_MAGIC : LITTLE_ENDIAN_MAGIC, 4);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 64);
+
+        String text = StringUtils.fixASCII (this.name);
+        if (this.extension != null)
+            text += "\0" + StringUtils.fixASCII (this.extension);
+        StreamUtils.writeASCII (out, text, 64);
         out.write (this.content);
     }
 }

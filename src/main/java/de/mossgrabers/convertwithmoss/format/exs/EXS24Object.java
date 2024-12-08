@@ -71,7 +71,7 @@ abstract class EXS24Object
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         this.write (out, isBigEndian);
-        final EXS24Block block = new EXS24Block (this.type, out.toByteArray ());
+        final EXS24Block block = new EXS24Block (this.type, out.toByteArray (), isBigEndian);
         block.name = this.name;
         return block;
     }
