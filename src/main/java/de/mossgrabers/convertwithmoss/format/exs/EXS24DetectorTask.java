@@ -99,58 +99,14 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      */
     private List<IMultisampleSource> readEXSFile (final File file, final InputStream in) throws IOException
     {
-        EXS24Instrument instrument = null;
-        final List<EXS24Zone> zones = new ArrayList<> ();
-        final List<EXS24Sample> samples = new ArrayList<> ();
-        final Map<Integer, EXS24Group> groups = new TreeMap<> ();
-        final EXS24Parameters parameters = new EXS24Parameters ();
+        final EXS24File exs24File = new EXS24File (this.notifier);
+        exs24File.read (in);
 
-        while (in.available () > 0)
-        {
-            final EXS24Block block = new EXS24Block (in);
-            switch (block.type)
-            {
-                case EXS24Block.TYPE_INSTRUMENT:
-                    instrument = new EXS24Instrument (block);
-                    break;
-
-                case EXS24Block.TYPE_ZONE:
-                    zones.add (new EXS24Zone (block));
-                    break;
-
-                case EXS24Block.TYPE_GROUP:
-                    final EXS24Group group = new EXS24Group (block);
-                    // Workaround for some files which have not a proper index set!
-                    final int idx = block.index == 0 && groups.containsKey (Integer.valueOf (block.index)) ? groups.size () : block.index;
-                    groups.put (Integer.valueOf (idx), group);
-                    break;
-
-                case EXS24Block.TYPE_SAMPLE:
-                    samples.add (new EXS24Sample (block));
-                    break;
-
-                case EXS24Block.TYPE_PARAMS:
-                    parameters.read (block);
-                    break;
-
-                case EXS24Block.TYPE_UNKNOWN:
-                    // No idea what that is but it is 4 bytes long...
-                    break;
-
-                case EXS24Block.TYPE_UNKNOWN_2:
-                    // No idea what that is ('bplist00')
-                    break;
-
-                default:
-                    this.notifier.logError ("IDS_EXS_UNKNOWN_EXS_BLOCK_TYPE", Integer.toString (block.type));
-                    break;
-            }
-        }
-
-        if (instrument == null)
+        if (exs24File.getInstrument () == null)
             return Collections.emptyList ();
 
         // Fix IDs if not set...
+        final List<EXS24Zone> zones = exs24File.getZones ();
         for (int i = 0; i < zones.size (); i++)
         {
             final EXS24Zone zone = zones.get (i);
@@ -158,13 +114,14 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                 zone.id = i;
         }
 
+        final List<EXS24Sample> samples = exs24File.getSamples ();
         if (samples.isEmpty () && !zones.isEmpty ())
         {
             this.notifier.logError ("IDS_EXS_NO_SAMPLES", Integer.toString (zones.size ()));
             return Collections.emptyList ();
         }
 
-        final Optional<IMultisampleSource> multisample = this.createMultisample (file, groups, zones, samples, parameters);
+        final Optional<IMultisampleSource> multisample = this.createMultisample (file, exs24File);
         if (multisample.isEmpty ())
             return Collections.emptyList ();
         return Collections.singletonList (multisample.get ());
@@ -175,14 +132,11 @@ public class EXS24DetectorTask extends AbstractDetectorTask
      * Create a multi-sample from the read EXS information.
      *
      * @param file The source file
-     * @param exs24Groups All read EXS groups
-     * @param exs24Zones All read EXS zones
-     * @param exs24Samples All read EXS samples
-     * @param parameters The global parameters
+     * @param exs24File The read EXS24 file
      * @return The multi-sample source
      * @throws IOException Could not create a multi-sample
      */
-    private Optional<IMultisampleSource> createMultisample (final File file, final Map<Integer, EXS24Group> exs24Groups, final List<EXS24Zone> exs24Zones, final List<EXS24Sample> exs24Samples, final EXS24Parameters parameters) throws IOException
+    private Optional<IMultisampleSource> createMultisample (final File file, final EXS24File exs24File) throws IOException
     {
         final String name = FileUtils.getNameWithoutType (file);
         final File parentFile = file.getParentFile ();
@@ -193,7 +147,8 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final Map<IGroup, EXS24Group> groupMapping = new HashMap<> ();
 
         File previousFolder = null;
-        for (final EXS24Zone exs24Zone: exs24Zones)
+        final List<EXS24Sample> exs24Samples = exs24File.getSamples ();
+        for (final EXS24Zone exs24Zone: exs24File.getZones ())
         {
             if (this.waitForDelivery ())
                 return Optional.empty ();
@@ -233,7 +188,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                 zone.getLoops ().add (loop);
             }
             // Add group data from exs24Groups
-            final IGroup group = getOrCreateGroup (exs24Groups, groupsMap, groupMapping, exs24Zone);
+            final IGroup group = getOrCreateGroup (exs24File.getGroups (), groupsMap, groupMapping, exs24Zone);
 
             final EXS24Group exs24Group = groupMapping.get (group);
             if (exs24Group == null || limitByGroupAttributes (exs24Group, zone))
@@ -241,7 +196,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         }
 
         multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
-        applyGlobalParameters (multisampleSource, parameters);
+        applyGlobalParameters (multisampleSource, exs24File.getParameters ());
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
         return Optional.of (multisampleSource);
     }
@@ -346,8 +301,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         final Integer decay = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_DECAY : EXS24Parameters.ENV2_DECAY);
         final Integer sustain = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_SUSTAIN : EXS24Parameters.ENV2_SUSTAIN);
         final Integer release = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_RELEASE : EXS24Parameters.ENV2_RELEASE);
-
-        // No example file which has ENV1_ATK_CURVE or ENV2_ATK_CURVE) set
+        final Integer attackCurve = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_CURVE : EXS24Parameters.ENV2_ATK_CURVE);
 
         final IEnvelope envelope = new DefaultEnvelope ();
         // Maximum time for each step are 10 seconds
@@ -357,6 +311,14 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         envelope.setDecayTime (decay == null ? 0 : decay.doubleValue () / 127.0 * 10.0);
         envelope.setSustainLevel (sustain == null ? 1.0 : sustain.doubleValue () / 127.0);
         envelope.setReleaseTime (release == null ? 0 : release.doubleValue () / 127.0 * 10.0);
+
+        if (attackCurve != null)
+        {
+            int v = attackCurve.intValue ();
+            if (v >= 0xFF00)
+                v = (v - 0xFF00) - 0x100;
+            envelope.setAttackSlope (Math.clamp (v / 99.0, -1, 1));
+        }
 
         return envelope;
     }

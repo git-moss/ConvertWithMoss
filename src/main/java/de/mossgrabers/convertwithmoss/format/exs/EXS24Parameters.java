@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.exs;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,8 +26,215 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 @SuppressWarnings("javadoc")
 public class EXS24Parameters extends EXS24Object
 {
-    private static final Map<Integer, String>  PARAM_NAMES    = new HashMap<> ();
-    private static final Map<Integer, Integer> DEFAULT_PARAMS = new HashMap<> ();
+    private static final int                   PARAMETER_COUNT_OLD        = 100;
+    private static final int                   PARAMETER_COUNT_NEW        = 200;
+
+    public static final int                    MASTER_VOLUME              = 0x07;
+    public static final int                    MASTER_PAN                 = 0x160;
+
+    public static final int                    VOLUME_KEYSCALE            = 0x08;
+    public static final int                    PITCH_BEND_UP              = 0x03;
+    public static final int                    PITCH_BEND_DOWN            = 0x04;
+    public static final int                    MONO_LEGATO                = 0x0a;
+    public static final int                    MIDI_MONO_MODE             = 0x116;
+    public static final int                    MIDI_MONO_MODE_PITCH_RANGE = 0x11a;
+
+    public static final int                    POLYPHONY_VOICES           = 0x05;
+    public static final int                    TRANSPOSE                  = 0x2d;
+    public static final int                    COARSE_TUNE                = 0x0e;
+    public static final int                    FINE_TUNE                  = 0x0f;
+    public static final int                    GLIDE                      = 0x14;
+    public static final int                    PORTA_DOWN                 = 0x48;
+    public static final int                    PORTA_UP                   = 0x49;
+
+    public static final int                    FILTER1_TOGGLE             = 0x2c;
+    public static final int                    FILTER1_TYPE               = 0xf3;
+    public static final int                    FILTER1_FAT                = 0xaa;
+    public static final int                    FILTER1_CUTOFF             = 0x1e;
+    public static final int                    FILTER1_RESO               = 0x1d;
+    public static final int                    FILTER1_DRIVE              = 0x4b;
+    public static final int                    FILTER1_KEYTRACK           = 0x2e;
+
+    public static final int                    FILTER2_TOGGLE             = 0x174;
+    public static final int                    FILTER2_TYPE               = 0x186;
+    public static final int                    FILTER2_CUTOFF             = 0x177;
+    public static final int                    FILTER2_RESO               = 0x178;
+    public static final int                    FILTER2_DRIVE              = 0x179;
+
+    public static final int                    FILTERS_SERIAL_PARALLEL    = 0x173;
+    public static final int                    FILTERS_BLEND              = 0x17a;
+
+    public static final int                    LFO_1_FADE                 = 0x3c;
+    public static final int                    LFO_1_RATE                 = 0x3d;
+    public static final int                    LFO_1_WAVE_SHAPE           = 0x3e;
+    public static final int                    LFO_1_KEY_TRIGGER          = 0x14c;
+    public static final int                    LFO_1_MONO_POLY            = 0x14d;
+    public static final int                    LFO_1_PHASE                = 0x14e;
+    public static final int                    LFO_1_POSITIVE_OR_MIDPOINT = 0x14f;
+    public static final int                    LFO_1_TEMPO_SYNC           = 0x150;
+    public static final int                    LFO_1_FADE_IN_OR_OUT       = 0x187;
+
+    public static final int                    LFO_2_RATE                 = 0x3f;
+    public static final int                    LFO_2_WAVE_SHAPE           = 0x40;
+    public static final int                    LFO_2_FADE                 = 0x151;
+    public static final int                    LFO_2_KEY_TRIGGER          = 0x152;
+    public static final int                    LFO_2_MONO_POLY            = 0x153;
+    public static final int                    LFO_2_PHASE                = 0x154;
+    public static final int                    LFO_2_POSITIVE_OR_MIDPOINT = 0x155;
+    public static final int                    LFO_2_TEMPO_SYNC           = 0x156;
+    public static final int                    LFO_2_FADE_IN_OR_OUT       = 0x188;
+
+    public static final int                    LFO_3_RATE                 = 0xa7;
+    public static final int                    LFO_3_WAVE_SHAPE           = 0x158;
+    public static final int                    LFO_3_FADE                 = 0x157;
+    public static final int                    LFO_3_KEY_TRIGGER          = 0x159;
+    public static final int                    LFO_3_MONO_POLY            = 0x15a;
+    public static final int                    LFO_3_PHASE                = 0x15b;
+    public static final int                    LFO_3_POSITIVE_OR_MIDPOINT = 0x15c;
+    public static final int                    LFO_3_TEMPO_SYNC           = 0x15d;
+    public static final int                    LFO_3_FADE_IN_OR_OUT       = 0x189;
+
+    /** 0=AD, 1=AR, 2=ADSR, 3=AHDSR, 4=DADSR, 5=DAHDSR */
+    public static final int                    ENV2_TYPE                  = 0x16a;
+    public static final int                    ENV2_VEL_SENS              = 0x17d;
+
+    public static final int                    ENV2_DELAY_START           = 0x16c;
+    public static final int                    ENV2_ATK_CURVE             = 0x192;
+    public static final int                    ENV2_ATK_HI_VEL            = 0x4c;
+    public static final int                    ENV2_ATK_LO_VEL            = 0x4d;
+    public static final int                    ENV2_HOLD                  = 0x38;
+    public static final int                    ENV2_DECAY                 = 0x4e;
+    public static final int                    ENV2_SUSTAIN               = 0x4f;
+    public static final int                    ENV2_RELEASE               = 0x50;
+    public static final int                    ENV2_TIME_CURVE            = 0x5b;
+
+    /** 0=AD, 1=AR, 2=ADSR, 3=AHDSR, 4=DADSR, 5=DAHDSR */
+    public static final int                    ENV1_TYPE                  = 0x6b;
+    public static final int                    ENV1_VEL_SENS              = 0x5a;
+    public static final int                    ENV1_VOLUME_HIGH           = 0x59;
+    public static final int                    ENV1_DELAY_START           = 0x16d;
+    public static final int                    ENV1_ATK_CURVE             = 0x195;
+    public static final int                    ENV1_ATK_HI_VEL            = 0x52;
+    public static final int                    ENV1_ATK_LO_VEL            = 0x53;
+    public static final int                    ENV1_HOLD                  = 0x58;
+    public static final int                    ENV1_DECAY                 = 0x54;
+    public static final int                    ENV1_SUSTAIN               = 0x51;
+    public static final int                    ENV1_RELEASE               = 0x55;
+    /** No ID ?! */
+    public static final int                    ENV1_TIME_CURVE            = -1;
+
+    public static final int                    AMP_VELOCITY_CURVE         = 0x183;
+    public static final int                    VELOCITY_OFFSET            = 0x5f;
+    public static final int                    RANDOM_VELOCITY            = 0xa4;
+    public static final int                    RANDOM_SAMPLE_SEL          = 0xa3;
+    public static final int                    RANDOM_PITCH               = 0x62;
+    public static final int                    XFADE_AMOUNT               = 0x61;
+    public static final int                    XFADE_TYPE                 = 0xa5;
+    public static final int                    UNISON_TOGGLE              = 0xab;
+    public static final int                    COARSE_TUNE_REMOTE         = 0xa6;
+    public static final int                    HOLD_VIA_CONTROL           = 0xac;
+
+    public static final int                    MOD1_DESTINATION           = 0xad;
+    public static final int                    MOD1_SOURCE                = 0xae;
+    public static final int                    MOD1_VIA                   = 0xaf;
+    public static final int                    MOD1_AMOUNT_LOW            = 0xb0;
+    public static final int                    MOD1_AMOUNT_HIGH           = 0xb1;
+    public static final int                    MOD1_SRC_INVERT            = 0xe9;
+    public static final int                    MOD1_VIA_INVERT            = 0xb2;
+    public static final int                    MOD1_BYPASS                = 0xf4;
+
+    public static final int                    MOD2_DESTINATION           = 0xb3;
+    public static final int                    MOD2_SOURCE                = 0xb4;
+    public static final int                    MOD2_VIA                   = 0xb5;
+    public static final int                    MOD2_AMOUNT_LOW            = 0xb6;
+    public static final int                    MOD2_AMOUNT_HIGH           = 0xb7;
+    public static final int                    MOD2_SRC_INVERT            = 0xea;
+    public static final int                    MOD2_VIA_INVERT            = 0xb8;
+    public static final int                    MOD2_BYPASS                = 0xf5;
+
+    public static final int                    MOD3_DESTINATION           = 0xb9;
+    public static final int                    MOD3_SOURCE                = 0xba;
+    public static final int                    MOD3_VIA                   = 0xbb;
+    public static final int                    MOD3_AMOUNT_LOW            = 0xbc;
+    public static final int                    MOD3_AMOUNT_HIGH           = 0xbd;
+    public static final int                    MOD3_SRC_INVERT            = 0xeb;
+    public static final int                    MOD3_VIA_INVERT            = 0xbe;
+    public static final int                    MOD3_BYPASS                = 0xf6;
+
+    public static final int                    MOD4_DESTINATION           = 0xbf;
+    public static final int                    MOD4_SOURCE                = 0xc0;
+    public static final int                    MOD4_VIA                   = 0xc1;
+    public static final int                    MOD4_AMOUNT_LOW            = 0xc2;
+    public static final int                    MOD4_AMOUNT_HIGH           = 0xc3;
+    public static final int                    MOD4_SRC_INVERT            = 0xec;
+    public static final int                    MOD4_VIA_INVERT            = 0xc4;
+    public static final int                    MOD4_BYPASS                = 0xf7;
+
+    public static final int                    MOD5_DESTINATION           = 0xc5;
+    public static final int                    MOD5_SOURCE                = 0xc6;
+    public static final int                    MOD5_VIA                   = 0xc7;
+    public static final int                    MOD5_AMOUNT_LOW            = 0xc8;
+    public static final int                    MOD5_AMOUNT_HIGH           = 0xc9;
+    public static final int                    MOD5_SRC_INVERT            = 0xed;
+    public static final int                    MOD5_VIA_INVERT            = 0xca;
+    public static final int                    MOD5_BYPASS                = 0xf8;
+
+    public static final int                    MOD6_DESTINATION           = 0xcb;
+    public static final int                    MOD6_SOURCE                = 0xcc;
+    public static final int                    MOD6_VIA                   = 0xcd;
+    public static final int                    MOD6_AMOUNT_LOW            = 0xce;
+    public static final int                    MOD6_AMOUNT_HIGH           = 0xcf;
+    public static final int                    MOD6_SRC_INVERT            = 0xee;
+    public static final int                    MOD6_VIA_INVERT            = 0xd0;
+    public static final int                    MOD6_BYPASS                = 0xf9;
+
+    public static final int                    MOD7_DESTINATION           = 0xd1;
+    public static final int                    MOD7_SOURCE                = 0xd2;
+    public static final int                    MOD7_VIA                   = 0xd3;
+    public static final int                    MOD7_AMOUNT_LOW            = 0xd4;
+    public static final int                    MOD7_AMOUNT_HIGH           = 0xd5;
+    public static final int                    MOD7_SRC_INVERT            = 0xef;
+    public static final int                    MOD7_VIA_INVERT            = 0xd6;
+    public static final int                    MOD7_BYPASS                = 0xfa;
+
+    public static final int                    MOD8_DESTINATION           = 0xd7;
+    public static final int                    MOD8_SOURCE                = 0xd8;
+    public static final int                    MOD8_VIA                   = 0xd9;
+    public static final int                    MOD8_AMOUNT_LOW            = 0xda;
+    public static final int                    MOD8_AMOUNT_HIGH           = 0xdb;
+    public static final int                    MOD8_SRC_INVERT            = 0xf0;
+    public static final int                    MOD8_VIA_INVERT            = 0xdc;
+    public static final int                    MOD8_BYPASS                = 0xfb;
+
+    public static final int                    MOD9_DESTINATION           = 0xdd;
+    public static final int                    MOD9_SOURCE                = 0xde;
+    public static final int                    MOD9_VIA                   = 0xdf;
+    public static final int                    MOD9_AMOUNT_LOW            = 0xe0;
+    public static final int                    MOD9_AMOUNT_HIGH           = 0xe1;
+    public static final int                    MOD9_SRC_INVERT            = 0xf1;
+    public static final int                    MOD9_VIA_INVERT            = 0xe2;
+    public static final int                    MOD9_BYPASS                = 0xfc;
+
+    public static final int                    MOD10_DESTINATION          = 0xe3;
+    public static final int                    MOD10_SOURCE               = 0xe4;
+    public static final int                    MOD10_VIA                  = 0xe5;
+    public static final int                    MOD10_AMOUNT_LOW           = 0xe6;
+    public static final int                    MOD10_AMOUNT_HIGH          = 0xe7;
+    public static final int                    MOD10_SRC_INVERT           = 0xf2;
+    public static final int                    MOD10_VIA_INVERT           = 0xe8;
+    public static final int                    MOD10_BYPASS               = 0xfd;
+
+    public static final int                    MOD11_DESTINATION          = 0x19b;
+    public static final int                    MOD11_SOURCE               = 0x19c;
+    public static final int                    MOD11_VIA                  = 0x19d;
+    public static final int                    MOD11_AMOUNT_LOW           = 0x19e;
+    public static final int                    MOD11_AMOUNT_HIGH          = 0x19f;
+    public static final int                    MOD11_SRC_INVERT           = 0x1a0;
+    public static final int                    MOD11_VIA_INVERT           = 0x1a1;
+    public static final int                    MOD11_BYPASS               = 0x1a2;
+
+    private static final Map<Integer, String>  PARAM_NAMES                = new HashMap<> ();
+    private static final Map<Integer, Integer> DEFAULT_PARAMS             = new HashMap<> ();
 
     static
     {
@@ -81,7 +290,7 @@ public class EXS24Parameters extends EXS24Object
         DEFAULT_PARAMS.put (Integer.valueOf (377), Integer.valueOf (100));
         DEFAULT_PARAMS.put (Integer.valueOf (389), Integer.valueOf (3));
         DEFAULT_PARAMS.put (Integer.valueOf (390), Integer.valueOf (3));
-        DEFAULT_PARAMS.put (Integer.valueOf (363), Integer.valueOf (2));
+        DEFAULT_PARAMS.put (Integer.valueOf (ENV1_TYPE), Integer.valueOf (2));
         DEFAULT_PARAMS.put (Integer.valueOf (500), Integer.valueOf (0));
         DEFAULT_PARAMS.put (Integer.valueOf (362), Integer.valueOf (2));
         DEFAULT_PARAMS.put (Integer.valueOf (501), Integer.valueOf (0));
@@ -194,7 +403,7 @@ public class EXS24Parameters extends EXS24Object
         PARAM_NAMES.put (Integer.valueOf (0x4f), "ENV2_SUSTAIN");
         PARAM_NAMES.put (Integer.valueOf (0x50), "ENV2_RELEASE");
         PARAM_NAMES.put (Integer.valueOf (0x5b), "ENV2_TIME_CURVE");
-        PARAM_NAMES.put (Integer.valueOf (0x16b), "ENV1_TYPE");
+        PARAM_NAMES.put (Integer.valueOf (ENV1_TYPE), "ENV1_TYPE");
         PARAM_NAMES.put (Integer.valueOf (0x5a), "ENV1_VEL_SENS");
         PARAM_NAMES.put (Integer.valueOf (0x59), "ENV1_VOLUME_HIGH");
         PARAM_NAMES.put (Integer.valueOf (0x16d), "ENV1_DELAY_START");
@@ -306,212 +515,7 @@ public class EXS24Parameters extends EXS24Object
         PARAM_NAMES.put (Integer.valueOf (0x1a2), "MOD11_BYPASS");
     }
 
-    public static final int MASTER_VOLUME              = 0x07;
-    public static final int MASTER_PAN                 = 0x160;
-
-    public static final int VOLUME_KEYSCALE            = 0x08;
-    public static final int PITCH_BEND_UP              = 0x03;
-    public static final int PITCH_BEND_DOWN            = 0x04;
-    public static final int MONO_LEGATO                = 0x0a;
-    public static final int MIDI_MONO_MODE             = 0x116;
-    public static final int MIDI_MONO_MODE_PITCH_RANGE = 0x11a;
-
-    public static final int POLYPHONY_VOICES           = 0x05;
-    public static final int TRANSPOSE                  = 0x2d;
-    public static final int COARSE_TUNE                = 0x0e;
-    public static final int FINE_TUNE                  = 0x0f;
-    public static final int GLIDE                      = 0x14;
-    public static final int PORTA_DOWN                 = 0x48;
-    public static final int PORTA_UP                   = 0x49;
-
-    public static final int FILTER1_TOGGLE             = 0x2c;
-    public static final int FILTER1_TYPE               = 0xf3;
-    public static final int FILTER1_FAT                = 0xaa;
-    public static final int FILTER1_CUTOFF             = 0x1e;
-    public static final int FILTER1_RESO               = 0x1d;
-    public static final int FILTER1_DRIVE              = 0x4b;
-    public static final int FILTER1_KEYTRACK           = 0x2e;
-
-    public static final int FILTER2_TOGGLE             = 0x174;
-    public static final int FILTER2_TYPE               = 0x186;
-    public static final int FILTER2_CUTOFF             = 0x177;
-    public static final int FILTER2_RESO               = 0x178;
-    public static final int FILTER2_DRIVE              = 0x179;
-
-    public static final int FILTERS_SERIAL_PARALLEL    = 0x173;
-    public static final int FILTERS_BLEND              = 0x17a;
-
-    public static final int LFO_1_FADE                 = 0x3c;
-    public static final int LFO_1_RATE                 = 0x3d;
-    public static final int LFO_1_WAVE_SHAPE           = 0x3e;
-    public static final int LFO_1_KEY_TRIGGER          = 0x14c;
-    public static final int LFO_1_MONO_POLY            = 0x14d;
-    public static final int LFO_1_PHASE                = 0x14e;
-    public static final int LFO_1_POSITIVE_OR_MIDPOINT = 0x14f;
-    public static final int LFO_1_TEMPO_SYNC           = 0x150;
-    public static final int LFO_1_FADE_IN_OR_OUT       = 0x187;
-
-    public static final int LFO_2_RATE                 = 0x3f;
-    public static final int LFO_2_WAVE_SHAPE           = 0x40;
-    public static final int LFO_2_FADE                 = 0x151;
-    public static final int LFO_2_KEY_TRIGGER          = 0x152;
-    public static final int LFO_2_MONO_POLY            = 0x153;
-    public static final int LFO_2_PHASE                = 0x154;
-    public static final int LFO_2_POSITIVE_OR_MIDPOINT = 0x155;
-    public static final int LFO_2_TEMPO_SYNC           = 0x156;
-    public static final int LFO_2_FADE_IN_OR_OUT       = 0x188;
-
-    public static final int LFO_3_RATE                 = 0xa7;
-    public static final int LFO_3_WAVE_SHAPE           = 0x158;
-    public static final int LFO_3_FADE                 = 0x157;
-    public static final int LFO_3_KEY_TRIGGER          = 0x159;
-    public static final int LFO_3_MONO_POLY            = 0x15a;
-    public static final int LFO_3_PHASE                = 0x15b;
-    public static final int LFO_3_POSITIVE_OR_MIDPOINT = 0x15c;
-    public static final int LFO_3_TEMPO_SYNC           = 0x15d;
-    public static final int LFO_3_FADE_IN_OR_OUT       = 0x189;
-
-    /** 0=AD, 1=AR, 2=ADSR, 3=AHDSR, 4=DADSR, 5=DAHDSR */
-    public static final int ENV2_TYPE                  = 0x16a;
-    public static final int ENV2_VEL_SENS              = 0x17d;
-
-    public static final int ENV2_DELAY_START           = 0x16c;
-    public static final int ENV2_ATK_CURVE             = 0x192;
-    public static final int ENV2_ATK_HI_VEL            = 0x4c;
-    public static final int ENV2_ATK_LO_VEL            = 0x4d;
-    public static final int ENV2_HOLD                  = 0x38;
-    public static final int ENV2_DECAY                 = 0x4e;
-    public static final int ENV2_SUSTAIN               = 0x4f;
-
-    public static final int ENV2_RELEASE               = 0x50;
-    public static final int ENV2_TIME_CURVE            = 0x5b;
-
-    /** 0=AD, 1=AR, 2=ADSR, 3=AHDSR, 4=DADSR, 5=DAHDSR */
-    public static final int ENV1_TYPE                  = 0x16b;
-    public static final int ENV1_VEL_SENS              = 0x5a;
-    public static final int ENV1_VOLUME_HIGH           = 0x59;
-    public static final int ENV1_DELAY_START           = 0x16d;
-    public static final int ENV1_ATK_CURVE             = 0x195;
-    public static final int ENV1_ATK_HI_VEL            = 0x52;
-    public static final int ENV1_ATK_LO_VEL            = 0x53;
-    public static final int ENV1_HOLD                  = 0x58;
-    public static final int ENV1_DECAY                 = 0x54;
-    public static final int ENV1_SUSTAIN               = 0x51;
-    public static final int ENV1_RELEASE               = 0x55;
-    /** No ID ?! */
-    public static final int ENV1_TIME_CURVE            = -1;
-
-    public static final int AMP_VELOCITY_CURVE         = 0x183;
-    public static final int VELOCITY_OFFSET            = 0x5f;
-    public static final int RANDOM_VELOCITY            = 0xa4;
-    public static final int RANDOM_SAMPLE_SEL          = 0xa3;
-    public static final int RANDOM_PITCH               = 0x62;
-    public static final int XFADE_AMOUNT               = 0x61;
-    public static final int XFADE_TYPE                 = 0xa5;
-    public static final int UNISON_TOGGLE              = 0xab;
-    public static final int COARSE_TUNE_REMOTE         = 0xa6;
-    public static final int HOLD_VIA_CONTROL           = 0xac;
-
-    public static final int MOD1_DESTINATION           = 0xad;
-    public static final int MOD1_SOURCE                = 0xae;
-    public static final int MOD1_VIA                   = 0xaf;
-    public static final int MOD1_AMOUNT_LOW            = 0xb0;
-    public static final int MOD1_AMOUNT_HIGH           = 0xb1;
-    public static final int MOD1_SRC_INVERT            = 0xe9;
-    public static final int MOD1_VIA_INVERT            = 0xb2;
-    public static final int MOD1_BYPASS                = 0xf4;
-
-    public static final int MOD2_DESTINATION           = 0xb3;
-    public static final int MOD2_SOURCE                = 0xb4;
-    public static final int MOD2_VIA                   = 0xb5;
-    public static final int MOD2_AMOUNT_LOW            = 0xb6;
-    public static final int MOD2_AMOUNT_HIGH           = 0xb7;
-    public static final int MOD2_SRC_INVERT            = 0xea;
-    public static final int MOD2_VIA_INVERT            = 0xb8;
-    public static final int MOD2_BYPASS                = 0xf5;
-
-    public static final int MOD3_DESTINATION           = 0xb9;
-    public static final int MOD3_SOURCE                = 0xba;
-    public static final int MOD3_VIA                   = 0xbb;
-    public static final int MOD3_AMOUNT_LOW            = 0xbc;
-    public static final int MOD3_AMOUNT_HIGH           = 0xbd;
-    public static final int MOD3_SRC_INVERT            = 0xeb;
-    public static final int MOD3_VIA_INVERT            = 0xbe;
-    public static final int MOD3_BYPASS                = 0xf6;
-
-    public static final int MOD4_DESTINATION           = 0xbf;
-    public static final int MOD4_SOURCE                = 0xc0;
-    public static final int MOD4_VIA                   = 0xc1;
-    public static final int MOD4_AMOUNT_LOW            = 0xc2;
-    public static final int MOD4_AMOUNT_HIGH           = 0xc3;
-    public static final int MOD4_SRC_INVERT            = 0xec;
-    public static final int MOD4_VIA_INVERT            = 0xc4;
-    public static final int MOD4_BYPASS                = 0xf7;
-
-    public static final int MOD5_DESTINATION           = 0xc5;
-    public static final int MOD5_SOURCE                = 0xc6;
-    public static final int MOD5_VIA                   = 0xc7;
-    public static final int MOD5_AMOUNT_LOW            = 0xc8;
-    public static final int MOD5_AMOUNT_HIGH           = 0xc9;
-    public static final int MOD5_SRC_INVERT            = 0xed;
-    public static final int MOD5_VIA_INVERT            = 0xca;
-    public static final int MOD5_BYPASS                = 0xf8;
-
-    public static final int MOD6_DESTINATION           = 0xcb;
-    public static final int MOD6_SOURCE                = 0xcc;
-    public static final int MOD6_VIA                   = 0xcd;
-    public static final int MOD6_AMOUNT_LOW            = 0xce;
-    public static final int MOD6_AMOUNT_HIGH           = 0xcf;
-    public static final int MOD6_SRC_INVERT            = 0xee;
-    public static final int MOD6_VIA_INVERT            = 0xd0;
-    public static final int MOD6_BYPASS                = 0xf9;
-
-    public static final int MOD7_DESTINATION           = 0xd1;
-    public static final int MOD7_SOURCE                = 0xd2;
-    public static final int MOD7_VIA                   = 0xd3;
-    public static final int MOD7_AMOUNT_LOW            = 0xd4;
-    public static final int MOD7_AMOUNT_HIGH           = 0xd5;
-    public static final int MOD7_SRC_INVERT            = 0xef;
-    public static final int MOD7_VIA_INVERT            = 0xd6;
-    public static final int MOD7_BYPASS                = 0xfa;
-
-    public static final int MOD8_DESTINATION           = 0xd7;
-    public static final int MOD8_SOURCE                = 0xd8;
-    public static final int MOD8_VIA                   = 0xd9;
-    public static final int MOD8_AMOUNT_LOW            = 0xda;
-    public static final int MOD8_AMOUNT_HIGH           = 0xdb;
-    public static final int MOD8_SRC_INVERT            = 0xf0;
-    public static final int MOD8_VIA_INVERT            = 0xdc;
-    public static final int MOD8_BYPASS                = 0xfb;
-
-    public static final int MOD9_DESTINATION           = 0xdd;
-    public static final int MOD9_SOURCE                = 0xde;
-    public static final int MOD9_VIA                   = 0xdf;
-    public static final int MOD9_AMOUNT_LOW            = 0xe0;
-    public static final int MOD9_AMOUNT_HIGH           = 0xe1;
-    public static final int MOD9_SRC_INVERT            = 0xf1;
-    public static final int MOD9_VIA_INVERT            = 0xe2;
-    public static final int MOD9_BYPASS                = 0xfc;
-
-    public static final int MOD10_DESTINATION          = 0xe3;
-    public static final int MOD10_SOURCE               = 0xe4;
-    public static final int MOD10_VIA                  = 0xe5;
-    public static final int MOD10_AMOUNT_LOW           = 0xe6;
-    public static final int MOD10_AMOUNT_HIGH          = 0xe7;
-    public static final int MOD10_SRC_INVERT           = 0xf2;
-    public static final int MOD10_VIA_INVERT           = 0xe8;
-    public static final int MOD10_BYPASS               = 0xfd;
-
-    public static final int MOD11_DESTINATION          = 0x19b;
-    public static final int MOD11_SOURCE               = 0x19c;
-    public static final int MOD11_VIA                  = 0x19d;
-    public static final int MOD11_AMOUNT_LOW           = 0x19e;
-    public static final int MOD11_AMOUNT_HIGH          = 0x19f;
-    public static final int MOD11_SRC_INVERT           = 0x1a0;
-    public static final int MOD11_VIA_INVERT           = 0x1a1;
-    public static final int MOD11_BYPASS               = 0x1a2;
-
-    Map<Integer, Integer>   params                     = new TreeMap<> ();
+    Map<Integer, Integer> params = new TreeMap<> ();
 
 
     /**
@@ -526,6 +530,19 @@ public class EXS24Parameters extends EXS24Object
         if (name == null)
             return String.format ("%s (%02x)", "Unknown", Integer.valueOf (id));
         return name;
+    }
+
+
+    /**
+     * Get the default value of the parameter.
+     * 
+     * @param id The parameter ID for which to get the default value
+     * @return The default value
+     */
+    public static int getDefaultValue (final int id)
+    {
+        final Integer defaultValue = DEFAULT_PARAMS.get (Integer.valueOf (id));
+        return defaultValue == null ? 0 : defaultValue.intValue ();
     }
 
 
@@ -551,10 +568,22 @@ public class EXS24Parameters extends EXS24Object
     }
 
 
+    /**
+     * Get all parameters.
+     * 
+     * @return The parameters
+     */
+    public Map<Integer, Integer> getParams ()
+    {
+        return this.params;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     protected void read (final InputStream in, final boolean isBigEndian) throws IOException
     {
+        // 100 bytes with parameter IDs, 200 bytes of related 16bit parameter values
         int paramCount = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         int paramBlockLength = paramCount * 3;
         byte [] parameterData = in.readNBytes (paramBlockLength);
@@ -570,22 +599,25 @@ public class EXS24Parameters extends EXS24Object
             }
         }
 
+        // 200 bytes of parameters with ID > 0xFF. 16 bit ID, 16 bit value.
         final int available = in.available ();
         if (available > 0)
         {
             paramCount = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-            if (paramCount <= 0 || paramCount * 2 > available)
+            if (paramCount <= 0)
+                return;
+            paramBlockLength = paramCount * 4;
+            if (paramBlockLength > available)
                 return;
 
-            paramBlockLength = paramCount * 2;
-            if (paramBlockLength <= 0)
-                return;
             parameterData = in.readNBytes (paramBlockLength);
-            for (int i = 0; i < paramBlockLength; i += 2)
+            final InputStream newParamsInputStream = new ByteArrayInputStream (parameterData);
+            while (newParamsInputStream.available () > 0)
             {
-                final int paramID = parameterData[i] & 0xFF;
+                final int paramID = StreamUtils.readUnsigned16 (newParamsInputStream, isBigEndian);
+                final int paramValue = StreamUtils.readUnsigned16 (newParamsInputStream, isBigEndian);
                 if (paramID != 0)
-                    this.params.put (Integer.valueOf (paramID), Integer.valueOf (parameterData[i + 1]));
+                    this.params.put (Integer.valueOf (paramID), Integer.valueOf (paramValue));
             }
         }
     }
@@ -596,20 +628,56 @@ public class EXS24Parameters extends EXS24Object
     protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
     {
         final Set<Entry<Integer, Integer>> entrySet = this.params.entrySet ();
-        final int paramCount = this.params.size ();
 
-        // It seems that always 100 parameters are required...
-        StreamUtils.writeUnsigned32 (out, 100, isBigEndian);
-
+        // Write old parameters
+        final ByteArrayOutputStream paramIDOutputStream = new ByteArrayOutputStream ();
+        final ByteArrayOutputStream paramValueOutputStream = new ByteArrayOutputStream ();
+        int writtenParams = 0;
         for (final Map.Entry<Integer, Integer> entry: entrySet)
-            out.write (entry.getKey ().intValue ());
-        for (int i = paramCount; i < 100; i++)
-            out.write (0);
+        {
+            int key = entry.getKey ().intValue ();
+            if (key <= 0xFF)
+            {
+                paramIDOutputStream.write (key);
+                StreamUtils.writeUnsigned16 (paramValueOutputStream, entry.getValue ().intValue (), isBigEndian);
+                writtenParams++;
+            }
+        }
+        for (int i = writtenParams; i < PARAMETER_COUNT_OLD; i++)
+        {
+            paramIDOutputStream.write (0);
+            StreamUtils.writeUnsigned16 (paramValueOutputStream, 0, isBigEndian);
+        }
 
+        // Write new parameters
+        writtenParams = 0;
+        final ByteArrayOutputStream newParamIDOutputStream = new ByteArrayOutputStream ();
+        final ByteArrayOutputStream newParamValueOutputStream = new ByteArrayOutputStream ();
         for (final Map.Entry<Integer, Integer> entry: entrySet)
-            StreamUtils.writeUnsigned16 (out, entry.getValue ().intValue (), isBigEndian);
-        for (int i = paramCount; i < 100; i++)
-            StreamUtils.writeUnsigned16 (out, 0, isBigEndian);
+        {
+            int key = entry.getKey ().intValue ();
+            if (key > 0xFF)
+            {
+                StreamUtils.writeUnsigned16 (newParamIDOutputStream, key, isBigEndian);
+                StreamUtils.writeUnsigned16 (newParamValueOutputStream, entry.getValue ().intValue (), isBigEndian);
+                writtenParams++;
+            }
+        }
+        for (int i = writtenParams; i < PARAMETER_COUNT_NEW; i++)
+        {
+            StreamUtils.writeUnsigned16 (newParamIDOutputStream, 0, isBigEndian);
+            StreamUtils.writeUnsigned32 (paramValueOutputStream, 0, isBigEndian);
+        }
+
+        // It seems that always 100 old parameters are required...
+        StreamUtils.writeUnsigned32 (out, PARAMETER_COUNT_OLD, isBigEndian);
+        out.write (paramIDOutputStream.toByteArray ());
+        out.write (paramValueOutputStream.toByteArray ());
+
+        // ... and 200 new
+        StreamUtils.writeUnsigned32 (out, PARAMETER_COUNT_NEW, isBigEndian);
+        out.write (newParamIDOutputStream.toByteArray ());
+        out.write (newParamValueOutputStream.toByteArray ());
     }
 
 
