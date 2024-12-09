@@ -1,6 +1,6 @@
 # Changes
 
-## 11.5.0 (unreleased)
+## 11.5.0
 
 * Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.
 * Checking if destination folder is empty ignores now OS thumbnail files like .DS_Store on MAC and Thumbs.db on Windows.
