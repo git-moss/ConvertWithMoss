@@ -52,7 +52,6 @@ class EXS24Block
     int     type;
     int     index       = 0;
     String  name;
-    String  extension   = "exs";
     byte [] content;
 
 
@@ -111,10 +110,7 @@ class EXS24Block
         if (!(this.isBigEndian ? BIG_ENDIAN_MAGIC_BYTES : LITTLE_ENDIAN_MAGIC_BYTES).contains (magic))
             throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_MAGIC", magic));
 
-        final String ascii = StreamUtils.readASCII (in, 64);
-        final String [] split = ascii.split ("\0");
-        this.name = split.length == 0 ? "" : split[0];
-        this.extension = split.length < 2 ? "" : split[1];
+        this.name = StringUtils.removeCharactersAfterZero (StreamUtils.readASCII (in, 64));
 
         this.content = in.readNBytes (size);
     }
@@ -137,11 +133,7 @@ class EXS24Block
         StreamUtils.writeUnsigned32 (out, this.index, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, 0, this.isBigEndian);
         StreamUtils.writeASCII (out, this.isBigEndian ? BIG_ENDIAN_MAGIC : LITTLE_ENDIAN_MAGIC, 4);
-
-        String text = StringUtils.fixASCII (this.name);
-        if (this.extension != null)
-            text += "\0" + StringUtils.fixASCII (this.extension);
-        StreamUtils.writeASCII (out, text, 64);
+        StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 64);
         out.write (this.content);
     }
 }
