@@ -215,6 +215,9 @@ public class SfzDetectorTask extends AbstractDetectorTask
             return Collections.emptyList ();
         }
 
+        if (this.logUnsupportedOpcodes)
+            this.printUnsupportedOpcodes (this.diffOpcodes ());
+
         String name = FileUtils.getNameWithoutType (multiSampleFile);
         final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
@@ -339,9 +342,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
         if (!group.getSampleZones ().isEmpty ())
             groups.add (group);
 
-        if (this.logUnsupportedOpcodes)
-            this.printUnsupportedOpcodes (this.diffOpcodes ());
-
         // Fix empty names
         for (int i = 0; i < groups.size (); i++)
         {
@@ -407,8 +407,12 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final Optional<String> direction = this.getAttribute (SfzOpcode.DIRECTION);
         if (direction.isPresent ())
             sampleMetadata.setReversed ("reverse".equals (direction.get ()));
-        if (this.getIntegerValue (SfzOpcode.SEQ_POSITION) > 0)
+        final int sequencePosition = this.getIntegerValue (SfzOpcode.SEQ_POSITION);
+        if (sequencePosition > 0)
+        {
             sampleMetadata.setPlayLogic (PlayLogic.ROUND_ROBIN);
+            sampleMetadata.setSequencePosition (sequencePosition);
+        }
 
         final int offset = this.getIntegerValue (SfzOpcode.OFFSET);
         if (offset >= 0)

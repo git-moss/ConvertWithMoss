@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.core.model;
 
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 
 
@@ -70,4 +71,31 @@ public interface IGroup
      * @param sample The sample description
      */
     void addSampleZone (ISampleZone sample);
+
+
+    /**
+     * If all zones in this group are set to play round-robin and contain the same one and only
+     * sequence position, it is considered that round-robin happens on a group-level. This means
+     * e.g. 3 groups are played round-robin.
+     * 
+     * @return True if round-robin happens on a group-level
+     */
+    default boolean isGroupRoundRobin ()
+    {
+        final List<ISampleZone> sampleZones = this.getSampleZones ();
+        if (sampleZones.isEmpty ())
+            return false;
+
+        int sequencePosition = -1;
+        for (final ISampleZone zone: sampleZones)
+        {
+            if (zone.getPlayLogic () != PlayLogic.ROUND_ROBIN)
+                return false;
+            if (sequencePosition == -1)
+                sequencePosition = zone.getSequencePosition ();
+            else if (sequencePosition != zone.getSequencePosition ())
+                return false;
+        }
+        return true;
+    }
 }

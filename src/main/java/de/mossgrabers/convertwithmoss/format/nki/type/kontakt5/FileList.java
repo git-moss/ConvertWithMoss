@@ -43,10 +43,18 @@ public class FileList
         if (chunkID == PresetChunkID.FILENAME_LIST_EX)
         {
             final int version = StreamUtils.readUnsigned16 (in, false);
-            if (version != 2)
+            if (version < 2 || version > 3)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_EX_VERSION", Integer.toString (version)));
 
-            this.specialFiles = readFiles (in);
+            final List<String> files = readFiles (in, version);
+            if (version == 3)
+            {
+                this.specialFiles = files;
+                this.sampleFiles = files;
+                return;
+            }
+
+            this.specialFiles = files;
         }
         else
         {
@@ -59,7 +67,7 @@ public class FileList
                 readFile (in);
         }
 
-        this.sampleFiles = readFiles (in);
+        this.sampleFiles = readFiles (in, -1);
         this.readMetadata (in, chunkID);
     }
 
@@ -73,7 +81,7 @@ public class FileList
             // The last update date of the file
             StreamUtils.readTimestamp (in, false);
             // Padding - always zero
-            StreamUtils.readUnsigned32 (in, false);
+            in.skipNBytes (4);
         }
 
         if (chunkID == PresetChunkID.FILENAME_LIST_EX)
@@ -82,7 +90,7 @@ public class FileList
             for (int i = 0; i < numFiles; i++)
                 StreamUtils.readUnsigned32 (in, false);
 
-            this.otherFiles = readFiles (in);
+            this.otherFiles = readFiles (in, -1);
         }
         else
             // Final padding
@@ -94,17 +102,39 @@ public class FileList
      * Read several file paths.
      *
      * @param in The input stream to read from
+     * @param version The version of the Filename List structure
      * @return The read file paths
      * @throws IOException Could not read
      */
-    private static List<String> readFiles (final ByteArrayInputStream in) throws IOException
+    private static List<String> readFiles (final ByteArrayInputStream in, final int version) throws IOException
     {
         final List<String> files = new ArrayList<> ();
         if (in.available () > 0)
         {
             final int size = StreamUtils.readSigned32 (in, false);
-            for (int i = 0; i < size; i++)
+
+            // 00 padding
+            if (version == 3)
+                in.skipNBytes (8);
+
+            for (int i = 0; i < size - 1; i++)
+            {
                 files.add (readFile (in));
+
+                if (version == 3 && in.available () > 0)
+                {
+                    // Padding - always zero
+                    in.skipNBytes (4);
+                    // The last update date of the file
+                    StreamUtils.readTimestamp (in, false);
+                    // Padding - always zero
+                    in.skipNBytes (20);
+                }
+            }
+
+            // The last empty entry - 00 padding
+            if (version == 3)
+                in.skipNBytes (24);
         }
         return files;
     }

@@ -1,5 +1,19 @@
 # Changes
 
+## 11.6.0
+
+* EXS24
+  * New: Added support for round-robin. Files are larger now since this info is in an additional block.
+  * Fixed: Reading: group indices were off by 1.
+* SFZ
+  * New: Added support for round-robin on group-level (not only zone-level).
+* Kontakt
+  * New: Added support reading for Kontakt 8
+  * New: Added support for reading new file lists in 7.10+.
+* Korgmultisample
+  * Fixed: Files created with Sample Builder 1.2.7 could not be read.
+  * Fixed: If a korgmultisample file was located in a subfolder, its samples could not be found.
+
 ## 11.5.0
 
 * Added support for Waldorf Quantum MkI/MkII, Iridium, Iridium Core sample format.

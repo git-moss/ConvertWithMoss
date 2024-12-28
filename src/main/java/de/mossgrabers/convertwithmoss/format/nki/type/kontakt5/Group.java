@@ -44,7 +44,7 @@ public class Group
      */
     public void parse (final byte [] data, final int version) throws IOException
     {
-        if (version > 0x9A)
+        if (version > 0x9C)
             throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_ZONE_VERSION", Integer.toHexString (version).toUpperCase ()));
 
         final ByteArrayInputStream in = new ByteArrayInputStream (data);

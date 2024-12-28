@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -148,6 +149,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
 
         File previousFolder = null;
         final List<EXS24Sample> exs24Samples = exs24File.getSamples ();
+        final Map<Integer, EXS24Group> exs24Groups = exs24File.getGroups ();
         for (final EXS24Zone exs24Zone: exs24File.getZones ())
         {
             if (this.waitForDelivery ())
@@ -188,11 +190,17 @@ public class EXS24DetectorTask extends AbstractDetectorTask
                 zone.getLoops ().add (loop);
             }
             // Add group data from exs24Groups
-            final IGroup group = getOrCreateGroup (exs24File.getGroups (), groupsMap, groupMapping, exs24Zone);
+            final IGroup group = getOrCreateGroup (exs24Groups, groupsMap, groupMapping, exs24Zone);
 
             final EXS24Group exs24Group = groupMapping.get (group);
             if (exs24Group == null || limitByGroupAttributes (exs24Group, zone))
                 group.addSampleZone (zone);
+            if (exs24Group != null && exs24Group.enableByRoundRobin && exs24Group.roundRobinGroupPos >= -1)
+            {
+                zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                // roundRobinGroupPos seems to be -1, 0, 1, ...
+                zone.setSequencePosition (exs24Group.roundRobinGroupPos + 2);
+            }
         }
 
         multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));

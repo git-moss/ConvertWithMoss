@@ -178,37 +178,53 @@ public class SfzCreator extends AbstractCreator
             sb.append (COMMENT_PREFIX).append (description.replace ("\n", "\n" + COMMENT_PREFIX)).append (LINE_FEED);
         sb.append (LINE_FEED);
 
+        // Set the name
         final String name = multisampleSource.getName ();
-
         sb.append ('<').append (SfzHeader.GLOBAL).append (">").append (LINE_FEED);
         if (name != null && !name.isBlank ())
             addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
 
+        // Add all groups with all sample zones (regions)
+        final Map<IGroup, Integer> roundRobinGroups = multisampleSource.getRoundRobinGroups ();
         for (final IGroup group: multisampleSource.getGroups ())
         {
             final List<ISampleZone> zones = group.getSampleZones ();
             if (zones.isEmpty ())
                 continue;
 
-            // Check for any sample which play round-robin
             int maxSequence = -1;
-            for (final ISampleZone zone: zones)
-                if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
-                    maxSequence = Math.max (maxSequence, zone.getSequencePosition ());
+            final boolean isNotRoundRobinGroup = !roundRobinGroups.containsKey (group);
+            if (isNotRoundRobinGroup)
+            {
+                // Check for any sample which play round-robin
+                for (final ISampleZone zone: zones)
+                    if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                        maxSequence = Math.max (maxSequence, zone.getSequencePosition ());
+            }
 
             sb.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
             final String groupName = group.getName ();
             if (groupName != null && !groupName.isBlank ())
                 addAttribute (sb, SfzOpcode.GROUP_LABEL, groupName, true);
-            if (maxSequence > 0)
-                addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, maxSequence, true);
+            if (isNotRoundRobinGroup)
+            {
+                if (maxSequence > 0)
+                    addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, maxSequence, true);
+            }
+            else
+            {
+                addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, roundRobinGroups.size (), true);
+                final Integer sequencePosition = roundRobinGroups.get (group);
+                if (sequencePosition != null && sequencePosition.intValue () > 0)
+                    addIntegerAttribute (sb, SfzOpcode.SEQ_POSITION, sequencePosition.intValue (), true);
+            }
 
             final TriggerType trigger = group.getTrigger ();
             if (trigger != null && trigger != TriggerType.ATTACK)
                 addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
 
             for (final ISampleZone zone: zones)
-                this.createSample (safeSampleFolderName, sb, zone);
+                this.createSample (safeSampleFolderName, sb, zone, isNotRoundRobinGroup);
         }
 
         return sb.toString ();
@@ -221,8 +237,9 @@ public class SfzCreator extends AbstractCreator
      * @param safeSampleFolderName The safe sample folder name
      * @param buffer Where to add the XML code
      * @param zone The sample zone
+     * @param isNotRoundRobinGroup If the sample zone does not belong to a round robin group
      */
-    private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone)
+    private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone, final boolean isNotRoundRobinGroup)
     {
         final String ending = this.convertToFlac.isSelected () ? ".flac" : ".wav";
 
@@ -236,7 +253,7 @@ public class SfzCreator extends AbstractCreator
 
         if (zone.isReversed ())
             addAttribute (buffer, SfzOpcode.DIRECTION, "reverse", true);
-        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN && isNotRoundRobinGroup)
             addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
         ////////////////////////////////////////////////////////////

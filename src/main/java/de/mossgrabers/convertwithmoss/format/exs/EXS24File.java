@@ -195,7 +195,8 @@ public class EXS24File
      */
     public void addGroup (final EXS24Group group)
     {
-        this.groups.put (Integer.valueOf (this.groups.size ()), group);
+        final int groupIndex = this.groups.size ();
+        this.groups.put (Integer.valueOf (groupIndex), group);
     }
 
 
@@ -270,10 +271,7 @@ public class EXS24File
 
     private void addGroup (final EXS24Block block) throws IOException
     {
-        final EXS24Group group = new EXS24Group (block);
-        // Workaround for some files which have not a proper index set!
-        final int idx = block.index == 0 && this.groups.containsKey (Integer.valueOf (block.index)) ? this.groups.size () : block.index;
-        this.groups.put (Integer.valueOf (idx), group);
+        this.addGroup (new EXS24Group (block));
     }
 
 

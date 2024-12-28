@@ -5,13 +5,16 @@
 package de.mossgrabers.convertwithmoss.core;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 
 
 /**
@@ -67,6 +70,25 @@ public interface IMultisampleSource
      * @return The descriptions
      */
     List<IGroup> getGroups ();
+
+
+    /**
+     * Get all groups which are considered to be part of a round-robin sequence. See
+     * {@link IGroup#isGroupRoundRobin ()}.
+     * 
+     * @return All round-robin groups with the sequence position index, see
+     *         {@link ISampleZone#getSequencePosition ()}
+     */
+    default Map<IGroup, Integer> getRoundRobinGroups ()
+    {
+        final Map<IGroup, Integer> roundRobinGroups = new HashMap<> ();
+        for (final IGroup group: this.getGroups ())
+        {
+            if (group.isGroupRoundRobin ())
+                roundRobinGroups.put (group, Integer.valueOf (group.getSampleZones ().get (0).getSequencePosition ()));
+        }
+        return roundRobinGroups;
+    }
 
 
     /**

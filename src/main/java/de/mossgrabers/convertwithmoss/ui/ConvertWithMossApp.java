@@ -5,8 +5,10 @@
 package de.mossgrabers.convertwithmoss.ui;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -692,6 +694,10 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             final boolean createStructure = this.createFolderStructure.isSelected ();
             final File multisampleOutputFolder = calcOutputFolder (this.outputFolder, multisampleSource.getSubPath (), createStructure);
             creator.create (multisampleOutputFolder, multisampleSource);
+        }
+        catch (final NoSuchFileException | FileNotFoundException ex)
+        {
+            this.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
         }
         catch (final IOException | RuntimeException ex)
         {

@@ -111,7 +111,7 @@ public class KorgmultisampleCreator extends AbstractCreator
     /**
      * Create a korgmultisample file.
      *
-     * @param multisampleSource The multi sample to store in the library
+     * @param multisampleSource The multi-sample to store in the library
      * @param multiFile The file of the korgmultisample
      * @param groupName The name to use for the group
      * @param group The group to store
@@ -134,21 +134,21 @@ public class KorgmultisampleCreator extends AbstractCreator
                 final String creator = metadata.getCreator ();
                 if (creator != null && !creator.isBlank ())
                 {
-                    multisampleOutput.write (KorgmultisampleTag.ID_AUTHOR);
+                    multisampleOutput.write (KorgmultisampleConstants.ID_AUTHOR);
                     writeAscii (multisampleOutput, creator, false);
                 }
 
                 final String category = metadata.getCategory ();
                 if (category != null && !category.isBlank ())
                 {
-                    multisampleOutput.write (KorgmultisampleTag.ID_CATEGORY);
+                    multisampleOutput.write (KorgmultisampleConstants.ID_CATEGORY);
                     writeAscii (multisampleOutput, category, false);
                 }
 
                 final String description = metadata.getDescription ();
                 if (description != null && !description.isBlank ())
                 {
-                    multisampleOutput.write (KorgmultisampleTag.ID_COMMENT);
+                    multisampleOutput.write (KorgmultisampleConstants.ID_COMMENT);
                     writeAscii (multisampleOutput, description, false);
                 }
 
@@ -197,7 +197,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             }
 
             // Write the sample block
-            multisampleOutput.write (KorgmultisampleTag.ID_SAMPLE);
+            multisampleOutput.write (KorgmultisampleConstants.ID_SAMPLE);
             multisampleOutput.write (sbByteArray.length);
             multisampleOutput.write (sbByteArray);
         }
@@ -209,7 +209,7 @@ public class KorgmultisampleCreator extends AbstractCreator
         final int start = sample.getStart ();
         if (start > 0)
         {
-            sampleOutput.write (KorgmultisampleTag.ID_START);
+            sampleOutput.write (KorgmultisampleConstants.ID_START);
             StreamUtils.write7bitNumberLSB (sampleOutput, start);
         }
 
@@ -219,7 +219,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             final int loopStart = loops.get (0).getStart ();
             if (loopStart > 0)
             {
-                sampleOutput.write (KorgmultisampleTag.ID_LOOP_START);
+                sampleOutput.write (KorgmultisampleConstants.ID_LOOP_START);
                 StreamUtils.write7bitNumberLSB (sampleOutput, loopStart);
             }
         }
@@ -227,7 +227,7 @@ public class KorgmultisampleCreator extends AbstractCreator
         final int end = sample.getStop ();
         if (end > 0)
         {
-            sampleOutput.write (KorgmultisampleTag.ID_END);
+            sampleOutput.write (KorgmultisampleConstants.ID_END);
             StreamUtils.write7bitNumberLSB (sampleOutput, end);
         }
 
@@ -235,7 +235,7 @@ public class KorgmultisampleCreator extends AbstractCreator
 
         if (loops.isEmpty ())
         {
-            sampleOutput.write (KorgmultisampleTag.ID_ONE_SHOT);
+            sampleOutput.write (KorgmultisampleConstants.ID_ONE_SHOT);
             sampleOutput.write (1);
         }
 
@@ -248,35 +248,35 @@ public class KorgmultisampleCreator extends AbstractCreator
         final int keyLow = sample.getKeyLow ();
         if (keyLow > 0)
         {
-            sampleOutput.write (KorgmultisampleTag.ID_KEY_BOTTOM);
+            sampleOutput.write (KorgmultisampleConstants.ID_KEY_BOTTOM);
             sampleOutput.write (keyLow);
         }
 
         final int keyHigh = sample.getKeyHigh ();
         if (keyHigh > 0)
         {
-            sampleOutput.write (KorgmultisampleTag.ID_KEY_TOP);
+            sampleOutput.write (KorgmultisampleConstants.ID_KEY_TOP);
             sampleOutput.write (keyHigh);
         }
 
         final int keyRoot = sample.getKeyRoot ();
         if (keyRoot > 0)
         {
-            sampleOutput.write (KorgmultisampleTag.ID_KEY_ORIGINAL);
+            sampleOutput.write (KorgmultisampleConstants.ID_KEY_ORIGINAL);
             sampleOutput.write (keyRoot);
         }
 
         final double keyTracking = sample.getKeyTracking ();
         if (keyTracking == 0)
         {
-            sampleOutput.write (KorgmultisampleTag.ID_FIXED_PITCH);
+            sampleOutput.write (KorgmultisampleConstants.ID_FIXED_PITCH);
             sampleOutput.write (1);
         }
 
         final double tune = sample.getTune ();
         if (tune != 0)
         {
-            sampleOutput.write (KorgmultisampleTag.ID_TUNE);
+            sampleOutput.write (KorgmultisampleConstants.ID_TUNE);
             final float val = (float) Math.min (999, Math.max (-999, tune * 1000));
             writeFloatLittleEndian (sampleOutput, val);
         }
@@ -285,13 +285,13 @@ public class KorgmultisampleCreator extends AbstractCreator
         if (gain != 0)
         {
             final float v = (float) Math.min (1000, Math.max (-1000, gain * 1000));
-            sampleOutput.write (KorgmultisampleTag.ID_LEVEL_LEFT);
+            sampleOutput.write (KorgmultisampleConstants.ID_LEVEL_LEFT);
             writeFloatLittleEndian (sampleOutput, v);
-            sampleOutput.write (KorgmultisampleTag.ID_LEVEL_RIGHT);
+            sampleOutput.write (KorgmultisampleConstants.ID_LEVEL_RIGHT);
             writeFloatLittleEndian (sampleOutput, v);
         }
 
-        sampleOutput.write (KorgmultisampleTag.ID_COLOR);
+        sampleOutput.write (KorgmultisampleConstants.ID_COLOR);
         sampleOutput.write (new byte []
         {
             (byte) 0xFF,
@@ -319,7 +319,7 @@ public class KorgmultisampleCreator extends AbstractCreator
 
     private static void writeUUID (final ByteArrayOutputStream sampleOutput) throws IOException
     {
-        sampleOutput.write (KorgmultisampleTag.ID_UUID);
+        sampleOutput.write (KorgmultisampleConstants.ID_UUID);
         sampleOutput.write (16);
         final UUID uuid = UUID.randomUUID ();
         final byte [] uuidBytes = new byte [16];
@@ -332,7 +332,7 @@ public class KorgmultisampleCreator extends AbstractCreator
 
     private static void writeHeader (final OutputStream out) throws IOException
     {
-        out.write (KorgmultisampleTag.TAG_KORG.getBytes ());
+        out.write (KorgmultisampleConstants.TAG_KORG.getBytes ());
         out.write (new byte []
         {
             0x27,
@@ -345,14 +345,14 @@ public class KorgmultisampleCreator extends AbstractCreator
             0x12
         });
 
-        writeAscii (out, KorgmultisampleTag.TAG_FILE_INFO, true);
+        writeAscii (out, KorgmultisampleConstants.TAG_FILE_INFO, true);
         out.write (new byte []
         {
             0x12,
             0x0F
         });
 
-        writeAscii (out, KorgmultisampleTag.TAG_MULTISAMPLE, true);
+        writeAscii (out, KorgmultisampleConstants.TAG_MULTISAMPLE, true);
         out.write (new byte []
         {
             0x18,
@@ -363,17 +363,17 @@ public class KorgmultisampleCreator extends AbstractCreator
             0x00
         });
 
-        writeAscii (out, KorgmultisampleTag.TAG_SINGLE_ITEM, true);
+        writeAscii (out, KorgmultisampleConstants.TAG_SINGLE_ITEM, true);
         out.write (0x12);
 
-        out.write (KorgmultisampleTag.TAG_SAMPLE_BUILDER.length ());
-        out.write (KorgmultisampleTag.TAG_SAMPLE_BUILDER.getBytes ());
+        out.write (KorgmultisampleConstants.TAG_SAMPLE_BUILDER.length ());
+        out.write (KorgmultisampleConstants.TAG_SAMPLE_BUILDER.getBytes ());
     }
 
 
     private static void writeTime (final OutputStream out, final Date dateTime) throws IOException
     {
-        out.write (KorgmultisampleTag.ID_TIME);
+        out.write (KorgmultisampleConstants.ID_TIME);
 
         final int time = (int) (dateTime.getTime () / 1000);
         out.write (toBytesLSB (time, 8));
