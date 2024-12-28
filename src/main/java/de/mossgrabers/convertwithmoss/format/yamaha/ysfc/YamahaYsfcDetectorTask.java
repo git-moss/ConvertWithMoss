@@ -45,18 +45,19 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class YamahaYsfcDetectorTask extends AbstractDetectorTask
 {
+    // A = All, U = User, L = Library
     private static final String [] ENDINGS           =
     {
-        ".x0a",
+        ".x0a",                                           // Motif XS
         ".x0w",
-        ".x3a",
+        ".x3a",                                           // Motif XF
         ".x3w",
-        ".x6a",
+        ".x6a",                                           // MOXF
         ".x6w",
-        ".x7u",
+        ".x7u",                                           // Montage
         ".x7l",
         ".x7a",
-        ".x8u",
+        ".x8u",                                           // MODX / MODX+
         ".x8l",
         ".x8a"
     };
@@ -125,11 +126,11 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         final Map<String, YamahaYsfcChunk> chunks = ysfcFile.getChunks ();
 
         // Waveform Metadata
-        final YamahaYsfcChunk ewfmChunk = chunks.get ("EWFM");
-        final YamahaYsfcChunk dwfmChunk = chunks.get ("DWFM");
-        // Wave Data
-        final YamahaYsfcChunk ewimChunk = chunks.get ("EWIM");
-        final YamahaYsfcChunk dwimChunk = chunks.get ("DWIM");
+        final YamahaYsfcChunk ewfmChunk = chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA);
+        final YamahaYsfcChunk dwfmChunk = chunks.get (YamahaYsfcChunk.DATA_LIST_WAVEFORM_METADATA);
+        // Waveform Data
+        final YamahaYsfcChunk ewimChunk = chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA);
+        final YamahaYsfcChunk dwimChunk = chunks.get (YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA);
         if (ewfmChunk == null || ewimChunk == null || dwfmChunk == null || dwimChunk == null)
         {
             this.notifier.logError ("IDS_YSFC_NO_MULTISAMPLE_DATA");

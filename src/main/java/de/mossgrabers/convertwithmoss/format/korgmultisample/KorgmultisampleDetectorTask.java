@@ -5,11 +5,13 @@
 package de.mossgrabers.convertwithmoss.format.korgmultisample;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -31,6 +33,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -80,32 +83,90 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
     }
 
 
+    private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws FormatException, IOException
+    {
+        final byte [] headerTag = in.readNBytes (4);
+        StreamUtils.checkTag (KorgmultisampleConstants.TAG_KORG, headerTag);
+
+        /////////////////////////////////////////////////
+        // Read all 3 chunks and check first chunk
+
+        final List<byte []> chunks = parseChunks (in);
+        if (chunks.size () != 3)
+            throw new IOException (Functions.getMessage ("IDS_WS_WRONG_NUMBER_OF_CHUNKS", Integer.toString (chunks.size ())));
+
+        if (Arrays.compare (KorgmultisampleConstants.HEADER_CHUNK, chunks.get (0)) != 0)
+            throw new IOException (Functions.getMessage ("IDS_WS_NO_MULTISAMPLE_HEADER"));
+
+        /////////////////////////////////////////////////
+        // Read the 2nd chunk
+
+        final InputStream secondIn = new ByteArrayInputStream (chunks.get (1));
+        checkAscii (secondIn);
+        final String singleItemTag = StreamUtils.readWithLengthAscii (secondIn);
+        StreamUtils.checkTag (KorgmultisampleConstants.TAG_SINGLE_ITEM, singleItemTag);
+        // Ignore single item header
+        secondIn.skipNBytes (1);
+        final String sampleBuilderTag = StreamUtils.readWithLengthAscii (secondIn);
+        StreamUtils.checkTag (KorgmultisampleConstants.TAG_SAMPLE_BUILDER, sampleBuilderTag);
+
+        // The version number, not always present and not needed
+        Date creationDateTime = new Date ();
+        String application = KorgmultisampleConstants.TAG_SAMPLE_BUILDER;
+        String applicationVersion = "";
+        while (secondIn.available () > 0)
+        {
+            final int chunk2ID = secondIn.read ();
+            switch (chunk2ID)
+            {
+                case KorgmultisampleConstants.ID_VERSION:
+                    StreamUtils.readWithLengthAscii (secondIn);
+                    break;
+                case KorgmultisampleConstants.ID_TIME:
+                    // Time of storage - the seconds from 1.1.1970
+                    creationDateTime = new Date (StreamUtils.fromBytesLE (secondIn.readNBytes (8)) * 1000L);
+                    break;
+                case KorgmultisampleConstants.ID_APPLICATION:
+                    application = StreamUtils.readWithLengthAscii (secondIn);
+                    break;
+                case KorgmultisampleConstants.ID_APPLICATION_VERSION:
+                    applicationVersion = StreamUtils.readWithLengthAscii (secondIn);
+                    break;
+                default:
+                    throw new IOException (Functions.getMessage ("IDS_WS_UNKNOWN_CHUNK2_ID", Integer.toString (chunk2ID)));
+            }
+        }
+
+        this.notifier.log ("IDS_WS_DETECTED_APPLICATION", application, applicationVersion);
+
+        return parseMultisample (new ByteArrayInputStream (chunks.get (2)), file, creationDateTime);
+    }
+
+
+    private static List<byte []> parseChunks (final InputStream in) throws IOException
+    {
+        final List<byte []> chunks = new ArrayList<> ();
+        while (in.available () > 0)
+        {
+            final int size = (int) StreamUtils.readUnsigned32 (in, false);
+            chunks.add (in.readNBytes (size));
+        }
+        return chunks;
+    }
+
+
     /**
-     * Load and parse the korgmultisample file.
+     * Parse the korgmultisample file.
      *
      * @param in The input stream to read from
      * @param file The source file
+     * @param creationDateTime The creation date and time
      * @return The parsed multi-sample source
      * @throws FormatException Error in the format of the file
      * @throws IOException Could not read from the file
      */
-    private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws FormatException, IOException
+    private List<IMultisampleSource> parseMultisample (final InputStream in, final File file, final Date creationDateTime) throws FormatException, IOException
     {
-        readHeader (in);
-
-        // The version number, not always present
-        if (in.read () == 0x1A)
-        {
-            StreamUtils.readWithLengthAscii (in);
-            in.read ();
-        }
-
-        // Time of storage - the seconds from 1.1.1970
-        final Date creationDateTime = new Date (StreamUtils.fromBytesLE (in.readNBytes (8)) * 1000L);
-
-        // Size of the content, not needed
-        in.readNBytes (4);
-
         checkAscii (in);
 
         final String name = StreamUtils.readWithLengthAscii (in);
@@ -124,23 +185,23 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
         while ((id = in.read ()) != -1)
             switch (id)
             {
-                case KorgmultisampleTag.ID_AUTHOR:
+                case KorgmultisampleConstants.ID_AUTHOR:
                     metadata.setCreator (StreamUtils.readWithLengthAscii (in));
                     break;
 
-                case KorgmultisampleTag.ID_CATEGORY:
+                case KorgmultisampleConstants.ID_CATEGORY:
                     metadata.setCategory (StreamUtils.readWithLengthAscii (in));
                     break;
 
-                case KorgmultisampleTag.ID_COMMENT:
+                case KorgmultisampleConstants.ID_COMMENT:
                     metadata.setDescription (StreamUtils.readWithLengthAscii (in));
                     break;
 
-                case KorgmultisampleTag.ID_SAMPLE:
-                    group.addSampleZone (this.readSample (in));
+                case KorgmultisampleConstants.ID_SAMPLE:
+                    group.addSampleZone (this.readSample (in, file.getParentFile ()));
                     break;
 
-                case KorgmultisampleTag.ID_UUID:
+                case KorgmultisampleConstants.ID_UUID:
                     final int size = in.readNBytes (1)[0];
                     in.readNBytes (size);
                     break;
@@ -159,52 +220,15 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Reads and checks the header information preceding the actual data.
-     *
-     * @param in The input stream to read from
-     * @throws IOException Could not read
-     * @throws FormatException Found unexpected format of the file
-     */
-    private static void readHeader (final InputStream in) throws IOException, FormatException
-    {
-        final byte [] headerTag = in.readNBytes (4);
-        StreamUtils.checkTag (KorgmultisampleTag.TAG_KORG, headerTag);
-
-        // Ignore rest of the header
-        in.readNBytes (8);
-
-        checkAscii (in);
-        final String fileInfoTag = StreamUtils.readWithLengthAscii (in);
-        StreamUtils.checkTag (KorgmultisampleTag.TAG_FILE_INFO, fileInfoTag);
-        // Ignore file info data
-        in.readNBytes (2);
-
-        checkAscii (in);
-        final String multiSampleTag = StreamUtils.readWithLengthAscii (in);
-        StreamUtils.checkTag (KorgmultisampleTag.TAG_MULTISAMPLE, multiSampleTag);
-        // Ignore multi-sample header
-        in.readNBytes (6);
-
-        checkAscii (in);
-        final String singleItemTag = StreamUtils.readWithLengthAscii (in);
-        StreamUtils.checkTag (KorgmultisampleTag.TAG_SINGLE_ITEM, singleItemTag);
-        // Ignore single item header
-        in.readNBytes (1);
-
-        final String sampleBuilderTag = StreamUtils.readWithLengthAscii (in);
-        StreamUtils.checkTag (KorgmultisampleTag.TAG_SAMPLE_BUILDER, sampleBuilderTag);
-    }
-
-
-    /**
      * Read the data related to the sample configuration.
      *
      * @param in The input stream to read from
+     * @param parentPath The path of the parent
      * @return The filled sample metadata
      * @throws IOException Could not read from the file
      * @throws FormatException Found unexpected format of the file
      */
-    private ISampleZone readSample (final InputStream in) throws IOException, FormatException
+    private ISampleZone readSample (final InputStream in, final File parentPath) throws IOException, FormatException
     {
         // Size of the sample block
         final int [] size = StreamUtils.read7bitNumberLE (in);
@@ -215,7 +239,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
         checkAscii (in);
         final String sampleFileName = StreamUtils.readWithLengthAscii (in);
-        final File sampleFile = this.createCanonicalFile (this.sourceFolder, sampleFileName);
+        final File sampleFile = this.createCanonicalFile (parentPath, sampleFileName);
         final ISampleData sampleData = new WavFileSampleData (sampleFile);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
@@ -260,32 +284,32 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
             switch (currentID)
             {
-                case KorgmultisampleTag.ID_START:
+                case KorgmultisampleConstants.ID_START:
                     final int [] startNumber = StreamUtils.read7bitNumberLE (in);
                     r -= startNumber[1];
                     zone.setStart (startNumber[0]);
                     break;
-                case KorgmultisampleTag.ID_LOOP_START:
+                case KorgmultisampleConstants.ID_LOOP_START:
                     final int [] loopStartNumber = StreamUtils.read7bitNumberLE (in);
                     r -= loopStartNumber[1];
                     loopStart = loopStartNumber[0];
                     break;
-                case KorgmultisampleTag.ID_END:
+                case KorgmultisampleConstants.ID_END:
                     final int [] endNumber = StreamUtils.read7bitNumberLE (in);
                     r -= endNumber[1];
                     zone.setStop (endNumber[0]);
                     break;
-                case KorgmultisampleTag.ID_LOOP_TUNE:
+                case KorgmultisampleConstants.ID_LOOP_TUNE:
                     r -= 4;
                     // Not used
                     in.readNBytes (4);
                     break;
-                case KorgmultisampleTag.ID_ONE_SHOT:
+                case KorgmultisampleConstants.ID_ONE_SHOT:
                     r -= 1;
                     if (in.readNBytes (1)[0] > 0)
                         oneShot = true;
                     break;
-                case KorgmultisampleTag.ID_BOOST_12DB:
+                case KorgmultisampleConstants.ID_BOOST_12DB:
                     r -= 1;
                     if (in.readNBytes (1)[0] > 0)
                         zone.setGain (12);
@@ -339,29 +363,29 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
             switch (currentID)
             {
-                case KorgmultisampleTag.ID_KEY_BOTTOM:
+                case KorgmultisampleConstants.ID_KEY_BOTTOM:
                     r -= 1;
                     zone.setKeyLow (in.readNBytes (1)[0]);
                     break;
-                case KorgmultisampleTag.ID_KEY_TOP:
+                case KorgmultisampleConstants.ID_KEY_TOP:
                     r -= 1;
                     zone.setKeyHigh (in.readNBytes (1)[0]);
                     break;
-                case KorgmultisampleTag.ID_KEY_ORIGINAL:
+                case KorgmultisampleConstants.ID_KEY_ORIGINAL:
                     r -= 1;
                     zone.setKeyRoot (in.readNBytes (1)[0]);
                     break;
-                case KorgmultisampleTag.ID_FIXED_PITCH:
+                case KorgmultisampleConstants.ID_FIXED_PITCH:
                     r -= 1;
                     if (in.readNBytes (1)[0] > 0)
                         zone.setKeyTracking (0);
                     break;
-                case KorgmultisampleTag.ID_TUNE:
+                case KorgmultisampleConstants.ID_TUNE:
                     r -= 4;
                     // Read value is in the range of [-999..999]
                     zone.setTune (StreamUtils.readFloatLE (in.readNBytes (4)) / 1000.0);
                     break;
-                case KorgmultisampleTag.ID_LEVEL_LEFT:
+                case KorgmultisampleConstants.ID_LEVEL_LEFT:
                     r -= 4;
                     // Note: The left/right link button in the editor is only a UI thing!
                     final float levelLeftValue = StreamUtils.readFloatLE (in.readNBytes (4));
@@ -369,12 +393,12 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
                     // (-100..100%) mean in dB this is better than nothing...
                     zone.setGain (levelLeftValue / 100.0 * 12.0);
                     break;
-                case KorgmultisampleTag.ID_LEVEL_RIGHT:
+                case KorgmultisampleConstants.ID_LEVEL_RIGHT:
                     r -= 4;
                     // This is -100..100%. We only handle one value (left)
                     in.readNBytes (4);
                     break;
-                case KorgmultisampleTag.ID_COLOR:
+                case KorgmultisampleConstants.ID_COLOR:
                     r -= 4;
                     // B, G, R, FF, ?? = 7 bit
                     in.readNBytes (5);
@@ -399,6 +423,6 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
     {
         final int blockType = in.read ();
         if (blockType != 0x0A)
-            throw new IOException ("Not an ASCII block.");
+            throw new IOException (Functions.getMessage ("IDS_WS_NO_ASCII"));
     }
 }

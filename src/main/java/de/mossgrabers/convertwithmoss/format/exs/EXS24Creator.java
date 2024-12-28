@@ -111,12 +111,23 @@ public class EXS24Creator extends AbstractCreator
         final EXS24File exs24File = new EXS24File (this.notifier);
 
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
+        final Map<IGroup, Integer> roundRobinGroups = multisampleSource.getRoundRobinGroups ();
         for (final IGroup group: groups)
         {
             final EXS24Group exsGroup = new EXS24Group ();
             exs24File.addGroup (exsGroup);
             exsGroup.name = group.getName ();
             exsGroup.releaseTrigger = group.getTrigger () == TriggerType.RELEASE;
+
+            if (roundRobinGroups.containsKey (group))
+            {
+                final int sequencePosition = roundRobinGroups.get (group).intValue ();
+                if (sequencePosition > 0)
+                {
+                    exsGroup.roundRobinGroupPos = sequencePosition - 2;
+                    exsGroup.enableByRoundRobin = true;
+                }
+            }
 
             for (final ISampleZone zone: group.getSampleZones ())
             {

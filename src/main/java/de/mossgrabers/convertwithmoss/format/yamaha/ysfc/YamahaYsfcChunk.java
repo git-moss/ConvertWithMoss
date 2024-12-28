@@ -21,14 +21,29 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class YamahaYsfcChunk
 {
-    private static final String         MAGIC_ENTRY      = "Entr";
-    private static final String         MAGIC_DATA       = "Data";
+    /** ID of the chunk which contains the entry list with pointers to the performances. */
+    public static final String          ENTRY_LIST_PERFORMANCE       = "EPFM";
+    /** ID of the chunk which contains the data of the performances. */
+    public static final String          DATA_LIST_PERFORMANCE        = "DPFM";
+
+    /** ID of the chunk which contains the entry list with pointers to the sample metadata. */
+    public static final String          ENTRY_LIST_WAVEFORM_METADATA = "EWFM";
+    /** ID of the chunk which contains the data of the sample metadata. */
+    public static final String          DATA_LIST_WAVEFORM_METADATA  = "DWFM";
+
+    /** ID of the chunk which contains the entry list with pointers to the sample data. */
+    public static final String          ENTRY_LIST_WAVEFORM_DATA     = "EWIM";
+    /** ID of the chunk which contains the data of the sample. */
+    public static final String          DATA_LIST_WAVEFORM_DATA      = "DWIM";
+
+    private static final String         MAGIC_ENTRY                  = "Entr";
+    private static final String         MAGIC_DATA                   = "Data";
 
     private String                      chunkID;
     private int                         chunkLength;
     private int                         numItemsInChunk;
-    private final List<YamahaYsfcEntry> entryListEntries = new ArrayList<> ();
-    private final List<byte []>         dataArrays       = new ArrayList<> ();
+    private final List<YamahaYsfcEntry> entryListEntries             = new ArrayList<> ();
+    private final List<byte []>         dataArrays                   = new ArrayList<> ();
 
 
     /**

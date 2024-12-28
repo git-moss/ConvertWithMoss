@@ -45,7 +45,7 @@ class EXS24Group extends EXS24Object
     int     enableByType              = 0;
     int     enableByControlValue      = 0;
     int     enableByControlLow        = 0;
-    int     enableByControlHigh       = 0;
+    int     enableByControlHigh       = 127;
     int     startNote                 = 0;
     int     endNote                   = 127;
     int     enableByMidiChannel       = 0;
@@ -209,5 +209,35 @@ class EXS24Group extends EXS24Object
         out.write (this.releaseTrigger ? 1 : 0);
         out.write (this.output);
         out.write (this.enableByNoteValue);
+
+        //////////////////////////////////////////////////////////////////
+        // Additional data
+
+        StreamUtils.padBytes (out, 4);
+
+        StreamUtils.writeUnsigned32 (out, this.roundRobinGroupPos, isBigEndian);
+        if (this.enableByNote)
+            this.enableByType = 1;
+        if (this.enableByRoundRobin)
+            this.enableByType = 2;
+        if (this.enableByControl)
+            this.enableByType = 3;
+        if (this.enableByBend)
+            this.enableByType = 4;
+        if (this.enableByChannel)
+            this.enableByType = 5;
+        if (this.enableByArticulation)
+            this.enableByType = 6;
+        if (this.enablebyTempo)
+            this.enableByType = 7;
+        out.write (this.enableByType);
+
+        out.write (this.enableByControlValue);
+        out.write (this.enableByControlLow);
+        out.write (this.enableByControlHigh);
+        out.write (this.startNote);
+        out.write (this.endNote);
+        out.write (this.enableByMidiChannel);
+        out.write (this.enableByArticulationValue);
     }
 }

@@ -325,7 +325,7 @@ WAV file can contain different sample formats. This converter supports (split) s
 ## Yamaha YSFC
 
 This format is used in most of the Yamaha Workstation. While the format is the same, the content is different.
-Currently, the formats of the Montage (not Montage M) and MODX/MODX+ are support both as source and destination format. That covers files with the endings X7L, X7U, X8L and X8U. As the source the backup formats X7A and X8A are supported as well.
+Currently, the formats of the Montage (not Montage M) and MODX/MODX+ are supported both as source and destination format. That covers files with the endings X7A, X7L, X7U (Montage) and X8A, X8L, X8U (MODX/MODX+). The backup formats X7A and X8A are supported only as a source.
 
 Furthermore, the formats of older models are suppored for reading only:
 
@@ -337,7 +337,7 @@ The wave files in professional Yamaha libraries often are compressed. Such files
 
 So far, only the basic multi-sample data is converted (which means that no performances are created and therefore no information about e.g. filter, envelope or effects is converted).
 
-Note: There are no checks that the created libraries stay in the bounds of the workstation (number of maximum samples or required memory size)!
+Note: There are no checks that the created libraries stay in the boundaries of the workstation (e.g. the number of the maximum allowed samples or the required memory size)!
 
 ### Destination Options
 

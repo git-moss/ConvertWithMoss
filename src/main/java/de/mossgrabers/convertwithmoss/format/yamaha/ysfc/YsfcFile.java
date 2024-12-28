@@ -43,7 +43,7 @@ public class YsfcFile
      */
     public YsfcFile ()
     {
-        this.createChunks ("EWFM", "DWFM", "EWIM", "DWIM");
+        this.createChunks (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA, YamahaYsfcChunk.DATA_LIST_WAVEFORM_METADATA, YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA, YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA);
     }
 
 
@@ -291,10 +291,10 @@ public class YsfcFile
 
     private List<YamahaYsfcChunk> sortAndUpdateChunks ()
     {
-        final YamahaYsfcChunk ewfm = this.chunks.get ("EWFM");
-        final YamahaYsfcChunk dwfm = this.chunks.get ("DWFM");
-        final YamahaYsfcChunk ewim = this.chunks.get ("EWIM");
-        final YamahaYsfcChunk dwim = this.chunks.get ("DWIM");
+        final YamahaYsfcChunk ewfm = this.chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA);
+        final YamahaYsfcChunk dwfm = this.chunks.get (YamahaYsfcChunk.DATA_LIST_WAVEFORM_METADATA);
+        final YamahaYsfcChunk ewim = this.chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA);
+        final YamahaYsfcChunk dwim = this.chunks.get (YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA);
 
         updateEntryReferences (ewfm, dwfm, 10001);
         updateEntryReferences (ewim, dwim, 10002);
@@ -347,8 +347,8 @@ public class YsfcFile
     public void fillWaveChunks (final YamahaYsfcEntry keyBankEntry, final List<YamahaYsfcKeybank> keybankList, final YamahaYsfcEntry waveDataEntry, final List<YamahaYsfcWaveData> waveDataList) throws IOException
     {
         // Waveform Metadata
-        this.chunks.get ("EWFM").addEntry (keyBankEntry);
-        final YamahaYsfcChunk dwfm = this.chunks.get ("DWFM");
+        this.chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA).addEntry (keyBankEntry);
+        final YamahaYsfcChunk dwfm = this.chunks.get (YamahaYsfcChunk.DATA_LIST_WAVEFORM_METADATA);
         final ByteArrayOutputStream dwfmContentOutput = new ByteArrayOutputStream ();
         StreamUtils.writeUnsigned16 (dwfmContentOutput, keybankList.size (), false);
         StreamUtils.padBytes (dwfmContentOutput, 2);
@@ -361,8 +361,8 @@ public class YsfcFile
         dwfm.addDataArray (dwfmContentOutput.toByteArray ());
 
         // Wave Data
-        this.chunks.get ("EWIM").addEntry (waveDataEntry);
-        final YamahaYsfcChunk dwim = this.chunks.get ("DWIM");
+        this.chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA).addEntry (waveDataEntry);
+        final YamahaYsfcChunk dwim = this.chunks.get (YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA);
         final ByteArrayOutputStream dwimContentOutput = new ByteArrayOutputStream ();
         StreamUtils.writeUnsigned32 (dwimContentOutput, waveDataList.size (), true);
         for (final YamahaYsfcWaveData element: waveDataList)
