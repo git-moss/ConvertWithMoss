@@ -159,7 +159,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
 
     /**
-     * Wait a bit.
+     * Check for task cancellation.
      *
      * @return The thread was cancelled if true
      */
@@ -635,5 +635,17 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             }
 
         return null;
+    }
+
+
+    protected void notifyProgress ()
+    {
+        this.notifier.log ("IDS_NOTIFY_PROGRESS");
+    }
+
+
+    protected void notifyNewline ()
+    {
+        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
     }
 }

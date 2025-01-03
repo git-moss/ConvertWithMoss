@@ -59,7 +59,9 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         ".x7a",
         ".x8u",                                           // MODX / MODX+
         ".x8l",
-        ".x8a"
+        ".x8a",
+        ".y2l",                                           // Montage M
+        ".y2u"
     };
     private static final int       SAMPLE_RESOLUTION = 16;
 
@@ -88,8 +90,20 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         try
         {
             final YsfcFile ysfcFile = new YsfcFile (file);
-            this.notifier.log ("IDS_YSFC_FOUND_TYPE", getWorkstationName (ysfcFile), ysfcFile.getVersionStr ());
-            return this.createMultisample (ysfcFile);
+            this.notifier.log ("IDS_YSFC_FOUND_TYPE", ysfcFile.getVersion ().getTitle (), ysfcFile.getVersionStr ());
+
+            final List<IMultisampleSource> keyGroups = this.createMultisamplesFromKeygroups (ysfcFile);
+
+            // If there are no Performances, create directly from key-groups
+            final YamahaYsfcChunk epfmChunk = ysfcFile.getChunks ().get (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE);
+            if (epfmChunk == null)
+            {
+                this.notifier.log ("IDS_YSFC_NO_PERFORMANCES");
+                return keyGroups;
+            }
+
+            // TODO
+            return keyGroups;
         }
         catch (final IOException ex)
         {
@@ -99,29 +113,14 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     }
 
 
-    private static String getWorkstationName (final YsfcFile ysfcFile)
-    {
-        final int version = ysfcFile.getVersion ();
-        if (version <= 101)
-            return "Motif XS";
-        if (version == 102)
-            return "Motif XF";
-        if (version == 103)
-            return "MOXF";
-        if (version >= 500)
-            return "MODX";
-        return "Montage";
-    }
-
-
     /**
-     * Create a multi-sample from the chunk data.
+     * Create multi-samples from the key-group/wave chunk data.
      *
      * @param ysfcFile The YSFC source file
      * @return The multi-sample(s)
      * @throws IOException COuld not read the multi-sample
      */
-    private List<IMultisampleSource> createMultisample (final YsfcFile ysfcFile) throws IOException
+    private List<IMultisampleSource> createMultisamplesFromKeygroups (final YsfcFile ysfcFile) throws IOException
     {
         final Map<String, YamahaYsfcChunk> chunks = ysfcFile.getChunks ();
 
@@ -177,7 +176,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     }
 
 
-    private static IGroup createSampleZones (final List<YamahaYsfcKeybank> keyBanks, final List<YamahaYsfcWaveData> waveDataItems, final String name, final int version) throws IOException
+    private static IGroup createSampleZones (final List<YamahaYsfcKeybank> keyBanks, final List<YamahaYsfcWaveData> waveDataItems, final String name, final YamahaYsfcVersion version) throws IOException
     {
         final DefaultGroup group = new DefaultGroup ("Layer");
 
@@ -230,7 +229,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
                 else
                     sampleData.setSampleData (WaveFile.interleaveChannels (data, dataRight, SAMPLE_RESOLUTION));
 
-                keybankIndex += version < 400 ? 1 : 2;
+                keybankIndex += version.isVersion1 () ? 1 : 2;
                 waveDataIndex += 2;
             }
         }
@@ -319,17 +318,16 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
      * Reads all the key-bank data items from the given data array.
      *
      * @param dwfmDataArray The array to read from
-     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
+     * @param version The format version of the YSFC file
      * @return The parsed wave metadata items
      * @throws IOException Could not read the data
      */
-    private static List<YamahaYsfcKeybank> readKeyBanks (final byte [] dwfmDataArray, final int version) throws IOException
+    private static List<YamahaYsfcKeybank> readKeyBanks (final byte [] dwfmDataArray, final YamahaYsfcVersion version) throws IOException
     {
         final List<YamahaYsfcKeybank> keyBanks = new ArrayList<> ();
         final ByteArrayInputStream dwfmContentStream = new ByteArrayInputStream (dwfmDataArray);
-        final boolean isVersion1 = version < 400;
         // numberOfKeyBank
-        StreamUtils.readUnsigned16 (dwfmContentStream, isVersion1);
+        StreamUtils.readUnsigned16 (dwfmContentStream, version.isVersion1 ());
         dwfmContentStream.skipNBytes (2);
         while (dwfmContentStream.available () > 0)
             keyBanks.add (new YamahaYsfcKeybank (dwfmContentStream, version));

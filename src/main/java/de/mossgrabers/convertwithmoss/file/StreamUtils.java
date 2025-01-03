@@ -890,6 +890,38 @@ public class StreamUtils
 
 
     /**
+     * Reads a certain number of bytes from the input stream. The number of bytes is determined from
+     * the first 4 bytes (32-bit value).
+     * 
+     * @param in The input stream to read from
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
+     * @return The data block without the size bytes
+     * @throws IOException Could not read
+     */
+    public static byte [] readDataBlock (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        final int size = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        return in.readNBytes (size);
+    }
+
+
+    /**
+     * Reads a certain number of bytes from the input stream. The number of bytes is determined from
+     * the first 4 bytes (32-bit value).
+     * 
+     * @param out The output stream to write to
+     * @param data The data block without the size bytes
+     * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
+     * @throws IOException Could not read
+     */
+    public static void writeDataBlock (final OutputStream out, final byte [] data, final boolean isBigEndian) throws IOException
+    {
+        StreamUtils.writeUnsigned32 (out, data.length, isBigEndian);
+        out.write (data);
+    }
+
+
+    /**
      * Skip exactly N bytes.
      *
      * @param fileAccess The random access file to read from

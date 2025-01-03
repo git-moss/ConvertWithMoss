@@ -56,7 +56,7 @@ public class YamahaYsfcKeybank
      * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcKeybank (final InputStream in, final int version) throws IOException
+    public YamahaYsfcKeybank (final InputStream in, final YamahaYsfcVersion version) throws IOException
     {
         this.read (in, version);
     }
@@ -69,10 +69,10 @@ public class YamahaYsfcKeybank
      * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the entry item
      */
-    public void read (final InputStream in, final int version) throws IOException
+    public void read (final InputStream in, final YamahaYsfcVersion version) throws IOException
     {
-        final boolean isVersion1 = version < 400;
-        final boolean isMotif = version < 103;
+        final boolean isVersion1 = version.isVersion1 ();
+        final boolean isMotif = version.isMotif ();
         final boolean isBigEndian = isVersion1 && !isMotif;
 
         this.keyRangeLower = in.read ();

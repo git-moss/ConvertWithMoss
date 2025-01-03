@@ -81,10 +81,14 @@ public abstract class AbstractCoreTask implements ICoreTask
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public void cancel ()
+    protected void notifyProgress ()
     {
-        // Intentionally empty
+        this.notifier.log ("IDS_NOTIFY_PROGRESS");
+    }
+
+
+    protected void notifyNewline ()
+    {
+        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
     }
 }

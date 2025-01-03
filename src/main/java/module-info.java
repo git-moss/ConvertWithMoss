@@ -13,8 +13,6 @@ module de.mossgrabers.convertwithmoss
     requires transitive de.mossgrabers.uitools;
     requires javafx.graphics;
     requires com.github.trilarion.sound;
-    requires org.fxmisc.richtext;
-    requires org.fxmisc.flowless;
 
 
     exports de.mossgrabers.convertwithmoss.ui;
@@ -35,4 +33,5 @@ module de.mossgrabers.convertwithmoss
     opens de.mossgrabers.convertwithmoss.images;
     opens de.mossgrabers.convertwithmoss.templates.nki;
     opens de.mossgrabers.convertwithmoss.templates.adv;
+    opens de.mossgrabers.convertwithmoss.templates.ysfc;
 }

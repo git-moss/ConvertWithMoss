@@ -92,6 +92,8 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     private boolean                             updateSampleChunk                  = false;
     private boolean                             removeJunkChunks                   = false;
 
+    protected boolean                           isCancelled                        = false;
+
     // Combine into library options
     protected CheckBox                          combineIntoOneLibrary              = null;
     protected TextField                         combinationFilename                = null;
@@ -123,6 +125,22 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     {
         // Overwrite and return true to support combining multi-sample files
         return false;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void cancel ()
+    {
+        this.isCancelled = true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void clearCancelled ()
+    {
+        this.isCancelled = false;
     }
 
 
@@ -579,6 +597,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
             final List<ISampleZone> sampleZones = group.getSampleZones ();
             for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
             {
+                if (this.isCancelled)
+                    return writtenFiles;
+
                 final ISampleZone zone = sampleZones.get (zoneIndex);
 
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
@@ -644,6 +665,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
             final List<ISampleZone> sampleZones = group.getSampleZones ();
             for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
             {
+                if (this.isCancelled)
+                    return writtenFiles;
+
                 final ISampleZone zone = sampleZones.get (zoneIndex);
 
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, extension));
@@ -926,18 +950,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         zipOutputStream.putNextEntry (entry);
         zipOutputStream.write (data);
         zipOutputStream.closeEntry ();
-    }
-
-
-    private void notifyProgress ()
-    {
-        this.notifier.log ("IDS_NOTIFY_PROGRESS");
-    }
-
-
-    private void notifyNewline ()
-    {
-        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
     }
 
 

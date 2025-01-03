@@ -78,10 +78,11 @@ public class KSFFile
      *
      * @param inputStream Where to read the file from
      * @param zone The zone to which to add the KSF data
+     * @return The referenced KSF file, if any
      * @throws IOException Could not read the file
      * @throws ParseException Error during parsing
      */
-    public static void read (final InputStream inputStream, final ISampleZone zone) throws IOException, ParseException
+    public static String read (final InputStream inputStream, final ISampleZone zone) throws IOException, ParseException
     {
         final DataInputStream in = new DataInputStream (inputStream);
 
@@ -138,8 +139,10 @@ public class KSFFile
                     // Bit 7 (0x40): 1 = reverse, 0 = forward
                     // Bit 8 (0x80): 1 = loop off, 0 = loop on
                     final int attributes = in.read ();
+
+                    // Boost by 12dB
                     if ((attributes & 1) > 0)
-                        System.out.println ("Boosted!");
+                        zone.setGain (boostDecibels (zone.getGain (), 12.0));
 
                     if ((attributes & 0x10) > 0)
                         throw new ParseException (Functions.getMessage ("IDS_KMP_COMPRESSED_DATA_NOT_SUPPORTED"));
@@ -168,12 +171,12 @@ public class KSFFile
 
                 case KSF_SAMPLE_NAME_ID:
                     assertSize (id, dataSize, KSF_SAMPLE_NAME_SIZE);
-                    combinedName = new String (in.readNBytes (24));
+                    combinedName = new String (in.readNBytes (KSF_SAMPLE_NAME_SIZE));
                     break;
 
                 case KSF_SAMPLE_FILENAME_ID:
                     assertSize (id, dataSize, KSF_SAMPLE_FILENAME_SIZE);
-                    throw new ParseException (Functions.getMessage ("IDS_KMP_ERR_REFERENCED_KSF_NOT_SUPPORTED"));
+                    return new String (in.readNBytes (KSF_SAMPLE_FILENAME_SIZE));
 
                 case KSF_SAMPLE_DIVIDED_PARAM_ID, KSF_SAMPLE_DIVIDED_DATA_ID:
                     throw new ParseException (Functions.getMessage ("IDS_KMP_ERR_DISTRIBUTED_KSF_NOT_SUPPORTED"));
@@ -190,6 +193,8 @@ public class KSFFile
         final InMemorySampleData sampleData = new InMemorySampleData (audioMetadata, data);
         zone.setName (combinedName.trim ());
         zone.setSampleData (sampleData);
+
+        return null;
     }
 
 
@@ -347,5 +352,21 @@ public class KSFFile
     {
         final String name = filename.replaceAll ("[\\\\/:*?\"<>|&\\.#]", "_").trim ();
         return name.length () == 1 ? "NAME" + name : name;
+    }
+
+
+    private static double boostDecibels (final double originalDb, final double boostDb)
+    {
+        // Convert original dB to linear scale
+        double originalLinear = Math.pow (10, originalDb / 10);
+
+        // Convert boost dB to linear scale
+        double boostLinear = Math.pow (10, boostDb / 10);
+
+        // Add the linear values
+        double newLinear = originalLinear + boostLinear;
+
+        // Convert back to dB
+        return 10 * Math.log10 (newLinear);
     }
 }
