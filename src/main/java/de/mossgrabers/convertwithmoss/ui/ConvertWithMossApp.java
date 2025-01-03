@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.ui;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -148,9 +149,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private Button                         renameFilePathSelectButton;
 
     private final CSVRenameFile            csvRenameFile                       = new CSVRenameFile ();
-    private final LoggerBoxWeb             loggingArea                         = new LoggerBoxWeb ();
+    private final LoggerBoxWeb             loggingArea                         = new LoggerBoxWeb (4000);
     private final TraversalManager         traversalManager                    = new TraversalManager ();
     private final List<IMultisampleSource> collectedSources                    = new ArrayList<> ();
+
+    private FileWriter                     logWriter;
 
 
     /**
@@ -349,8 +352,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.closeButton = setupButton (exButtonPanel, "Close", "@IDS_EXEC_CLOSE", "@IDS_EXEC_CLOSE_TOOLTIP");
         this.closeButton.setOnAction (event -> this.closeExecution ());
 
-        final Parent loggerComponent = this.loggingArea.getComponent ();
-        this.executePane.setCenter (loggerComponent);
+        this.executePane.setCenter (this.loggingArea.getComponent ());
         this.executePane.setRight (exButtonPanel.getPane ());
         this.executePane.setVisible (false);
 
@@ -539,7 +541,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         if (selectedDetector < 0 || !this.detectors[selectedDetector].checkSettings () || !this.detectors[selectedDetector].validateParameters ())
             return;
 
-        this.loggingArea.clear ();
+        final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
+        if (selectedCreator < 0)
+            return;
+        this.creators[selectedCreator].clearCancelled ();
+
+        this.clearLog ();
 
         this.mainPane.setVisible (false);
         this.executePane.setVisible (true);
@@ -559,6 +566,10 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
         if (selectedDetector >= 0)
             this.detectors[selectedDetector].cancel ();
+
+        final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
+        if (selectedCreator >= 0)
+            this.creators[selectedCreator].cancel ();
     }
 
 
@@ -753,11 +764,36 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
+    private void clearLog ()
+    {
+        this.loggingArea.clear ();
+
+        try
+        {
+            this.logWriter = new FileWriter (new File (this.outputFolder, "ConvertWithMoss.log"));
+        }
+        catch (final IOException ex)
+        {
+            this.loggingArea.notifyError ("IDS_NOTIFY_ERR_NO_LOG_FILE", ex);
+            this.logWriter = null;
+        }
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public void log (final String messageID, final String... replaceStrings)
     {
-        this.loggingArea.notify (Functions.getMessage (messageID, replaceStrings));
+        this.logText (Functions.getMessage (messageID, replaceStrings));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void logText (final String text)
+    {
+        this.loggingArea.notify (text);
+        this.logToFile (text);
     }
 
 
@@ -765,7 +801,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void logError (final String messageID, final String... replaceStrings)
     {
-        this.loggingArea.notifyError (Functions.getMessage (messageID, replaceStrings));
+        final String message = Functions.getMessage (messageID, replaceStrings);
+        this.loggingArea.notifyError (message);
+        this.logToFile (message);
     }
 
 
@@ -773,7 +811,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void logError (final String messageID, final Throwable throwable)
     {
-        this.loggingArea.notifyError (Functions.getMessage (messageID, throwable));
+        final String message = Functions.getMessage (messageID, throwable);
+        this.loggingArea.notifyError (message);
+        this.logToFile (message);
     }
 
 
@@ -796,14 +836,21 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             this.loggingArea.notifyError (message, throwable);
         else
             this.loggingArea.notifyError (message);
+        this.logToFile (message);
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public void logText (final String text)
+    private void logToFile (final String message)
     {
-        this.loggingArea.notify (text);
+        if (this.logWriter != null)
+            try
+            {
+                this.logWriter.append (message);
+            }
+            catch (final IOException ex)
+            {
+                // Ignore
+            }
     }
 
 
@@ -852,6 +899,22 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
                 this.closeButton.setDefaultButton (true);
                 this.closeButton.requestFocus ();
                 loggerComponent.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_FINISHED"));
+            }
+
+            if (canClose)
+            {
+                if (this.logWriter != null)
+                {
+                    try
+                    {
+                        this.logWriter.close ();
+                    }
+                    catch (final IOException ex)
+                    {
+                        // Ignore
+                    }
+                    this.logWriter = null;
+                }
             }
 
         });

@@ -47,6 +47,8 @@ public class NcwFile
 
     private int [] []        channelData;
     private float [] []      channelDataFloat;
+    private final File       ncwFile;
+    private final Object     lazyLoadingLock = new Object ();
 
 
     /**
@@ -57,10 +59,7 @@ public class NcwFile
      */
     public NcwFile (final File ncwFile) throws IOException
     {
-        try (final FileInputStream stream = new FileInputStream (ncwFile))
-        {
-            this.read (stream);
-        }
+        this.ncwFile = ncwFile;
     }
 
 
@@ -72,6 +71,7 @@ public class NcwFile
      */
     public NcwFile (final InputStream inputStream) throws IOException
     {
+        this.ncwFile = null;
         this.read (inputStream);
     }
 
@@ -80,9 +80,11 @@ public class NcwFile
      * Get the number of channels.
      *
      * @return The number of channels
+     * @throws IOException Could not read the file
      */
-    public int getChannels ()
+    public int getChannels () throws IOException
     {
+        this.lazyLoading ();
         return this.channels;
     }
 
@@ -91,9 +93,11 @@ public class NcwFile
      * Get the number of samples of one channel.
      *
      * @return The number of samples
+     * @throws IOException Could not read the file
      */
-    public int getNumberOfSamples ()
+    public int getNumberOfSamples () throws IOException
     {
+        this.lazyLoading ();
         return this.numberOfSamples;
     }
 
@@ -102,9 +106,11 @@ public class NcwFile
      * Get the bits per sample.
      *
      * @return Bits per sample
+     * @throws IOException Could not read the file
      */
-    public int getBitsPerSample ()
+    public int getBitsPerSample () throws IOException
     {
+        this.lazyLoading ();
         return this.bitsPerSample;
     }
 
@@ -113,9 +119,11 @@ public class NcwFile
      * Get the sample rate.
      *
      * @return The sample rate
+     * @throws IOException Could not read the file
      */
-    public int getSampleRate ()
+    public int getSampleRate () throws IOException
     {
+        this.lazyLoading ();
         return this.sampleRate;
     }
 
@@ -126,27 +134,51 @@ public class NcwFile
      * @param outputStream Where to write the WAV file
      * @throws IOException Could not write
      */
-    public void writeWAV (final OutputStream outputStream) throws IOException
+    public synchronized void writeWAV (final OutputStream outputStream) throws IOException
     {
-        final boolean isFloat = this.channelDataFloat != null;
+        synchronized (this.lazyLoadingLock)
+        {
+            this.lazyLoading ();
 
-        final WaveFile wavFile = new WaveFile (this.channels, this.sampleRate, this.bitsPerSample, this.numberOfSamples);
-        if (isFloat)
-            wavFile.getFormatChunk ().setCompressionCode (FormatChunk.WAVE_FORMAT_IEEE_FLOAT);
-        final DataChunk dataChunk = wavFile.getDataChunk ();
+            final boolean isFloat = this.channelDataFloat != null;
 
-        final ByteArrayOutputStream bout = new ByteArrayOutputStream (this.channels * (this.bitsPerSample / 8) * this.numberOfSamples);
-        if (isFloat)
-            for (int i = 0; i < this.numberOfSamples; i++)
-                for (int channel = 0; channel < this.channels; channel++)
-                    StreamUtils.writeFloatLE (bout, this.channelDataFloat[channel][i]);
-        else
-            for (int i = 0; i < this.numberOfSamples; i++)
-                for (int channel = 0; channel < this.channels; channel++)
-                    StreamUtils.writeUnsigned (bout, this.channelData[channel][i], this.bitsPerSample, false);
+            final WaveFile wavFile = new WaveFile (this.channels, this.sampleRate, this.bitsPerSample, this.numberOfSamples);
+            if (isFloat)
+                wavFile.getFormatChunk ().setCompressionCode (FormatChunk.WAVE_FORMAT_IEEE_FLOAT);
+            final DataChunk dataChunk = wavFile.getDataChunk ();
 
-        dataChunk.setData (bout.toByteArray ());
-        wavFile.write (outputStream);
+            final ByteArrayOutputStream bout = new ByteArrayOutputStream (this.channels * (this.bitsPerSample / 8) * this.numberOfSamples);
+            if (isFloat)
+                for (int i = 0; i < this.numberOfSamples; i++)
+                    for (int channel = 0; channel < this.channels; channel++)
+                        StreamUtils.writeFloatLE (bout, this.channelDataFloat[channel][i]);
+            else
+                for (int i = 0; i < this.numberOfSamples; i++)
+                    for (int channel = 0; channel < this.channels; channel++)
+                        StreamUtils.writeUnsigned (bout, this.channelData[channel][i], this.bitsPerSample, false);
+
+            dataChunk.setData (bout.toByteArray ());
+            wavFile.write (outputStream);
+
+            // Dirty workaround to allow garbage collection
+            this.channelData = null;
+            this.channelDataFloat = null;
+        }
+    }
+
+
+    private void lazyLoading () throws IOException
+    {
+        synchronized (this.lazyLoadingLock)
+        {
+            if (this.channelData != null || this.channelDataFloat != null)
+                return;
+
+            try (final FileInputStream stream = new FileInputStream (this.ncwFile))
+            {
+                this.read (stream);
+            }
+        }
     }
 
 

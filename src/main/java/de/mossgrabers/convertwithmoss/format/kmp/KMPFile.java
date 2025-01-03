@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -186,6 +187,16 @@ public class KMPFile
             if (in.available () == 0)
                 break;
         }
+
+        // Remove all 'skipped sample' zones
+        final List<ISampleZone> cleanedZones = new ArrayList<> ();
+        for (final ISampleZone zone: this.zones)
+        {
+            if (!SAMPLE_SKIPPED.equals (zone.getName ()))
+                cleanedZones.add (zone);
+        }
+        this.zones.clear ();
+        this.zones.addAll (cleanedZones);
     }
 
 
@@ -226,23 +237,30 @@ public class KMPFile
             // Filter Cutoff - unused in KMP itself
             in.readByte ();
 
-            final byte [] nBytes = in.readNBytes (12);
-            final String sampleFilename = new String (nBytes);
+            String sampleFilename = new String (in.readNBytes (12));
 
-            if (SAMPLE_SKIPPED.equals (sampleFilename))
-                this.notifier.logError ("IDS_KMP_ERR_SKIPPED_SAMPLE");
-            else if (sampleFilename.startsWith (SAMPLE_INTERNAL))
-                try
+            while (sampleFilename != null)
+            {
+                if (SAMPLE_SKIPPED.equals (sampleFilename))
                 {
-                    final int internalIndex = Integer.parseInt (sampleFilename.substring (SAMPLE_INTERNAL.length ()));
-                    this.notifier.logError ("IDS_KMP_ERR_INTERNAL_SAMPLE", Integer.toString (internalIndex));
-                }
-                catch (final NumberFormatException ex)
-                {
-                    // All good, not a reference to internal sample memory
+                    zone.setName (SAMPLE_SKIPPED);
+                    this.notifier.log ("IDS_KMP_SKIPPED_SAMPLE");
+                    break;
                 }
 
-            this.readKSFZone (zone, sampleFilename);
+                if (sampleFilename.startsWith (SAMPLE_INTERNAL))
+                    try
+                    {
+                        final int internalIndex = Integer.parseInt (sampleFilename.substring (SAMPLE_INTERNAL.length ()));
+                        throw new IOException (Functions.getMessage ("IDS_KMP_ERR_INTERNAL_SAMPLE", Integer.toString (internalIndex)));
+                    }
+                    catch (final NumberFormatException ex)
+                    {
+                        // All good, not a reference to internal sample memory
+                    }
+
+                sampleFilename = this.readKSFZone (zone, sampleFilename);
+            }
         }
     }
 
@@ -261,7 +279,7 @@ public class KMPFile
     }
 
 
-    private void readKSFZone (final ISampleZone zone, final String filename) throws IOException, ParseException
+    private String readKSFZone (final ISampleZone zone, final String filename) throws IOException, ParseException
     {
         File ksfFile = new File (this.sampleFolder1, filename);
         if (!ksfFile.exists ())
@@ -273,7 +291,7 @@ public class KMPFile
 
         try (final FileInputStream stream = new FileInputStream (ksfFile))
         {
-            KSFFile.read (stream, zone);
+            return KSFFile.read (stream, zone);
         }
     }
 

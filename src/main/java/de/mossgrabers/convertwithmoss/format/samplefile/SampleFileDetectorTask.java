@@ -109,7 +109,10 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
             if (files.length == 0)
                 continue;
 
+            this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (files.length), sampleFileType.getName ());
+
             // Analyze all files
+            int outputCount = 0;
             final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.length);
             for (final File file: files)
             {
@@ -120,6 +123,10 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
                 try
                 {
                     sampleData.add (this.createSampleData (file));
+                    this.notifyProgress ();
+                    outputCount++;
+                    if (outputCount % 80 == 0)
+                        this.notifyNewline ();
                 }
                 catch (final IOException ex)
                 {
@@ -127,6 +134,8 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
                     return Collections.emptyList ();
                 }
             }
+
+            this.notifyNewline ();
 
             sources.addAll (this.createMultisample (sampleFileType, folder, sampleData));
         }

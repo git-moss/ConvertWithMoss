@@ -100,18 +100,19 @@ public class YsfcFile
      */
     public void setVersionStr (final String versionStr)
     {
-        this.versionStr = versionStr;
+        this.versionStr = versionStr.trim ();
+        this.version = parseVersion (this.versionStr);
     }
 
 
     /**
-     * Get the version number as an integer, e.g. 404.
+     * Get the YSFC version.
      *
-     * @return The version number
+     * @return The version
      */
-    public int getVersion ()
+    public YamahaYsfcVersion getVersion ()
     {
-        return this.version;
+        return YamahaYsfcVersion.get (this.version);
     }
 
 
@@ -146,8 +147,7 @@ public class YsfcFile
 
         // The version in the form of 'A.B.C', e.g. '1.0.2'. Older versions may have appended 0xFF
         // instead of 0x00
-        this.versionStr = createAsciiString (inputStream.readNBytes (16));
-        this.version = parseVersion (this.versionStr.trim ());
+        this.setVersionStr (createAsciiString (inputStream.readNBytes (16)));
 
         // The size of the chunk catalog block
         final int catalogSize = (int) StreamUtils.readUnsigned32 (inputStream, true);

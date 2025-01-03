@@ -45,4 +45,10 @@ public interface ICreator extends ICoreTask
      * @return Returns true if the creator wants to combine several files
      */
     boolean wantsMultipleFiles ();
+
+
+    /**
+     * Clears the cancelled state. Call before each run.
+     */
+    void clearCancelled ();
 }

@@ -37,26 +37,26 @@ public class NcwFileSampleData extends AbstractFileSampleData
     {
         super (file);
 
-        this.handleNcwFile (new NcwFile (file));
+        this.ncwFile = new NcwFile (file);
     }
 
 
     /**
-     * Constructor.
+     * Constructor. Used for monoliths.
      *
      * @param inputStream The stream from which the file content can be read
      * @throws IOException Could not read the file
      */
     public NcwFileSampleData (final InputStream inputStream) throws IOException
     {
-        this.handleNcwFile (new NcwFile (inputStream));
+        this.ncwFile = new NcwFile (inputStream);
     }
 
 
-    private void handleNcwFile (final NcwFile ncwFile) throws IOException
+    /** {@inheritDoc} */
+    @Override
+    protected void createAudioMetadata () throws IOException
     {
-        this.ncwFile = ncwFile;
-
         final int channels = this.ncwFile.getChannels ();
         if (channels > 2)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (channels), this.sampleFile.getAbsolutePath ()));

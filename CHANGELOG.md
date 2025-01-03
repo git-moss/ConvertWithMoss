@@ -1,5 +1,19 @@
 # Changes
 
+## 11.7.0
+
+* New: Writing of samples can now be cancelled as well.
+* Fixed: Logger text is now cleared regularily to prevent a crash. To have the log still available, all messages are now logged into a file ConvertWithMoss.log which is created in the output directory.
+* Kontakt
+  * Fixed: Regression: Reading Kontakt 5-7 file lists were broken.
+  * Fixed: NCW files are now only read when needed for writing and the memory is freed up directly afterwards to support NKIs which reference a very large amounts of NCW files.
+* Korg KMP
+  * New: KSF files which reference another KSF file are now read properly.
+  * New: Reading: Applied +12dB option.
+  * New: KMP/KSF files which contain SKIPPEDSAMPLE as a filename are now ignored (conversion was canceled previously).
+* Sample Files
+  * New: Notify about the number of sample files found in a folder before the mapping starts.
+
 ## 11.6.0
 
 * EXS24

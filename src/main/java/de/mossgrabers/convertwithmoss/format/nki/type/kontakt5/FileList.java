@@ -46,15 +46,15 @@ public class FileList
             if (version < 2 || version > 3)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_EX_VERSION", Integer.toString (version)));
 
-            final List<String> files = readFiles (in, version);
             if (version == 3)
             {
+                final List<String> files = readFilesV3 (in);
                 this.specialFiles = files;
                 this.sampleFiles = files;
                 return;
             }
 
-            this.specialFiles = files;
+            this.specialFiles = readFilesV2 (in);
         }
         else
         {
@@ -67,7 +67,7 @@ public class FileList
                 readFile (in);
         }
 
-        this.sampleFiles = readFiles (in, -1);
+        this.sampleFiles = readFilesV2 (in);
         this.readMetadata (in, chunkID);
     }
 
@@ -90,7 +90,7 @@ public class FileList
             for (int i = 0; i < numFiles; i++)
                 StreamUtils.readUnsigned32 (in, false);
 
-            this.otherFiles = readFiles (in, -1);
+            this.otherFiles = readFilesV2 (in);
         }
         else
             // Final padding
@@ -99,14 +99,33 @@ public class FileList
 
 
     /**
-     * Read several file paths.
+     * Read several file paths in version 2.
      *
      * @param in The input stream to read from
-     * @param version The version of the Filename List structure
      * @return The read file paths
      * @throws IOException Could not read
      */
-    private static List<String> readFiles (final ByteArrayInputStream in, final int version) throws IOException
+    private static List<String> readFilesV2 (final ByteArrayInputStream in) throws IOException
+    {
+        final List<String> files = new ArrayList<> ();
+        if (in.available () > 0)
+        {
+            final int size = StreamUtils.readSigned32 (in, false);
+            for (int i = 0; i < size; i++)
+                files.add (readFile (in));
+        }
+        return files;
+    }
+
+
+    /**
+     * Read several file paths in version 3.
+     *
+     * @param in The input stream to read from
+     * @return The read file paths
+     * @throws IOException Could not read
+     */
+    private static List<String> readFilesV3 (final ByteArrayInputStream in) throws IOException
     {
         final List<String> files = new ArrayList<> ();
         if (in.available () > 0)
@@ -114,14 +133,13 @@ public class FileList
             final int size = StreamUtils.readSigned32 (in, false);
 
             // 00 padding
-            if (version == 3)
-                in.skipNBytes (8);
+            in.skipNBytes (8);
 
             for (int i = 0; i < size - 1; i++)
             {
                 files.add (readFile (in));
 
-                if (version == 3 && in.available () > 0)
+                if (in.available () > 0)
                 {
                     // Padding - always zero
                     in.skipNBytes (4);
@@ -133,8 +151,7 @@ public class FileList
             }
 
             // The last empty entry - 00 padding
-            if (version == 3)
-                in.skipNBytes (24);
+            in.skipNBytes (24);
         }
         return files;
     }
