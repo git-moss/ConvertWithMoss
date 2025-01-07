@@ -7,7 +7,7 @@
 	<groupId>de.mossgrabers</groupId>
 	<packaging>jar</packaging>
 	<name>UiTools</name>
-	<version>1.5.3</version>
+	<version>1.6.0</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -25,11 +25,6 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>23.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.openjfx</groupId>
-			<artifactId>javafx-web</artifactId>
 			<version>23.0.1</version>
 		</dependency>
 		<dependency>

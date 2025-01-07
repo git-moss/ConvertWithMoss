@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.disting;
@@ -187,7 +187,7 @@ public class DistingExCreator extends WavCreator
                 {
                     final ISampleZone zone = zones.get (0);
 
-                    final int bendUp = zone.getBendUp ();
+                    final int bendUp = (int) Math.round (Math.abs (zone.getBendUp ()) / 100.0);
                     parameters[18] = bendUp > 0 ? bendUp : 2;
 
                     // Octave + Transpose + fine tune

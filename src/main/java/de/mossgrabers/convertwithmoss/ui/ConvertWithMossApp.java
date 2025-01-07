@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.ui;
@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -68,8 +70,9 @@ import de.mossgrabers.tools.ui.DefaultApplication;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.TraversalManager;
-import de.mossgrabers.tools.ui.control.LoggerBoxWeb;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
+import de.mossgrabers.tools.ui.control.loggerbox.LoggerBox;
+import de.mossgrabers.tools.ui.control.loggerbox.LoggerBoxLogger;
 import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import de.mossgrabers.tools.ui.panel.ButtonPanel;
@@ -106,6 +109,7 @@ import javafx.stage.Stage;
 public class ConvertWithMossApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
 {
     private static final int               NUMBER_OF_DIRECTORIES               = 20;
+    private static final int               MAXIMUM_NUMBER_OF_LOG_ENTRIES       = 100000;
 
     private static final String            ENABLE_DARK_MODE                    = "EnableDarkMode";
     private static final String            DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
@@ -149,11 +153,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private Button                         renameFilePathSelectButton;
 
     private final CSVRenameFile            csvRenameFile                       = new CSVRenameFile ();
-    private final LoggerBoxWeb             loggingArea                         = new LoggerBoxWeb (4000);
+    private final LoggerBoxLogger          logger                              = new LoggerBoxLogger (MAXIMUM_NUMBER_OF_LOG_ENTRIES);
+    private final LoggerBox                loggingArea                         = new LoggerBox (this.logger);
     private final TraversalManager         traversalManager                    = new TraversalManager ();
     private final List<IMultisampleSource> collectedSources                    = new ArrayList<> ();
 
     private FileWriter                     logWriter;
+    private boolean                        combineWithPreviousMessage          = false;
 
 
     /**
@@ -352,7 +358,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.closeButton = setupButton (exButtonPanel, "Close", "@IDS_EXEC_CLOSE", "@IDS_EXEC_CLOSE_TOOLTIP");
         this.closeButton.setOnAction (event -> this.closeExecution ());
 
-        this.executePane.setCenter (this.loggingArea.getComponent ());
+        this.executePane.setCenter (this.loggingArea);
         this.executePane.setRight (exButtonPanel.getPane ());
         this.executePane.setVisible (false);
 
@@ -396,7 +402,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         this.traversalManager.add (this.cancelButton);
         this.traversalManager.add (this.closeButton);
-        this.traversalManager.add (this.loggingArea.getComponent ());
+        this.traversalManager.add (this.loggingArea);
 
         this.traversalManager.register (this.getStage ());
     }
@@ -411,13 +417,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             if (!stylesheets.contains (stylesheet))
             {
                 stylesheets.add (stylesheet);
-                this.loggingArea.getComponent ().setBlendMode (BlendMode.OVERLAY);
+                this.loggingArea.setBlendMode (BlendMode.OVERLAY);
             }
         }
         else
         {
             stylesheets.remove (stylesheet);
-            this.loggingArea.getComponent ().setBlendMode (BlendMode.DARKEN);
+            this.loggingArea.setBlendMode (BlendMode.DARKEN);
         }
     }
 
@@ -767,6 +773,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private void clearLog ()
     {
         this.loggingArea.clear ();
+        this.loggingArea.autoScrollToTailProperty ().set (true);
 
         try
         {
@@ -774,7 +781,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         }
         catch (final IOException ex)
         {
-            this.loggingArea.notifyError ("IDS_NOTIFY_ERR_NO_LOG_FILE", ex);
+            this.logger.error (Functions.getMessage ("IDS_NOTIFY_ERR_NO_LOG_FILE", ex.getLocalizedMessage ()));
             this.logWriter = null;
         }
     }
@@ -792,7 +799,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void logText (final String text)
     {
-        this.loggingArea.notify (text);
+        final boolean combine = this.combineWithPreviousMessage;
+        this.combineWithPreviousMessage = !text.endsWith ("\n");
+        this.logger.info (text, combine);
         this.logToFile (text);
     }
 
@@ -801,9 +810,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void logError (final String messageID, final String... replaceStrings)
     {
-        final String message = Functions.getMessage (messageID, replaceStrings);
-        this.loggingArea.notifyError (message);
-        this.logToFile (message);
+        this.logErrorText (Functions.getMessage (messageID, replaceStrings));
     }
 
 
@@ -811,9 +818,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void logError (final String messageID, final Throwable throwable)
     {
-        final String message = Functions.getMessage (messageID, throwable);
-        this.loggingArea.notifyError (message);
-        this.logToFile (message);
+        this.logErrorText (Functions.getMessage (messageID, throwable));
     }
 
 
@@ -833,9 +838,21 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         if (message == null)
             message = throwable.getClass ().getName ();
         if (logExceptionStack)
-            this.loggingArea.notifyError (message, throwable);
-        else
-            this.loggingArea.notifyError (message);
+        {
+            final StringBuilder sb = new StringBuilder (message).append ('\n');
+            final StringWriter sw = new StringWriter ();
+            final PrintWriter pw = new PrintWriter (sw);
+            throwable.printStackTrace (pw);
+            sb.append (sw.toString ()).append ('\n');
+            message = sb.toString ();
+        }
+        this.logErrorText (message);
+    }
+
+
+    private void logErrorText (final String message)
+    {
+        this.logger.error (message);
         this.logToFile (message);
     }
 
@@ -885,20 +902,19 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     {
         Platform.runLater ( () -> {
 
-            final Parent loggerComponent = this.loggingArea.getComponent ();
             this.cancelButton.setDisable (canClose);
             this.closeButton.setDisable (!canClose);
             if (!this.cancelButton.isDisabled ())
             {
                 this.cancelButton.setDefaultButton (true);
                 this.cancelButton.requestFocus ();
-                loggerComponent.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_PROCESSING"));
+                this.loggingArea.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_PROCESSING"));
             }
             else
             {
                 this.closeButton.setDefaultButton (true);
                 this.closeButton.requestFocus ();
-                loggerComponent.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_FINISHED"));
+                this.loggingArea.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_FINISHED"));
             }
 
             if (canClose)
@@ -966,6 +982,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         }
 
         this.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");
+
+        // Wait a bit till the last message has been added...
+        Platform.runLater ( () -> this.loggingArea.autoScrollToTailProperty ().set (false));
     }
 
 

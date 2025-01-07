@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.waldorf.qpat;
@@ -348,7 +348,7 @@ public class WaldorfQpatCreator extends AbstractCreator
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "FinePitch", "+0.0 cents", 0.5f));
 
             // Osc1PitchBendRange: [0..48] ~ [-24..24]
-            final int pitchbend = Math.clamp (firstZone.getBendUp (), -24, 24);
+            final int pitchbend = Math.clamp (Math.round (firstZone.getBendUp () / 100.0), -24, 24);
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24));
 
             // Osc1Keytrack: [0..1] ~ [-200..200] - already set in the sample maps

@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.nki;
@@ -725,7 +725,7 @@ public abstract class AbstractNKIMetadataFileHandler
         if (pitchBend >= 0)
         {
             zone.setBendUp (pitchBend);
-            zone.setBendDown (pitchBend);
+            zone.setBendDown (-pitchBend);
         }
     }
 

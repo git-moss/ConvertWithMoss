@@ -2,10 +2,6 @@
     -fx-background-color: transparent;
 }
 
-.logging {
-    -fx-background-color: gray;
-}
-
 .root { 
     -fx-accent: #1e74c6;
     -fx-focus-color: -fx-accent;
@@ -75,4 +71,20 @@
 .table-row-cell {
     -fx-border-color: transparent;
     -fx-table-cell-border-color:transparent;
+}
+
+/*********************
+ * Log View
+**********************/
+
+.log-view .list-cell {
+    -fx-background-color: #D0D0D0; /* LightGray */
+}
+
+.log-view .list-cell:info {
+	-fx-text-fill: black;
+}
+
+.log-view .list-cell:error {
+    -fx-text-fill: red;
 }

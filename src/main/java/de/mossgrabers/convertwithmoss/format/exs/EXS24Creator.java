@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.exs;
@@ -192,8 +192,8 @@ public class EXS24Creator extends AbstractCreator
             {
                 final ISampleZone zone = sampleZones.get (0);
                 // Pitch bend up/down
-                exs24File.addParameter (EXS24Parameters.PITCH_BEND_UP, zone.getBendUp () / 100);
-                exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.abs (zone.getBendDown () / 100));
+                exs24File.addParameter (EXS24Parameters.PITCH_BEND_UP, Math.clamp (Math.round (zone.getBendDown () / 100.0), 0, 24));
+                exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.clamp (Math.round (zone.getBendDown () / 100.0), 0, -24));
 
                 final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
                 final int velocityModulation = (int) Math.round (Math.clamp ((1 - velocityDepth) * -60.0, -60, 0));

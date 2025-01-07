@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core;
@@ -268,5 +268,38 @@ public class MathUtils
     public static double denormalizeTime (final double logValue, final double maxValue)
     {
         return Math.exp (logValue * Math.log (maxValue + 1)) - 1;
+    }
+
+
+    /**
+     * Normalizes an integer to the range of [-1..1] with different amounts in the negative and
+     * positive direction. E.g. a value might be in the range of [-64..+63] but is stored as
+     * [0..127]. The method might then be called with normalizeIntegerRange(value,-64,63,64).
+     * 
+     * @param value The value to normalize
+     * @param negativeMinimum The negative minimum of the range
+     * @param positiveMaximum The negative maximum of the range
+     * @param offset An offset to remove first from the value
+     * @return The normalized value
+     */
+    public static double normalizeIntegerRange (final int value, final int negativeMinimum, final int positiveMaximum, final int offset)
+    {
+        return normalizeIntegerRange (value - offset, negativeMinimum, positiveMaximum);
+    }
+
+
+    /**
+     * Normalizes an integer to the range of [-1..1] with different amounts in the negative and
+     * positive direction.
+     * 
+     * @param value The value to normalize
+     * @param negativeMinimum The negative minimum of the range
+     * @param positiveMaximum The negative maximum of the range
+     * @return The normalized value
+     */
+    public static double normalizeIntegerRange (final int value, final int negativeMinimum, final int positiveMaximum)
+    {
+        double result = value < 0 ? -(value / (double) negativeMinimum) : value / (double) positiveMaximum;
+        return Math.clamp (result, -1, 1);
     }
 }

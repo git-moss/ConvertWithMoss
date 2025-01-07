@@ -1,9 +1,18 @@
 # macOS
 
-## Mojave and later
+Since the build depends on the GitHub build infrastructure, you need a quite recent macOS version.
+This is currently macOS 13 for Intel and macOS 14 for ARM based Macs. It might work down to macOS 11 but I cannot test that.
 
-Mojave prevents software to be run which is not authorized by Apple.
-But instead of telling you so, you get an error that the files are corrupted (so, your OS is lying to you now...).
+## macOS installation security issues
+
+Macos will complain about different things when you try to run the application:
+
+1. The application is unsafe to run since it is downloaded from the internet
+2. The application is unsafe to run since it is not signed by Apple
+
+### Fixing 1
+
+Note: You might also get alternatively a totally confusing error that the application files are corrupted. This is the same issue.
 
 To fix it open the Terminal app and enter the application folder:
 
@@ -33,15 +42,13 @@ sudo spctl --master-enable
 
 The application should now run also with Gatekeeper enabled.
 
-## macOS 13 Ventura
+### Fixing 2 
 
-It got worse on macOS 13 and you need to take another step:
-
-* after you did the xattr thing run it again and click away the error.
-* now open the system settings and go to *Privacy & Security Settings*.
-* at the very end there should now be a message saying something like
-  'publisher of ConvertWithMoss could not identified'.
+* Run the application again and click away the error.
+* Now open the system settings and go to *Privacy & Security Settings*.
+* At the very end, there should now be a message saying something like
+  'publisher of ConvertWithMoss could not be identified'.
 * Click on the allow anyway button
-* when you start ConvertWithMoss again you need to click away another 1000 dialogs but then it works.
+* When you start ConvertWithMoss again you need to click away another 1000 dialogs but then it works.
 
 Finally, have fun.

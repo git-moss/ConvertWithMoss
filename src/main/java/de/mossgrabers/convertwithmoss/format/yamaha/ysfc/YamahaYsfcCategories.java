@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
@@ -28,7 +28,7 @@ public class YamahaYsfcCategories
     private static final String               TAG_ELECTRONIC               = "Electronic";
     private static final String               TAG_ANALOG                   = "Analog";
 
-    private static final String []            WAVE_FORM_CATEGORIES         = new String []
+    private static final String []            MAIN_CATEGORIES              = new String []
     {
         TagDetector.CATEGORY_PIANO,
         TagDetector.CATEGORY_KEYBOARD,
@@ -261,14 +261,15 @@ public class YamahaYsfcCategories
 
 
     /**
-     * Get the waveform category name.
+     * Get the name of the tag category which is mapped to the performance/waveform main category
+     * name.
      *
-     * @param categoryValue The category value
+     * @param categoryValue The category value in the range of 0..256
      * @return The category name
      */
-    public static String getWaveformCategory (final int categoryValue)
+    public static String getMainCategory (final int categoryValue)
     {
-        return WAVE_FORM_CATEGORIES[Math.clamp (categoryValue, 0, 255) / 16];
+        return MAIN_CATEGORIES[Math.clamp (categoryValue, 0, 256) / 16];
     }
 
 

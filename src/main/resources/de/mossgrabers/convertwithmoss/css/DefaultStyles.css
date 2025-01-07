@@ -93,12 +93,31 @@
     -fx-padding: 0.0 10.0 0.0 0.0;
 }
 
-.titled-separator-pane
-{
+.titled-separator-pane {
     -fx-padding: 20.0 0.0 0.0 0.0;
 }
 
 .flat-button {
     -fx-background-color: transparent;
     -fx-padding: 0.0;
+}
+
+/*********************
+ * Log View
+**********************/
+
+.log-view {
+	-fx-font-family: 'Consolas', 'monospaced';
+	-fx-font-size: 1.5em;	
+}
+
+.log-view .list-cell:selected {
+	-fx-background-color: -fx-focus-color;
+}
+
+.log-view .list-cell:info {
+}
+
+.log-view .list-cell:error {
+    -fx-text-fill: red;
 }
