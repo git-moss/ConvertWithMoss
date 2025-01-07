@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
@@ -22,10 +22,22 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class YamahaYsfcPerformancePart
 {
-    String                              name;
-    int                                 type;
-    private List<YamahaYsfcPartElement> elements = new ArrayList<> ();
-    private byte []                     theRest;
+    private String                            name;
+    private int                               type;
+    private int                               partCategoryMain;
+    private int                               partCategorySub;
+    private int                               partSwitch;
+    private int                               keyboardSwitch;
+    private int                               velocityLimitLow;
+    private int                               velocityLimitHigh;
+    private int                               noteLimitLow;
+    private int                               noteLimitHigh;
+    private int                               pitchBendRangeUpper;
+    private int                               pitchBendRangeLower;
+
+    private byte []                           theRest;
+
+    private final List<YamahaYsfcPartElement> elements = new ArrayList<> ();
 
 
     /**
@@ -38,6 +50,140 @@ public class YamahaYsfcPerformancePart
     public YamahaYsfcPerformancePart (final InputStream in, final YamahaYsfcVersion version) throws IOException
     {
         this.read (in, version);
+    }
+
+
+    /**
+     * Get the name of the performance.
+     *
+     * @return The name
+     */
+    public String getName ()
+    {
+        return this.name;
+    }
+
+
+    /**
+     * Set the name of the performance.
+     *
+     * @param name The name
+     */
+    public void getName (final String name)
+    {
+        this.name = name;
+    }
+
+
+    /**
+     * Get the lower note limit.
+     *
+     * @return The MIDI note
+     */
+    public int getNoteLimitLow ()
+    {
+        return this.noteLimitLow;
+    }
+
+
+    /**
+     * Set the lower note limit.
+     *
+     * @param noteLimitLow The MIDI note
+     */
+    public void setNoteLimitLow (final int noteLimitLow)
+    {
+        this.noteLimitLow = noteLimitLow;
+    }
+
+
+    /**
+     * Get the upper note limit.
+     *
+     * @return The MIDI note
+     */
+    public int getNoteLimitHigh ()
+    {
+        return this.noteLimitHigh;
+    }
+
+
+    /**
+     * Set the upper note limit.
+     *
+     * @param noteLimitHigh The MIDI note
+     */
+    public void setNoteLimitHigh (final int noteLimitHigh)
+    {
+        this.noteLimitHigh = noteLimitHigh;
+    }
+
+
+    /**
+     * Get the lower velocity limit.
+     *
+     * @return The MIDI velocity
+     */
+    public int getVelocityLimitLow ()
+    {
+        return this.velocityLimitLow;
+    }
+
+
+    /**
+     * Set the upper velocity limit.
+     *
+     * @param velocityLimitLow The MIDI velocity
+     */
+    public void setVelocityLimitLow (final int velocityLimitLow)
+    {
+        this.velocityLimitLow = velocityLimitLow;
+    }
+
+
+    /**
+     * Get the upper pitch bend value.
+     *
+     * @return The value in the range of 16..88 which relates to -48..+24 (0 ~ 64)
+     */
+    public int getPitchBendRangeUpper ()
+    {
+        return this.pitchBendRangeUpper;
+    }
+
+
+    /**
+     * Set the upper pitch bend value.
+     *
+     * @param pitchBendRangeUpper The value in the range of 16..88 which relates to -48..+24 (0 ~
+     *            64)
+     */
+    public void setPitchBendRangeUpper (final int pitchBendRangeUpper)
+    {
+        this.pitchBendRangeUpper = pitchBendRangeUpper;
+    }
+
+
+    /**
+     * Get the lower pitch bend value.
+     *
+     * @return The value in the range of 16..88 which relates to -48..+24 (0 ~ 64)
+     */
+    public int getPitchBendRangeLower ()
+    {
+        return this.pitchBendRangeLower;
+    }
+
+
+    /**
+     * Set the lower pitch bend value.
+     *
+     * @param pitchBendRangeLower The value in the range of 16..88 which relates to -48..+24 (0 ~
+     *            64)
+     */
+    public void setPitchBendRangeLower (final int pitchBendRangeLower)
+    {
+        this.pitchBendRangeLower = pitchBendRangeLower;
     }
 
 
@@ -56,8 +202,42 @@ public class YamahaYsfcPerformancePart
             this.name = this.name.substring (0, pos);
 
         this.type = in.read ();
+        this.partCategoryMain = in.read ();
+        this.partCategorySub = in.read ();
+        this.partSwitch = in.read ();
+        this.keyboardSwitch = in.read ();
+        this.velocityLimitLow = in.read ();
+        this.velocityLimitHigh = in.read ();
+        this.noteLimitLow = in.read ();
+        this.noteLimitHigh = in.read ();
+        this.pitchBendRangeUpper = in.read ();
+        this.pitchBendRangeLower = in.read ();
+
         // TODO ...
         this.theRest = in.readAllBytes ();
+    }
+
+
+    /**
+     * Tries to find a common XA mode across all active elements.
+     * 
+     * @return The common XA mode or 0 if they have different ones
+     */
+    public int getCommonXaMode ()
+    {
+        int xaMode = -1;
+        for (int i = 0; i < this.elements.size (); i++)
+        {
+            final YamahaYsfcPartElement element = this.elements.get (i);
+            if (element.getElementSwitch () > 0)
+            {
+                if (xaMode == -1)
+                    xaMode = element.getXaMode ();
+                else if (xaMode != element.getXaMode ())
+                    return 0;
+            }
+        }
+        return xaMode;
     }
 
 
@@ -72,7 +252,18 @@ public class YamahaYsfcPerformancePart
         final ByteArrayOutputStream arrayOut = new ByteArrayOutputStream ();
         StreamUtils.writeASCII (arrayOut, StringUtils.rightPadSpaces (StringUtils.optimizeName (this.name, 20), 20), 21);
 
-        arrayOut.write (this.type);
+        arrayOut.write (this.getType ());
+        arrayOut.write (this.partCategoryMain);
+        arrayOut.write (this.partCategorySub);
+        arrayOut.write (this.partSwitch);
+        arrayOut.write (this.keyboardSwitch);
+        arrayOut.write (this.velocityLimitLow);
+        arrayOut.write (this.velocityLimitHigh);
+        arrayOut.write (this.noteLimitLow);
+        arrayOut.write (this.noteLimitHigh);
+        arrayOut.write (this.pitchBendRangeUpper);
+        arrayOut.write (this.pitchBendRangeLower);
+
         // TODO
         arrayOut.write (this.theRest);
 
@@ -80,14 +271,35 @@ public class YamahaYsfcPerformancePart
     }
 
 
+    /**
+     * Add an element to the part
+     *
+     * @param element The element to add
+     */
     public void addElement (final YamahaYsfcPartElement element)
     {
         this.elements.add (element);
     }
 
 
+    /**
+     * Get all elements.
+     *
+     * @return The elements
+     */
     public List<YamahaYsfcPartElement> getElements ()
     {
         return this.elements;
+    }
+
+
+    /**
+     * Get the type of the part.
+     *
+     * @return The type
+     */
+    public int getType ()
+    {
+        return this.type;
     }
 }

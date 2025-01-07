@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
@@ -384,7 +384,7 @@ public class DefaultSampleZone implements ISampleZone
     @Override
     public void setPanorama (final double panorama)
     {
-        this.panorama = panorama;
+        this.panorama = Math.clamp (panorama, -1, 1);
     }
 
 

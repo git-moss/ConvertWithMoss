@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.sfz;
@@ -338,10 +338,10 @@ public class SfzCreator extends AbstractCreator
 
         final int bendUp = zone.getBendUp ();
         if (bendUp != 0)
-            addIntegerAttribute (buffer, SfzOpcode.BEND_UP, bendUp * 100, true);
+            addIntegerAttribute (buffer, SfzOpcode.BEND_UP, bendUp, true);
         final int bendDown = zone.getBendDown ();
         if (bendDown != 0)
-            addIntegerAttribute (buffer, SfzOpcode.BEND_DOWN, bendDown * 100, true);
+            addIntegerAttribute (buffer, SfzOpcode.BEND_DOWN, bendDown, true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 

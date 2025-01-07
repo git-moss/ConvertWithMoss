@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.sxt;
@@ -460,8 +460,8 @@ class SxtZone
         zone.setStart ((int) this.sampleStart);
         zone.setStop ((int) this.sampleEnd);
         zone.setTune (this.octave * 12 + this.semitone + this.cent / 100.0 + this.sampleTune / 100.0);
-        zone.setBendUp (this.pitchWheelRange);
-        zone.setBendDown (this.pitchWheelRange);
+        zone.setBendUp (this.pitchWheelRange * 100);
+        zone.setBendDown (-this.pitchWheelRange * 100);
 
         // Set loop
         boolean hasLoop = true;
@@ -641,8 +641,7 @@ class SxtZone
         this.semitone = semitones % 12;
         this.cent = (int) (tune % 100);
 
-        this.pitchWheelRange = zone.getBendUp ();
-        this.pitchWheelRange = zone.getBendDown ();
+        this.pitchWheelRange = Math.clamp (Math.abs (Math.round (zone.getBendUp () / 100.0)), 0, 24);
 
         //////////////////////////////////////////////////////////
         // Loop

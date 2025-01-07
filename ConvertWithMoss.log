@@ -1,0 +1,200 @@
+Detecting and converting multi-samples...
+
+Analyzing: C:\Privat\Programming\ConvertWithMoss\Testdateien\YamahaYSFC\X7 - Montage
+
+Analyzing: C:\Privat\Programming\ConvertWithMoss\Testdateien\YamahaYSFC\X7 - Montage\Compressed Libraries
+
+Analyzing: C:\Privat\Programming\ConvertWithMoss\Testdateien\YamahaYSFC\X7 - Montage\Compressed Libraries\Bosendorfer.X7L
+Detected Yamaha YSFC format version 4.0.1 (Montage).
+Could not load file: Unsupported sample format:  WXC. Cannot decode the wave form(s).
+
+
+Analyzing: C:\Privat\Programming\ConvertWithMoss\Testdateien\YamahaYSFC\X7 - Montage\Compressed Libraries\Chick's Mark V.X7L
+Detected Yamaha YSFC format version 4.0.2 (Montage).
+Could not load file: Unsupported sample format:  WXC. Cannot decode the wave form(s).
+
+
+Analyzing: C:\Privat\Programming\ConvertWithMoss\Testdateien\YamahaYSFC\X7 - Montage\Compressed Libraries\KApro CS80.X7L
+Detected Yamaha YSFC format version 4.0.4 (Montage).
+Analyzing Performance: *PJ CS80 New Brass 1
+Analyzing Performance: *PJ CS80 New Brass 2
+Analyzing Performance: *PJ CS80 New Brass 3
+Analyzing Performance: *PJ CS80 New Brass 4
+Analyzing Performance: *PJ CS80 New Brass 5
+Analyzing Performance: *PJ CS80 New Brass 6
+Analyzing Performance: *PJ CS80 New Brass 7
+Analyzing Performance: *PJ CS80 New Funk 1
+Analyzing Performance: *PJ CS80 New Funk 2
+Analyzing Performance: *PJ CS80 New Funk 3
+Analyzing Performance: *PJ CS80 New Funk 4
+Analyzing Performance: *PJ CS80 New Funk 5
+Analyzing Performance: *PJ CS80 New Funk 6
+Analyzing Performance: *PJ CS80 NewStrngs 1
+Analyzing Performance: *PJ CS80 NewStrngs 2
+Analyzing Performance: *PJ CS80 NewStrngs 3
+Analyzing Performance: *PJ CS80 NewStrngs 4
+Analyzing Performance: *PJ CS80 NewStrngs 5
+Analyzing Performance: *PJ CS80 NewStrngs 6
+Analyzing Performance: *PJ CS80 New Flute
+Analyzing Performance: *PJ CS80 New Organ 1
+Analyzing Performance: *PJ CS80 New Organ 2
+Analyzing Performance: *PJ CS80 New Organ 3
+Analyzing Performance: *PJ CS80 New Organ 4
+Analyzing Performance: *PJ CS80 New SinePad
+Analyzing Performance: *PJ CS80 New PWM Pad
+Analyzing Performance: *PJ CS80 New Saw Pad
+Analyzing Performance: *PJ CS80 New Sqr Pad
+Analyzing Performance: *PJ CS80 New PW Pad
+Analyzing Performance: *PJ CS80 New Oct Pad
+Analyzing Performance: *PJ CS80 New Octal
+Analyzing Performance: *PJ CS80 New Stereo
+Analyzing Performance: *PJ CS80 New Dual
+Analyzing Performance: *PJ CS80 New ResoPAN
+Analyzing Performance: *PJ CS80 New3DRes
+Analyzing Performance: *PJ CS80 New3DFunk
+Analyzing Performance: *PJ CS80 V.A.N.G.
+Analyzing Performance: *PJ CS80 Ringme
+Analyzing Performance: *PJ CS80 Trancilizer
+Analyzing Performance: *PJ CS80 Arpeggio 1
+Analyzing Performance: *PJ CS80 Arpeggio 2
+Analyzing Performance: *PJ CS80 Arpeggio 3
+Analyzing Performance: *PJ CS80 Arpeggio 4
+Analyzing Performance: *PJ CS80 Could Be
+Analyzing Performance: *PJ CS80 Remember?
+Analyzing Performance: *PJ CS80 Shar...
+Analyzing Performance: *PJ CS80 Chordronic
+Analyzing Performance: *PJ CS80 Funky Riffs
+Analyzing Performance: *PJ CS80 Saw-Ring
+Analyzing Performance: *PJ CS80 Sanapada
+Analyzing Performance: *PJ CS80 Pheysah
+Analyzing Performance: *PJ CS80 Noizer
+Analyzing Performance: *PJ CS80 Stochastic
+Analyzing Performance: *PJ CS80 Ringmosho
+Analyzing Performance: *PJ CS80 3rd Space
+Analyzing Performance: *PJ CS80 Babylon 5
+Analyzing Performance: *PJ CS80 Vorlon Cry
+Analyzing Performance: *PJ CS80 Minbar Voce
+Analyzing Performance: *PJ CS80 Chamber
+Analyzing Performance: *PJ CS80 Fungan
+Analyzing Performance: *PJ CS80 Synvox
+Analyzing Performance: *PJ CS80 Legato
+Analyzing Performance: *PJ CS80 Voxy
+Analyzing Performance: *PJ CS80 Ringmo
+Analyzing Performance: *PJ CS80 Sordino
+Analyzing Performance: *PJ CS80 PWM 1
+Analyzing Performance: *PJ CS80 PWM 2
+Analyzing Performance: *PJ CS80 Bright Port
+Analyzing Performance: *PJ CS80 PWM Port
+Analyzing Performance: *PJ CS80 PWMPluk
+Analyzing Performance: *PJ CS80 Rooms
+Analyzing Performance: *PJ CS80 Squares
+Analyzing Performance: *PJ CS80 Dynosaw
+Analyzing Performance: *PJ CS80 Dynopulze
+Analyzing Performance: *PJ CS80 Polysaw
+Analyzing Performance: *PJ CS80 Polypulze
+Analyzing Performance: *PJ CS80 Polytri
+Analyzing Performance: *PJ CS80 Bombpad
+Analyzing Performance: *PJ CS80 Airlon 1
+Analyzing Performance: *PJ CS80 Airlon 2
+Analyzing Performance: *PJ CS80 Xylol
+Analyzing Performance: *PJ CS80 Syn-R-G
+Analyzing Performance: *PJ CS80 R.E.S. Comp
+Analyzing Performance: *PJ CS80 Pulzar
+Analyzing Performance: *PJ CS80 Virtuangel
+Analyzing Performance: *PJ CS80 Analoglead
+Analyzing Performance: *PJ CS80 Lead AT
+Analyzing Performance: *PJ CS80 PWM Lead
+Analyzing Performance: *PJ CS80 Squaralead
+Analyzing Performance: *PJ CS80 Bad Lead
+Analyzing Performance: *PJ CS80 Britesquare
+Analyzing Performance: *PJ CS80 Phased Lead
+Analyzing Performance: *PJ CS80 Thimm
+Analyzing Performance: *PJ CS80 Funky Lead
+Analyzing Performance: *PJ CS80 Flute Lead
+Analyzing Performance: *PJ CS80 Grieve Lead
+Analyzing Performance: *PJ CS80 Brass 1 A
+Analyzing Performance: *PJ CS80 Brass 1 B
+Element 1 refers to a preset waveform and cannot be converted.
+Analyzing Performance: *PJ CS80 Brass 2
+Analyzing Performance: *PJ CS80 Brass 3
+Analyzing Performance: *PJ CS80 Brassonance
+Analyzing Performance: *PJ CS80 Brassring
+Analyzing Performance: *PJ CS80 Brass FM
+Analyzing Performance: *PJ CS80 Horns
+Analyzing Performance: *PJ CS80 Funky
+Analyzing Performance: *PJ CS80 Section
+Analyzing Performance: *PJ CS80 Funkytoo
+Analyzing Performance: *PJ CS80 Funkyres
+Analyzing Performance: *PJ CS80 Funkyjus
+Analyzing Performance: *PJ CS80 Barkley
+Analyzing Performance: *PJ CS80 Sweepy
+Analyzing Performance: *PJ CS80 Full Brass
+Analyzing Performance: *PJ CS80 PEG Brass
+Analyzing Performance: *PJ CS80 Simplebrass
+Analyzing Performance: *PJ CS80 Big!
+Analyzing Performance: *PJ CS80 Huge!
+Analyzing Performance: *PJ CS80 Soft
+Analyzing Performance: *PJ CS80 Slow Horns
+Analyzing Performance: *PJ CS80 B4 OH
+Analyzing Performance: *PJ CS80 Swell
+Analyzing Performance: *PJ CS80 Spiccato
+Analyzing Performance: *PJ CS80 Strings 1
+Analyzing Performance: *PJ CS80 Strings 2
+Analyzing Performance: *PJ CS80 Strings 3
+Analyzing Performance: *PJ CS80 Strings 4
+Analyzing Performance: *PJ CS80 Strings 5
+Analyzing Performance: *PJ CS80 Strings 6
+Analyzing Performance: *PJ CS80 Strings 7
+Analyzing Performance: *PJ CS80 Strings 8
+Analyzing Performance: *PJ CS80 Strings 9
+Analyzing Performance: *PJ CS80 Ringstrings
+Analyzing Performance: *PJ CS80 Anastring
+Analyzing Performance: *PJ CS80 Back G.
+Analyzing Performance: *PJ CS80 Flanged
+Analyzing Performance: *PJ CS80 Toxic Base
+Analyzing Performance: *PJ CS80 Mellowbase
+Analyzing Performance: *PJ CS80 Dark Bass
+Analyzing Performance: *PJ CS80 Basement
+Analyzing Performance: *PJ CS80 PLZ Base
+Analyzing Performance: *PJ CS80 Fat Base
+Analyzing Performance: *PJ CS80 Chili Base
+Analyzing Performance: *PJ CS80 Compbase
+Analyzing Performance: *PJ CS80 Blade Base
+Analyzing Performance: *PJ CS80 Westernbase
+Analyzing Performance: *PJ CS80 Acidic
+Analyzing Performance: *PJ CS80 Ace Base
+Analyzing Performance: *PJ CS80 Laterbase
+Analyzing Performance: *PJ CS80mond
+Analyzing Performance: *PJ CS80 Laurens
+Analyzing Performance: *PJ CS80 AF Gan
+Analyzing Performance: *PJ CS80 AF Gel
+Analyzing Performance: *PJ CS80 Lo-Fi-Gan
+Analyzing Performance: *PJ CS80 Organic
+Analyzing Performance: *PJ CS80 Piano 1
+Analyzing Performance: *PJ CS80 Piano 2
+Analyzing Performance: *PJ CS80 Piano 3
+Analyzing Performance: *PJ CS80 MuteClav
+Analyzing Performance: *PJ CS80 BritClav 1
+Analyzing Performance: *PJ CS80 BritClav 2
+Analyzing Performance: *PJ CS80 WahClav
+Analyzing Performance: *PJ CS80 Clavitoo
+Analyzing Performance: *PJ CS80 Edda
+Element 5 refers to a preset waveform and cannot be converted.
+Element 6 refers to a preset waveform and cannot be converted.
+Element 7 refers to a preset waveform and cannot be converted.
+Element 8 refers to a preset waveform and cannot be converted.
+Analyzing Performance: *PJ CS80 Gilgamesh
+Element 5 refers to a preset waveform and cannot be converted.
+Element 6 refers to a preset waveform and cannot be converted.
+Element 7 refers to a preset waveform and cannot be converted.
+Element 8 refers to a preset waveform and cannot be converted.
+Analyzing Performance: *PJ CS80 Donar
+Element 5 refers to a preset waveform and cannot be converted.
+Element 6 refers to a preset waveform and cannot be converted.
+Element 7 refers to a preset waveform and cannot be converted.
+Element 8 refers to a preset waveform and cannot be converted.
+Mapping: KApro CS80.X7L : *PJ CS80 New Brass 1
+Mapping: KApro CS80.X7L : *PJ CS80 New Brass 2
+Mapping: KApro CS80.X7L : *PJ CS80 New Brass 3
+
+Analyzing: C:\Privat\Programming\ConvertWithMoss\Testdateien\YamahaYSFC\X7 - Montage\Compressed Libraries\KApro CS80.X7U

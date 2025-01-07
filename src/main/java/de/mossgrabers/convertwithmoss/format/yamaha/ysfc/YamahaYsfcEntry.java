@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.Pair;
 
 
 /**
@@ -216,6 +217,20 @@ public class YamahaYsfcEntry
     public void setItemName (final String itemName)
     {
         this.itemName = itemName;
+    }
+
+
+    /**
+     * Splits the item name into the category/sub-category value and the actual name part.
+     * 
+     * @return The category/sub-category value and the actual name part
+     */
+    public Pair<Integer, String> getItemCategoryAndName ()
+    {
+        final String [] split = this.itemName.split (":");
+        if (split.length == 2)
+            return new Pair<> (Integer.valueOf (split[0]), split[1]);
+        return new Pair<> (Integer.valueOf (-1), this.itemName);
     }
 
 

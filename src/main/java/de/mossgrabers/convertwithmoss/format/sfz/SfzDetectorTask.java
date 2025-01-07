@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.sfz;
@@ -508,8 +508,8 @@ public class SfzDetectorTask extends AbstractDetectorTask
         final double pitchKeytrack = this.getDoubleValue (SfzOpcode.PITCH_KEYTRACK, 100);
         sampleMetadata.setKeyTracking (Math.clamp (pitchKeytrack, 0, 100) / 100.0);
 
-        sampleMetadata.setBendUp ((int) (this.getIntegerValue (SfzOpcode.BEND_UP, 0) / 100.0));
-        sampleMetadata.setBendDown ((int) (this.getIntegerValue (SfzOpcode.BEND_DOWN, 0) / 100.0));
+        sampleMetadata.setBendUp (this.getIntegerValue (SfzOpcode.BEND_UP, 200));
+        sampleMetadata.setBendDown (this.getIntegerValue (SfzOpcode.BEND_DOWN, -200));
 
         int envelopeDepth = this.getIntegerValue (SfzOpcode.PITCHEG_DEPTH, 0);
         if (envelopeDepth == 0)

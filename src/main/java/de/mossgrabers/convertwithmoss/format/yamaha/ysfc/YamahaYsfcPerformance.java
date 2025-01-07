@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2024
+// (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
@@ -73,6 +73,28 @@ public class YamahaYsfcPerformance
     {
         this.sourceVersion = version;
         this.read (in);
+    }
+
+
+    /**
+     * Get the name of the performance.
+     * 
+     * @return The name
+     */
+    public String getName ()
+    {
+        return this.name;
+    }
+
+
+    /**
+     * Get all parts of the performance.
+     * 
+     * @return The parts
+     */
+    public List<YamahaYsfcPerformancePart> getParts ()
+    {
+        return this.parts;
     }
 
 
@@ -226,7 +248,7 @@ public class YamahaYsfcPerformance
 
         for (final YamahaYsfcPerformancePart part: this.allParts)
         {
-            StreamUtils.writeUnsigned32 (out, part.type, true);
+            StreamUtils.writeUnsigned32 (out, part.getType(), true);
 
             // Always 8 AWM elements!
             StreamUtils.writeUnsigned32 (out, 8, true);
@@ -238,6 +260,7 @@ public class YamahaYsfcPerformance
     }
 
 
+    // TODO remove
     public static void main (final String [] args)
     {
         try (final FileOutputStream out = new FileOutputStream (new File ("C:\\Users\\mos\\Desktop\\result.bin")))
@@ -252,6 +275,7 @@ public class YamahaYsfcPerformance
     }
 
 
+    // TODO remove
     public static void main2 (final String [] args)
     {
         final String filenameX7U = "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\YamahaYSFC\\X7 - Montage\\01W Atmosphere.X7U";
@@ -295,6 +319,7 @@ public class YamahaYsfcPerformance
     }
 
 
+    // TODO remove
     private static void dump (final YamahaYsfcEntry yamahaYsfcEntry, final byte [] performanceData, final int version)
     {
         // TODO Auto-generated method stub
