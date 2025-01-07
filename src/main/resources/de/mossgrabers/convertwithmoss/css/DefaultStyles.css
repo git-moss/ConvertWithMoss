@@ -107,7 +107,7 @@
 **********************/
 
 .log-view {
-	-fx-font-family: 'Consolas', 'monospaced';
+	-fx-font-family: 'monospace';
 	-fx-font-size: 1.5em;	
 }
 
