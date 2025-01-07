@@ -196,7 +196,8 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     {
         // Waveforms list is not empty and all of them contain metadata which was detected from the
         // library filename
-        final IMetadata globalMetadata = waveforms.get (0).getMetadata ();
+        final IMultisampleSource globalMultisample = waveforms.get (0);
+        final IMetadata globalMetadata = globalMultisample.getMetadata ();
 
         final List<IMultisampleSource> results = new ArrayList<> ();
         final List<byte []> dpfmListChunks = dpfmChunk.getDataArrays ();
@@ -207,10 +208,8 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
             final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), version);
             final String performanceName = performance.getName ();
             this.notifier.log ("IDS_YSFC_ANALYZING_PERFORMANCE", performanceName);
-            final DefaultMultisampleSource multisample = new DefaultMultisampleSource ();
-            multisample.setName (performanceName);
-            multisample.setMappingName (filename + " : " + performanceName);
-            fillMetadata (globalMetadata, multisample.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (globalMultisample.getSourceFile (), globalMultisample.getSubPath (), performanceName, filename + " : " + performanceName);
+            fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
 
             final List<IGroup> groups = new ArrayList<> ();
             final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
@@ -262,8 +261,8 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
 
             if (!groups.isEmpty ())
             {
-                multisample.setGroups (groups);
-                results.add (multisample);
+                multisampleSource.setGroups (groups);
+                results.add (multisampleSource);
             }
         }
 
