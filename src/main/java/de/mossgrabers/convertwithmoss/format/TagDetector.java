@@ -452,6 +452,21 @@ public class TagDetector
 
 
     /**
+     * Checks if the given label is one of the CATEGORY_* constants. If not detectCategory is called
+     * on the label to find one.
+     * 
+     * @param categoryLabel The label for which to get one of the default categories
+     * @return The normalized category
+     */
+    public static String normalizeCategory (final String categoryLabel)
+    {
+        if (CATEGORIES.keySet ().contains (categoryLabel))
+            return categoryLabel;
+        return detectCategory (Collections.singletonList (categoryLabel));
+    }
+
+
+    /**
      * Detect a category in the given strings.
      *
      * @param texts The texts

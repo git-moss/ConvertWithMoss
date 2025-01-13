@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import de.mossgrabers.convertwithmoss.core.IStreamable;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -17,35 +18,39 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class YamahaYsfcKeybank
+public class YamahaYsfcKeybank implements IStreamable
 {
-    private int keyRangeLower;
-    private int keyRangeUpper;
-    private int velocityRangeLower;
-    private int velocityRangeUpper;
-    private int level;
-    private int panorama;
-    private int coarseTune;
-    private int fineTune;
-    private int rootNote;
-    private int sampleFrequency;
-    private int playStart;
-    private int loopPoint;
-    private int playEnd;
-    private int number;
-    private int sampleLength;
-    private int channels;
-    private int loopMode;
-    private int fixedPitch = 0xFF;
-    private int loopTune;
+    private final YamahaYsfcVersion version;
+
+    private int                     keyRangeLower;
+    private int                     keyRangeUpper;
+    private int                     velocityRangeLower;
+    private int                     velocityRangeUpper;
+    private int                     level;
+    private int                     panorama;
+    private int                     coarseTune;
+    private int                     fineTune;
+    private int                     rootNote;
+    private int                     sampleFrequency;
+    private int                     playStart;
+    private int                     loopPoint;
+    private int                     playEnd;
+    private int                     number;
+    private int                     sampleLength;
+    private int                     channels;
+    private int                     loopMode;
+    private int                     fixedPitch = 0xFF;
+    private int                     loopTune;
 
 
     /**
      * Default constructor.
+     * 
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      */
-    public YamahaYsfcKeybank ()
+    public YamahaYsfcKeybank (final YamahaYsfcVersion version)
     {
-        // Intentionally empty
+        this.version = version;
     }
 
 
@@ -58,21 +63,17 @@ public class YamahaYsfcKeybank
      */
     public YamahaYsfcKeybank (final InputStream in, final YamahaYsfcVersion version) throws IOException
     {
-        this.read (in, version);
+        this.version = version;
+        this.read (in);
     }
 
 
-    /**
-     * Read a key-bank from the input stream.
-     *
-     * @param in The input stream
-     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
-     * @throws IOException Could not read the entry item
-     */
-    public void read (final InputStream in, final YamahaYsfcVersion version) throws IOException
+    /** {@inheritDoc} */
+    @Override
+    public void read (final InputStream in) throws IOException
     {
-        final boolean isVersion1 = version.isVersion1 ();
-        final boolean isMotif = version.isMotif ();
+        final boolean isVersion1 = this.version.isVersion1 ();
+        final boolean isMotif = this.version.isMotif ();
         final boolean isBigEndian = isVersion1 && !isMotif;
 
         this.keyRangeLower = in.read ();
@@ -83,6 +84,7 @@ public class YamahaYsfcKeybank
         // Range is only 0-128
         if (isVersion1)
             this.level = Math.clamp (2L * this.level, 0, 255);
+        // Bit 7 contains the Pan-Curve
         this.panorama = in.read () & 0x7F;
 
         // Reserved 00
@@ -97,7 +99,7 @@ public class YamahaYsfcKeybank
 
         this.loopTune = in.read ();
 
-        // Ignore
+        // Play-form on Montage / loop fraction on older formats
         in.skipNBytes (1);
         final int waveFormat = in.read ();
         if (waveFormat != 0 && waveFormat != 5)
@@ -117,7 +119,7 @@ public class YamahaYsfcKeybank
         // Compression/Encryption information
         in.skipNBytes (12);
 
-        if (!isVersion1)
+        if (!isMotif)
             in.skipNBytes (4);
 
         this.sampleFrequency = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
@@ -165,12 +167,8 @@ public class YamahaYsfcKeybank
     }
 
 
-    /**
-     * Write a key-bank to the output stream.
-     *
-     * @param out The output stream
-     * @throws IOException Could not write the entry item
-     */
+    /** {@inheritDoc} */
+    @Override
     public void write (final OutputStream out) throws IOException
     {
         out.write (this.keyRangeLower);

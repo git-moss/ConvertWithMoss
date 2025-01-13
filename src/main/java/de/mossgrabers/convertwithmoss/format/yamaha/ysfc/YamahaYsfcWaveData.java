@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import de.mossgrabers.convertwithmoss.core.IStreamable;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
@@ -16,7 +17,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class YamahaYsfcWaveData
+public class YamahaYsfcWaveData implements IStreamable
 {
     private byte [] data;
 
@@ -42,12 +43,8 @@ public class YamahaYsfcWaveData
     }
 
 
-    /**
-     * Read the wave data from the input stream.
-     *
-     * @param in The input stream
-     * @throws IOException Could not read the entry item
-     */
+    /** {@inheritDoc} */
+    @Override
     public void read (final InputStream in) throws IOException
     {
         final int size = (int) StreamUtils.readUnsigned32 (in, true);
@@ -55,12 +52,8 @@ public class YamahaYsfcWaveData
     }
 
 
-    /**
-     * Write the wave data to the output stream.
-     *
-     * @param out The output stream
-     * @throws IOException Could not write the entry item
-     */
+    /** {@inheritDoc} */
+    @Override
     public void write (final OutputStream out) throws IOException
     {
         StreamUtils.writeUnsigned32 (out, this.data.length, true);

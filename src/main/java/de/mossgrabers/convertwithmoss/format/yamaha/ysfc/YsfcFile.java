@@ -17,8 +17,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.mossgrabers.convertwithmoss.core.IStreamable;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -28,22 +30,42 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class YsfcFile
 {
-    private static final String                YAMAHA_YSFC = "YAMAHA-YSFC";
-    private static final int                   HEADER_SIZE = 64;
+    private static final String                YAMAHA_YSFC              = "YAMAHA-YSFC";
+    private static final int                   HEADER_SIZE              = 64;
+
+    private static final String []             CHUNKS_ONLY_WAVEFORMS    = new String []
+    {
+        YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA,
+        YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA,
+        YamahaYsfcChunk.DATA_LIST_WAVEFORM_METADATA,
+        YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA
+    };
+
+    private static final String []             CHUNKS_WITH_PERFORMANCES = new String []
+    {
+        YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE,
+        YamahaYsfcChunk.DATA_LIST_PERFORMANCE,
+        YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA,
+        YamahaYsfcChunk.DATA_LIST_WAVEFORM_METADATA,
+        YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA,
+        YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA
+    };
 
     private File                               sourceFile;
     private String                             versionStr;
     private int                                version;
-    private int                                maxEntryID  = 0xFFFFFFFF;
-    private final Map<String, YamahaYsfcChunk> chunks      = HashMap.newHashMap (4);
+    private int                                maxEntryID               = 0xFFFFFFFF;
+    private final Map<String, YamahaYsfcChunk> chunks                   = HashMap.newHashMap (4);
 
 
     /**
      * Default constructor.
+     * 
+     * @param addPerformances Add performance chunks if true
      */
-    public YsfcFile ()
+    public YsfcFile (final boolean addPerformances)
     {
-        this.createChunks (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA, YamahaYsfcChunk.DATA_LIST_WAVEFORM_METADATA, YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA, YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA);
+        this.createChunks (addPerformances ? CHUNKS_WITH_PERFORMANCES : CHUNKS_ONLY_WAVEFORMS);
     }
 
 
@@ -291,42 +313,63 @@ public class YsfcFile
 
     private List<YamahaYsfcChunk> sortAndUpdateChunks ()
     {
+        final YamahaYsfcChunk epfm = this.chunks.get (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE);
+        final YamahaYsfcChunk dpfm = this.chunks.get (YamahaYsfcChunk.DATA_LIST_PERFORMANCE);
         final YamahaYsfcChunk ewfm = this.chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA);
         final YamahaYsfcChunk dwfm = this.chunks.get (YamahaYsfcChunk.DATA_LIST_WAVEFORM_METADATA);
         final YamahaYsfcChunk ewim = this.chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA);
         final YamahaYsfcChunk dwim = this.chunks.get (YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA);
 
-        updateEntryReferences (ewfm, dwfm, 10001);
-        updateEntryReferences (ewim, dwim, 10002);
-        this.maxEntryID = 10001 + ewfm.getEntryListChunks ().size () * 2;
+        if (epfm != null && dpfm != null)
+            updateCorrespondingDataOffsets (epfm, dpfm);
+        updateCorrespondingDataOffsets (ewfm, dwfm);
+        updateCorrespondingDataOffsets (ewim, dwim);
+
+        this.maxEntryID = 10001; // 0x2711
+
+        if (epfm != null && dpfm != null)
+        {
+            final List<YamahaYsfcEntry> epfmListChunks = epfm.getEntryListChunks ();
+            for (int i = 0; i < epfmListChunks.size (); i++)
+                epfmListChunks.get (i).setEntryID (this.maxEntryID++);
+        }
+        final List<YamahaYsfcEntry> ewfmListChunks = ewfm.getEntryListChunks ();
+        final List<YamahaYsfcEntry> ewimListChunks = ewim.getEntryListChunks ();
+        for (int i = 0; i < ewfmListChunks.size (); i++)
+        {
+            ewfmListChunks.get (i).setEntryID (this.maxEntryID++);
+            ewimListChunks.get (i).setEntryID (this.maxEntryID++);
+        }
 
         final List<YamahaYsfcChunk> orderedChunks = new ArrayList<> ();
+        if (epfm != null)
+            orderedChunks.add (epfm);
         orderedChunks.add (ewfm);
-        orderedChunks.add (dwfm);
         orderedChunks.add (ewim);
+        if (dpfm != null)
+            orderedChunks.add (dpfm);
+        orderedChunks.add (dwfm);
         orderedChunks.add (dwim);
         return orderedChunks;
     }
 
 
     /**
-     * Update the references in the entry list chunk to the referenced data chunk items.
+     * Update the offsets in the entry list chunk to the referenced data chunk items.
      *
      * @param entryChunk The entry chunk with the entry item list
      * @param dataChunk The data chunk with the referenced data
-     * @param entryID The entryID to start with
      */
-    private static void updateEntryReferences (final YamahaYsfcChunk entryChunk, final YamahaYsfcChunk dataChunk, final int entryID)
+    private static void updateCorrespondingDataOffsets (final YamahaYsfcChunk entryChunk, final YamahaYsfcChunk dataChunk)
     {
         final List<YamahaYsfcEntry> entryListChunks = entryChunk.getEntryListChunks ();
         final List<byte []> dataArrays = dataChunk.getDataArrays ();
         int offset = 12;
         for (int i = 0; i < entryListChunks.size (); i++)
         {
-            final YamahaYsfcEntry ysfcEntry = entryListChunks.get (i);
             final byte [] dataArray = dataArrays.get (i);
 
-            ysfcEntry.setEntryID (entryID + i * 2);
+            final YamahaYsfcEntry ysfcEntry = entryListChunks.get (i);
             ysfcEntry.setCorrespondingDataOffset (offset);
             ysfcEntry.setCorrespondingDataSize (dataArray.length);
 
@@ -372,5 +415,47 @@ public class YsfcFile
             dwimContentOutput.write (dataOutput.toByteArray ());
         }
         dwim.addDataArray (dwimContentOutput.toByteArray ());
+    }
+
+
+    /**
+     * Fill a combination of Exxx and Dxxx.
+     * 
+     * @param entryListID The ID of the entry list
+     * @param dataListID The ID of the data list
+     * @param entry The entry
+     * @param data The data
+     * @param <T> The type of the data
+     * @throws IOException Could not store the data
+     */
+    public <T extends IStreamable> void fillChunkPair (final String entryListID, final String dataListID, final YamahaYsfcEntry entry, final T data) throws IOException
+    {
+        this.chunks.get (entryListID).addEntry (entry);
+        final ByteArrayOutputStream dataOutput = new ByteArrayOutputStream ();
+        data.write (dataOutput);
+        this.chunks.get (dataListID).addDataArray (dataOutput.toByteArray ());
+    }
+
+
+    /**
+     * Dumps all info into a text.
+     *
+     * @param level The indentation level
+     * @return The formatted string
+     */
+    public String dump (final int level)
+    {
+        final int indent = level * 4;
+        final int indentNext = indent + 4;
+
+        final StringBuilder sb = new StringBuilder ();
+        sb.append (StringUtils.padLeftSpaces ("Ysfc File: ", indent)).append (this.sourceFile.getAbsolutePath ()).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Version  : ", indentNext)).append (this.versionStr).append (" (").append (this.version).append (")\n");
+        sb.append (StringUtils.padLeftSpaces ("Max.Entry: ", indentNext)).append (StringUtils.formatDataValue (this.maxEntryID)).append ("\n");
+
+        for (final YamahaYsfcChunk chunk: this.getChunks ().values ())
+            sb.append (chunk.dump (level + 2));
+
+        return sb.toString ();
     }
 }

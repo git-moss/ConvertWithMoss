@@ -13,6 +13,7 @@ import java.util.Arrays;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.Pair;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -23,13 +24,13 @@ import de.mossgrabers.tools.Pair;
 public class YamahaYsfcEntry
 {
     private int     length;
+    private int     correspondingDataSize   = 0;
+    private int     correspondingDataOffset = 0;
+    private int     contentNumber           = 0;
     private byte [] flags                   = new byte [6];
     private String  itemName                = "";
     private String  itemTitle               = "";
     private byte [] additionalData          = new byte [0];
-    private int     correspondingDataSize   = 0;
-    private int     correspondingDataOffset = 0;
-    private int     specificValue           = 0;
     private int     entryID                 = 0xFFFFFFFF;
 
 
@@ -70,20 +71,44 @@ public class YamahaYsfcEntry
 
         final ByteArrayInputStream contentStream = new ByteArrayInputStream (content);
 
+        // Reserved
+        if (version <= 102)
+            contentStream.skipNBytes (4);
+
         // Size of the item corresponding to this entry
         this.correspondingDataSize = (int) StreamUtils.readUnsigned32 (contentStream, true);
+
+        // Reserved
+        if (version <= 102)
+            contentStream.skipNBytes (4);
+
         // Offset of the item chunk within the data block
         this.correspondingDataOffset = (int) StreamUtils.readUnsigned32 (contentStream, true);
-        // Type specific - e.g. Program number 0x10001, 0x10002, ...
-        this.specificValue = (int) StreamUtils.readUnsigned32 (contentStream, true);
 
-        if (version >= 400)
+        // Type specific - e.g. Program number 0x10001, 0x10002, ...
+        this.contentNumber = (int) StreamUtils.readUnsigned32 (contentStream, true);
+
+        if (version <= 102)
+            contentStream.skipNBytes (version <= 101 ? 1 : 2);
+        else if (version >= 400)
         {
             // Flags - type specific
             this.flags = contentStream.readNBytes (6);
 
             // ID of the entry object for ordering
-            this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
+            if ((version > 402 && version < 410) || version >= 500)
+                this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
+
+            if (version >= 410 && version < 500)
+            {
+                // Additional unknown bytes for Montage M
+                // 0F - 0 0 0 0 0 0 - 28 AA
+                // FF - 0 0 0 0 0 0 - 28 F7
+                // 05 - 0 0 0 0 0 0 - 28 AA
+                // 03 - 0 0 0 0 0 0 - 28 AA
+                @SuppressWarnings("unused")
+                byte [] unknown = contentStream.readNBytes (9);
+            }
         }
 
         this.itemName = StreamUtils.readNullTerminatedASCII (contentStream);
@@ -92,7 +117,7 @@ public class YamahaYsfcEntry
         {
             this.itemTitle = StreamUtils.readNullTerminatedASCII (contentStream);
 
-            // Optional additional data - type specific, only used by EPFM
+            // 32-bit program numbers of non-preset waveforms - only used by the performance
             this.additionalData = contentStream.readAllBytes ();
         }
     }
@@ -114,6 +139,8 @@ public class YamahaYsfcEntry
 
     private byte [] createContent () throws IOException
     {
+        // Only creates 4.0.5 format!
+
         final ByteArrayOutputStream contentStream = new ByteArrayOutputStream ();
 
         // Size of the item corresponding to this entry
@@ -121,7 +148,7 @@ public class YamahaYsfcEntry
         // Offset of the item chunk within the data block
         StreamUtils.writeUnsigned32 (contentStream, this.correspondingDataOffset, true);
         // Type specific - e.g. Program number
-        StreamUtils.writeUnsigned32 (contentStream, this.specificValue, true);
+        StreamUtils.writeUnsigned32 (contentStream, this.contentNumber, true);
 
         // Flags - type specific
         contentStream.write (this.flags);
@@ -139,6 +166,17 @@ public class YamahaYsfcEntry
         final byte [] content = contentStream.toByteArray ();
         this.length = content.length;
         return content;
+    }
+
+
+    /**
+     * Get the entry ID.
+     *
+     * @return The entry ID
+     */
+    public int getEntryID ()
+    {
+        return this.entryID;
     }
 
 
@@ -188,13 +226,24 @@ public class YamahaYsfcEntry
 
 
     /**
-     * Set the specific value.
+     * Set the content number.
      *
-     * @param specificValue The specific value
+     * @return The value
      */
-    public void setSpecificValue (final int specificValue)
+    public int getContentNumber ()
     {
-        this.specificValue = specificValue;
+        return this.contentNumber;
+    }
+
+
+    /**
+     * Set the content number.
+     *
+     * @param contentNumber The content number
+     */
+    public void setContentNumber (final int contentNumber)
+    {
+        this.contentNumber = contentNumber;
     }
 
 
@@ -228,7 +277,7 @@ public class YamahaYsfcEntry
     public Pair<Integer, String> getItemCategoryAndName ()
     {
         final String [] split = this.itemName.split (":");
-        if (split.length == 2)
+        if (split.length >= 2 && !split[0].isBlank ())
             return new Pair<> (Integer.valueOf (split[0]), split[1]);
         return new Pair<> (Integer.valueOf (-1), this.itemName);
     }
@@ -242,6 +291,17 @@ public class YamahaYsfcEntry
     public String getItemTitle ()
     {
         return this.itemTitle;
+    }
+
+
+    /**
+     * Set the title of the item to be found in the matching data item (only non-empty for EPFM).
+     *
+     * @param title The title
+     */
+    public void setItemTitle (final String title)
+    {
+        this.itemTitle = title;
     }
 
 
@@ -264,5 +324,55 @@ public class YamahaYsfcEntry
     public byte [] getAdditionalData ()
     {
         return this.additionalData;
+    }
+
+
+    /**
+     * Set the flags.
+     * 
+     * @param flags The flags, a 6 byte array
+     */
+    public void setFlags (final byte [] flags)
+    {
+        this.flags = flags;
+    }
+
+
+    /**
+     * Set the additional data.
+     * 
+     * @param additionalData The additional data
+     */
+    public void setAdditionalData (final byte [] additionalData)
+    {
+        this.additionalData = additionalData;
+    }
+
+
+    /**
+     * Dumps all info into a text.
+     *
+     * @param level The indentation level
+     * @return The formatted string
+     */
+    public String dump (final int level)
+    {
+        final int indent = level * 4;
+        final int indentNext = indent + 4;
+
+        final StringBuilder sb = new StringBuilder ();
+        sb.append (StringUtils.padLeftSpaces ("Ysfc Entry", indent)).append ("\n");
+
+        sb.append (StringUtils.padLeftSpaces ("Item Name      : '", indentNext)).append (this.itemName).append ("'\n");
+        sb.append (StringUtils.padLeftSpaces ("Item Title     : '", indentNext)).append (this.itemTitle).append ("'\n");
+        sb.append (StringUtils.padLeftSpaces ("Size           : ", indentNext)).append (StringUtils.formatDataValue (this.length)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Data Size      : ", indentNext)).append (StringUtils.formatDataValue (this.correspondingDataSize)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Data Offset    : ", indentNext)).append (StringUtils.formatDataValue (this.correspondingDataOffset)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Content Number : ", indentNext)).append (StringUtils.formatDataValue (this.contentNumber)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Flags          : ", indentNext)).append (StringUtils.formatArray (this.flags)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Additional Data: ", indentNext)).append (StringUtils.formatArray (this.additionalData)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Entry ID       : ", indentNext)).append (StringUtils.formatDataValue (this.entryID)).append ("\n");
+
+        return sb.toString ();
     }
 }

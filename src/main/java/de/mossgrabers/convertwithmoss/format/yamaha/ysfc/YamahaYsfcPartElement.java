@@ -5,12 +5,14 @@
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -23,8 +25,11 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class YamahaYsfcPartElement
 {
-    private static final Map<Integer, Integer> PITCH_KEY      = new HashMap<> ();
-    private static final Map<Integer, Double>  ENVELOPE_TIMES = new HashMap<> ();
+    private static final double                MAXIMUM_ENVELOPE_TIME = 90.0;
+    private static final double                MINIMUM_ENVELOPE_TIME = 0.2;
+
+    private static final Map<Integer, Integer> PITCH_KEY             = new HashMap<> ();
+    private static final Map<Integer, Double>  ENVELOPE_TIMES        = new TreeMap<> ();
     static
     {
         PITCH_KEY.put (Integer.valueOf (0), Integer.valueOf (-200));
@@ -156,7 +161,7 @@ public class YamahaYsfcPartElement
         PITCH_KEY.put (Integer.valueOf (126), Integer.valueOf (199));
         PITCH_KEY.put (Integer.valueOf (127), Integer.valueOf (200));
 
-        ENVELOPE_TIMES.put (Integer.valueOf (0), Double.valueOf (0.2));
+        ENVELOPE_TIMES.put (Integer.valueOf (0), Double.valueOf (MINIMUM_ENVELOPE_TIME));
         ENVELOPE_TIMES.put (Integer.valueOf (1), Double.valueOf (0.21));
         ENVELOPE_TIMES.put (Integer.valueOf (2), Double.valueOf (0.22));
         ENVELOPE_TIMES.put (Integer.valueOf (3), Double.valueOf (0.23));
@@ -283,154 +288,155 @@ public class YamahaYsfcPartElement
         ENVELOPE_TIMES.put (Integer.valueOf (124), Double.valueOf (78.857));
         ENVELOPE_TIMES.put (Integer.valueOf (125), Double.valueOf (82.571));
         ENVELOPE_TIMES.put (Integer.valueOf (126), Double.valueOf (86.286));
-        ENVELOPE_TIMES.put (Integer.valueOf (127), Double.valueOf (90.0));
+        ENVELOPE_TIMES.put (Integer.valueOf (127), Double.valueOf (MAXIMUM_ENVELOPE_TIME));
     }
 
-    private int elementSwitch;
-    private int waveBank;
-    private int elementGroupNumber;
-    private int receiveNoteOff;
-    private int keyAssignMode;
-    private int alternateGroup;
-    private int pan;
-    private int randomPanDepth;
-    private int alternatePanDepth;
-    private int scalingPanDepth;
-    private int xaMode;
-    private int noteLimitLow;
-    private int noteLimitHigh;
-    private int velocityLimitLow;
-    private int velocityLimitHigh;
-    private int velocityCrossFade;
-    private int keyOnDelay;
-    private int keyOnDelayTempoSync;
-    private int reverbSendLevel;
-    private int variationSendLevel;
-    private int insertionEffectSwitch;
-    private int outputSelect;
-    private int controlBox1Sw;
-    private int controlBox2Sw;
-    private int controlBox3Sw;
-    private int controlBox4Sw;
-    private int controlBox5Sw;
-    private int controlBox6Sw;
-    private int controlBox7Sw;
-    private int controlBox8Sw;
-    private int controlBox9Sw;
-    private int controlBox10Sw;
-    private int controlBox11Sw;
-    private int controlBox12Sw;
-    private int controlBox13Sw;
-    private int controlBox14Sw;
-    private int controlBox15Sw;
-    private int controlBox16Sw;
-    private int keyOnDelayTempo;
-    private int halfDamperSwitch;
-    private int elementLevel;
-    private int levelVelocitySensitivity;
-    private int levelVelocityOffset;
-    private int levelSensKeyCurve;
-    private int aegAttackTime;
-    private int aegDecay1Time;
-    private int aegDecay2Time;
-    private int aegSustainTime;
-    private int aegReleaseTime;
-    private int aegInitLevel;
-    private int aegAttackLevel;
-    private int aegDecay1Level;
-    private int aegDecay2Level;
-    private int aegTimeVelocitySegment;
-    private int aegTimeVelocitySensitivity;
-    private int aegTimeKeyFollowSensitivity;
-    private int aegTimeKeyFollowCenterNote;
-    private int aegTimeKeyFollowAdjustment;
-    private int levelScalingBreakPoint1;
-    private int levelScalingBreakPoint2;
-    private int levelScalingBreakPoint3;
-    private int levelScalingBreakPoint4;
-    private int levelScalingOffset1;
-    private int levelScalingOffset2;
-    private int levelScalingOffset3;
-    private int levelScalingOffset4;
-    private int levelKeyFollowSensitivity;
-    private int coarseTune;
-    private int fineTune;
-    private int pitchVelocitySensitivity;
-    private int randomPitchDepth;
-    private int pitchKeyFollowSensitivity;
-    private int pitchKeyFollowCenterNote;
-    private int pitchFineScalingSensitivity;
-    private int pegHoldTime;
-    private int pegAttackTime;
-    private int pegDecay1Time;
-    private int pegDecay2Time;
-    private int pegReleaseTime;
-    private int pegHoldLevel;
-    private int pegAttackLevel;
-    private int pegDecay1Level;
-    private int pegDecay2Level;
-    private int pegReleaseLevel;
-    private int pegDepth;
-    private int pegTimeVelocitySegment;
-    private int pegTimeVelocitySensitivity;
-    private int pegLevelVelocitySensitivity;
-    private int pegLevelSensVelocityCurve;
-    private int pegTimeKeyFollowSensitivity;
-    private int pegTimeKeyFollowCenterNote;
-    private int filterType;
-    private int filterCutoffFrequency;
-    private int filterCutoffVelocitySensitivity;
-    private int filterResonance;
-    private int filterResonanceVelocitySensitivity;
-    private int hpfCutoffFrequency;
-    private int distance;
-    private int filterGain;
-    private int fegHoldTime;
-    private int fegAttackTime;
-    private int fegDecay1Time;
-    private int fegDecay2Time;
-    private int fegReleaseTime;
-    private int fegHoldLevel;
-    private int fegAttackLevel;
-    private int fegDecay1Level;
-    private int fegDecay2Level;
-    private int fegReleaseLevel;
-    private int fegDepth;
-    private int fegTimeVelocitySegment;
-    private int fegTimeVelocitySensitivity;
-    private int fegLevelVelocitySensitivity;
-    private int fegLevelVelocityCurve;
-    private int fegTimeKeyFollowSensitivity;
-    private int fegTimeKeyFollowCenterNote;
-    private int filterCutoffScalingBreakPoint1;
-    private int filterCutoffScalingBreakPoint2;
-    private int filterCutoffScalingBreakPoint3;
-    private int filterCutoffScalingBreakPoint4;
-    private int filterCutoffScalingOffset1;
-    private int filterCutoffScalingOffset2;
-    private int filterCutoffScalingOffset3;
-    private int filterCutoffScalingOffset4;
-    private int filterCutoffKeyFollowSensitivity;
-    private int hpfCutoffKeyFollowSensitivity;
-    private int eqType;
-    private int eqResonance;
-    private int eq1Frequency;
-    private int eq1Gain;
-    private int eq2Frequency;
-    private int eq2Gain;
-    private int lfoWave;
-    private int lfoKeyOnSync;
-    private int lfoKeyOnDelayTime;
-    private int lfoSpeed;
-    private int lfoAmodDepth;
-    private int lfoPmodDepth;
-    private int lfoFmodDepth;
-    private int lfoFadeInTime;
-    private int commonLfoPhaseOffset;
-    private int commonLfoBox1DepthRatio;
-    private int commonLfoBox2DepthRatio;
-    private int commonLfoBox3DepthRatio;
-    private int waveformNumber;
+    private int     elementSwitch;
+    private int     waveBank;
+    private int     elementGroupNumber;
+    private int     receiveNoteOff;
+    private int     keyAssignMode;
+    private int     alternateGroup;
+    private int     pan;
+    private int     randomPanDepth;
+    private int     alternatePanDepth;
+    private int     scalingPanDepth;
+    private int     xaMode;
+    private int     noteLimitLow;
+    private int     noteLimitHigh;
+    private int     velocityLimitLow;
+    private int     velocityLimitHigh;
+    private int     velocityCrossFade;
+    private int     keyOnDelay;
+    private int     keyOnDelayTempoSync;
+    private int     reverbSendLevel;
+    private int     variationSendLevel;
+    private int     insertionEffectSwitch;
+    private int     outputSelect;
+    private int     controlBox1Sw;
+    private int     controlBox2Sw;
+    private int     controlBox3Sw;
+    private int     controlBox4Sw;
+    private int     controlBox5Sw;
+    private int     controlBox6Sw;
+    private int     controlBox7Sw;
+    private int     controlBox8Sw;
+    private int     controlBox9Sw;
+    private int     controlBox10Sw;
+    private int     controlBox11Sw;
+    private int     controlBox12Sw;
+    private int     controlBox13Sw;
+    private int     controlBox14Sw;
+    private int     controlBox15Sw;
+    private int     controlBox16Sw;
+    private int     keyOnDelayTempo;
+    private int     halfDamperSwitch;
+    private int     elementLevel;
+    private int     levelVelocitySensitivity;
+    private int     levelVelocityOffset;
+    private int     levelSensKeyCurve;
+    private int     aegAttackTime;
+    private int     aegDecay1Time;
+    private int     aegDecay2Time;
+    private int     aegSustainTime;
+    private int     aegReleaseTime;
+    private int     aegInitLevel;
+    private int     aegAttackLevel;
+    private int     aegDecay1Level;
+    private int     aegDecay2Level;
+    private int     aegTimeVelocitySegment;
+    private int     aegTimeVelocitySensitivity;
+    private int     aegTimeKeyFollowSensitivity;
+    private int     aegTimeKeyFollowCenterNote;
+    private int     aegTimeKeyFollowAdjustment;
+    private int     levelScalingBreakPoint1;
+    private int     levelScalingBreakPoint2;
+    private int     levelScalingBreakPoint3;
+    private int     levelScalingBreakPoint4;
+    private int     levelScalingOffset1;
+    private int     levelScalingOffset2;
+    private int     levelScalingOffset3;
+    private int     levelScalingOffset4;
+    private int     levelKeyFollowSensitivity;
+    private int     coarseTune;
+    private int     fineTune;
+    private int     pitchVelocitySensitivity;
+    private int     randomPitchDepth;
+    private int     pitchKeyFollowSensitivity;
+    private int     pitchKeyFollowCenterNote;
+    private int     pitchFineScalingSensitivity;
+    private int     pegHoldTime;
+    private int     pegAttackTime;
+    private int     pegDecay1Time;
+    private int     pegDecay2Time;
+    private int     pegReleaseTime;
+    private int     pegHoldLevel;
+    private int     pegAttackLevel;
+    private int     pegDecay1Level;
+    private int     pegDecay2Level;
+    private int     pegReleaseLevel;
+    private int     pegDepth;
+    private int     pegTimeVelocitySegment;
+    private int     pegTimeVelocitySensitivity;
+    private int     pegLevelVelocitySensitivity;
+    private int     pegLevelSensVelocityCurve;
+    private int     pegTimeKeyFollowSensitivity;
+    private int     pegTimeKeyFollowCenterNote;
+    private int     filterType;
+    private int     filterCutoffFrequency;
+    private int     filterCutoffVelocitySensitivity;
+    private int     filterResonance;
+    private int     filterResonanceVelocitySensitivity;
+    private int     hpfCutoffFrequency;
+    private int     distance;
+    private int     filterGain;
+    private int     fegHoldTime;
+    private int     fegAttackTime;
+    private int     fegDecay1Time;
+    private int     fegDecay2Time;
+    private int     fegReleaseTime;
+    private int     fegHoldLevel;
+    private int     fegAttackLevel;
+    private int     fegDecay1Level;
+    private int     fegDecay2Level;
+    private int     fegReleaseLevel;
+    private int     fegDepth;
+    private int     fegTimeVelocitySegment;
+    private int     fegTimeVelocitySensitivity;
+    private int     fegLevelVelocitySensitivity;
+    private int     fegLevelVelocityCurve;
+    private int     fegTimeKeyFollowSensitivity;
+    private int     fegTimeKeyFollowCenterNote;
+    private int     filterCutoffScalingBreakPoint1;
+    private int     filterCutoffScalingBreakPoint2;
+    private int     filterCutoffScalingBreakPoint3;
+    private int     filterCutoffScalingBreakPoint4;
+    private int     filterCutoffScalingOffset1;
+    private int     filterCutoffScalingOffset2;
+    private int     filterCutoffScalingOffset3;
+    private int     filterCutoffScalingOffset4;
+    private int     filterCutoffKeyFollowSensitivity;
+    private int     hpfCutoffKeyFollowSensitivity;
+    private int     eqType;
+    private int     eqResonance;
+    private int     eq1Frequency;
+    private int     eq1Gain;
+    private int     eq2Frequency;
+    private int     eq2Gain;
+    private int     lfoWave;
+    private int     lfoKeyOnSync;
+    private int     lfoKeyOnDelayTime;
+    private int     lfoSpeed;
+    private int     lfoAmodDepth;
+    private int     lfoPmodDepth;
+    private int     lfoFmodDepth;
+    private int     lfoFadeInTime;
+    private int     commonLfoPhaseOffset;
+    private int     commonLfoBox1DepthRatio;
+    private int     commonLfoBox2DepthRatio;
+    private int     commonLfoBox3DepthRatio;
+    private byte [] unknownBytes;
+    private int     waveformNumber;
 
 
     /**
@@ -884,7 +890,7 @@ public class YamahaYsfcPartElement
      */
     public void setFineTune (final int fineTune)
     {
-        this.fineTune = fineTune;
+        this.fineTune = Math.clamp (fineTune, 0, 127);
     }
 
 
@@ -1049,7 +1055,7 @@ public class YamahaYsfcPartElement
      *
      * @param pegHoldLevel The value in the range of 0..255 which relates to -128..+127 (0 ~ 128)
      */
-    public void pegHoldLevel (final int pegHoldLevel)
+    public void setPegHoldLevel (final int pegHoldLevel)
     {
         this.pegHoldLevel = pegHoldLevel;
     }
@@ -1663,7 +1669,7 @@ public class YamahaYsfcPartElement
 
         // No idea about these 3 bytes
         if (rest == 5)
-            elementDataIn.skipNBytes (3);
+            this.unknownBytes = elementDataIn.readNBytes (3);
 
         this.waveformNumber = StreamUtils.readUnsigned16 (elementDataIn, false);
     }
@@ -1677,151 +1683,156 @@ public class YamahaYsfcPartElement
      */
     public void write (final OutputStream out) throws IOException
     {
-        out.write (this.elementSwitch);
-        out.write (this.waveBank);
-        out.write (this.elementGroupNumber);
-        out.write (this.receiveNoteOff);
-        out.write (this.keyAssignMode);
-        out.write (this.alternateGroup);
-        out.write (this.pan);
-        out.write (this.randomPanDepth);
-        out.write (this.alternatePanDepth);
-        out.write (this.scalingPanDepth);
-        out.write (this.xaMode);
-        out.write (this.noteLimitLow);
-        out.write (this.noteLimitHigh);
-        out.write (this.velocityLimitLow);
-        out.write (this.velocityLimitHigh);
-        out.write (this.velocityCrossFade);
-        out.write (this.keyOnDelay);
-        out.write (this.keyOnDelayTempoSync);
-        out.write (this.reverbSendLevel);
-        out.write (this.variationSendLevel);
-        out.write (this.insertionEffectSwitch);
-        out.write (this.outputSelect);
-        out.write (this.controlBox1Sw);
-        out.write (this.controlBox2Sw);
-        out.write (this.controlBox3Sw);
-        out.write (this.controlBox4Sw);
-        out.write (this.controlBox5Sw);
-        out.write (this.controlBox6Sw);
-        out.write (this.controlBox7Sw);
-        out.write (this.controlBox8Sw);
-        out.write (this.controlBox9Sw);
-        out.write (this.controlBox10Sw);
-        out.write (this.controlBox11Sw);
-        out.write (this.controlBox12Sw);
-        out.write (this.controlBox13Sw);
-        out.write (this.controlBox14Sw);
-        out.write (this.controlBox15Sw);
-        out.write (this.controlBox16Sw);
-        out.write (this.keyOnDelayTempo);
-        out.write (this.halfDamperSwitch);
-        out.write (this.elementLevel);
-        out.write (this.levelVelocitySensitivity);
-        out.write (this.levelVelocityOffset);
-        out.write (this.levelSensKeyCurve);
-        out.write (this.aegAttackTime);
-        out.write (this.aegDecay1Time);
-        out.write (this.aegDecay2Time);
-        out.write (this.aegSustainTime);
-        out.write (this.aegReleaseTime);
-        out.write (this.aegInitLevel);
-        out.write (this.aegAttackLevel);
-        out.write (this.aegDecay1Level);
-        out.write (this.aegDecay2Level);
-        out.write (this.aegTimeVelocitySegment);
-        out.write (this.aegTimeVelocitySensitivity);
-        out.write (this.aegTimeKeyFollowSensitivity);
-        out.write (this.aegTimeKeyFollowCenterNote);
-        out.write (this.aegTimeKeyFollowAdjustment);
-        out.write (this.levelScalingBreakPoint1);
-        out.write (this.levelScalingBreakPoint2);
-        out.write (this.levelScalingBreakPoint3);
-        out.write (this.levelScalingBreakPoint4);
-        out.write (this.levelScalingOffset1);
-        out.write (this.levelScalingOffset2);
-        out.write (this.levelScalingOffset3);
-        out.write (this.levelScalingOffset4);
-        out.write (this.levelKeyFollowSensitivity);
-        out.write (this.coarseTune);
-        out.write (this.fineTune);
-        out.write (this.pitchVelocitySensitivity);
-        out.write (this.randomPitchDepth);
-        out.write (this.pitchKeyFollowSensitivity);
-        out.write (this.pitchKeyFollowCenterNote);
-        out.write (this.pitchFineScalingSensitivity);
-        out.write (this.pegHoldTime);
-        out.write (this.pegAttackTime);
-        out.write (this.pegDecay1Time);
-        out.write (this.pegDecay2Time);
-        out.write (this.pegReleaseTime);
-        out.write (this.pegHoldLevel);
-        out.write (this.pegAttackLevel);
-        out.write (this.pegDecay1Level);
-        out.write (this.pegDecay2Level);
-        out.write (this.pegReleaseLevel);
-        out.write (this.pegDepth);
-        out.write (this.pegTimeVelocitySegment);
-        out.write (this.pegTimeVelocitySensitivity);
-        out.write (this.pegLevelVelocitySensitivity);
-        out.write (this.pegLevelSensVelocityCurve);
-        out.write (this.pegTimeKeyFollowSensitivity);
-        out.write (this.pegTimeKeyFollowCenterNote);
-        out.write (this.filterType);
-        out.write (this.filterCutoffFrequency);
-        out.write (this.filterCutoffVelocitySensitivity);
-        out.write (this.filterResonance);
-        out.write (this.filterResonanceVelocitySensitivity);
-        out.write (this.hpfCutoffFrequency);
-        out.write (this.distance);
-        out.write (this.filterGain);
-        out.write (this.fegHoldTime);
-        out.write (this.fegAttackTime);
-        out.write (this.fegDecay1Time);
-        out.write (this.fegDecay2Time);
-        out.write (this.fegReleaseTime);
-        out.write (this.fegHoldLevel);
-        out.write (this.fegAttackLevel);
-        out.write (this.fegDecay1Level);
-        out.write (this.fegDecay2Level);
-        out.write (this.fegReleaseLevel);
-        out.write (this.fegDepth);
-        out.write (this.fegTimeVelocitySegment);
-        out.write (this.fegTimeVelocitySensitivity);
-        out.write (this.fegLevelVelocitySensitivity);
-        out.write (this.fegLevelVelocityCurve);
-        out.write (this.fegTimeKeyFollowSensitivity);
-        out.write (this.fegTimeKeyFollowCenterNote);
-        out.write (this.filterCutoffScalingBreakPoint1);
-        out.write (this.filterCutoffScalingBreakPoint2);
-        out.write (this.filterCutoffScalingBreakPoint3);
-        out.write (this.filterCutoffScalingBreakPoint4);
-        out.write (this.filterCutoffScalingOffset1);
-        out.write (this.filterCutoffScalingOffset2);
-        out.write (this.filterCutoffScalingOffset3);
-        out.write (this.filterCutoffScalingOffset4);
-        out.write (this.filterCutoffKeyFollowSensitivity);
-        out.write (this.hpfCutoffKeyFollowSensitivity);
-        out.write (this.eqType);
-        out.write (this.eqResonance);
-        out.write (this.eq1Frequency);
-        out.write (this.eq1Gain);
-        out.write (this.eq2Frequency);
-        out.write (this.eq2Gain);
-        out.write (this.lfoWave);
-        out.write (this.lfoKeyOnSync);
-        out.write (this.lfoKeyOnDelayTime);
-        out.write (this.lfoSpeed);
-        out.write (this.lfoAmodDepth);
-        out.write (this.lfoPmodDepth);
-        out.write (this.lfoFmodDepth);
-        out.write (this.lfoFadeInTime);
-        out.write (this.commonLfoPhaseOffset);
-        out.write (this.commonLfoBox1DepthRatio);
-        out.write (this.commonLfoBox2DepthRatio);
-        out.write (this.commonLfoBox3DepthRatio);
-        StreamUtils.writeUnsigned16 (out, this.waveformNumber, false);
+        final ByteArrayOutputStream elementOut = new ByteArrayOutputStream ();
+        elementOut.write (this.elementSwitch);
+        elementOut.write (this.waveBank);
+        elementOut.write (this.elementGroupNumber);
+        elementOut.write (this.receiveNoteOff);
+        elementOut.write (this.keyAssignMode);
+        elementOut.write (this.alternateGroup);
+        elementOut.write (this.pan);
+        elementOut.write (this.randomPanDepth);
+        elementOut.write (this.alternatePanDepth);
+        elementOut.write (this.scalingPanDepth);
+        elementOut.write (this.xaMode);
+        elementOut.write (this.noteLimitLow);
+        elementOut.write (this.noteLimitHigh);
+        elementOut.write (this.velocityLimitLow);
+        elementOut.write (this.velocityLimitHigh);
+        elementOut.write (this.velocityCrossFade);
+        elementOut.write (this.keyOnDelay);
+        elementOut.write (this.keyOnDelayTempoSync);
+        elementOut.write (this.reverbSendLevel);
+        elementOut.write (this.variationSendLevel);
+        elementOut.write (this.insertionEffectSwitch);
+        elementOut.write (this.outputSelect);
+        elementOut.write (this.controlBox1Sw);
+        elementOut.write (this.controlBox2Sw);
+        elementOut.write (this.controlBox3Sw);
+        elementOut.write (this.controlBox4Sw);
+        elementOut.write (this.controlBox5Sw);
+        elementOut.write (this.controlBox6Sw);
+        elementOut.write (this.controlBox7Sw);
+        elementOut.write (this.controlBox8Sw);
+        elementOut.write (this.controlBox9Sw);
+        elementOut.write (this.controlBox10Sw);
+        elementOut.write (this.controlBox11Sw);
+        elementOut.write (this.controlBox12Sw);
+        elementOut.write (this.controlBox13Sw);
+        elementOut.write (this.controlBox14Sw);
+        elementOut.write (this.controlBox15Sw);
+        elementOut.write (this.controlBox16Sw);
+        elementOut.write (this.keyOnDelayTempo);
+        elementOut.write (this.halfDamperSwitch);
+        elementOut.write (this.elementLevel);
+        elementOut.write (this.levelVelocitySensitivity);
+        elementOut.write (this.levelVelocityOffset);
+        elementOut.write (this.levelSensKeyCurve);
+        elementOut.write (this.aegAttackTime);
+        elementOut.write (this.aegDecay1Time);
+        elementOut.write (this.aegDecay2Time);
+        elementOut.write (this.aegSustainTime);
+        elementOut.write (this.aegReleaseTime);
+        elementOut.write (this.aegInitLevel);
+        elementOut.write (this.aegAttackLevel);
+        elementOut.write (this.aegDecay1Level);
+        elementOut.write (this.aegDecay2Level);
+        elementOut.write (this.aegTimeVelocitySegment);
+        elementOut.write (this.aegTimeVelocitySensitivity);
+        elementOut.write (this.aegTimeKeyFollowSensitivity);
+        elementOut.write (this.aegTimeKeyFollowCenterNote);
+        elementOut.write (this.aegTimeKeyFollowAdjustment);
+        elementOut.write (this.levelScalingBreakPoint1);
+        elementOut.write (this.levelScalingBreakPoint2);
+        elementOut.write (this.levelScalingBreakPoint3);
+        elementOut.write (this.levelScalingBreakPoint4);
+        elementOut.write (this.levelScalingOffset1);
+        elementOut.write (this.levelScalingOffset2);
+        elementOut.write (this.levelScalingOffset3);
+        elementOut.write (this.levelScalingOffset4);
+        elementOut.write (this.levelKeyFollowSensitivity);
+        elementOut.write (this.coarseTune);
+        elementOut.write (this.fineTune);
+        elementOut.write (this.pitchVelocitySensitivity);
+        elementOut.write (this.randomPitchDepth);
+        elementOut.write (this.pitchKeyFollowSensitivity);
+        elementOut.write (this.pitchKeyFollowCenterNote);
+        elementOut.write (this.pitchFineScalingSensitivity);
+        elementOut.write (this.pegHoldTime);
+        elementOut.write (this.pegAttackTime);
+        elementOut.write (this.pegDecay1Time);
+        elementOut.write (this.pegDecay2Time);
+        elementOut.write (this.pegReleaseTime);
+        elementOut.write (this.pegHoldLevel);
+        elementOut.write (this.pegAttackLevel);
+        elementOut.write (this.pegDecay1Level);
+        elementOut.write (this.pegDecay2Level);
+        elementOut.write (this.pegReleaseLevel);
+        elementOut.write (this.pegDepth);
+        elementOut.write (this.pegTimeVelocitySegment);
+        elementOut.write (this.pegTimeVelocitySensitivity);
+        elementOut.write (this.pegLevelVelocitySensitivity);
+        elementOut.write (this.pegLevelSensVelocityCurve);
+        elementOut.write (this.pegTimeKeyFollowSensitivity);
+        elementOut.write (this.pegTimeKeyFollowCenterNote);
+        elementOut.write (this.filterType);
+        elementOut.write (this.filterCutoffFrequency);
+        elementOut.write (this.filterCutoffVelocitySensitivity);
+        elementOut.write (this.filterResonance);
+        elementOut.write (this.filterResonanceVelocitySensitivity);
+        elementOut.write (this.hpfCutoffFrequency);
+        elementOut.write (this.distance);
+        elementOut.write (this.filterGain);
+        elementOut.write (this.fegHoldTime);
+        elementOut.write (this.fegAttackTime);
+        elementOut.write (this.fegDecay1Time);
+        elementOut.write (this.fegDecay2Time);
+        elementOut.write (this.fegReleaseTime);
+        elementOut.write (this.fegHoldLevel);
+        elementOut.write (this.fegAttackLevel);
+        elementOut.write (this.fegDecay1Level);
+        elementOut.write (this.fegDecay2Level);
+        elementOut.write (this.fegReleaseLevel);
+        elementOut.write (this.fegDepth);
+        elementOut.write (this.fegTimeVelocitySegment);
+        elementOut.write (this.fegTimeVelocitySensitivity);
+        elementOut.write (this.fegLevelVelocitySensitivity);
+        elementOut.write (this.fegLevelVelocityCurve);
+        elementOut.write (this.fegTimeKeyFollowSensitivity);
+        elementOut.write (this.fegTimeKeyFollowCenterNote);
+        elementOut.write (this.filterCutoffScalingBreakPoint1);
+        elementOut.write (this.filterCutoffScalingBreakPoint2);
+        elementOut.write (this.filterCutoffScalingBreakPoint3);
+        elementOut.write (this.filterCutoffScalingBreakPoint4);
+        elementOut.write (this.filterCutoffScalingOffset1);
+        elementOut.write (this.filterCutoffScalingOffset2);
+        elementOut.write (this.filterCutoffScalingOffset3);
+        elementOut.write (this.filterCutoffScalingOffset4);
+        elementOut.write (this.filterCutoffKeyFollowSensitivity);
+        elementOut.write (this.hpfCutoffKeyFollowSensitivity);
+        elementOut.write (this.eqType);
+        elementOut.write (this.eqResonance);
+        elementOut.write (this.eq1Frequency);
+        elementOut.write (this.eq1Gain);
+        elementOut.write (this.eq2Frequency);
+        elementOut.write (this.eq2Gain);
+        elementOut.write (this.lfoWave);
+        elementOut.write (this.lfoKeyOnSync);
+        elementOut.write (this.lfoKeyOnDelayTime);
+        elementOut.write (this.lfoSpeed);
+        elementOut.write (this.lfoAmodDepth);
+        elementOut.write (this.lfoPmodDepth);
+        elementOut.write (this.lfoFmodDepth);
+        elementOut.write (this.lfoFadeInTime);
+        elementOut.write (this.commonLfoPhaseOffset);
+        elementOut.write (this.commonLfoBox1DepthRatio);
+        elementOut.write (this.commonLfoBox2DepthRatio);
+        elementOut.write (this.commonLfoBox3DepthRatio);
+        // This is always filled by the template, therefore never null!
+        elementOut.write (this.unknownBytes);
+        StreamUtils.writeUnsigned16 (elementOut, this.waveformNumber, false);
+
+        StreamUtils.writeDataBlock (out, elementOut.toByteArray (), true);
     }
 
 
@@ -1834,5 +1845,26 @@ public class YamahaYsfcPartElement
     public static double convertEnvelopeTimeToSeconds (final int envelopeTime)
     {
         return ENVELOPE_TIMES.get (Integer.valueOf (Math.clamp (envelopeTime, 0, 127))).doubleValue ();
+    }
+
+
+    /**
+     * Converts an envelope time value to seconds.
+     * 
+     * @param seconds The time in seconds, attack times should be enlarged by factor 6
+     * @return The time in the range of 0-127
+     */
+    public static int convertSecondsToEnvelopeTime (final double seconds)
+    {
+        if (seconds <= MINIMUM_ENVELOPE_TIME)
+            return 0;
+
+        for (int i = 0; i < 127; i++)
+        {
+            if (seconds >= ENVELOPE_TIMES.get (Integer.valueOf (i)).intValue () && seconds < ENVELOPE_TIMES.get (Integer.valueOf (i + 1)).intValue ())
+                return i;
+        }
+
+        return 127;
     }
 }

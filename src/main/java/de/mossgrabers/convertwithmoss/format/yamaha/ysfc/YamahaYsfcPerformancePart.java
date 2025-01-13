@@ -24,8 +24,8 @@ public class YamahaYsfcPerformancePart
 {
     private String                            name;
     private int                               type;
-    private int                               partCategoryMain;
-    private int                               partCategorySub;
+    private int                               mainCategory;
+    private int                               subCategory;
     private int                               partSwitch;
     private int                               keyboardSwitch;
     private int                               velocityLimitLow;
@@ -69,9 +69,21 @@ public class YamahaYsfcPerformancePart
      *
      * @param name The name
      */
-    public void getName (final String name)
+    public void setName (final String name)
     {
         this.name = name;
+    }
+
+
+    /**
+     * Set the category.
+     * 
+     * @param categoryID THe category index in the range of [0..255]
+     */
+    public void setCategory (final int categoryID)
+    {
+        this.mainCategory = categoryID / 16;
+        this.subCategory = categoryID % 16;
     }
 
 
@@ -202,8 +214,8 @@ public class YamahaYsfcPerformancePart
             this.name = this.name.substring (0, pos);
 
         this.type = in.read ();
-        this.partCategoryMain = in.read ();
-        this.partCategorySub = in.read ();
+        this.mainCategory = in.read ();
+        this.subCategory = in.read ();
         this.partSwitch = in.read ();
         this.keyboardSwitch = in.read ();
         this.velocityLimitLow = in.read ();
@@ -213,7 +225,7 @@ public class YamahaYsfcPerformancePart
         this.pitchBendRangeUpper = in.read ();
         this.pitchBendRangeLower = in.read ();
 
-        // TODO ...
+        // Currently not used...
         this.theRest = in.readAllBytes ();
     }
 
@@ -253,8 +265,8 @@ public class YamahaYsfcPerformancePart
         StreamUtils.writeASCII (arrayOut, StringUtils.rightPadSpaces (StringUtils.optimizeName (this.name, 20), 20), 21);
 
         arrayOut.write (this.getType ());
-        arrayOut.write (this.partCategoryMain);
-        arrayOut.write (this.partCategorySub);
+        arrayOut.write (this.mainCategory);
+        arrayOut.write (this.subCategory);
         arrayOut.write (this.partSwitch);
         arrayOut.write (this.keyboardSwitch);
         arrayOut.write (this.velocityLimitLow);
@@ -264,7 +276,7 @@ public class YamahaYsfcPerformancePart
         arrayOut.write (this.pitchBendRangeUpper);
         arrayOut.write (this.pitchBendRangeLower);
 
-        // TODO
+        // Currently not used...
         arrayOut.write (this.theRest);
 
         StreamUtils.writeDataBlock (out, arrayOut.toByteArray (), true);

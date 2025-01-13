@@ -18,6 +18,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
@@ -157,10 +158,10 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
             if (!waveforms.isEmpty ())
             {
                 final Map<String, YamahaYsfcChunk> chunks = ysfcFile.getChunks ();
-                // If there are no Performances, create directly from key-groups
                 final YamahaYsfcChunk epfmChunk = chunks.get (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE);
                 final YamahaYsfcChunk dpfmChunk = chunks.get (YamahaYsfcChunk.DATA_LIST_PERFORMANCE);
                 final boolean hasNoPerformanceData = epfmChunk == null || dpfmChunk == null || epfmChunk.getEntryListChunks ().isEmpty ();
+                // If there are no Performances, create directly from key-groups
                 if (hasNoPerformanceData || version != YamahaYsfcVersion.MONTAGE || !this.isSourceTypePerformance)
                 {
                     if (hasNoPerformanceData)
@@ -410,7 +411,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     private static ISampleZone createSampleZone (final String name, final YamahaYsfcKeybank keybank)
     {
         final int rootNote = keybank.getRootNote ();
-        final String sampleName = String.format ("%s_%d_%s", name.replace (':', '_'), Integer.valueOf (rootNote), NoteParser.formatNoteSharps (rootNote));
+        final String sampleName = String.format ("%s_%d_%s", AbstractCreator.createSafeFilename (name), Integer.valueOf (rootNote), NoteParser.formatNoteSharps (rootNote));
 
         final ISampleZone zone = new DefaultSampleZone (sampleName, null);
         zone.setKeyRoot (rootNote);
@@ -474,8 +475,9 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     {
         final List<YamahaYsfcKeybank> keyBanks = new ArrayList<> ();
         final ByteArrayInputStream dwfmContentStream = new ByteArrayInputStream (dwfmDataArray);
-        // numberOfKeyBank
+        // Number of key-banks
         StreamUtils.readUnsigned16 (dwfmContentStream, version.isVersion1 ());
+        // Pitch offset table number (not used)
         dwfmContentStream.skipNBytes (2);
         while (dwfmContentStream.available () > 0)
             keyBanks.add (new YamahaYsfcKeybank (dwfmContentStream, version));

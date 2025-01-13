@@ -54,7 +54,18 @@ public enum YamahaYsfcVersion
      */
     public boolean isVersion1 ()
     {
-        return this.isMotif () || this == MOXF;
+        return this.isMotif () || isMOXF ();
+    }
+
+
+    /**
+     * Returns true if this is a version 1.0.x version.
+     * 
+     * @return True if version 1
+     */
+    public boolean isMOXF ()
+    {
+        return this == MOXF;
     }
 
 

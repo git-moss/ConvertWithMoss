@@ -292,14 +292,47 @@ public class MathUtils
      * Normalizes an integer to the range of [-1..1] with different amounts in the negative and
      * positive direction.
      * 
-     * @param value The value to normalize
-     * @param negativeMinimum The negative minimum of the range
-     * @param positiveMaximum The negative maximum of the range
-     * @return The normalized value
+     * @param value The integer value to normalize
+     * @param negativeMinimum The negative minimum of the integer range
+     * @param positiveMaximum The negative maximum of the integer range
+     * @return The normalized double value
      */
     public static double normalizeIntegerRange (final int value, final int negativeMinimum, final int positiveMaximum)
     {
         double result = value < 0 ? -(value / (double) negativeMinimum) : value / (double) positiveMaximum;
         return Math.clamp (result, -1, 1);
+    }
+
+
+    /**
+     * De-normalizes a double in the range of [-1..1] to an integer range with different amounts in
+     * the negative and positive direction.
+     * 
+     * @param value The value to normalize
+     * @param negativeMinimum The negative minimum of the integer range
+     * @param positiveMaximum The negative maximum of the integer range
+     * @param offset An offset to add to the de-normalized integer value
+     * @return The normalized value
+     */
+    public static int denormalizeIntegerRange (final double value, final int negativeMinimum, final int positiveMaximum, final int offset)
+    {
+        return denormalizeIntegerRange (value, negativeMinimum, positiveMaximum) + offset;
+    }
+
+
+    /**
+     * De-normalizes a double in the range of [-1..1] to an integer range with different amounts in
+     * the negative and positive direction.
+     * 
+     * @param value The double value to normalize
+     * @param negativeMinimum The negative minimum of the integer range
+     * @param positiveMaximum The negative maximum of the integer range
+     * @return The de-normalized integer value
+     */
+    public static int denormalizeIntegerRange (final double value, final int negativeMinimum, final int positiveMaximum)
+    {
+        if (value < 0)
+            return Math.clamp (Math.round (value * negativeMinimum), negativeMinimum, 0);
+        return Math.clamp (Math.round (value * positiveMaximum), 0, positiveMaximum);
     }
 }
