@@ -91,4 +91,11 @@ public abstract class AbstractCoreTask implements ICoreTask
     {
         this.notifier.log ("IDS_NOTIFY_LINE_FEED");
     }
+
+
+    protected void notifyNewline (final int count)
+    {
+        if (count > 0 && count % 80 == 0)
+            this.notifyNewline ();
+    }
 }

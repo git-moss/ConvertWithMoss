@@ -6,10 +6,12 @@ package de.mossgrabers.convertwithmoss.core.creator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -219,9 +221,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param filename A potential filename
      * @return The filename with illegal characters replaced by an underscore
      */
-    protected static String createSafeFilename (final String filename)
+    public static String createSafeFilename (final String filename)
     {
-        return filename.replaceAll ("[\\\\/:*?\"<>|&\\.]", "_").trim ();
+        return filename.replaceAll ("[\\\\/:*?\"<>|&\\.']", "_").trim ();
     }
 
 
@@ -398,8 +400,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
             {
                 this.notifyProgress ();
                 outputCount++;
-                if (outputCount % 80 == 0)
-                    this.notifyNewline ();
+                this.notifyNewline (outputCount);
 
                 this.zipSamplefile (alreadyStored, zipOutputStream, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
             }
@@ -473,8 +474,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
             {
                 this.notifyProgress ();
                 outputCount++;
-                if (outputCount % 80 == 0)
-                    this.notifyNewline ();
+                this.notifyNewline (outputCount);
 
                 this.storeSamplefile (alreadyStored, zipOutputStream, multisampleSource.getMetadata (), zone, relativeFolderName);
             }
@@ -607,8 +607,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 {
                     this.notifyProgress ();
                     outputCount++;
-                    if (outputCount % 80 == 0)
-                        this.notifyNewline ();
+                    this.notifyNewline (outputCount);
 
                     if (this.requiresRewrite (destinationFormat) || trim)
                         this.rewriteFile (multisampleSource.getMetadata (), zone, fos, destinationFormat, trim);
@@ -620,8 +619,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                         else
                             sampleData.writeSample (fos);
                     }
+
+                    writtenFiles.add (file);
                 }
-                writtenFiles.add (file);
+                catch (final NoSuchFileException | FileNotFoundException ex)
+                {
+                    this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+                }
             }
         }
         this.notifyNewline ();
@@ -640,7 +644,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected String createSampleFilename (final ISampleZone zone, final int zoneIndex, final String fileEnding)
     {
-        return zone.getName () + fileEnding;
+        return createSafeFilename (zone.getName ()) + fileEnding;
     }
 
 
@@ -675,8 +679,7 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
                 {
                     this.notifyProgress ();
                     outputCount++;
-                    if (outputCount % 80 == 0)
-                        this.notifyNewline ();
+                    this.notifyNewline (outputCount);
                     final ISampleData sampleData = zone.getSampleData ();
                     if (sampleData == null)
                         this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());

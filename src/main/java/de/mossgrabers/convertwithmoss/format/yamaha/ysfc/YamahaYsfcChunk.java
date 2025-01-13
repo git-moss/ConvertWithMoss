@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -89,9 +90,7 @@ public class YamahaYsfcChunk
                     break;
 
                 case MAGIC_DATA:
-                    final int dataLength = (int) StreamUtils.readUnsigned32 (in, true);
-                    final byte [] data = in.readNBytes (dataLength);
-                    this.dataArrays.add (data);
+                    this.dataArrays.add (StreamUtils.readDataBlock (in, true));
                     break;
 
                 default:
@@ -214,5 +213,28 @@ public class YamahaYsfcChunk
     public void addEntry (final YamahaYsfcEntry entry)
     {
         this.entryListEntries.add (entry);
+    }
+
+
+    /**
+     * Dumps all info into a text.
+     *
+     * @param level The indentation level
+     * @return The formatted string
+     */
+    public String dump (final int level)
+    {
+        final int indent = level * 4;
+        final int indentNext = indent + 4;
+
+        final StringBuilder sb = new StringBuilder ();
+        sb.append (StringUtils.padLeftSpaces ("Ysfc Chunk: ", indent)).append (this.chunkID).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Size      : ", indentNext)).append (StringUtils.formatDataValue (this.chunkLength)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Num. Items: ", indentNext)).append (StringUtils.formatDataValue (this.numItemsInChunk)).append ("\n");
+
+        for (final YamahaYsfcEntry entry: this.entryListEntries)
+            sb.append (entry.dump (level + 2));
+
+        return sb.toString ();
     }
 }

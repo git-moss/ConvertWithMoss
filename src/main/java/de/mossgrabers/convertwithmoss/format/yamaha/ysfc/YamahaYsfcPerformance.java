@@ -6,16 +6,13 @@ package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import de.mossgrabers.convertwithmoss.core.IStreamable;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -26,7 +23,7 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class YamahaYsfcPerformance
+public class YamahaYsfcPerformance implements IStreamable
 {
     private String                                name;
     private final List<YamahaYsfcPerformancePart> parts           = new ArrayList<> ();
@@ -44,20 +41,21 @@ public class YamahaYsfcPerformance
     private byte []                               playSettings;
     private final String []                       assignableKnobs = new String [8];
     final List<YamahaYsfcPerformancePart>         allParts        = new ArrayList<> ();
+    private byte []                               rest;
 
 
     /**
-     * Default constructor.
-     *
+     * Constructor which fills the performance from the given data array.
+     * 
+     * @param data The data block (DPFM without the 4 size bytes)
      * @param version The version to use
      * @throws IOException Could not read the default parameters for the requested version
      */
-    public YamahaYsfcPerformance (final YamahaYsfcVersion version) throws IOException
+    public YamahaYsfcPerformance (final byte [] data, final YamahaYsfcVersion version) throws IOException
     {
         this.sourceVersion = version;
         if (version != YamahaYsfcVersion.MONTAGE)
             throw new IOException (Functions.getMessage ("IDS_YSFC_VERSION_NOT_SUPPORTED", version.getTitle ()));
-        final byte [] data = Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/ysfc/MontageDPFM.bin");
         this.read (new ByteArrayInputStream (data));
     }
 
@@ -88,6 +86,17 @@ public class YamahaYsfcPerformance
 
 
     /**
+     * Set the name of the performance.
+     * 
+     * @param name The name
+     */
+    public void setName (final String name)
+    {
+        this.name = name;
+    }
+
+
+    /**
      * Get all parts of the performance.
      * 
      * @return The parts
@@ -98,12 +107,8 @@ public class YamahaYsfcPerformance
     }
 
 
-    /**
-     * Read a performance from the input stream.
-     *
-     * @param in The input stream
-     * @throws IOException Could not read the entry item
-     */
+    /** {@inheritDoc} */
+    @Override
     public void read (final InputStream in) throws IOException
     {
         this.readCommon (new ByteArrayInputStream (StreamUtils.readDataBlock (in, true)));
@@ -134,6 +139,8 @@ public class YamahaYsfcPerformance
 
         // Control Box 1-16
         this.controlBoxes = in.readNBytes (16 * 9);
+
+        this.rest = in.readAllBytes ();
     }
 
 
@@ -149,7 +156,6 @@ public class YamahaYsfcPerformance
     private void readParts (final InputStream in) throws IOException
     {
         final int numberOfParts = (int) StreamUtils.readUnsigned32 (in, true);
-
         for (int i = 0; i < numberOfParts; i++)
             this.allParts.add (new YamahaYsfcPerformancePart (new ByteArrayInputStream (StreamUtils.readDataBlock (in, true)), this.sourceVersion));
 
@@ -193,12 +199,8 @@ public class YamahaYsfcPerformance
     }
 
 
-    /**
-     * Write a performance to the output stream.
-     *
-     * @param out The output stream
-     * @throws IOException Could not write the entry item
-     */
+    /** {@inheritDoc} */
+    @Override
     public void write (final OutputStream out) throws IOException
     {
         this.writeCommon (out);
@@ -222,6 +224,8 @@ public class YamahaYsfcPerformance
 
         // Control Box 1-16
         arrayOut.write (this.controlBoxes);
+
+        arrayOut.write (this.rest);
 
         StreamUtils.writeDataBlock (out, arrayOut.toByteArray (), true);
     }
@@ -248,7 +252,7 @@ public class YamahaYsfcPerformance
 
         for (final YamahaYsfcPerformancePart part: this.allParts)
         {
-            StreamUtils.writeUnsigned32 (out, part.getType(), true);
+            StreamUtils.writeUnsigned32 (out, part.getType (), true);
 
             // Always 8 AWM elements!
             StreamUtils.writeUnsigned32 (out, 8, true);
@@ -257,81 +261,5 @@ public class YamahaYsfcPerformance
         }
 
         out.write (this.playSettings);
-    }
-
-
-    // TODO remove
-    public static void main (final String [] args)
-    {
-        try (final FileOutputStream out = new FileOutputStream (new File ("C:\\Users\\mos\\Desktop\\result.bin")))
-        {
-            final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (YamahaYsfcVersion.MONTAGE);
-            performance.write (out);
-        }
-        catch (final IOException e)
-        {
-            e.printStackTrace ();
-        }
-    }
-
-
-    // TODO remove
-    public static void main2 (final String [] args)
-    {
-        final String filenameX7U = "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\YamahaYSFC\\X7 - Montage\\01W Atmosphere.X7U";
-        final String filenameX8L = "C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\YamahaYSFC\\X8 - MODX\\Arilyn.X8L";
-
-        YsfcFile ysfcFile;
-        try
-        {
-            ysfcFile = new YsfcFile (new File (filenameX7U));
-            final Map<String, YamahaYsfcChunk> chunks = ysfcFile.getChunks ();
-            final YamahaYsfcChunk epfmChunk = chunks.get (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE);
-            final YamahaYsfcChunk dpfmChunk = chunks.get (YamahaYsfcChunk.DATA_LIST_PERFORMANCE);
-            if (epfmChunk == null || dpfmChunk == null)
-                // TODO
-                // this.notifier.logError ("IDS_YSFC_NO_MULTISAMPLE_DATA");
-                // return Collections.emptyList ();
-                return;
-
-            final List<YamahaYsfcEntry> epfmListChunks = epfmChunk.getEntryListChunks ();
-            final List<byte []> dpfmListChunks = dpfmChunk.getDataArrays ();
-
-            if (epfmListChunks.size () != dpfmListChunks.size ())
-                // TODO
-                // this.notifier.logError ("IDS_YSFC_DIFFERENT_NUMBER_OF_WAVEFORM_CHUNKS");
-                // return Collections.emptyList ();
-                return;
-
-            for (int i = 0; i < epfmListChunks.size (); i++)
-            {
-                final YamahaYsfcEntry yamahaYsfcEntry = epfmListChunks.get (i);
-                final byte [] performanceData = dpfmListChunks.get (i);
-
-                final YamahaYsfcPerformance yamahaYsfcPerformance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), ysfcFile.getVersion ());
-            }
-
-        }
-        catch (final IOException e)
-        {
-            e.printStackTrace ();
-        }
-    }
-
-
-    // TODO remove
-    private static void dump (final YamahaYsfcEntry yamahaYsfcEntry, final byte [] performanceData, final int version)
-    {
-        // TODO Auto-generated method stub
-        try
-        {
-            Files.write (new File ("C:\\Users\\mos\\Desktop\\Data\\" + yamahaYsfcEntry.getItemTitle () + "DPFM.bin").toPath (), performanceData);
-        }
-        catch (final IOException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace ();
-        }
-
     }
 }

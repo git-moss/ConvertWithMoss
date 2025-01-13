@@ -53,7 +53,7 @@ If the format is selected as the source, there are two things to consider:
 * One or multiple slots contain a multi-sample: for each of the multi-samples a file in the destination format is created.
 * All slots contain only single samples: one file in the destination format is created which combines all 16 slots. The notes are from 36 upwards if not configured differently in the preset.
 
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Destination Options
 
@@ -81,7 +81,7 @@ ADV files and their samples need to be placed in the Ableton user library in the
 
 A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV). Both keygroup and drum types are supported.
 
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 Other restrictions are:
 
@@ -99,7 +99,7 @@ TX16Wx is a free sampler plugin available for Windows and Macos. TX16Wx Professi
 
 The format uses a XML format and keeps the samples separate.
 
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Destination Options
 
@@ -113,7 +113,7 @@ The format specification is available here: https://www.decentsamples.com/wp-con
 A preset file contains a single preset. A dspreset file contains only the description of the multisample. The related samples are normally kept in a separate folder. Only WAV files are supported.
 A dslibrary file contains several dspreset files incl. the samples compressed in ZIP format.
 
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Destination Options
 
@@ -181,7 +181,7 @@ Since the KMP format can only contain 1 group of a multisample, sources with mul
 
 Even if the KSF files can store stereo files, they do not work. Therefore, they need to be split into 2 KMP files. To ease the use of these 2 files an additional KSC file is created, which loads all referenced files.
 
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Destination Options
 
@@ -207,7 +207,7 @@ The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digit
 
 The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. *The number of folders can be configured*.
 
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Destination Options
 
@@ -230,7 +230,7 @@ This converter supports (split) stereo uncompressed and IEEE float 32 bit format
 
 The Propellerhead Reason NN-XT is a software sampler that is included in the Reason software package. Reason is a digital audio workstation (DAW) software developed by Propellerhead Software. It allows users to load and play back sampled sounds, such as instruments or drum hits. The file ending is *sxt*.
 
-There are metadata fields for creator and a creator URL. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are metadata fields for creator and a creator URL. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ## SFZ
 
@@ -238,7 +238,7 @@ There are metadata fields for creator and a creator URL. However, additional inf
 
 The SFZ file contains only the description of the multisample. The related samples are normally kept in a separate folder. The converter supports samples in WAV, OGG and FLAC format.
 
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Source Options
 
@@ -257,7 +257,7 @@ A SoundFont can contain several presets grouped into banks. Presets refer to one
 
 The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
 
-There are metadata fields for creator and some description specified in the format. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are metadata fields for creator and some description specified in the format. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Source Options
 
@@ -271,7 +271,7 @@ TAL-Sampler is an analog modeled synthesizer with a sampler engine as the sound 
 Choosing TAL Sampler as the destination format, creates a *talsmpl*
 file and stores all samples in a sub-folder by the same name. The samples of the source groups are distributed across the 4 layers of TAL Sampler in such a way that the key and velocity splits do not overlap. This is a workaround for the fact that TAL Sampler does not support overlapping samples. Since groups have only the name and trigger type as attributes, which are not supported in TAL Sampler anyway, this should work in most cases. If there are still overlapping samples a warning is displayed.
 
-There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Destination Options
 
@@ -297,7 +297,7 @@ First, all WAV files of a folder are checked if they contain instrument chunks. 
 * A category is extracted from the file name as well based on a list of several synonyms and abbreviations (e.g. Solo as a synonym for Lead). If this fails the same logic is applied to the folder names (e.g. you might have sorted your lead sounds in a folder called *Lead*).
 * Characterizations like *hard* are extracted as well with a similar algorithm as for the category.
 
-Metadata information is retrieved from Broadcast Audio Extension chunks in the WAV files. If noch such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+Metadata information is retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
 ### Groups
 
@@ -324,20 +324,28 @@ WAV file can contain different sample formats. This converter supports (split) s
 
 ## Yamaha YSFC
 
-This format is used in most of the Yamaha Workstation. While the format is the same, the content is different.
-Currently, the formats of the Montage (not Montage M) and MODX/MODX+ are supported both as source and destination format. That covers files with the endings X7A, X7L, X7U (Montage) and X8A, X8L, X8U (MODX/MODX+). The backup formats X7A and X8A are supported only as a source.
+This format is used in many Yamaha Workstation. While the format is the same, the content is different.
 
-Furthermore, the formats of older models are suppored for reading only:
+The following file formats are supported as a source:
 
-* X0A, X0W: Motif XS
-* X3A, X3W: Motif XF
-* X6A, X6W: MOXF
+* Motif XS: X0A, X0W
+* Motif XF: X3A, X3W
+* MOXF: X6A, X6W
+* Montage: X7A, X7L, X7U
+* MODX/MODX+: X8A, X8L, X8U
+* Montage M: Y2U, Y2L
 
-The wave files in professional Yamaha libraries often are compressed. Such files are not supported. Furthermore, only self-contained libraries (= libraries which do not reference samples in other libraries) are supported.
+Currently, the user and library formats of the Montage (not Montage M!) and MODX/MODX+ are as the destination format. The backup formats X7A and X8A are supported only as a source.
 
-So far, only the basic multi-sample data is converted (which means that no performances are created and therefore no information about e.g. filter, envelope or effects is converted).
+### Notes on using it as the source format
 
-Note: There are no checks that the created libraries stay in the boundaries of the workstation (e.g. the number of the maximum allowed samples or the required memory size)!
+The wave files in professional Yamaha libraries are often compressed. Such files are not supported. Furthermore, only self-contained libraries (= libraries which do not reference samples in other libraries) are supported.
+
+So far, reading of Performances is only supported for Montage files. This means that for all other formats only the basic multi-sample data is converted (no filter and envelopes data is converted).
+
+### Notes on using it as the destination format
+
+There are no checks that the created libraries stay in the boundaries of the workstation specifications (e.g. the number of the maximum allowed samples or the required memory size)!
 
 ### Destination Options
 

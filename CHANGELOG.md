@@ -1,9 +1,19 @@
 # Changes
 
+## 12.0.0 (unreleased)
+
+* New: Implemented a new logging component. Much faster and does not crash anymore.
+* Fixed: Sample files with illegal file system characters could not be created.
+* Yamaha YSFC
+  * New: Performance data of Montage can now be read and applied.
+  * New: Wave data of Montage M (*.Y2U) can now be read as well.
+  * New: Added progress logging when reading samples.
+  * Fixed: Library files of pre-Montage models were not read correctly.
+
 ## 11.7.0
 
 * New: Writing of samples can now be cancelled as well.
-* Fixed: Logger text is now cleared regularily to prevent a crash. To have the log still available, all messages are now logged into a file ConvertWithMoss.log which is created in the output directory.
+* Fixed: Logger text is now cleared regularly to prevent a crash. To have the log still available, all messages are now logged into a file ConvertWithMoss.log which is created in the output directory.
 * Kontakt
   * Fixed: Regression: Reading Kontakt 5-7 file lists were broken.
   * Fixed: NCW files are now only read when needed for writing and the memory is freed up directly afterwards to support NKIs which reference a very large amounts of NCW files.
