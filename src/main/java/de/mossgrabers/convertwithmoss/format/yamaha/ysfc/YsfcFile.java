@@ -132,9 +132,9 @@ public class YsfcFile
      *
      * @return The version
      */
-    public YamahaYsfcVersion getVersion ()
+    public YamahaYsfcFileFormat getVersion ()
     {
-        return YamahaYsfcVersion.get (this.version);
+        return YamahaYsfcFileFormat.get (this.version);
     }
 
 

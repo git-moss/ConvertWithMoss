@@ -326,29 +326,36 @@ WAV file can contain different sample formats. This converter supports (split) s
 
 This format is used in many Yamaha Workstation. While the format is the same, the content is different.
 
+### Notes on using it as the source format
+
 The following file formats are supported as a source:
 
 * Motif XS: X0A, X0W
 * Motif XF: X3A, X3W
 * MOXF: X6A, X6W
-* Montage: X7A, X7L, X7U
-* MODX/MODX+: X8A, X8L, X8U
+* Montage: X7A, X7L, X7U with Performance Data
+* MODX/MODX+: X8A, X8L, X8U with Performance Data
 * Montage M: Y2U, Y2L
-
-Currently, the user and library formats of the Montage (not Montage M!) and MODX/MODX+ are as the destination format. The backup formats X7A and X8A are supported only as a source.
-
-### Notes on using it as the source format
 
 The wave files in professional Yamaha libraries are often compressed. Such files are not supported. Furthermore, only self-contained libraries (= libraries which do not reference samples in other libraries) are supported.
 
-So far, reading of Performances is only supported for Montage files. This means that for all other formats only the basic multi-sample data is converted (no filter and envelopes data is converted).
+So far, reading of Performances is only supported for Montage (not Montage M!) and MODX/MODX+ files. This means that for all other formats only the basic multi-sample data is converted (no filter and envelopes data is converted).
 
 ### Notes on using it as the destination format
 
+Currently, the user and library formats of the Montage (not Montage M!) and MODX/MODX+ are available as the destination format. The backup formats X7A and X8A are supported only as a source.
+
 There are no checks that the created libraries stay in the boundaries of the workstation specifications (e.g. the number of the maximum allowed samples or the required memory size)!
+
+### Source Options
+
+* Create multi-samples for: 
+  * Waveforms: this reads only the raw-multisample(s) without additional Performance information. Use this option as well if the Performances do not reference all multi-samples in the library/user-bank.
+  * Performances: Only supported for Montage and MODX/MODX+ files and when Performance data is present in the file. Will create a multi-sample source for each Performance.
 
 ### Destination Options
 
 * Library Format: Chooses the output format which is created.
+* Create only Waveforms: No Performances will be written. Only Waveform data.
 * Combine all source multi-samples into one library: If this option is off, each source multi-sample is stored in a separate library which the name of the multi-sample. If this option is enabled, all source multi-samples are combined into 1 library.
 * Library Filename: If the previous option is enabled to combine all source multi-samples into one library, this name is used as the filename.

@@ -446,7 +446,7 @@ public class YamahaYsfcPartElement
      * @param version The format version of the YSFC file
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcPartElement (final InputStream in, final YamahaYsfcVersion version) throws IOException
+    public YamahaYsfcPartElement (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
     {
         this.read (in, version);
     }
@@ -1513,7 +1513,7 @@ public class YamahaYsfcPartElement
      * @param version The format version of the YSFC file
      * @throws IOException Could not read the entry item
      */
-    public void read (final InputStream in, final YamahaYsfcVersion version) throws IOException
+    public void read (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
     {
         final byte [] dataBlock = StreamUtils.readDataBlock (in, true);
 

@@ -1123,12 +1123,13 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      */
     protected File createUniqueFilename (final File destinationFolder, final String sampleName, final String extension)
     {
-        File multiFile = new File (destinationFolder, sampleName + extension);
+        final String ext = "." + extension;
+        File multiFile = new File (destinationFolder, sampleName + ext);
         int counter = 1;
         while (multiFile.exists ())
         {
             counter++;
-            multiFile = new File (destinationFolder, sampleName + " (" + counter + ")" + extension);
+            multiFile = new File (destinationFolder, sampleName + " (" + counter + ")" + ext);
         }
         return multiFile;
     }

@@ -27,7 +27,7 @@ public class YamahaYsfcPerformance implements IStreamable
 {
     private String                                name;
     private final List<YamahaYsfcPerformancePart> parts           = new ArrayList<> ();
-    private final YamahaYsfcVersion               sourceVersion;
+    private final YamahaYsfcFileFormat            sourceVersion;
 
     private byte []                               reverbBlock;
     private byte []                               variationBlock;
@@ -51,10 +51,10 @@ public class YamahaYsfcPerformance implements IStreamable
      * @param version The version to use
      * @throws IOException Could not read the default parameters for the requested version
      */
-    public YamahaYsfcPerformance (final byte [] data, final YamahaYsfcVersion version) throws IOException
+    public YamahaYsfcPerformance (final byte [] data, final YamahaYsfcFileFormat version) throws IOException
     {
         this.sourceVersion = version;
-        if (version != YamahaYsfcVersion.MONTAGE)
+        if (data == null)
             throw new IOException (Functions.getMessage ("IDS_YSFC_VERSION_NOT_SUPPORTED", version.getTitle ()));
         this.read (new ByteArrayInputStream (data));
     }
@@ -67,7 +67,7 @@ public class YamahaYsfcPerformance implements IStreamable
      * @param version The format version of the YSFC file
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcPerformance (final InputStream in, final YamahaYsfcVersion version) throws IOException
+    public YamahaYsfcPerformance (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
     {
         this.sourceVersion = version;
         this.read (in);
@@ -128,7 +128,7 @@ public class YamahaYsfcPerformance implements IStreamable
         this.commonParameters = in.readNBytes (43);
 
         // Scene 1-8
-        if (this.sourceVersion == YamahaYsfcVersion.MONTAGE)
+        if (this.sourceVersion == YamahaYsfcFileFormat.MONTAGE)
             this.sceneData = in.readNBytes (8 * 11);
         else // MODX
             this.sceneData = in.readNBytes (8 * 21);

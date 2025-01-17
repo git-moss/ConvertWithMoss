@@ -47,7 +47,7 @@ public class YamahaYsfcPerformancePart
      * @param version The format version of the YSFC file
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcPerformancePart (final InputStream in, final YamahaYsfcVersion version) throws IOException
+    public YamahaYsfcPerformancePart (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
     {
         this.read (in, version);
     }
@@ -206,7 +206,7 @@ public class YamahaYsfcPerformancePart
      * @param version The format version of the YSFC file
      * @throws IOException Could not read the entry item
      */
-    public void read (final InputStream in, final YamahaYsfcVersion version) throws IOException
+    public void read (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
     {
         this.name = StreamUtils.readASCII (in, 21).trim ();
         final int pos = this.name.indexOf (0);
@@ -226,6 +226,7 @@ public class YamahaYsfcPerformancePart
         this.pitchBendRangeLower = in.read ();
 
         // Currently not used...
+        // MODX has 1 Byte more than Montage! Needs to be considered in case that Scenes are used!
         this.theRest = in.readAllBytes ();
     }
 
