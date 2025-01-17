@@ -5,10 +5,12 @@
 * New: Implemented a new logging component. Much faster and does not crash anymore.
 * Fixed: Sample files with illegal file system characters could not be created.
 * Yamaha YSFC
-  * New: Performance data of Montage can now be read and applied.
-  * New: Wave data of Montage M (*.Y2U) can now be read as well.
-  * New: Added progress logging when reading samples.
+  * New: Performances can be created in destination libraries for Montage and MODX/MODX+ (optional).
+  * New: Performance data of Montage and MODX/MODX+ can now be read and applied.
+  * New: Waveform data of Montage M (*.Y2U) can now be read as well.
+  * New: Added progress logging when extracting samples from a library.
   * Fixed: Library files of pre-Montage models were not read correctly.
+  * Fixed: Waveform panorama was not always correct.
 
 ## 11.7.0
 

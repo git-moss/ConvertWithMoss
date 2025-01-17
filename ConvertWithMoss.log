@@ -2,9 +2,11 @@ Detecting and converting multi-samples...
 
 Analyzing: C:\Users\mos\Desktop\TEST
 
-Analyzing: C:\Users\mos\Desktop\TEST\01W Atmosphere.X7U
-Detected Yamaha YSFC format version 4.0.4 (Montage).
-Analyzing Performance: 01W Atmosphere
-Mapping: 01W Atmosphere.X7U : 01W Atmosphere
+Analyzing: C:\Users\mos\Desktop\TEST\01W Analog Pad Samples
+
+Analyzing: C:\Users\mos\Desktop\TEST\01W Analog Pad.nki
+Detected Kontakt 4.2 format (created with Kontakt 4.2.2.4504) - Little-Endian.
+Using default volume envelope for category 'Basic Pad'.
+Mapping: \01W Analog Pad.nki : 01W Analog Pad
 
 Finished. 

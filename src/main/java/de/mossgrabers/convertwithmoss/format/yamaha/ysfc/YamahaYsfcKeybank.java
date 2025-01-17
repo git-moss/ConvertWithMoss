@@ -20,27 +20,27 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class YamahaYsfcKeybank implements IStreamable
 {
-    private final YamahaYsfcVersion version;
+    private final YamahaYsfcFileFormat version;
 
-    private int                     keyRangeLower;
-    private int                     keyRangeUpper;
-    private int                     velocityRangeLower;
-    private int                     velocityRangeUpper;
-    private int                     level;
-    private int                     panorama;
-    private int                     coarseTune;
-    private int                     fineTune;
-    private int                     rootNote;
-    private int                     sampleFrequency;
-    private int                     playStart;
-    private int                     loopPoint;
-    private int                     playEnd;
-    private int                     number;
-    private int                     sampleLength;
-    private int                     channels;
-    private int                     loopMode;
-    private int                     fixedPitch = 0xFF;
-    private int                     loopTune;
+    private int                        keyRangeLower;
+    private int                        keyRangeUpper;
+    private int                        velocityRangeLower;
+    private int                        velocityRangeUpper;
+    private int                        level;
+    private int                        panorama   = 64;
+    private int                        coarseTune;
+    private int                        fineTune;
+    private int                        rootNote;
+    private int                        sampleFrequency;
+    private int                        playStart;
+    private int                        loopPoint;
+    private int                        playEnd;
+    private int                        number;
+    private int                        sampleLength;
+    private int                        channels;
+    private int                        loopMode;
+    private int                        fixedPitch = 0xFF;
+    private int                        loopTune;
 
 
     /**
@@ -48,7 +48,7 @@ public class YamahaYsfcKeybank implements IStreamable
      * 
      * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      */
-    public YamahaYsfcKeybank (final YamahaYsfcVersion version)
+    public YamahaYsfcKeybank (final YamahaYsfcFileFormat version)
     {
         this.version = version;
     }
@@ -61,7 +61,7 @@ public class YamahaYsfcKeybank implements IStreamable
      * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcKeybank (final InputStream in, final YamahaYsfcVersion version) throws IOException
+    public YamahaYsfcKeybank (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
     {
         this.version = version;
         this.read (in);
@@ -365,22 +365,22 @@ public class YamahaYsfcKeybank implements IStreamable
     /**
      * Get the panorama of the sample.
      *
-     * @return The panorama in the range of [-64 to 63]
+     * @return The panorama in the range of [1..127] which relates to [-63 to 63]
      */
     public int getPanorama ()
     {
-        return this.panorama - 64;
+        return this.panorama;
     }
 
 
     /**
      * Set the panorama of the sample.
      *
-     * @param panorama The panorama in the range of [-64 to 63]
+     * @param panorama The panorama in the range of [1..127] which relates to [-63 to 63]
      */
     public void setPanorama (final int panorama)
     {
-        this.panorama = panorama + 64;
+        this.panorama = Math.clamp (panorama, 1, 127);
     }
 
 

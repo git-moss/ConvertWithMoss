@@ -308,7 +308,7 @@ public class MathUtils
      * De-normalizes a double in the range of [-1..1] to an integer range with different amounts in
      * the negative and positive direction.
      * 
-     * @param value The value to normalize
+     * @param value The value to de-normalize
      * @param negativeMinimum The negative minimum of the integer range
      * @param positiveMaximum The negative maximum of the integer range
      * @param offset An offset to add to the de-normalized integer value
@@ -324,7 +324,7 @@ public class MathUtils
      * De-normalizes a double in the range of [-1..1] to an integer range with different amounts in
      * the negative and positive direction.
      * 
-     * @param value The double value to normalize
+     * @param value The double value to de-normalize
      * @param negativeMinimum The negative minimum of the integer range
      * @param positiveMaximum The negative maximum of the integer range
      * @return The de-normalized integer value
@@ -332,7 +332,7 @@ public class MathUtils
     public static int denormalizeIntegerRange (final double value, final int negativeMinimum, final int positiveMaximum)
     {
         if (value < 0)
-            return Math.clamp (Math.round (value * negativeMinimum), negativeMinimum, 0);
+            return Math.clamp (-Math.round (value * negativeMinimum), negativeMinimum, 0);
         return Math.clamp (Math.round (value * positiveMaximum), 0, positiveMaximum);
     }
 }
