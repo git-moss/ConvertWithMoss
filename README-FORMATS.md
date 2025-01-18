@@ -1,6 +1,6 @@
 # Supported Formats
 
-The following multisample formats are supported:
+The following multi-sample formats are supported:
 
 * [AIFF](#aiff)
 * [Ableton Sampler](#ableton-sampler)
@@ -30,14 +30,14 @@ If a source format does not support metadata like author, category or additional
 If the format uses WAV files to store the samples, there are the following options to additionally write metadata information to the respective chunks:
 
 * Broadcast Audio Metadata: This can contain a description text, the creator of the sample and the creation date and time.
-* Instrument: Contains the root note, fine tuning, gain, the key range ans the velocity range.
+* Instrument: Contains the root note, fine tuning, gain, the key range and the velocity range.
 * Sample: Contains the root note, fine tuning and loop points.
 * Remove JUNK, junk, FLLR and MD5 chunks: Enable this option to drop these chunks. Junk and filler chunks are only for aligning the following chunks to certain data positions. The MD5 chunk contains a checksum which is currently not updated and therefore should be dropped.
 
 ### Metadata Detection Options
 
-* Prefer folder name: If enabled the name of the multisample will be extracted from the folder instead of the sample names.
-* Default creator: The name which is set as the creator of the multisamples, if no creator tag could be found.
+* Prefer folder name: If enabled the name of the multi-sample will be extracted from the folder instead of the sample names.
+* Default creator: The name which is set as the creator of the multi-samples, if no creator tag could be found.
 * Creator tag(s): Here you can set a number of creator names, which need to be separated by comma. You can also use this to look up other things. For example, I set the names of the synthesizers which I sampled. My string looks like: "01W,FM8,Pro-53,Virus B,XV" (without the quotes).
 
 ## 1010music blackbox, tangerine, bitbox
@@ -65,7 +65,7 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 
 The Audio Interchange File Format (Audio IFF) provides a standard for storing sampled sounds. The format is quite flexible, allowing for the storage of monaural or multichannel sampled sounds at a variety of sample rates and sample widths. Audio IFF conforms to the "EA IFF 85" Standard for Interchange Format Files developed by Electronic Arts.
 
-If AIFF is selected as the source format, all AIFF files located in the same folder are considered as a part of one multisample. You can also select a top folder. If you do so, all sub-folders are checked for potential multisample folders.
+If AIFF is selected as the source format, all AIFF files located in the same folder are considered as a part of one multi-sample. You can also select a top folder. If you do so, all sub-folders are checked for potential multi-sample folders.
 
 The applied algorithm and configuration options are the same as when WAV files are used as the source. See the [WAV section](#wav-files) for details.
 
@@ -95,7 +95,7 @@ Other restrictions are:
 
 ## CWITEC TX16Wx
 
-TX16Wx is a free sampler plugin available for Windows and Macos. TX16Wx Professional is the commercial expansion of TX16Wx. It adds some advanced features like effects, signal routing or trigger switching. But the free version is already very powerful and covers all of the features that ConvertWithMoss supports.
+TX16Wx is a free sampler plug-in available for Windows and MacOS. TX16Wx Professional is the commercial expansion of TX16Wx. It adds some advanced features like effects, signal routing or trigger switching. But the free version is already very powerful and covers all of the features that ConvertWithMoss supports.
 
 The format uses a XML format and keeps the samples separate.
 
@@ -110,8 +110,8 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 The Decent Sampler plugin is a free (but closed source) sample player plugin that allows you to play sample libraries in the DecentSampler format (files with extensions: dspreset and dslibrary). See https://www.decentsamples.com/product/decent-sampler-plugin/
 The format specification is available here: https://www.decentsamples.com/wp-content/uploads/2020/06/format-documentation.html#the-sample-element
 
-A preset file contains a single preset. A dspreset file contains only the description of the multisample. The related samples are normally kept in a separate folder. Only WAV files are supported.
-A dslibrary file contains several dspreset files incl. the samples compressed in ZIP format.
+A preset file contains a single preset. A dspreset file contains only the description of the multi-sample. The related samples are normally kept in a separate folder. Only WAV files are supported.
+A dslibrary file contains several dspreset files including the samples compressed in ZIP format.
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
@@ -153,7 +153,7 @@ If selected as a destination, a NKI file is written and all samples are placed i
 
 ## Expert Sleepers disting EX
 
-The disting EX is a multi-function Eurorack module which provides many different algorithms. On of them is the SD Multisample algorithm which is an eight voice polyphonic, three part multitimbral, sample playback instrument, playing WAV files from the MicroSD card. It can have up to 3 input CV/gate pairs, or can be played via MIDI or I2C. It supports both velocity switches and round robins per sample.
+The disting EX is a multi-function Eurorack module which provides many different algorithms. On of them is the SD Multisample algorithm which is an eight voice polyphonic, three part multi-timbral, sample playback instrument, playing WAV files from the MicroSD card. It can have up to 3 input CV/gate pairs, or can be played via MIDI or I2C. It supports both velocity switches and round robins per sample.
 The basic multi-sample setup is encoded in the file-names of the samples. Further information like the amplitude envelope are stored in a preset (*.dexpreset). The preset references only the name of the folder which contains the related samples. All samples in the folder considered to be belonging to the multi-sample.
 
 ### Destination Options
@@ -175,9 +175,9 @@ The KMP/KSF format (*.KMP) was first introduced in the Korg Trinity workstation 
 * PA1X/PA800/PA2X/PA3X/PA4X
 * Nautilus
 
-The format is documented in detail (more or less) in the appendix of the respective parameter guides. The KMP format contains only 1 group of a multisample, which means there are only key splits but no groups. The file references several KSF files which contain the sample data for each key region.
+The format is documented in detail (more or less) in the appendix of the respective parameter guides. The KMP format contains only 1 group of a multi-sample, which means there are only key splits but no groups. The file references several KSF files which contain the sample data for each key region.
 
-Since the KMP format can only contain 1 group of a multisample, sources with multiple groups can be optionally split into several destination KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported. Files in other formats are automatically converted.
+Since the KMP format can only contain 1 group of a multi-sample, sources with multiple groups can be optionally split into several destination KMP files. Due to limitations of the format only uncompressed 8 or 16 bit samples up to 48kHz are supported. Files in other formats are automatically converted.
 
 Even if the KSF files can store stereo files, they do not work. Therefore, they need to be split into 2 KMP files. To ease the use of these 2 files an additional KSC file is created, which loads all referenced files.
 
@@ -195,7 +195,7 @@ The korgmultisample format is currently used by the Korg wavestate and modwave k
 
 Since the format is pretty simple all data stored in the file is available for the conversion.
 
-Since the format supports only one group of a multisample, multiple destination files are created for each group available in the source. If there is more than one group in the source the name of the created file has the velocity range of the group added. Using that information a multisample with up to 4 groups can be created as a Performance in the device.
+Since the format supports only one group of a multi-sample, multiple destination files are created for each group available in the source. If there is more than one group in the source the name of the created file has the velocity range of the group added. Using that information a multi-sample with up to 4 groups can be created as a Performance in the device.
 
 ### Destination Options
 
@@ -236,7 +236,7 @@ There are metadata fields for creator and a creator URL. However, additional inf
 
 "The SFZ format is a file format to define how a collection of samples are arranged for performance. The goal behind the SFZ format is to provide a free, simple, minimalistic and expandable format to arrange, distribute and use audio samples with the highest possible quality and the highest possible performance flexibility" (cited from https://sfzformat.com/).
 
-The SFZ file contains only the description of the multisample. The related samples are normally kept in a separate folder. The converter supports samples in WAV, OGG and FLAC format.
+The SFZ file contains only the description of the multi-sample. The related samples are normally kept in a separate folder. The converter supports samples in WAV, OGG and FLAC format.
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
@@ -289,7 +289,7 @@ If this format is used as the source it produces 1 or 2 output presets, one for 
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
-If WAV is selected as the source format, all WAV files located in the same folder are considered as a part of one multisample. You can also select a top folder. If you do so, all sub-folders are checked for potential multisample folders.
+If WAV is selected as the source format, all WAV files located in the same folder are considered as a part of one multi-sample. You can also select a top folder. If you do so, all sub-folders are checked for potential multi-sample folders.
 
 First, all WAV files of a folder are checked if they contain instrument chunks. If this is the case they are used to create the layout of the multi-sample (range and velocity splits as well as gain and pitch settings). If no such information is available a clever algorithm tries to detect the necessary key range and velocity information from the names of the WAV files. Furthermore, the algorithm tries to detect as much metadata as possible from the WAV files:
 
@@ -316,7 +316,7 @@ WAV file can contain different sample formats. This converter supports (split) s
 
 * Crossfade notes: You can automatically create crossfades between the different note ranges. This makes especially sense if you only sampled a couple of notes. Set the number of notes, which should be cross-faded between two samples (0-127). If you set a too high number the crossfade is automatically limited to the maximum number of notes between the two neighboring samples.
 * Crossfade velocities: You can automatically create crossfades between the different groups. This makes especially sense if you sampled several sample groups with different velocity values. Set the number of velocity steps (0-127), which should be crossfaded between two samples. If you set a too high number the crossfade is automatically limited to the maximum number of velocity steps between the two neighbouring samples.
-* Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multisample but there might be further text at the end of the name, which you might want to remove. For example the multisamples I created with SampleRobot have a group information like "_ms0_0". You can set a comma separated list of such postfix texts in that field.
+* Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multi-sample but there might be further text at the end of the name, which you might want to remove. For example the multi-samples I created with SampleRobot have a group information like "_ms0_0". You can set a comma separated list of such postfix texts in that field.
 
 ### Destination Options
 
@@ -350,7 +350,7 @@ There are no checks that the created libraries stay in the boundaries of the wor
 ### Source Options
 
 * Create multi-samples for: 
-  * Waveforms: this reads only the raw-multisample(s) without additional Performance information. Use this option as well if the Performances do not reference all multi-samples in the library/user-bank.
+  * Waveforms: this reads only the raw-multi-sample(s) without additional Performance information. Use this option as well if the Performances do not reference all multi-samples in the library/user-bank.
   * Performances: Only supported for Montage and MODX/MODX+ files and when Performance data is present in the file. Will create a multi-sample source for each Performance.
 
 ### Destination Options
