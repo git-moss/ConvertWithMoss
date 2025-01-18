@@ -1,6 +1,6 @@
 # Changes
 
-## 12.0.0 (unreleased)
+## 12.0.0
 
 * New: Implemented a new logging component. Much faster and does not crash anymore.
 * Fixed: Sample files with illegal file system characters could not be created.
