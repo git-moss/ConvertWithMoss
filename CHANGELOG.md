@@ -1,5 +1,20 @@
 # Changes
 
+## 12.1.0
+
+* Fixed: Most of the created files had two dots before the file extension.
+* Fixed: Output folder was not checked for existence when only Analyze was executed but it is required now for the log file.
+* Fixed: Crash when left/right WAV files should be combined to stereo.
+* DecentSampler
+  * Fixed: Added workaround for absolute sample paths in dslibrary files.
+* Kontakt
+  * New: Improved category detection, especially for Instruments in NKM files.
+* Kontakt 1/2
+  * Fixed: Improved lookup of sample files which are referenced by absolute paths.
+  * Fixed: Added support for file paths which include encoded UTF-8 characters in the format of %xxxx.
+* Kontakt 5+
+  * Fixed: File could not be read if a sound description was set.
+
 ## 12.0.0
 
 * New: Implemented a new logging component. Much faster and does not crash anymore.

@@ -6,8 +6,11 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -17,9 +20,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class AuthoringApplicationChunkData extends AbstractChunkData
 {
-    private boolean              isCompressed;
+    private boolean              isCompressed = false;
+    private AuthoringApplication application  = AuthoringApplication.KONTAKT;
     private String               applicationVersion;
-    private AuthoringApplication application;
 
 
     /** {@inheritDoc} */
@@ -37,6 +40,22 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
         StreamUtils.readUnsigned32 (in, false);
 
         this.applicationVersion = StreamUtils.readWithLengthUTF16 (in);
+
+        if (in.available () > 0)
+            throw new IOException (Functions.getMessage ("IDS_NKI5_UNKNOWN_DATA", "Authoring Application"));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void write (final OutputStream out) throws IOException
+    {
+        this.writeVersion (out);
+
+        out.write (this.isCompressed ? 1 : 0);
+        StreamUtils.writeUnsigned32 (out, this.application.getID (), false);
+        StreamUtils.writeUnsigned32 (out, 1, false);
+        StreamUtils.writeWithLengthUTF16 (out, this.applicationVersion);
     }
 
 
@@ -70,5 +89,18 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
     public AuthoringApplication getApplication ()
     {
         return this.application;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String dump (final int level)
+    {
+        final int padding = level * 4;
+        final StringBuilder sb = new StringBuilder ();
+        sb.append (StringUtils.padLeftSpaces ("* Is Compressed: ", padding)).append (this.isCompressed).append ('\n');
+        sb.append (StringUtils.padLeftSpaces ("* Application: ", padding)).append (this.application.getName ()).append ('\n');
+        sb.append (StringUtils.padLeftSpaces ("* Application Version: ", padding)).append (this.applicationVersion).append ('\n');
+        return sb.toString ();
     }
 }

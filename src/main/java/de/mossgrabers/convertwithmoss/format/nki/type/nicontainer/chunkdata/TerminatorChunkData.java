@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 
 /**
@@ -20,5 +21,21 @@ public class TerminatorChunkData extends AbstractChunkData
     public void read (final InputStream in) throws IOException
     {
         this.readVersion (in);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void write (final OutputStream out) throws IOException
+    {
+        this.writeVersion (out);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String dump (final int level)
+    {
+        return "";
     }
 }

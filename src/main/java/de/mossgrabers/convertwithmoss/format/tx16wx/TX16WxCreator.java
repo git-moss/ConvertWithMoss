@@ -263,7 +263,7 @@ public class TX16WxCreator extends AbstractCreator
         if (metadata.isEmpty ())
             return;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".txprog");
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "txprog");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());

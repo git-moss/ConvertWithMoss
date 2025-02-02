@@ -193,7 +193,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                 sampleName = URLDecoder.decode (sampleName, StandardCharsets.UTF_8).replace ("\\", File.separator);
 
                 final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-                final File sampleFile = this.findSampleFile (parentFile, previousFolder, sampleName, height);
+                final File sampleFile = findSampleFile (this.notifier, parentFile, previousFolder, sampleName, height);
                 if (!sampleFile.exists ())
                 {
                     this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());

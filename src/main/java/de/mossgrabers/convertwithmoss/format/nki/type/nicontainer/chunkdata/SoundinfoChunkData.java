@@ -6,12 +6,15 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -21,13 +24,17 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class SoundinfoChunkData extends AbstractChunkData
 {
-    private String                    soundInfoVersion;
+    private String                    soundInfoVersionText;
     private String                    name;
     private String                    author;
     private String                    vendor;
+    private String                    description;
     private final List<String>        tags       = new ArrayList<> ();
     private final List<String>        attributes = new ArrayList<> ();
-    private final Map<String, String> properties = new HashMap<> ();
+    private final Map<String, String> properties = new TreeMap<> ();
+    private int                       versionMajor;
+    private int                       versionMinor;
+    private int                       versionPatch;
 
 
     /** {@inheritDoc} */
@@ -36,17 +43,18 @@ public class SoundinfoChunkData extends AbstractChunkData
     {
         this.readVersion (in);
 
-        final int versionMajor = (int) StreamUtils.readUnsigned32 (in, false);
-        final int versionMinor = (int) StreamUtils.readUnsigned32 (in, false);
-        final int versionPatch = (int) StreamUtils.readUnsigned32 (in, false);
-        this.soundInfoVersion = versionMajor + "." + versionMinor + "." + versionPatch;
+        this.versionMajor = (int) StreamUtils.readUnsigned32 (in, false);
+        this.versionMinor = (int) StreamUtils.readUnsigned32 (in, false);
+        this.versionPatch = (int) StreamUtils.readUnsigned32 (in, false);
+        this.soundInfoVersionText = this.versionMajor + "." + this.versionMinor + "." + this.versionPatch;
 
         this.name = StreamUtils.readWithLengthUTF16 (in);
         this.author = StreamUtils.readWithLengthUTF16 (in);
         this.vendor = StreamUtils.readWithLengthUTF16 (in);
+        this.description = StreamUtils.readWithLengthUTF16 (in);
 
         // Always 0
-        StreamUtils.readUnsigned64 (in, false);
+        StreamUtils.readUnsigned32 (in, false);
         // Always FF FF FF FF FF FF FF FF (-1)
         StreamUtils.readUnsigned64 (in, false);
         // Always 0
@@ -84,6 +92,55 @@ public class SoundinfoChunkData extends AbstractChunkData
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    public void write (final OutputStream out) throws IOException
+    {
+        this.writeVersion (out);
+
+        StreamUtils.writeUnsigned32 (out, this.versionMajor, false);
+        StreamUtils.writeUnsigned32 (out, this.versionMinor, false);
+        StreamUtils.writeUnsigned32 (out, this.versionPatch, false);
+
+        StreamUtils.writeWithLengthUTF16 (out, this.name);
+        StreamUtils.writeWithLengthUTF16 (out, this.author);
+        StreamUtils.writeWithLengthUTF16 (out, this.vendor);
+        StreamUtils.writeWithLengthUTF16 (out, this.description);
+
+        // Always 0
+        StreamUtils.writeUnsigned32 (out, 0, false);
+        // Always FF FF FF FF FF FF FF FF (-1)
+        StreamUtils.writeUnsigned64 (out, -1, false);
+        // Always 0
+        StreamUtils.writeUnsigned64 (out, 0, false);
+        // Always 0
+        StreamUtils.writeUnsigned64 (out, 0, false);
+
+        // Always 1
+        StreamUtils.writeUnsigned32 (out, 1, false);
+        // Always 1
+        StreamUtils.writeUnsigned32 (out, 1, false);
+
+        StreamUtils.writeUnsigned32 (out, this.tags.size (), false);
+        for (int i = 0; i < this.tags.size (); i++)
+            StreamUtils.writeWithLengthUTF16 (out, this.tags.get (i));
+
+        StreamUtils.writeUnsigned32 (out, this.attributes.size (), false);
+        for (int i = 0; i < this.attributes.size (); i++)
+            StreamUtils.writeWithLengthUTF16 (out, this.attributes.get (i));
+
+        // Always 0
+        StreamUtils.writeUnsigned32 (out, 0, false);
+
+        StreamUtils.writeUnsigned32 (out, this.properties.size (), false);
+        for (final Map.Entry<String, String> e: this.properties.entrySet ())
+        {
+            StreamUtils.writeWithLengthUTF16 (out, e.getKey ());
+            StreamUtils.writeWithLengthUTF16 (out, e.getValue ());
+        }
+    }
+
+
     /**
      * Get the version of the sound info.
      *
@@ -91,7 +148,7 @@ public class SoundinfoChunkData extends AbstractChunkData
      */
     public String getSoundInfoVersion ()
     {
-        return this.soundInfoVersion;
+        return this.soundInfoVersionText;
     }
 
 
@@ -129,6 +186,17 @@ public class SoundinfoChunkData extends AbstractChunkData
 
 
     /**
+     * Get the description of the sound.
+     *
+     * @return The description
+     */
+    public String getDescription ()
+    {
+        return this.description;
+    }
+
+
+    /**
      * Get the tags.
      *
      * @return The tags
@@ -158,5 +226,51 @@ public class SoundinfoChunkData extends AbstractChunkData
     public Map<String, String> getProperties ()
     {
         return this.properties;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String dump (final int level)
+    {
+        final int padding = level * 4;
+        final StringBuilder sb = new StringBuilder ();
+        sb.append (StringUtils.padLeftSpaces ("* SoundInfo Version: ", padding)).append (this.soundInfoVersionText).append ('\n');
+        sb.append (StringUtils.padLeftSpaces ("* Name: ", padding)).append (this.name).append ('\n');
+        sb.append (StringUtils.padLeftSpaces ("* Author: ", padding)).append (this.author == null || this.author.isBlank () ? "-" : this.author).append ('\n');
+        sb.append (StringUtils.padLeftSpaces ("* Vendor: ", padding)).append (this.vendor == null || this.vendor.isBlank () ? "-" : this.vendor).append ('\n');
+        sb.append (StringUtils.padLeftSpaces ("* Description: ", padding)).append (this.description == null || this.description.isBlank () ? "-" : this.description).append ('\n');
+
+        sb.append (StringUtils.padLeftSpaces ("* Tags: ", padding));
+        if (this.tags.isEmpty ())
+            sb.append ("None");
+        else
+        {
+            for (final String tag: this.tags)
+                sb.append ('\'').append (tag).append ("' ");
+        }
+        sb.append ('\n');
+
+        sb.append (StringUtils.padLeftSpaces ("* Attributes: ", padding));
+        if (this.attributes.isEmpty ())
+            sb.append ("None");
+        else
+        {
+            for (final String attribute: this.attributes)
+                sb.append ('\'').append (attribute).append ("' ");
+        }
+        sb.append ('\n');
+
+        sb.append (StringUtils.padLeftSpaces ("* Properties: ", padding));
+        if (this.properties.isEmpty ())
+            sb.append ("None\n");
+        else
+        {
+            sb.append ('\n');
+            for (final Entry<String, String> e: this.properties.entrySet ())
+                sb.append (StringUtils.padLeftSpaces (e.getKey (), padding + 4)).append (": ").append (e.getValue ()).append ('\n');
+        }
+
+        return sb.toString ();
     }
 }

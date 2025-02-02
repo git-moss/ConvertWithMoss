@@ -205,7 +205,7 @@ public class DecentSamplerCreator extends AbstractCreator
             // Make sure the file name is unique among either the files in the destination folder or
             // inside of the library
             String sampleName = createSafeFilename (multisampleSource.getName ());
-            presetResult.dsPresetFile = isPresetOutput ? this.createUniqueFilename (destinationFolder, sampleName, ".dspreset") : this.createUniqueFilename (destinationFolder, sampleName, ".dspreset", otherOutputFiles);
+            presetResult.dsPresetFile = isPresetOutput ? this.createUniqueFilename (destinationFolder, sampleName, "dspreset") : this.createUniqueFilename (destinationFolder, sampleName, "dspreset", otherOutputFiles);
             sampleName = FileUtils.getNameWithoutType (presetResult.dsPresetFile);
             presetResult.sampleFolder = sampleName + FOLDER_POSTFIX;
 

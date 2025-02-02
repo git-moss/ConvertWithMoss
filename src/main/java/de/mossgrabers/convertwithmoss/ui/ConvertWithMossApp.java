@@ -606,9 +606,6 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         }
         this.sourcePathHistory.add (0, this.sourceFolder.getAbsolutePath ());
 
-        if (this.onlyAnalyse)
-            return true;
-
         // Check output folder
         this.outputFolder = new File (this.destinationPathField.getEditor ().getText ());
         if (!this.outputFolder.exists () && !this.outputFolder.mkdirs ())
@@ -744,7 +741,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
                 }
             }
         if (wasSet)
-            this.log ("IDS_NOTIFY_APPLY_DEFAULT_ENVELOPE", category);
+            this.log ("IDS_NOTIFY_APPLY_DEFAULT_ENVELOPE", category.isBlank () ? "Unknown" : category);
     }
 
 
@@ -781,7 +778,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         }
         catch (final IOException ex)
         {
-            this.logger.error (Functions.getMessage ("IDS_NOTIFY_ERR_NO_LOG_FILE", ex.getLocalizedMessage ()));
+            this.logger.error (Functions.getMessage ("@IDS_NOTIFY_ERR_NO_LOG_FILE", ex.getLocalizedMessage ()));
             this.logWriter = null;
         }
     }
@@ -917,20 +914,17 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
                 this.loggingArea.setAccessibleText (Functions.getMessage ("IDS_NOTIFY_FINISHED"));
             }
 
-            if (canClose)
+            if (canClose && this.logWriter != null)
             {
-                if (this.logWriter != null)
+                try
                 {
-                    try
-                    {
-                        this.logWriter.close ();
-                    }
-                    catch (final IOException ex)
-                    {
-                        // Ignore
-                    }
-                    this.logWriter = null;
+                    this.logWriter.close ();
                 }
+                catch (final IOException ex)
+                {
+                    // Ignore
+                }
+                this.logWriter = null;
             }
 
         });

@@ -4,8 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
@@ -28,7 +29,7 @@ public class ZoneLoop
     private int             loopStart;
     private int             loopLength;
     private int             loopCount;
-    private int             alternatingLoop;
+    private boolean         alternatingLoop;
     private float           loopTuning;
     private int             xFadeLength;
 
@@ -39,18 +40,40 @@ public class ZoneLoop
      * @param in Where to read the data from
      * @throws IOException Could not read the loop
      */
-    public void parse (final ByteArrayInputStream in) throws IOException
+    public void read (final InputStream in) throws IOException
     {
         this.mode = StreamUtils.readSigned32 (in, false);
         this.loopStart = (int) StreamUtils.readUnsigned32 (in, false);
         this.loopLength = (int) StreamUtils.readUnsigned32 (in, false);
         this.loopCount = (int) StreamUtils.readUnsigned32 (in, false);
-        this.alternatingLoop = in.read ();
+        this.alternatingLoop = in.read () > 0;
         this.loopTuning = StreamUtils.readFloatLE (in);
         this.xFadeLength = (int) StreamUtils.readUnsigned32 (in, false);
         // Padding, except after last loop
         if (in.available () > 0)
             in.skipNBytes (1);
+    }
+
+
+    /**
+     * Parse the loop data.
+     *
+     * @param out Where to write the data to
+     * @param isLast True if this is the last loop
+     * @throws IOException Could not read the loop
+     */
+    public void write (final OutputStream out, final boolean isLast) throws IOException
+    {
+        StreamUtils.writeSigned32 (out, this.mode, false);
+        StreamUtils.writeUnsigned32 (out, this.loopStart, false);
+        StreamUtils.writeUnsigned32 (out, this.loopLength, false);
+        StreamUtils.writeUnsigned32 (out, this.loopCount, false);
+        out.write (this.alternatingLoop ? 1 : 0);
+        StreamUtils.writeFloatLE (out, this.loopTuning);
+        StreamUtils.writeUnsigned32 (out, this.xFadeLength, false);
+        // Padding, except after last loop
+        if (!isLast)
+            out.write (0);
     }
 
 
@@ -101,9 +124,9 @@ public class ZoneLoop
     /**
      * Is the loop alternating?
      *
-     * @return 1 if alternating otherwise 0
+     * @return True if alternating
      */
-    public int isAlternating ()
+    public boolean isAlternating ()
     {
         return this.alternatingLoop;
     }

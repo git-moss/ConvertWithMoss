@@ -433,8 +433,7 @@ public class StreamUtils
      */
     public static float readFloatLE (final InputStream in) throws IOException
     {
-        final byte [] data = in.readNBytes (4);
-        return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getFloat ();
+        return readFloatLE (in.readNBytes (4));
     }
 
 
@@ -464,27 +463,32 @@ public class StreamUtils
 
 
     /**
-     * Converts a N byte double value.
+     * Converts and writes a 4 byte float value.
      *
-     * @param data The N byte array
-     * @return The double value
+     * @param out The output stream to write to
+     * @param value The float value
+     * @param isBigEndian True if bytes of the size number are stored big-endian otherwise
+     *            little-endian (least significant bytes first)
+     * @throws IOException Data could not be written
      */
-    public static double readDoubleLE (final byte [] data)
+    public static void writeDouble (final OutputStream out, final double value, final boolean isBigEndian) throws IOException
     {
-        return readDouble (data, false);
+        out.write (ByteBuffer.allocate (8).order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN).putDouble (value).array ());
     }
 
 
     /**
-     * Converts a N byte double value.
+     * Converts a 8 byte double value.
      *
-     * @param data The N byte array
+     * @param in The input stream to read from
+     * @return The double value
      * @param isBigEndian True if bytes of the size number are stored big-endian otherwise
      *            little-endian (least significant bytes first)
-     * @return The double value
+     * @throws IOException Data could not be read
      */
-    public static double readDouble (final byte [] data, final boolean isBigEndian)
+    public static double readDouble (final InputStream in, final boolean isBigEndian) throws IOException
     {
+        final byte [] data = in.readNBytes (8);
         return ByteBuffer.wrap (data).order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN).getDouble ();
     }
 
@@ -767,8 +771,22 @@ public class StreamUtils
     public static String readWithLengthUTF16 (final InputStream in) throws IOException
     {
         final int size = (int) readUnsigned32 (in, false);
-        final byte [] wideStringBytes = in.readNBytes (size * 2);
-        return new String (wideStringBytes, StandardCharsets.UTF_16LE);
+        return new String (in.readNBytes (size * 2), StandardCharsets.UTF_16LE);
+    }
+
+
+    /**
+     * Writes an UTF-16 string. The length of the string is stored in the first 4 bytes
+     * (little-endian). There are no null termination bytes.
+     *
+     * @param out The output stream to write to
+     * @param text The read string
+     * @throws IOException Could not read the string
+     */
+    public static void writeWithLengthUTF16 (final OutputStream out, final String text) throws IOException
+    {
+        writeUnsigned32 (out, text.length (), false);
+        out.write (text.getBytes (StandardCharsets.UTF_16LE));
     }
 
 

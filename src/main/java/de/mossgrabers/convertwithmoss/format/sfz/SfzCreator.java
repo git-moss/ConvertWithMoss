@@ -124,7 +124,7 @@ public class SfzCreator extends AbstractCreator
         final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
         final String metadata = this.createMetadata (safeSampleFolderName, multisampleSource);
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".sfz");
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "sfz");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))

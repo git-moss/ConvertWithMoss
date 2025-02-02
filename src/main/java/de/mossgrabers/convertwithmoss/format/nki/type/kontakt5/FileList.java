@@ -31,16 +31,16 @@ public class FileList
      * @param chunk The chunk to parse
      * @throws IOException Could not read the chunk
      */
-    public void parse (final PresetChunk chunk) throws IOException
+    public void parse (final KontaktPresetChunk chunk) throws IOException
     {
         final int chunkID = chunk.getId ();
-        if (chunkID != PresetChunkID.FILENAME_LIST && chunkID != PresetChunkID.FILENAME_LIST_EX)
+        if (chunkID != KontaktPresetChunkID.FILENAME_LIST && chunkID != KontaktPresetChunkID.FILENAME_LIST_EX)
             throw new IOException (Functions.getMessage ("IDS_NKI5_NOT_A_FILELIST_CHUNK"));
 
         final byte [] data = chunk.getPublicData ();
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
-        if (chunkID == PresetChunkID.FILENAME_LIST_EX)
+        if (chunkID == KontaktPresetChunkID.FILENAME_LIST_EX)
         {
             final int version = StreamUtils.readUnsigned16 (in, false);
             if (version < 2 || version > 3)
@@ -84,7 +84,7 @@ public class FileList
             in.skipNBytes (4);
         }
 
-        if (chunkID == PresetChunkID.FILENAME_LIST_EX)
+        if (chunkID == KontaktPresetChunkID.FILENAME_LIST_EX)
         {
             // Unknown but there is 1 integer for each file
             for (int i = 0; i < numFiles; i++)

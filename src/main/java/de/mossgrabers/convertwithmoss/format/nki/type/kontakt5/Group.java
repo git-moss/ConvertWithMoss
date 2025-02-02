@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -45,7 +46,7 @@ public class Group
     public void parse (final byte [] data, final int version) throws IOException
     {
         if (version > 0x9C)
-            throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_ZONE_VERSION", Integer.toHexString (version).toUpperCase ()));
+            throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_GROUP_VERSION", Integer.toHexString (version).toUpperCase ()));
 
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
@@ -64,6 +65,37 @@ public class Group
         this.muted = in.read () > 0;
         this.soloed = in.read () > 0;
         this.interpQuality = StreamUtils.readSigned32 (in, false);
+    }
+
+
+    /**
+     * Create a public data block from the group data.
+     *
+     * @param version The version of the group structure
+     * @return The created data
+     * @throws IOException Error creating the data
+     */
+    public byte [] create (final int version) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+
+        StreamUtils.writeWithLengthUTF16 (out, this.name);
+        StreamUtils.writeFloatLE (out, this.volume);
+        StreamUtils.writeFloatLE (out, this.pan);
+        StreamUtils.writeFloatLE (out, this.tune);
+        out.write (this.keyTracking ? 1 : 0);
+        out.write (this.reverse ? 1 : 0);
+        out.write (this.releaseTrigger ? 1 : 0);
+        out.write (this.releaseTriggerNoteMonophonic ? 1 : 0);
+        StreamUtils.writeSigned32 (out, this.releaseTriggerCounter, false);
+        StreamUtils.writeSigned16 (out, this.midiChannel, false);
+        StreamUtils.writeSigned32 (out, this.voiceGroupIdx, false);
+        StreamUtils.writeSigned32 (out, this.fxIdxAmpSplitPoint, false);
+        out.write (this.muted ? 1 : 0);
+        out.write (this.soloed ? 1 : 0);
+        StreamUtils.writeSigned32 (out, this.interpQuality, false);
+
+        return out.toByteArray ();
     }
 
 

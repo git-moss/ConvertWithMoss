@@ -16,7 +16,7 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt1.Kontakt1Type;
-import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.Kontakt2Type;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Kontakt5Type;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -63,9 +63,10 @@ public class NkiCreator extends AbstractCreator
         final RadioButton order1 = panel.createRadioButton ("@IDS_NKI_KONTAKT_1");
         order1.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order1.setToggleGroup (this.outputFormatGroup);
-        final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_2");
+        final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_6_8");
         order2.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order2.setToggleGroup (this.outputFormatGroup);
+        // TODO remove if implementation is finished
         order2.setDisable (true);
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
@@ -107,10 +108,10 @@ public class NkiCreator extends AbstractCreator
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
-        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt2Type (this.notifier, false);
+        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt5Type (this.notifier);
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".nki");
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "nki");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         // First, store all samples

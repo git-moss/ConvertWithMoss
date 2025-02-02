@@ -5,8 +5,10 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +51,7 @@ public class NIContainerItem
     public void read (final InputStream in) throws IOException
     {
         final byte [] itemBlock = StreamUtils.readBlock64 (in, false);
+
         final ByteArrayInputStream bin = new ByteArrayInputStream (itemBlock);
 
         final int headerVersion = (int) StreamUtils.readUnsigned32 (bin, false);
@@ -60,9 +63,9 @@ public class NIContainerItem
         if (!"hsin".equals (domainID))
             throw new IOException (Functions.getMessage ("IDS_NKI5_CORRUPTED_FILE_NO_HSIN"));
 
-        // Unknown
+        // Unknown - seems to be always 1
         StreamUtils.readUnsigned32 (bin, false);
-        // Flags?
+        // Unknown - seems to be always 0
         StreamUtils.readUnsigned32 (bin, false);
 
         // 16 Byte UUID
@@ -77,9 +80,39 @@ public class NIContainerItem
         for (int i = 0; i < numChildren; i++)
         {
             final NIContainerChildItem childItem = new NIContainerChildItem ();
-            childItem.read (bin);
             this.children.add (childItem);
+            childItem.read (bin);
         }
+    }
+
+
+    /**
+     * Write the content of the item.
+     *
+     * @param out The output stream to write to
+     * @throws IOException Error during writing
+     */
+    public void write (final OutputStream out) throws IOException
+    {
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream ();
+
+        StreamUtils.writeUnsigned32 (bout, 1, false);
+        StreamUtils.writeASCII (bout, "hsin", 4);
+        StreamUtils.writeUnsigned32 (bout, 1, false);
+        StreamUtils.writeUnsigned32 (bout, 0, false);
+        bout.write (this.uuid);
+
+        this.dataChunk.write (bout);
+
+        StreamUtils.writeUnsigned32 (bout, this.version, false);
+
+        // Write all child items
+        final int numChildren = this.children.size ();
+        StreamUtils.writeUnsigned32 (bout, numChildren, false);
+        for (int i = 0; i < numChildren; i++)
+            this.children.get (i).write (bout);
+
+        StreamUtils.writeBlock64 (out, bout.toByteArray (), false);
     }
 
 
@@ -124,36 +157,6 @@ public class NIContainerItem
     public List<NIContainerChildItem> getChildren ()
     {
         return this.children;
-    }
-
-
-    /**
-     * Dumps all info into a text.
-     *
-     * @param level The indentation level
-     * @return The formatted string
-     */
-    public String dump (final int level)
-    {
-        final int length = level * 4;
-
-        final StringBuilder sb = new StringBuilder ();
-        sb.append (StringUtils.padLeftSpaces ("Item: hsin\n", length));
-
-        final int childLevel = level + 2;
-
-        sb.append (StringUtils.padLeftSpaces ("Data:\n", length + 4)).append (this.dataChunk.dump (childLevel));
-
-        if (this.children.isEmpty ())
-            sb.append (StringUtils.padLeftSpaces ("Children: None\n", length + 4));
-        else
-        {
-            sb.append (StringUtils.padLeftSpaces ("Children:\n", length + 4));
-            for (final NIContainerChildItem childItem: this.children)
-                sb.append (childItem.dump (childLevel));
-        }
-
-        return sb.toString ();
     }
 
 
@@ -231,5 +234,34 @@ public class NIContainerItem
 
         for (final NIContainerChildItem childItem: this.children)
             childItem.getItem ().findAll (type, foundChunks);
+    }
+
+
+    /**
+     * Dumps all info into a text.
+     *
+     * @param level The indentation level
+     * @return The formatted string
+     */
+    public String dump (final int level)
+    {
+        final int padding = level * 4;
+
+        final StringBuilder sb = new StringBuilder ();
+        sb.append (StringUtils.padLeftSpaces ("Item HSIN: Version ", padding)).append (this.version).append ('\n');
+
+        final int childLevel = level + 2;
+        final int nextPadding = padding + 4;
+
+        sb.append (StringUtils.padLeftSpaces ("Data:\n", nextPadding)).append (this.dataChunk.dump (childLevel));
+
+        if (!this.children.isEmpty ())
+        {
+            sb.append (StringUtils.padLeftSpaces ("Children:\n", nextPadding));
+            for (final NIContainerChildItem childItem: this.children)
+                sb.append (childItem.dump (childLevel));
+        }
+
+        return sb.toString ();
     }
 }

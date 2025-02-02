@@ -113,7 +113,7 @@ public class AbletonCreator extends AbstractCreator
             return;
         }
 
-        final File multiFile = this.createUniqueFilename (multiSampleFolder, createSafeFilename (multisampleSource.getName ()), ".adv");
+        final File multiFile = this.createUniqueFilename (multiSampleFolder, createSafeFilename (multisampleSource.getName ()), "adv");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final Map<String, File> writtenSamples = new HashMap<> ();

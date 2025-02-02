@@ -7,7 +7,6 @@ package de.mossgrabers.convertwithmoss.file.aiff;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,7 +15,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import javax.sound.sampled.AudioFileFormat;
@@ -99,16 +97,9 @@ public class AiffFileSampleData extends AbstractFileSampleData
             return;
         }
 
-        try (final ZipFile zf = new ZipFile (this.zipFile))
+        try (final ZipFile zf = new ZipFile (this.zipFile); final InputStream inputStream = zf.getInputStream (this.getHarmonizedZipEntry (zf)))
         {
-            final String path = this.zipEntry.getPath ().replace ('\\', '/');
-            final ZipEntry entry = zf.getEntry (path);
-            if (entry == null)
-                throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
-            try (final InputStream inputStream = zf.getInputStream (entry))
-            {
-                this.readConvertWrite (inputStream, outputStream);
-            }
+            this.readConvertWrite (inputStream, outputStream);
         }
     }
 
@@ -241,17 +232,9 @@ public class AiffFileSampleData extends AbstractFileSampleData
             else
             {
                 this.aiffFile = new AiffFile ();
-
-                try (final ZipFile zf = new ZipFile (this.zipFile))
+                try (final ZipFile zf = new ZipFile (this.zipFile); final InputStream in = zf.getInputStream (this.getHarmonizedZipEntry (zf)))
                 {
-                    final String path = this.zipEntry.getPath ().replace ('\\', '/');
-                    final ZipEntry entry = zf.getEntry (path);
-                    if (entry == null)
-                        throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
-                    try (final InputStream in = zf.getInputStream (entry))
-                    {
-                        this.aiffFile.read (in);
-                    }
+                    this.aiffFile.read (in);
                 }
             }
         }

@@ -332,7 +332,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
 
         // Find the sample file
         final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-        return this.findSampleFile (parentFile, previousFolder, sampleFileName, height);
+        return findSampleFile (this.notifier, parentFile, previousFolder, sampleFileName, height);
     }
 
 

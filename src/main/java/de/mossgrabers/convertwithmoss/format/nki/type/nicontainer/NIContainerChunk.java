@@ -5,8 +5,10 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.ChunkDataFactory;
@@ -26,7 +28,8 @@ public class NIContainerChunk
     private String           domainID;
     private int              chunkTypeID;
     private int              version;
-    private NIContainerChunk nextChunk;
+    private NIContainerChunk nextChunk = null;
+    private int              dataSize;
     private IChunkData       data;
 
 
@@ -62,7 +65,30 @@ public class NIContainerChunk
         this.data = ChunkDataFactory.createChunkData (chunkType);
         if (this.data == null)
             throw new IOException (Functions.getMessage ("IDS_NKI_UNSUPPORTED_CONTAINER_CHUNK_TYPE"));
+        this.dataSize = bin.available ();
         this.data.read (bin);
+    }
+
+
+    /**
+     * Write the content of the item chunk.
+     *
+     * @param out The output stream to write to
+     * @throws IOException Error during writing
+     */
+    public void write (final OutputStream out) throws IOException
+    {
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream ();
+
+        StreamUtils.writeASCII (bout, this.domainID, 4);
+        StreamUtils.writeUnsigned32 (bout, this.chunkTypeID, false);
+        StreamUtils.writeUnsigned32 (bout, this.version, false);
+
+        if (this.nextChunk != null)
+            this.nextChunk.write (bout);
+
+        this.data.write (bout);
+        StreamUtils.writeBlock64 (out, bout.toByteArray (), false);
     }
 
 
@@ -141,15 +167,19 @@ public class NIContainerChunk
     public String dump (final int level)
     {
         final StringBuilder sb = new StringBuilder ();
-        sb.append (StringUtils.padLeftSpaces ("Type: ", level * 4)).append (this.getChunkType ()).append ("\n");
+        final int padding = level * 4;
+
+        sb.append (StringUtils.padLeftSpaces ("Chunk: ", padding)).append (this.getChunkType ()).append (" (Version: ").append (this.getVersion ()).append (", Size: ").append (this.dataSize).append (" Bytes)\n");
         if (this.data instanceof final SubTreeItemChunkData subTree)
         {
-            sb.append (StringUtils.padLeftSpaces ("Sub Tree:\n", level * 4));
             if (subTree.isEncrypted ())
                 sb.append (StringUtils.padLeftSpaces ("Encrypted.\n", (level + 1) * 4));
             else
                 sb.append (subTree.getSubTree ().dump (level + 1));
         }
+        else if (this.data != null)
+            sb.append (this.data.dump (level + 1));
+
         if (this.nextChunk != null)
             sb.append (this.nextChunk.dump (level));
         return sb.toString ();

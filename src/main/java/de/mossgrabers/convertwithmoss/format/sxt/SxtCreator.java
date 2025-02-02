@@ -81,7 +81,7 @@ public class SxtCreator extends AbstractCreator
         final File outputFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         safeCreateDirectory (outputFolder);
 
-        final File multiFile = this.createUniqueFilename (outputFolder, sampleName, ".sxt");
+        final File multiFile = this.createUniqueFilename (outputFolder, sampleName, "sxt");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         storeMultisample (multisampleSource, multiFile);

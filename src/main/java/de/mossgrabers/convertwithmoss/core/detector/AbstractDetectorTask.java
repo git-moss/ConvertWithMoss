@@ -101,7 +101,13 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         if (this.waitForDelivery ())
             return;
 
-        for (final File file: this.listFiles (folder, this.fileEndings))
+        final File [] listFiles = this.listFiles (folder, this.fileEndings);
+        if (listFiles == null)
+        {
+            this.notifier.log ("IDS_NOT_A_DIRECTORY", folder.getAbsolutePath ());
+            return;
+        }
+        for (final File file: listFiles)
         {
             // Ignore MacOS crap
             if (file.getName ().startsWith ("._"))
@@ -550,14 +556,15 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     /**
      * If the sample is not found in the given folder, a search is started from one folder up and
      * search recursively for the wave file.
-     *
+     * 
+     * @param notifier Where to write logging info to
      * @param folder The folder where the sample is expected
      * @param previousFolder The folder in which the previous sample was found, might be null
      * @param fileName The name of the sample file
      * @param levels The number of levels to move upwards to start the search
      * @return The sample file
      */
-    protected File findSampleFile (final File folder, final File previousFolder, final String fileName, final int levels)
+    public static File findSampleFile (final INotifier notifier, final File folder, final File previousFolder, final String fileName, final int levels)
     {
         final File file = new File (fileName);
 
@@ -585,13 +592,13 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
 
         // ... and search recursively...
-        this.notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN", startDirectory.getAbsolutePath ());
-        final File found = this.findSampleFileRecursively (startDirectory, sampleFile.getName ());
+        notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN", startDirectory.getAbsolutePath ());
+        final File found = findSampleFileRecursively (startDirectory, sampleFile.getName ());
         // Returning the original file triggers the expected error...
         if (found == null)
             return sampleFile;
 
-        this.notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN_FOUND");
+        notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN_FOUND");
         return found;
     }
 
@@ -616,7 +623,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     }
 
 
-    private File findSampleFileRecursively (final File folder, final String fileName)
+    private static File findSampleFileRecursively (final File folder, final String fileName)
     {
         File sampleFile = new File (folder, fileName);
         if (sampleFile.exists ())
@@ -629,7 +636,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                 if (subFolder.isHidden () || subFolder.getName ().startsWith ("."))
                     continue;
 
-                sampleFile = this.findSampleFileRecursively (subFolder, fileName);
+                sampleFile = findSampleFileRecursively (subFolder, fileName);
                 if (sampleFile != null)
                     return sampleFile;
             }

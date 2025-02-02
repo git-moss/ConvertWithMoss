@@ -92,7 +92,7 @@ public class TALSamplerCreator extends AbstractCreator
         if (metadata.isEmpty ())
             return;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".talsmpl");
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "talsmpl");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());

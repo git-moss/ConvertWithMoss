@@ -23,8 +23,11 @@ public class ChunkDataFactory
     {
         TEMPLATES.put (NIContainerChunkType.AUTHORING_APPLICATION, AuthoringApplicationChunkData.class);
         TEMPLATES.put (NIContainerChunkType.AUTHORIZATION, AuthorizationChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.BNI_SOUND_HEADER, BNISoundHeaderChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BNI_SOUND_PRESET, BNIPresetChunkData.class);
         TEMPLATES.put (NIContainerChunkType.CONTAINER_ROOT, RootChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.CONTROLLER_ASSIGNMENTS, ControllerAssignmentsChunkData.class);
+        TEMPLATES.put (NIContainerChunkType.ENCRYPTION_ITEM, EncryptionItemChunkData.class);
         TEMPLATES.put (NIContainerChunkType.PRESET_CHUNK_ITEM, PresetChunkData.class);
         TEMPLATES.put (NIContainerChunkType.SOUNDINFO_ITEM, SoundinfoChunkData.class);
         TEMPLATES.put (NIContainerChunkType.SUB_TREE_ITEM, SubTreeItemChunkData.class);
@@ -32,7 +35,6 @@ public class ChunkDataFactory
 
         // Not used
         TEMPLATES.put (NIContainerChunkType.BANK, UnusedChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.BNI_SOUND_HEADER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BANK_CONTAINER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.PRESET_CONTAINER, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.BINARY_CHUNK_ITEM, UnusedChunkData.class);
@@ -41,10 +43,8 @@ public class ChunkDataFactory
         TEMPLATES.put (NIContainerChunkType.AUDIO_SAMPLE_ITEM, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.INTERNAL_RESOURCE_REFERENCE_ITEM, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.PICTURE_ITEM, UnusedChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.ENCRYPTION_ITEM, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.APP_SPECIFIC, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.AUTOMATION_PARAMETERS, UnusedChunkData.class);
-        TEMPLATES.put (NIContainerChunkType.CONTROLLER_ASSIGNMENTS, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.MODULE, UnusedChunkData.class);
         TEMPLATES.put (NIContainerChunkType.MODULE_BANK, UnusedChunkData.class);
     }

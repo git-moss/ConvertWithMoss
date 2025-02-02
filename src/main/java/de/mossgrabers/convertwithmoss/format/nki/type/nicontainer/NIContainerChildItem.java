@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
@@ -20,7 +21,8 @@ public class NIContainerChildItem
 {
     private String                domainID;
     private int                   chunkTypeID;
-    private final NIContainerItem item = new NIContainerItem ();
+    private final NIContainerItem item       = new NIContainerItem ();
+    private long                  childIndex = -1;
 
 
     /**
@@ -32,12 +34,29 @@ public class NIContainerChildItem
     public void read (final InputStream in) throws IOException
     {
         // The index of the child
-        StreamUtils.readUnsigned32 (in, false);
+        this.childIndex = StreamUtils.readUnsigned32 (in, false);
 
         this.domainID = StreamUtils.readASCII (in, 4);
         this.chunkTypeID = (int) StreamUtils.readUnsigned32 (in, false);
 
         this.item.read (in);
+    }
+
+
+    /**
+     * Write the content of the child item.
+     *
+     * @param out The output stream to write to
+     * @throws IOException Error during writing
+     */
+    public void write (final OutputStream out) throws IOException
+    {
+        StreamUtils.writeUnsigned32 (out, this.childIndex, false);
+
+        StreamUtils.writeASCII (out, this.domainID, 4);
+        StreamUtils.writeUnsigned32 (out, this.chunkTypeID, false);
+
+        this.item.write (out);
     }
 
 

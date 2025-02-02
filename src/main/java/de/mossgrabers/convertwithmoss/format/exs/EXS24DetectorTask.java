@@ -253,7 +253,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         }
 
         final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
-        final File sampleFile = this.findSampleFile (parentFile, previousFolder, exs24Sample.fileName, height);
+        final File sampleFile = findSampleFile (this.notifier, parentFile, previousFolder, exs24Sample.fileName, height);
         if (!sampleFile.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());

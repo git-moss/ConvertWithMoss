@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -18,7 +19,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public abstract class AbstractChunkData implements IChunkData
 {
-    private int version;
+    private int version = 1;
 
 
     /**
@@ -36,10 +37,19 @@ public abstract class AbstractChunkData implements IChunkData
 
 
     /**
-     * Get the format version.
+     * Write the version number of the chunk format.
      *
-     * @return The version number
+     * @param out The output stream to write to
+     * @throws IOException Error during writing
      */
+    protected void writeVersion (final OutputStream out) throws IOException
+    {
+        StreamUtils.writeUnsigned32 (out, this.version, false);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int getVersion ()
     {
         return this.version;

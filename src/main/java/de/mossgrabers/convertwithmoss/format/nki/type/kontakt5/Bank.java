@@ -46,9 +46,9 @@ public class Bank
      * @param chunk The chunk from which to read the bank data
      * @throws IOException Could not read the bank
      */
-    public void parse (final PresetChunk chunk) throws IOException
+    public void parse (final KontaktPresetChunk chunk) throws IOException
     {
-        if (chunk.getId () != PresetChunkID.BANK)
+        if (chunk.getId () != KontaktPresetChunkID.BANK)
             throw new IOException ("Not a bank chunk!");
 
         this.readMasterData (chunk.getPublicData ());

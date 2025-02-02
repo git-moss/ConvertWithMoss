@@ -97,7 +97,7 @@ public class KorgmultisampleCreator extends AbstractCreator
             final ISampleZone zone = group.getSampleZones ().get (0);
             final String groupName = size > 1 ? String.format ("%s %03d-%03d", sampleName, Integer.valueOf (zone.getVelocityLow ()), Integer.valueOf (zone.getVelocityHigh ())) : sampleName;
 
-            final File multiFile = this.createUniqueFilename (subFolder, groupName, ".korgmultisample");
+            final File multiFile = this.createUniqueFilename (subFolder, groupName, "korgmultisample");
             this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
             storeMultisample (multisampleSource, multiFile, groupName, group);
         }
