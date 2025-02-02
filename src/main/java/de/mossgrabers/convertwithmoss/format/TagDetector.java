@@ -148,6 +148,7 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_BASS, new String []
         {
+            "Bass Guitar",
             CATEGORY_BASS,
             "Fretless",
             "Slap",
@@ -219,6 +220,7 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_DRUM, new String []
         {
             CATEGORY_DRUM,
+            "Drum Kit",
             "Drum-Set",
             "Drumset",
             "Cymbal",
@@ -250,10 +252,12 @@ public class TagDetector
             "Heart",
             "Stadium",
             "Applause",
-            "Surround"
+            "Surround",
+            "Alarm"
         });
         CATEGORIES.put (CATEGORY_GUITAR, new String []
         {
+            "Electric Guitar",
             CATEGORY_GUITAR,
             "Rajao",
             "Banjo"
@@ -294,9 +298,11 @@ public class TagDetector
         {
             CATEGORY_ORCHESTRAL,
             "Orchestra",
+            "Score"
         });
         CATEGORIES.put (CATEGORY_ORGAN, new String []
         {
+            "Pipe Organ",
             CATEGORY_ORGAN,
             "Tonewheel",
             "Accordion",
@@ -340,8 +346,11 @@ public class TagDetector
             "Upright",
             "Digital Piano",
             "Klavier",
+            "Harpsichord",
+            "Spinet",
             "Clav",
             "Suitcase",
+            "SCase",
             "Whirly",
             "Wurlitz",
             "Mark I",
@@ -398,6 +407,7 @@ public class TagDetector
             "Analog",
             "Sweep",
             "Swell",
+            "Virus",
             "Mini",
             "Moog",
             "Syn",

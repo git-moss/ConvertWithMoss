@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +47,20 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Kontakt5Type extends AbstractKontaktType
 {
+    private static final byte [] NKI_TEMPLATE;
+
+    static
+    {
+        try
+        {
+            NKI_TEMPLATE = Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/nki/Kontakt680Template.nki");
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException (ex);
+        }
+    }
+
     private File sourceFolder;
 
 
@@ -75,7 +90,18 @@ public class Kontakt5Type extends AbstractKontaktType
     @Override
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
-        // Not yet supported
+        final NIContainerItem niContainerItem = new NIContainerItem ();
+        niContainerItem.read (new ByteArrayInputStream (NKI_TEMPLATE));
+
+        final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+        if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+        {
+            final Program program = presetChunkData.getPrograms ().get (0);
+            program.fillFrom (multisampleSource);
+            presetChunkData.setPrograms (Collections.singletonList (program));
+        }
+
+        niContainerItem.write (out);
     }
 
 
@@ -165,7 +191,15 @@ public class Kontakt5Type extends AbstractKontaktType
             final IMetadata metadata = source.getMetadata ();
             metadata.setKeywords (attributes.toArray (new String [attributes.size ()]));
             if (metadata.getCreator () == null)
-                metadata.setCreator (soundinfo.getAuthor ());
+            {
+                final String author = soundinfo.getAuthor ();
+                if (author != null && !author.isBlank ())
+                    metadata.setCreator (author);
+                else
+                    metadata.setCreator (soundinfo.getVendor ());
+            }
+            metadata.setDescription (soundinfo.getDescription ());
+
             final String category = metadata.getCategory ();
             if ((category == null || category.isBlank () || "New".equals (category)) && !attributes.isEmpty ())
                 metadata.setCategory (attributes.get (0));
@@ -184,15 +218,21 @@ public class Kontakt5Type extends AbstractKontaktType
      */
     private List<IMultisampleSource> convertPrograms (final PresetChunkData presetChunkData, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
     {
+        final List<Program> programs = presetChunkData.getPrograms ();
+
         final String n = metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
 
         final List<IMultisampleSource> results = new ArrayList<> ();
-        for (final Program program: presetChunkData.parsePrograms ())
+        for (final Program program: presetChunkData.getPrograms ())
         {
-            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + program.getName ();
+            final String programName = program.getName ();
+            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + programName;
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
-            program.fillInto (multisampleSource);
+            program.fillInto (multisampleSource, programs.size () > 1 ? new String []
+            {
+                programName
+            } : parts);
             results.add (multisampleSource);
         }
         return results;

@@ -33,6 +33,7 @@ import org.xml.sax.SAXException;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -74,8 +75,8 @@ public abstract class AbstractNKIMetadataFileHandler
     protected static final String                TEMPLATE_FOLDER     = "de/mossgrabers/convertwithmoss/templates/nki/";
 
     private static final String                  NULL_ENTRY          = "(null)";
-
     private static final Pattern                 FILTER_TYPE_PATTERN = Pattern.compile ("^(lp|hp|bp)(\\d+)pole$");
+    private static final Pattern                 UTF_PATTERN         = Pattern.compile ("%([0-9a-fA-F]{4})");
 
     private static final Map<FilterType, String> FILTER_PREFIXES     = new EnumMap<> (FilterType.class);
     static
@@ -87,6 +88,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
     protected final AbstractTagsAndAttributes tags;
     protected final INotifier                 notifier;
+    private final Map<String, String>         absolutePathLookupSuccess = new HashMap<> ();
 
 
     /**
@@ -915,31 +917,55 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final File parentFolder = new File (sourcePath);
 
+        File sampleFile = null;
         if (decodedPath.isAbsolute ())
         {
-            // If it is an absolute path, try to find the sample file in all possible sub-paths from
-            // the current folder
-            final Path path = Paths.get (samplePath);
+            final Path absoluteParentPath = Paths.get (samplePath);
+            final String originalAbsoluteParentPath = absoluteParentPath.getParent ().toString ();
 
-            File subFolder = null;
-            for (int i = path.getNameCount () - 1; i > 0; i--)
+            // First check if this absolute path was searched before
+            final String resultPath = this.absolutePathLookupSuccess.get (originalAbsoluteParentPath);
+            if (resultPath != null)
             {
-                final String folder = path.getName (i).toString ();
-                subFolder = subFolder == null ? new File (folder) : new File (folder, subFolder.getPath ());
-                final File sampleFile = new File (parentFolder, subFolder.getPath ());
+                sampleFile = new File (resultPath, absoluteParentPath.getFileName ().toString ());
                 if (sampleFile.exists () && sampleFile.canRead ())
                     return sampleFile;
             }
+
+            // If it is an absolute path, try to find the sample file in all possible sub-paths from
+            // the current folder
+            File subFolder = null;
+            for (int i = absoluteParentPath.getNameCount () - 1; i > 0; i--)
+            {
+                final String folder = absoluteParentPath.getName (i).toString ();
+                subFolder = subFolder == null ? new File (folder) : new File (folder, subFolder.getPath ());
+                sampleFile = new File (parentFolder, subFolder.getPath ());
+                if (sampleFile.exists () && sampleFile.canRead ())
+                    return this.logFoundFolder (sampleFile, originalAbsoluteParentPath);
+            }
+
+            // Search all sub-folders
+            final String fileName = absoluteParentPath.getFileName ().toString ();
+            sampleFile = AbstractDetectorTask.findSampleFile (this.notifier, parentFolder, null, fileName, 0);
+            if (sampleFile != null)
+                return this.logFoundFolder (sampleFile, originalAbsoluteParentPath);
 
             this.notifier.logError ("IDS_NKI_SAMPLE_FILE_DOES_NOT_EXIST", samplePath);
             return null;
         }
 
-        final File sampleFile = new File (parentFolder, samplePath);
+        sampleFile = new File (parentFolder, samplePath);
         if (sampleFile.exists () && sampleFile.canRead ())
             return sampleFile;
         this.notifier.logError ("IDS_NKI_SAMPLE_FILE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
         return null;
+    }
+
+
+    private File logFoundFolder (final File sampleFile, final String originalAbsoluteParentPath)
+    {
+        this.absolutePathLookupSuccess.put (sampleFile.getParent (), originalAbsoluteParentPath);
+        return sampleFile;
     }
 
 
@@ -967,6 +993,7 @@ public abstract class AbstractNKIMetadataFileHandler
         while ((id = reader.read ()) != -1)
             switch (id)
             {
+                // The disc letter or name name
                 case 'v':
                     final String disc = readFolder (reader, encodedSampleFileName);
                     if (!disc.contains (":"))
@@ -975,6 +1002,7 @@ public abstract class AbstractNKIMetadataFileHandler
                     decodedPath.setAbsolute (true);
                     break;
 
+                // Folder upwards
                 case 'b':
                     path.append ("../");
                     break;
@@ -992,7 +1020,10 @@ public abstract class AbstractNKIMetadataFileHandler
                     int c;
                     while ((c = reader.read ()) != -1)
                         path.append ((char) c);
-                    decodedPath.setPath (path.toString ());
+                    final String finalPath = decodeUTF8Characters (path.toString ());
+                    decodedPath.setPath (finalPath);
+                    if (finalPath.startsWith ("/"))
+                        decodedPath.setAbsolute (true);
                     return decodedPath;
 
                 // A NKS library
@@ -1009,6 +1040,21 @@ public abstract class AbstractNKIMetadataFileHandler
         error (encodedSampleFileName);
         // Never reached
         return null;
+    }
+
+
+    private static String decodeUTF8Characters (final String text)
+    {
+        if (!text.contains ("%"))
+            return text;
+
+        final Matcher m = UTF_PATTERN.matcher (text);
+        final StringBuffer sb = new StringBuffer ();
+        while (m.find ())
+            m.appendReplacement (sb, new String (Character.toChars (Integer.parseInt (m.group (1), 16))));
+        m.appendTail (sb);
+
+        return sb.toString ();
     }
 
 

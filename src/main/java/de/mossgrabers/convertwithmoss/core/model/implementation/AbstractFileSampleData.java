@@ -29,7 +29,7 @@ public abstract class AbstractFileSampleData extends AbstractSampleData implemen
     protected String           filename;
     protected File             sampleFile;
     protected final File       zipFile;
-    protected final File       zipEntry;
+    protected final File       zipEntryFile;
     protected Optional<String> combinedFilename     = Optional.empty ();
     protected Optional<String> filenameWithoutLayer = Optional.empty ();
 
@@ -91,7 +91,7 @@ public abstract class AbstractFileSampleData extends AbstractSampleData implemen
         this.filename = filename;
         this.sampleFile = sampleFile;
         this.zipFile = zipFile;
-        this.zipEntry = zipEntry;
+        this.zipEntryFile = zipEntry;
     }
 
 
@@ -108,17 +108,9 @@ public abstract class AbstractFileSampleData extends AbstractSampleData implemen
         if (this.zipFile == null)
             return;
 
-        try (final ZipFile zf = new ZipFile (this.zipFile))
+        try (final ZipFile zf = new ZipFile (this.zipFile); final InputStream in = zf.getInputStream (this.getHarmonizedZipEntry (zf)))
         {
-            final String path = this.zipEntry.getPath ().replace ('\\', '/');
-            final ZipEntry entry = zf.getEntry (path);
-            if (entry == null)
-                throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
-
-            try (final InputStream in = zf.getInputStream (entry))
-            {
-                in.transferTo (outputStream);
-            }
+            in.transferTo (outputStream);
         }
     }
 
@@ -133,17 +125,9 @@ public abstract class AbstractFileSampleData extends AbstractSampleData implemen
             return;
         }
 
-        try (final ZipFile zf = new ZipFile (this.zipFile))
+        try (final ZipFile zf = new ZipFile (this.zipFile); final InputStream in = zf.getInputStream (this.getHarmonizedZipEntry (zf)))
         {
-            final String path = this.zipEntry.getPath ().replace ('\\', '/');
-            final ZipEntry entry = zf.getEntry (path);
-            if (entry == null)
-                throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
-
-            try (final InputStream in = zf.getInputStream (entry))
-            {
-                this.audioMetadata = AudioFileUtils.getMetadata (in);
-            }
+            this.audioMetadata = AudioFileUtils.getMetadata (in);
         }
     }
 
@@ -153,5 +137,25 @@ public abstract class AbstractFileSampleData extends AbstractSampleData implemen
     public String getFilename ()
     {
         return this.filename;
+    }
+
+
+    /**
+     * Get the entry in the ZIP file.
+     * 
+     * @param zf The ZIP file object
+     * @return The entry
+     * @throws FileNotFoundException If the entry could not be found in the ZIP
+     */
+    protected ZipEntry getHarmonizedZipEntry (final ZipFile zf) throws FileNotFoundException
+    {
+        String path = this.zipEntryFile.getPath ().replace ('\\', '/');
+        // Folders in the ZIP are always relative!
+        if (path.startsWith ("/"))
+            path = path.substring (1);
+        final ZipEntry zipEntry = zf.getEntry (path);
+        if (zipEntry == null)
+            throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
+        return zipEntry;
     }
 }

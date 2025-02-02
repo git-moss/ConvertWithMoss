@@ -12,24 +12,20 @@ import de.mossgrabers.tools.StringUtils;
 
 
 /**
- * A chunk which contains the data of a BNI preset.
+ * The Sound Header chunk.
  *
  * @author Jürgen Moßgraber
  */
-public class BNIPresetChunkData extends AbstractChunkData
+public class BNISoundHeaderChunkData extends AbstractChunkData
 {
-    private byte [] allBytes =
-    {
-        0,
-        0
-    };
+    private byte [] allBytes;
 
 
     /** {@inheritDoc} */
     @Override
     public void read (final InputStream in) throws IOException
     {
-        // Not used (0, 0)
+        // TODO contains date and UUID!
         this.allBytes = in.readAllBytes ();
     }
 

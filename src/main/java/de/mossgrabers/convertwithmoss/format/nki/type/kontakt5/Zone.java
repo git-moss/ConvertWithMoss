@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,12 +37,14 @@ public class Zone
     private float                zonePan;
     private float                zoneTune;
     private int                  filenameId = -1;
-    private int                  sampleDataType;
+    private int                  sampleResolution;
     private int                  sampleRate;
     private int                  numChannels;
     private int                  numFrames;
     private int                  rootNote;
     private float                tuning;
+    private long                 sampleSize;
+
     private final List<ZoneLoop> loops      = new ArrayList<> ();
 
 
@@ -71,7 +74,7 @@ public class Zone
      * @param version The version of the zone structure
      * @throws IOException Error parsing the data
      */
-    public void parse (final byte [] data, final int version) throws IOException
+    public void read (final byte [] data, final int version) throws IOException
     {
         if (version > 0x9C)
             throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_ZONE_VERSION", Integer.toHexString (version).toUpperCase ()));
@@ -110,7 +113,7 @@ public class Zone
         }
 
         this.filenameId = (int) StreamUtils.readUnsigned32 (in, false);
-        this.sampleDataType = (int) StreamUtils.readUnsigned32 (in, false);
+        this.sampleResolution = (int) StreamUtils.readUnsigned32 (in, false);
         this.sampleRate = (int) StreamUtils.readUnsigned32 (in, false);
         this.numChannels = in.read ();
         this.numFrames = (int) StreamUtils.readUnsigned32 (in, false);
@@ -129,7 +132,81 @@ public class Zone
 
         // Unknown
         in.read ();
-        StreamUtils.readUnsigned32 (in, false);
+        this.sampleSize = StreamUtils.readUnsigned32 (in, false);
+    }
+
+
+    /**
+     * Create the zone data.
+     *
+     * Known zone structure versions:
+     * <ul>
+     * <li>0x93: 4.2.x
+     * <li>0x98: 5.3.0 - 5.6.8
+     * <li>0x99: 5.8.1
+     * <li>0x9A: 6.5.2 - 6.8.0
+     * </ul>
+     *
+     * @param version The version of the zone structure
+     * @return The created data
+     * @throws IOException Error creating the data
+     */
+    public byte [] write (final int version) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+
+        StreamUtils.writeUnsigned32 (out, this.sampleStart, false);
+        StreamUtils.writeUnsigned32 (out, this.sampleEnd, false);
+
+        // Sample start modulation range
+        StreamUtils.writeUnsigned32 (out, 0xFFFFFFFF, false);
+
+        StreamUtils.writeUnsigned16 (out, this.lowVelocity, false);
+        StreamUtils.writeUnsigned16 (out, this.highVelocity, false);
+        StreamUtils.writeUnsigned16 (out, this.lowKey, false);
+        StreamUtils.writeUnsigned16 (out, this.highKey, false);
+        StreamUtils.writeUnsigned16 (out, this.fadeLowVelocity, false);
+        StreamUtils.writeUnsigned16 (out, this.fadeHighVelocity, false);
+        StreamUtils.writeUnsigned16 (out, this.fadeLowKey, false);
+        StreamUtils.writeUnsigned16 (out, this.fadeHighKey, false);
+        StreamUtils.writeUnsigned16 (out, this.rootKey, false);
+        StreamUtils.writeFloatLE (out, this.zoneVolume);
+        StreamUtils.writeFloatLE (out, this.zonePan);
+        StreamUtils.writeFloatLE (out, this.zoneTune);
+
+        if (version >= 0x9A)
+        {
+            // Unknown
+            out.write (0);
+            out.write (1);
+            StreamUtils.writeUnsigned32 (out, 0xFFFFFFFF, false);
+        }
+
+        StreamUtils.writeUnsigned32 (out, this.filenameId, false);
+        StreamUtils.writeUnsigned32 (out, this.sampleResolution, false);
+        StreamUtils.writeUnsigned32 (out, this.sampleRate, false);
+        out.write (this.numChannels);
+        StreamUtils.writeUnsigned32 (out, this.numFrames, false);
+
+        // Unknown - flags?!
+        StreamUtils.writeUnsigned32 (out, 44, false);
+
+        if (version <= 0x93)
+            // Unknown
+            StreamUtils.writeUnsigned32 (out, 0, false);
+
+        // Not sure what this is actually doing, some time 0, 60 or identical to rootKey
+        StreamUtils.writeUnsigned32 (out, this.rootNote, false);
+        // Seems never to be set to anything but 1.0, no idea where this might be set in Kontakt
+        StreamUtils.writeFloatLE (out, this.tuning);
+
+        // Unknown
+        out.write (0);
+
+        this.sampleSize = this.numFrames * this.numChannels * this.sampleResolution;
+        StreamUtils.writeUnsigned32 (out, this.sampleSize, false);
+
+        return out.toByteArray ();
     }
 
 
@@ -235,7 +312,7 @@ public class Zone
     /**
      * Get the lower key fade value.
      *
-     * @return The number of semitones to crossfade in the range of [0..127]
+     * @return The number of semi-tones to crossfade in the range of [0..127]
      */
     public int getFadeLowKey ()
     {
@@ -246,7 +323,7 @@ public class Zone
     /**
      * Get the upper key fade value.
      *
-     * @return The number of semitones to crossfade in the range of [0..127]
+     * @return The number of semi-tones to crossfade in the range of [0..127]
      */
     public int getFadeHighKey ()
     {
@@ -322,13 +399,13 @@ public class Zone
 
 
     /**
-     * Get the type of the sample data.
+     * Get the number of bytes of a sample.
      *
-     * @return The type: 2 = 16 bit, 3 = 24 bit
+     * @return Number of bytes: 1 = 8 bit, 2 = 16 bit, 3 = 24 bit, 4 = 32 bit
      */
-    public int getSampleDataType ()
+    public int getSampleResolution ()
     {
-        return this.sampleDataType;
+        return this.sampleResolution;
     }
 
 
@@ -373,6 +450,17 @@ public class Zone
     public float getTuning ()
     {
         return this.tuning;
+    }
+
+
+    /**
+     * Get the sample size.
+     * 
+     * @return The sample size
+     */
+    public long getSampleSize ()
+    {
+        return this.sampleSize;
     }
 
 

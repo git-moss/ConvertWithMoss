@@ -127,7 +127,7 @@ public class WaldorfQpatCreator extends AbstractCreator
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".qpat");
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "qpat");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final String relativeSamplePath = "samples/" + sampleName;

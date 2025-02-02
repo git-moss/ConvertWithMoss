@@ -118,6 +118,17 @@ public enum AuthoringApplication
 
 
     /**
+     * Get the ID of the authoring application.
+     *
+     * @return The ID
+     */
+    public int getID ()
+    {
+        return this.id;
+    }
+
+
+    /**
      * Get the name of the authoring application.
      *
      * @return The name

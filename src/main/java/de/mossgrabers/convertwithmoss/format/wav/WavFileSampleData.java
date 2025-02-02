@@ -5,12 +5,10 @@
 package de.mossgrabers.convertwithmoss.format.wav;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -114,7 +112,7 @@ public class WavFileSampleData extends AbstractFileSampleData
     {
         try
         {
-            this.getWaveFile ().combine (sample.waveFile);
+            this.getWaveFile ().combine (sample.getWaveFile ());
         }
         catch (final IOException ex)
         {
@@ -218,20 +216,13 @@ public class WavFileSampleData extends AbstractFileSampleData
             {
                 this.waveFile = new WaveFile ();
 
-                try (final ZipFile zf = new ZipFile (this.zipFile))
+                try (final ZipFile zf = new ZipFile (this.zipFile); final InputStream in = zf.getInputStream (this.getHarmonizedZipEntry (zf)))
                 {
-                    final String path = this.zipEntry.getPath ().replace ('\\', '/');
-                    final ZipEntry entry = zf.getEntry (path);
-                    if (entry == null)
-                        throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_FILE_NOT_FOUND_IN_ZIP", path));
-                    try (final InputStream in = zf.getInputStream (entry))
-                    {
-                        this.waveFile.read (in, true);
-                    }
-                    catch (final ParseException | RuntimeException ex)
-                    {
-                        throw new IOException (ex);
-                    }
+                    this.waveFile.read (in, true);
+                }
+                catch (final ParseException | RuntimeException ex)
+                {
+                    throw new IOException (ex);
                 }
             }
 

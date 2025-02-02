@@ -12,24 +12,21 @@ import de.mossgrabers.tools.StringUtils;
 
 
 /**
- * A chunk which contains the data of a BNI preset.
+ * The controller assignment chunk.
  *
  * @author Jürgen Moßgraber
  */
-public class BNIPresetChunkData extends AbstractChunkData
+public class ControllerAssignmentsChunkData extends AbstractChunkData
 {
-    private byte [] allBytes =
-    {
-        0,
-        0
-    };
+    private byte [] allBytes;
 
 
     /** {@inheritDoc} */
     @Override
     public void read (final InputStream in) throws IOException
     {
-        // Not used (0, 0)
+        this.readVersion (in);
+
         this.allBytes = in.readAllBytes ();
     }
 
@@ -38,6 +35,8 @@ public class BNIPresetChunkData extends AbstractChunkData
     @Override
     public void write (final OutputStream out) throws IOException
     {
+        this.writeVersion (out);
+
         out.write (this.allBytes);
     }
 

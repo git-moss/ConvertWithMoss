@@ -122,7 +122,7 @@ public class DistingExCreator extends WavCreator
         this.filenamePrefix = StringUtils.fixASCII (sampleName);
         final String safeSampleFolderName = sampleName.length () > 20 ? sampleName.substring (0, 20).trim () : sampleName;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, ".dexpreset");
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "dexpreset");
         // Note: trim doesn't need to be used in the preset since the loop information is stored in
         // the sample chunk!
         storeMultisample (multisampleSource, multiFile, safeSampleFolderName);

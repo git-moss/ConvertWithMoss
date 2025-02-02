@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
+import de.mossgrabers.tools.ui.Functions;
+
 
 /**
  * A Kontakt 5+ slot list.
@@ -35,10 +37,10 @@ public class SlotList
      * @return The parsed programs
      * @throws IOException Could not read the slot list
      */
-    public List<Program> parse (final PresetChunk chunk, final List<String> filePaths) throws IOException
+    public List<Program> read (final KontaktPresetChunk chunk, final List<String> filePaths) throws IOException
     {
-        if (chunk.getId () != PresetChunkID.SLOT_LIST)
-            throw new IOException ("Not a slot list chunk!");
+        if (chunk.getId () != KontaktPresetChunkID.SLOT_LIST)
+            throw new IOException (Functions.getMessage ("IDS_NKI_NO_SLOT_LIST_CHUNK"));
 
         final List<Program> programs = new ArrayList<> ();
 
@@ -48,14 +50,14 @@ public class SlotList
             for (int i = 0; i < 64; i++)
                 if (slotFlags.get (i))
                 {
-                    final PresetChunk programContainerChunk = new PresetChunk ();
-                    programContainerChunk.parse (in);
-                    if (programContainerChunk.getId () != PresetChunkID.PROGRAM_CONTAINER)
+                    final KontaktPresetChunk programContainerChunk = new KontaktPresetChunk ();
+                    programContainerChunk.read (in);
+                    if (programContainerChunk.getId () != KontaktPresetChunkID.PROGRAM_CONTAINER)
                         continue;
 
-                    for (final PresetChunk child: programContainerChunk.getChildren ())
-                        if (child.getId () == PresetChunkID.PROGRAM_LIST)
-                            programs.add (parseProgramList (child, filePaths));
+                    for (final KontaktPresetChunk child: programContainerChunk.getChildren ())
+                        if (child.getId () == KontaktPresetChunkID.PROGRAM_LIST)
+                            programs.addAll (parseProgramList (child, filePaths));
                 }
         }
 
@@ -63,19 +65,22 @@ public class SlotList
     }
 
 
-    private static Program parseProgramList (final PresetChunk programListChunk, final List<String> filePaths) throws IOException
+    private static List<Program> parseProgramList (final KontaktPresetChunk programListChunk, final List<String> filePaths) throws IOException
     {
+        final List<Program> programs = new ArrayList<> ();
         final byte [] publicData = programListChunk.getPublicData ();
         try (final ByteArrayInputStream bin = new ByteArrayInputStream (publicData))
         {
-            final PresetChunk childChunk = new PresetChunk ();
+            final KontaktPresetChunk childChunk = new KontaktPresetChunk ();
             childChunk.readArray (bin, publicData.length, false);
-
-            final List<PresetChunk> children = childChunk.getChildren ();
-            final PresetChunk presetChunk = children.get (0);
-            final Program program = new Program (filePaths);
-            program.parse (presetChunk);
-            return program;
+            for (final KontaktPresetChunk presetChunk: childChunk.getChildren ())
+            {
+                presetChunk.setId (KontaktPresetChunkID.PROGRAM);
+                final Program program = new Program (filePaths);
+                program.read (presetChunk);
+                programs.add (program);
+            }
         }
+        return programs;
     }
 }

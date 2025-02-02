@@ -79,7 +79,9 @@ public class Kontakt2Type extends AbstractKontaktType
         header.read (fileAccess);
         this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", header.isFourDotTwo () ? "4.2" : "2", header.getKontaktVersion (), header.isMonolith () ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
 
-        this.fillMetadata (header);
+        // NKM header does not contain meaningful metadata
+        if (!sourceFile.getName ().endsWith (".nkm"))
+            this.fillMetadata (header);
 
         final List<IMultisampleSource> multiSamples;
         if (header.isFourDotTwo ())
@@ -156,10 +158,10 @@ public class Kontakt2Type extends AbstractKontaktType
         if (MathUtils.calcCRC32 (compressedData) != crc32Hash)
             this.notifier.logError ("IDS_NKI_CRC32_MISMATCH");
 
-        final byte [] uncompressedData = FastLZ.uncompress (compressedData, uncompressedSize);
-        final List<Program> programs = this.kontakt5Preset.parse (uncompressedData);
-        if (programs.isEmpty ())
-            return Collections.emptyList ();
+        this.kontakt5Preset.readKontaktPresetChunks (FastLZ.uncompress (compressedData, uncompressedSize));
+
+        this.kontakt5Preset.readKontaktPresetChunks (FastLZ.uncompress (compressedData, uncompressedSize));
+        final List<Program> programs = this.kontakt5Preset.getPrograms ();
 
         final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
@@ -167,9 +169,13 @@ public class Kontakt2Type extends AbstractKontaktType
         final List<IMultisampleSource> results = new ArrayList<> ();
         for (final Program program: programs)
         {
-            final String mappingName = AudioFileUtils.subtractPaths (sourceFolder, sourceFile) + " : " + program.getName ();
+            final String programName = program.getName ();
+            final String mappingName = AudioFileUtils.subtractPaths (sourceFolder, sourceFile) + " : " + programName;
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
-            program.fillInto (multisampleSource);
+            program.fillInto (multisampleSource, programs.size () > 1 ? new String []
+            {
+                programName
+            } : parts);
             results.add (multisampleSource);
         }
         return results;
@@ -219,7 +225,7 @@ public class Kontakt2Type extends AbstractKontaktType
             final int numOfPendingbytes = (int) (sourceFile.length () - fileAccess.getFilePointer ());
             if (numOfPendingbytes > 0)
             {
-                // Seems to be always little endian or missing
+                // Seems to be always little-endian or missing
                 final int soundinfoHeader = (int) StreamUtils.readUnsigned32 (fileAccess, false);
                 final int soundinfoHeaderVersion = (int) StreamUtils.readUnsigned32 (fileAccess, false);
                 if (soundinfoHeader != Magic.SOUNDINFO_HEADER_LE || soundinfoHeaderVersion != Magic.SOUNDINFO_HEADER_VERSION_LE)
@@ -301,11 +307,14 @@ public class Kontakt2Type extends AbstractKontaktType
         final String creator = headerMetadata.getCreator ();
         final String category = headerMetadata.getCategory ();
 
+        final boolean isMulti = multiSamples.size () > 1;
         for (final IMultisampleSource multiSample: multiSamples)
         {
             final IMetadata metadata = multiSample.getMetadata ();
-            metadata.setCreator (creator);
-            metadata.setCategory (category);
+            if (!isMulti || metadata.getCreator () == null || metadata.getCreator ().isBlank ())
+                metadata.setCreator (creator);
+            if (!isMulti || metadata.getCategory () == null || metadata.getCategory ().isBlank ())
+                metadata.setCategory (category);
 
             final List<String> soundCategories = new ArrayList<> ();
             soundCategories.addAll (categories);
@@ -314,7 +323,7 @@ public class Kontakt2Type extends AbstractKontaktType
 
             // Update the description
             String description = metadata.getDescription ();
-            description = description == null ? "" : "\n" + description;
+            description = description == null || description.isBlank () ? "" : "\n" + description;
             metadata.setDescription (headerMetadata.getDescription () + description);
         }
     }

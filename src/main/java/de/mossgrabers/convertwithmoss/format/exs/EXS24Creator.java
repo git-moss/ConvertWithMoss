@@ -92,7 +92,7 @@ public class EXS24Creator extends AbstractCreator
             return;
         }
 
-        final File multiFile = this.createUniqueFilename (subFolder, sampleName, ".exs");
+        final File multiFile = this.createUniqueFilename (subFolder, sampleName, "exs");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final Map<String, File> writtenSamples = new HashMap<> ();

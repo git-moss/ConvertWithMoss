@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 
 /**
@@ -16,10 +17,36 @@ import java.io.InputStream;
 public interface IChunkData
 {
     /**
-     * Read the additional data.
+     * Get the format version.
+     *
+     * @return The version number
+     */
+    int getVersion ();
+
+
+    /**
+     * Read the chunk data.
      *
      * @param in The input stream to read from
      * @throws IOException Error during reading
      */
     void read (InputStream in) throws IOException;
+
+
+    /**
+     * Write the chunk data.
+     *
+     * @param out The output stream to write to
+     * @throws IOException Error during writing
+     */
+    void write (OutputStream out) throws IOException;
+
+
+    /**
+     * Dumps all info into a text.
+     *
+     * @param level The indentation level
+     * @return The formatted string
+     */
+    String dump (int level);
 }

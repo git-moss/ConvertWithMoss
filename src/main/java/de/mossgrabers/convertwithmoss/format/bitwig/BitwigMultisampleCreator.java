@@ -84,7 +84,7 @@ public class BitwigMultisampleCreator extends AbstractCreator
         if (metadata.isEmpty ())
             return;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), ".multisample");
+        final File multiFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "multisample");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
