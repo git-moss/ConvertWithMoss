@@ -797,10 +797,27 @@ public class StreamUtils
      * @return The read ASCII string
      * @throws IOException Could not read
      */
-    public static String readWithLengthAscii (final InputStream in) throws IOException
+    public static String readWith1ByteLengthAscii (final InputStream in) throws IOException
     {
         final int blocklength = in.read ();
         final byte [] blockData = in.readNBytes (blocklength);
+        return new String (blockData);
+    }
+
+
+    /**
+     * Reads an ASCII string. The first four read bytes (LE) indicate the length of the string.
+     *
+     * @param in The input stream to read from
+     * @return The read ASCII string
+     * @throws IOException Could not read
+     */
+    public static String readWith4ByteLengthAscii (final InputStream in) throws IOException
+    {
+        final int blockLength = (int) StreamUtils.readUnsigned32 (in, false);
+        final byte [] blockData = in.readNBytes (blockLength);
+        if (blockData.length != blockLength)
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_COULD_NOT_READ_STRING", Integer.toString (blockLength), Integer.toString (blockData.length)));
         return new String (blockData);
     }
 

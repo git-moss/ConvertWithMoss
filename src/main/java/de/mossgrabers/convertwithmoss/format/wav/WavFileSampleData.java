@@ -11,13 +11,16 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.zip.ZipFile;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
@@ -106,13 +109,19 @@ public class WavFileSampleData extends AbstractFileSampleData
      * Combines two mono files into a stereo file. Format and sample chunks must be identical.
      *
      * @param sample The other sample to include
+     * @return The stereo sample data
      * @throws CombinationNotPossibleException Could not combine the wave files
      */
-    public void combine (final WavFileSampleData sample) throws CombinationNotPossibleException
+    public ISampleData combine (final WavFileSampleData sample) throws CombinationNotPossibleException
     {
         try
         {
-            this.getWaveFile ().combine (sample.getWaveFile ());
+            final WaveFile wf = this.getWaveFile ();
+            final byte [] stereoData = wf.combine (sample.getWaveFile ());
+            final FormatChunk formatChunk = wf.getFormatChunk ();
+            final int frames = formatChunk.calculateLength (wf.getDataChunk ().getData ());
+            final IAudioMetadata am = new DefaultAudioMetadata (2, formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), frames);
+            return new InMemorySampleData (am, stereoData);
         }
         catch (final IOException ex)
         {

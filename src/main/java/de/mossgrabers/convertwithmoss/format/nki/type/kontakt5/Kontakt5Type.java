@@ -27,8 +27,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
-import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerChunkType;
+import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerDataChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.NIContainerItem;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplication;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthoringApplicationChunkData;
@@ -93,7 +93,7 @@ public class Kontakt5Type extends AbstractKontaktType
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (new ByteArrayInputStream (NKI_TEMPLATE));
 
-        final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+        final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
         if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
         {
             final Program program = presetChunkData.getPrograms ().get (0);
@@ -143,7 +143,7 @@ public class Kontakt5Type extends AbstractKontaktType
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (inputStream);
 
-        final NIContainerChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
+        final NIContainerDataChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
         if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
         {
             final AuthoringApplication application = appChunkData.getApplication ();
@@ -152,23 +152,20 @@ public class Kontakt5Type extends AbstractKontaktType
 
             this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", appChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
 
-            final NIContainerChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+            final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
             if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
             {
                 final List<IMultisampleSource> sources = this.convertPrograms (presetChunkData, sourceFile, metadataConfig);
                 final String n = metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
                 final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
                 for (final IMultisampleSource multisampleSource: sources)
-                {
-                    updateMetadata (niContainerItem, multisampleSource);
-                    AbstractNKIMetadataFileHandler.updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
-                }
+                    updateMetadata (niContainerItem, multisampleSource, metadataConfig, parts);
                 return sources;
             }
         }
 
         // Check for encrypted sections
-        for (final NIContainerChunk autorizationChunk: niContainerItem.findAll (NIContainerChunkType.AUTHORIZATION))
+        for (final NIContainerDataChunk autorizationChunk: niContainerItem.findAll (NIContainerChunkType.AUTHORIZATION))
             if (autorizationChunk.getData () instanceof final AuthorizationChunkData authorization && !authorization.getSerialNumberPIDs ().isEmpty ())
                 this.notifier.logError ("IDS_NKI5_CONTAINS_ENCRYPTED_SUB_TREE");
 
@@ -181,10 +178,12 @@ public class Kontakt5Type extends AbstractKontaktType
      *
      * @param niContainerItem The top item to start searching for the SoundInfo chunk.
      * @param source The source to update
+     * @param parts The path parts
+     * @param metadataConfig The metadata configuration
      */
-    private static void updateMetadata (final NIContainerItem niContainerItem, final IMultisampleSource source)
+    private static void updateMetadata (final NIContainerItem niContainerItem, final IMultisampleSource source, final IMetadataConfig metadataConfig, final String [] parts)
     {
-        final NIContainerChunk soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
+        final NIContainerDataChunk soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
         if (soundInfoChunk != null && soundInfoChunk.getData () instanceof final SoundinfoChunkData soundinfo)
         {
             final List<String> attributes = soundinfo.getAttributes ();
@@ -204,6 +203,7 @@ public class Kontakt5Type extends AbstractKontaktType
             if ((category == null || category.isBlank () || "New".equals (category)) && !attributes.isEmpty ())
                 metadata.setCategory (attributes.get (0));
         }
+        AbstractNKIMetadataFileHandler.updateMetadata (metadataConfig, parts, source.getMetadata ());
     }
 
 
@@ -218,21 +218,21 @@ public class Kontakt5Type extends AbstractKontaktType
      */
     private List<IMultisampleSource> convertPrograms (final PresetChunkData presetChunkData, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
     {
-        final List<Program> programs = presetChunkData.getPrograms ();
-
         final String n = metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
 
         final List<IMultisampleSource> results = new ArrayList<> ();
-        for (final Program program: presetChunkData.getPrograms ())
+        final List<Program> programs = presetChunkData.getPrograms ();
+        final List<String> filePaths = presetChunkData.getFilePaths ();
+        for (final Program program: programs)
         {
             final String programName = program.getName ();
             final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + programName;
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
-            program.fillInto (multisampleSource, programs.size () > 1 ? new String []
+            fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName
-            } : parts);
+            } : parts, filePaths);
             results.add (multisampleSource);
         }
         return results;

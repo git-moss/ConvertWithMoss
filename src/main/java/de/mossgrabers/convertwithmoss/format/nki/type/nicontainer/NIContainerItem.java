@@ -26,7 +26,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class NIContainerItem
 {
-    private final NIContainerChunk           dataChunk = new NIContainerChunk ();
+    private final NIContainerDataChunk       dataChunk = new NIContainerDataChunk ();
     private final List<NIContainerChildItem> children  = new ArrayList<> ();
 
     private byte []                          uuid;
@@ -139,11 +139,11 @@ public class NIContainerItem
 
 
     /**
-     * Get the data section.
+     * Get the first data chunk of them item.
      *
-     * @return The data
+     * @return The data chunk
      */
-    public NIContainerChunk getData ()
+    public NIContainerDataChunk getDataChunk ()
     {
         return this.dataChunk;
     }
@@ -167,9 +167,9 @@ public class NIContainerItem
      * @param type The type of the chunk to look for
      * @return The chunk or null if none is found
      */
-    public NIContainerChunk find (final NIContainerChunkType type)
+    public NIContainerDataChunk find (final NIContainerChunkType type)
     {
-        NIContainerChunk chunk = this.dataChunk;
+        NIContainerDataChunk chunk = this.dataChunk;
         while (chunk != null)
         {
             if (chunk.getChunkType () == type)
@@ -177,7 +177,7 @@ public class NIContainerItem
 
             if (chunk.getData () instanceof final SubTreeItemChunkData subTree && !subTree.isEncrypted ())
             {
-                final NIContainerChunk found = subTree.getSubTree ().find (type);
+                final NIContainerDataChunk found = subTree.getSubTree ().find (type);
                 if (found != null)
                     return found;
             }
@@ -187,7 +187,7 @@ public class NIContainerItem
 
         for (final NIContainerChildItem childItem: this.children)
         {
-            final NIContainerChunk found = childItem.getItem ().find (type);
+            final NIContainerDataChunk found = childItem.getItem ().find (type);
             if (found != null)
                 return found;
         }
@@ -203,9 +203,9 @@ public class NIContainerItem
      * @param type The type of the chunk to look for
      * @return The found chunks
      */
-    public List<NIContainerChunk> findAll (final NIContainerChunkType type)
+    public List<NIContainerDataChunk> findAll (final NIContainerChunkType type)
     {
-        final List<NIContainerChunk> foundChunks = new ArrayList<> ();
+        final List<NIContainerDataChunk> foundChunks = new ArrayList<> ();
         this.findAll (type, foundChunks);
         return foundChunks;
     }
@@ -218,9 +218,9 @@ public class NIContainerItem
      * @param type The type of the chunk to look for
      * @param foundChunks Where to add the found chunks
      */
-    private void findAll (final NIContainerChunkType type, final List<NIContainerChunk> foundChunks)
+    private void findAll (final NIContainerChunkType type, final List<NIContainerDataChunk> foundChunks)
     {
-        NIContainerChunk chunk = this.dataChunk;
+        NIContainerDataChunk chunk = this.dataChunk;
         while (chunk != null)
         {
             if (chunk.getChunkType () == type)

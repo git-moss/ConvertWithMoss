@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -19,36 +21,37 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Group
 {
-    private String  name;
-    private float   volume;
-    private float   pan;
-    private float   tune;
-    private boolean keyTracking;
-    private boolean reverse;
-    private boolean releaseTrigger;
-    private boolean releaseTriggerNoteMonophonic;
-    private boolean muted;
-    private boolean soloed;
-    private int     releaseTriggerCounter;
-    private int     voiceGroupIdx;
-    private int     fxIdxAmpSplitPoint;
-    private int     interpQuality;
-    private int     midiChannel;
+    private String                  name;
+    private float                   volume;
+    private float                   pan;
+    private float                   tune;
+    private boolean                 keyTracking;
+    private boolean                 reverse;
+    private boolean                 releaseTrigger;
+    private boolean                 releaseTriggerNoteMonophonic;
+    private boolean                 muted;
+    private boolean                 soloed;
+    private int                     releaseTriggerCounter;
+    private int                     voiceGroupIdx;
+    private int                     fxIdxAmpSplitPoint;
+    private int                     interpQuality;
+    private int                     midiChannel;
+    private List<InternalModulator> internalModulators = new ArrayList<> ();
 
 
     /**
      * Parse the group data.
      *
-     * @param data The data to parse
-     * @param version The version of the group structure
+     * @param groupChunk The data to parse
      * @throws IOException Error parsing the data
      */
-    public void parse (final byte [] data, final int version) throws IOException
+    public void parse (final KontaktPresetChunk groupChunk) throws IOException
     {
+        final int version = groupChunk.getVersion ();
         if (version > 0x9C)
             throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_GROUP_VERSION", Integer.toHexString (version).toUpperCase ()));
 
-        final ByteArrayInputStream in = new ByteArrayInputStream (data);
+        final ByteArrayInputStream in = new ByteArrayInputStream (groupChunk.getPublicData ());
 
         this.name = StreamUtils.readWithLengthUTF16 (in);
         this.volume = StreamUtils.readFloatLE (in);
@@ -65,6 +68,45 @@ public class Group
         this.muted = in.read () > 0;
         this.soloed = in.read () > 0;
         this.interpQuality = StreamUtils.readSigned32 (in, false);
+
+        this.parseModulators (groupChunk.getChildren ());
+    }
+
+
+    private void parseModulators (final List<KontaktPresetChunk> children) throws IOException
+    {
+        for (final KontaktPresetChunk childChunk: children)
+        {
+            switch (childChunk.getId ())
+            {
+                case KontaktPresetChunkID.PARAMETER_ARRAY_16:
+                    this.parseEnvelopes (childChunk.getChildren ());
+                    break;
+
+                case KontaktPresetChunkID.PARAMETER_ARRAY_32:
+                    // TODO handle the pitch bend
+                    break;
+
+                default:
+                    // Not used
+                    break;
+            }
+        }
+    }
+
+
+    private void parseEnvelopes (final List<KontaktPresetChunk> children) throws IOException
+    {
+        for (final KontaktPresetChunk childChunk: children)
+        {
+            int id = childChunk.getId ();
+            if (id == KontaktPresetChunkID.PAR_INTERNAL_MOD || id == KontaktPresetChunkID.PAR_MOD_BASE)
+            {
+                final InternalModulator internalModulator = new InternalModulator ();
+                internalModulator.read (childChunk);
+                this.internalModulators.add (internalModulator);
+            }
+        }
     }
 
 
@@ -261,5 +303,16 @@ public class Group
     public int getMidiChannel ()
     {
         return this.midiChannel;
+    }
+
+
+    /**
+     * Get the internal modulators.
+     * 
+     * @return The modulators
+     */
+    public List<InternalModulator> getInternalModulators ()
+    {
+        return this.internalModulators;
     }
 }

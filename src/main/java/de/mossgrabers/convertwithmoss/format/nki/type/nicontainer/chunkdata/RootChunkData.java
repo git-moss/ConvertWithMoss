@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
@@ -113,6 +115,30 @@ public class RootChunkData extends AbstractChunkData
     public int getRepositoryType ()
     {
         return this.repositoryType;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode ()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Arrays.hashCode (this.rest);
+        return prime * result + Objects.hash (Integer.valueOf (this.majorVersion), Integer.valueOf (this.minorVersion), Integer.valueOf (this.patchVersion), Integer.valueOf (this.repositoryMagic), Integer.valueOf (this.repositoryType));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (this == obj)
+            return true;
+        if ((obj == null) || (this.getClass () != obj.getClass ()))
+            return false;
+        final RootChunkData other = (RootChunkData) obj;
+        return this.majorVersion == other.majorVersion && this.minorVersion == other.minorVersion && this.patchVersion == other.patchVersion && this.repositoryMagic == other.repositoryMagic && this.repositoryType == other.repositoryType && Arrays.equals (this.rest, other.rest);
     }
 
 

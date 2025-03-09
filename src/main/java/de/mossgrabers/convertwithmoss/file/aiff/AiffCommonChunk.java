@@ -56,7 +56,7 @@ public class AiffCommonChunk extends AiffChunk
             if (in.available () > 0)
             {
                 this.compressionType = StreamUtils.readASCII (in, 4);
-                this.compressionName = StreamUtils.readWithLengthAscii (in).trim ();
+                this.compressionName = StreamUtils.readWith1ByteLengthAscii (in).trim ();
                 if ((this.compressionName.length () + 1) % 2 == 1)
                     in.skipNBytes (1);
             }

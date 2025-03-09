@@ -228,6 +228,7 @@ public class TagDetector
             "Ride",
             "Kit",
             "Tom",
+            "707",
             "808",
             "909"
         });
@@ -273,7 +274,8 @@ public class TagDetector
         {
             CATEGORY_KEYBOARD,
             "Clavinet",
-            "Harpsi"
+            "Harpsi",
+            "Keys"
         });
         CATEGORIES.put (CATEGORY_KICK, new String []
         {
@@ -372,6 +374,7 @@ public class TagDetector
             "Balalaika",
             "Dulcimer",
             "Mandolin",
+            "Zither",
             "Sitar",
             "Harp",
             "Koto",

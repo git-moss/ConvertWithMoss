@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -393,9 +394,11 @@ public class KeyMapping
         // Always true
         if (leftChannelZone.getSampleData () instanceof final WavFileSampleData leftChannel && rightChannelZone.getSampleData () instanceof final WavFileSampleData rightChannel)
         {
-            leftChannel.combine (rightChannel);
-            leftChannelZone.setName (leftChannel.getFilename ().replace (pattern, ""));
-            return leftChannelZone;
+            final ISampleData stereoData = leftChannel.combine (rightChannel);
+            final ISampleZone stereoSampleZone = new DefaultSampleZone (leftChannelZone);
+            stereoSampleZone.setName (FileUtils.getNameWithoutType (leftChannel.getFilename ()).replace (pattern, ""));
+            stereoSampleZone.setSampleData (stereoData);
+            return stereoSampleZone;
         }
         throw new CombinationNotPossibleException (Functions.getMessage ("IDS_WAV_COMBINATION_NOT_POSSIBLE"));
     }
@@ -437,8 +440,8 @@ public class KeyMapping
             {
                 final String number = matcher.group ("value");
                 final Integer id = Integer.valueOf (number);
-                // Not used: matcher.group ("prefix");
-                // Not used: matcher.group ("postfix");
+                // Matcher group "prefix" not used
+                // Matcher group "postfix" not used
                 final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (filename)), si);
                 groups.computeIfAbsent (id, key -> new ArrayList<> ()).add (zone);
             }
@@ -464,7 +467,7 @@ public class KeyMapping
     {
         if (groupPatterns.length == 0 || sampleData.isEmpty ())
             return Optional.empty ();
-        final String filename = sampleData.get (0).getFilename ();
+        final String filename = FileUtils.getNameWithoutType (sampleData.get (0).getFilename ());
         for (final String groupPattern: groupPatterns)
         {
             final String [] parts = groupPattern.split ("\\*");

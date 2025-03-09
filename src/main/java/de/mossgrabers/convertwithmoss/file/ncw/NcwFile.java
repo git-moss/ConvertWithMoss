@@ -60,6 +60,8 @@ public class NcwFile
     public NcwFile (final File ncwFile) throws IOException
     {
         this.ncwFile = ncwFile;
+        if (this.ncwFile == null)
+            throw new IOException (Functions.getMessage ("IDS_NCW_FILE_MUST_NOT_BE_NULL"));
     }
 
 
@@ -160,9 +162,12 @@ public class NcwFile
             dataChunk.setData (bout.toByteArray ());
             wavFile.write (outputStream);
 
-            // Dirty workaround to allow garbage collection
-            this.channelData = null;
-            this.channelDataFloat = null;
+            // Dirty workaround to allow fast garbage collection
+            if (this.ncwFile != null)
+            {
+                this.channelData = null;
+                this.channelDataFloat = null;
+            }
         }
     }
 

@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 import de.mossgrabers.tools.StringUtils;
 
@@ -39,6 +40,30 @@ public class BNIPresetChunkData extends AbstractChunkData
     public void write (final OutputStream out) throws IOException
     {
         out.write (this.allBytes);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode ()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Arrays.hashCode (this.allBytes);
+        return result;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (this == obj)
+            return true;
+        if ((obj == null) || (this.getClass () != obj.getClass ()))
+            return false;
+        final BNIPresetChunkData other = (BNIPresetChunkData) obj;
+        return Arrays.equals (this.allBytes, other.allBytes);
     }
 
 

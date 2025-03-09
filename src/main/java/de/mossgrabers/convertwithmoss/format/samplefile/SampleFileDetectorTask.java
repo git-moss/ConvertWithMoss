@@ -122,7 +122,7 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
 
                 try
                 {
-                    sampleData.add (this.createSampleData (file));
+                    sampleData.add (createSampleData (file, this.notifier));
                     this.notifyProgress ();
                     outputCount++;
                     if (outputCount % 80 == 0)
@@ -196,7 +196,7 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
             if (name.isBlank ())
             {
                 this.notifier.logError ("IDS_NOTIFY_NO_NAME");
-                name = sampleData.get (0).getFilename ();
+                name = FileUtils.getNameWithoutType (sampleData.get (0).getFilename ());
             }
 
             name = cleanupName (name, this.postfixTexts);

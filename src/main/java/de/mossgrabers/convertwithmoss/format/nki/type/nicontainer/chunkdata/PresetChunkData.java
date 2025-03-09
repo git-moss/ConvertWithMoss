@@ -10,8 +10,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -34,11 +36,15 @@ public class PresetChunkData extends AbstractChunkData
     private final List<KontaktPresetChunk> chunks   = new ArrayList<> ();
     private final List<Program>            programs = new ArrayList<> ();
     private long                           dictionaryType;
+    private long                           unknown  = 0;
+    private long                           padding  = 0;
+    private long                           magic    = 0x8565620D;
+    private byte []                        programData;
 
 
     /**
      * Get the read programs.
-     * 
+     *
      * @return The programs
      */
     public List<Program> getPrograms ()
@@ -49,7 +55,7 @@ public class PresetChunkData extends AbstractChunkData
 
     /**
      * Set the programs.
-     * 
+     *
      * @param programs The programs to set
      */
     public void setPrograms (final List<Program> programs)
@@ -76,17 +82,17 @@ public class PresetChunkData extends AbstractChunkData
         final int sizeOfItem = (int) StreamUtils.readUnsigned32 (in, false);
 
         // Reference for multiple items in the dictionary or does this belong to the size?!
-        StreamUtils.readUnsigned32 (in, false);
+        this.unknown = StreamUtils.readUnsigned32 (in, false);
 
-        final byte [] data = in.readNBytes (sizeOfItem);
+        this.programData = in.readNBytes (sizeOfItem);
 
         // Padding
-        StreamUtils.readUnsigned32 (in, false);
+        this.padding = StreamUtils.readUnsigned32 (in, false);
 
         // Seems to be always 0x8565620D, even for encrypted files
-        StreamUtils.readUnsigned32 (in, false);
+        this.magic = StreamUtils.readUnsigned32 (in, false);
 
-        this.readKontaktPresetChunks (data);
+        this.readKontaktPresetChunks (this.programData);
     }
 
 
@@ -102,18 +108,18 @@ public class PresetChunkData extends AbstractChunkData
         // Number of items in the Dictionary - must be 1
         StreamUtils.writeUnsigned32 (out, 1, false);
 
-        final byte [] data = this.writeKontaktPresetChunks ();
+        this.programData = this.writeKontaktPresetChunks ();
 
-        StreamUtils.writeUnsigned32 (out, data.length, false);
+        StreamUtils.writeUnsigned32 (out, this.programData.length, false);
 
         // Reference for multiple items in the dictionary or does this belong to the size?!
-        StreamUtils.writeUnsigned32 (out, 0, false);
+        StreamUtils.writeUnsigned32 (out, this.unknown, false);
 
-        out.write (data);
+        out.write (this.programData);
 
         // Padding & checksum
-        StreamUtils.writeUnsigned32 (out, 0, false);
-        StreamUtils.writeUnsigned32 (out, 0x8565620D, false);
+        StreamUtils.writeUnsigned32 (out, this.padding, false);
+        StreamUtils.writeUnsigned32 (out, this.magic, false);
     }
 
 
@@ -147,14 +153,12 @@ public class PresetChunkData extends AbstractChunkData
      */
     private void readProgramsFromChunks () throws IOException
     {
-        final List<String> filePaths = this.getFilePaths ();
-
         this.programs.clear ();
 
         // Read all top level programs
         for (final KontaktPresetChunk programChunk: findAllChunks (this.chunks, KontaktPresetChunkID.PROGRAM))
         {
-            final Program program = new Program (filePaths);
+            final Program program = new Program ();
             program.read (programChunk);
             this.programs.add (program);
         }
@@ -169,7 +173,7 @@ public class PresetChunkData extends AbstractChunkData
 
         for (final KontaktPresetChunk childChunk: bankChunk.getChildren ())
             if (childChunk.getId () == KontaktPresetChunkID.SLOT_LIST)
-                this.programs.addAll (new SlotList ().read (childChunk, filePaths));
+                this.programs.addAll (new SlotList ().read (childChunk));
     }
 
 
@@ -205,9 +209,18 @@ public class PresetChunkData extends AbstractChunkData
             // TODO also create NKM Banks (see parsePrograms above)
         }
         else
-        {
             this.programs.get (0).write (this.chunks.get (0));
-        }
+    }
+
+
+    /**
+     * Get all chunks of the Kontakt program.
+     * 
+     * @return The chunks
+     */
+    public List<KontaktPresetChunk> getChunks ()
+    {
+        return this.chunks;
     }
 
 
@@ -217,14 +230,13 @@ public class PresetChunkData extends AbstractChunkData
      * @return The paths
      * @throws IOException Could not read the paths
      */
-    private List<String> getFilePaths () throws IOException
+    public List<String> getFilePaths () throws IOException
     {
         Optional<KontaktPresetChunk> filelistChunk = this.getTopChunk (KontaktPresetChunkID.FILENAME_LIST);
         if (filelistChunk.isEmpty ())
         {
             filelistChunk = this.getTopChunk (KontaktPresetChunkID.FILENAME_LIST_EX);
             if (filelistChunk.isEmpty ())
-                // No files?
                 return Collections.emptyList ();
         }
         final FileList fileList = new FileList ();
@@ -264,6 +276,31 @@ public class PresetChunkData extends AbstractChunkData
             else
                 results.addAll (findAllChunks (chunk.getChildren (), presetChunkID));
         return results;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode ()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Arrays.hashCode (this.programData);
+        result = prime * result + Objects.hash (Long.valueOf (this.dictionaryType), Long.valueOf (this.magic), Long.valueOf (this.padding), Long.valueOf (this.unknown));
+        return result;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (this == obj)
+            return true;
+        if ((obj == null) || (this.getClass () != obj.getClass ()))
+            return false;
+        final PresetChunkData other = (PresetChunkData) obj;
+        return this.dictionaryType == other.dictionaryType && this.magic == other.magic && this.padding == other.padding && Arrays.equals (this.programData, other.programData) && this.unknown == other.unknown;
     }
 
 

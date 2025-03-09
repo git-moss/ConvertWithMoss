@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
@@ -23,6 +24,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
     private boolean              isCompressed = false;
     private AuthoringApplication application  = AuthoringApplication.KONTAKT;
     private String               applicationVersion;
+    private int                  unknown      = 1;
 
 
     /** {@inheritDoc} */
@@ -37,7 +39,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
         this.application = AuthoringApplication.get (applicationID);
 
         // Always 1
-        StreamUtils.readUnsigned32 (in, false);
+        this.unknown = (int) StreamUtils.readUnsigned32 (in, false);
 
         this.applicationVersion = StreamUtils.readWithLengthUTF16 (in);
 
@@ -54,7 +56,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
 
         out.write (this.isCompressed ? 1 : 0);
         StreamUtils.writeUnsigned32 (out, this.application.getID (), false);
-        StreamUtils.writeUnsigned32 (out, 1, false);
+        StreamUtils.writeUnsigned32 (out, this.unknown, false);
         StreamUtils.writeWithLengthUTF16 (out, this.applicationVersion);
     }
 
@@ -89,6 +91,27 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
     public AuthoringApplication getApplication ()
     {
         return this.application;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode ()
+    {
+        return Objects.hash (this.application, this.applicationVersion, Boolean.valueOf (this.isCompressed), Integer.valueOf (this.unknown));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (this == obj)
+            return true;
+        if ((obj == null) || (this.getClass () != obj.getClass ()))
+            return false;
+        final AuthoringApplicationChunkData other = (AuthoringApplicationChunkData) obj;
+        return this.application == other.application && Objects.equals (this.applicationVersion, other.applicationVersion) && this.isCompressed == other.isCompressed && this.unknown == other.unknown;
     }
 
 

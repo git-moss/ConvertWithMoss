@@ -265,7 +265,7 @@ public class SxtDetectorTask extends AbstractDetectorTask
                     final IGroup group = groups.get ((int) sxtZone.groupIndex);
                     if (group != null)
                     {
-                        final ISampleData sampleData = this.createSampleData (sampleFile);
+                        final ISampleData sampleData = createSampleData (sampleFile, this.notifier);
                         final String zoneName = FileUtils.getNameWithoutType (sampleFile);
                         final ISampleZone zone = new DefaultSampleZone (zoneName, sampleData);
                         sxtZone.fillInto (zone);

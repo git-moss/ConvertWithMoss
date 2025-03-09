@@ -118,16 +118,23 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             if (this.waitForDelivery ())
                 break;
 
-            for (final IMultisampleSource multisample: this.readFile (file))
+            try
             {
-                if (this.waitForDelivery ())
-                    break;
+                for (final IMultisampleSource multisample: this.readFile (file))
+                {
+                    if (this.waitForDelivery ())
+                        break;
 
-                this.updateCreationDateTime (multisample.getMetadata (), file);
-                this.consumer.accept (multisample);
+                    this.updateCreationDateTime (multisample.getMetadata (), file);
+                    this.consumer.accept (multisample);
 
-                if (this.isCancelled ())
-                    return;
+                    if (this.isCancelled ())
+                        return;
+                }
+            }
+            catch (final RuntimeException ex)
+            {
+                this.notifier.logError (ex);
             }
         }
     }
@@ -369,7 +376,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      */
     protected ISampleZone createSampleZone (final File sampleFile) throws IOException
     {
-        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), this.createSampleData (sampleFile));
+        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), createSampleData (sampleFile, this.notifier));
     }
 
 
@@ -402,10 +409,11 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * method supports WAV, AIF, AIFF, OGG and FLAC files.
      *
      * @param sampleFile The sample file for which to create sample metadata
+     * @param notifier Where to report errors
      * @return The matching sample metadata, support is WAV and AIFF
      * @throws IOException Unsupported sample file type
      */
-    protected IFileBasedSampleData createSampleData (final File sampleFile) throws IOException
+    public static IFileBasedSampleData createSampleData (final File sampleFile, final INotifier notifier) throws IOException
     {
         if (!sampleFile.exists ())
             throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
@@ -439,7 +447,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                 final AudioFileFormat.Type type = audioFileFormat.getType ();
                 if (AudioFileFormat.Type.WAVE.equals (type))
                 {
-                    if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                    if (AudioFileUtils.checkSampleFile (sampleFile, notifier))
                         sampleData = new WavFileSampleData (sampleFile);
                 }
                 else if (AudioFileFormat.Type.AIFF.equals (type))
@@ -592,13 +600,19 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
 
         // ... and search recursively...
-        notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN", startDirectory.getAbsolutePath ());
+        if (notifier != null)
+            notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN", startDirectory.getAbsolutePath ());
         final File found = findSampleFileRecursively (startDirectory, sampleFile.getName ());
         // Returning the original file triggers the expected error...
         if (found == null)
+        {
+            if (notifier != null)
+                notifier.logText ("\n");
             return sampleFile;
+        }
 
-        notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN_FOUND");
+        if (notifier != null)
+            notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN_FOUND");
         return found;
     }
 

@@ -57,6 +57,7 @@ import de.mossgrabers.convertwithmoss.file.aiff.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
+import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
@@ -428,15 +429,34 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final Map<String, String> programParameters = this.readParameters (programElement);
 
-        final String name = programElement.getAttribute (programName);
-        multisampleSource.setName (name);
         final IMetadata metadata = multisampleSource.getMetadata ();
+
+        final String iconIdx = programParameters.get ("catIconIdx");
+        if (iconIdx != null && !iconIdx.isBlank ())
+        {
+            try
+            {
+                final int index = Integer.parseInt (iconIdx);
+                // 0 is Organ but might simply not be set there use auto-detection instead, 28 is
+                // New where we use auto-detection as well
+                if (index > 0 && index < 28)
+                {
+                    final String iconName = KontaktIcon.getName (index);
+                    if (iconName != null)
+                        metadata.setCategory (iconName);
+                }
+            }
+            catch (final NumberFormatException ex)
+            {
+                // Ignore
+            }
+        }
         final String author = programParameters.get ("instrumentAuthor");
         if (author != null)
             metadata.setCreator (author);
         final String description = programParameters.get ("instrumentCredits");
         if (description != null && !NULL_ENTRY.equals (description))
-            metadata.setDescription (description);
+            metadata.setDescription (description.replace (NULL_ENTRY, ""));
 
         final List<Element> groupElements = this.getGroupElements (programElement);
         final List<Element> zoneElements = this.getZoneElements (programElement);
@@ -450,6 +470,13 @@ public abstract class AbstractNKIMetadataFileHandler
         }
 
         multisampleSource.setGroups (groups);
+
+        String name = programElement.getAttribute (programName);
+        // Kontakt seems to behave like this...
+        if ("Instrument 1".equals (name) && groups.size () == 1)
+            name = groups.get (0).getName ();
+        multisampleSource.setName (name);
+
         return true;
     }
 

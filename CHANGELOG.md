@@ -1,5 +1,24 @@
 # Changes
 
+## 12.2.0
+
+* Fixed: Sample files with problematic characters in their name got updated accordingly but not the references to them.
+* Ableton ADV
+  * Fixed: Reading: Velocity range settings did overwrite the key range settings.
+* Kontakt 1/2
+  * Fixed: Improved detection of metadata like name, category and description.
+* Kontakt 5-7
+  * New: Reading amplitude and pitch envelopes is now supported.
+  * New: Added automatically finding samples with wrong absolute or relative paths.
+  * Fixed: Monolith NKIs which referenced a NCM file more than once could not be converted.
+  * Fixed: AIFF files could be treated as WAV files.
+* WAV - Read
+  * Fixed: Split stereo files were not combined to stereo file instead only the left side was included.
+  * Fixed: Samples could (still) have doubled file endings (.wav.wav).
+* Waldorf QPat
+  * Fixed: Split stereo files were not combined to a stereo file instead only the left side was included.
+  * Fixed: Fine tune was applied in the wrong direction.
+
 ## 12.1.0
 
 * Fixed: Most of the created files had two dots before the file extension.
