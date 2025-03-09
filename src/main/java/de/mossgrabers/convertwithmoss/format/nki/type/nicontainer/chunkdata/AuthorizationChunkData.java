@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
@@ -21,6 +22,8 @@ public class AuthorizationChunkData extends AbstractChunkData
     private final List<String> serialNumberPIDs = new ArrayList<> ();
     private int                pidContent;
     private long               checksum         = 0x8565620D;
+    private int                unknown1         = 0;
+    private int                unknown2         = 0;
 
 
     /** {@inheritDoc} */
@@ -46,9 +49,9 @@ public class AuthorizationChunkData extends AbstractChunkData
             }
 
             // Unknown - always 0?
-            in.skipNBytes (4);
+            this.unknown1 = (int) StreamUtils.readUnsigned32 (in, false);
             // Unknown - always 0?
-            in.skipNBytes (4);
+            this.unknown2 = (int) StreamUtils.readUnsigned32 (in, false);
 
             this.checksum = StreamUtils.readUnsigned32 (in, false);
             return;
@@ -74,8 +77,8 @@ public class AuthorizationChunkData extends AbstractChunkData
             // No PIDs
             StreamUtils.writeUnsigned32 (out, 0, false);
 
-            StreamUtils.writeUnsigned32 (out, 0, false);
-            StreamUtils.writeUnsigned32 (out, 0, false);
+            StreamUtils.writeUnsigned32 (out, this.unknown1, false);
+            StreamUtils.writeUnsigned32 (out, this.unknown2, false);
             StreamUtils.writeUnsigned32 (out, this.checksum, false);
         }
     }
@@ -94,6 +97,27 @@ public class AuthorizationChunkData extends AbstractChunkData
 
     /** {@inheritDoc} */
     @Override
+    public int hashCode ()
+    {
+        return Objects.hash (Long.valueOf (this.checksum), Integer.valueOf (this.pidContent), this.serialNumberPIDs, Integer.valueOf (this.unknown1), Integer.valueOf (this.unknown2));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (this == obj)
+            return true;
+        if ((obj == null) || (this.getClass () != obj.getClass ()))
+            return false;
+        final AuthorizationChunkData other = (AuthorizationChunkData) obj;
+        return this.checksum == other.checksum && this.pidContent == other.pidContent && Objects.equals (this.serialNumberPIDs, other.serialNumberPIDs) && this.unknown1 == other.unknown1 && this.unknown2 == other.unknown2;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public String dump (final int level)
     {
         final int padding = level * 4;
@@ -102,10 +126,8 @@ public class AuthorizationChunkData extends AbstractChunkData
         if (this.serialNumberPIDs.isEmpty ())
             sb.append ("None");
         else
-        {
             for (final String pid: this.serialNumberPIDs)
                 sb.append (pid).append (' ');
-        }
         return sb.append ('\n').toString ();
     }
 }

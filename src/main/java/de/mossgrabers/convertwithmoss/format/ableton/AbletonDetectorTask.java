@@ -308,16 +308,24 @@ public class AbletonDetectorTask extends AbstractDetectorTask
     private static void readZone (final ISampleZone zone, final Element multiSamplePartElement) throws IOException
     {
         final Element keyRangeElement = getRequiredElement (multiSamplePartElement, AbletonTag.TAG_KEY_RANGE);
-        zone.setKeyLow (AbletonDetectorTask.getIntegerValueAttribute (keyRangeElement, AbletonTag.TAG_MINIMUM, 0));
-        zone.setKeyHigh (AbletonDetectorTask.getIntegerValueAttribute (keyRangeElement, AbletonTag.TAG_MAXIMUM, 127));
-        zone.setNoteCrossfadeLow (AbletonDetectorTask.getIntegerValueAttribute (keyRangeElement, AbletonTag.TAG_CROSSFADE_MINIMUM, 0));
-        zone.setNoteCrossfadeHigh (AbletonDetectorTask.getIntegerValueAttribute (keyRangeElement, AbletonTag.TAG_CROSSFADE_MAXIMUM, 127));
+        final int lowKey = AbletonDetectorTask.getIntegerValueAttribute (keyRangeElement, AbletonTag.TAG_MINIMUM, 0);
+        final int highKey = AbletonDetectorTask.getIntegerValueAttribute (keyRangeElement, AbletonTag.TAG_MAXIMUM, 127);
+        final int lowKeyFade = AbletonDetectorTask.getIntegerValueAttribute (keyRangeElement, AbletonTag.TAG_CROSSFADE_MINIMUM, lowKey);
+        final int highKeyFade = AbletonDetectorTask.getIntegerValueAttribute (keyRangeElement, AbletonTag.TAG_CROSSFADE_MAXIMUM, highKey);
+        zone.setKeyLow (lowKey);
+        zone.setKeyHigh (highKey);
+        zone.setNoteCrossfadeLow (Math.abs (lowKeyFade - lowKey));
+        zone.setNoteCrossfadeHigh (Math.abs (highKeyFade - highKey));
 
         final Element velocityRangeElement = getRequiredElement (multiSamplePartElement, AbletonTag.TAG_VELOCITY_RANGE);
-        zone.setKeyLow (AbletonDetectorTask.getIntegerValueAttribute (velocityRangeElement, AbletonTag.TAG_MINIMUM, 1));
-        zone.setKeyHigh (AbletonDetectorTask.getIntegerValueAttribute (velocityRangeElement, AbletonTag.TAG_MAXIMUM, 127));
-        zone.setNoteCrossfadeLow (AbletonDetectorTask.getIntegerValueAttribute (velocityRangeElement, AbletonTag.TAG_CROSSFADE_MINIMUM, 1));
-        zone.setNoteCrossfadeHigh (AbletonDetectorTask.getIntegerValueAttribute (velocityRangeElement, AbletonTag.TAG_CROSSFADE_MAXIMUM, 127));
+        final int velLow = AbletonDetectorTask.getIntegerValueAttribute (velocityRangeElement, AbletonTag.TAG_MINIMUM, 1);
+        final int velHigh = AbletonDetectorTask.getIntegerValueAttribute (velocityRangeElement, AbletonTag.TAG_MAXIMUM, 127);
+        final int veFadelLow = AbletonDetectorTask.getIntegerValueAttribute (velocityRangeElement, AbletonTag.TAG_CROSSFADE_MINIMUM, 1);
+        final int velFadehigh = AbletonDetectorTask.getIntegerValueAttribute (velocityRangeElement, AbletonTag.TAG_CROSSFADE_MAXIMUM, 127);
+        zone.setVelocityLow (velLow);
+        zone.setVelocityHigh (velHigh);
+        zone.setVelocityCrossfadeLow (Math.abs (veFadelLow - velLow));
+        zone.setVelocityCrossfadeHigh (Math.abs (velFadehigh - velHigh));
 
         zone.setKeyRoot (AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_ROOT_KEY, 60));
         zone.setTune (AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
@@ -361,7 +369,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
     private ISampleData getSampleData (final Element fileRefElement, final File rootPath) throws IOException
     {
         final String relativePath = AbletonDetectorTask.getValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH);
-        return this.createSampleData (new File (rootPath, relativePath));
+        return createSampleData (new File (rootPath, relativePath), this.notifier);
     }
 
 

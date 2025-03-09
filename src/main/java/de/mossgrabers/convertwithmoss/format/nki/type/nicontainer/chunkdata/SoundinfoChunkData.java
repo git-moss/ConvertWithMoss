@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -122,12 +123,12 @@ public class SoundinfoChunkData extends AbstractChunkData
         StreamUtils.writeUnsigned32 (out, 1, false);
 
         StreamUtils.writeUnsigned32 (out, this.tags.size (), false);
-        for (int i = 0; i < this.tags.size (); i++)
-            StreamUtils.writeWithLengthUTF16 (out, this.tags.get (i));
+        for (final String element: this.tags)
+            StreamUtils.writeWithLengthUTF16 (out, element);
 
         StreamUtils.writeUnsigned32 (out, this.attributes.size (), false);
-        for (int i = 0; i < this.attributes.size (); i++)
-            StreamUtils.writeWithLengthUTF16 (out, this.attributes.get (i));
+        for (final String element: this.attributes)
+            StreamUtils.writeWithLengthUTF16 (out, element);
 
         // Always 0
         StreamUtils.writeUnsigned32 (out, 0, false);
@@ -231,6 +232,27 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /** {@inheritDoc} */
     @Override
+    public int hashCode ()
+    {
+        return Objects.hash (this.attributes, this.author, this.description, this.name, this.properties, this.soundInfoVersionText, this.tags, this.vendor, Integer.valueOf (this.versionMajor), Integer.valueOf (this.versionMinor), Integer.valueOf (this.versionPatch));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (this == obj)
+            return true;
+        if ((obj == null) || (this.getClass () != obj.getClass ()))
+            return false;
+        final SoundinfoChunkData other = (SoundinfoChunkData) obj;
+        return Objects.equals (this.attributes, other.attributes) && Objects.equals (this.author, other.author) && Objects.equals (this.description, other.description) && Objects.equals (this.name, other.name) && Objects.equals (this.properties, other.properties) && Objects.equals (this.soundInfoVersionText, other.soundInfoVersionText) && Objects.equals (this.tags, other.tags) && Objects.equals (this.vendor, other.vendor) && this.versionMajor == other.versionMajor && this.versionMinor == other.versionMinor && this.versionPatch == other.versionPatch;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public String dump (final int level)
     {
         final int padding = level * 4;
@@ -245,20 +267,16 @@ public class SoundinfoChunkData extends AbstractChunkData
         if (this.tags.isEmpty ())
             sb.append ("None");
         else
-        {
             for (final String tag: this.tags)
                 sb.append ('\'').append (tag).append ("' ");
-        }
         sb.append ('\n');
 
         sb.append (StringUtils.padLeftSpaces ("* Attributes: ", padding));
         if (this.attributes.isEmpty ())
             sb.append ("None");
         else
-        {
             for (final String attribute: this.attributes)
                 sb.append ('\'').append (attribute).append ("' ");
-        }
         sb.append ('\n');
 
         sb.append (StringUtils.padLeftSpaces ("* Properties: ", padding));

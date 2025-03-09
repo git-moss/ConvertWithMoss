@@ -515,7 +515,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         try
         {
             if (libraryFile == null)
-                sampleData = this.createSampleData (sampleFile);
+                sampleData = createSampleData (sampleFile, this.notifier);
             else
                 sampleData = this.createSampleData (libraryFile, sampleFile);
         }

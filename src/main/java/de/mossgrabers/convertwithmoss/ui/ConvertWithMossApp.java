@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -686,6 +687,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         if (selectedCreator < 0)
             return;
 
+        ensureSafeSampleFileNames (multisampleSource);
         this.applyRenaming (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
 
@@ -721,6 +723,19 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
 
     /**
+     * Remove critical characters from all zone names.
+     * 
+     * @param multisampleSource The multi-sample source
+     */
+    private static void ensureSafeSampleFileNames (final IMultisampleSource multisampleSource)
+    {
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+                zone.setName (AbstractCreator.createSafeFilename (zone.getName ()));
+    }
+
+
+    /**
      * Apply a volume envelopes if none are set based on the category of the multi-sample source.
      *
      * @param multisampleSource The multi-sample source
@@ -730,8 +745,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final String category = multisampleSource.getMetadata ().getCategory ();
         boolean wasSet = false;
         final IEnvelope defaultEnvelope = DefaultEnvelope.getDefaultEnvelope (category);
-        for (final IGroup layer: multisampleSource.getGroups ())
-            for (final ISampleZone zone: layer.getSampleZones ())
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
             {
                 final IEnvelope volumeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
                 if (!volumeEnvelope.isSet ())
@@ -815,6 +830,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     @Override
     public void logError (final String messageID, final Throwable throwable)
     {
+        throwable.printStackTrace ();
         this.logErrorText (Functions.getMessage (messageID, throwable));
     }
 

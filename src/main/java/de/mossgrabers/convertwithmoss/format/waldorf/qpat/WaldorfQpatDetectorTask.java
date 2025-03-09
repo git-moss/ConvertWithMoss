@@ -522,7 +522,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
     private void createSampleZone (final File parentFolder, final IGroup group, final String [] params, final String samplePath) throws IOException
     {
         final File sampleFile = new File (parentFolder, samplePath);
-        final ISampleData sampleData = this.createSampleData (sampleFile);
+        final ISampleData sampleData = createSampleData (sampleFile, this.notifier);
 
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
         group.addSampleZone (zone);

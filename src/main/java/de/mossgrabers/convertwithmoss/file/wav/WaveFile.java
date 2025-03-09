@@ -272,9 +272,10 @@ public class WaveFile extends AbstractRIFFFile
      * Combines two mono files into a stereo file. Format and sample chunks must be identical.
      *
      * @param otherWave The other sample to include
+     * @return The interleaved stereo data
      * @throws CombinationNotPossibleException Could not combine the wave files
      */
-    public void combine (final WaveFile otherWave) throws CombinationNotPossibleException
+    public byte [] combine (final WaveFile otherWave) throws CombinationNotPossibleException
     {
         final FormatChunk otherFormat = otherWave.getFormatChunk ();
         if (!Arrays.equals (this.formatChunk.getData (), otherFormat.getData ()))
@@ -288,8 +289,7 @@ public class WaveFile extends AbstractRIFFFile
         if (numberOfChannels != 1)
             throw new CombinationNotPossibleException ("Can only combine mono files.");
 
-        this.formatChunk.setNumberOfChannels (2);
-        this.dataChunk.setData (interleaveChannels (this.dataChunk.getData (), otherWave.dataChunk.getData (), this.formatChunk.getSignificantBitsPerSample ()));
+        return interleaveChannels (this.dataChunk.getData (), otherWave.dataChunk.getData (), this.formatChunk.getSignificantBitsPerSample ());
     }
 
 

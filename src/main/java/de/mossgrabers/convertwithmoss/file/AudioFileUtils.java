@@ -154,7 +154,8 @@ public final class AudioFileUtils
     {
         if (!wavFile.exists ())
         {
-            notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", wavFile.getAbsolutePath ());
+            if (notifier != null)
+                notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", wavFile.getAbsolutePath ());
             return false;
         }
 
@@ -165,7 +166,8 @@ public final class AudioFileUtils
         }
         catch (final IOException | ParseException | RuntimeException ex)
         {
-            notifier.logError (BROKEN_WAV, wavFile.getAbsolutePath (), ex.getMessage ());
+            if (notifier != null)
+                notifier.logError (BROKEN_WAV, wavFile.getAbsolutePath (), ex.getMessage ());
             return false;
         }
 

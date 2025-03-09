@@ -168,7 +168,7 @@ public class DistingExDetectorTask extends AbstractDetectorTask
 
         for (final File file: getWavFiles (parentFile, in))
         {
-            final IFileBasedSampleData sampleData = this.createSampleData (file);
+            final IFileBasedSampleData sampleData = createSampleData (file, this.notifier);
             final String nameWithoutType = FileUtils.getNameWithoutType (file);
             final ISampleZone zone = new DefaultSampleZone (nameWithoutType, sampleData);
 

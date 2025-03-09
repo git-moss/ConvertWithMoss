@@ -30,7 +30,6 @@ public abstract class AbstractFileSampleData extends AbstractSampleData implemen
     protected File             sampleFile;
     protected final File       zipFile;
     protected final File       zipEntryFile;
-    protected Optional<String> combinedFilename     = Optional.empty ();
     protected Optional<String> filenameWithoutLayer = Optional.empty ();
 
 

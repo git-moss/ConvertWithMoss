@@ -6,32 +6,13 @@ package de.mossgrabers.convertwithmoss.format.nki.type.kontakt5;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
-import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
-import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -84,19 +65,6 @@ public class Program
 
     private final List<Group>    groups                   = new ArrayList<> ();
     private final List<Zone>     zones                    = new ArrayList<> ();
-    private final List<String>   filePaths;
-
-
-    /**
-     * Constructor.
-     *
-     * @param filePaths The list of file paths for external audio samples referenced from the
-     *            program.
-     */
-    public Program (final List<String> filePaths)
-    {
-        this.filePaths = filePaths;
-    }
 
 
     /**
@@ -199,9 +167,9 @@ public class Program
         if (this.midiTranspose > 128)
             this.midiTranspose -= 256;
 
-        this.instrumentVolume = StreamUtils.readFloatLE (in);
-        this.instrumentPan = StreamUtils.readFloatLE (in);
-        this.instrumentTune = StreamUtils.readFloatLE (in);
+        this.setInstrumentVolume (StreamUtils.readFloatLE (in));
+        this.setInstrumentPan (StreamUtils.readFloatLE (in));
+        this.setInstrumentTune (StreamUtils.readFloatLE (in));
 
         // Global clipping: Low velocity, high velocity, low key, high key - not really helpful
         this.clipLowVelocity = in.read ();
@@ -216,12 +184,12 @@ public class Program
         this.loadingFlags = StreamUtils.readUnsigned32 (in, false);
         this.groupSolo = in.read () > 0;
 
-        this.instrumentIconName = KontaktIcon.getName ((int) StreamUtils.readUnsigned32 (in, false));
+        this.setInstrumentIconName (KontaktIcon.getName ((int) StreamUtils.readUnsigned32 (in, false)));
         this.instrumentCredits = StreamUtils.readWithLengthUTF16 (in);
-        this.instrumentAuthor = StreamUtils.readWithLengthUTF16 (in);
-        this.instrumentURL = StreamUtils.readWithLengthUTF16 (in);
-        if (this.instrumentURL.isBlank () || NULL_ENTRY.equals (this.instrumentURL))
-            this.instrumentURL = null;
+        this.setInstrumentAuthor (StreamUtils.readWithLengthUTF16 (in));
+        this.setInstrumentURL (StreamUtils.readWithLengthUTF16 (in));
+        if (this.getInstrumentURL().isBlank () || NULL_ENTRY.equals (this.getInstrumentURL()))
+            this.setInstrumentURL (null);
 
         // Where is the lookup table for these?
         this.instrumentCategory1 = StreamUtils.readUnsigned16 (in, false);
@@ -247,15 +215,15 @@ public class Program
 
         // The size of all samples
         this.sizeOfAllSamples = 0;
-        for (final Zone zone: this.zones)
+        for (final Zone zone: this.getZones())
             this.sizeOfAllSamples += zone.getSampleSize ();
         StreamUtils.writeDouble (out, this.sizeOfAllSamples, false);
 
         out.write (this.midiTranspose < 0 ? this.midiTranspose + 256 : this.midiTranspose);
 
-        StreamUtils.writeFloatLE (out, this.instrumentVolume);
-        StreamUtils.writeFloatLE (out, this.instrumentPan);
-        StreamUtils.writeFloatLE (out, this.instrumentTune);
+        StreamUtils.writeFloatLE (out, this.getInstrumentVolume());
+        StreamUtils.writeFloatLE (out, this.getInstrumentPan());
+        StreamUtils.writeFloatLE (out, this.getInstrumentTune());
 
         // Global clipping
         out.write (this.clipLowVelocity);
@@ -270,11 +238,11 @@ public class Program
         StreamUtils.writeUnsigned32 (out, this.loadingFlags, false);
         out.write (this.groupSolo ? 1 : 0);
 
-        StreamUtils.writeUnsigned32 (out, KontaktIcon.getID (this.instrumentIconName), false);
+        StreamUtils.writeUnsigned32 (out, KontaktIcon.getID (this.getInstrumentIconName()), false);
 
         StreamUtils.writeWithLengthUTF16 (out, this.instrumentCredits);
-        StreamUtils.writeWithLengthUTF16 (out, this.instrumentAuthor);
-        StreamUtils.writeWithLengthUTF16 (out, this.instrumentURL == null ? NULL_ENTRY : this.instrumentURL);
+        StreamUtils.writeWithLengthUTF16 (out, this.getInstrumentAuthor());
+        StreamUtils.writeWithLengthUTF16 (out, this.getInstrumentURL() == null ? NULL_ENTRY : this.getInstrumentURL());
 
         StreamUtils.writeUnsigned16 (out, this.instrumentCategory1, false);
         StreamUtils.writeUnsigned16 (out, this.instrumentCategory2, false);
@@ -289,16 +257,16 @@ public class Program
     /**
      * Read all groups from the group list.
      *
-     * @param presetChunk The chunk which contains the group list
+     * @param groupListChunk The chunk which contains the group list
      * @throws IOException Could not read the groups
      */
-    private void parseGroupList (final KontaktPresetChunk presetChunk) throws IOException
+    private void parseGroupList (final KontaktPresetChunk groupListChunk) throws IOException
     {
-        for (final KontaktPresetChunk groupChunk: presetChunk.getChildren ())
+        for (final KontaktPresetChunk groupChunk: groupListChunk.getChildren ())
         {
             final Group group = new Group ();
-            group.parse (groupChunk.getPublicData (), groupChunk.getVersion ());
-            this.groups.add (group);
+            group.parse (groupChunk);
+            this.getGroups().add (group);
         }
     }
 
@@ -314,9 +282,13 @@ public class Program
         final List<KontaktPresetChunk> groupChunks = new ArrayList<> ();
 
         final KontaktPresetChunk groupListChunk = findChunk (programPresetChunk.getChildren (), KontaktPresetChunkID.GROUP_LIST);
+        if (groupListChunk == null)
+            return;
         final KontaktPresetChunk templateGroupChunk = findChunk (groupListChunk.getChildren (), KontaktPresetChunkID.GROUP);
+        if (templateGroupChunk == null)
+            return;
 
-        for (final Group group: this.groups)
+        for (final Group group: this.getGroups())
         {
             final KontaktPresetChunk groupChunk = new KontaktPresetChunk ();
             groupChunk.setId (KontaktPresetChunkID.GROUP);
@@ -339,13 +311,13 @@ public class Program
      */
     private void readZoneList (final KontaktPresetChunk presetChunk) throws IOException
     {
-        this.zones.clear ();
+        this.getZones().clear ();
 
         for (final KontaktPresetChunk zoneChunk: presetChunk.getChildren ())
         {
             final Zone zone = new Zone (zoneChunk.getId ());
             zone.read (zoneChunk.getPublicData (), zoneChunk.getVersion ());
-            this.zones.add (zone);
+            this.getZones().add (zone);
 
             for (final KontaktPresetChunk zoneChildChunk: zoneChunk.getChildren ())
                 if (zoneChildChunk.getId () == KontaktPresetChunkID.LOOP_ARRAY)
@@ -366,9 +338,9 @@ public class Program
 
         final List<KontaktPresetChunk> zoneChunks = new ArrayList<> ();
 
-        for (int z = 0; z < this.zones.size (); z++)
+        for (int z = 0; z < this.getZones().size (); z++)
         {
-            final Zone zone = this.zones.get (z);
+            final Zone zone = this.getZones().get (z);
 
             final KontaktPresetChunk zoneChunk = new KontaktPresetChunk ();
             zoneChunks.add (zoneChunk);
@@ -377,6 +349,7 @@ public class Program
 
             final byte [] privateData = new byte [ZONE_PRIVATE_DATA.length];
 
+            // TODO
             byte [] privateData2 = ZONE_PRIVATE_DATA;// zoneListChunk.getChildren ().get
                                                      // (z).getPrivateData ();
             System.out.println (StringUtils.formatArray (privateData2));
@@ -483,87 +456,6 @@ public class Program
 
 
     /**
-     * Fill the given multi-sample instance with data from the program.
-     *
-     * @param multiSample The multi-sample to fill
-     * @param parts Parts of the name for category detection
-     * @throws IOException Error finding samples
-     */
-    public void fillInto (final IMultisampleSource multiSample, final String [] parts) throws IOException
-    {
-        this.setMetadata (multiSample, parts);
-
-        final Map<Integer, Pair<IGroup, Group>> indexedGroups = this.createGroups ();
-
-        for (final Zone kontaktZone: this.zones)
-        {
-            // Zones without a sample file might be present
-            if (kontaktZone.getFilenameId () < 0)
-                continue;
-
-            final Integer groupIndex = Integer.valueOf (kontaktZone.getGroupIndex ());
-            final Pair<IGroup, Group> groupPair = indexedGroups.get (groupIndex);
-            if (groupPair == null)
-                throw new IOException (Functions.getMessage ("IDS_NKI5_MISSING_GROUP", groupIndex.toString ()));
-
-            final IGroup group = groupPair.getKey ();
-            final Group kontaktGroup = groupPair.getValue ();
-
-            final ISampleZone zone = this.createZone (multiSample, kontaktZone);
-            group.addSampleZone (zone);
-
-            zone.setStart (kontaktZone.getSampleStart ());
-            zone.setStop (kontaktZone.getNumFrames () - kontaktZone.getSampleEnd ());
-
-            zone.setKeyLow (kontaktZone.getLowKey ());
-            zone.setKeyHigh (kontaktZone.getHighKey ());
-            final int rootKey = kontaktZone.getRootKey ();
-            zone.setKeyRoot (rootKey);
-
-            final float volume = this.instrumentVolume * kontaktGroup.getVolume () * kontaktZone.getZoneVolume ();
-            zone.setGain (MathUtils.valueToDb (volume));
-            zone.setPanorama (Math.clamp (this.instrumentPan + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
-
-            zone.setTune (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (), this.instrumentTune));
-            zone.setKeyTracking (kontaktGroup.isKeyTracking () ? 1 : 0);
-
-            zone.setVelocityLow (kontaktZone.getLowVelocity ());
-            zone.setVelocityHigh (kontaktZone.getHighVelocity ());
-
-            zone.setNoteCrossfadeLow (kontaktZone.getFadeLowKey ());
-            zone.setNoteCrossfadeHigh (kontaktZone.getFadeHighKey ());
-            zone.setVelocityCrossfadeLow (kontaktZone.getFadeLowKey ());
-            zone.setVelocityCrossfadeHigh (kontaktZone.getFadeHighVelocity ());
-
-            // Only on a group level...
-            zone.setReversed (kontaktGroup.isReverse ());
-
-            // TODO Fill missing info, when understood where it is stored
-            // Bend Up / Down, Filter, Amplitude and Pitch Modulator
-
-            for (final ZoneLoop zoneLoop: kontaktZone.getLoops ())
-            {
-                final ISampleLoop loop = new DefaultSampleLoop ();
-                final int loopMode = zoneLoop.getMode ();
-                if (loopMode == ZoneLoop.MODE_UNTIL_END || loopMode == ZoneLoop.MODE_UNTIL_RELEASE)
-                {
-                    loop.setType (zoneLoop.isAlternating () ? LoopType.ALTERNATING : LoopType.FORWARDS);
-                    loop.setStart (zoneLoop.getLoopStart ());
-                    loop.setEnd (zoneLoop.getLoopStart () + zoneLoop.getLoopLength ());
-                    loop.setCrossfadeInSamples (zoneLoop.getCrossfadeLength ());
-                    zone.addLoop (loop);
-                }
-            }
-        }
-
-        final List<IGroup> sampleGroups = new ArrayList<> ();
-        for (final Pair<IGroup, Group> pair: indexedGroups.values ())
-            sampleGroups.add (pair.getKey ());
-        multiSample.setGroups (sampleGroups);
-    }
-
-
-    /**
      * Fill the program attributes from the given multi-sample instance.
      *
      * @param source The multi-sample to read from
@@ -646,87 +538,95 @@ public class Program
     }
 
 
-    /**
-     * Creates all groups.
-     *
-     * @return The indexed groups
-     */
-    private Map<Integer, Pair<IGroup, Group>> createGroups ()
-    {
-        final Map<Integer, Pair<IGroup, Group>> map = new TreeMap<> ();
-        for (int i = 0; i < this.groups.size (); i++)
-        {
-            final Group kontaktGroup = this.groups.get (i);
-            final IGroup group = new DefaultGroup ();
-            group.setName (kontaktGroup.getName ());
-            if (kontaktGroup.isReleaseTrigger ())
-                group.setTrigger (TriggerType.RELEASE);
-            map.put (Integer.valueOf (i), new Pair<> (group, kontaktGroup));
-        }
-        return map;
-    }
-
-
-    private ISampleZone createZone (final IMultisampleSource source, final Zone zone) throws IOException
-    {
-        final int filenameId = zone.getFilenameId ();
-        if (filenameId < 0 || filenameId >= this.filePaths.size ())
-            throw new IOException (Functions.getMessage ("IDS_NKI5_WRONG_FILE_INDEX", Integer.toString (filenameId)));
-
-        // Check if it is an absolute path, try to find the sample file...
-        final String filename = this.filePaths.get (filenameId);
-        File sampleFile = new File (filename);
-        if (sampleFile.isAbsolute ())
-        {
-            if (!sampleFile.exists ())
-                sampleFile = new File (source.getSourceFile ().getParent (), sampleFile.getName ());
-        }
-        else
-            sampleFile = new File (source.getSourceFile ().getParent (), filename);
-
-        final ISampleData sampleData;
-        // Ignore non-existing files since it might be in a monolith
-        if (!sampleFile.exists ())
-            sampleData = null;
-        else if (filename.toLowerCase ().endsWith (".ncw"))
-            sampleData = new NcwFileSampleData (sampleFile);
-        else
-            sampleData = new WavFileSampleData (sampleFile);
-        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
-    }
-
-
-    private void setMetadata (final IMultisampleSource source, final String [] parts)
-    {
-        source.setName (this.name);
-
-        final IMetadata metadata = source.getMetadata ();
-
-        if (this.instrumentAuthor != null && !this.instrumentAuthor.isBlank ())
-            metadata.setCreator (this.instrumentAuthor);
-        if (this.instrumentURL != null && !this.instrumentURL.isBlank ())
-            metadata.setDescription (this.instrumentURL);
-
-        if (this.instrumentIconName == null || this.instrumentIconName.isBlank () || "New".equals (this.instrumentIconName))
-            metadata.setCategory (TagDetector.detectCategory (parts));
-        else
-            metadata.setCategory (TagDetector.detectCategory (this.instrumentIconName.split (" ")));
-    }
-
-
-    private static double calculateTune (final double zoneTune, final double groupTune, final double progTune)
-    {
-        // All three tune values are stored logarithmically
-        final double value = 12.0 * Math.log (zoneTune * groupTune * progTune) / Math.log (2);
-        return Math.round (value * 100000) / 100000.0;
-    }
-
-
     private static KontaktPresetChunk findChunk (final List<KontaktPresetChunk> chunks, final int id)
     {
         for (final KontaktPresetChunk chunk: chunks)
             if (chunk.getId () == id)
                 return chunk;
         return null;
+    }
+
+
+    public List<Zone> getZones ()
+    {
+        return zones;
+    }
+
+
+    public float getInstrumentVolume ()
+    {
+        return instrumentVolume;
+    }
+
+
+    public void setInstrumentVolume (float instrumentVolume)
+    {
+        this.instrumentVolume = instrumentVolume;
+    }
+
+
+    public float getInstrumentPan ()
+    {
+        return instrumentPan;
+    }
+
+
+    public void setInstrumentPan (float instrumentPan)
+    {
+        this.instrumentPan = instrumentPan;
+    }
+
+
+    public float getInstrumentTune ()
+    {
+        return instrumentTune;
+    }
+
+
+    public void setInstrumentTune (float instrumentTune)
+    {
+        this.instrumentTune = instrumentTune;
+    }
+
+
+    public String getInstrumentAuthor ()
+    {
+        return instrumentAuthor;
+    }
+
+
+    public void setInstrumentAuthor (String instrumentAuthor)
+    {
+        this.instrumentAuthor = instrumentAuthor;
+    }
+
+
+    public String getInstrumentURL ()
+    {
+        return instrumentURL;
+    }
+
+
+    public void setInstrumentURL (String instrumentURL)
+    {
+        this.instrumentURL = instrumentURL;
+    }
+
+
+    public String getInstrumentIconName ()
+    {
+        return instrumentIconName;
+    }
+
+
+    public void setInstrumentIconName (String instrumentIconName)
+    {
+        this.instrumentIconName = instrumentIconName;
+    }
+
+
+    public List<Group> getGroups ()
+    {
+        return groups;
     }
 }

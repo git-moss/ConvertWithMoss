@@ -246,11 +246,9 @@ public class WaldorfQpatCreator extends AbstractCreator
                 // copying of the samples to the internal memory
                 sb.append ("\"4:").append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
 
-                // Pitch
-                double tune = zone.getTune ();
-                // Add only the fractions
-                tune -= (int) tune;
-                sb.append (formatMapDouble (zone.getKeyRoot () + tune)).append ('\t');
+                // Pitch - tuning needs to be subtracted since the sample plays high if the root
+                // note is lower!
+                sb.append (formatMapDouble (zone.getKeyRoot () - zone.getTune ())).append ('\t');
 
                 // FromNote / ToNote
                 sb.append (zone.getKeyLow ()).append ('\t').append (zone.getKeyHigh ()).append ('\t');

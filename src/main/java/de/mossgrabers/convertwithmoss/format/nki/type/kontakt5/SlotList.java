@@ -33,11 +33,10 @@ public class SlotList
      * Parse the slot list data.
      *
      * @param chunk The chunk from which to read the slot list data
-     * @param filePaths The paths to the samples
      * @return The parsed programs
      * @throws IOException Could not read the slot list
      */
-    public List<Program> read (final KontaktPresetChunk chunk, final List<String> filePaths) throws IOException
+    public List<Program> read (final KontaktPresetChunk chunk) throws IOException
     {
         if (chunk.getId () != KontaktPresetChunkID.SLOT_LIST)
             throw new IOException (Functions.getMessage ("IDS_NKI_NO_SLOT_LIST_CHUNK"));
@@ -57,7 +56,7 @@ public class SlotList
 
                     for (final KontaktPresetChunk child: programContainerChunk.getChildren ())
                         if (child.getId () == KontaktPresetChunkID.PROGRAM_LIST)
-                            programs.addAll (parseProgramList (child, filePaths));
+                            programs.addAll (parseProgramList (child));
                 }
         }
 
@@ -65,7 +64,7 @@ public class SlotList
     }
 
 
-    private static List<Program> parseProgramList (final KontaktPresetChunk programListChunk, final List<String> filePaths) throws IOException
+    private static List<Program> parseProgramList (final KontaktPresetChunk programListChunk) throws IOException
     {
         final List<Program> programs = new ArrayList<> ();
         final byte [] publicData = programListChunk.getPublicData ();
@@ -76,7 +75,7 @@ public class SlotList
             for (final KontaktPresetChunk presetChunk: childChunk.getChildren ())
             {
                 presetChunk.setId (KontaktPresetChunkID.PROGRAM);
-                final Program program = new Program (filePaths);
+                final Program program = new Program ();
                 program.read (presetChunk);
                 programs.add (program);
             }

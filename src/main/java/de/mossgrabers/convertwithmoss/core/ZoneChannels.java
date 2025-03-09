@@ -133,14 +133,9 @@ public enum ZoneChannels
             final ISampleZone rightSampleZone = rightSampleZones.get (i);
             leftSampleZone.getSampleData ().writeSample (leftBuffer);
             rightSampleZone.getSampleData ().writeSample (rightBuffer);
-            final WavFileSampleData leftFile;
-            final WavFileSampleData rightFile;
             try (final InputStream inLeft = new ByteArrayInputStream (leftBuffer.toByteArray ()); final InputStream inRight = new ByteArrayInputStream (rightBuffer.toByteArray ()))
             {
-                leftFile = new WavFileSampleData (inLeft);
-                rightFile = new WavFileSampleData (inRight);
-                leftFile.combine (rightFile);
-                leftSampleZone.setSampleData (leftFile);
+                leftSampleZone.setSampleData (new WavFileSampleData (inLeft).combine (new WavFileSampleData (inRight)));
             }
             catch (final CombinationNotPossibleException ex)
             {

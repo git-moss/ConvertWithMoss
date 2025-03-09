@@ -160,22 +160,21 @@ public class Kontakt2Type extends AbstractKontaktType
 
         this.kontakt5Preset.readKontaktPresetChunks (FastLZ.uncompress (compressedData, uncompressedSize));
 
-        this.kontakt5Preset.readKontaktPresetChunks (FastLZ.uncompress (compressedData, uncompressedSize));
-        final List<Program> programs = this.kontakt5Preset.getPrograms ();
-
         final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
 
         final List<IMultisampleSource> results = new ArrayList<> ();
+        final List<Program> programs = this.kontakt5Preset.getPrograms ();
+        final List<String> filePaths = this.kontakt5Preset.getFilePaths ();
         for (final Program program: programs)
         {
             final String programName = program.getName ();
             final String mappingName = AudioFileUtils.subtractPaths (sourceFolder, sourceFile) + " : " + programName;
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
-            program.fillInto (multisampleSource, programs.size () > 1 ? new String []
+            fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName
-            } : parts);
+            } : parts, filePaths);
             results.add (multisampleSource);
         }
         return results;
@@ -251,9 +250,16 @@ public class Kontakt2Type extends AbstractKontaktType
 
     private void fillMetadata (final Kontakt2Header header)
     {
-        final String iconName = KontaktIcon.getName (header.getIconID ());
-        if (iconName != null)
-            this.metadata.setCategory (iconName);
+        final int iconID = header.getIconID ();
+        // 0 is Organ but might simply not be set there use auto-detection instead, 28 is
+        // New where we use auto-detection as well
+        if (iconID > 0 && iconID < 28)
+        {
+            final String iconName = KontaktIcon.getName (iconID);
+            if (iconName != null)
+                this.metadata.setCategory (iconName);
+        }
+
         this.metadata.setCreator (header.getAuthor ());
         this.metadata.setCreationDateTime (header.getCreation ());
 
@@ -311,9 +317,9 @@ public class Kontakt2Type extends AbstractKontaktType
         for (final IMultisampleSource multiSample: multiSamples)
         {
             final IMetadata metadata = multiSample.getMetadata ();
-            if (!isMulti || metadata.getCreator () == null || metadata.getCreator ().isBlank ())
+            if (!isMulti && (metadata.getCreator () == null || metadata.getCreator ().isBlank ()))
                 metadata.setCreator (creator);
-            if (!isMulti || metadata.getCategory () == null || metadata.getCategory ().isBlank ())
+            if (!isMulti && (metadata.getCategory () == null || metadata.getCategory ().isBlank ()))
                 metadata.setCategory (category);
 
             final List<String> soundCategories = new ArrayList<> ();
@@ -322,9 +328,15 @@ public class Kontakt2Type extends AbstractKontaktType
             metadata.setKeywords (TagDetector.detectKeywords (soundCategories.toArray (new String [soundCategories.size ()])));
 
             // Update the description
-            String description = metadata.getDescription ();
-            description = description == null || description.isBlank () ? "" : "\n" + description;
-            metadata.setDescription (headerMetadata.getDescription () + description);
+            final StringBuilder sb = new StringBuilder (metadata.getDescription ());
+            final String description = headerMetadata.getDescription ();
+            if (description != null && !description.isBlank ())
+            {
+                if (!sb.isEmpty ())
+                    sb.append ('\n');
+                sb.append (description);
+            }
+            metadata.setDescription (sb.toString ().trim ());
         }
     }
 }

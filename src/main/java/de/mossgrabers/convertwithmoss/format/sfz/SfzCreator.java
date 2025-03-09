@@ -120,11 +120,11 @@ public class SfzCreator extends AbstractCreator
     @Override
     public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
+        final String multiSampleName = createSafeFilename (multisampleSource.getName ());
+        final String safeSampleFolderName = multiSampleName + FOLDER_POSTFIX;
         final String metadata = this.createMetadata (safeSampleFolderName, multisampleSource);
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "sfz");
+        final File multiFile = this.createUniqueFilename (destinationFolder, multiSampleName, "sfz");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))

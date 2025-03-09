@@ -60,7 +60,11 @@ public class KontaktPresetChunk
                 this.readStructure (objectInputStream, objectSize);
                 break;
 
-            case KontaktPresetChunkID.SLOT_LIST, KontaktPresetChunkID.PAR_FX, KontaktPresetChunkID.FILENAME_LIST_EX, KontaktPresetChunkID.FILENAME_LIST, KontaktPresetChunkID.PARAMETER_ARRAY_16:
+            case KontaktPresetChunkID.PARAMETER_ARRAY_16:
+                this.readFixedArray (objectInputStream, 16);
+                break;
+
+            case KontaktPresetChunkID.SLOT_LIST, KontaktPresetChunkID.PAR_FX, KontaktPresetChunkID.FILENAME_LIST_EX, KontaktPresetChunkID.FILENAME_LIST:
             default:
                 this.publicData = objectInputStream.readNBytes (objectSize);
                 break;
@@ -125,6 +129,30 @@ public class KontaktPresetChunk
             arrayObject.id = reference;
             arrayObject.readStructure (in, objectSize);
             this.children.add (arrayObject);
+        }
+    }
+
+
+    public void readFixedArray (final InputStream in, final int size) throws IOException
+    {
+        // TODO
+        int isXXXX = in.read ();
+        // System.out.println ("isXXXX: " + isXXXX);
+
+        int version = StreamUtils.readUnsigned16 (in, false);
+        // check for 0x10, 0x11, 0x12, 0x13
+
+        for (int i = 0; i < size; i++)
+        {
+            if (in.read () > 0)
+            {
+                final KontaktPresetChunk child = new KontaktPresetChunk ();
+                child.id = StreamUtils.readUnsigned16 (in, false);
+
+                final int dataSize = (int) StreamUtils.readUnsigned32 (in, false);
+                child.publicData = in.readNBytes (dataSize);
+                this.children.add (child);
+            }
         }
     }
 
@@ -351,8 +379,8 @@ public class KontaktPresetChunk
         final int childLevel = level + 1;
         final int childPadding = padding + 4;
 
-        sb.append (StringUtils.padLeftSpaces ("Private (", childPadding)).append (this.privateData == null ? 0 : this.privateData.length).append (" Bytes): ").append (this.privateData == null ? "[]" : StringUtils.formatArray (this.privateData)).append ("\n");
-        sb.append (StringUtils.padLeftSpaces ("Public  (", childPadding)).append (this.publicData == null ? 0 : this.publicData.length).append (" Bytes): ").append (this.publicData == null ? "[]" : StringUtils.formatArray (this.publicData)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Private (", childPadding)).append (this.privateData == null ? 0 : this.privateData.length).append (" Bytes): ").append (this.privateData == null ? "[]" : StringUtils.formatHexStr (this.privateData)).append ("\n");
+        sb.append (StringUtils.padLeftSpaces ("Public  (", childPadding)).append (this.publicData == null ? 0 : this.publicData.length).append (" Bytes): ").append (this.publicData == null ? "[]" : StringUtils.formatHexStr (this.publicData)).append ("\n");
 
         if (!this.children.isEmpty ())
         {

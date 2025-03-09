@@ -19,18 +19,18 @@ import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * A chunk in a Native Instruments Container (used by Kontakt 5+ and other NI plugins).
+ * A data chunk in a Native Instruments Container (used by Kontakt 5+ and other NI plugins).
  *
  * @author Jürgen Moßgraber
  */
-public class NIContainerChunk
+public class NIContainerDataChunk
 {
-    private String           domainID;
-    private int              chunkTypeID;
-    private int              version;
-    private NIContainerChunk nextChunk = null;
-    private int              dataSize;
-    private IChunkData       data;
+    private String               domainID;
+    private int                  chunkTypeID;
+    private int                  version;
+    private NIContainerDataChunk nextDataChunk = null;
+    private int                  dataSize;
+    private IChunkData           data;
 
 
     /**
@@ -58,8 +58,8 @@ public class NIContainerChunk
         // Is this the last chunk?
         if (chunkType != NIContainerChunkType.TERMINATOR)
         {
-            this.nextChunk = new NIContainerChunk ();
-            this.nextChunk.read (bin);
+            this.nextDataChunk = new NIContainerDataChunk ();
+            this.nextDataChunk.read (bin);
         }
 
         this.data = ChunkDataFactory.createChunkData (chunkType);
@@ -84,8 +84,8 @@ public class NIContainerChunk
         StreamUtils.writeUnsigned32 (bout, this.chunkTypeID, false);
         StreamUtils.writeUnsigned32 (bout, this.version, false);
 
-        if (this.nextChunk != null)
-            this.nextChunk.write (bout);
+        if (this.nextDataChunk != null)
+            this.nextDataChunk.write (bout);
 
         this.data.write (bout);
         StreamUtils.writeBlock64 (out, bout.toByteArray (), false);
@@ -141,9 +141,9 @@ public class NIContainerChunk
      *
      * @return The next chunk or null if there is none
      */
-    public NIContainerChunk getNextChunk ()
+    public NIContainerDataChunk getNextChunk ()
     {
-        return this.nextChunk;
+        return this.nextDataChunk;
     }
 
 
@@ -180,8 +180,8 @@ public class NIContainerChunk
         else if (this.data != null)
             sb.append (this.data.dump (level + 1));
 
-        if (this.nextChunk != null)
-            sb.append (this.nextChunk.dump (level));
+        if (this.nextDataChunk != null)
+            sb.append (this.nextDataChunk.dump (level));
         return sb.toString ();
     }
 }
