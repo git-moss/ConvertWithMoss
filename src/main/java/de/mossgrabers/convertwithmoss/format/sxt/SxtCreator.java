@@ -114,7 +114,6 @@ public class SxtCreator extends AbstractCreator
             sxtGroup.write (groupsOutputStream, SxtChunkConstants.VERSION_2_0_0);
 
             final List<ISampleZone> zones = group.getSampleZones ();
-            overallZoneCount += zones.size ();
 
             for (int zoneIndex = 0; zoneIndex < zones.size (); zoneIndex++)
             {
@@ -123,7 +122,7 @@ public class SxtCreator extends AbstractCreator
                 final ByteArrayOutputStream sampleReferenceOutputStream = new ByteArrayOutputStream ();
                 sampleReferenceOutputStreams.add (sampleReferenceOutputStream);
                 writeSampleReference (sampleReferenceOutputStream, zone.getName () + ".wav");
-                writeZoneSampleReference (zoneIndex, zoneSampleReferenceOutputStream);
+                writeZoneSampleReference (overallZoneCount + zoneIndex, zoneSampleReferenceOutputStream);
 
                 // Fill zone
                 final SxtZone sxtZone = new SxtZone ();
@@ -131,6 +130,8 @@ public class SxtCreator extends AbstractCreator
                 sxtZone.fillFrom (zone);
                 sxtZone.write (zoneOutputStream);
             }
+
+            overallZoneCount += zones.size ();
         }
 
         // Combine all sample references

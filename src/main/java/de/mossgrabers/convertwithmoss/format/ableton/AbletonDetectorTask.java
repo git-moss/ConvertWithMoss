@@ -330,7 +330,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
         zone.setKeyRoot (AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_ROOT_KEY, 60));
         zone.setTune (AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
         zone.setKeyTracking (Math.clamp (AbletonDetectorTask.getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_TUNE_SCALE, 0) / 100.0, 0, 1));
-        zone.setPanorama (AbletonDetectorTask.getDoubleValueAttribute (multiSamplePartElement, AbletonTag.TAG_PANORAMA, 0));
+        zone.setPanning (AbletonDetectorTask.getDoubleValueAttribute (multiSamplePartElement, AbletonTag.TAG_PANORAMA, 0));
 
         final double volumeVal = AbletonDetectorTask.getDoubleValueAttribute (multiSamplePartElement, AbletonTag.TAG_VOLUME, 1);
         zone.setGain (Math.log (volumeVal) / Math.log (2) * 6.0);

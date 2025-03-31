@@ -445,9 +445,9 @@ public class SfzCreator extends AbstractCreator
         if (velAmpDepth < 1)
             addAttribute (buffer, SfzOpcode.AMP_VELOCITY_TRACK, formatDouble (velAmpDepth * 100.0, 2), true);
 
-        final double pan = zone.getPanorama ();
+        final double pan = zone.getPanning ();
         if (pan != 0)
-            addAttribute (buffer, SfzOpcode.PANORAMA, Integer.toString ((int) Math.round (pan * 100)), true);
+            addAttribute (buffer, SfzOpcode.PANNING, Integer.toString ((int) Math.round (pan * 100)), true);
 
         final StringBuilder envelopeStr = new StringBuilder ();
 

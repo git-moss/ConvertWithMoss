@@ -43,8 +43,8 @@ public class TX16WxTag
     /** The attenuation tag on different levels. */
     public static final String ATTENUATION            = "tx:attenuation";
 
-    /** The panorama attribute on different levels. */
-    public static final String PANORAMA               = "tx:pan";
+    /** The panning attribute on different levels. */
+    public static final String PANNING                = "tx:pan";
     /** The coarse tuning attribute. */
     public static final String TUNING_COARSE          = "tx:coarse";
     /** The fine tuning attribute. */

@@ -217,7 +217,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         // Gain - "gaindb" -> unknown conversion
 
         sampleZone.setTune (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PITCH, 0) / 1000.0);
-        sampleZone.setPanorama (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PANORAMA, 0) / 1000.0);
+        sampleZone.setPanning (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PANNING, 0) / 1000.0);
 
         // No zone logic
 

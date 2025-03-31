@@ -136,7 +136,7 @@ public class MPCKeygroupTag
     public static final String LAYER_ACTIVE                         = "Active";
     /** The volume element of the layer element. */
     public static final String LAYER_VOLUME                         = "Volume";
-    /** The panorama element of the layer element. */
+    /** The panning element of the layer element. */
     public static final String LAYER_PAN                            = "Pan";
     /** The pitch element of the layer element. */
     public static final String LAYER_PITCH                          = "Pitch";
@@ -168,7 +168,7 @@ public class MPCKeygroupTag
     public static final String LAYER_PITCH_RANDOM                   = "PitchRandom";
     /** The volume randomization element of the layer element. */
     public static final String LAYER_VOLUME_RANDOM                  = "VolumeRandom";
-    /** The panorama randomization element of the layer element. */
+    /** The panning randomization element of the layer element. */
     public static final String LAYER_PAN_RANDOM                     = "PanRandom";
     /** The offset randomization element of the layer element. */
     public static final String LAYER_OFFSET_RANDOM                  = "OffsetRandom";

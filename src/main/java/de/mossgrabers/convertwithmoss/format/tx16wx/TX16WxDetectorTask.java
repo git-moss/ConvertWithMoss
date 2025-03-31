@@ -277,7 +277,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
     private Optional<IFilter> parseGroup (final DefaultGroup group, final Element groupElement, final Map<String, ISampleZone> sampleMap, final Map<String, Element> soundShapeElementMap)
     {
         final double groupVolumeOffset = this.parseVolume (groupElement, TX16WxTag.VOLUME);
-        final double groupPanoramaOffset = parsePercentage (groupElement, TX16WxTag.PANORAMA);
+        final double groupPanningOffset = parsePercentage (groupElement, TX16WxTag.PANNING);
         double groupTuningOffset = XMLUtils.getIntegerAttribute (groupElement, TX16WxTag.TUNING_COARSE, 0);
         groupTuningOffset += XMLUtils.getIntegerAttribute (groupElement, TX16WxTag.TUNING_FINE, 0) / 100.0;
 
@@ -335,7 +335,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
             final ISampleZone zone = sampleMap.get (regionElement.getAttribute (TX16WxTag.SAMPLE));
             if (zone != null)
             {
-                this.parseZone (zone, regionElement, groupVolumeOffset, groupPanoramaOffset, groupTuningOffset);
+                this.parseZone (zone, regionElement, groupVolumeOffset, groupPanningOffset, groupTuningOffset);
                 group.addSampleZone (zone);
 
                 if (pitchModulator.isPresent ())
@@ -367,13 +367,13 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * @param zone The zone for which to parse the attributes
      * @param regionElement The region element which contains the attributes
      * @param groupVolumeOffset The group offset for volume
-     * @param groupPanoramaOffset The group offset for panorama
+     * @param groupPanningOffset The group offset for panning
      * @param groupTuningOffset The group offset for tuning
      */
-    private void parseZone (final ISampleZone zone, final Element regionElement, final double groupVolumeOffset, final double groupPanoramaOffset, final double groupTuningOffset)
+    private void parseZone (final ISampleZone zone, final Element regionElement, final double groupVolumeOffset, final double groupPanningOffset, final double groupTuningOffset)
     {
         zone.setGain (groupVolumeOffset + this.parseVolume (regionElement, TX16WxTag.ATTENUATION));
-        zone.setPanorama (groupPanoramaOffset + parsePercentage (regionElement, TX16WxTag.PANORAMA));
+        zone.setPanning (groupPanningOffset + parsePercentage (regionElement, TX16WxTag.PANNING));
 
         double tuning = 0;
         final Element soundOffsetsElement = XMLUtils.getChildElementByName (regionElement, TX16WxTag.SOUND_OFFSETS);

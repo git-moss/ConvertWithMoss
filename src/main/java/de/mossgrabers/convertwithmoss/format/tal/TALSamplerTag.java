@@ -59,8 +59,8 @@ public class TALSamplerTag
     public static final String HI_VEL                  = "velocityend";
     /** The volume tag on different levels. */
     public static final String VOLUME                  = "volume";
-    /** The sample panorama attribute. */
-    public static final String PANORAMA                = "pan";
+    /** The sample panning attribute. */
+    public static final String PANNING                 = "pan";
     /** The layer transpose attribute. */
     public static final String LAYER_TRANSPOSE         = "layertranspose";
     /** The tune sample attribute. */

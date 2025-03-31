@@ -42,7 +42,7 @@ public class DefaultSampleZone implements ISampleZone
     protected int                velocityCrossfadeHigh      = 0;
 
     protected double             gain                       = 0;
-    protected double             panorama                   = 0;
+    protected double             panning                    = 0;
     protected double             tune                       = 0;
     protected double             keyTracking                = 1.0;
     protected int                bendUp                     = 0;
@@ -382,17 +382,17 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public void setPanorama (final double panorama)
+    public void setPanning (final double panning)
     {
-        this.panorama = Math.clamp (panorama, -1, 1);
+        this.panning = Math.clamp (panning, -1, 1);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public double getPanorama ()
+    public double getPanning ()
     {
-        return this.panorama;
+        return this.panning;
     }
 
 
@@ -534,7 +534,7 @@ public class DefaultSampleZone implements ISampleZone
         this.velocityCrossfadeLow = other.getVelocityCrossfadeLow ();
         this.velocityCrossfadeHigh = other.getVelocityCrossfadeHigh ();
         this.gain = other.getGain ();
-        this.panorama = other.getPanorama ();
+        this.panning = other.getPanning ();
         this.tune = other.getTune ();
         this.keyTracking = other.getKeyTracking ();
         this.bendUp = other.getBendUp ();

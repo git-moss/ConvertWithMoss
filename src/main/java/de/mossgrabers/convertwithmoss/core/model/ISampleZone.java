@@ -307,19 +307,19 @@ public interface ISampleZone
 
 
     /**
-     * Get the panorama.
+     * Get the panning.
      *
-     * @return The panorama in the range of [-1..1], -1 is full left, 0 centered and 1 full right
+     * @return The panning in the range of [-1..1], -1 is full left, 0 centered and 1 full right
      */
-    double getPanorama ();
+    double getPanning ();
 
 
     /**
-     * Set the panorama in the range of [-1..1], -1 is full left, 0 centered and 1 full right.
+     * Set the panning in the range of [-1..1], -1 is full left, 0 centered and 1 full right.
      *
-     * @param panorama The panorama
+     * @param panning The panning
      */
-    void setPanorama (double panorama);
+    void setPanning (double panning);
 
 
     /**

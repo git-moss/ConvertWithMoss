@@ -27,7 +27,7 @@ public class YamahaYsfcKeybank implements IStreamable
     private int                        velocityRangeLower;
     private int                        velocityRangeUpper;
     private int                        level;
-    private int                        panorama   = 64;
+    private int                        panning    = 64;
     private int                        coarseTune;
     private int                        fineTune;
     private int                        rootNote;
@@ -85,7 +85,7 @@ public class YamahaYsfcKeybank implements IStreamable
         if (isVersion1)
             this.level = Math.clamp (2L * this.level, 0, 255);
         // Bit 7 contains the Pan-Curve
-        this.panorama = in.read () & 0x7F;
+        this.panning = in.read () & 0x7F;
 
         // Reserved 00
         in.skipNBytes (1);
@@ -176,7 +176,7 @@ public class YamahaYsfcKeybank implements IStreamable
         out.write (this.velocityRangeLower);
         out.write (this.velocityRangeUpper);
         out.write (this.level);
-        out.write (this.panorama);
+        out.write (this.panning);
 
         out.write (0x00);
         out.write (this.fixedPitch);
@@ -247,7 +247,7 @@ public class YamahaYsfcKeybank implements IStreamable
         sb.append ("Coarse Tune: ").append (this.getCoarseTune ()).append (" (").append (this.coarseTune).append (")\n");
         sb.append ("Fine Tune: ").append (this.getFineTune ()).append (" (").append (this.fineTune).append (")\n");
         sb.append ("Level: ").append (this.level).append ('\n');
-        sb.append ("Panorama: ").append (this.getPanorama ()).append (" (").append (this.panorama).append (")\n\n");
+        sb.append ("Panning: ").append (this.getPanning ()).append (" (").append (this.panning).append (")\n\n");
         return sb.toString ();
     }
 
@@ -363,24 +363,24 @@ public class YamahaYsfcKeybank implements IStreamable
 
 
     /**
-     * Get the panorama of the sample.
+     * Get the panning of the sample.
      *
-     * @return The panorama in the range of [1..127] which relates to [-63 to 63]
+     * @return The panning in the range of [1..127] which relates to [-63 to 63]
      */
-    public int getPanorama ()
+    public int getPanning ()
     {
-        return this.panorama;
+        return this.panning;
     }
 
 
     /**
-     * Set the panorama of the sample.
+     * Set the panning of the sample.
      *
-     * @param panorama The panorama in the range of [1..127] which relates to [-63 to 63]
+     * @param panning The panning in the range of [1..127] which relates to [-63 to 63]
      */
-    public void setPanorama (final int panorama)
+    public void setPanning (final int panning)
     {
-        this.panorama = Math.clamp (panorama, 1, 127);
+        this.panning = Math.clamp (panning, 1, 127);
     }
 
 

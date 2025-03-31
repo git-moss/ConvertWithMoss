@@ -174,7 +174,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             if (exs24Zone.pitch && (exs24Zone.coarseTuning != 0 || exs24Zone.fineTuning != 0))
                 zone.setTune (exs24Zone.coarseTuning + exs24Zone.fineTuning / 100.0);
 
-            zone.setPanorama (Math.clamp (exs24Zone.pan, -50, 50) / 50.0);
+            zone.setPanning (Math.clamp (exs24Zone.pan, -50, 50) / 50.0);
 
             if (exs24Zone.loopOn)
             {
@@ -395,7 +395,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         if (exs24Group.volume != 0)
             zone.setGain (zone.getGain () + exs24Group.volume);
         if (exs24Group.pan != 0)
-            zone.setPanorama (zone.getPanorama () + exs24Group.pan);
+            zone.setPanning (zone.getPanning () + exs24Group.pan);
 
         // Zone is completely outside of the groups' velocity range
         if (zone.getVelocityHigh () < exs24Group.minVelocity)

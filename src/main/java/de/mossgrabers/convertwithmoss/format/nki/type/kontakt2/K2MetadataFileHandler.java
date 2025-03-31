@@ -12,6 +12,8 @@ import java.util.Map;
 import org.w3c.dom.Element;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.tools.XMLUtils;
@@ -147,6 +149,42 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
     {
         final String releaseTrigParam = groupParameters.get (K2Tag.K2_RELEASE_TRIGGER_PARAM);
         return releaseTrigParam != null && releaseTrigParam.equals (this.tags.yes ()) ? TriggerType.RELEASE : TriggerType.ATTACK;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void parseRoundRobin (final Element groupElement, final List<ISampleZone> zones)
+    {
+        final Element groupStartElement = XMLUtils.getChildElementByName (groupElement, K2Tag.K2_GROUP_START);
+        if (groupStartElement == null)
+            return;
+        final Element startCriteriaElement = XMLUtils.getChildElementByName (groupStartElement, K2Tag.K2_START_CRITERIA);
+        if (startCriteriaElement == null)
+            return;
+
+        final Map<String, String> values = this.readValueMap (startCriteriaElement);
+        final String mode = values.get ("mode");
+        if (mode == null || !mode.startsWith ("cycle"))
+            return;
+
+        final String cycleClassValue = values.get ("cycleClass");
+        int roundRobinPosition;
+        try
+        {
+            roundRobinPosition = cycleClassValue != null ? Integer.parseInt (cycleClassValue) : -1;
+        }
+        catch (final NumberFormatException ex)
+        {
+            roundRobinPosition = -1;
+        }
+
+        for (final ISampleZone zone: zones)
+        {
+            zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+            if (roundRobinPosition > -1)
+                zone.setSequencePosition (roundRobinPosition);
+        }
     }
 
 

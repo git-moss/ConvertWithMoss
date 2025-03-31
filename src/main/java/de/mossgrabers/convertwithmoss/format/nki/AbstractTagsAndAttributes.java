@@ -735,7 +735,7 @@ public abstract class AbstractTagsAndAttributes
 
 
     /**
-     * Get the zone panorama parameter tag.
+     * Get the zone panning parameter tag.
      *
      * @return The tag
      */
@@ -746,7 +746,7 @@ public abstract class AbstractTagsAndAttributes
 
 
     /**
-     * Get the group panorama parameter tag.
+     * Get the group panning parameter tag.
      *
      * @return The tag
      */
@@ -757,7 +757,7 @@ public abstract class AbstractTagsAndAttributes
 
 
     /**
-     * Get the program panorama parameter tag.
+     * Get the program panning parameter tag.
      *
      * @return The tag
      */

@@ -1,5 +1,14 @@
 # Changes
 
+## 12.2.1
+
+* EXS24
+  * Fixed: Creating EXS files was broken (0 > -24).
+* Kontakt 2
+  * New: Round-robin information is read.
+* Reason NN-XT
+  * Fixed: Sample indices were not written correctly (every group started again to count from zero).
+
 ## 12.2.0
 
 * Fixed: Sample files with problematic characters in their name got updated accordingly but not the references to them.
@@ -44,7 +53,7 @@
   * New: Waveform data of Montage M (*.Y2U) can now be read as well.
   * New: Added progress logging when extracting samples from a library.
   * Fixed: Library files of pre-Montage models were not read correctly.
-  * Fixed: Waveform panorama was not always correct.
+  * Fixed: Waveform panning was not always correct.
 
 ## 11.7.0
 
@@ -188,7 +197,7 @@
 * Kontakt - Writing
   * New: Improved pitch envelope.
 * Kontakt 4.2-7 - Reading
-  * Fixed: Group volume, panorama and key-tracking was not applied.
+  * Fixed: Group volume, panning and key-tracking was not applied.
 * EXS, SXT, TX16Wx - Reading
   * New: Speed up finding samples.
   * Fixed: If levels to search upwards was set to 0, it did not search downwards.
@@ -288,7 +297,7 @@
   * New: Minimum version is now set to "1.11".
   * New: Added support for new filter types: lowpass, lowpass_1pl, bandpass, highpass, peak and notch.
   * New: Added filter envelope.
-  * New: Added support for panorama.
+  * New: Added support for panning.
   * New: Removed all knobs except reverb settings to be able to set these parameters on the samples level.
 * Kontakt - Reading
   * New: Use category detection when category is set to 'New'.
@@ -404,7 +413,7 @@
   * Fixed: Created Kontakt 1 files could be opened with Kontakt but not saved again due to the use of forward slashes for sample paths. Backward slashes are used now.
 * Sf2 - Reading
   * New: Use filename (without ending) for instruments named 'NewInstr'.
-  * Fixed: Panorama setting was not corrected when mono files were combined to stereo.
+  * Fixed: Panning setting was not corrected when mono files were combined to stereo.
   * Fixed: If left and right sample had different lengths, the shorter sample had data from the following sample added.
 
 ## 6.3.0
@@ -417,7 +426,7 @@
   * Fixed: Write: Pitch was not correct.
 * SFZ
   * Fixed: Increased allowed range of pitch values.
-  * Fixed: Panorama was not read / written.
+  * Fixed: Panning was not read / written.
 
 ## 6.2.1
 
@@ -456,7 +465,7 @@
 * New: Added option to rename multi-samples (thanks to Philip Stolz).
 * New: Improved mapping of envelopes to MPC keygroups (thanks to Philip Stolz).
 * New: Added support for reading Kontakt NKI files (only the format of the versions before Kontakt 4.2 are supported, thanks to Philip Stolz).
-* Fixed: Added missing reading of panorama value.
+* Fixed: Added missing reading of panning value.
 
 ## 5.2.1
 

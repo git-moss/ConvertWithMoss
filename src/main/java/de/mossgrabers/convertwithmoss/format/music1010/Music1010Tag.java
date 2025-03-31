@@ -95,8 +95,8 @@ public class Music1010Tag
 
     /** The attribute for the sample pitch. */
     public static final String ATTR_PITCH                 = "pitch";
-    /** The attribute for the sample panorama. */
-    public static final String ATTR_PANORAMA              = "panpos";
+    /** The attribute for the sample panning. */
+    public static final String ATTR_PANNING               = "panpos";
 
     /** The attribute for the loop mode. */
     public static final String ATTR_LOOP_MODE             = "loopmodes";

@@ -164,9 +164,9 @@ public class Group
 
 
     /**
-     * Get the panorama of the group.
+     * Get the panning of the group.
      *
-     * @return The panorama, see Zone
+     * @return The panning, see Zone
      */
     public float getPan ()
     {

@@ -151,7 +151,7 @@ public class EXS24Creator extends AbstractCreator
                 final double tune = zone.getTune ();
                 exs24Zone.coarseTuning = (int) (tune / 100);
                 exs24Zone.fineTuning = (int) (tune % 100);
-                exs24Zone.pan = (int) (zone.getPanorama () * 50);
+                exs24Zone.pan = (int) (zone.getPanning () * 50);
 
                 final List<ISampleLoop> loops = zone.getLoops ();
                 exs24Zone.loopOn = !loops.isEmpty ();
@@ -193,7 +193,7 @@ public class EXS24Creator extends AbstractCreator
                 final ISampleZone zone = sampleZones.get (0);
                 // Pitch bend up/down
                 exs24File.addParameter (EXS24Parameters.PITCH_BEND_UP, Math.clamp (Math.round (zone.getBendDown () / 100.0), 0, 24));
-                exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.clamp (Math.round (zone.getBendDown () / 100.0), 0, -24));
+                exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.clamp (Math.round (zone.getBendDown () / 100.0), -24, 0));
 
                 final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
                 final int velocityModulation = (int) Math.round (Math.clamp ((1 - velocityDepth) * -60.0, -60, 0));

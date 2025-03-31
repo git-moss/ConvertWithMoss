@@ -80,7 +80,7 @@ public class AbletonTag
     public static final String TAG_TUNE_SCALE              = "TuneScale";
     /** The volume tag. */
     public static final String TAG_VOLUME                  = "Volume";
-    /** The panorama tag. */
+    /** The panning tag. */
     public static final String TAG_PANORAMA                = "Panorama";
     /** The Sample Start tag. */
     public static final String TAG_SAMPLE_START            = "SampleStart";
@@ -151,7 +151,7 @@ public class AbletonTag
     /** The Auxiliary Envelope connection tag. */
     public static final String TAG_MODULATION_CONNECTION   = "Connection";
 
-    /** The Volume and Panorama tag. */
+    /** The Volume and Panning tag. */
     public static final String TAG_VOLUME_AND_PAN          = "VolumeAndPan";
     /** The Volume Velocity scale tag. */
     public static final String TAG_VOLUME_VEL_SCALE        = "VolumeVelScale";

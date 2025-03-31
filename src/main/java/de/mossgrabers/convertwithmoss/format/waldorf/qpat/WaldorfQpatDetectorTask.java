@@ -286,10 +286,10 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
             }
 
             // Osc1Pan: [0..1] ~ [L..R]
-            double panorama = 0.5;
-            final WaldorfQpatParameter panoramaParameter = parameters.get ("Osc" + groupIndex + "Pan");
-            if (panoramaParameter != null)
-                panorama = panoramaParameter.value * 2.0 - 1.0;
+            double panning = 0.5;
+            final WaldorfQpatParameter panningParameter = parameters.get ("Osc" + groupIndex + "Pan");
+            if (panningParameter != null)
+                panning = panningParameter.value * 2.0 - 1.0;
 
             // Osc1MinNote - C-2 - 0.0 -> Only relevant for splits!
             // Osc1MaxNote - G8 - 127.0 -> Only relevant for splits!
@@ -312,7 +312,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
                 zone.setBendUp (pitchbend);
                 zone.setBendDown (-pitchbend);
                 zone.setGain (volume);
-                zone.setPanorama (panorama);
+                zone.setPanning (panning);
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVeloAmount);
                 zone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
                 if (filter.isPresent ())
@@ -566,7 +566,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
         // Pan
         if (params.length <= 7)
             return;
-        zone.setPanorama (Math.clamp (Double.parseDouble (params[7]) * 2.0 - 1.0, -1.0, 1.0));
+        zone.setPanning (Math.clamp (Double.parseDouble (params[7]) * 2.0 - 1.0, -1.0, 1.0));
 
         // Start
         if (params.length <= 8)

@@ -259,7 +259,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ACTIVE, MPCKeygroupTag.TRUE);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME, Double.toString (convertGain (zone.getGain ())));
 
-        final double pan = (Math.clamp (zone.getPanorama (), -1.0d, 1.0d) + 1.0d) / 2.0d;
+        final double pan = (Math.clamp (zone.getPanning (), -1.0d, 1.0d) + 1.0d) / 2.0d;
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PAN, String.format (Locale.US, "%.6f", Double.valueOf (pan)));
 
         final double tuneCent = zone.getTune ();
