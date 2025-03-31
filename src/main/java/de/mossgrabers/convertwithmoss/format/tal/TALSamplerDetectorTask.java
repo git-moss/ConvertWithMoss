@@ -215,7 +215,7 @@ public class TALSamplerDetectorTask extends AbstractDetectorTask
         final ISampleZone zone = this.createSampleZone (new File (parentFolder, filename));
 
         zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
-        zone.setPanorama (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANORAMA, 0.5) * 2.0 - 1.0);
+        zone.setPanning (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANNING, 0.5) * 2.0 - 1.0);
 
         zone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.START_SAMPLE, -1)));
         zone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.END_SAMPLE, -1)));

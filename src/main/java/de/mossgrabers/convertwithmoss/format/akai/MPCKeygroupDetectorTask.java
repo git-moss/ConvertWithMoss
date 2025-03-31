@@ -404,7 +404,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
         final String panStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PAN);
         if (panStr != null && !panStr.isBlank ())
-            sampleMetadata.setPanorama (Math.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
+            sampleMetadata.setPanning (Math.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
 
         final String pitchStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PITCH);
         if (pitchStr != null && !pitchStr.isBlank ())

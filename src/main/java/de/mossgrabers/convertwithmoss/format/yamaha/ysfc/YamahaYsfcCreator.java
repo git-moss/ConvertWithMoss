@@ -335,7 +335,7 @@ public class YamahaYsfcCreator extends AbstractCreator
         element.setCoarseTune (semitones + 64);
         element.setFineTune ((int) ((tune - semitones) * 100) + 64);
 
-        element.setPan (MathUtils.denormalizeIntegerRange (zone.getPanorama (), -63, 63, 64));
+        element.setPan (MathUtils.denormalizeIntegerRange (zone.getPanning (), -63, 63, 64));
 
         // Gain & Level envelope
 
@@ -565,7 +565,7 @@ public class YamahaYsfcCreator extends AbstractCreator
         final double gain = zone.getGain ();
         keybank.setLevel (gain < -95.25 ? 0 : (int) Math.round ((Math.clamp (gain, -95.25, 0) + 95.25) / 0.375) + 1);
 
-        keybank.setPanorama (MathUtils.denormalizeIntegerRange (zone.getPanorama (), -63, 63, 64));
+        keybank.setPanning (MathUtils.denormalizeIntegerRange (zone.getPanning (), -63, 63, 64));
 
         keybank.setPlayStart (zone.getStart ());
         keybank.setPlayEnd (zone.getStop ());

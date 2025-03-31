@@ -381,8 +381,8 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
                     // them left/right
                     final ISampleZone zoneRight = new DefaultSampleZone (zone);
                     zoneRight.setSampleData (new InMemorySampleData (audioMetadata, dataRight));
-                    zone.setPanorama (-1.0);
-                    zoneRight.setPanorama (1.0);
+                    zone.setPanning (-1.0);
+                    zoneRight.setPanning (1.0);
                     group.addSampleZone (zoneRight);
                 }
                 else
@@ -434,7 +434,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         final int level = keybank.getLevel ();
         zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + (level - 1) * 0.375);
 
-        zone.setPanorama (MathUtils.normalizeIntegerRange (keybank.getPanorama (), -63, 63, 64));
+        zone.setPanning (MathUtils.normalizeIntegerRange (keybank.getPanning (), -63, 63, 64));
 
         final int loopMode = keybank.getLoopMode ();
         if (loopMode != 1)
@@ -563,7 +563,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         final double pitchOffset = element.getCoarseTune () - 64 + (element.getFineTune () - 64) / 100.0;
         zone.setTune (zone.getTune () + pitchOffset);
 
-        zone.setPanorama ((zone.getPanorama () + MathUtils.normalizeIntegerRange (element.getPan (), -63, 63, 64)) / 2.0);
+        zone.setPanning ((zone.getPanning () + MathUtils.normalizeIntegerRange (element.getPan (), -63, 63, 64)) / 2.0);
 
         final int level = element.getElementLevel ();
         zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + 2 * level * 0.375);

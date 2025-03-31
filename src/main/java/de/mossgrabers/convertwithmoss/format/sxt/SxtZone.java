@@ -608,9 +608,9 @@ class SxtZone
         ampEnvelope.setSustainLevel (this.ampEnvSustain / 1000.0);
         ampEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.ampEnvRelease));
 
-        // Set gain and panorama
+        // Set gain and panning
         zone.setGain (20 * Math.log10 (Math.pow ((this.ampEnvGain + 1440) / 1440, 3)));
-        zone.setPanorama (this.pan / 1000.0);
+        zone.setPanning (this.pan / 1000.0);
     }
 
 
@@ -801,12 +801,12 @@ class SxtZone
         if (ampVelocityAmount != 0)
             this.velocityToAmpGain = (int) Math.round (ampVelocityAmount * 1000.0);
 
-        // Set gain and panorama
+        // Set gain and panning
         final double dBValue = zone.getGain ();
         final double gainRatio = Math.pow (10, dBValue / 20);
         this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3) * 1440 - 1440);
 
-        this.pan = (int) (zone.getPanorama () * 1000.0);
+        this.pan = (int) (zone.getPanning () * 1000.0);
     }
 
 

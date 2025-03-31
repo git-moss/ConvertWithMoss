@@ -293,7 +293,7 @@ public abstract class AbstractNKIMetadataFileHandler
         zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (limitToDefault (zone.getKeyRoot (), keyLow)));
         zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, zone.getGain () / 20.0d)));
         zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (zone.getTune () / 0.12d * Math.log (2))));
-        zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (zone.getPanorama ())));
+        zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (zone.getPanning ())));
 
         // Note: we need to use backward slashes otherwise Kontakt can read but not save the file
         // again!
@@ -596,9 +596,14 @@ public abstract class AbstractNKIMetadataFileHandler
         final double ampVelocityMod = this.readGroupAmplitudeVelocityModulator (groupElement);
         group.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-        group.setSampleZones (this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter));
+        final List<ISampleZone> zones = this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter);
+        group.setSampleZones (zones);
+        this.parseRoundRobin (groupElement, zones);
         return group;
     }
+
+
+    protected abstract void parseRoundRobin (final Element groupElement, final List<ISampleZone> zones);
 
 
     /**
@@ -728,7 +733,7 @@ public abstract class AbstractNKIMetadataFileHandler
             final double groupPan = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ());
             final double progPan = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progPanParam ());
             final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
-            zone.setPanorama (Math.clamp (totalPan, -1.0d, 1.0d));
+            zone.setPanning (Math.clamp (totalPan, -1.0d, 1.0d));
 
             if (ampVelocityMod >= 0)
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityMod);

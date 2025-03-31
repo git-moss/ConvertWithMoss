@@ -497,9 +497,9 @@ public class YamahaYsfcPartElement
 
 
     /**
-     * Get the panorama.
+     * Get the panning.
      *
-     * @return The panorama in the range of [1..127] which relates to -63..+63, 64 = Center
+     * @return The panning in the range of [1..127] which relates to -63..+63, 64 = Center
      */
     public int getPan ()
     {
@@ -508,9 +508,9 @@ public class YamahaYsfcPartElement
 
 
     /**
-     * Set the panorama.
+     * Set the panning.
      *
-     * @param pan The panorama in the range of [1..127] which relates to -63..+63, 64 = Center
+     * @param pan The panning in the range of [1..127] which relates to -63..+63, 64 = Center
      */
     public void setPan (final int pan)
     {

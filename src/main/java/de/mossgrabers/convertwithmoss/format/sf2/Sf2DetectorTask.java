@@ -259,10 +259,10 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
                     default:
                     case Sf2SampleDescriptor.MONO:
-                        final double panorama = zone.getPanorama ();
-                        if (panorama == 0)
+                        final double panning = zone.getPanning ();
+                        if (panning == 0)
                             resultSamples.add (zone);
-                        else if (panorama < 0)
+                        else if (panning < 0)
                             panLeftSamples.add (zone);
                         else
                             panRightSamples.add (zone);
@@ -274,7 +274,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                 this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_NUMBER_LEFT_RIGHT", Integer.toString (leftSamples.size ()), Integer.toString (rightSamples.size ()));
 
             resultSamples.addAll (this.combineLinkedSamples (leftSamples, rightSamples));
-            resultSamples.addAll (this.combinePanoramaSamples (panLeftSamples, panRightSamples));
+            resultSamples.addAll (this.combinePanningSamples (panLeftSamples, panRightSamples));
 
             group.setSampleZones (resultSamples);
         }
@@ -315,7 +315,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         // Store the matching right side sample with the left side one
                         leftSampleData.setRightSample (sample);
                         updateFilename (leftSampleZone, rightSampleZone);
-                        leftSampleZone.setPanorama (Math.clamp (leftSampleZone.getPanorama () + rightSampleZone.getPanorama (), -1.0, 1.0));
+                        leftSampleZone.setPanning (Math.clamp (leftSampleZone.getPanning () + rightSampleZone.getPanning (), -1.0, 1.0));
                         resultSamples.add (leftSampleZone);
                         rightSampleZones.remove (i);
                         found = true;
@@ -345,7 +345,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
      * @param panRightSamples The right hand side mono samples
      * @return The stereo combined result samples
      */
-    private List<ISampleZone> combinePanoramaSamples (final List<ISampleZone> panLeftSamples, final List<ISampleZone> panRightSamples)
+    private List<ISampleZone> combinePanningSamples (final List<ISampleZone> panLeftSamples, final List<ISampleZone> panRightSamples)
     {
         final List<ISampleZone> resultSamples = new ArrayList<> ();
 
@@ -370,7 +370,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
                         final Sf2SampleData leftSampleData = (Sf2SampleData) panLeftSampleZone.getSampleData ();
                         updateFilename (panLeftSampleZone, panRightSampleZone);
                         leftSampleData.setRightSample (((Sf2SampleData) panRightSampleZone.getSampleData ()).getSample ());
-                        panLeftSampleZone.setPanorama (Math.clamp (panLeftSampleZone.getPanorama () + panRightSampleZone.getPanorama (), -1.0, 1.0));
+                        panLeftSampleZone.setPanning (Math.clamp (panLeftSampleZone.getPanning () + panRightSampleZone.getPanning (), -1.0, 1.0));
                         resultSamples.add (panLeftSampleZone);
                         panRightSamples.remove (i);
                         found = true;
@@ -440,9 +440,9 @@ public class Sf2DetectorTask extends AbstractDetectorTask
             final Sf2SampleData sampleData = new Sf2SampleData (sample);
             final DefaultSampleZone zone = new DefaultSampleZone (sample.getName (), sampleData);
 
-            final Integer panorama = generators.getSignedValue (Generator.PANORAMA);
-            if (panorama != null)
-                zone.setPanorama (panorama.intValue () / 500.0);
+            final Integer panning = generators.getSignedValue (Generator.PANNING);
+            if (panning != null)
+                zone.setPanning (panning.intValue () / 500.0);
 
             // Set the pitch
             final int overridingRootKey = generators.getUnsignedValue (Generator.OVERRIDING_ROOT_KEY).intValue ();

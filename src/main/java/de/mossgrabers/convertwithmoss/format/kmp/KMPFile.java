@@ -231,7 +231,7 @@ public class KMPFile
             // Let's keep it between [0..6]dB
             zone.setGain ((Math.clamp (in.readByte (), -99, 99) / 99.0 + 1) / 3.0);
 
-            // Panorama - unused in KMP itself, 64 is center
+            // Panning - unused in KMP itself, 64 is center
             in.read ();
 
             // Filter Cutoff - unused in KMP itself
@@ -385,7 +385,7 @@ public class KMPFile
             // Let's keep it between [0..6]dB
             out.writeByte (this.maxVolume ? 99 : (byte) Math.clamp (Math.round (Math.clamp (zone.getGain (), 0, 6) / 3.0 - 1.0) * 99.0, 0, 99));
 
-            // Panorama - unused in KMP itself, 64 is center
+            // Panning - unused in KMP itself, 64 is center
             out.write (64);
 
             // Filter Cutoff - unused in KMP itself

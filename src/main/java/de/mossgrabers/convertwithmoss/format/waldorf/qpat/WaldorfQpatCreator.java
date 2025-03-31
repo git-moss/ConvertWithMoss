@@ -261,7 +261,7 @@ public class WaldorfQpatCreator extends AbstractCreator
                 sb.append (zone.getVelocityLow ()).append ('\t').append (zone.getVelocityHigh ()).append ('\t');
 
                 // Pan - CURRENTLY IGNORED
-                sb.append (formatMapDouble ((zone.getPanorama () + 1.0) / 2.0)).append ('\t');
+                sb.append (formatMapDouble ((zone.getPanning () + 1.0) / 2.0)).append ('\t');
 
                 // Start / End
                 sb.append (formatMapDouble (zone.getStart () / numSampleFrames)).append ('\t');

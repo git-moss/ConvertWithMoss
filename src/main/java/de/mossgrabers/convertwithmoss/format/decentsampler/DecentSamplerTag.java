@@ -68,8 +68,8 @@ public class DecentSamplerTag
     public static final String                    VOLUME             = "volume";
     /** The volume velocity tag on the group level. */
     public static final String                    AMP_VELOCITY_TRACK = "ampVelTrack";
-    /** The panorama tag on different levels. */
-    public static final String                    PANORAMA           = "pan";
+    /** The panning tag on different levels. */
+    public static final String                    PANNING            = "pan";
     /** The start tag sample attribute. */
     public static final String                    START              = "start";
     /** The end tag sample attribute. */
@@ -135,8 +135,8 @@ public class DecentSamplerTag
     {
         ATTRIBUTES.put (DECENTSAMPLER, Collections.emptySet ());
         ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, SEQ_MODE, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE));
-        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANORAMA, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER));
-        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANORAMA, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE));
+        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, SEQ_POSITION, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANNING, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER));
+        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANNING, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE));
     }
 
 

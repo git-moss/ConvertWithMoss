@@ -25,8 +25,8 @@ public class Generator
     /** The ID of the modulation envelope to filter cutoff generator. */
     public static final int       MOD_ENV_TO_FILTER_CUTOFF = 11;
 
-    /** The ID of the panorama generator. */
-    public static final int       PANORAMA                 = 17;
+    /** The ID of the panning generator. */
+    public static final int       PANNING                  = 17;
 
     /** The ID of the modulation envelope delay generator. */
     public static final int       MOD_ENV_DELAY            = 25;

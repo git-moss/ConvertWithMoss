@@ -417,7 +417,7 @@ public class DecentSamplerCreator extends AbstractCreator
         final double gain = zone.getGain ();
         if (gain != 0)
             sampleElement.setAttribute (DecentSamplerTag.VOLUME, gain + "dB");
-        sampleElement.setAttribute (DecentSamplerTag.PANORAMA, Integer.toString ((int) (zone.getPanorama () * 100.0)));
+        sampleElement.setAttribute (DecentSamplerTag.PANNING, Integer.toString ((int) (zone.getPanning () * 100.0)));
         XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.START, Math.max (0, zone.getStart ()), 3);
         final int stop = zone.getStop ();
         if (stop >= 0)

@@ -365,9 +365,9 @@ public class Zone
 
 
     /**
-     * Get the panorama.
+     * Get the panning.
      *
-     * @return The panorama in the range of [-1..1]
+     * @return The panning in the range of [-1..1]
      */
     public float getZonePan ()
     {
@@ -378,7 +378,7 @@ public class Zone
     /**
      * Get the zone tuning.
      *
-     * @return The tune setting in the range of [-36..36] semitones which is returned as 2^octave
+     * @return The tune setting in the range of [-36..36] semi-tones which is returned as 2^octave
      *         which maps to the range [0.125, 8.0], 2^(-36/12) = 0.125
      */
     public float getZoneTune ()

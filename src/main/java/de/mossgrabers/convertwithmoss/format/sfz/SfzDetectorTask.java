@@ -672,8 +672,8 @@ public class SfzDetectorTask extends AbstractDetectorTask
     private void parseVolume (final ISampleZone sampleZone)
     {
         sampleZone.setGain (this.getDoubleValue (SfzOpcode.VOLUME, 0));
-        final double panorama = this.getDoubleValue (SfzOpcode.PANORAMA, 0);
-        sampleZone.setPanorama (Math.clamp (panorama, -100, 100) / 100.0);
+        final double panning = this.getDoubleValue (SfzOpcode.PANNING, 0);
+        sampleZone.setPanning (Math.clamp (panning, -100, 100) / 100.0);
 
         // Amplitude envelope
 

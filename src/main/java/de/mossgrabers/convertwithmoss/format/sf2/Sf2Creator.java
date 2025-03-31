@@ -255,14 +255,14 @@ public class Sf2Creator extends AbstractCreator
         final int bendUp = sampleZone.getBendUp ();
         instrumentZone.addModulator (Sf2Modulator.MODULATOR_PITCH_BEND.intValue (), Generator.FINE_TUNE, bendUp, 0x10, 0);
 
-        // Set panorama
-        double pan = sampleZone.getPanorama ();
+        // Set panning
+        double pan = sampleZone.getPanning ();
         final int sampleType = sampleDescriptor.getSampleType ();
         if (sampleType == Sf2SampleDescriptor.LEFT)
             pan = -1;
         else if (sampleType == Sf2SampleDescriptor.RIGHT)
             pan = 1;
-        instrumentZone.addSignedGenerator (Generator.PANORAMA, (int) (pan * 500.0));
+        instrumentZone.addSignedGenerator (Generator.PANNING, (int) (pan * 500.0));
 
         // Set the pitch
         instrumentZone.addGenerator (Generator.OVERRIDING_ROOT_KEY, sampleZone.getKeyRoot ());

@@ -77,8 +77,8 @@ public enum ZoneChannels
                     // Check for split stereo which needs to be hard panned left or right
                     if (!isStereo && (splitStereo == null || splitStereo.booleanValue ()))
                     {
-                        final double panorama = sampleZone.getPanorama ();
-                        splitStereo = Boolean.valueOf (panorama <= -1 || panorama >= 1);
+                        final double panning = sampleZone.getPanning ();
+                        splitStereo = Boolean.valueOf (panning <= -1 || panning >= 1);
                     }
                 }
             }
@@ -142,7 +142,7 @@ public enum ZoneChannels
                 throw new IOException (ex);
             }
 
-            leftSampleZone.setPanorama (0);
+            leftSampleZone.setPanning (0);
             String commonName = KeyMapping.findCommonPrefix (leftSampleZone.getName (), rightSampleZone.getName ());
             if (commonName.endsWith ("_"))
                 commonName = commonName.substring (0, commonName.length () - 1);
@@ -167,7 +167,7 @@ public enum ZoneChannels
         for (final IGroup group: groups)
             for (final ISampleZone sampleZone: group.getSampleZones ())
             {
-                if (sampleZone.getPanorama () <= -1)
+                if (sampleZone.getPanning () <= -1)
                     leftSampleZones.add (sampleZone);
                 else
                     rightSampleZones.add (sampleZone);

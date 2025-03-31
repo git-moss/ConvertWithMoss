@@ -103,7 +103,7 @@ public abstract class AbstractKontaktType implements IKontaktFormat
 
             final float volume = program.getInstrumentVolume () * kontaktGroup.getVolume () * kontaktZone.getZoneVolume ();
             zone.setGain (MathUtils.valueToDb (volume));
-            zone.setPanorama (Math.clamp (program.getInstrumentPan () + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
+            zone.setPanning (Math.clamp (program.getInstrumentPan () + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
 
             zone.setTune (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (), program.getInstrumentTune ()));
             zone.setKeyTracking (kontaktGroup.isKeyTracking () ? 1 : 0);

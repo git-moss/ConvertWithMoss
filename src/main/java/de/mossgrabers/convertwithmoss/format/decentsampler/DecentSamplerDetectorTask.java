@@ -346,7 +346,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 final DefaultGroup group = new DefaultGroup (groupName);
 
                 final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
-                final int groupPanoramaOffset = XMLUtils.getIntegerAttribute (groupElement, DecentSamplerTag.PANORAMA, 0);
+                final int groupPanningOffset = XMLUtils.getIntegerAttribute (groupElement, DecentSamplerTag.PANNING, 0);
                 double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.GROUP_TUNING, 0);
                 // Actually not in the specification but support it anyway
                 if (groupTuningOffset == 0)
@@ -354,7 +354,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
                 final String triggerAttribute = groupElement.getAttribute (DecentSamplerTag.TRIGGER);
 
-                this.parseGroup (group, groupElement, basePath, libraryFile, groupVolumeOffset, groupPanoramaOffset, globalTuningOffset + groupTuningOffset, triggerAttribute);
+                this.parseGroup (group, groupElement, basePath, libraryFile, groupVolumeOffset, groupPanningOffset, globalTuningOffset + groupTuningOffset, triggerAttribute);
                 groups.add (group);
                 groupCounter++;
             }
@@ -375,11 +375,11 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
      * @param basePath The base path of the samples
      * @param libraryFile If it is a library otherwise null
      * @param groupVolumeOffset The volume offset
-     * @param groupPanoramaOffset The panorama offset
+     * @param groupPanningOffset The panning offset
      * @param tuningOffset The tuning offset
      * @param trigger The trigger value
      */
-    private void parseGroup (final DefaultGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double groupPanoramaOffset, final double tuningOffset, final String trigger)
+    private void parseGroup (final DefaultGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
     {
         final double ampVelocityDepth = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.AMP_VELOCITY_TRACK, 1);
 
@@ -398,7 +398,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
                 continue;
 
             final DefaultSampleZone sampleZone = optSampleZone.get ();
-            this.convertSampleZone (sampleElement, sampleZone, groupVolumeOffset, groupPanoramaOffset, tuningOffset, trigger);
+            this.convertSampleZone (sampleElement, sampleZone, groupVolumeOffset, groupPanningOffset, tuningOffset, trigger);
             this.convertVolumeEnvelope (sampleZone, ampVelocityDepth);
 
             // Check for sequence e.g. round robin
@@ -420,7 +420,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
     }
 
 
-    private void convertSampleZone (final Element sampleElement, final DefaultSampleZone sampleZone, final double groupVolumeOffset, final double groupPanoramaOffset, final double tuningOffset, final String trigger)
+    private void convertSampleZone (final Element sampleElement, final DefaultSampleZone sampleZone, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
     {
         String triggerAttribute = sampleElement.getAttribute (DecentSamplerTag.TRIGGER);
         if (triggerAttribute == null || triggerAttribute.isBlank ())
@@ -438,7 +438,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         sampleZone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
         sampleZone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
         sampleZone.setGain (groupVolumeOffset + parseVolume (sampleElement, DecentSamplerTag.VOLUME));
-        sampleZone.setPanorama (groupPanoramaOffset + XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.PANORAMA, 0) / 100.0);
+        sampleZone.setPanning (groupPanningOffset + XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.PANNING, 0) / 100.0);
         sampleZone.setTune (tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0));
 
         final String zoneLogic = this.currentGroupsElement.getAttribute (DecentSamplerTag.SEQ_MODE);
