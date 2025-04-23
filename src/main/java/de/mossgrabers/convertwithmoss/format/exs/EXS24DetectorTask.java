@@ -180,7 +180,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
             {
                 final DefaultSampleLoop loop = new DefaultSampleLoop ();
                 loop.setStart (exs24Zone.loopStart);
-                loop.setEnd (exs24Zone.loopEnd);
+                loop.setEnd (exs24Zone.loopEnd - 1);
                 if (exs24Zone.loopCrossfade != 0)
                 {
                     // Existence has been checked above...

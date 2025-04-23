@@ -624,14 +624,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.destinationPathHistory.add (0, this.outputFolder.getAbsolutePath ());
 
         // Output folder must be empty or add new must be active
-        if (!this.addNewFiles.isSelected () && !isEmptyFolder (this.outputFolder.getPath ()))
-        {
-            Functions.message ("@IDS_NOTIFY_FOLDER_MUST_BE_EMPTY");
-            this.destinationPathField.requestFocus ();
-            return false;
-        }
-
-        return true;
+        return this.addNewFiles.isSelected () || this.isEmptyFolder (this.outputFolder.getPath ());
     }
 
 
@@ -1063,22 +1056,30 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
 
     /**
-     * Checks if folder is empty. Ignores OS thumbnail files like .DS_Store on MAC and Thumbs.db on
+     * Checks if folder is empty. Ignores OS thumb-nail files like .DS_Store on MAC and Thumbs.db on
      * Windows.
      *
      * @param directoryPath Path of folder to check
      * @return True if directory is empty
      */
-    private static boolean isEmptyFolder (final String directoryPath)
+    private boolean isEmptyFolder (final String directoryPath)
     {
+        boolean result = true;
         try (final Stream<Path> paths = Files.list (Path.of (directoryPath)))
         {
-            return paths.filter (path -> !Pattern.matches ("^(\\.(DS_Store|desktop)|Thumbs.db)$", path.getFileName ().toString ())).count () == 0;
+            result = paths.filter (path -> !Pattern.matches ("^(\\.(DS_Store|desktop)|Thumbs.db|ConvertWithMoss.log)$", path.getFileName ().toString ())).count () == 0;
         }
         catch (final IOException ex)
         {
-            Functions.message (Functions.getMessage ("@IDS_NOTIFY_FOLDER_MUST_BE_EMPTY", ex));
-            return false;
+            result = false;
         }
+
+        if (!result)
+        {
+            Functions.message ("@IDS_NOTIFY_FOLDER_MUST_BE_EMPTY");
+            this.destinationPathField.requestFocus ();
+        }
+
+        return result;
     }
 }

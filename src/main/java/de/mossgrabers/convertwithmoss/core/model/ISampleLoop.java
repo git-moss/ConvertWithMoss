@@ -47,7 +47,8 @@ public interface ISampleLoop
 
 
     /**
-     * Get the end of the loop.
+     * Get the end of the loop. This is inclusive - the sample specified is played as part of the
+     * loop.
      *
      * @return The end of the loop
      */
@@ -55,7 +56,8 @@ public interface ISampleLoop
 
 
     /**
-     * Set the end of the loop.
+     * Set the end of the loop. This is inclusive - the sample specified is played as part of the
+     * loop.
      *
      * @param loopEnd The end of the loop
      */

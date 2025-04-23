@@ -469,15 +469,23 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
             // Set play range
             zone.setStart (0);
-            final long sampleStart = sample.getStart ();
-            zone.setStop ((int) (sample.getEnd () - sampleStart));
+            final Integer sampleStartOffset = generators.getSignedValue (Generator.START_ADDRS_OFFSET);
+            final int sampleStartOffsetInt = sampleStartOffset == null ? 0 : sampleStartOffset.intValue ();
+            final long sampleStart = sample.getStart () + sampleStartOffsetInt;
+            final Integer sampleEndOffset = generators.getSignedValue (Generator.END_ADDRS_OFFSET);
+            final int sampleEndOffsetInt = sampleEndOffset == null ? 0 : sampleEndOffset.intValue ();
+            zone.setStop ((int) (sample.getEnd () - sampleStart + sampleEndOffsetInt));
 
             // Set loop, if any
             if ((generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue () & 1) > 0)
             {
                 final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
-                sampleLoop.setStart ((int) (sample.getLoopStart () - sampleStart));
-                sampleLoop.setEnd ((int) (sample.getLoopEnd () - sampleStart));
+                final Integer startOffset = generators.getSignedValue (Generator.START_LOOP_ADDRS_OFFSET);
+                final int startOffsetInt = startOffset == null ? 0 : startOffset.intValue ();
+                sampleLoop.setStart ((int) (sample.getLoopStart () - sampleStart + startOffsetInt));
+                final Integer endOffset = generators.getSignedValue (Generator.END_LOOP_ADDRS_OFFSET);
+                final int endOffsetInt = endOffset == null ? 0 : endOffset.intValue ();
+                sampleLoop.setEnd ((int) (sample.getLoopEnd () - sampleStart + endOffsetInt));
                 zone.addLoop (sampleLoop);
             }
 

@@ -1,5 +1,15 @@
 # Changes
 
+## 12.2.2
+
+* Fixed: Checking for empty output folder ignores now the ConvertWithMoss log file.
+* EXS
+  * Fixed: The loop end was off by 1.
+* SF2
+  * Fixed: Added support for reading missing generators: startAddrsOffset, endAddrsOffset, startloopAddrsOffset and endloopAddrsOffset.
+* SFZ
+  * Fixed: Loops were not read from wave files when loop info was missing in SFZ file.
+
 ## 12.2.1
 
 * EXS24
