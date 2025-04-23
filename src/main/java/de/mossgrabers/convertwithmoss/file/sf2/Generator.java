@@ -14,6 +14,15 @@ import java.util.Set;
  */
 public class Generator
 {
+    /** The ID of the start offset. */
+    public static final int       START_ADDRS_OFFSET       = 0;
+    /** The ID of the end offset. */
+    public static final int       END_ADDRS_OFFSET         = 1;
+    /** The ID of the start loop offset. */
+    public static final int       START_LOOP_ADDRS_OFFSET  = 2;
+    /** The ID of the end loop offset. */
+    public static final int       END_LOOP_ADDRS_OFFSET    = 3;
+
     /** The ID of the modulation envelope to pitch generator. */
     public static final int       MOD_ENV_TO_PITCH         = 7;
 

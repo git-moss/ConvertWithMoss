@@ -648,7 +648,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
             loop.setEnd (loopEnd);
 
         final double crossfadeInSeconds = this.getDoubleValue (SfzOpcode.LOOP_CROSSFADE, 0);
-        if (crossfadeInSeconds >= 0)
+        if (crossfadeInSeconds > 0)
             try
             {
                 loop.setCrossfadeInSeconds (crossfadeInSeconds, sampleMetadata.getSampleData ().getAudioMetadata ().getSampleRate ());
@@ -714,6 +714,7 @@ public class SfzDetectorTask extends AbstractDetectorTask
             {
                 oldLoop = loops.get (0);
                 readLoops = oldLoop.getStart () < 0 || oldLoop.getEnd () < 0;
+                loops.clear ();
             }
 
             zone.getSampleData ().addZoneData (zone, true, readLoops);
@@ -734,8 +735,8 @@ public class SfzDetectorTask extends AbstractDetectorTask
                     if (oldEnd >= 0)
                         newLoop.setEnd (oldEnd);
 
-                    // If values are still not complete remove the loop
-                    if (newLoop.getStart () < 0 || newLoop.getEnd () < 0)
+                    // If values are still not set remove the loop
+                    if (newLoop.getStart () < 0 && newLoop.getEnd () < 0)
                         loops.clear ();
                 }
             }

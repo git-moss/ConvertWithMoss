@@ -159,7 +159,7 @@ public class EXS24Creator extends AbstractCreator
                 {
                     final ISampleLoop loop = loops.get (0);
                     exs24Zone.loopStart = loop.getStart ();
-                    exs24Zone.loopEnd = loop.getEnd ();
+                    exs24Zone.loopEnd = loop.getEnd () + 1;
                     exs24Zone.loopCrossfade = loop.getCrossfadeInSamples ();
                 }
 
