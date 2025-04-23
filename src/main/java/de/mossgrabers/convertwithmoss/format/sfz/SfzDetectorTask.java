@@ -714,7 +714,8 @@ public class SfzDetectorTask extends AbstractDetectorTask
             {
                 oldLoop = loops.get (0);
                 readLoops = oldLoop.getStart () < 0 || oldLoop.getEnd () < 0;
-                loops.clear ();
+                if (readLoops)
+                    loops.clear ();
             }
 
             zone.getSampleData ().addZoneData (zone, true, readLoops);
