@@ -105,7 +105,7 @@ public class NkiCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt5Type (this.notifier);

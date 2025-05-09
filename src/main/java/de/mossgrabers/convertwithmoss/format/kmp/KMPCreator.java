@@ -92,7 +92,7 @@ public class KMPCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         AbstractCreator.recalculateSamplePositions (multisampleSource, 48000, true);
 

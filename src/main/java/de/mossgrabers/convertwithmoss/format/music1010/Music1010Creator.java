@@ -224,7 +224,7 @@ public class Music1010Creator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final boolean resample = this.resampleTo2448.isSelected ();
         final boolean trim = this.trimStartToEnd.isSelected ();

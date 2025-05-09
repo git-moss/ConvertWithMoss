@@ -463,9 +463,10 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         final int loopEnd = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, -1));
         final int loopCrossfade = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, 0);
 
+        DefaultSampleLoop loop = null;
         if (loopStart >= 0 || loopEnd > 0 || loopCrossfade > 0)
         {
-            final DefaultSampleLoop loop = new DefaultSampleLoop ();
+            loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
             loop.setEnd (loopEnd);
             loop.setCrossfadeInSamples (loopCrossfade);
@@ -474,7 +475,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
         try
         {
-            sampleZone.getSampleData ().addZoneData (sampleZone, false, false);
+            sampleZone.getSampleData ().addZoneData (sampleZone, false, loop == null);
         }
         catch (final IOException ex)
         {
@@ -618,21 +619,21 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
         if (this.currentSampleElement != null)
         {
             final String value = this.currentSampleElement.getAttribute (key);
-            if (value != null)
+            if (value != null && !value.isBlank ())
                 return Optional.of (value);
         }
 
         if (this.currentGroupElement != null)
         {
             final String value = this.currentGroupElement.getAttribute (key);
-            if (value != null)
+            if (value != null && !value.isBlank ())
                 return Optional.of (value);
         }
 
         if (this.currentGroupsElement != null)
         {
             final String value = this.currentGroupsElement.getAttribute (key);
-            if (value != null)
+            if (value != null && !value.isBlank ())
                 return Optional.of (value);
         }
 

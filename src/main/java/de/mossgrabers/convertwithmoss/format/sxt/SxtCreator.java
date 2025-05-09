@@ -74,7 +74,7 @@ public class SxtCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 

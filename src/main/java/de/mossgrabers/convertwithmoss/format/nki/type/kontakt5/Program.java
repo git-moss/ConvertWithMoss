@@ -133,7 +133,7 @@ public class Program
 
     /**
      * Writes the program into the given preset chunk.
-     * 
+     *
      * @param presetChunk The top Program preset chunk to fill
      * @throws IOException Could not create the chunk
      */
@@ -188,7 +188,7 @@ public class Program
         this.instrumentCredits = StreamUtils.readWithLengthUTF16 (in);
         this.setInstrumentAuthor (StreamUtils.readWithLengthUTF16 (in));
         this.setInstrumentURL (StreamUtils.readWithLengthUTF16 (in));
-        if (this.getInstrumentURL().isBlank () || NULL_ENTRY.equals (this.getInstrumentURL()))
+        if (this.getInstrumentURL ().isBlank () || NULL_ENTRY.equals (this.getInstrumentURL ()))
             this.setInstrumentURL (null);
 
         // Where is the lookup table for these?
@@ -215,15 +215,15 @@ public class Program
 
         // The size of all samples
         this.sizeOfAllSamples = 0;
-        for (final Zone zone: this.getZones())
+        for (final Zone zone: this.getZones ())
             this.sizeOfAllSamples += zone.getSampleSize ();
         StreamUtils.writeDouble (out, this.sizeOfAllSamples, false);
 
         out.write (this.midiTranspose < 0 ? this.midiTranspose + 256 : this.midiTranspose);
 
-        StreamUtils.writeFloatLE (out, this.getInstrumentVolume());
-        StreamUtils.writeFloatLE (out, this.getInstrumentPan());
-        StreamUtils.writeFloatLE (out, this.getInstrumentTune());
+        StreamUtils.writeFloatLE (out, this.getInstrumentVolume ());
+        StreamUtils.writeFloatLE (out, this.getInstrumentPan ());
+        StreamUtils.writeFloatLE (out, this.getInstrumentTune ());
 
         // Global clipping
         out.write (this.clipLowVelocity);
@@ -238,11 +238,11 @@ public class Program
         StreamUtils.writeUnsigned32 (out, this.loadingFlags, false);
         out.write (this.groupSolo ? 1 : 0);
 
-        StreamUtils.writeUnsigned32 (out, KontaktIcon.getID (this.getInstrumentIconName()), false);
+        StreamUtils.writeUnsigned32 (out, KontaktIcon.getID (this.getInstrumentIconName ()), false);
 
         StreamUtils.writeWithLengthUTF16 (out, this.instrumentCredits);
-        StreamUtils.writeWithLengthUTF16 (out, this.getInstrumentAuthor());
-        StreamUtils.writeWithLengthUTF16 (out, this.getInstrumentURL() == null ? NULL_ENTRY : this.getInstrumentURL());
+        StreamUtils.writeWithLengthUTF16 (out, this.getInstrumentAuthor ());
+        StreamUtils.writeWithLengthUTF16 (out, this.getInstrumentURL () == null ? NULL_ENTRY : this.getInstrumentURL ());
 
         StreamUtils.writeUnsigned16 (out, this.instrumentCategory1, false);
         StreamUtils.writeUnsigned16 (out, this.instrumentCategory2, false);
@@ -266,7 +266,7 @@ public class Program
         {
             final Group group = new Group ();
             group.parse (groupChunk);
-            this.getGroups().add (group);
+            this.getGroups ().add (group);
         }
     }
 
@@ -288,7 +288,7 @@ public class Program
         if (templateGroupChunk == null)
             return;
 
-        for (final Group group: this.getGroups())
+        for (final Group group: this.getGroups ())
         {
             final KontaktPresetChunk groupChunk = new KontaktPresetChunk ();
             groupChunk.setId (KontaktPresetChunkID.GROUP);
@@ -311,13 +311,13 @@ public class Program
      */
     private void readZoneList (final KontaktPresetChunk presetChunk) throws IOException
     {
-        this.getZones().clear ();
+        this.getZones ().clear ();
 
         for (final KontaktPresetChunk zoneChunk: presetChunk.getChildren ())
         {
             final Zone zone = new Zone (zoneChunk.getId ());
             zone.read (zoneChunk.getPublicData (), zoneChunk.getVersion ());
-            this.getZones().add (zone);
+            this.getZones ().add (zone);
 
             for (final KontaktPresetChunk zoneChildChunk: zoneChunk.getChildren ())
                 if (zoneChildChunk.getId () == KontaktPresetChunkID.LOOP_ARRAY)
@@ -338,9 +338,9 @@ public class Program
 
         final List<KontaktPresetChunk> zoneChunks = new ArrayList<> ();
 
-        for (int z = 0; z < this.getZones().size (); z++)
+        for (int z = 0; z < this.getZones ().size (); z++)
         {
-            final Zone zone = this.getZones().get (z);
+            final Zone zone = this.getZones ().get (z);
 
             final KontaktPresetChunk zoneChunk = new KontaktPresetChunk ();
             zoneChunks.add (zoneChunk);
@@ -350,8 +350,8 @@ public class Program
             final byte [] privateData = new byte [ZONE_PRIVATE_DATA.length];
 
             // TODO
-            byte [] privateData2 = ZONE_PRIVATE_DATA;// zoneListChunk.getChildren ().get
-                                                     // (z).getPrivateData ();
+            final byte [] privateData2 = ZONE_PRIVATE_DATA;// zoneListChunk.getChildren ().get
+            // (z).getPrivateData ();
             System.out.println (StringUtils.formatArray (privateData2));
 
             System.arraycopy (privateData2, 0, privateData, 0, ZONE_PRIVATE_DATA.length);
@@ -547,86 +547,156 @@ public class Program
     }
 
 
+    /**
+     * Get all zones.
+     * 
+     * @return The zones
+     */
     public List<Zone> getZones ()
     {
-        return zones;
+        return this.zones;
     }
 
 
+    /**
+     * Get the volume of the instrument.
+     * 
+     * @return The volume in the range of [0..1]
+     */
     public float getInstrumentVolume ()
     {
-        return instrumentVolume;
+        return this.instrumentVolume;
     }
 
 
-    public void setInstrumentVolume (float instrumentVolume)
+    /**
+     * Set the volume of the instrument.
+     * 
+     * @param instrumentVolume The volume in the range of [0..1]
+     */
+    public void setInstrumentVolume (final float instrumentVolume)
     {
         this.instrumentVolume = instrumentVolume;
     }
 
 
+    /**
+     * Get the instruments panning.
+     * 
+     * @return The panning in the range of [-1..1]
+     */
     public float getInstrumentPan ()
     {
-        return instrumentPan;
+        return this.instrumentPan;
     }
 
 
-    public void setInstrumentPan (float instrumentPan)
+    /**
+     * Set the instruments panning.
+     * 
+     * @param instrumentPan The panning in the range of [-1..1]
+     */
+    public void setInstrumentPan (final float instrumentPan)
     {
         this.instrumentPan = instrumentPan;
     }
 
 
+    /**
+     * Get the instruments tuning.
+     * 
+     * @return The tuning in the range of [0..1]
+     */
     public float getInstrumentTune ()
     {
-        return instrumentTune;
+        return this.instrumentTune;
     }
 
 
-    public void setInstrumentTune (float instrumentTune)
+    /**
+     * Set the instruments tuning.
+     * 
+     * @param instrumentTune The tuning in the range of [0..1]
+     */
+    public void setInstrumentTune (final float instrumentTune)
     {
         this.instrumentTune = instrumentTune;
     }
 
 
+    /**
+     * Get the instruments author.
+     * 
+     * @return The author
+     */
     public String getInstrumentAuthor ()
     {
-        return instrumentAuthor;
+        return this.instrumentAuthor;
     }
 
 
-    public void setInstrumentAuthor (String instrumentAuthor)
+    /**
+     * Set the instruments author.
+     * 
+     * @param instrumentAuthor The author
+     */
+    public void setInstrumentAuthor (final String instrumentAuthor)
     {
         this.instrumentAuthor = instrumentAuthor;
     }
 
 
+    /**
+     * Get the instruments URL.
+     * 
+     * @return The URL
+     */
     public String getInstrumentURL ()
     {
-        return instrumentURL;
+        return this.instrumentURL;
     }
 
 
-    public void setInstrumentURL (String instrumentURL)
+    /**
+     * Set the instruments URL.
+     * 
+     * @param instrumentURL The URL
+     */
+    public void setInstrumentURL (final String instrumentURL)
     {
         this.instrumentURL = instrumentURL;
     }
 
 
+    /**
+     * Get the instruments icon name.
+     * 
+     * @return The icon name
+     */
     public String getInstrumentIconName ()
     {
-        return instrumentIconName;
+        return this.instrumentIconName;
     }
 
 
-    public void setInstrumentIconName (String instrumentIconName)
+    /**
+     * Get the instruments icon name.
+     * 
+     * @param instrumentIconName The icon name
+     */
+    public void setInstrumentIconName (final String instrumentIconName)
     {
         this.instrumentIconName = instrumentIconName;
     }
 
 
+    /**
+     * Get all groups.
+     * 
+     * @return The groups
+     */
     public List<Group> getGroups ()
     {
-        return groups;
+        return this.groups;
     }
 }

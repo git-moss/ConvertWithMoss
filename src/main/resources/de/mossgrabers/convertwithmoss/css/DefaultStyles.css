@@ -76,7 +76,7 @@
 }
 
 .paddingLeftBottomRight {
-    -fx-padding: 0.0 15.0 15.0 15.0;
+    -fx-padding: 0.0 15.0 15.0 7.0;
 }
 
 .no-padding {

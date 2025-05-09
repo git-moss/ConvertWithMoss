@@ -1,5 +1,11 @@
 # Changes
 
+## 12.2.3 (unreleased)
+
+* Decent Sampler
+  * Fixed: Loops were not read from wave files when loop info was missing in Decent Sampler file.
+  * Fixed: seqMode and seqPosition were falsely reported as not used.
+
 ## 12.2.2
 
 * Fixed: Checking for empty output folder ignores now the ConvertWithMoss log file.

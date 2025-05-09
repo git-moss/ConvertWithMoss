@@ -26,25 +26,34 @@ public interface ICreator extends ICoreTask
      * @param multisampleSource The multi-sample source from which to create
      * @throws IOException Could not store the file
      */
-    void create (File destinationFolder, IMultisampleSource multisampleSource) throws IOException;
+    void createPreset (File destinationFolder, IMultisampleSource multisampleSource) throws IOException;
 
 
     /**
-     * Combines several multi-samples input files and stores them into one multi-sample file.
+     * Combines several multi-samples input files and stores them into one library file.
      *
      * @param destinationFolder Where to store the created file
      * @param multisampleSources The multi-sample sources from which to create
+     * @param libraryName The name to use for the library file
      * @throws IOException Could not store the file
      */
-    void create (File destinationFolder, List<IMultisampleSource> multisampleSources) throws IOException;
+    void createLibrary (File destinationFolder, List<IMultisampleSource> multisampleSources, String libraryName) throws IOException;
 
 
     /**
      * Check if the creator supports to combine several multi-samples into one file.
      *
-     * @return Returns true if the creator wants to combine several files
+     * @return Returns true if the creator can combine several files
      */
-    boolean wantsMultipleFiles ();
+    boolean supportsLibraries ();
+
+
+    /**
+     * Check if the creator supports to convert a performance source into a performance.
+     *
+     * @return Returns true if supported
+     */
+    boolean supportsPerformances ();
 
 
     /**

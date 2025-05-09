@@ -133,6 +133,13 @@ public class KontaktPresetChunk
     }
 
 
+    /**
+     * Reads some preset chunks.
+     * 
+     * @param in The stream to read from
+     * @param size The number of preset chunks to read
+     * @throws IOException Could not read
+     */
     public void readFixedArray (final InputStream in, final int size) throws IOException
     {
         // TODO
