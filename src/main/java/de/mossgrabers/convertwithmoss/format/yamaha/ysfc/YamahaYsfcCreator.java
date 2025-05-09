@@ -168,7 +168,6 @@ public class YamahaYsfcCreator extends AbstractCreator
 
         this.createOnlyWaveforms = panel.createCheckBox ("@IDS_YSFC_DESTINATION_TYPE_WAVEFORMS");
 
-        this.addCombineToLibraryUI (panel);
         return panel.getPane ();
     }
 
@@ -179,8 +178,6 @@ public class YamahaYsfcCreator extends AbstractCreator
     {
         Functions.setSelectedToggleIndex (this.outputFormatGroup, config.getInteger (YSFC_OUTPUT_FORMAT_LIBRARY, 1));
         this.createOnlyWaveforms.setSelected (config.getBoolean (YSFC_CREATE_ONLY_WAVEFORMS, false));
-
-        this.loadCombineToLibrarySettings ("Ysfc", config);
     }
 
 
@@ -190,39 +187,36 @@ public class YamahaYsfcCreator extends AbstractCreator
     {
         config.setInteger (YSFC_OUTPUT_FORMAT_LIBRARY, this.getSelectedOutputFormat ());
         config.setBoolean (YSFC_CREATE_ONLY_WAVEFORMS, this.createOnlyWaveforms.isSelected ());
-
-        this.saveCombineToLibrarySettings ("Ysfc", config);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public boolean wantsMultipleFiles ()
+    public boolean supportsLibraries ()
     {
-        return this.combineIntoOneLibrary.isSelected ();
+        return true;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        this.create (destinationFolder, Collections.singletonList (multisampleSource));
+        this.createLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final List<IMultisampleSource> multisampleSources) throws IOException
+    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
         if (multisampleSources.isEmpty ())
             return;
 
-        final String multiSampleName = this.getCombinationLibraryName (multisampleSources);
         final Integer selectedOutputFormat = Integer.valueOf (this.getSelectedOutputFormat ());
         final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
-        final File multiFile = this.createUniqueFilename (destinationFolder, multiSampleName, format.getEnding (isUser));
+        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         this.storeMultisamples (multisampleSources, multiFile, format);
@@ -511,7 +505,8 @@ public class YamahaYsfcCreator extends AbstractCreator
         // Each of the 16 bits represents a category: Bit 0 = Off, Bit 1 = Piano, ...
         final ByteArrayOutputStream flagsOutput = new ByteArrayOutputStream ();
         flagsOutput.write (EPFM_FLAGS);
-        final int categoryBit = categoryID == 256 ? 0 : (int) Math.pow (2, categoryID / 16);
+        final int mainCategory = categoryID / 16;
+        final int categoryBit = categoryID == 256 ? 0 : (int) Math.pow (2, mainCategory);
         StreamUtils.writeUnsigned16 (flagsOutput, categoryBit, true);
         performanceEntry.setFlags (flagsOutput.toByteArray ());
 

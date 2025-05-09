@@ -12,11 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.zip.ZipOutputStream;
@@ -44,8 +42,6 @@ import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
 
 
 /**
@@ -60,38 +56,20 @@ public class DecentSamplerCreator extends AbstractCreator
     private static final String LIBRARY_INFO_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
 
 
-    private enum DsOutputFormat
-    {
-        PRESET,
-        LIBRARY,
-        BUNDLE
-    }
-
-
     private class PresetResult
     {
         String             dsPreset;
-        public File        dsPresetFile;
+        File               dsPresetFile;
         String             sampleFolder;
         IMultisampleSource sampleSource;
     }
 
 
-    private static final Map<DsOutputFormat, String> OUTPUT_FORMAT_ENDINGS = new EnumMap<> (DsOutputFormat.class);
-    static
-    {
-        OUTPUT_FORMAT_ENDINGS.put (DsOutputFormat.PRESET, ".dspreset");
-        OUTPUT_FORMAT_ENDINGS.put (DsOutputFormat.LIBRARY, ".dslibrary");
-        OUTPUT_FORMAT_ENDINGS.put (DsOutputFormat.BUNDLE, ".dsbundle");
-    }
-
-    private DsOutputFormat      outputFormat              = DsOutputFormat.PRESET;
-
-    private static final String DS_OUTPUT_FORMAT_LIBRARY  = "DsOutputFormatPreset";
+    private static final String DS_OUTPUT_CREATE_BUNDLE   = "DsOutputCreateBundle";
     private static final String DS_OUTPUT_MAKE_MONOPHONIC = "DsOutputMakeMonophonic";
     private static final String DS_OUTPUT_ADD_REVERB      = "DsOutputAddReverb";
 
-    private ToggleGroup         outputFormatGroup;
+    private CheckBox            createBundleBox;
     private CheckBox            addReverbBox;
     private CheckBox            makeMonophonicBox;
 
@@ -116,19 +94,7 @@ public class DecentSamplerCreator extends AbstractCreator
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
         panel.createSeparator ("@IDS_DS_OUTPUT_FORMAT");
-
-        this.outputFormatGroup = new ToggleGroup ();
-        final RadioButton order1 = panel.createRadioButton ("@IDS_DS_PRESET");
-        order1.setAccessibleHelp (Functions.getMessage ("IDS_DS_OUTPUT_FORMAT"));
-        order1.setToggleGroup (this.outputFormatGroup);
-        final RadioButton order2 = panel.createRadioButton ("@IDS_DS_LIBRARY");
-        order2.setAccessibleHelp (Functions.getMessage ("IDS_DS_OUTPUT_FORMAT"));
-        order2.setToggleGroup (this.outputFormatGroup);
-        final RadioButton order3 = panel.createRadioButton ("@IDS_DS_BUNDLE");
-        order3.setAccessibleHelp (Functions.getMessage ("IDS_DS_OUTPUT_FORMAT"));
-        order3.setToggleGroup (this.outputFormatGroup);
-
-        this.addCombineToLibraryUI (panel);
+        this.createBundleBox = panel.createCheckBox ("@IDS_DS_CREATE_BUNDLE");
 
         final TitledSeparator separator = panel.createSeparator ("@IDS_DS_USER_INTERFACE");
         separator.getStyleClass ().add ("titled-separator-pane");
@@ -146,11 +112,10 @@ public class DecentSamplerCreator extends AbstractCreator
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        Functions.setSelectedToggleIndex (this.outputFormatGroup, config.getInteger (DS_OUTPUT_FORMAT_LIBRARY, 0));
+        this.createBundleBox.setSelected (config.getBoolean (DS_OUTPUT_CREATE_BUNDLE, false));
         this.makeMonophonicBox.setSelected (config.getBoolean (DS_OUTPUT_MAKE_MONOPHONIC, false));
         this.addReverbBox.setSelected (config.getBoolean (DS_OUTPUT_ADD_REVERB, true));
 
-        this.loadCombineToLibrarySettings ("Ds", config);
         this.loadWavChunkSettings (config, "Ds");
     }
 
@@ -159,42 +124,73 @@ public class DecentSamplerCreator extends AbstractCreator
     @Override
     public void saveSettings (final BasicConfig config)
     {
-        config.setInteger (DS_OUTPUT_FORMAT_LIBRARY, Functions.getSelectedToggleIndex (this.outputFormatGroup));
+        config.setBoolean (DS_OUTPUT_CREATE_BUNDLE, this.createBundleBox.isSelected ());
         config.setBoolean (DS_OUTPUT_MAKE_MONOPHONIC, this.makeMonophonicBox.isSelected ());
         config.setBoolean (DS_OUTPUT_ADD_REVERB, this.addReverbBox.isSelected ());
 
-        this.saveCombineToLibrarySettings ("Ds", config);
         this.saveWavChunkSettings (config, "Ds");
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public boolean wantsMultipleFiles ()
+    public boolean supportsLibraries ()
     {
-        return this.combineIntoOneLibrary.isSelected () && this.getOutputFormat () != DsOutputFormat.PRESET;
+        return true;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        this.create (destinationFolder, Collections.singletonList (multisampleSource));
+        final List<PresetResult> results = this.create (destinationFolder, Collections.singletonList (multisampleSource), false);
+
+        if (this.createBundleBox.isSelected ())
+        {
+            // Note: method is called for each multi-source individually!
+            final File multiFile = this.createUniqueFilename (destinationFolder, multisampleSource.getName (), "dsbundle");
+            this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+
+            this.storeBundle (multiFile, Collections.singletonList (results.get (0)));
+        }
+        else
+        {
+            for (final PresetResult presetResult: results)
+            {
+                this.notifier.log ("IDS_NOTIFY_STORING", presetResult.dsPresetFile.getAbsolutePath ());
+                this.storePreset (destinationFolder, presetResult);
+            }
+        }
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final List<IMultisampleSource> multisampleSources) throws IOException
+    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    {
+        final List<PresetResult> results = create (destinationFolder, multisampleSources, true);
+
+        final boolean isBundle = this.createBundleBox.isSelected ();
+        final String extension = isBundle ? "dsbundle" : "dslibrary";
+        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, extension);
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        if (isBundle)
+            this.storeBundle (multiFile, results);
+        else
+            this.storeLibrary (multiFile, results);
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    private final List<PresetResult> create (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final boolean isLibrary)
     {
         if (multisampleSources.isEmpty ())
-            return;
+            return Collections.emptyList ();
 
-        this.outputFormat = this.getOutputFormat ();
-        final boolean isPresetOutput = this.outputFormat == DsOutputFormat.PRESET;
-
-        final String extension = OUTPUT_FORMAT_ENDINGS.get (this.outputFormat);
         final List<String> otherOutputFiles = new ArrayList<> ();
         final List<PresetResult> results = new ArrayList<> ();
         for (final IMultisampleSource multisampleSource: multisampleSources)
@@ -205,7 +201,7 @@ public class DecentSamplerCreator extends AbstractCreator
             // Make sure the file name is unique among either the files in the destination folder or
             // inside of the library
             String sampleName = createSafeFilename (multisampleSource.getName ());
-            presetResult.dsPresetFile = isPresetOutput ? this.createUniqueFilename (destinationFolder, sampleName, "dspreset") : this.createUniqueFilename (destinationFolder, sampleName, "dspreset", otherOutputFiles);
+            presetResult.dsPresetFile = isLibrary ? this.createUniqueFilename (destinationFolder, sampleName, ".dspreset", otherOutputFiles) : this.createUniqueFilename (destinationFolder, sampleName, "dspreset");
             sampleName = FileUtils.getNameWithoutType (presetResult.dsPresetFile);
             presetResult.sampleFolder = sampleName + FOLDER_POSTFIX;
 
@@ -218,34 +214,7 @@ public class DecentSamplerCreator extends AbstractCreator
             results.add (presetResult);
         }
 
-        if (this.outputFormat == DsOutputFormat.PRESET)
-            for (final PresetResult presetResult: results)
-            {
-                this.notifier.log ("IDS_NOTIFY_STORING", presetResult.dsPresetFile.getAbsolutePath ());
-                this.storePreset (destinationFolder, presetResult);
-            }
-        else
-        {
-            final boolean storeInOneLibrary = this.wantsMultipleFiles ();
-            final String multiSampleName = this.getCombinationLibraryName (multisampleSources);
-            final File multiFile = this.createUniqueFilename (destinationFolder, multiSampleName, extension);
-            this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
-            if (this.outputFormat == DsOutputFormat.BUNDLE)
-            {
-                if (storeInOneLibrary)
-                    this.storeBundle (multiFile, results);
-                else
-                    // Note method is called for each multi-source individually!
-                    this.storeBundle (multiFile, Collections.singletonList (results.get (0)));
-            }
-            else if (storeInOneLibrary)
-                this.storeLibrary (multiFile, results);
-            else
-                // Note method is called for each multi-source individually!
-                this.storeLibrary (multiFile, Collections.singletonList (results.get (0)));
-        }
-
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        return results;
     }
 
 
@@ -471,17 +440,6 @@ public class DecentSamplerCreator extends AbstractCreator
             if (crossfade > 0)
                 XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, crossfade);
         }
-    }
-
-
-    /**
-     * Get the selected output format.
-     *
-     * @return The output format
-     */
-    private DsOutputFormat getOutputFormat ()
-    {
-        return DsOutputFormat.values ()[Functions.getSelectedToggleIndex (this.outputFormatGroup)];
     }
 
 

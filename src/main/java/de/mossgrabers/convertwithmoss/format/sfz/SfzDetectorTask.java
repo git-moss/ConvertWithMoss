@@ -31,7 +31,6 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -697,55 +696,6 @@ public class SfzDetectorTask extends AbstractDetectorTask
 
         final double ampVelTrack = this.getDoubleValue (SfzOpcode.AMP_VELOCITY_TRACK, 100);
         sampleZone.getAmplitudeVelocityModulator ().setDepth (ampVelTrack / 100.0);
-    }
-
-
-    private void readMissingValues (final ISampleZone zone)
-    {
-        try
-        {
-            // Read loop and root key if necessary. If loop was not explicitly
-            // deactivated, there is a loop present, which might need to read the
-            // parameters from the WAV file
-            List<ISampleLoop> loops = zone.getLoops ();
-            boolean readLoops = false;
-            ISampleLoop oldLoop = null;
-            if (!loops.isEmpty ())
-            {
-                oldLoop = loops.get (0);
-                readLoops = oldLoop.getStart () < 0 || oldLoop.getEnd () < 0;
-                if (readLoops)
-                    loops.clear ();
-            }
-
-            zone.getSampleData ().addZoneData (zone, true, readLoops);
-
-            // If start or end was already set overwrite it here
-            if (readLoops)
-            {
-                loops = zone.getLoops ();
-                // The null check is not necessary but otherwise we get an Eclipse warning
-                if (oldLoop != null && !loops.isEmpty ())
-                {
-                    final ISampleLoop newLoop = loops.get (0);
-
-                    final int oldStart = oldLoop.getStart ();
-                    if (oldStart >= 0)
-                        newLoop.setStart (oldStart);
-                    final int oldEnd = oldLoop.getEnd ();
-                    if (oldEnd >= 0)
-                        newLoop.setEnd (oldEnd);
-
-                    // If values are still not set remove the loop
-                    if (newLoop.getStart () < 0 && newLoop.getEnd () < 0)
-                        loops.clear ();
-                }
-            }
-        }
-        catch (final IOException ex)
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
-        }
     }
 
 

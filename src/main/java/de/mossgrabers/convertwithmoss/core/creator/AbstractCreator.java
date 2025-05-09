@@ -54,10 +54,8 @@ import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
-import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.TextField;
 
 
 /**
@@ -80,10 +78,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     private static final String                 WRITE_SAMPLE_CHUNK                 = "WriteSampleChunk";
     private static final String                 REMOVE_JUNK_CHUNK                  = "RemoveJunkChunk";
 
-    // Combine into library constants
-    private static final String                 COMBINE_INTO_ONE_LIBRARY           = "CombineIntoOneLibrary";
-    private static final String                 COMBINE_FILENAME                   = "CombineFilename";
-
     // Metadata options
     private CheckBox                            updateBroadcastAudioChunkBox       = null;
     private CheckBox                            updateInstrumentChunkBox           = null;
@@ -95,10 +89,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     private boolean                             removeJunkChunks                   = false;
 
     protected boolean                           isCancelled                        = false;
-
-    // Combine into library options
-    protected CheckBox                          combineIntoOneLibrary              = null;
-    protected TextField                         combinationFilename                = null;
 
 
     /**
@@ -115,17 +105,24 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
     /** {@inheritDoc} */
     @Override
-    public void create (final File destinationFolder, final List<IMultisampleSource> multisampleSources) throws IOException
+    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
-        // Overwrite as well as wantsMultipleFiles() to support
+        // Overwrite as well as supportsLibraries() to support
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public boolean wantsMultipleFiles ()
+    public boolean supportsLibraries ()
     {
-        // Overwrite and return true to support combining multi-sample files
+        return false;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
         return false;
     }
 
@@ -143,56 +140,6 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     public void clearCancelled ()
     {
         this.isCancelled = false;
-    }
-
-
-    /**
-     * Add the UI elements for the combination of several multi-sample source into 1 library.
-     *
-     * @param panel The panel to add the widgets to
-     */
-    protected void addCombineToLibraryUI (final BasePanel panel)
-    {
-        final TitledSeparator separator = panel.createSeparator ("@IDS_COMBINE_OF_SOURCES");
-        separator.getStyleClass ().add ("titled-separator-pane");
-        this.combineIntoOneLibrary = panel.createCheckBox ("@IDS_COMBINE_IN_ONE_LIBRARY");
-        this.combinationFilename = panel.createField ("@IDS_COMBINE_LIBRARY_FILENAME");
-    }
-
-
-    protected void loadCombineToLibrarySettings (final String prefix, final BasicConfig config)
-    {
-        this.combineIntoOneLibrary.setSelected (config.getBoolean (prefix + COMBINE_INTO_ONE_LIBRARY, false));
-        this.combinationFilename.setText (config.getProperty (prefix + COMBINE_FILENAME, ""));
-    }
-
-
-    protected void saveCombineToLibrarySettings (final String prefix, final BasicConfig config)
-    {
-        config.setBoolean (prefix + COMBINE_INTO_ONE_LIBRARY, this.combineIntoOneLibrary.isSelected ());
-        config.setProperty (prefix + COMBINE_FILENAME, this.combinationFilename.getText ());
-    }
-
-
-    /**
-     * Get the library name to use for combine multi-sample sources.
-     *
-     * @param multisampleSources If no name was entered, the name of the first multi-sample is used,
-     *            if any
-     * @return The name
-     */
-    protected String getCombinationLibraryName (final List<IMultisampleSource> multisampleSources)
-    {
-        String name = multisampleSources.get (0).getName ();
-
-        if (this.wantsMultipleFiles ())
-        {
-            final String combinationName = this.combinationFilename.getText ().trim ();
-            if (combinationName.length () > 0)
-                name = combinationName;
-        }
-
-        return createSafeFilename (name);
     }
 
 

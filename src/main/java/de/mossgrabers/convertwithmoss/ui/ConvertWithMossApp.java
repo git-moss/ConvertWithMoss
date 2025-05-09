@@ -14,7 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -116,11 +118,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private static final String            DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
     private static final String            DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
     private static final String            DESTINATION_PATH                    = "DestinationPath";
+    private static final String            DESTINATION_FORMAT                  = "DestinationFormat";
     private static final String            DESTINATION_TYPE                    = "DestinationType";
     private static final String            SOURCE_PATH                         = "SourcePath";
     private static final String            SOURCE_TYPE                         = "SourceType";
     private static final String            RENAMING_CSV_FILE                   = "RenamingCSVFile";
     private static final String            RENAMING_SOURCE_ENABLED             = "EnableRenaming";
+    private static final String            COMBINE_FILENAME                    = "CombineFilename";
 
     private final IDetector []             detectors;
     private final ICreator []              creators;
@@ -141,6 +145,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
     private final TabPane                  sourceTabPane                       = new TabPane ();
     private final TabPane                  destinationTabPane                  = new TabPane ();
+    private final TabPane                  destinationTypeTabPane              = new TabPane ();
 
     private final List<String>             sourcePathHistory                   = new ArrayList<> ();
     private final List<String>             destinationPathHistory              = new ArrayList<> ();
@@ -161,6 +166,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
     private FileWriter                     logWriter;
     private boolean                        combineWithPreviousMessage          = false;
+    private TextField                      combinationFilename;
+    private Map<Tab, ICreator>             creatorTabs                         = new HashMap<> ();
 
 
     /**
@@ -321,6 +328,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             final Tab tab = new Tab (creator.getName (), creator.getEditPane ());
             tab.setClosable (false);
             destinationTabs.add (tab);
+            this.creatorTabs.put (tab, creator);
         }
         setTabPaneLeftTabsHorizontal (this.destinationTabPane);
 
@@ -333,7 +341,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.enableDarkMode = bottomRight.createCheckBox ("@IDS_MAIN_ENABLE_DARK_MODE", "@IDS_MAIN_ENABLE_DARK_MODE_TOOLTIP");
         this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> this.setDarkMode (isSelected.booleanValue ()));
 
-        final BorderPane destinationPane = new BorderPane (this.destinationTabPane);
+        this.configureDestinationTypePane ();
+
+        final BorderPane destinationCenterPane = new BorderPane (this.destinationTabPane);
+        destinationCenterPane.setBottom (this.destinationTypeTabPane);
+
+        final BorderPane destinationPane = new BorderPane (destinationCenterPane);
         destinationPane.setTop (destinationUpperPart.getPane ());
         destinationPane.setBottom (new BorderPane (null, null, bottomRight.getPane (), null, bottomLeft.getPane ()));
 
@@ -375,6 +388,61 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
+    private void configureDestinationTypePane ()
+    {
+        final ObservableList<Tab> destinationTypeTabs = this.destinationTypeTabPane.getTabs ();
+        this.destinationTypeTabPane.getStyleClass ().add ("paddingLeftBottomRight");
+
+        Tab tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_PRESET"), new BorderPane ());
+        tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_PRESET_INFO")));
+        tab.setClosable (false);
+        destinationTypeTabs.add (tab);
+
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        this.combinationFilename = panel.createField ("@IDS_COMBINE_LIBRARY_FILENAME");
+        tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_LIBRARY"), panel.getPane ());
+        tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_LIBRARY_INFO")));
+        tab.setClosable (false);
+        destinationTypeTabs.add (tab);
+
+        tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_PERFORMANCE"), new BorderPane ());
+        tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_PERFORMANCE_INFO")));
+        tab.setClosable (false);
+        destinationTypeTabs.add (tab);
+
+        setTabPaneLeftTabsHorizontal (this.destinationTypeTabPane);
+
+        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener (index -> {
+
+            final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+            boolean needsSelection = false;
+
+            // Enable only the destination formats which support the selected output type
+            for (final Tab destinationTab: this.destinationTabPane.getTabs ())
+            {
+                final ICreator creator = this.creatorTabs.get (destinationTab);
+                final boolean showTab = selectedType == 0 || (selectedType == 1 && creator.supportsLibraries ()) || (selectedType == 2 && creator.supportsPerformances ());
+                destinationTab.setDisable (!showTab);
+                if (!showTab && destinationTab.isSelected ())
+                    needsSelection = true;
+            }
+
+            // Select the first enabled destination format, if required
+            if (needsSelection)
+            {
+                for (final Tab destinationTab: this.destinationTabPane.getTabs ())
+                {
+                    if (!destinationTab.isDisabled ())
+                    {
+                        this.destinationTabPane.getSelectionModel ().select (destinationTab);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+
     private void configureTraversalManager ()
     {
         this.traversalManager.add (this.sourcePathField);
@@ -388,6 +456,10 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.traversalManager.add (this.destinationFolderSelectButton);
         this.traversalManager.add (this.destinationTabPane);
         for (final Tab tab: this.destinationTabPane.getTabs ())
+            if (tab.getContent () instanceof final Parent content)
+                this.traversalManager.addChildren (content);
+        this.traversalManager.add (this.destinationTypeTabPane);
+        for (final Tab tab: this.destinationTypeTabPane.getTabs ())
             if (tab.getContent () instanceof final Parent content)
                 this.traversalManager.addChildren (content);
 
@@ -480,8 +552,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         final int sourceType = this.config.getInteger (SOURCE_TYPE, 0);
         this.sourceTabPane.getSelectionModel ().select (sourceType);
+        final int destinationFormat = this.config.getInteger (DESTINATION_FORMAT, 0);
+        this.destinationTabPane.getSelectionModel ().select (destinationFormat);
+
         final int destinationType = this.config.getInteger (DESTINATION_TYPE, 0);
-        this.destinationTabPane.getSelectionModel ().select (destinationType);
+        this.destinationTypeTabPane.getSelectionModel ().select (destinationType);
+
+        this.combinationFilename.setText (this.config.getProperty (COMBINE_FILENAME, ""));
     }
 
 
@@ -512,7 +589,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         final int sourceSelectedIndex = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
         this.config.setInteger (SOURCE_TYPE, sourceSelectedIndex);
         final int destinationSelectedIndex = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
-        this.config.setInteger (DESTINATION_TYPE, destinationSelectedIndex);
+        this.config.setInteger (DESTINATION_FORMAT, destinationSelectedIndex);
+
+        final int destinationTypeSelectedIndex = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+        this.config.setInteger (DESTINATION_TYPE, destinationTypeSelectedIndex);
+
+        this.config.setProperty (COMBINE_FILENAME, this.combinationFilename.getText ());
     }
 
 
@@ -685,7 +767,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.applyDefaultEnvelope (multisampleSource);
 
         final ICreator creator = this.creators[selectedCreator];
-        if (creator.wantsMultipleFiles ())
+        if (this.wantsMultipleFiles ())
         {
             if (!this.onlyAnalyse)
                 this.collectedSources.add (multisampleSource);
@@ -702,7 +784,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         {
             final boolean createStructure = this.createFolderStructure.isSelected ();
             final File multisampleOutputFolder = calcOutputFolder (this.outputFolder, multisampleSource.getSubPath (), createStructure);
-            creator.create (multisampleOutputFolder, multisampleSource);
+            creator.createPreset (multisampleOutputFolder, multisampleSource);
         }
         catch (final NoSuchFileException | FileNotFoundException ex)
         {
@@ -712,6 +794,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         {
             this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
         }
+    }
+
+
+    private boolean wantsMultipleFiles ()
+    {
+        final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+        return selectedType == 1;
     }
 
 
@@ -974,7 +1063,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
             try
             {
-                this.creators[selectedCreator].create (this.outputFolder, this.collectedSources);
+                final String libraryName = this.getCombinationLibraryName (this.collectedSources);
+                this.creators[selectedCreator].createLibrary (this.outputFolder, this.collectedSources, libraryName);
             }
             catch (final IOException | RuntimeException ex)
             {
@@ -1081,5 +1171,27 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         }
 
         return result;
+    }
+
+
+    /**
+     * Get the library name to use for combine multi-sample sources.
+     *
+     * @param multisampleSources If no name was entered, the name of the first multi-sample is used,
+     *            if any
+     * @return The name
+     */
+    protected String getCombinationLibraryName (final List<IMultisampleSource> multisampleSources)
+    {
+        String name = multisampleSources.get (0).getName ();
+
+        if (this.wantsMultipleFiles ())
+        {
+            final String combinationName = this.combinationFilename.getText ().trim ();
+            if (!combinationName.isEmpty ())
+                name = combinationName;
+        }
+
+        return AbstractCreator.createSafeFilename (name);
     }
 }
