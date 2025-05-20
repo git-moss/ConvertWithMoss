@@ -71,6 +71,14 @@ public class AiffChunk implements IChunk
 
     /** {@inheritDoc} */
     @Override
+    public int getDataSize ()
+    {
+        return this.chunk.getDataSize ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public byte [] getData ()
     {
         return this.chunk.getData ();
@@ -81,7 +89,7 @@ public class AiffChunk implements IChunk
     @Override
     public String infoText ()
     {
-        return "Date Size: " + this.getData ().length + " Bytes";
+        return "Date Size: " + this.getDataSize () + " Bytes";
     }
 
 

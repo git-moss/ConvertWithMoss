@@ -191,10 +191,8 @@ public class KMPFile
         // Remove all 'skipped sample' zones
         final List<ISampleZone> cleanedZones = new ArrayList<> ();
         for (final ISampleZone zone: this.zones)
-        {
             if (!SAMPLE_SKIPPED.equals (zone.getName ()))
                 cleanedZones.add (zone);
-        }
         this.zones.clear ();
         this.zones.addAll (cleanedZones);
     }

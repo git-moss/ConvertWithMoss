@@ -24,7 +24,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class NcwFileSampleData extends AbstractFileSampleData
 {
-    private NcwFile ncwFile;
+    private final NcwFile ncwFile;
 
 
     /**

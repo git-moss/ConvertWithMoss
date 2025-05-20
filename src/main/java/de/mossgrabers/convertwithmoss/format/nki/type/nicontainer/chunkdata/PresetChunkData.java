@@ -215,7 +215,7 @@ public class PresetChunkData extends AbstractChunkData
 
     /**
      * Get all chunks of the Kontakt program.
-     * 
+     *
      * @return The chunks
      */
     public List<KontaktPresetChunk> getChunks ()
@@ -297,7 +297,7 @@ public class PresetChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final PresetChunkData other = (PresetChunkData) obj;
         return this.dictionaryType == other.dictionaryType && this.magic == other.magic && this.padding == other.padding && Arrays.equals (this.programData, other.programData) && this.unknown == other.unknown;

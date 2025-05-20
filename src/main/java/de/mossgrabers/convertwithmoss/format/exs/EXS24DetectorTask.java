@@ -324,7 +324,7 @@ public class EXS24DetectorTask extends AbstractDetectorTask
         {
             int v = attackCurve.intValue ();
             if (v >= 0xFF00)
-                v = (v - 0xFF00) - 0x100;
+                v = v - 0xFF00 - 0x100;
             envelope.setAttackSlope (Math.clamp (v / 99.0, -1, 1));
         }
 

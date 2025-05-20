@@ -68,7 +68,7 @@ public interface ISampleZone
 
     /**
      * Get the number indicating this zone’s position in the round robin queue.
-     * 
+     *
      * @return The number starting with 1
      */
     int getSequencePosition ();
@@ -76,7 +76,7 @@ public interface ISampleZone
 
     /**
      * Set the number indicating this zone’s position in the round robin queue.
-     * 
+     *
      * @param sequencePosition The number starting with 1
      */
     void setSequencePosition (int sequencePosition);

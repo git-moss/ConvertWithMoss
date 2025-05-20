@@ -94,7 +94,7 @@ public enum ZoneChannels
      * Creates stereo sample zones (with stereo sample files) from split stereo sample zones.
      * Important: the input must have been checked to be split stereo with the
      * detectChannelConfiguration method.
-     * 
+     *
      * @param groups The groups containing the sample zones
      * @return The group containing all resulting stereo sample zones if combination is possible
      * @throws IOException Could not combine the files
@@ -118,10 +118,8 @@ public enum ZoneChannels
 
         // Audio metadata must match as well as the loops of the left/right pairs!
         for (int i = 0; i < size; i++)
-        {
             if (!compareSampleZones (leftSampleZones.get (i), rightSampleZones.get (i)))
                 return Optional.empty ();
-        }
 
         // Finally, combine the left/right pairs
         final IGroup group = new DefaultGroup ();
@@ -157,7 +155,7 @@ public enum ZoneChannels
 
     /**
      * Splits all sample zones from all groups into left/right arrays.
-     * 
+     *
      * @param groups All groups
      * @param leftSampleZones All samples zones which are panned hard left
      * @param rightSampleZones All samples zones which are panned hard right
@@ -166,12 +164,10 @@ public enum ZoneChannels
     {
         for (final IGroup group: groups)
             for (final ISampleZone sampleZone: group.getSampleZones ())
-            {
                 if (sampleZone.getPanning () <= -1)
                     leftSampleZones.add (sampleZone);
                 else
                     rightSampleZones.add (sampleZone);
-            }
     }
 
 
@@ -199,7 +195,7 @@ public enum ZoneChannels
     {
         /** {@inheritDoc} */
         @Override
-        public int compare (ISampleZone o1, ISampleZone o2)
+        public int compare (final ISampleZone o1, final ISampleZone o2)
         {
             int result = Integer.compare (o1.getKeyRoot (), o2.getKeyRoot ());
             if (result != 0)

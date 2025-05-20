@@ -24,6 +24,14 @@ public interface IChunk
 
 
     /**
+     * Get the size of the data.
+     *
+     * @return The size in bytes
+     */
+    int getDataSize ();
+
+
+    /**
      * Gets the data.
      *
      * @return The data array. The array will not be cloned for performance reasons and is expected

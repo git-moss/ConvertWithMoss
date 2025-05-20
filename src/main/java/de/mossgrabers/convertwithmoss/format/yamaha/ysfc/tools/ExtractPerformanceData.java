@@ -24,7 +24,7 @@ public class ExtractPerformanceData
 {
     /**
      * Writes all Performance data arrays into individual files.
-     * 
+     *
      * @param args First argument is the absolute path to the YSFC file. Second argument is the
      *            output folder, which needs to exist.
      */

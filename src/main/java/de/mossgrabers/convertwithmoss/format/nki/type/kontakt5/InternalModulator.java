@@ -206,34 +206,34 @@ public class InternalModulator
 
     /**
      * Get the volume envelope if present.
-     * 
+     *
      * @return The volume envelope
      */
     public Optional<IEnvelopeModulator> getVolumeEnvelope ()
     {
-        return this.isEnvelopeModulator () ? createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_VOLUME)) : Optional.empty ();
+        return this.isEnvelopeModulator () ? this.createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_VOLUME)) : Optional.empty ();
     }
 
 
     /**
      * Get the filter cutoff envelope if present.
-     * 
+     *
      * @return The filter cutoff envelope
      */
     public Optional<IEnvelopeModulator> getFilterCutoffEnvelope ()
     {
-        return this.isEnvelopeModulator () ? createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_CUTOFF)) : Optional.empty ();
+        return this.isEnvelopeModulator () ? this.createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_CUTOFF)) : Optional.empty ();
     }
 
 
     /**
      * Get the pitch envelope if present.
-     * 
+     *
      * @return The pitch envelope
      */
     public Optional<IEnvelopeModulator> getPitchEnvelope ()
     {
-        return this.isEnvelopeModulator () ? createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_PITCH)) : Optional.empty ();
+        return this.isEnvelopeModulator () ? this.createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_PITCH)) : Optional.empty ();
     }
 
 
@@ -310,10 +310,8 @@ public class InternalModulator
             modulatedParameter.lag = StreamUtils.readSigned16 (in, false);
 
             if ((modulatedParameter.flags & 8) > 0)
-            {
                 // Unused
                 in.readNBytes (5);
-            }
             else
             {
                 modulatedParameter.modulatorDescription = StreamUtils.readWith4ByteLengthAscii (in);
@@ -394,10 +392,7 @@ public class InternalModulator
             if (PARAMETER_NAME_VOLUME.equals (modulatedParameter.parameterName) && ("LFO_SINE_VOLUME".equals (modulatedParameter.modulatorDescription) || "STEP_VOLUME".equals (modulatedParameter.modulatorDescription)))
                 return 1;
 
-            if (PARAMETER_NAME_PAN.equals (modulatedParameter.parameterName) && "ENV_DBD_PAN".equals (modulatedParameter.modulatorDescription))
-                return 2;
-
-            if (PARAMETER_NAME_CUTOFF.equals (modulatedParameter.parameterName) && "LFO_MULTI_CUTOFF".equals (modulatedParameter.modulatorDescription))
+            if ((PARAMETER_NAME_PAN.equals (modulatedParameter.parameterName) && "ENV_DBD_PAN".equals (modulatedParameter.modulatorDescription)) || (PARAMETER_NAME_CUTOFF.equals (modulatedParameter.parameterName) && "LFO_MULTI_CUTOFF".equals (modulatedParameter.modulatorDescription)))
                 return 2;
             if ("vfType".equals (modulatedParameter.parameterName) && "LFO_MULTI_3X2_TYPE".equals (modulatedParameter.modulatorDescription))
                 return 2;
@@ -418,15 +413,9 @@ public class InternalModulator
 
     private void readBlock2 (final InputStream in) throws IOException
     {
-        final ModulatedParameter envelopeParameter = getEnvelopeParameter (PARAMETER_NAME_VOLUME, PARAMETER_NAME_CUTOFF, PARAMETER_NAME_PITCH);
-        if (envelopeParameter == null)
-            return;
-
-        if (!this.isEnvelopeModulator ())
-            return;
-
+        final ModulatedParameter envelopeParameter = this.getEnvelopeParameter (PARAMETER_NAME_VOLUME, PARAMETER_NAME_CUTOFF, PARAMETER_NAME_PITCH);
         // Too short but not understood what it contains
-        if (in.available () == 0x38)
+        if ((envelopeParameter == null) || !this.isEnvelopeModulator () || (in.available () == 0x38))
             return;
 
         if (MODULATOR_SOURCE_NAME_AHDSR.equals (this.modulatorSourceName) || "<none>".equals (this.modulatorSourceName) || "".equals (this.modulatorSourceName))
@@ -458,13 +447,9 @@ public class InternalModulator
     private ModulatedParameter getEnvelopeParameter (final String... parameters)
     {
         for (final ModulatedParameter modulatedParameter: this.modulatedParameters)
-        {
             for (final String parameter: parameters)
-            {
                 if (modulatedParameter.parameterName.equals (parameter))
                     return modulatedParameter;
-            }
-        }
         return null;
     }
 

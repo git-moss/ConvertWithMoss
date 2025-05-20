@@ -139,7 +139,7 @@ public class KorgmultisampleDetectorTask extends AbstractDetectorTask
 
         this.notifier.log ("IDS_WS_DETECTED_APPLICATION", application, applicationVersion);
 
-        return parseMultisample (new ByteArrayInputStream (chunks.get (2)), file, creationDateTime);
+        return this.parseMultisample (new ByteArrayInputStream (chunks.get (2)), file, creationDateTime);
     }
 
 

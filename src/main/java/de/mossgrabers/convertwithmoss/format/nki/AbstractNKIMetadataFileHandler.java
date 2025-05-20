@@ -433,7 +433,6 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final String iconIdx = programParameters.get ("catIconIdx");
         if (iconIdx != null && !iconIdx.isBlank ())
-        {
             try
             {
                 final int index = Integer.parseInt (iconIdx);
@@ -450,7 +449,6 @@ public abstract class AbstractNKIMetadataFileHandler
             {
                 // Ignore
             }
-        }
         final String author = programParameters.get ("instrumentAuthor");
         if (author != null)
             metadata.setCreator (author);

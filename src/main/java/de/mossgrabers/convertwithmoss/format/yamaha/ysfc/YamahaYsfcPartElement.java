@@ -520,7 +520,7 @@ public class YamahaYsfcPartElement
 
     /**
      * Get the Expanded Articulation (XA) mode.
-     * 
+     *
      * @return 0: Normal, 1: Legato, 2: Key Off, 3: Cycle, 4: Random, 5: A.SW Off, 6: A.SW1 On, 7:
      *         A.SW2 On
      */
@@ -532,7 +532,7 @@ public class YamahaYsfcPartElement
 
     /**
      * Set the Expanded Articulation (XA) mode.
-     * 
+     *
      * @param xaMode 0: Normal, 1: Legato, 2: Key Off, 3: Cycle, 4: Random, 5: A.SW Off, 6: A.SW1
      *            On, 7: A.SW2 On
      */
@@ -1838,7 +1838,7 @@ public class YamahaYsfcPartElement
 
     /**
      * Converts an envelope time value to seconds.
-     * 
+     *
      * @param envelopeTime The time in the range of 0-127
      * @return The time in seconds, attack times should be shortened by factor 6
      */
@@ -1850,7 +1850,7 @@ public class YamahaYsfcPartElement
 
     /**
      * Converts an envelope time value to seconds.
-     * 
+     *
      * @param seconds The time in seconds, attack times should be enlarged by factor 6
      * @return The time in the range of 0-127
      */
@@ -1860,10 +1860,8 @@ public class YamahaYsfcPartElement
             return 0;
 
         for (int i = 0; i < 127; i++)
-        {
             if (seconds >= ENVELOPE_TIMES.get (Integer.valueOf (i)).intValue () && seconds < ENVELOPE_TIMES.get (Integer.valueOf (i + 1)).intValue ())
                 return i;
-        }
 
         return 127;
     }

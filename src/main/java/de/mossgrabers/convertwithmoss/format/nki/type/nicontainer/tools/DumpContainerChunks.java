@@ -22,7 +22,7 @@ public class DumpContainerChunks
 {
     /**
      * Dumps all chunks of a NI Container file to the console.
-     * 
+     *
      * @param args The absolute path to the file as the first argument
      */
     public static void main (final String [] args)

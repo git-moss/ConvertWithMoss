@@ -193,7 +193,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
         int fullSize = 4;
         for (final IChunk chunk: this.chunkStack)
         {
-            final int length = chunk.getData ().length;
+            final int length = chunk.getDataSize ();
             fullSize += 8 + length;
             if (length % 2 == 1)
                 fullSize++;

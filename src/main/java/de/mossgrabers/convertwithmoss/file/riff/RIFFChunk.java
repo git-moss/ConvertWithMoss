@@ -234,7 +234,23 @@ public class RIFFChunk implements IChunk
 
     /** {@inheritDoc} */
     @Override
+    public int getDataSize ()
+    {
+        this.checkValidity ();
+        return this.data.length;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public byte [] getData ()
+    {
+        this.checkValidity ();
+        return this.data;
+    }
+
+
+    private void checkValidity ()
     {
         if (this.id != RiffID.LIST_ID.getId () && this.data == null)
         {
@@ -242,7 +258,6 @@ public class RIFFChunk implements IChunk
                 throw new NoDataInChunkException ("Chunk contains no data since it was too large to be loaded.");
             throw new NoDataInChunkException ("Chunk contains no data.");
         }
-        return this.data;
     }
 
 

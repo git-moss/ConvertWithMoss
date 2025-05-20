@@ -195,12 +195,10 @@ public class SfzCreator extends AbstractCreator
             int maxSequence = -1;
             final boolean isNotRoundRobinGroup = !roundRobinGroups.containsKey (group);
             if (isNotRoundRobinGroup)
-            {
                 // Check for any sample which play round-robin
                 for (final ISampleZone zone: zones)
                     if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                         maxSequence = Math.max (maxSequence, zone.getSequencePosition ());
-            }
 
             sb.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
             final String groupName = group.getName ();

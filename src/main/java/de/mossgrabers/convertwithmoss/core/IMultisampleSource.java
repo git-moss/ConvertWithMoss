@@ -75,7 +75,7 @@ public interface IMultisampleSource
     /**
      * Get all groups which are considered to be part of a round-robin sequence. See
      * {@link IGroup#isGroupRoundRobin ()}.
-     * 
+     *
      * @return All round-robin groups with the sequence position index, see
      *         {@link ISampleZone#getSequencePosition ()}
      */
@@ -83,10 +83,8 @@ public interface IMultisampleSource
     {
         final Map<IGroup, Integer> roundRobinGroups = new HashMap<> ();
         for (final IGroup group: this.getGroups ())
-        {
             if (group.isGroupRoundRobin ())
                 roundRobinGroups.put (group, Integer.valueOf (group.getSampleZones ().get (0).getSequencePosition ()));
-        }
         return roundRobinGroups;
     }
 

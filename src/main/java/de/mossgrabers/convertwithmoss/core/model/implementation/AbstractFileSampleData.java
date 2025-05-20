@@ -141,7 +141,7 @@ public abstract class AbstractFileSampleData extends AbstractSampleData implemen
 
     /**
      * Get the entry in the ZIP file.
-     * 
+     *
      * @param zf The ZIP file object
      * @return The entry
      * @throws FileNotFoundException If the entry could not be found in the ZIP

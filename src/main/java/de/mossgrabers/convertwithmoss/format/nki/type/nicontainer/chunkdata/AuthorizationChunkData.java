@@ -109,7 +109,7 @@ public class AuthorizationChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final AuthorizationChunkData other = (AuthorizationChunkData) obj;
         return this.checksum == other.checksum && this.pidContent == other.pidContent && Objects.equals (this.serialNumberPIDs, other.serialNumberPIDs) && this.unknown1 == other.unknown1 && this.unknown2 == other.unknown2;

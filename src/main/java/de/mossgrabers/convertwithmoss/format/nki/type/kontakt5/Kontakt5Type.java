@@ -229,7 +229,7 @@ public class Kontakt5Type extends AbstractKontaktType
             final String programName = program.getName ();
             final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + programName;
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
-            fillInto (multisampleSource, program, programs.size () > 1 ? new String []
+            this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName
             } : parts, filePaths);

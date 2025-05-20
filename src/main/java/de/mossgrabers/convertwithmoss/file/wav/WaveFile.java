@@ -94,7 +94,7 @@ public class WaveFile extends AbstractRIFFFile
 
     /**
      * Get the position of the start of the data of the data chunk in the wave file.
-     * 
+     *
      * @param wavFile The wave file
      * @return The position of the data chunk or -1 if no data chunk is present
      * @throws IOException Could not read the file
@@ -404,7 +404,7 @@ public class WaveFile extends AbstractRIFFFile
 
     private static final class DataChunkPositionRIFFVisitor implements RIFFVisitor
     {
-        private RIFFParser parser;
+        private final RIFFParser parser;
         long               dataChunkPosition = -1;
 
 

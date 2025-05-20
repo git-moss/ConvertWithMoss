@@ -167,7 +167,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private FileWriter                     logWriter;
     private boolean                        combineWithPreviousMessage          = false;
     private TextField                      combinationFilename;
-    private Map<Tab, ICreator>             creatorTabs                         = new HashMap<> ();
+    private final Map<Tab, ICreator>             creatorTabs                         = new HashMap<> ();
 
 
     /**
@@ -421,7 +421,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             for (final Tab destinationTab: this.destinationTabPane.getTabs ())
             {
                 final ICreator creator = this.creatorTabs.get (destinationTab);
-                final boolean showTab = selectedType == 0 || (selectedType == 1 && creator.supportsLibraries ()) || (selectedType == 2 && creator.supportsPerformances ());
+                final boolean showTab = selectedType == 0 || selectedType == 1 && creator.supportsLibraries () || selectedType == 2 && creator.supportsPerformances ();
                 destinationTab.setDisable (!showTab);
                 if (!showTab && destinationTab.isSelected ())
                     needsSelection = true;
@@ -429,16 +429,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
             // Select the first enabled destination format, if required
             if (needsSelection)
-            {
                 for (final Tab destinationTab: this.destinationTabPane.getTabs ())
-                {
                     if (!destinationTab.isDisabled ())
                     {
                         this.destinationTabPane.getSelectionModel ().select (destinationTab);
                         break;
                     }
-                }
-            }
         });
     }
 
@@ -806,7 +802,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
     /**
      * Remove critical characters from all zone names.
-     * 
+     *
      * @param multisampleSource The multi-sample source
      */
     private static void ensureSafeSampleFileNames (final IMultisampleSource multisampleSource)
@@ -1066,7 +1062,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
                 final String libraryName = this.getCombinationLibraryName (this.collectedSources);
                 this.creators[selectedCreator].createLibrary (this.outputFolder, this.collectedSources, libraryName);
             }
-            catch (final IOException | RuntimeException ex)
+            catch (final IOException | RuntimeException | OutOfMemoryError ex)
             {
                 this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
             }

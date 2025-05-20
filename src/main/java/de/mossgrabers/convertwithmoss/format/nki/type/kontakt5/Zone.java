@@ -455,7 +455,7 @@ public class Zone
 
     /**
      * Get the sample size.
-     * 
+     *
      * @return The sample size
      */
     public long getSampleSize ()

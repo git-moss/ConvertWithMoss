@@ -36,7 +36,7 @@ public class Group
     private int                     fxIdxAmpSplitPoint;
     private int                     interpQuality;
     private int                     midiChannel;
-    private List<InternalModulator> internalModulators = new ArrayList<> ();
+    private final List<InternalModulator> internalModulators = new ArrayList<> ();
 
 
     /**
@@ -76,7 +76,6 @@ public class Group
     private void parseModulators (final List<KontaktPresetChunk> children) throws IOException
     {
         for (final KontaktPresetChunk childChunk: children)
-        {
             switch (childChunk.getId ())
             {
                 case KontaktPresetChunkID.PARAMETER_ARRAY_16:
@@ -91,7 +90,6 @@ public class Group
                     // Not used
                     break;
             }
-        }
     }
 
 
@@ -99,7 +97,7 @@ public class Group
     {
         for (final KontaktPresetChunk childChunk: children)
         {
-            int id = childChunk.getId ();
+            final int id = childChunk.getId ();
             if (id == KontaktPresetChunkID.PAR_INTERNAL_MOD || id == KontaktPresetChunkID.PAR_MOD_BASE)
             {
                 final InternalModulator internalModulator = new InternalModulator ();
@@ -308,7 +306,7 @@ public class Group
 
     /**
      * Get the internal modulators.
-     * 
+     *
      * @return The modulators
      */
     public List<InternalModulator> getInternalModulators ()

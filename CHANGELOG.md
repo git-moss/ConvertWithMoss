@@ -1,10 +1,13 @@
 # Changes
 
-## 12.2.3 (unreleased)
+## 13.0.0 (unreleased)
 
+* Rearranged the destination area of the user interface. There is now a new section which allows to switch between creating single patches, libraries containing multiple patches and multis which contain a certain configuration of patches (e.g. different MIDI channels). Output formats are filtered to the ones which support these options.
 * Decent Sampler
   * Fixed: Loops were not read from wave files when loop info was missing in Decent Sampler file.
   * Fixed: seqMode and seqPosition were falsely reported as not used.
+* SF2
+  * New: Added support to write as library (adds all found source-multi-samples into 1 sf2 file).
 
 ## 12.2.2
 

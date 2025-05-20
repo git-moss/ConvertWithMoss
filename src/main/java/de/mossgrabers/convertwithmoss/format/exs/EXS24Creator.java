@@ -98,7 +98,7 @@ public class EXS24Creator extends AbstractCreator
         final Map<String, File> writtenSamples = new HashMap<> ();
         for (final File sampleFile: this.writeSamples (subFolder, multisampleSource))
             writtenSamples.put (sampleFile.getName (), sampleFile);
-        storeMultisample (multisampleSource, multiFile, writtenSamples);
+        this.storeMultisample (multisampleSource, multiFile, writtenSamples);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }

@@ -226,7 +226,6 @@ public class AiffFileSampleData extends AbstractFileSampleData
     public AiffFile getAiffFile () throws IOException
     {
         if (this.aiffFile == null)
-        {
             if (this.zipFile == null)
                 this.aiffFile = new AiffFile (this.sampleFile);
             else
@@ -237,7 +236,6 @@ public class AiffFileSampleData extends AbstractFileSampleData
                     this.aiffFile.read (in);
                 }
             }
-        }
 
         return this.aiffFile;
     }

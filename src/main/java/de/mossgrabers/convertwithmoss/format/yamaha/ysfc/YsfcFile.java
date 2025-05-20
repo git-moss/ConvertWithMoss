@@ -60,7 +60,7 @@ public class YsfcFile
 
     /**
      * Default constructor.
-     * 
+     *
      * @param addPerformances Add performance chunks if true
      */
     public YsfcFile (final boolean addPerformances)
@@ -330,8 +330,8 @@ public class YsfcFile
         if (epfm != null && dpfm != null)
         {
             final List<YamahaYsfcEntry> epfmListChunks = epfm.getEntryListChunks ();
-            for (int i = 0; i < epfmListChunks.size (); i++)
-                epfmListChunks.get (i).setEntryID (this.maxEntryID++);
+            for (final YamahaYsfcEntry epfmListChunk: epfmListChunks)
+                epfmListChunk.setEntryID (this.maxEntryID++);
         }
         final List<YamahaYsfcEntry> ewfmListChunks = ewfm.getEntryListChunks ();
         final List<YamahaYsfcEntry> ewimListChunks = ewim.getEntryListChunks ();
@@ -420,7 +420,7 @@ public class YsfcFile
 
     /**
      * Fill a combination of Exxx and Dxxx.
-     * 
+     *
      * @param entryListID The ID of the entry list
      * @param dataListID The ID of the data list
      * @param entry The entry

@@ -690,7 +690,9 @@ public class Sf2File extends AbstractRIFFFile
         final ByteArrayOutputStream sampleOut = new ByteArrayOutputStream ();
         final ByteArrayOutputStream sample24Out = new ByteArrayOutputStream ();
         for (final Sf2Preset sf2Preset: this.presets)
-            for (int presetZoneIndex = 0; presetZoneIndex < sf2Preset.getZoneCount (); presetZoneIndex++)
+        {
+            final int numZones = sf2Preset.getZoneCount ();
+            for (int presetZoneIndex = 0; presetZoneIndex < numZones; presetZoneIndex++)
             {
                 final Sf2PresetZone zone = sf2Preset.getZone (presetZoneIndex);
                 final Sf2Instrument instrument = zone.getInstrument ();
@@ -701,6 +703,8 @@ public class Sf2File extends AbstractRIFFFile
                     sample24Out.writeBytes (sample.getSample24Data ());
                 }
             }
+        }
+
         // Fill data chunk
         final byte [] sampleData = sampleOut.toByteArray ();
         final byte [] sample24Data = sample24Out.toByteArray ();

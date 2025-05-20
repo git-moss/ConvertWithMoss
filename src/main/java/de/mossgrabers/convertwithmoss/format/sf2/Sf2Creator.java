@@ -9,8 +9,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -39,6 +41,7 @@ import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.InfoChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -72,34 +75,52 @@ public class Sf2Creator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
+    public boolean supportsLibraries ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "sf2");
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.storeMultisample (Collections.singletonList (multisampleSource), destinationFolder, sampleName);
+    }
 
-        storeMultisample (multisampleSource, multiFile);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    /** {@inheritDoc} */
+    @Override
+    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    {
+        this.storeMultisample (multisampleSources, destinationFolder, libraryName);
     }
 
 
     /**
      * Create all SF2 chunks and store the file.
      *
-     * @param multisampleSource The multi-sample source
-     * @param multiFile The file in which to store
+     * @param multisampleSources The multi-sample sources
+     * @param destinationFolder The folder into which to store the sf2 file
+     * @param name The name of the sf2 file without the extension
      * @throws IOException Could not store the file
      */
-    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile) throws IOException
+    private void storeMultisample (final List<IMultisampleSource> multisampleSources, final File destinationFolder, final String name) throws IOException
     {
+        final File multiFile = this.createUniqueFilename (destinationFolder, name, "sf2");
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+
         final Sf2File sf2File = new Sf2File ();
-        storeMetadata (multisampleSource, sf2File.getInfoChunk ());
+        storeMetadata (multisampleSources, sf2File.getInfoChunk (), name);
 
         // Create the preset
         final List<Sf2Preset> presets = sf2File.getPresets ();
-        final Sf2Preset sf2Preset = createSf2Preset (multisampleSource);
-        presets.add (sf2Preset);
+
+        final GlobalCounters globalcounters = new GlobalCounters ();
+
+        for (final IMultisampleSource multisampleSource: multisampleSources)
+            presets.add (this.createSf2Preset (multisampleSource, globalcounters, globalcounters.instrumentCounts));
 
         // Add the final empty preset
         final Sf2Preset finalPreset = new Sf2Preset ("EOP");
@@ -108,7 +129,7 @@ public class Sf2Creator extends AbstractCreator
         presets.add (finalPreset);
 
         for (final Sf2Preset preset: presets)
-            preset.updateCounts ();
+            preset.updateCounts (globalcounters.presetCounts);
 
         sf2File.createPresetDataChunks ();
 
@@ -116,18 +137,32 @@ public class Sf2Creator extends AbstractCreator
         {
             sf2File.write (out);
         }
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
     /**
      * Fill the info chunks with metadata.
      *
-     * @param multisampleSource The source which contains the metadata
+     * @param multisampleSources The source which contains the metadata
      * @param infoChunk The info chunk object which handles the different info-sub-chunks
+     * @param name The name to set
      */
-    private static void storeMetadata (final IMultisampleSource multisampleSource, final InfoChunk infoChunk)
+    private static void storeMetadata (final List<IMultisampleSource> multisampleSources, final InfoChunk infoChunk, final String name)
     {
-        final IMetadata metadata = multisampleSource.getMetadata ();
+        final Set<String> creators = new HashSet<> ();
+        final Set<String> descriptions = new HashSet<> ();
+        for (final IMultisampleSource multisampleSource: multisampleSources)
+        {
+            final IMetadata metadata = multisampleSource.getMetadata ();
+            final String creator = metadata.getCreator ();
+            if (!creator.isBlank ())
+                creators.add (creator);
+            final String description = metadata.getDescription ();
+            if (!description.isBlank ())
+                descriptions.add (description);
+        }
 
         // Version number
         infoChunk.addInfoField (RiffID.SF_IFIL_ID, new byte []
@@ -141,14 +176,14 @@ public class Sf2Creator extends AbstractCreator
         // Mandatory info fields
         // Wave-table sound engine
         infoChunk.addInfoTextField (RiffID.SF_ISNG_ID, "EMU8000", 256);
-        infoChunk.addInfoTextField (RiffID.INFO_INAM, StringUtils.fixASCII (multisampleSource.getName ()), 256);
+        infoChunk.addInfoTextField (RiffID.INFO_INAM, StringUtils.fixASCII (name), 256);
 
         // Optional info fields
-        infoChunk.addCreationDate (metadata.getCreationDateTime ());
-        final String creator = metadata.getCreator ();
+        infoChunk.addCreationDate (multisampleSources.get (0).getMetadata ().getCreationDateTime ());
+        final String creator = String.join (", ", creators);
         if (!creator.isBlank ())
             infoChunk.addInfoTextField (RiffID.INFO_IENG, StringUtils.fixASCII (creator), 256);
-        final String description = metadata.getDescription ();
+        final String description = String.join ("\n", descriptions);
         if (!description.isBlank ())
             infoChunk.addInfoTextField (RiffID.INFO_ICMT, StringUtils.fixASCII (description), 65536);
     }
@@ -158,15 +193,13 @@ public class Sf2Creator extends AbstractCreator
      * Create one SF2 preset for the multi-sample source.
      *
      * @param multisampleSource The multi-sample source
+     * @param globalcounters Contains all counters for numbering which are global to the sf2 file
      * @return The created SF2 preset
      * @throws IOException Could not create the preset
      */
-    private static Sf2Preset createSf2Preset (final IMultisampleSource multisampleSource) throws IOException
+    private Sf2Preset createSf2Preset (final IMultisampleSource multisampleSource, final GlobalCounters globalcounters, final Pair<Integer, Integer> counts) throws IOException
     {
-        int firstZoneIndex = 0;
-        int instrumentIndex = 0;
-        int sampleIndex = 0;
-        long sampleStartPosition = 0;
+        int writtenProgress = 0;
 
         // Note: If multiple sources might be combined into one SF2 in the future, the program
         // number needs to be set here as well as the first preset zone index
@@ -177,12 +210,17 @@ public class Sf2Creator extends AbstractCreator
         {
             final Sf2Instrument instrument = new Sf2Instrument ();
             instrument.setName (group.getName ());
-            final Sf2PresetZone presetZone = new Sf2PresetZone (instrument, instrumentIndex);
-            instrumentIndex++;
+            final Sf2PresetZone presetZone = new Sf2PresetZone (instrument, globalcounters.instrumentIndex);
+            globalcounters.instrumentIndex++;
             preset.addZone (presetZone);
 
             for (final ISampleZone sampleZone: group.getSampleZones ())
             {
+                this.notifier.log ("IDS_NOTIFY_PROGRESS");
+                writtenProgress++;
+                if (writtenProgress > 0 && writtenProgress % 80 == 0)
+                    this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+
                 // Ensure that the WAV is 16 or 24 bit
                 final WaveFile waveFile = AudioFileUtils.convertToWav (sampleZone.getSampleData (), DESTINATION_AUDIO_FORMAT);
                 final FormatChunk formatChunk = waveFile.getFormatChunk ();
@@ -209,30 +247,32 @@ public class Sf2Creator extends AbstractCreator
                 final List<byte []> sampleDataList = convertData (data, numSamples, is24Bit, isStereo);
                 if (isStereo)
                 {
-                    final Sf2SampleDescriptor leftDesc = createSf2SampleDescriptor (Sf2SampleDescriptor.LEFT, sampleIndex, sampleStartPosition, sampleZone, formatChunk, numSamples, sampleDataList.get (0), sampleDataList.get (1));
-                    sampleStartPosition += numSamples + PADDING;
-                    final Sf2SampleDescriptor rightDesc = createSf2SampleDescriptor (Sf2SampleDescriptor.RIGHT, sampleIndex + 1, sampleStartPosition, sampleZone, formatChunk, numSamples, sampleDataList.get (2), sampleDataList.get (3));
-                    sampleStartPosition += numSamples + PADDING;
-                    leftDesc.setLinkedSample (sampleIndex + 1);
-                    rightDesc.setLinkedSample (sampleIndex);
+                    final Sf2SampleDescriptor leftDesc = createSf2SampleDescriptor (Sf2SampleDescriptor.LEFT, globalcounters.sampleIndex, globalcounters.sampleStartPosition, sampleZone, formatChunk, numSamples, sampleDataList.get (0), sampleDataList.get (1));
+                    globalcounters.sampleStartPosition += numSamples + PADDING;
+                    final Sf2SampleDescriptor rightDesc = createSf2SampleDescriptor (Sf2SampleDescriptor.RIGHT, globalcounters.sampleIndex + 1, globalcounters.sampleStartPosition, sampleZone, formatChunk, numSamples, sampleDataList.get (2), sampleDataList.get (3));
+                    globalcounters.sampleStartPosition += numSamples + PADDING;
+                    leftDesc.setLinkedSample (globalcounters.sampleIndex + 1);
+                    rightDesc.setLinkedSample (globalcounters.sampleIndex);
                     createInstrumentZone (instrument, leftDesc, sampleZone);
                     createInstrumentZone (instrument, rightDesc, sampleZone);
-                    sampleIndex += 2;
+                    globalcounters.sampleIndex += 2;
                 }
                 else
                 {
-                    final Sf2SampleDescriptor desc = createSf2SampleDescriptor (Sf2SampleDescriptor.MONO, sampleIndex, sampleStartPosition, sampleZone, formatChunk, numSamples, sampleDataList.get (0), sampleDataList.get (1));
-                    sampleStartPosition += numSamples + PADDING;
+                    final Sf2SampleDescriptor desc = createSf2SampleDescriptor (Sf2SampleDescriptor.MONO, globalcounters.sampleIndex, globalcounters.sampleStartPosition, sampleZone, formatChunk, numSamples, sampleDataList.get (0), sampleDataList.get (1));
+                    globalcounters.sampleStartPosition += numSamples + PADDING;
                     createInstrumentZone (instrument, desc, sampleZone);
-                    sampleIndex++;
+                    globalcounters.sampleIndex++;
                 }
             }
 
-            instrument.setFirstZoneIndex (firstZoneIndex);
-            firstZoneIndex += instrument.getZoneCount ();
+            instrument.setFirstZoneIndex (globalcounters.firstZoneIndex);
+            globalcounters.firstZoneIndex += instrument.getZoneCount ();
 
-            instrument.updateCounts ();
+            instrument.updateCounts (counts);
         }
+
+        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
 
         return preset;
     }
@@ -475,5 +515,25 @@ public class Sf2Creator extends AbstractCreator
     {
         if (level >= 0)
             instrumentZone.addSignedGenerator (generator, convertEnvelopeVolume (level));
+    }
+
+
+    /** Contains all counters for numbering which are global to the sf2 file. */
+    private class GlobalCounters
+    {
+        int                          firstZoneIndex      = 0;
+        int                          instrumentIndex     = 0;
+        int                          sampleIndex         = 0;
+        long                         sampleStartPosition = 0;
+
+        final Pair<Integer, Integer> presetCounts;
+        final Pair<Integer, Integer> instrumentCounts;
+
+
+        GlobalCounters ()
+        {
+            this.presetCounts = new Pair<> (Integer.valueOf (0), Integer.valueOf (0));
+            this.instrumentCounts = new Pair<> (Integer.valueOf (0), Integer.valueOf (0));
+        }
     }
 }

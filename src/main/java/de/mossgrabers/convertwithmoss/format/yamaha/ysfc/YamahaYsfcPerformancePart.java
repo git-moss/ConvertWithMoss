@@ -77,7 +77,7 @@ public class YamahaYsfcPerformancePart
 
     /**
      * Set the category.
-     * 
+     *
      * @param categoryID THe category index in the range of [0..255]
      */
     public void setCategory (final int categoryID)
@@ -233,22 +233,19 @@ public class YamahaYsfcPerformancePart
 
     /**
      * Tries to find a common XA mode across all active elements.
-     * 
+     *
      * @return The common XA mode or 0 if they have different ones
      */
     public int getCommonXaMode ()
     {
         int xaMode = -1;
-        for (int i = 0; i < this.elements.size (); i++)
+        for (final YamahaYsfcPartElement element: this.elements)
         {
-            final YamahaYsfcPartElement element = this.elements.get (i);
             if (element.getElementSwitch () > 0)
-            {
                 if (xaMode == -1)
                     xaMode = element.getXaMode ();
                 else if (xaMode != element.getXaMode ())
                     return 0;
-            }
         }
         return xaMode;
     }

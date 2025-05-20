@@ -89,6 +89,14 @@ public class DecentSamplerCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
+    public boolean supportsLibraries ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public Node getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
@@ -134,14 +142,6 @@ public class DecentSamplerCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public boolean supportsLibraries ()
-    {
-        return true;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final List<PresetResult> results = this.create (destinationFolder, Collections.singletonList (multisampleSource), false);
@@ -155,13 +155,11 @@ public class DecentSamplerCreator extends AbstractCreator
             this.storeBundle (multiFile, Collections.singletonList (results.get (0)));
         }
         else
-        {
             for (final PresetResult presetResult: results)
             {
                 this.notifier.log ("IDS_NOTIFY_STORING", presetResult.dsPresetFile.getAbsolutePath ());
                 this.storePreset (destinationFolder, presetResult);
             }
-        }
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -171,7 +169,7 @@ public class DecentSamplerCreator extends AbstractCreator
     @Override
     public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
-        final List<PresetResult> results = create (destinationFolder, multisampleSources, true);
+        final List<PresetResult> results = this.create (destinationFolder, multisampleSources, true);
 
         final boolean isBundle = this.createBundleBox.isSelected ();
         final String extension = isBundle ? "dsbundle" : "dslibrary";

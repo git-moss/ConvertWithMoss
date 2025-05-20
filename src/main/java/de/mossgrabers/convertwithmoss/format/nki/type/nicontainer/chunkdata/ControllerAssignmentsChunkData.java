@@ -59,7 +59,7 @@ public class ControllerAssignmentsChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final ControllerAssignmentsChunkData other = (ControllerAssignmentsChunkData) obj;
         return Arrays.equals (this.allBytes, other.allBytes);
