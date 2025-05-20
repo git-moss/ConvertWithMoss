@@ -244,7 +244,7 @@ public class SoundinfoChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final SoundinfoChunkData other = (SoundinfoChunkData) obj;
         return Objects.equals (this.attributes, other.attributes) && Objects.equals (this.author, other.author) && Objects.equals (this.description, other.description) && Objects.equals (this.name, other.name) && Objects.equals (this.properties, other.properties) && Objects.equals (this.soundInfoVersionText, other.soundInfoVersionText) && Objects.equals (this.tags, other.tags) && Objects.equals (this.vendor, other.vendor) && this.versionMajor == other.versionMajor && this.versionMinor == other.versionMinor && this.versionPatch == other.versionPatch;

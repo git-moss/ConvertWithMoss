@@ -108,7 +108,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final AuthoringApplicationChunkData other = (AuthoringApplicationChunkData) obj;
         return this.application == other.application && Objects.equals (this.applicationVersion, other.applicationVersion) && this.isCompressed == other.isCompressed && this.unknown == other.unknown;

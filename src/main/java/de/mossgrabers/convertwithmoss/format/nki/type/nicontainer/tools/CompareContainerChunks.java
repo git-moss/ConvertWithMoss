@@ -30,7 +30,7 @@ public class CompareContainerChunks
 {
     /**
      * Compares all chunks of a container.
-     * 
+     *
      * @param args The absolute path to the file as the first argument
      */
     public static void main (final String [] args)
@@ -61,7 +61,7 @@ public class CompareContainerChunks
 
     private static void compare (final NIContainerItem niContainerItem1, final NIContainerItem niContainerItem2, final int level)
     {
-        int depth = level * 4;
+        final int depth = level * 4;
 
         NIContainerDataChunk dataChunk1 = niContainerItem1.getDataChunk ();
         NIContainerDataChunk dataChunk2 = niContainerItem2.getDataChunk ();
@@ -120,8 +120,8 @@ public class CompareContainerChunks
             else
                 System.out.println (StringUtils.padLeftSpaces ("* Domain: " + domainID1, depth));
 
-            int chunkTypeID1 = childItem1.getChunkTypeID ();
-            int chunkTypeID2 = childItem2.getChunkTypeID ();
+            final int chunkTypeID1 = childItem1.getChunkTypeID ();
+            final int chunkTypeID2 = childItem2.getChunkTypeID ();
             if (chunkTypeID1 != chunkTypeID2)
                 System.out.println (StringUtils.padLeftSpaces (String.format ("Different types: %s %s ", NIContainerChunkType.get (chunkTypeID1), NIContainerChunkType.get (chunkTypeID2)), depth));
             else
@@ -134,7 +134,7 @@ public class CompareContainerChunks
 
     private static void compareData (final IChunkData data1, final IChunkData data2, final int level)
     {
-        if (data1 instanceof SubTreeItemChunkData subTree1 && data2 instanceof SubTreeItemChunkData subTree2)
+        if (data1 instanceof final SubTreeItemChunkData subTree1 && data2 instanceof final SubTreeItemChunkData subTree2)
         {
             compare (subTree1.getSubTree (), subTree2.getSubTree (), level + 1);
             return;

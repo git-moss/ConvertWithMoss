@@ -149,7 +149,7 @@ public class EXS24File
 
     /**
      * Writes the EXS24 file to the given output stream.
-     * 
+     *
      * @param out The stream to write to
      * @param isBigEndian Write big-endian if true
      * @throws IOException Could not write the file

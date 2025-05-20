@@ -535,7 +535,7 @@ public class EXS24Parameters extends EXS24Object
 
     /**
      * Get the default value of the parameter.
-     * 
+     *
      * @param id The parameter ID for which to get the default value
      * @return The default value
      */
@@ -570,7 +570,7 @@ public class EXS24Parameters extends EXS24Object
 
     /**
      * Get all parameters.
-     * 
+     *
      * @return The parameters
      */
     public Map<Integer, Integer> getParams ()
@@ -635,7 +635,7 @@ public class EXS24Parameters extends EXS24Object
         int writtenParams = 0;
         for (final Map.Entry<Integer, Integer> entry: entrySet)
         {
-            int key = entry.getKey ().intValue ();
+            final int key = entry.getKey ().intValue ();
             if (key <= 0xFF)
             {
                 paramIDOutputStream.write (key);
@@ -655,7 +655,7 @@ public class EXS24Parameters extends EXS24Object
         final ByteArrayOutputStream newParamValueOutputStream = new ByteArrayOutputStream ();
         for (final Map.Entry<Integer, Integer> entry: entrySet)
         {
-            int key = entry.getKey ().intValue ();
+            final int key = entry.getKey ().intValue ();
             if (key > 0xFF)
             {
                 StreamUtils.writeUnsigned16 (newParamIDOutputStream, key, isBigEndian);

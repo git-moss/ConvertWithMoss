@@ -927,7 +927,7 @@ public class StreamUtils
     /**
      * Reads a certain number of bytes from the input stream. The number of bytes is determined from
      * the first 4 bytes (32-bit value).
-     * 
+     *
      * @param in The input stream to read from
      * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
      * @return The data block without the size bytes
@@ -943,7 +943,7 @@ public class StreamUtils
     /**
      * Reads a certain number of bytes from the input stream. The number of bytes is determined from
      * the first 4 bytes (32-bit value).
-     * 
+     *
      * @param out The output stream to write to
      * @param data The data block without the size bytes
      * @param isBigEndian True if bytes are stored big-endian otherwise little-endian

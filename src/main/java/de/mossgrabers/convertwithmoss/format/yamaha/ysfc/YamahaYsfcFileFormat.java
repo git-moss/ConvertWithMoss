@@ -35,7 +35,7 @@ public enum YamahaYsfcFileFormat
 
     /**
      * Constructor.
-     * 
+     *
      * @param title The title of the workstation model
      * @param maxVersion The maximum file format version number for this device in the form of x.x.x
      * @param endingUser The file ending for user banks of that type
@@ -52,7 +52,7 @@ public enum YamahaYsfcFileFormat
 
     /**
      * Get the title.
-     * 
+     *
      * @return The title
      */
     public String getTitle ()
@@ -63,7 +63,7 @@ public enum YamahaYsfcFileFormat
 
     /**
      * Get the maximum file format version number of this workstation model.
-     * 
+     *
      * @return The maximum version number in the form of x.x.x
      */
     public String getMaxVersion ()
@@ -74,7 +74,7 @@ public enum YamahaYsfcFileFormat
 
     /**
      * Get the file ending for libraries or user banks of that type.
-     * 
+     *
      * @param isUser If true return the ending for user banks otherwise for libraries
      * @return The file ending
      */
@@ -86,7 +86,7 @@ public enum YamahaYsfcFileFormat
 
     /**
      * Get the file ending for libraries of that type.
-     * 
+     *
      * @return The file ending for libraries of that type
      */
     public String getEndingLibrary ()
@@ -97,18 +97,18 @@ public enum YamahaYsfcFileFormat
 
     /**
      * Returns true if this is a version 1.0.x version.
-     * 
+     *
      * @return True if version 1
      */
     public boolean isVersion1 ()
     {
-        return this.isMotif () || isMOXF ();
+        return this.isMotif () || this.isMOXF ();
     }
 
 
     /**
      * Returns true if this is a version 1.0.x version.
-     * 
+     *
      * @return True if version 1
      */
     public boolean isMOXF ()
@@ -119,7 +119,7 @@ public enum YamahaYsfcFileFormat
 
     /**
      * Returns true if this is a Motif 1.0.x version.
-     * 
+     *
      * @return True if Motif version
      */
     public boolean isMotif ()
@@ -130,7 +130,7 @@ public enum YamahaYsfcFileFormat
 
     /**
      * Get the constant from the 3 digit version number.
-     * 
+     *
      * @param version The version, e.g. version 4.0.5 is 405.
      * @return The enumeration constant
      */

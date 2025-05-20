@@ -275,7 +275,7 @@ public class MathUtils
      * Normalizes an integer to the range of [-1..1] with different amounts in the negative and
      * positive direction. E.g. a value might be in the range of [-64..+63] but is stored as
      * [0..127]. The method might then be called with normalizeIntegerRange(value,-64,63,64).
-     * 
+     *
      * @param value The value to normalize
      * @param negativeMinimum The negative minimum of the range
      * @param positiveMaximum The negative maximum of the range
@@ -291,7 +291,7 @@ public class MathUtils
     /**
      * Normalizes an integer to the range of [-1..1] with different amounts in the negative and
      * positive direction.
-     * 
+     *
      * @param value The integer value to normalize
      * @param negativeMinimum The negative minimum of the integer range
      * @param positiveMaximum The negative maximum of the integer range
@@ -299,7 +299,7 @@ public class MathUtils
      */
     public static double normalizeIntegerRange (final int value, final int negativeMinimum, final int positiveMaximum)
     {
-        double result = value < 0 ? -(value / (double) negativeMinimum) : value / (double) positiveMaximum;
+        final double result = value < 0 ? -(value / (double) negativeMinimum) : value / (double) positiveMaximum;
         return Math.clamp (result, -1, 1);
     }
 
@@ -307,7 +307,7 @@ public class MathUtils
     /**
      * De-normalizes a double in the range of [-1..1] to an integer range with different amounts in
      * the negative and positive direction.
-     * 
+     *
      * @param value The value to de-normalize
      * @param negativeMinimum The negative minimum of the integer range
      * @param positiveMaximum The negative maximum of the integer range
@@ -323,7 +323,7 @@ public class MathUtils
     /**
      * De-normalizes a double in the range of [-1..1] to an integer range with different amounts in
      * the negative and positive direction.
-     * 
+     *
      * @param value The double value to de-normalize
      * @param negativeMinimum The negative minimum of the integer range
      * @param positiveMaximum The negative maximum of the integer range

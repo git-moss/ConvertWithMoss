@@ -77,7 +77,7 @@ public class BNISoundHeaderChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final BNISoundHeaderChunkData other = (BNISoundHeaderChunkData) obj;
         return Arrays.equals (this.restBytes, other.restBytes) && Objects.equals (this.timestamp, other.timestamp) && Arrays.equals (this.unknownBytes, other.unknownBytes) && Arrays.equals (this.unknownBytes2, other.unknownBytes2) && Arrays.equals (this.uuid, other.uuid);

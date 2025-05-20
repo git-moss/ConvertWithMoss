@@ -384,7 +384,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     /**
      * Check the type of the source sample for compatibility and handle them accordingly. This
      * method supports WAV, AIF, AIFF, OGG and FLAC files. The file is compressed in a ZIP file.
-     * 
+     *
      * @param zipFile The ZIP file which contains the sample file
      * @param sampleFile The sample file for which to create sample metadata
      * @return The matching sample metadata, support is WAV and AIFF
@@ -565,7 +565,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     /**
      * If the sample is not found in the given folder, a search is started from one folder up and
      * search recursively for the wave file.
-     * 
+     *
      * @param notifier Where to write logging info to
      * @param folder The folder where the sample is expected
      * @param previousFolder The folder in which the previous sample was found, might be null

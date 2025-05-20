@@ -105,24 +105,24 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     // A = All, U = User, L = Library
     private static final String []                 ENDINGS                        =
     {
-        ".x0a",                                                                                                                                                                                                                                           // Motif
-                                                                                                                                                                                                                                                          // XS
+        ".x0a",                                                                                                                                                                                                                                                   // Motif
+                                                                                                                                                                                                                                                                  // XS
         ".x0w",
-        ".x3a",                                                                                                                                                                                                                                           // Motif
-                                                                                                                                                                                                                                                          // XF
+        ".x3a",                                                                                                                                                                                                                                                   // Motif
+                                                                                                                                                                                                                                                                  // XF
         ".x3w",
-        ".x6a",                                                                                                                                                                                                                                           // MOXF
+        ".x6a",                                                                                                                                                                                                                                                   // MOXF
         ".x6w",
-        ".x7u",                                                                                                                                                                                                                                           // Montage
+        ".x7u",                                                                                                                                                                                                                                                   // Montage
         ".x7l",
         ".x7a",
-        ".x8u",                                                                                                                                                                                                                                           // MODX
-                                                                                                                                                                                                                                                          // /
-                                                                                                                                                                                                                                                          // MODX+
+        ".x8u",                                                                                                                                                                                                                                                   // MODX
+                                                                                                                                                                                                                                                                  // /
+                                                                                                                                                                                                                                                                  // MODX+
         ".x8l",
         ".x8a",
-        ".y2l",                                                                                                                                                                                                                                           // Montage
-                                                                                                                                                                                                                                                          // M
+        ".y2l",                                                                                                                                                                                                                                                   // Montage
+                                                                                                                                                                                                                                                                  // M
         ".y2u"
     };
     private static final int                       SAMPLE_RESOLUTION              = 16;
@@ -593,7 +593,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         final int pegDecay1Time = element.getPegDecay1Time ();
         final int pegDecay2Time = element.getPegDecay2Time ();
         final int pegReleaseTime = element.getPegReleaseTime ();
-        final boolean hasNoEnvelope = (pegHoldLevel == 128 && pegAttackLevel == 128 && pegDecay1Level == 128 && pegDecay2Level == 128) || (pegHoldTime == 0 && pegAttackTime == 0 && pegDecay1Time == 0 && pegDecay2Time == 0 && pegReleaseTime == 0);
+        final boolean hasNoEnvelope = pegHoldLevel == 128 && pegAttackLevel == 128 && pegDecay1Level == 128 && pegDecay2Level == 128 || pegHoldTime == 0 && pegAttackTime == 0 && pegDecay1Time == 0 && pegDecay2Time == 0 && pegReleaseTime == 0;
         if (!hasNoEnvelope)
         {
             final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchModulator ();

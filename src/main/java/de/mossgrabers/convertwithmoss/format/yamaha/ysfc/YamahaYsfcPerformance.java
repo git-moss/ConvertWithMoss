@@ -46,7 +46,7 @@ public class YamahaYsfcPerformance implements IStreamable
 
     /**
      * Constructor which fills the performance from the given data array.
-     * 
+     *
      * @param data The data block (DPFM without the 4 size bytes)
      * @param version The version to use
      * @throws IOException Could not read the default parameters for the requested version
@@ -76,7 +76,7 @@ public class YamahaYsfcPerformance implements IStreamable
 
     /**
      * Get the name of the performance.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -87,7 +87,7 @@ public class YamahaYsfcPerformance implements IStreamable
 
     /**
      * Set the name of the performance.
-     * 
+     *
      * @param name The name
      */
     public void setName (final String name)
@@ -98,7 +98,7 @@ public class YamahaYsfcPerformance implements IStreamable
 
     /**
      * Get all parts of the performance.
-     * 
+     *
      * @return The parts
      */
     public List<YamahaYsfcPerformancePart> getParts ()

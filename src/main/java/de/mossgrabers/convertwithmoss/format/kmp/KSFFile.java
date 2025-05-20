@@ -358,13 +358,13 @@ public class KSFFile
     private static double boostDecibels (final double originalDb, final double boostDb)
     {
         // Convert original dB to linear scale
-        double originalLinear = Math.pow (10, originalDb / 10);
+        final double originalLinear = Math.pow (10, originalDb / 10);
 
         // Convert boost dB to linear scale
-        double boostLinear = Math.pow (10, boostDb / 10);
+        final double boostLinear = Math.pow (10, boostDb / 10);
 
         // Add the linear values
-        double newLinear = originalLinear + boostLinear;
+        final double newLinear = originalLinear + boostLinear;
 
         // Convert back to dB
         return 10 * Math.log10 (newLinear);

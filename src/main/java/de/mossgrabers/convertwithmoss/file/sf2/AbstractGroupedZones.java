@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.mossgrabers.tools.Pair;
+
 
 /**
  * Base class for a group of SF2 zones.
@@ -125,16 +127,19 @@ public abstract class AbstractGroupedZones<T extends AbstractZone>
 
     /**
      * Update all generator/modulator indices and counts of the zones.
+     *
+     * @param counts Counter for the first generator and modulator
      */
-    public void updateCounts ()
+    public void updateCounts (final Pair<Integer, Integer> counts)
     {
-        int firstGenerator = 0;
-        int firstModulator = 0;
+        int firstGenerator = counts.getKey ().intValue ();
+        int firstModulator = counts.getValue ().intValue ();
         for (final T zone: this.zones)
         {
             zone.updateCounts (firstGenerator, firstModulator);
             firstGenerator += zone.getNumberOfGenerators ();
             firstModulator += zone.getNumberOfModulators ();
         }
+        counts.set (Integer.valueOf (firstGenerator), Integer.valueOf (firstModulator));
     }
 }

@@ -408,7 +408,7 @@ public class YamahaYsfcCreator extends AbstractCreator
 
     /**
      * If there are more than 8 groups all sample zones of the groups 9 to N are added to group 8.
-     * 
+     *
      * @param groups The groups to limit
      * @return A maximum of 8 groups
      */
@@ -421,10 +421,8 @@ public class YamahaYsfcCreator extends AbstractCreator
             limitedGroups.add (groups.get (i));
         final IGroup lastGroup = limitedGroups.get (7);
         for (int i = 8; i < groups.size (); i++)
-        {
             for (final ISampleZone zone: groups.get (i).getSampleZones ())
                 lastGroup.addSampleZone (zone);
-        }
         return limitedGroups;
     }
 
@@ -511,8 +509,8 @@ public class YamahaYsfcCreator extends AbstractCreator
         performanceEntry.setFlags (flagsOutput.toByteArray ());
 
         final ByteArrayOutputStream dataOutputStream = new ByteArrayOutputStream ();
-        for (int i = 0; i < waveReferences.length; i++)
-            StreamUtils.writeUnsigned32 (dataOutputStream, waveReferences[i], true);
+        for (final int element: waveReferences)
+            StreamUtils.writeUnsigned32 (dataOutputStream, element, true);
         performanceEntry.setAdditionalData (dataOutputStream.toByteArray ());
         return performanceEntry;
     }

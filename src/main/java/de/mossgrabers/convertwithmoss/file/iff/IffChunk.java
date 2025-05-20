@@ -46,6 +46,19 @@ public class IffChunk
 
 
     /**
+     * Get the size of the data.
+     *
+     * @return The size in bytes
+     */
+    public int getDataSize ()
+    {
+        if (this.data == null)
+            throw new NoDataInChunkException ("Chunk contains no data.");
+        return this.data.length;
+    }
+
+
+    /**
      * Gets the data.
      *
      * @return The data array. The array will not be cloned for performance reasons and is expected

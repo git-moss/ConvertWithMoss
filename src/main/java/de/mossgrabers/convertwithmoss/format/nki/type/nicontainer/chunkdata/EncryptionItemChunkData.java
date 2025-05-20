@@ -55,7 +55,7 @@ public class EncryptionItemChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final EncryptionItemChunkData other = (EncryptionItemChunkData) obj;
         return Arrays.equals (this.unknownData, other.unknownData);

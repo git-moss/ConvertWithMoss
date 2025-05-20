@@ -135,7 +135,7 @@ public class KontaktPresetChunk
 
     /**
      * Reads some preset chunks.
-     * 
+     *
      * @param in The stream to read from
      * @param size The number of preset chunks to read
      * @throws IOException Could not read
@@ -143,14 +143,13 @@ public class KontaktPresetChunk
     public void readFixedArray (final InputStream in, final int size) throws IOException
     {
         // TODO
-        int isXXXX = in.read ();
+        final int isXXXX = in.read ();
         // System.out.println ("isXXXX: " + isXXXX);
 
-        int version = StreamUtils.readUnsigned16 (in, false);
+        final int version = StreamUtils.readUnsigned16 (in, false);
         // check for 0x10, 0x11, 0x12, 0x13
 
         for (int i = 0; i < size; i++)
-        {
             if (in.read () > 0)
             {
                 final KontaktPresetChunk child = new KontaktPresetChunk ();
@@ -160,7 +159,6 @@ public class KontaktPresetChunk
                 child.publicData = in.readNBytes (dataSize);
                 this.children.add (child);
             }
-        }
     }
 
 
@@ -291,7 +289,7 @@ public class KontaktPresetChunk
 
     /**
      * Set the public data.
-     * 
+     *
      * @param publicData The data
      */
     public void setPublicData (final byte [] publicData)
@@ -302,7 +300,7 @@ public class KontaktPresetChunk
 
     /**
      * Set the public data.
-     * 
+     *
      * @param privateData The data
      */
     public void setPrivateData (final byte [] privateData)
@@ -335,7 +333,7 @@ public class KontaktPresetChunk
 
     /**
      * Set the version.
-     * 
+     *
      * @param version The version
      */
     public void setVersion (final int version)

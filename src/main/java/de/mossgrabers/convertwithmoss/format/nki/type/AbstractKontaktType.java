@@ -74,7 +74,7 @@ public abstract class AbstractKontaktType implements IKontaktFormat
     {
         setMetadata (multiSample, program, parts);
 
-        final List<File> files = lookupFiles (filePaths, multiSample.getSourceFile ().getParent ());
+        final List<File> files = this.lookupFiles (filePaths, multiSample.getSourceFile ().getParent ());
         final Map<Integer, Pair<IGroup, Group>> indexedGroups = createGroups (program);
         for (final Zone kontaktZone: program.getZones ())
         {
@@ -121,7 +121,7 @@ public abstract class AbstractKontaktType implements IKontaktFormat
 
             // TODO Fill missing info, when understood where it is stored
             // Bend Up / Down, Filter
-            IFilter filter = null;
+            final IFilter filter = null;
 
             // Set amplitude and pitch modulator
             for (final InternalModulator modulator: kontaktGroup.getInternalModulators ())

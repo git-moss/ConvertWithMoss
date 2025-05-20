@@ -52,7 +52,7 @@ public class UnusedChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final UnusedChunkData other = (UnusedChunkData) obj;
         return Arrays.equals (this.allBytes, other.allBytes);

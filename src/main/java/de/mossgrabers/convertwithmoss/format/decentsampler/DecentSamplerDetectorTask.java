@@ -393,7 +393,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
             this.checkAttributes (DecentSamplerTag.SAMPLE, sampleElement.getAttributes (), DecentSamplerTag.getAttributes (DecentSamplerTag.SAMPLE));
             this.checkChildTags (DecentSamplerTag.SAMPLE, DecentSamplerTag.SAMPLE_TAGS, XMLUtils.getChildElements (sampleElement));
 
-            final Optional<DefaultSampleZone> optSampleZone = createSampleZone (basePath, libraryFile, sampleElement);
+            final Optional<DefaultSampleZone> optSampleZone = this.createSampleZone (basePath, libraryFile, sampleElement);
             if (optSampleZone.isEmpty ())
                 continue;
 
@@ -531,7 +531,7 @@ public class DecentSamplerDetectorTask extends AbstractDetectorTask
 
     /**
      * Get a time value. Unit is supposed to be in seconds but it sounds more like double the time.
-     * 
+     *
      * @param key The key for the time attribute
      * @return The time in seconds (multiplied by 2)
      */

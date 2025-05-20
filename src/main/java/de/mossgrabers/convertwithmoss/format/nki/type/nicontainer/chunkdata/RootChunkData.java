@@ -135,7 +135,7 @@ public class RootChunkData extends AbstractChunkData
     {
         if (this == obj)
             return true;
-        if ((obj == null) || (this.getClass () != obj.getClass ()))
+        if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final RootChunkData other = (RootChunkData) obj;
         return this.majorVersion == other.majorVersion && this.minorVersion == other.minorVersion && this.patchVersion == other.patchVersion && this.repositoryMagic == other.repositoryMagic && this.repositoryType == other.repositoryType && Arrays.equals (this.rest, other.rest);

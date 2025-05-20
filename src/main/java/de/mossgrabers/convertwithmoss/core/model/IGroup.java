@@ -77,7 +77,7 @@ public interface IGroup
      * If all zones in this group are set to play round-robin and contain the same one and only
      * sequence position, it is considered that round-robin happens on a group-level. This means
      * e.g. 3 groups are played round-robin.
-     * 
+     *
      * @return True if round-robin happens on a group-level
      */
     default boolean isGroupRoundRobin ()

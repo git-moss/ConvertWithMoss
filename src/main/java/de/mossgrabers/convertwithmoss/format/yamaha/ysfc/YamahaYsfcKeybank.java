@@ -45,7 +45,7 @@ public class YamahaYsfcKeybank implements IStreamable
 
     /**
      * Default constructor.
-     * 
+     *
      * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      */
     public YamahaYsfcKeybank (final YamahaYsfcFileFormat version)

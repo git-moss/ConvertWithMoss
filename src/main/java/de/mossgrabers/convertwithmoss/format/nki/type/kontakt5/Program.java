@@ -549,7 +549,7 @@ public class Program
 
     /**
      * Get all zones.
-     * 
+     *
      * @return The zones
      */
     public List<Zone> getZones ()
@@ -560,7 +560,7 @@ public class Program
 
     /**
      * Get the volume of the instrument.
-     * 
+     *
      * @return The volume in the range of [0..1]
      */
     public float getInstrumentVolume ()
@@ -571,7 +571,7 @@ public class Program
 
     /**
      * Set the volume of the instrument.
-     * 
+     *
      * @param instrumentVolume The volume in the range of [0..1]
      */
     public void setInstrumentVolume (final float instrumentVolume)
@@ -582,7 +582,7 @@ public class Program
 
     /**
      * Get the instruments panning.
-     * 
+     *
      * @return The panning in the range of [-1..1]
      */
     public float getInstrumentPan ()
@@ -593,7 +593,7 @@ public class Program
 
     /**
      * Set the instruments panning.
-     * 
+     *
      * @param instrumentPan The panning in the range of [-1..1]
      */
     public void setInstrumentPan (final float instrumentPan)
@@ -604,7 +604,7 @@ public class Program
 
     /**
      * Get the instruments tuning.
-     * 
+     *
      * @return The tuning in the range of [0..1]
      */
     public float getInstrumentTune ()
@@ -615,7 +615,7 @@ public class Program
 
     /**
      * Set the instruments tuning.
-     * 
+     *
      * @param instrumentTune The tuning in the range of [0..1]
      */
     public void setInstrumentTune (final float instrumentTune)
@@ -626,7 +626,7 @@ public class Program
 
     /**
      * Get the instruments author.
-     * 
+     *
      * @return The author
      */
     public String getInstrumentAuthor ()
@@ -637,7 +637,7 @@ public class Program
 
     /**
      * Set the instruments author.
-     * 
+     *
      * @param instrumentAuthor The author
      */
     public void setInstrumentAuthor (final String instrumentAuthor)
@@ -648,7 +648,7 @@ public class Program
 
     /**
      * Get the instruments URL.
-     * 
+     *
      * @return The URL
      */
     public String getInstrumentURL ()
@@ -659,7 +659,7 @@ public class Program
 
     /**
      * Set the instruments URL.
-     * 
+     *
      * @param instrumentURL The URL
      */
     public void setInstrumentURL (final String instrumentURL)
@@ -670,7 +670,7 @@ public class Program
 
     /**
      * Get the instruments icon name.
-     * 
+     *
      * @return The icon name
      */
     public String getInstrumentIconName ()
@@ -681,7 +681,7 @@ public class Program
 
     /**
      * Get the instruments icon name.
-     * 
+     *
      * @param instrumentIconName The icon name
      */
     public void setInstrumentIconName (final String instrumentIconName)
@@ -692,7 +692,7 @@ public class Program
 
     /**
      * Get all groups.
-     * 
+     *
      * @return The groups
      */
     public List<Group> getGroups ()

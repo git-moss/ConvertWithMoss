@@ -20,7 +20,7 @@ public class DumpEntryHeaders
 {
     /**
      * Dump all entry headers of the given file
-     * 
+     *
      * @param args The absolute path to the file as the first argument
      */
     public static void main (final String [] args)
