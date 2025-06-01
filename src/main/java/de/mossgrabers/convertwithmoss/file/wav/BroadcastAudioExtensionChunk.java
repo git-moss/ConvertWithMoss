@@ -11,7 +11,8 @@ import java.util.Date;
 import java.util.Locale;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 import de.mossgrabers.tools.StringUtils;
 
@@ -21,7 +22,7 @@ import de.mossgrabers.tools.StringUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class BroadcastAudioExtensionChunk extends RIFFChunk
+public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
 {
     // Not fully correct; last field has variable size (note counted in this value)
     private static final int       CHUNK_SIZE          = 602;
@@ -35,7 +36,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public BroadcastAudioExtensionChunk ()
     {
-        super (RiffID.BEXT_ID, new byte [CHUNK_SIZE], CHUNK_SIZE);
+        super (RiffID.BEXT_ID, CHUNK_SIZE);
     }
 
 
@@ -45,9 +46,9 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      * @param chunk The RIFF chunk which contains the data
      * @throws ParseException Length of data does not match the expected chunk size
      */
-    public BroadcastAudioExtensionChunk (final RIFFChunk chunk) throws ParseException
+    public BroadcastAudioExtensionChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.BEXT_ID, chunk.getData (), CHUNK_SIZE);
+        super (RiffID.BEXT_ID, chunk);
     }
 
 
@@ -62,7 +63,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public String getDescription ()
     {
-        return this.getNullTerminatedString (0, 256, "");
+        return this.rawRiffChunk.getNullTerminatedString (0, 256, "");
     }
 
 
@@ -73,7 +74,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public void setDescription (final String description)
     {
-        this.setNullTerminatedString (0, 256, StringUtils.fixASCII (description));
+        this.rawRiffChunk.setNullTerminatedString (0, 256, StringUtils.fixASCII (description));
     }
 
 
@@ -86,7 +87,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public String getOriginator ()
     {
-        return this.getNullTerminatedString (256, 32, "");
+        return this.rawRiffChunk.getNullTerminatedString (256, 32, "");
     }
 
 
@@ -97,7 +98,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public void setOriginator (final String originator)
     {
-        this.setNullTerminatedString (256, 32, StringUtils.fixASCII (originator));
+        this.rawRiffChunk.setNullTerminatedString (256, 32, StringUtils.fixASCII (originator));
     }
 
 
@@ -110,7 +111,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public String getOriginatorReference ()
     {
-        return this.getNullTerminatedString (288, 32, "");
+        return this.rawRiffChunk.getNullTerminatedString (288, 32, "");
     }
 
 
@@ -121,8 +122,8 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public void setOriginationDateTime (final Date originationDateTime)
     {
-        this.setNullTerminatedString (320, 10, this.simpleDateFormatter.format (originationDateTime));
-        this.setNullTerminatedString (330, 8, this.simpleTimeFormatter.format (originationDateTime));
+        this.rawRiffChunk.setNullTerminatedString (320, 10, this.simpleDateFormatter.format (originationDateTime));
+        this.rawRiffChunk.setNullTerminatedString (330, 8, this.simpleTimeFormatter.format (originationDateTime));
     }
 
 
@@ -171,7 +172,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public String getOriginationDate ()
     {
-        return this.getNullTerminatedString (320, 10, "");
+        return this.rawRiffChunk.getNullTerminatedString (320, 10, "");
     }
 
 
@@ -186,7 +187,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public String getOriginationTime ()
     {
-        return this.getNullTerminatedString (330, 8, "");
+        return this.rawRiffChunk.getNullTerminatedString (330, 8, "");
     }
 
 
@@ -199,7 +200,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public int getTimeReference ()
     {
-        return (this.getFourBytesAsInt (342) << 32) + this.getFourBytesAsInt (338);
+        return (this.rawRiffChunk.getFourBytesAsInt (342) << 32) + this.rawRiffChunk.getFourBytesAsInt (338);
     }
 
 
@@ -212,7 +213,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public int getVersion ()
     {
-        return this.getTwoBytesAsInt (346);
+        return this.rawRiffChunk.getTwoBytesAsInt (346);
     }
 
 
@@ -226,7 +227,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
     public byte [] getUMID ()
     {
         final byte [] umid = new byte [64];
-        System.arraycopy (this.getData (), 348, umid, 0, 64);
+        System.arraycopy (this.rawRiffChunk.getData (), 348, umid, 0, 64);
         return umid;
     }
 
@@ -239,7 +240,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public int getLoudnessValue ()
     {
-        return this.getTwoBytesAsInt (412);
+        return this.rawRiffChunk.getTwoBytesAsInt (412);
     }
 
 
@@ -250,7 +251,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public int getLoudnessRange ()
     {
-        return this.getTwoBytesAsInt (414);
+        return this.rawRiffChunk.getTwoBytesAsInt (414);
     }
 
 
@@ -262,7 +263,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public int getMaxTruePeakLevel ()
     {
-        return this.getTwoBytesAsInt (416);
+        return this.rawRiffChunk.getTwoBytesAsInt (416);
     }
 
 
@@ -274,7 +275,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public int getMaxMomentaryLoudness ()
     {
-        return this.getTwoBytesAsInt (418);
+        return this.rawRiffChunk.getTwoBytesAsInt (418);
     }
 
 
@@ -286,7 +287,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public int getMaxShortTermLoudness ()
     {
-        return this.getTwoBytesAsInt (420);
+        return this.rawRiffChunk.getTwoBytesAsInt (420);
     }
 
 
@@ -299,7 +300,7 @@ public class BroadcastAudioExtensionChunk extends RIFFChunk
      */
     public String getCodingHistory ()
     {
-        final byte [] data = this.getData ();
+        final byte [] data = this.rawRiffChunk.getData ();
         final int offset = 422 + 180;
         return new String (data, offset, data.length - offset);
     }

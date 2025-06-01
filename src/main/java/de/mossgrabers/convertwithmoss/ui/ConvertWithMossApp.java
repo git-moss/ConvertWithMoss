@@ -167,7 +167,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private FileWriter                     logWriter;
     private boolean                        combineWithPreviousMessage          = false;
     private TextField                      combinationFilename;
-    private final Map<Tab, ICreator>             creatorTabs                         = new HashMap<> ();
+    private final Map<Tab, ICreator>       creatorTabs                         = new HashMap<> ();
 
 
     /**
@@ -1066,8 +1066,6 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             {
                 this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
             }
-
-            return;
         }
 
         this.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");

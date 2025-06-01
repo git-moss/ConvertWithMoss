@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -77,7 +77,7 @@ public class Sf2SampleDescriptor
      * @param chunk The chunk to read
      * @throws ParseException Error parsing the values
      */
-    public void readHeader (final int offset, final RIFFChunk chunk) throws ParseException
+    public void readHeader (final int offset, final RawRIFFChunk chunk) throws ParseException
     {
         final byte [] data = chunk.getData ();
 

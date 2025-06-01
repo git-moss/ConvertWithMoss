@@ -4,7 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -13,7 +15,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  *
  * @author Jürgen Moßgraber
  */
-public class InstrumentChunk extends RIFFChunk
+public class InstrumentChunk extends AbstractSpecificRIFFChunk
 {
     private static final int CHUNK_SIZE = 7;
 
@@ -23,7 +25,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public InstrumentChunk ()
     {
-        super (RiffID.INST_ID, new byte [CHUNK_SIZE], CHUNK_SIZE);
+        super (RiffID.INST_ID, CHUNK_SIZE);
     }
 
 
@@ -31,10 +33,12 @@ public class InstrumentChunk extends RIFFChunk
      * Constructor.
      *
      * @param chunk The RIFF chunk which contains the data
+     * @throws ParseException The raw chunk is not of the specific type or the length of data does
+     *             not match the expected chunk size
      */
-    public InstrumentChunk (final RIFFChunk chunk)
+    public InstrumentChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.INST_ID, chunk.getData (), CHUNK_SIZE);
+        super (RiffID.INST_ID, chunk);
     }
 
 
@@ -46,7 +50,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public int getUnshiftedNote ()
     {
-        return this.getByteAsUnsignedInt (0x00);
+        return this.rawRiffChunk.getByteAsUnsignedInt (0x00);
     }
 
 
@@ -58,7 +62,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public void setUnshiftedNote (final int unshiftedNote)
     {
-        this.setUnsignedIntAsByte (0x00, unshiftedNote);
+        this.rawRiffChunk.setUnsignedIntAsByte (0x00, unshiftedNote);
     }
 
 
@@ -71,7 +75,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public int getFineTune ()
     {
-        return this.getByteAsSignedInt (0x01);
+        return this.rawRiffChunk.getByteAsSignedInt (0x01);
     }
 
 
@@ -84,7 +88,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public void setFineTune (final int fineTune)
     {
-        this.setSignedIntAsByte (0x01, fineTune);
+        this.rawRiffChunk.setSignedIntAsByte (0x01, fineTune);
     }
 
 
@@ -97,7 +101,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public int getGain ()
     {
-        return this.getByteAsSignedInt (0x02);
+        return this.rawRiffChunk.getByteAsSignedInt (0x02);
     }
 
 
@@ -110,7 +114,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public void setGain (final int gain)
     {
-        this.setSignedIntAsByte (0x02, gain);
+        this.rawRiffChunk.setSignedIntAsByte (0x02, gain);
     }
 
 
@@ -121,7 +125,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public int getLowNote ()
     {
-        return this.getByteAsUnsignedInt (0x03);
+        return this.rawRiffChunk.getByteAsUnsignedInt (0x03);
     }
 
 
@@ -132,7 +136,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public void setLowNote (final int lowNote)
     {
-        this.setUnsignedIntAsByte (0x03, lowNote);
+        this.rawRiffChunk.setUnsignedIntAsByte (0x03, lowNote);
     }
 
 
@@ -143,7 +147,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public int getHighNote ()
     {
-        return this.getByteAsUnsignedInt (0x04);
+        return this.rawRiffChunk.getByteAsUnsignedInt (0x04);
     }
 
 
@@ -154,7 +158,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public void setHighNote (final int highNote)
     {
-        this.setUnsignedIntAsByte (0x04, highNote);
+        this.rawRiffChunk.setUnsignedIntAsByte (0x04, highNote);
     }
 
 
@@ -165,7 +169,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public int getLowVelocity ()
     {
-        return this.getByteAsUnsignedInt (0x05);
+        return this.rawRiffChunk.getByteAsUnsignedInt (0x05);
     }
 
 
@@ -176,7 +180,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public void setLowVelocity (final int lowVelocity)
     {
-        this.setUnsignedIntAsByte (0x05, lowVelocity);
+        this.rawRiffChunk.setUnsignedIntAsByte (0x05, lowVelocity);
     }
 
 
@@ -187,7 +191,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public int getHighVelocity ()
     {
-        return this.getByteAsUnsignedInt (0x06);
+        return this.rawRiffChunk.getByteAsUnsignedInt (0x06);
     }
 
 
@@ -198,7 +202,7 @@ public class InstrumentChunk extends RIFFChunk
      */
     public void setHighVelocity (final int highVelocity)
     {
-        this.setUnsignedIntAsByte (0x06, highVelocity);
+        this.rawRiffChunk.setUnsignedIntAsByte (0x06, highVelocity);
     }
 
 

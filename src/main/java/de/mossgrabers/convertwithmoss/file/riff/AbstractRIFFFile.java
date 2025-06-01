@@ -45,7 +45,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
 
 
     /**
-     * Get the info chunk if present in the WAV file.
+     * Get the info chunk if present in the RIFF file.
      *
      * @return The info chunk or null if not present
      */
@@ -57,7 +57,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
 
     /** {@inheritDoc} */
     @Override
-    public boolean enteringGroup (final RIFFChunk group)
+    public boolean enteringGroup (final RawRIFFChunk group)
     {
         // Return true to enter and parse the group
         return true;
@@ -66,7 +66,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
 
     /** {@inheritDoc} */
     @Override
-    public void enterGroup (final RIFFChunk group) throws ParseException
+    public void enterGroup (final RawRIFFChunk group) throws ParseException
     {
         // Intentionally empty
     }
@@ -74,7 +74,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
 
     /** {@inheritDoc} */
     @Override
-    public void leaveGroup (final RIFFChunk group) throws ParseException
+    public void leaveGroup (final RawRIFFChunk group) throws ParseException
     {
         // Intentionally empty
     }
@@ -178,7 +178,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
 
 
     /**
-     * Check if the chunk stack is already filled from reading the WAV file. Fill it if empty.
+     * Check if the chunk stack is already filled from reading the RIFF file. Fill it if empty.
      */
     protected abstract void fillChunkStack ();
 
@@ -186,14 +186,14 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
     /**
      * Calculate the file size from all chunks on the chunk stack.
      *
-     * @return The size of the whole WAV file
+     * @return The size of the whole RIFF file
      */
-    private int calculateFileSize ()
+    private long calculateFileSize ()
     {
         int fullSize = 4;
         for (final IChunk chunk: this.chunkStack)
         {
-            final int length = chunk.getDataSize ();
+            final long length = chunk.getDataSize ();
             fullSize += 8 + length;
             if (length % 2 == 1)
                 fullSize++;

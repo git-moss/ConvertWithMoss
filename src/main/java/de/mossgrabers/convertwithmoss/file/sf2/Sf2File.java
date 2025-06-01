@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 import de.mossgrabers.convertwithmoss.file.wav.InfoChunk;
@@ -200,7 +201,7 @@ public class Sf2File extends AbstractRIFFFile
 
     /** {@inheritDoc} */
     @Override
-    public void enterGroup (final RIFFChunk group) throws ParseException
+    public void enterGroup (final RawRIFFChunk group) throws ParseException
     {
         switch (RiffID.fromId (group.getType ()))
         {
@@ -225,7 +226,7 @@ public class Sf2File extends AbstractRIFFFile
 
     /** {@inheritDoc} */
     @Override
-    public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
+    public void visitChunk (final RawRIFFChunk group, final RawRIFFChunk chunk) throws ParseException
     {
         final RiffID fromId = RiffID.fromId (chunk.getId ());
         switch (fromId)
@@ -296,7 +297,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
-    private void parsePresets (final RIFFChunk chunk) throws ParseException
+    private void parsePresets (final RawRIFFChunk chunk) throws ParseException
     {
         final long length = chunk.getSize ();
         if (length % Sf2Preset.LENGTH_PRESET_HEADER > 0)
@@ -317,7 +318,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
-    private void parsePresetZones (final RIFFChunk chunk) throws ParseException
+    private void parsePresetZones (final RawRIFFChunk chunk) throws ParseException
     {
         final long len = chunk.getSize ();
         if (len % LENGTH_PBAG > 0)
@@ -358,7 +359,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
-    private void parsePresetModulators (final RIFFChunk chunk) throws ParseException
+    private void parsePresetModulators (final RawRIFFChunk chunk) throws ParseException
     {
         // Check for sound PMOD structure
         final long size = chunk.getSize ();
@@ -380,7 +381,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @param zone The zone
      */
-    private static void parsePresetZoneModulators (final RIFFChunk chunk, final Sf2PresetZone zone)
+    private static void parsePresetZoneModulators (final RawRIFFChunk chunk, final Sf2PresetZone zone)
     {
         final int firstModulator = zone.getFirstModulator ();
         final int numberOfModulators = zone.getNumberOfModulators ();
@@ -404,7 +405,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
-    private void parsePresetGenerators (final RIFFChunk chunk) throws ParseException
+    private void parsePresetGenerators (final RawRIFFChunk chunk) throws ParseException
     {
         // Check for sound PGEN structure
         final long size = chunk.getSize ();
@@ -426,7 +427,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @param zone The zone
      */
-    private static void parsePresetZoneGenerators (final RIFFChunk chunk, final Sf2PresetZone zone)
+    private static void parsePresetZoneGenerators (final RawRIFFChunk chunk, final Sf2PresetZone zone)
     {
         final int firstGenerator = zone.getFirstGenerator ();
         final int numberOfGenerators = zone.getNumberOfGenerators ();
@@ -452,7 +453,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
-    private void parseInstruments (final RIFFChunk chunk) throws ParseException
+    private void parseInstruments (final RawRIFFChunk chunk) throws ParseException
     {
         final long leng = chunk.getSize ();
         if (leng % LENGTH_INST > 0)
@@ -487,7 +488,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
-    private void parseInstrumentZones (final RIFFChunk chunk) throws ParseException
+    private void parseInstrumentZones (final RawRIFFChunk chunk) throws ParseException
     {
         final long length = chunk.getSize ();
         if (length % LENGTH_IBAG > 0)
@@ -529,7 +530,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
-    private void parseInstrumentModulators (final RIFFChunk chunk) throws ParseException
+    private void parseInstrumentModulators (final RawRIFFChunk chunk) throws ParseException
     {
         // Check for sound PMOD structure
         final long size = chunk.getSize ();
@@ -551,7 +552,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @param zone The zone
      */
-    private static void parseInstrumentZoneModulators (final RIFFChunk chunk, final Sf2InstrumentZone zone)
+    private static void parseInstrumentZoneModulators (final RawRIFFChunk chunk, final Sf2InstrumentZone zone)
     {
         final int firstModulator = zone.getFirstModulator ();
         final int numberOfModulators = zone.getNumberOfModulators ();
@@ -576,7 +577,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Error if the chunk is unsound
      */
-    private void parseInstrumentGenerators (final RIFFChunk chunk) throws ParseException
+    private void parseInstrumentGenerators (final RawRIFFChunk chunk) throws ParseException
     {
         // Check for sound IGEN structure
         final long size = chunk.getSize ();
@@ -598,7 +599,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @param zone The zone
      */
-    private static void parseInstrumentZoneGenerators (final RIFFChunk chunk, final Sf2InstrumentZone zone)
+    private static void parseInstrumentZoneGenerators (final RawRIFFChunk chunk, final Sf2InstrumentZone zone)
     {
         final int firstGenerator = zone.getFirstGenerator ();
         final int numberOfGenerators = zone.getNumberOfGenerators ();
@@ -624,7 +625,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param chunk The chunk to parse
      * @throws ParseException Could not parse the sample headers chunk
      */
-    private void parseSampleHeader (final RIFFChunk chunk) throws ParseException
+    private void parseSampleHeader (final RawRIFFChunk chunk) throws ParseException
     {
         // Check for sound IGEN structure
         final long size = chunk.getSize ();
@@ -686,35 +687,42 @@ public class Sf2File extends AbstractRIFFFile
         }
 
         // Create data chunk
-        // Collect all sample data from the sample zones
-        final ByteArrayOutputStream sampleOut = new ByteArrayOutputStream ();
-        final ByteArrayOutputStream sample24Out = new ByteArrayOutputStream ();
-        for (final Sf2Preset sf2Preset: this.presets)
+
+        // Work around the GB limit of Java arrays
+        final File tempSampleDataFile = File.createTempFile ("temp-sd", ".bin");
+        tempSampleDataFile.deleteOnExit ();
+        final File tempSampleData24File = File.createTempFile ("temp-sd24", ".bin");
+        tempSampleData24File.deleteOnExit ();
+
+        try (final FileOutputStream sampleOut = new FileOutputStream (tempSampleDataFile); final FileOutputStream sample24Out = new FileOutputStream (tempSampleData24File))
         {
-            final int numZones = sf2Preset.getZoneCount ();
-            for (int presetZoneIndex = 0; presetZoneIndex < numZones; presetZoneIndex++)
+            // Collect all sample data from the sample zones
+            for (final Sf2Preset sf2Preset: this.presets)
             {
-                final Sf2PresetZone zone = sf2Preset.getZone (presetZoneIndex);
-                final Sf2Instrument instrument = zone.getInstrument ();
-                for (int instZoneIndex = 0; instZoneIndex < instrument.getZoneCount (); instZoneIndex++)
+                final int numZones = sf2Preset.getZoneCount ();
+                for (int presetZoneIndex = 0; presetZoneIndex < numZones; presetZoneIndex++)
                 {
-                    final Sf2SampleDescriptor sample = instrument.getZone (instZoneIndex).getSample ();
-                    sampleOut.writeBytes (sample.getSampleData ());
-                    sample24Out.writeBytes (sample.getSample24Data ());
+                    final Sf2PresetZone zone = sf2Preset.getZone (presetZoneIndex);
+                    final Sf2Instrument instrument = zone.getInstrument ();
+                    for (int instZoneIndex = 0; instZoneIndex < instrument.getZoneCount (); instZoneIndex++)
+                    {
+                        final Sf2SampleDescriptor sample = instrument.getZone (instZoneIndex).getSample ();
+                        sampleOut.write (sample.getSampleData ());
+                        sample24Out.write (sample.getSample24Data ());
+                    }
                 }
             }
         }
 
         // Fill data chunk
-        final byte [] sampleData = sampleOut.toByteArray ();
-        final byte [] sample24Data = sample24Out.toByteArray ();
-        final RIFFChunk sampleChunk = new RIFFChunk (0, RiffID.SMPL_ID.getId (), sampleData.length);
-        sampleChunk.setData (sampleData);
+        final RawRIFFChunk sampleChunk = new RawRIFFChunk (0, RiffID.SMPL_ID.getId (), tempSampleDataFile.length ());
+        sampleChunk.setData (tempSampleDataFile);
         this.dataChunk.add (sampleChunk);
-        if (sample24Data.length > 0)
+        final long length24 = tempSampleData24File.length ();
+        if (length24 > 0)
         {
-            final RIFFChunk sample24Chunk = new RIFFChunk (0, RiffID.SF_SM24_ID.getId (), sample24Data.length);
-            sample24Chunk.setData (sample24Data);
+            final RawRIFFChunk sample24Chunk = new RawRIFFChunk (0, RiffID.SF_SM24_ID.getId (), length24);
+            sample24Chunk.setData (tempSampleData24File);
             this.dataChunk.add (sample24Chunk);
         }
 
@@ -724,7 +732,7 @@ public class Sf2File extends AbstractRIFFFile
             for (final Sf2Preset sf2Preset: this.presets)
                 sf2Preset.writeHeader (out);
             final byte [] data = out.toByteArray ();
-            final RIFFChunk chunk = new RIFFChunk (0, RiffID.SF_PHDR_ID.getId (), data.length);
+            final RawRIFFChunk chunk = new RawRIFFChunk (0, RiffID.SF_PHDR_ID.getId (), data.length);
             chunk.setData (data);
             subChunks.add (chunk);
         }
@@ -865,7 +873,7 @@ public class Sf2File extends AbstractRIFFFile
     private static void createChunk (final RiffID riffID, final ByteArrayOutputStream out, final List<IChunk> subChunks)
     {
         final byte [] data = out.toByteArray ();
-        final RIFFChunk chunk = new RIFFChunk (0, riffID.getId (), data.length);
+        final RawRIFFChunk chunk = new RawRIFFChunk (0, riffID.getId (), data.length);
         chunk.setData (data);
         subChunks.add (chunk);
     }

@@ -24,27 +24,27 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 public class RIFFParser
 {
     /** The visitor traverses the parse tree. */
-    private RIFFVisitor               visitor;
+    private RIFFVisitor                 visitor;
 
     /** List of data chunks the visitor is interested in. */
-    private final HashSet<RIFFChunk>  dataChunks     = new HashSet<> ();
+    private final HashSet<RawRIFFChunk> dataChunks     = new HashSet<> ();
     /** List of property chunks the visitor is interested in. */
-    private HashSet<RIFFChunk>        propertyChunks;
+    private HashSet<RawRIFFChunk>       propertyChunks;
     /** List of collection chunks the visitor is interested in. */
-    private HashSet<RIFFChunk>        collectionChunks;
+    private HashSet<RawRIFFChunk>       collectionChunks;
     /** List of stop chunks the visitor is interested in. */
-    private final HashSet<Integer>    stopChunkTypes = new HashSet<> ();
+    private final HashSet<Integer>      stopChunkTypes = new HashSet<> ();
     /** List of group chunks the visitor is interested in. */
-    private final HashSet<RIFFChunk>  groupChunks    = new HashSet<> ();
+    private final HashSet<RawRIFFChunk> groupChunks    = new HashSet<> ();
 
     /** Reference to the input stream. */
-    private RIFFPrimitivesInputStream in;
+    private RIFFPrimitivesInputStream   in;
     /** Reference to the image input stream. */
-    private ImageInputStream          iin;
+    private ImageInputStream            iin;
     /** Whether we stop at all chunks. */
-    private boolean                   isStopChunks;
+    private boolean                     isStopChunks;
     /** Stream offset. */
-    private long                      streamOffset;
+    private long                        streamOffset;
 
 
     /**
@@ -124,7 +124,7 @@ public class RIFFParser
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseFORM (final boolean ignoreUnknownChunks, final boolean ignoreChunkErrors, final Map<Integer, RIFFChunk> props) throws ParseException, IOException
+    private void parseFORM (final boolean ignoreUnknownChunks, final boolean ignoreChunkErrors, final Map<Integer, RawRIFFChunk> props) throws ParseException, IOException
     {
         final long size = this.in.readUDWORD ();
         final long offset = this.getPosition ();
@@ -132,8 +132,8 @@ public class RIFFParser
         if (!isGroupType (type))
             throw new ParseException ("Invalid FORM Type: \"" + RiffID.toASCII (type) + "\"");
 
-        final RIFFChunk propGroup = props == null ? null : props.get (Integer.valueOf (type));
-        final RIFFChunk chunk = new RIFFChunk (type, RiffID.RIFF_ID.getId (), size, propGroup);
+        final RawRIFFChunk propGroup = props == null ? null : props.get (Integer.valueOf (type));
+        final RawRIFFChunk chunk = new RawRIFFChunk (type, RiffID.RIFF_ID.getId (), size, propGroup);
 
         boolean visitorWantsToEnterGroup = false;
         if (this.isGroupChunk (chunk))
@@ -192,7 +192,7 @@ public class RIFFParser
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseLIST (final Map<Integer, RIFFChunk> props, final boolean ignoreChunkErrors) throws ParseException, IOException
+    private void parseLIST (final Map<Integer, RawRIFFChunk> props, final boolean ignoreChunkErrors) throws ParseException, IOException
     {
         final long size = this.in.readUDWORD ();
         final long scan = this.getPosition ();
@@ -201,8 +201,8 @@ public class RIFFParser
         if (!isGroupType (type))
             throw new ParseException ("Invalid LIST Type: \"" + type + "\"");
 
-        final RIFFChunk propGroup = props == null ? null : props.get (Integer.valueOf (type));
-        final RIFFChunk chunk = new RIFFChunk (type, RiffID.LIST_ID.getId (), size, propGroup);
+        final RawRIFFChunk propGroup = props == null ? null : props.get (Integer.valueOf (type));
+        final RawRIFFChunk chunk = new RawRIFFChunk (type, RiffID.LIST_ID.getId (), size, propGroup);
 
         boolean visitorWantsToEnterGroup = false;
         if (this.isGroupChunk (chunk))
@@ -258,10 +258,10 @@ public class RIFFParser
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseLocalChunk (final RIFFChunk parent, final int id, final boolean ignoreChunkErrors) throws ParseException, IOException
+    private void parseLocalChunk (final RawRIFFChunk parent, final int id, final boolean ignoreChunkErrors) throws ParseException, IOException
     {
         final long longSize = this.in.readUDWORD ();
-        final RIFFChunk chunk = new RIFFChunk (parent == null ? 0 : parent.getType (), id, longSize);
+        final RawRIFFChunk chunk = new RawRIFFChunk (parent == null ? 0 : parent.getType (), id, longSize);
 
         if (longSize < Integer.MAX_VALUE)
         {
@@ -292,10 +292,11 @@ public class RIFFParser
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private boolean handleChunks (final RIFFChunk parent, final RIFFChunk chunk, final int size, final boolean ignoreChunkErrors) throws IOException, ParseException
+    private boolean handleChunks (final RawRIFFChunk parent, final RawRIFFChunk chunk, final int size, final boolean ignoreChunkErrors) throws IOException, ParseException
     {
         if (this.isDataChunk (chunk))
         {
+            // Note: this can only read up to 2GB!
             final byte [] chunkData = this.in.readNBytes (size);
             if (chunkData.length != size && ignoreChunkErrors)
                 return true;
@@ -339,9 +340,9 @@ public class RIFFParser
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseGarbage (final RIFFChunk parent, final int id, final long longSize) throws ParseException, IOException
+    private void parseGarbage (final RawRIFFChunk parent, final int id, final long longSize) throws ParseException, IOException
     {
-        final RIFFChunk chunk = new RIFFChunk (parent.getType (), id, longSize);
+        final RawRIFFChunk chunk = new RawRIFFChunk (parent.getType (), id, longSize);
 
         if (longSize < Integer.MAX_VALUE)
         {
@@ -391,7 +392,7 @@ public class RIFFParser
      * @param chunk Chunk to be verified.
      * @return True when the parameter is a data chunk.
      */
-    protected boolean isDataChunk (final RIFFChunk chunk)
+    protected boolean isDataChunk (final RawRIFFChunk chunk)
     {
         if (this.dataChunks.isEmpty ())
             return this.collectionChunks == null && this.propertyChunks == null && !this.stopChunkTypes.contains (Integer.valueOf (chunk.getType ()));
@@ -405,7 +406,7 @@ public class RIFFParser
      * @param chunk Chunk to be verified
      * @return True when the visitor is interested in this
      */
-    protected boolean isGroupChunk (final RIFFChunk chunk)
+    protected boolean isGroupChunk (final RawRIFFChunk chunk)
     {
         return this.groupChunks.contains (chunk);
     }
@@ -417,7 +418,7 @@ public class RIFFParser
      * @param chunk The chunk to test
      * @return True if it is a property chunk
      */
-    protected boolean isPropertyChunk (final RIFFChunk chunk)
+    protected boolean isPropertyChunk (final RawRIFFChunk chunk)
     {
         return this.propertyChunks != null && this.propertyChunks.contains (chunk);
     }
@@ -429,7 +430,7 @@ public class RIFFParser
      * @param chunk Chunk to be tested
      * @return True when the parameter is a collection chunk
      */
-    protected boolean isCollectionChunk (final RIFFChunk chunk)
+    protected boolean isCollectionChunk (final RawRIFFChunk chunk)
     {
         return this.collectionChunks != null && this.collectionChunks.contains (chunk);
     }
@@ -445,7 +446,7 @@ public class RIFFParser
      */
     public void declareDataChunk (final int type, final int id)
     {
-        this.dataChunks.add (new RIFFChunk (type, id));
+        this.dataChunks.add (new RawRIFFChunk (type, id));
     }
 
 
@@ -459,7 +460,7 @@ public class RIFFParser
      */
     public void declareGroupChunk (final int type, final int id)
     {
-        this.groupChunks.add (new RIFFChunk (type, id));
+        this.groupChunks.add (new RawRIFFChunk (type, id));
     }
 
 
@@ -473,7 +474,7 @@ public class RIFFParser
      */
     public void declarePropertyChunk (final int type, final int id)
     {
-        final RIFFChunk chunk = new RIFFChunk (type, id);
+        final RawRIFFChunk chunk = new RawRIFFChunk (type, id);
         if (this.propertyChunks == null)
             this.propertyChunks = new HashSet<> ();
         this.propertyChunks.add (chunk);
@@ -490,7 +491,7 @@ public class RIFFParser
      */
     public void declareCollectionChunk (final int type, final int id)
     {
-        final RIFFChunk chunk = new RIFFChunk (type, id);
+        final RawRIFFChunk chunk = new RawRIFFChunk (type, id);
         if (this.collectionChunks == null)
             this.collectionChunks = new HashSet<> ();
 
@@ -524,7 +525,7 @@ public class RIFFParser
     }
 
 
-    private boolean isStopChunk (final RIFFChunk chunk)
+    private boolean isStopChunk (final RawRIFFChunk chunk)
     {
         return this.isStopChunks || this.stopChunkTypes.contains (Integer.valueOf (chunk.getType ()));
     }

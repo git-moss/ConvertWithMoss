@@ -78,6 +78,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
 
         // Ugly workaround for the SPI not accepting AIFF files with the ending 'aiff'
         final File tempFile = File.createTempFile ("temp", ".aif");
+        tempFile.deleteOnExit ();
         Files.copy (this.sampleFile.toPath (), tempFile.toPath (), StandardCopyOption.REPLACE_EXISTING);
         this.sourceFile = this.sampleFile;
         this.sampleFile = tempFile;
@@ -127,9 +128,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
                 final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
                 final WaveFile wavFile = new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), (int) commonChunk.getNumSampleFrames ());
                 final DataChunk dataChunk = wavFile.getDataChunk ();
-                final byte [] soundData = aiffFile.getSoundDataChunk ().getData ();
-                final byte [] destinationData = dataChunk.getData ();
-                System.arraycopy (soundData, 0, destinationData, 0, Math.min (destinationData.length, soundData.length));
+                dataChunk.setData (aiffFile.getSoundDataChunk ().getData ());
                 wavFile.write (outputStream);
                 return;
             }

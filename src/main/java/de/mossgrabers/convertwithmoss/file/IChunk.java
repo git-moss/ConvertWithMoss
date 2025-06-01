@@ -24,27 +24,27 @@ public interface IChunk
 
 
     /**
-     * Get the size of the data.
+     * Get the size of the data contained in the chunk.
      *
      * @return The size in bytes
      */
-    int getDataSize ();
+    long getDataSize ();
 
 
     /**
-     * Gets the data.
+     * Writes the data to the given output stream.
      *
-     * @return The data array. The array will not be cloned for performance reasons and is expected
-     *         to be modified from wrapper classes!
+     * @param out Where to write the data to
+     * @throws IOException Could not write the data
      */
-    byte [] getData ();
+    void writeData (OutputStream out) throws IOException;
 
 
     /**
      * Write the chunk to an output stream.
      *
      * @param out The stream to write to
-     * @throws IOException Could not write the data
+     * @throws IOException Could not write the chunk
      */
     void write (OutputStream out) throws IOException;
 

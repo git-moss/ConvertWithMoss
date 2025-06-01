@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -14,7 +16,7 @@ import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractListChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -67,7 +69,7 @@ public class InfoChunk extends AbstractListChunk
     {
         final Map<String, String> fields = new TreeMap<> ();
         for (final IChunk chunk: this.subChunks)
-            fields.put (RiffID.fromId (chunk.getId ()).getName (), new String (chunk.getData (), StandardCharsets.US_ASCII));
+            fields.put (RiffID.fromId (chunk.getId ()).getName (), chunkDataToAsciiString (chunk));
         return fields;
     }
 
@@ -83,7 +85,7 @@ public class InfoChunk extends AbstractListChunk
         final int id = infoChunkID.getId ();
         for (final IChunk chunk: this.subChunks)
             if (chunk.getId () == id)
-                return new String (chunk.getData (), StandardCharsets.US_ASCII);
+                return chunkDataToAsciiString (chunk);
         return null;
     }
 
@@ -137,7 +139,7 @@ public class InfoChunk extends AbstractListChunk
      */
     public void addInfoField (final RiffID infoChunkID, final byte [] content)
     {
-        final RIFFChunk riffChunk = new RIFFChunk (RiffID.INFO_ID.getId (), infoChunkID.getId (), content.length);
+        final RawRIFFChunk riffChunk = new RawRIFFChunk (RiffID.INFO_ID.getId (), infoChunkID.getId (), content.length);
         riffChunk.setData (content);
         this.add (riffChunk);
     }
@@ -185,8 +187,23 @@ public class InfoChunk extends AbstractListChunk
         {
             if (sb.length () > 0)
                 sb.append ('\n');
-            sb.append (RiffID.fromId (chunk.getId ()).getName ()).append (": ").append (new String (chunk.getData (), StandardCharsets.US_ASCII));
+            sb.append (RiffID.fromId (chunk.getId ()).getName ()).append (": ").append (chunkDataToAsciiString (chunk));
         }
         return sb.toString ();
+    }
+
+
+    private static String chunkDataToAsciiString (final IChunk chunk)
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        try
+        {
+            chunk.writeData (out);
+        }
+        catch (final IOException ex)
+        {
+            return "";
+        }
+        return new String (out.toByteArray (), StandardCharsets.US_ASCII);
     }
 }
