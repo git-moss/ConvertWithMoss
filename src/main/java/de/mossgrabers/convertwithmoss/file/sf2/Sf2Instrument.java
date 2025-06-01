@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.tools.StringUtils;
 
 
@@ -30,7 +30,7 @@ public class Sf2Instrument extends AbstractGroupedZones<Sf2InstrumentZone>
      * @param offset The offset to start reading
      * @param chunk The chunk to read
      */
-    public void readHeader (final int offset, final RIFFChunk chunk)
+    public void readHeader (final int offset, final RawRIFFChunk chunk)
     {
         final byte [] data = chunk.getData ();
 

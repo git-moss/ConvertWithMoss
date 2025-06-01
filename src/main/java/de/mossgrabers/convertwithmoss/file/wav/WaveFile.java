@@ -14,9 +14,9 @@ import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFVisitor;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -135,7 +135,7 @@ public class WaveFile extends AbstractRIFFFile
         riffParser.parse (inputStream, this, ignoreChunkErrors, ignoreChunkErrors);
 
         // Workaround for broken(?) WAV files which have the wave data after(!) the data chunk
-        if (this.formatChunk != null && this.dataChunk != null && this.dataChunk.getData ().length == 0 && inputStream.available () > 0)
+        if (this.formatChunk != null && this.dataChunk != null && this.dataChunk.getDataSize () == 0 && inputStream.available () > 0)
             this.dataChunk.setData (inputStream.readAllBytes ());
         else
             this.requiresRewrite = false;
@@ -329,7 +329,7 @@ public class WaveFile extends AbstractRIFFFile
 
     /** {@inheritDoc} */
     @Override
-    public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
+    public void visitChunk (final RawRIFFChunk group, final RawRIFFChunk chunk) throws ParseException
     {
         if (group.getType () == RiffID.INFO_ID.getId () && group.getId () == RiffID.LIST_ID.getId ())
         {
@@ -405,7 +405,7 @@ public class WaveFile extends AbstractRIFFFile
     private static final class DataChunkPositionRIFFVisitor implements RIFFVisitor
     {
         private final RIFFParser parser;
-        long               dataChunkPosition = -1;
+        long                     dataChunkPosition = -1;
 
 
         public DataChunkPositionRIFFVisitor (final RIFFParser parser)
@@ -416,7 +416,7 @@ public class WaveFile extends AbstractRIFFFile
 
         /** {@inheritDoc} */
         @Override
-        public boolean enteringGroup (final RIFFChunk group)
+        public boolean enteringGroup (final RawRIFFChunk group)
         {
             return false;
         }
@@ -424,7 +424,7 @@ public class WaveFile extends AbstractRIFFFile
 
         /** {@inheritDoc} */
         @Override
-        public void enterGroup (final RIFFChunk group) throws ParseException
+        public void enterGroup (final RawRIFFChunk group) throws ParseException
         {
             // Intentionally empty
         }
@@ -432,7 +432,7 @@ public class WaveFile extends AbstractRIFFFile
 
         /** {@inheritDoc} */
         @Override
-        public void leaveGroup (final RIFFChunk group) throws ParseException
+        public void leaveGroup (final RawRIFFChunk group) throws ParseException
         {
             // Intentionally empty
         }
@@ -440,7 +440,7 @@ public class WaveFile extends AbstractRIFFFile
 
         /** {@inheritDoc} */
         @Override
-        public void visitChunk (final RIFFChunk group, final RIFFChunk chunk) throws ParseException
+        public void visitChunk (final RawRIFFChunk group, final RawRIFFChunk chunk) throws ParseException
         {
             final RiffID riffID = RiffID.fromId (chunk.getId ());
             if (riffID == RiffID.DATA_ID)

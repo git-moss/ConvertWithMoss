@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -17,7 +18,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  *
  * @author Jürgen Moßgraber
  */
-public class SampleChunk extends RIFFChunk
+public class SampleChunk extends AbstractSpecificRIFFChunk
 {
     /** Play the loop forwards. */
     public static final int             LOOP_FORWARD     = 0;
@@ -39,12 +40,10 @@ public class SampleChunk extends RIFFChunk
      */
     public SampleChunk (final int numSampleLoops)
     {
-        super (RiffID.SMPL_ID, new byte [0], 0);
+        super (RiffID.SMPL_ID, CHUNK_SIZE + numSampleLoops * LOOP_SIZE);
 
-        final int sizeOfLoops = numSampleLoops * LOOP_SIZE;
-        this.setData (new byte [CHUNK_SIZE + sizeOfLoops]);
         this.setNumSampleLoops (numSampleLoops);
-        this.setSamplerData (sizeOfLoops);
+        this.setSamplerData (numSampleLoops * LOOP_SIZE);
 
         this.loops = new ArrayList<> (numSampleLoops);
         for (int i = 0; i < numSampleLoops; i++)
@@ -58,9 +57,9 @@ public class SampleChunk extends RIFFChunk
      * @param chunk The RIFF chunk which contains the data
      * @throws ParseException Length of data does not match the expected chunk size
      */
-    public SampleChunk (final RIFFChunk chunk) throws ParseException
+    public SampleChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.SMPL_ID, chunk.getData (), chunk.getData ().length);
+        super (RiffID.SMPL_ID, chunk);
 
         final byte [] data = chunk.getData ();
 
@@ -86,7 +85,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getManufacturer ()
     {
-        return this.getFourBytesAsInt (0x00);
+        return this.rawRiffChunk.getFourBytesAsInt (0x00);
     }
 
 
@@ -99,7 +98,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getProduct ()
     {
-        return this.getFourBytesAsInt (0x04);
+        return this.rawRiffChunk.getFourBytesAsInt (0x04);
     }
 
 
@@ -112,7 +111,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getSamplePeriod ()
     {
-        return this.getFourBytesAsInt (0x08);
+        return this.rawRiffChunk.getFourBytesAsInt (0x08);
     }
 
 
@@ -123,7 +122,7 @@ public class SampleChunk extends RIFFChunk
      */
     public void setSamplePeriod (final int samplePeriod)
     {
-        this.setIntAsFourBytes (0x08, samplePeriod);
+        this.rawRiffChunk.setIntAsFourBytes (0x08, samplePeriod);
     }
 
 
@@ -136,7 +135,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getMIDIUnityNoteRaw ()
     {
-        return this.getFourBytesAsInt (0x0C);
+        return this.rawRiffChunk.getFourBytesAsInt (0x0C);
     }
 
 
@@ -149,7 +148,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getMIDIUnityNote ()
     {
-        final int unityNote = this.getFourBytesAsInt (0x0C);
+        final int unityNote = this.rawRiffChunk.getFourBytesAsInt (0x0C);
         return this.getMIDIPitchFractionAsCents () < 0 ? unityNote + 1 : unityNote;
     }
 
@@ -163,7 +162,7 @@ public class SampleChunk extends RIFFChunk
      */
     private void setMIDIUnityNote (final int note)
     {
-        this.setIntAsFourBytes (0x0C, note);
+        this.rawRiffChunk.setIntAsFourBytes (0x0C, note);
     }
 
 
@@ -181,7 +180,7 @@ public class SampleChunk extends RIFFChunk
      */
     public long getMIDIPitchFraction ()
     {
-        return this.getFourBytesAsLong (0x10);
+        return this.rawRiffChunk.getFourBytesAsLong (0x10);
     }
 
 
@@ -239,7 +238,7 @@ public class SampleChunk extends RIFFChunk
      */
     private void setMIDIPitchFraction (final long pitchFraction)
     {
-        this.setLongAsFourBytes (0x10, pitchFraction);
+        this.rawRiffChunk.setLongAsFourBytes (0x10, pitchFraction);
     }
 
 
@@ -252,7 +251,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getSMPTEFormat ()
     {
-        return this.getFourBytesAsInt (0x14);
+        return this.rawRiffChunk.getFourBytesAsInt (0x14);
     }
 
 
@@ -264,7 +263,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getSMPTEOffset ()
     {
-        return this.getFourBytesAsInt (0x18);
+        return this.rawRiffChunk.getFourBytesAsInt (0x18);
     }
 
 
@@ -276,7 +275,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getNumSampleLoops ()
     {
-        return this.getFourBytesAsInt (0x1C);
+        return this.rawRiffChunk.getFourBytesAsInt (0x1C);
     }
 
 
@@ -288,7 +287,7 @@ public class SampleChunk extends RIFFChunk
      */
     private void setNumSampleLoops (final int numLoops)
     {
-        this.setIntAsFourBytes (0x1C, numLoops);
+        this.rawRiffChunk.setIntAsFourBytes (0x1C, numLoops);
     }
 
 
@@ -301,7 +300,7 @@ public class SampleChunk extends RIFFChunk
      */
     public int getSamplerData ()
     {
-        return this.getFourBytesAsInt (0x20);
+        return this.rawRiffChunk.getFourBytesAsInt (0x20);
     }
 
 
@@ -312,7 +311,7 @@ public class SampleChunk extends RIFFChunk
      */
     private void setSamplerData (final int sampleDataSize)
     {
-        this.setIntAsFourBytes (0x20, sampleDataSize);
+        this.rawRiffChunk.setIntAsFourBytes (0x20, sampleDataSize);
     }
 
 
@@ -347,6 +346,12 @@ public class SampleChunk extends RIFFChunk
     }
 
 
+    private RawRIFFChunk getRawChunk ()
+    {
+        return this.rawRiffChunk;
+    }
+
+
     /**
      * The sample loop section of a sample chunk.
      */
@@ -376,7 +381,13 @@ public class SampleChunk extends RIFFChunk
          */
         public int getCuePointID ()
         {
-            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x00);
+            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x00);
+        }
+
+
+        private RawRIFFChunk getRawChunk ()
+        {
+            return SampleChunk.this.getRawChunk ();
         }
 
 
@@ -389,7 +400,7 @@ public class SampleChunk extends RIFFChunk
          */
         public int getType ()
         {
-            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x04);
+            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x04);
         }
 
 
@@ -400,7 +411,7 @@ public class SampleChunk extends RIFFChunk
          */
         public void setType (final int type)
         {
-            SampleChunk.this.setIntAsFourBytes (this.offset + 0x04, type);
+            this.getRawChunk ().setIntAsFourBytes (this.offset + 0x04, type);
         }
 
 
@@ -412,7 +423,7 @@ public class SampleChunk extends RIFFChunk
          */
         public int getStart ()
         {
-            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x08);
+            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x08);
         }
 
 
@@ -423,7 +434,7 @@ public class SampleChunk extends RIFFChunk
          */
         public void setStart (final int start)
         {
-            SampleChunk.this.setIntAsFourBytes (this.offset + 0x08, start);
+            this.getRawChunk ().setIntAsFourBytes (this.offset + 0x08, start);
         }
 
 
@@ -435,7 +446,7 @@ public class SampleChunk extends RIFFChunk
          */
         public int getEnd ()
         {
-            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x0C);
+            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x0C);
         }
 
 
@@ -446,7 +457,7 @@ public class SampleChunk extends RIFFChunk
          */
         public void setEnd (final int end)
         {
-            SampleChunk.this.setIntAsFourBytes (this.offset + 0x0C, end);
+            this.getRawChunk ().setIntAsFourBytes (this.offset + 0x0C, end);
         }
 
 
@@ -461,7 +472,7 @@ public class SampleChunk extends RIFFChunk
          */
         public int getFraction ()
         {
-            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x10);
+            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x10);
         }
 
 
@@ -476,7 +487,7 @@ public class SampleChunk extends RIFFChunk
          */
         public int getPlayCount ()
         {
-            return SampleChunk.this.getFourBytesAsInt (this.offset + 0x14);
+            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x14);
         }
 
 
@@ -487,7 +498,7 @@ public class SampleChunk extends RIFFChunk
          */
         public void setPlayCount (final int playCount)
         {
-            SampleChunk.this.setIntAsFourBytes (this.offset + 0x14, playCount);
+            this.getRawChunk ().setIntAsFourBytes (this.offset + 0x14, playCount);
         }
 
 

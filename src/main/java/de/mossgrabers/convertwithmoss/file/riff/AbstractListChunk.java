@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.file.riff;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +20,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  *
  * @author Jürgen Moßgraber
  */
-public abstract class AbstractListChunk extends RIFFChunk
+public abstract class AbstractListChunk extends RawRIFFChunk
 {
     protected final List<IChunk> subChunks = new ArrayList<> ();
 
@@ -40,7 +41,7 @@ public abstract class AbstractListChunk extends RIFFChunk
      *
      * @param chunk The info sub-chunk
      */
-    public void add (final RIFFChunk chunk)
+    public void add (final RawRIFFChunk chunk)
     {
         this.subChunks.add (chunk);
     }
@@ -59,13 +60,34 @@ public abstract class AbstractListChunk extends RIFFChunk
 
     /** {@inheritDoc} */
     @Override
+    public long getSize ()
+    {
+        final long length = this.getDataSize ();
+        return 4 + length + (length % 2);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public long getDataSize ()
+    {
+        int size = 4;
+        for (final IChunk chunk: this.subChunks)
+        {
+            final long dataSize = chunk.getDataSize ();
+            size += 8 + dataSize + (dataSize % 2);
+        }
+        return size;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public byte [] getData ()
     {
         try (final ByteArrayOutputStream out = new ByteArrayOutputStream ())
         {
-            StreamUtils.writeUnsigned32 (out, this.getType (), true);
-            for (final IChunk chunk: this.subChunks)
-                chunk.write (out);
+            this.writeData (out);
             this.setData (out.toByteArray ());
         }
         catch (final IOException ex)
@@ -75,6 +97,16 @@ public abstract class AbstractListChunk extends RIFFChunk
         }
 
         return super.getData ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void writeData (final OutputStream out) throws IOException
+    {
+        StreamUtils.writeUnsigned32 (out, this.getType (), true);
+        for (final IChunk chunk: this.subChunks)
+            chunk.write (out);
     }
 
 

@@ -21,7 +21,7 @@ public interface RIFFVisitor
      * @param group The group to enter
      * @return True to enter the group, false to skip over the group.
      */
-    public boolean enteringGroup (RIFFChunk group);
+    public boolean enteringGroup (RawRIFFChunk group);
 
 
     /**
@@ -30,7 +30,7 @@ public interface RIFFVisitor
      * @param group The group
      * @throws ParseException If a parsing error occurs in the group
      */
-    public void enterGroup (RIFFChunk group) throws ParseException;
+    public void enterGroup (RawRIFFChunk group) throws ParseException;
 
 
     /**
@@ -39,7 +39,7 @@ public interface RIFFVisitor
      * @param group The group
      * @throws ParseException If a parsing error occurs
      */
-    public void leaveGroup (RIFFChunk group) throws ParseException;
+    public void leaveGroup (RawRIFFChunk group) throws ParseException;
 
 
     /**
@@ -49,5 +49,5 @@ public interface RIFFVisitor
      * @param chunk The chunk
      * @throws ParseException Parsing error in the chunk
      */
-    public void visitChunk (RIFFChunk group, RIFFChunk chunk) throws ParseException;
+    public void visitChunk (RawRIFFChunk group, RawRIFFChunk chunk) throws ParseException;
 }

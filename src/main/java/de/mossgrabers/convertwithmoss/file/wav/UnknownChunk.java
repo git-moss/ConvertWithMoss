@@ -4,7 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.file.wav;
 
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -13,16 +15,26 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  *
  * @author Jürgen Moßgraber
  */
-public class UnknownChunk extends RIFFChunk
+public class UnknownChunk extends AbstractSpecificRIFFChunk
 {
     /**
      * Constructor.
      *
      * @param riffId The RIFF id
      * @param chunk The RIFF chunk which contains the data
+     * @throws ParseException The raw chunk is not of the specific type or the length of data does
+     *             not match the expected chunk size
      */
-    public UnknownChunk (final RiffID riffId, final RIFFChunk chunk)
+    public UnknownChunk (final RiffID riffId, final RawRIFFChunk chunk) throws ParseException
     {
-        super (riffId, chunk.getData (), chunk.getData ().length);
+        super (riffId, chunk);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String infoText ()
+    {
+        return "Unknown Data";
     }
 }

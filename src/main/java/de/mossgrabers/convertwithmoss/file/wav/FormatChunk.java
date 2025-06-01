@@ -8,7 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -17,7 +18,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  *
  * @author Jürgen Moßgraber
  */
-public class FormatChunk extends RIFFChunk
+public class FormatChunk extends AbstractSpecificRIFFChunk
 {
     private static final int                  CHUNK_SIZE                 = 16;
     private static final int                  CHUNK_SIZE_EX              = 20;
@@ -96,7 +97,7 @@ public class FormatChunk extends RIFFChunk
      */
     public FormatChunk (final int numberOfChannels, final int sampleRate, final int bitsPerSample, final boolean addFormatEx)
     {
-        super (RiffID.FMT_ID, new byte [addFormatEx ? CHUNK_SIZE_EX : CHUNK_SIZE], addFormatEx ? CHUNK_SIZE_EX : CHUNK_SIZE);
+        super (RiffID.FMT_ID, addFormatEx ? CHUNK_SIZE_EX : CHUNK_SIZE);
 
         this.setCompressionCode (WAVE_FORMAT_PCM);
         this.setNumberOfChannels (numberOfChannels);
@@ -111,9 +112,9 @@ public class FormatChunk extends RIFFChunk
      * @param chunk The RIFF chunk which contains the data
      * @throws ParseException Length of data does not match the expected chunk size
      */
-    public FormatChunk (final RIFFChunk chunk) throws ParseException
+    public FormatChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.FMT_ID, chunk.getData (), chunk.getData ().length);
+        super (RiffID.FMT_ID, chunk);
     }
 
 
@@ -138,7 +139,7 @@ public class FormatChunk extends RIFFChunk
      */
     public int getCompressionCode ()
     {
-        return this.getTwoBytesAsInt (0x00);
+        return this.rawRiffChunk.getTwoBytesAsInt (0x00);
     }
 
 
@@ -150,7 +151,7 @@ public class FormatChunk extends RIFFChunk
      */
     public void setCompressionCode (final int compressionCode)
     {
-        this.setIntAsTwoBytes (0x00, compressionCode);
+        this.rawRiffChunk.setIntAsTwoBytes (0x00, compressionCode);
     }
 
 
@@ -162,7 +163,7 @@ public class FormatChunk extends RIFFChunk
      */
     public int getNumberOfChannels ()
     {
-        return this.getTwoBytesAsInt (0x02);
+        return this.rawRiffChunk.getTwoBytesAsInt (0x02);
     }
 
 
@@ -173,7 +174,7 @@ public class FormatChunk extends RIFFChunk
      */
     public void setNumberOfChannels (final int channels)
     {
-        this.setIntAsTwoBytes (0x02, channels);
+        this.rawRiffChunk.setIntAsTwoBytes (0x02, channels);
 
         this.updateBlockAlign ();
     }
@@ -186,7 +187,7 @@ public class FormatChunk extends RIFFChunk
      */
     public int getSampleRate ()
     {
-        return this.getFourBytesAsInt (0x04);
+        return this.rawRiffChunk.getFourBytesAsInt (0x04);
     }
 
 
@@ -198,7 +199,7 @@ public class FormatChunk extends RIFFChunk
      */
     public void setSampleRate (final int sampleRate)
     {
-        this.setIntAsFourBytes (0x04, sampleRate);
+        this.rawRiffChunk.setIntAsFourBytes (0x04, sampleRate);
 
         this.updateAverageBytesPerSecond ();
     }
@@ -214,7 +215,7 @@ public class FormatChunk extends RIFFChunk
      */
     public int getAverageBytesPerSecond ()
     {
-        return this.getFourBytesAsInt (0x08);
+        return this.rawRiffChunk.getFourBytesAsInt (0x08);
     }
 
 
@@ -226,7 +227,7 @@ public class FormatChunk extends RIFFChunk
         final int sampleRate = this.getSampleRate ();
         final int blockAlign = this.getBlockAlign ();
         final int averageBytesPerSecond = sampleRate * blockAlign;
-        this.setIntAsFourBytes (0x08, averageBytesPerSecond);
+        this.rawRiffChunk.setIntAsFourBytes (0x08, averageBytesPerSecond);
     }
 
 
@@ -239,7 +240,7 @@ public class FormatChunk extends RIFFChunk
      */
     public int getBlockAlign ()
     {
-        return this.getTwoBytesAsInt (0x0C);
+        return this.rawRiffChunk.getTwoBytesAsInt (0x0C);
     }
 
 
@@ -253,7 +254,7 @@ public class FormatChunk extends RIFFChunk
         final int bitsPerSample = this.getSignificantBitsPerSample ();
         final int numberOfChannels = this.getNumberOfChannels ();
         final int blockAlign = bitsPerSample / 8 * numberOfChannels;
-        this.setIntAsTwoBytes (0x0C, blockAlign);
+        this.rawRiffChunk.setIntAsTwoBytes (0x0C, blockAlign);
 
         this.updateAverageBytesPerSecond ();
     }
@@ -270,8 +271,8 @@ public class FormatChunk extends RIFFChunk
      */
     public int getSignificantBitsPerSample ()
     {
-        if (0x0E < this.getData ().length)
-            return this.getTwoBytesAsInt (0x0E);
+        if (0x0E < this.rawRiffChunk.getData ().length)
+            return this.rawRiffChunk.getTwoBytesAsInt (0x0E);
         return 0;
     }
 
@@ -287,7 +288,7 @@ public class FormatChunk extends RIFFChunk
      */
     public void setSignificantBitsPerSample (final int bitsPerSample)
     {
-        this.setIntAsTwoBytes (0x0E, bitsPerSample);
+        this.rawRiffChunk.setIntAsTwoBytes (0x0E, bitsPerSample);
 
         this.updateBlockAlign ();
     }
@@ -340,7 +341,7 @@ public class FormatChunk extends RIFFChunk
         sb.append ("Average bytes per second: ").append (this.getAverageBytesPerSecond ()).append ('\n');
         sb.append ("Block align: ").append (this.getBlockAlign ()).append ('\n');
         sb.append ("Significant bits per sample: ").append (this.getSignificantBitsPerSample ()).append ('\n');
-        sb.append ("Extra bytes: ").append (this.getSize () - CHUNK_SIZE);
+        sb.append ("Extra bytes: ").append (this.rawRiffChunk.getSize () - CHUNK_SIZE);
         return sb.toString ();
     }
 }

@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -119,8 +120,27 @@ public class Sf2Creator extends AbstractCreator
 
         final GlobalCounters globalcounters = new GlobalCounters ();
 
+        int programIndex = 0;
         for (final IMultisampleSource multisampleSource: multisampleSources)
-            presets.add (this.createSf2Preset (multisampleSource, globalcounters, globalcounters.instrumentCounts));
+        {
+            if (this.isCancelled)
+                return;
+
+            final Optional<Sf2Preset> sf2Preset = this.createSf2Preset (programIndex, multisampleSource, globalcounters, globalcounters.instrumentCounts);
+            if (sf2Preset.isPresent ())
+            {
+                final Sf2Preset preset = sf2Preset.get ();
+                preset.setProgramNumber (programIndex % 128);
+                final int bankNumber = programIndex / 128;
+                // No more than 16129 presets
+                if (bankNumber > 127)
+                    break;
+                preset.setBankNumber (bankNumber);
+                presets.add (preset);
+
+                programIndex++;
+            }
+        }
 
         // Add the final empty preset
         final Sf2Preset finalPreset = new Sf2Preset ("EOP");
@@ -191,19 +211,24 @@ public class Sf2Creator extends AbstractCreator
 
     /**
      * Create one SF2 preset for the multi-sample source.
-     *
+     * 
+     * @param programIndex The index of the program
      * @param multisampleSource The multi-sample source
      * @param globalcounters Contains all counters for numbering which are global to the sf2 file
+     * @param counts Counter for instrument generators and modulators
      * @return The created SF2 preset
      * @throws IOException Could not create the preset
      */
-    private Sf2Preset createSf2Preset (final IMultisampleSource multisampleSource, final GlobalCounters globalcounters, final Pair<Integer, Integer> counts) throws IOException
+    private Optional<Sf2Preset> createSf2Preset (final int programIndex, final IMultisampleSource multisampleSource, final GlobalCounters globalcounters, final Pair<Integer, Integer> counts) throws IOException
     {
-        int writtenProgress = 0;
+        final String name = multisampleSource.getName ();
+        final String message = Functions.getMessage ("IDS_NOTIFY_ADDING", (programIndex / 128) + ":" + (programIndex % 128) + " " + name);
+        this.notifier.logText (message);
+        int writtenProgress = message.length ();
 
         // Note: If multiple sources might be combined into one SF2 in the future, the program
         // number needs to be set here as well as the first preset zone index
-        final Sf2Preset preset = new Sf2Preset (multisampleSource.getName ());
+        final Sf2Preset preset = new Sf2Preset (name);
 
         // Create a SF2 instrument for each group
         for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
@@ -221,8 +246,18 @@ public class Sf2Creator extends AbstractCreator
                 if (writtenProgress > 0 && writtenProgress % 80 == 0)
                     this.notifier.log ("IDS_NOTIFY_LINE_FEED");
 
+                if (this.isCancelled)
+                    return Optional.empty ();
+
                 // Ensure that the WAV is 16 or 24 bit
-                final WaveFile waveFile = AudioFileUtils.convertToWav (sampleZone.getSampleData (), DESTINATION_AUDIO_FORMAT);
+                final ISampleData sampleData = sampleZone.getSampleData ();
+                if (sampleData == null)
+                {
+                    this.notifier.logError ("IDS_ERR_NO_SAMPLE_DATA", sampleZone.getName ());
+                    continue;
+                }
+
+                final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
                 final FormatChunk formatChunk = waveFile.getFormatChunk ();
                 final int numberOfChannels = formatChunk.getNumberOfChannels ();
                 if (numberOfChannels > 2)
@@ -274,7 +309,7 @@ public class Sf2Creator extends AbstractCreator
 
         this.notifier.log ("IDS_NOTIFY_LINE_FEED");
 
-        return preset;
+        return Optional.of (preset);
     }
 
 

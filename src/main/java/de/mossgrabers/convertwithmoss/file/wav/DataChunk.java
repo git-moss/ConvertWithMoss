@@ -5,7 +5,9 @@
 package de.mossgrabers.convertwithmoss.file.wav;
 
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -14,7 +16,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  *
  * @author Jürgen Moßgraber
  */
-public class DataChunk extends RIFFChunk
+public class DataChunk extends AbstractSpecificRIFFChunk
 {
     /**
      * Constructor. Creates an empty data chunk.
@@ -25,7 +27,20 @@ public class DataChunk extends RIFFChunk
      */
     public DataChunk (final FormatChunk formatChunk, final int lengthInSamples)
     {
-        super (RiffID.DATA_ID, new byte [formatChunk.calculateDataSize (lengthInSamples)], formatChunk.calculateDataSize (lengthInSamples));
+        super (RiffID.DATA_ID, formatChunk.calculateDataSize (lengthInSamples));
+    }
+
+
+    /**
+     * Constructor. Creates an empty data chunk.
+     *
+     * @param formatChunk The format chunk, necessary for the calculation (sample size and number of
+     *            channels
+     * @param data The data
+     */
+    public DataChunk (final FormatChunk formatChunk, final byte [] data)
+    {
+        super (RiffID.DATA_ID, data);
     }
 
 
@@ -33,10 +48,23 @@ public class DataChunk extends RIFFChunk
      * Constructor.
      *
      * @param chunk The RIFF chunk which contains the data
+     * @throws ParseException The raw chunk is not of the specific type or the length of data does
+     *             not match the expected chunk size
      */
-    public DataChunk (final RIFFChunk chunk)
+    public DataChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.DATA_ID, chunk.getData (), chunk.getData ().length);
+        super (RiffID.DATA_ID, chunk);
+    }
+
+
+    /**
+     * Sets the data.
+     * 
+     * @param data The data
+     */
+    public void setData (final byte [] data)
+    {
+        this.rawRiffChunk.setData (data);
     }
 
 
@@ -54,14 +82,14 @@ public class DataChunk extends RIFFChunk
         final int compressionCode = formatChunk.getCompressionCode ();
 
         if (compressionCode == FormatChunk.WAVE_FORMAT_PCM || compressionCode == FormatChunk.WAVE_FORMAT_IEEE_FLOAT)
-            return formatChunk.calculateLength (this.getData ());
+            return formatChunk.calculateLength (this.rawRiffChunk.getData ());
 
         if (compressionCode == FormatChunk.WAVE_FORMAT_EXTENSIBLE)
         {
             final int numberOfChannels = formatChunk.getNumberOfChannels ();
             if (numberOfChannels > 2)
                 throw new CompressionNotSupportedException ("WAV files in Extensible format are only supported for stereo files.");
-            return formatChunk.calculateLength (this.getData ());
+            return formatChunk.calculateLength (this.rawRiffChunk.getData ());
         }
 
         throw new CompressionNotSupportedException ("Unsupported data compression: " + FormatChunk.getCompression (compressionCode));
@@ -73,7 +101,7 @@ public class DataChunk extends RIFFChunk
     public String infoText ()
     {
         final StringBuilder sb = new StringBuilder ();
-        sb.append ("Size: ").append (this.getData ().length + " Bytes");
+        sb.append ("Size: ").append (this.rawRiffChunk.getData ().length + " Bytes");
         return sb.toString ();
     }
 }

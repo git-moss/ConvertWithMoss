@@ -5,7 +5,7 @@
 package de.mossgrabers.convertwithmoss.file.sf2;
 
 import de.mossgrabers.convertwithmoss.file.riff.AbstractListChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
@@ -16,8 +16,8 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  */
 public class Sf2DataChunk extends AbstractListChunk
 {
-    private RIFFChunk sampleDataChunk;
-    private RIFFChunk sampleData24Chunk;
+    private RawRIFFChunk sampleDataChunk;
+    private RawRIFFChunk sampleData24Chunk;
 
 
     /**
@@ -31,7 +31,7 @@ public class Sf2DataChunk extends AbstractListChunk
 
     /** {@inheritDoc} */
     @Override
-    public void add (final RIFFChunk chunk)
+    public void add (final RawRIFFChunk chunk)
     {
         super.add (chunk);
 

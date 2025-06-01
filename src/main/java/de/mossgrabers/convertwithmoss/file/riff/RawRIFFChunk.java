@@ -4,8 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.file.riff;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -24,19 +27,20 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class RIFFChunk implements IChunk
+public class RawRIFFChunk implements IChunk
 {
-    private final RiffID                    riffID;
-    private final int                       id;
-    private int                             type;
-    private long                            size;
-    private byte []                         data;
+    private final RiffID                          riffID;
+    private final int                             id;
+    private int                                   type;
+    private long                                  size;
+    private byte []                               data;
+    private File                                  dataFile;
 
-    private final Map<RIFFChunk, RIFFChunk> propertyChunks   = new HashMap<> ();
-    private final List<RIFFChunk>           collectionChunks = new ArrayList<> ();
+    private final Map<RawRIFFChunk, RawRIFFChunk> propertyChunks   = new HashMap<> ();
+    private final List<RawRIFFChunk>              collectionChunks = new ArrayList<> ();
 
-    private String                          parserMessage;
-    private boolean                         tooLarge         = false;
+    private String                                parserMessage;
+    private boolean                               tooLarge         = false;
 
 
     /**
@@ -45,7 +49,7 @@ public class RIFFChunk implements IChunk
      * @param type The type of the chunk
      * @param id The chunk ID
      */
-    public RIFFChunk (final int type, final int id)
+    public RawRIFFChunk (final int type, final int id)
     {
         this (type, id, -1);
     }
@@ -58,7 +62,7 @@ public class RIFFChunk implements IChunk
      * @param id The chunk ID
      * @param size The size of the chunk
      */
-    public RIFFChunk (final int type, final int id, final long size)
+    public RawRIFFChunk (final int type, final int id, final long size)
     {
         this (type, id, size, null);
     }
@@ -71,7 +75,7 @@ public class RIFFChunk implements IChunk
      * @param data The data of the chunk
      * @param size The expected size of the chunk
      */
-    protected RIFFChunk (final RiffID riffID, final byte [] data, final int size)
+    protected RawRIFFChunk (final RiffID riffID, final byte [] data, final int size)
     {
         this (0, riffID.getId (), size);
 
@@ -87,7 +91,7 @@ public class RIFFChunk implements IChunk
      * @param size The size of the chunk
      * @param propGroup The property group chunk
      */
-    public RIFFChunk (final int type, final int id, final long size, final RIFFChunk propGroup)
+    public RawRIFFChunk (final int type, final int id, final long size, final RawRIFFChunk propGroup)
     {
         this.id = id;
         this.riffID = RiffID.fromId (id);
@@ -133,8 +137,8 @@ public class RIFFChunk implements IChunk
 
     /**
      * Get the size of the chunk.
-     *
-     * @return Size of chunk
+     * 
+     * @return THe size
      */
     public long getSize ()
     {
@@ -147,7 +151,7 @@ public class RIFFChunk implements IChunk
      *
      * @param chunk The chunk
      */
-    public void putPropertyChunk (final RIFFChunk chunk)
+    public void putPropertyChunk (final RawRIFFChunk chunk)
     {
         this.propertyChunks.put (chunk, chunk);
     }
@@ -159,9 +163,9 @@ public class RIFFChunk implements IChunk
      * @param id The ID
      * @return The property chunk
      */
-    public RIFFChunk getPropertyChunk (final int id)
+    public RawRIFFChunk getPropertyChunk (final int id)
     {
-        final RIFFChunk chunk = new RIFFChunk (this.type, id);
+        final RawRIFFChunk chunk = new RawRIFFChunk (this.type, id);
         return this.propertyChunks.get (chunk);
     }
 
@@ -171,7 +175,7 @@ public class RIFFChunk implements IChunk
      *
      * @return The chunks
      */
-    public Set<RIFFChunk> propertyChunks ()
+    public Set<RawRIFFChunk> propertyChunks ()
     {
         return this.propertyChunks.keySet ();
     }
@@ -182,7 +186,7 @@ public class RIFFChunk implements IChunk
      *
      * @param chunk The chunk to add
      */
-    public void addCollectionChunk (final RIFFChunk chunk)
+    public void addCollectionChunk (final RawRIFFChunk chunk)
     {
         this.collectionChunks.add (chunk);
     }
@@ -194,10 +198,10 @@ public class RIFFChunk implements IChunk
      * @param id The ID
      * @return The chunks
      */
-    public List<RIFFChunk> getCollectionChunks (final int id)
+    public List<RawRIFFChunk> getCollectionChunks (final int id)
     {
-        final List<RIFFChunk> array = new ArrayList<> ();
-        for (final RIFFChunk chunk: this.collectionChunks)
+        final List<RawRIFFChunk> array = new ArrayList<> ();
+        for (final RawRIFFChunk chunk: this.collectionChunks)
             if (chunk.id == id)
                 array.add (chunk);
         return array;
@@ -209,7 +213,7 @@ public class RIFFChunk implements IChunk
      *
      * @return The iterator
      */
-    public Iterator<RIFFChunk> collectionChunks ()
+    public Iterator<RawRIFFChunk> collectionChunks ()
     {
         return this.collectionChunks.iterator ();
     }
@@ -232,17 +236,32 @@ public class RIFFChunk implements IChunk
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public int getDataSize ()
+    /**
+     * Sets the data via a file in case it is larger than 2GB.
+     *
+     * @param largeFile A temporary
+     */
+    public void setData (final File largeFile)
     {
-        this.checkValidity ();
-        return this.data.length;
+        this.dataFile = largeFile;
+
     }
 
 
     /** {@inheritDoc} */
     @Override
+    public long getDataSize ()
+    {
+        this.checkValidity ();
+        return this.data == null ? this.dataFile.length () : this.data.length;
+    }
+
+
+    /**
+     * Get the data from the array. Only use this for small chunks with fixed data size!
+     * 
+     * @return The data
+     */
     public byte [] getData ()
     {
         this.checkValidity ();
@@ -252,7 +271,7 @@ public class RIFFChunk implements IChunk
 
     private void checkValidity ()
     {
-        if (this.id != RiffID.LIST_ID.getId () && this.data == null)
+        if (this.id != RiffID.LIST_ID.getId () && (this.data == null && this.dataFile == null))
         {
             if (this.tooLarge)
                 throw new NoDataInChunkException ("Chunk contains no data since it was too large to be loaded.");
@@ -323,6 +342,17 @@ public class RIFFChunk implements IChunk
     {
         final byte [] d = this.getData ();
         return d[offset];
+    }
+
+
+    /**
+     * Interprets the data of the chunk as an ASCII string.
+     *
+     * @return The string
+     */
+    public String getASCIIString ()
+    {
+        return new String (this.getData (), StandardCharsets.US_ASCII);
     }
 
 
@@ -481,15 +511,27 @@ public class RIFFChunk implements IChunk
 
     /** {@inheritDoc} */
     @Override
+    public void writeData (final OutputStream out) throws IOException
+    {
+        if (this.usesDataFile ())
+            Files.copy (this.dataFile.toPath (), out);
+        else
+            out.write (this.getData ());
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void write (final OutputStream out) throws IOException
     {
         StreamUtils.writeUnsigned32 (out, this.id, true);
 
-        final byte [] currentData = this.getData ();
-        final boolean needsPadByte = currentData.length % 2 == 1;
-        final int dataSize = needsPadByte ? currentData.length + 1 : currentData.length;
+        final long length = this.getDataSize ();
+        final boolean needsPadByte = length % 2 == 1;
+        final long dataSize = needsPadByte ? length + 1 : length;
         StreamUtils.writeUnsigned32 (out, dataSize, false);
-        out.write (currentData);
+
+        this.writeData (out);
 
         if (needsPadByte)
             out.write (0);
@@ -500,7 +542,7 @@ public class RIFFChunk implements IChunk
     @Override
     public boolean equals (final Object another)
     {
-        if (another instanceof final RIFFChunk that)
+        if (another instanceof final RawRIFFChunk that)
             return that.id == this.id && that.type == this.type;
         return false;
     }
@@ -528,6 +570,17 @@ public class RIFFChunk implements IChunk
     public void markTooLarge ()
     {
         this.tooLarge = true;
+    }
+
+
+    /**
+     * Returns true if a data file is used (instead of a simple array).
+     * 
+     * @return True if a data file is used
+     */
+    public boolean usesDataFile ()
+    {
+        return this.dataFile != null;
     }
 
 
