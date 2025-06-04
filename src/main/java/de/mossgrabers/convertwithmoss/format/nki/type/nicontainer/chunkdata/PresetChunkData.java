@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Bank;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.FileList;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.KontaktPresetChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.KontaktPresetChunkID;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.MultiConfiguration;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.SlotList;
 import de.mossgrabers.tools.ui.Functions;
@@ -33,12 +34,14 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class PresetChunkData extends AbstractChunkData
 {
-    private final List<KontaktPresetChunk> chunks   = new ArrayList<> ();
-    private final List<Program>            programs = new ArrayList<> ();
+    private final List<KontaktPresetChunk> presetChunks        = new ArrayList<> ();
+    private final List<Program>            programs            = new ArrayList<> ();
+    private final List<MultiConfiguration> multiConfigurations = new ArrayList<> ();
+
     private long                           dictionaryType;
-    private long                           unknown  = 0;
-    private long                           padding  = 0;
-    private long                           magic    = 0x8565620D;
+    private long                           unknown             = 0;
+    private long                           padding             = 0;
+    private long                           magic               = 0x8565620D;
     private byte []                        programData;
 
 
@@ -132,14 +135,14 @@ public class PresetChunkData extends AbstractChunkData
      */
     public void readKontaktPresetChunks (final byte [] data) throws IOException
     {
-        this.chunks.clear ();
+        this.presetChunks.clear ();
 
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
         while (in.available () > 0)
         {
             final KontaktPresetChunk chunk = new KontaktPresetChunk ();
             chunk.read (in);
-            this.chunks.add (chunk);
+            this.presetChunks.add (chunk);
         }
 
         this.readProgramsFromChunks ();
@@ -156,7 +159,7 @@ public class PresetChunkData extends AbstractChunkData
         this.programs.clear ();
 
         // Read all top level programs
-        for (final KontaktPresetChunk programChunk: findAllChunks (this.chunks, KontaktPresetChunkID.PROGRAM))
+        for (final KontaktPresetChunk programChunk: findAllChunks (this.presetChunks, KontaktPresetChunkID.PROGRAM))
         {
             final Program program = new Program ();
             program.read (programChunk);
@@ -167,13 +170,28 @@ public class PresetChunkData extends AbstractChunkData
         final Optional<KontaktPresetChunk> bankChunkOpt = this.getTopChunk (KontaktPresetChunkID.BANK);
         if (bankChunkOpt.isEmpty ())
             return;
-
         final KontaktPresetChunk bankChunk = bankChunkOpt.get ();
         new Bank ().parse (bankChunk);
 
         for (final KontaktPresetChunk childChunk: bankChunk.getChildren ())
-            if (childChunk.getId () == KontaktPresetChunkID.SLOT_LIST)
-                this.programs.addAll (new SlotList ().read (childChunk));
+        {
+            switch (childChunk.getId ())
+            {
+                case KontaktPresetChunkID.SLOT_LIST:
+                    this.programs.addAll (new SlotList ().read (childChunk));
+                    break;
+
+                case KontaktPresetChunkID.MULTI_CONFIGURATION:
+                    final MultiConfiguration multiConfiguration = new MultiConfiguration ();
+                    multiConfiguration.parse (childChunk);
+                    multiConfigurations.add (multiConfiguration);
+                    break;
+
+                default:
+                    // Not used
+                    break;
+            }
+        }
     }
 
 
@@ -188,7 +206,7 @@ public class PresetChunkData extends AbstractChunkData
         this.writeProgramsToChunks ();
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
-        for (final KontaktPresetChunk chunk: this.chunks)
+        for (final KontaktPresetChunk chunk: this.presetChunks)
             chunk.write (out);
         return out.toByteArray ();
     }
@@ -209,7 +227,7 @@ public class PresetChunkData extends AbstractChunkData
             // TODO also create NKM Banks (see parsePrograms above)
         }
         else
-            this.programs.get (0).write (this.chunks.get (0));
+            this.programs.get (0).write (this.presetChunks.get (0));
     }
 
 
@@ -220,7 +238,7 @@ public class PresetChunkData extends AbstractChunkData
      */
     public List<KontaktPresetChunk> getChunks ()
     {
-        return this.chunks;
+        return this.presetChunks;
     }
 
 
@@ -253,7 +271,7 @@ public class PresetChunkData extends AbstractChunkData
      */
     private Optional<KontaktPresetChunk> getTopChunk (final int presetChunkID)
     {
-        for (final KontaktPresetChunk chunk: this.chunks)
+        for (final KontaktPresetChunk chunk: this.presetChunks)
             if (chunk.getId () == presetChunkID)
                 return Optional.of (chunk);
         return Optional.empty ();
@@ -309,7 +327,7 @@ public class PresetChunkData extends AbstractChunkData
     public String dump (final int level)
     {
         final StringBuilder sb = new StringBuilder ();
-        for (final KontaktPresetChunk chunk: this.chunks)
+        for (final KontaktPresetChunk chunk: this.presetChunks)
             sb.append (chunk.dump (level)).append ("\n");
         return sb.toString ();
     }
