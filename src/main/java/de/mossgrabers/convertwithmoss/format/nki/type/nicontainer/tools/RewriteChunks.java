@@ -22,7 +22,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.Pres
  *
  * @author Jürgen Moßgraber
  */
-public class ReqriteChunks
+public class RewriteChunks
 {
     public static void mainX (final String [] args)
     {
