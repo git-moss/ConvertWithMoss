@@ -4,12 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.core.detector;
 
+import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 
 
 /**
@@ -34,6 +38,16 @@ public abstract class AbstractDetector<T extends AbstractDetectorTask> extends A
     protected AbstractDetector (final String name, final INotifier notifier)
     {
         super (name, notifier);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void detect (final File folder, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final boolean detectPerformances)
+    {
+        // Override to implement performance source consumer as well
+
+        this.detect (folder, multisampleSourceConsumer);
     }
 
 
@@ -78,5 +92,13 @@ public abstract class AbstractDetector<T extends AbstractDetectorTask> extends A
     public boolean validateParameters ()
     {
         return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        return false;
     }
 }

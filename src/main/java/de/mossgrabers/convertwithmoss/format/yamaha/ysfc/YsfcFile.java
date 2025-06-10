@@ -387,7 +387,7 @@ public class YsfcFile
      * @param waveDataList The wave data items
      * @throws IOException Could not store the data
      */
-    public void fillWaveChunks (final YamahaYsfcEntry keyBankEntry, final List<YamahaYsfcKeybank> keybankList, final YamahaYsfcEntry waveDataEntry, final List<YamahaYsfcWaveData> waveDataList) throws IOException
+    public void addWaveChunks (final YamahaYsfcEntry keyBankEntry, final List<YamahaYsfcKeybank> keybankList, final YamahaYsfcEntry waveDataEntry, final List<YamahaYsfcWaveData> waveDataList) throws IOException
     {
         // Waveform Metadata
         this.chunks.get (YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA).addEntry (keyBankEntry);

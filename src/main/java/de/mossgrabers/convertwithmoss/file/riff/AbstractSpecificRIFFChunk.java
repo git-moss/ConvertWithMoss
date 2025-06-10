@@ -80,7 +80,7 @@ public abstract class AbstractSpecificRIFFChunk implements IChunk
 
     /**
      * Get the data.
-     * 
+     *
      * @return The data
      */
     public byte [] getData ()

@@ -47,7 +47,7 @@ public class KMPDetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File sourceFile)
+    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
         final IGroup group = new DefaultGroup ("Group 1");
 

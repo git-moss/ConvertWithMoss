@@ -96,7 +96,7 @@ public class YamahaYsfcEntry
             this.flags = contentStream.readNBytes (6);
 
             // ID of the entry object for ordering
-            if ((version > 402 && version < 410) || version >= 500)
+            if (version > 402 && version < 410 || version >= 500)
                 this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
 
             if (version >= 410 && version < 500)
@@ -107,7 +107,7 @@ public class YamahaYsfcEntry
                 // 05 - 0 0 0 0 0 0 - 28 AA
                 // 03 - 0 0 0 0 0 0 - 28 AA
                 @SuppressWarnings("unused")
-                byte [] unknown = contentStream.readNBytes (9);
+                final byte [] unknown = contentStream.readNBytes (9);
             }
         }
 
@@ -271,7 +271,7 @@ public class YamahaYsfcEntry
 
     /**
      * Splits the item name into the category/sub-category value and the actual name part.
-     * 
+     *
      * @return The category/sub-category value and the actual name part
      */
     public Pair<Integer, String> getItemCategoryAndName ()
@@ -329,18 +329,18 @@ public class YamahaYsfcEntry
 
     /**
      * Set the flags.
-     * 
+     *
      * @param flags The flags, a 6 byte array
      */
     public void setFlags (final byte [] flags)
     {
-        this.flags = flags;
+        System.arraycopy (flags, 0, this.flags, 0, flags.length);
     }
 
 
     /**
      * Set the additional data.
-     * 
+     *
      * @param additionalData The additional data
      */
     public void setAdditionalData (final byte [] additionalData)

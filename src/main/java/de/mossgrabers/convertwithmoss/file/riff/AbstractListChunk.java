@@ -63,7 +63,7 @@ public abstract class AbstractListChunk extends RawRIFFChunk
     public long getSize ()
     {
         final long length = this.getDataSize ();
-        return 4 + length + (length % 2);
+        return 4 + length + length % 2;
     }
 
 
@@ -75,7 +75,7 @@ public abstract class AbstractListChunk extends RawRIFFChunk
         for (final IChunk chunk: this.subChunks)
         {
             final long dataSize = chunk.getDataSize ();
-            size += 8 + dataSize + (dataSize % 2);
+            size += 8 + dataSize + dataSize % 2;
         }
         return size;
     }

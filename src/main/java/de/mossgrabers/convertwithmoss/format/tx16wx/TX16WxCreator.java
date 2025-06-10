@@ -572,12 +572,14 @@ public class TX16WxCreator extends AbstractCreator
                 final Element envElement = XMLUtils.addElement (document, soundshapeElement, TX16WxTag.ENVELOPE_2);
                 final IEnvelope pitchEnvelope = pitchModulator.getSource ();
                 envElement.setAttribute (TX16WxTag.ENV_LEVEL0, (int) (pitchEnvelope.getStartLevel () * 100.0) + "%");
-                envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (pitchEnvelope.getAttackTime ()));
                 envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) (pitchEnvelope.getSustainLevel () * 100.0) + "%");
-                envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (pitchEnvelope.getDecayTime ()));
                 envElement.setAttribute (TX16WxTag.ENV_LEVEL2, (int) (pitchEnvelope.getSustainLevel () * 100.0) + "%");
-                envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (pitchEnvelope.getReleaseTime ()));
                 envElement.setAttribute (TX16WxTag.ENV_LEVEL3, (int) (pitchEnvelope.getEndLevel () * 100.0) + "%");
+
+                envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (pitchEnvelope.getDecayTime ()));
+                envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (0));
+                envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (pitchEnvelope.getReleaseTime ()));
+
                 XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, amplitudeEnvelope.getAttackSlope (), 6);
                 XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, amplitudeEnvelope.getDecaySlope (), 6);
                 XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);

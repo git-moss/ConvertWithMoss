@@ -137,7 +137,7 @@ public class RawRIFFChunk implements IChunk
 
     /**
      * Get the size of the chunk.
-     * 
+     *
      * @return THe size
      */
     public long getSize ()
@@ -259,7 +259,7 @@ public class RawRIFFChunk implements IChunk
 
     /**
      * Get the data from the array. Only use this for small chunks with fixed data size!
-     * 
+     *
      * @return The data
      */
     public byte [] getData ()
@@ -271,7 +271,7 @@ public class RawRIFFChunk implements IChunk
 
     private void checkValidity ()
     {
-        if (this.id != RiffID.LIST_ID.getId () && (this.data == null && this.dataFile == null))
+        if (this.id != RiffID.LIST_ID.getId () && this.data == null && this.dataFile == null)
         {
             if (this.tooLarge)
                 throw new NoDataInChunkException ("Chunk contains no data since it was too large to be loaded.");
@@ -575,7 +575,7 @@ public class RawRIFFChunk implements IChunk
 
     /**
      * Returns true if a data file is used (instead of a simple array).
-     * 
+     *
      * @return True if a data file is used
      */
     public boolean usesDataFile ()

@@ -120,9 +120,7 @@ public abstract class AbstractNKIMetadataFileHandler
     {
         try
         {
-            final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            final Element top = document.getDocumentElement ();
-
+            final Element top = getTopLevelElement (content);
             if (!this.isValidTopLevelElement (top))
                 return Collections.emptyList ();
 
@@ -151,6 +149,13 @@ public abstract class AbstractNKIMetadataFileHandler
         {
             throw new IOException (ex);
         }
+    }
+
+
+    private static Element getTopLevelElement (final String content) throws SAXException
+    {
+        final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
+        return document.getDocumentElement ();
     }
 
 

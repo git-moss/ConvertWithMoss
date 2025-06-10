@@ -17,9 +17,9 @@ import java.util.List;
  */
 public class MultiConfiguration
 {
-    private static final int      NUM_INSTRUMENTS  = 64;
+    private static final int            NUM_INSTRUMENTS  = 64;
 
-    private List<MultiInstrument> multiInstruments = new ArrayList<> ();
+    private final List<MultiInstrument> multiInstruments = new ArrayList<> ();
 
 
     /**

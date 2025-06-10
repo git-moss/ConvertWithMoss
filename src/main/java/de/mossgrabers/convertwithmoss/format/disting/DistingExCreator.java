@@ -210,7 +210,7 @@ public class DistingExCreator extends WavCreator
                         {
                             final IEnvelope envelope = envelopeModulator.getSource ();
                             parameters[7] = Math.clamp ((int) Math.round (Math.log (envelope.getAttackTime () / 0.001) / 0.0757), 0, 127);
-                            parameters[8] = Math.clamp ((int) Math.round (Math.log (envelope.getDecayTime () / 0.02) / 0.0521), 0, 127);
+                            parameters[8] = Math.clamp ((int) Math.round (Math.log (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()) / 0.02) / 0.0521), 0, 127);
                             parameters[10] = Math.clamp ((int) Math.round (Math.log (envelope.getReleaseTime () / 0.01) / 0.0630), 0, 127);
                         }
                     }

@@ -165,7 +165,7 @@ public class AbletonCreator extends AbstractCreator
                     final IEnvelopeModulator ampModulator = zone.getAmplitudeEnvelopeModulator ();
                     final IEnvelope ampEnvelope = ampModulator.getSource ();
                     text = text.replace ("%AMP_EG_ATTACK_TIME%", formatEnvTime (ampEnvelope.getAttackTime ()));
-                    text = text.replace ("%AMP_EG_DECAY_TIME%", formatEnvTime (ampEnvelope.getDecayTime ()));
+                    text = text.replace ("%AMP_EG_DECAY_TIME%", formatEnvTime (Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ())));
                     text = text.replace ("%AMP_EG_RELEASE_TIME%", formatEnvTime (ampEnvelope.getReleaseTime ()));
 
                     text = text.replace ("%AMP_EG_START_LEVEL%", formatEnvVolume (ampEnvelope.getStartLevel ()));
@@ -186,7 +186,7 @@ public class AbletonCreator extends AbstractCreator
                     text = text.replace ("%PITCH_EG_AMOUNT%", Integer.toString ((int) (pitchModDepth * 100)));
 
                     text = text.replace ("%PITCH_EG_ATTACK_TIME%", formatEnvTime (pitchEnvelope.getAttackTime ()));
-                    text = text.replace ("%PITCH_EG_DECAY_TIME%", formatEnvTime (pitchEnvelope.getDecayTime ()));
+                    text = text.replace ("%PITCH_EG_DECAY_TIME%", formatEnvTime (Math.max (0, pitchEnvelope.getHoldTime ()) + Math.max (0, pitchEnvelope.getDecayTime ())));
                     text = text.replace ("%PITCH_EG_RELEASE_TIME%", formatEnvTime (pitchEnvelope.getReleaseTime ()));
 
                     text = text.replace ("%PITCH_EG_START_LEVEL%", formatEnvVolume (pitchEnvelope.getStartLevel ()));
@@ -244,7 +244,7 @@ public class AbletonCreator extends AbstractCreator
         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 
         text = text.replace ("%FILTER_EG_ATTACK_TIME%", formatEnvTime (filterEnvelope.getAttackTime ()));
-        text = text.replace ("%FILTER_EG_DECAY_TIME%", formatEnvTime (filterEnvelope.getDecayTime ()));
+        text = text.replace ("%FILTER_EG_DECAY_TIME%", formatEnvTime (Math.max (0, filterEnvelope.getHoldTime ()) + Math.max (0, filterEnvelope.getDecayTime ())));
         text = text.replace ("%FILTER_EG_RELEASE_TIME%", formatEnvTime (filterEnvelope.getReleaseTime ()));
 
         text = text.replace ("%FILTER_EG_START_LEVEL%", formatEnvVolume (filterEnvelope.getStartLevel ()));

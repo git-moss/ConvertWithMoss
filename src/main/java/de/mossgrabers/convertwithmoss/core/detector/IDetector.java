@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 
 
 /**
@@ -23,9 +24,20 @@ public interface IDetector extends ICoreTask
      * Start the detection.
      *
      * @param folder The folder where to start the detection
-     * @param consumer Where to report the found multi-samples
+     * @param multisampleSourceConsumer Where to report the found multi-samples
      */
-    void detect (File folder, Consumer<IMultisampleSource> consumer);
+    void detect (File folder, Consumer<IMultisampleSource> multisampleSourceConsumer);
+
+
+    /**
+     * Start the detection.
+     *
+     * @param folder The folder where to start the detection
+     * @param multisampleSourceConsumer Where to report the found multi-samples sources
+     * @param performanceSourceConsumer Where to report the found performance sources
+     * @param detectPerformances If true, performances are detected otherwise presets
+     */
+    void detect (File folder, Consumer<IMultisampleSource> multisampleSourceConsumer, Consumer<IPerformanceSource> performanceSourceConsumer, boolean detectPerformances);
 
 
     /**
@@ -34,4 +46,12 @@ public interface IDetector extends ICoreTask
      * @return Returns true if all parameters are valid
      */
     boolean validateParameters ();
+
+
+    /**
+     * Check if the detector supports performance sources.
+     *
+     * @return Returns true if supported
+     */
+    boolean supportsPerformances ();
 }

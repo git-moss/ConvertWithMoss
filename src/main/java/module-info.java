@@ -33,5 +33,6 @@ module de.mossgrabers.convertwithmoss
     opens de.mossgrabers.convertwithmoss.images;
     opens de.mossgrabers.convertwithmoss.templates.nki;
     opens de.mossgrabers.convertwithmoss.templates.adv;
+    opens de.mossgrabers.convertwithmoss.templates.dspreset;
     opens de.mossgrabers.convertwithmoss.templates.ysfc;
 }

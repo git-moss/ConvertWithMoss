@@ -54,6 +54,15 @@ public class YamahaYsfcPerformancePart
 
 
     /**
+     * Default constructor.
+     */
+    private YamahaYsfcPerformancePart ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Get the name of the performance.
      *
      * @return The name
@@ -232,6 +241,37 @@ public class YamahaYsfcPerformancePart
 
 
     /**
+     * Create a clone of the object.
+     * 
+     * @return The clone
+     */
+    public YamahaYsfcPerformancePart deepClone ()
+    {
+        final YamahaYsfcPerformancePart copy = new YamahaYsfcPerformancePart ();
+        copy.name = this.name;
+        copy.type = this.type;
+        copy.mainCategory = this.mainCategory;
+        copy.subCategory = this.subCategory;
+        copy.partSwitch = this.partSwitch;
+        copy.keyboardSwitch = this.keyboardSwitch;
+        copy.velocityLimitLow = this.velocityLimitLow;
+        copy.velocityLimitHigh = this.velocityLimitHigh;
+        copy.noteLimitLow = this.noteLimitLow;
+        copy.noteLimitHigh = this.noteLimitHigh;
+        copy.pitchBendRangeUpper = this.pitchBendRangeUpper;
+        copy.pitchBendRangeLower = this.pitchBendRangeLower;
+
+        copy.theRest = new byte [this.theRest.length];
+        System.arraycopy (this.theRest, 0, copy.theRest, 0, this.theRest.length);
+
+        for (final YamahaYsfcPartElement element: this.elements)
+            copy.elements.add (element.deepClone ());
+
+        return copy;
+    }
+
+
+    /**
      * Tries to find a common XA mode across all active elements.
      *
      * @return The common XA mode or 0 if they have different ones
@@ -240,13 +280,11 @@ public class YamahaYsfcPerformancePart
     {
         int xaMode = -1;
         for (final YamahaYsfcPartElement element: this.elements)
-        {
             if (element.getElementSwitch () > 0)
                 if (xaMode == -1)
                     xaMode = element.getXaMode ();
                 else if (xaMode != element.getXaMode ())
                     return 0;
-        }
         return xaMode;
     }
 

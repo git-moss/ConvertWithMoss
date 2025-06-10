@@ -453,6 +453,15 @@ public class YamahaYsfcPartElement
 
 
     /**
+     * Default constructor.
+     */
+    private YamahaYsfcPartElement ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Get the element switch.
      *
      * @return 1 if the element is active, 0 if off
@@ -1864,5 +1873,167 @@ public class YamahaYsfcPartElement
                 return i;
 
         return 127;
+    }
+
+
+    /**
+     * Create a clone of the object.
+     * 
+     * @return The clone
+     */
+    public YamahaYsfcPartElement deepClone ()
+    {
+        final YamahaYsfcPartElement copy = new YamahaYsfcPartElement ();
+
+        copy.elementSwitch = this.elementSwitch;
+        copy.waveBank = this.waveBank;
+        copy.elementGroupNumber = this.elementGroupNumber;
+        copy.receiveNoteOff = this.receiveNoteOff;
+        copy.keyAssignMode = this.keyAssignMode;
+        copy.alternateGroup = this.alternateGroup;
+        copy.pan = this.pan;
+        copy.randomPanDepth = this.randomPanDepth;
+        copy.alternatePanDepth = this.alternatePanDepth;
+        copy.scalingPanDepth = this.scalingPanDepth;
+        copy.xaMode = this.xaMode;
+        copy.noteLimitLow = this.noteLimitLow;
+        copy.noteLimitHigh = this.noteLimitHigh;
+        copy.velocityLimitLow = this.velocityLimitLow;
+        copy.velocityLimitHigh = this.velocityLimitHigh;
+        copy.velocityCrossFade = this.velocityCrossFade;
+        copy.keyOnDelay = this.keyOnDelay;
+        copy.keyOnDelayTempoSync = this.keyOnDelayTempoSync;
+        copy.reverbSendLevel = this.reverbSendLevel;
+        copy.variationSendLevel = this.variationSendLevel;
+        copy.insertionEffectSwitch = this.insertionEffectSwitch;
+        copy.outputSelect = this.outputSelect;
+        copy.controlBox1Sw = this.controlBox1Sw;
+        copy.controlBox2Sw = this.controlBox2Sw;
+        copy.controlBox3Sw = this.controlBox3Sw;
+        copy.controlBox4Sw = this.controlBox4Sw;
+        copy.controlBox5Sw = this.controlBox5Sw;
+        copy.controlBox6Sw = this.controlBox6Sw;
+        copy.controlBox7Sw = this.controlBox7Sw;
+        copy.controlBox8Sw = this.controlBox8Sw;
+        copy.controlBox9Sw = this.controlBox9Sw;
+        copy.controlBox10Sw = this.controlBox10Sw;
+        copy.controlBox11Sw = this.controlBox11Sw;
+        copy.controlBox12Sw = this.controlBox12Sw;
+        copy.controlBox13Sw = this.controlBox13Sw;
+        copy.controlBox14Sw = this.controlBox14Sw;
+        copy.controlBox15Sw = this.controlBox15Sw;
+        copy.controlBox16Sw = this.controlBox16Sw;
+        copy.keyOnDelayTempo = this.keyOnDelayTempo;
+        copy.halfDamperSwitch = this.halfDamperSwitch;
+        copy.elementLevel = this.elementLevel;
+        copy.levelVelocitySensitivity = this.levelVelocitySensitivity;
+        copy.levelVelocityOffset = this.levelVelocityOffset;
+        copy.levelSensKeyCurve = this.levelSensKeyCurve;
+        copy.aegAttackTime = this.aegAttackTime;
+        copy.aegDecay1Time = this.aegDecay1Time;
+        copy.aegDecay2Time = this.aegDecay2Time;
+        copy.aegSustainTime = this.aegSustainTime;
+        copy.aegReleaseTime = this.aegReleaseTime;
+        copy.aegInitLevel = this.aegInitLevel;
+        copy.aegAttackLevel = this.aegAttackLevel;
+        copy.aegDecay1Level = this.aegDecay1Level;
+        copy.aegDecay2Level = this.aegDecay2Level;
+        copy.aegTimeVelocitySegment = this.aegTimeVelocitySegment;
+        copy.aegTimeVelocitySensitivity = this.aegTimeVelocitySensitivity;
+        copy.aegTimeKeyFollowSensitivity = this.aegTimeKeyFollowSensitivity;
+        copy.aegTimeKeyFollowCenterNote = this.aegTimeKeyFollowCenterNote;
+        copy.aegTimeKeyFollowAdjustment = this.aegTimeKeyFollowAdjustment;
+        copy.levelScalingBreakPoint1 = this.levelScalingBreakPoint1;
+        copy.levelScalingBreakPoint2 = this.levelScalingBreakPoint2;
+        copy.levelScalingBreakPoint3 = this.levelScalingBreakPoint3;
+        copy.levelScalingBreakPoint4 = this.levelScalingBreakPoint4;
+        copy.levelScalingOffset1 = this.levelScalingOffset1;
+        copy.levelScalingOffset2 = this.levelScalingOffset2;
+        copy.levelScalingOffset3 = this.levelScalingOffset3;
+        copy.levelScalingOffset4 = this.levelScalingOffset4;
+        copy.levelKeyFollowSensitivity = this.levelKeyFollowSensitivity;
+        copy.coarseTune = this.coarseTune;
+        copy.fineTune = this.fineTune;
+        copy.pitchVelocitySensitivity = this.pitchVelocitySensitivity;
+        copy.randomPitchDepth = this.randomPitchDepth;
+        copy.pitchKeyFollowSensitivity = this.pitchKeyFollowSensitivity;
+        copy.pitchKeyFollowCenterNote = this.pitchKeyFollowCenterNote;
+        copy.pitchFineScalingSensitivity = this.pitchFineScalingSensitivity;
+        copy.pegHoldTime = this.pegHoldTime;
+        copy.pegAttackTime = this.pegAttackTime;
+        copy.pegDecay1Time = this.pegDecay1Time;
+        copy.pegDecay2Time = this.pegDecay2Time;
+        copy.pegReleaseTime = this.pegReleaseTime;
+        copy.pegHoldLevel = this.pegHoldLevel;
+        copy.pegAttackLevel = this.pegAttackLevel;
+        copy.pegDecay1Level = this.pegDecay1Level;
+        copy.pegDecay2Level = this.pegDecay2Level;
+        copy.pegReleaseLevel = this.pegReleaseLevel;
+        copy.pegDepth = this.pegDepth;
+        copy.pegTimeVelocitySegment = this.pegTimeVelocitySegment;
+        copy.pegTimeVelocitySensitivity = this.pegTimeVelocitySensitivity;
+        copy.pegLevelVelocitySensitivity = this.pegLevelVelocitySensitivity;
+        copy.pegLevelSensVelocityCurve = this.pegLevelSensVelocityCurve;
+        copy.pegTimeKeyFollowSensitivity = this.pegTimeKeyFollowSensitivity;
+        copy.pegTimeKeyFollowCenterNote = this.pegTimeKeyFollowCenterNote;
+        copy.filterType = this.filterType;
+        copy.filterCutoffFrequency = this.filterCutoffFrequency;
+        copy.filterCutoffVelocitySensitivity = this.filterCutoffVelocitySensitivity;
+        copy.filterResonance = this.filterResonance;
+        copy.filterResonanceVelocitySensitivity = this.filterResonanceVelocitySensitivity;
+        copy.hpfCutoffFrequency = this.hpfCutoffFrequency;
+        copy.distance = this.distance;
+        copy.filterGain = this.filterGain;
+        copy.fegHoldTime = this.fegHoldTime;
+        copy.fegAttackTime = this.fegAttackTime;
+        copy.fegDecay1Time = this.fegDecay1Time;
+        copy.fegDecay2Time = this.fegDecay2Time;
+        copy.fegReleaseTime = this.fegReleaseTime;
+        copy.fegHoldLevel = this.fegHoldLevel;
+        copy.fegAttackLevel = this.fegAttackLevel;
+        copy.fegDecay1Level = this.fegDecay1Level;
+        copy.fegDecay2Level = this.fegDecay2Level;
+        copy.fegReleaseLevel = this.fegReleaseLevel;
+        copy.fegDepth = this.fegDepth;
+        copy.fegTimeVelocitySegment = this.fegTimeVelocitySegment;
+        copy.fegTimeVelocitySensitivity = this.fegTimeVelocitySensitivity;
+        copy.fegLevelVelocitySensitivity = this.fegLevelVelocitySensitivity;
+        copy.fegLevelVelocityCurve = this.fegLevelVelocityCurve;
+        copy.fegTimeKeyFollowSensitivity = this.fegTimeKeyFollowSensitivity;
+        copy.fegTimeKeyFollowCenterNote = this.fegTimeKeyFollowCenterNote;
+        copy.filterCutoffScalingBreakPoint1 = this.filterCutoffScalingBreakPoint1;
+        copy.filterCutoffScalingBreakPoint2 = this.filterCutoffScalingBreakPoint2;
+        copy.filterCutoffScalingBreakPoint3 = this.filterCutoffScalingBreakPoint3;
+        copy.filterCutoffScalingBreakPoint4 = this.filterCutoffScalingBreakPoint4;
+        copy.filterCutoffScalingOffset1 = this.filterCutoffScalingOffset1;
+        copy.filterCutoffScalingOffset2 = this.filterCutoffScalingOffset2;
+        copy.filterCutoffScalingOffset3 = this.filterCutoffScalingOffset3;
+        copy.filterCutoffScalingOffset4 = this.filterCutoffScalingOffset4;
+        copy.filterCutoffKeyFollowSensitivity = this.filterCutoffKeyFollowSensitivity;
+        copy.hpfCutoffKeyFollowSensitivity = this.hpfCutoffKeyFollowSensitivity;
+        copy.eqType = this.eqType;
+        copy.eqResonance = this.eqResonance;
+        copy.eq1Frequency = this.eq1Frequency;
+        copy.eq1Gain = this.eq1Gain;
+        copy.eq2Frequency = this.eq2Frequency;
+        copy.eq2Gain = this.eq2Gain;
+        copy.lfoWave = this.lfoWave;
+        copy.lfoKeyOnSync = this.lfoKeyOnSync;
+        copy.lfoKeyOnDelayTime = this.lfoKeyOnDelayTime;
+        copy.lfoSpeed = this.lfoSpeed;
+        copy.lfoAmodDepth = this.lfoAmodDepth;
+        copy.lfoPmodDepth = this.lfoPmodDepth;
+        copy.lfoFmodDepth = this.lfoFmodDepth;
+        copy.lfoFadeInTime = this.lfoFadeInTime;
+        copy.commonLfoPhaseOffset = this.commonLfoPhaseOffset;
+        copy.commonLfoBox1DepthRatio = this.commonLfoBox1DepthRatio;
+        copy.commonLfoBox2DepthRatio = this.commonLfoBox2DepthRatio;
+        copy.commonLfoBox3DepthRatio = this.commonLfoBox3DepthRatio;
+
+        copy.unknownBytes = new byte [this.unknownBytes.length];
+        System.arraycopy (this.unknownBytes, 0, copy.unknownBytes, 0, this.unknownBytes.length);
+
+        copy.waveformNumber = this.waveformNumber;
+        return copy;
     }
 }

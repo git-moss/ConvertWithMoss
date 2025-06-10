@@ -14,10 +14,8 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
 
 
 /**
@@ -25,14 +23,12 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
  *
  * @author Jürgen Moßgraber
  */
-public class DefaultMultisampleSource implements IMultisampleSource
+public class DefaultMultisampleSource extends DefaultSource implements IMultisampleSource
 {
-    private File            sourceFile;
-    private String []       subPath;
-    private String          name;
-    private String          mappingName;
-    private List<IGroup>    groups   = Collections.emptyList ();
-    private final IMetadata metadata = new DefaultMetadata ();
+    private File         sourceFile;
+    private String []    subPath;
+    private String       mappingName;
+    private List<IGroup> groups = Collections.emptyList ();
 
 
     /**
@@ -54,18 +50,11 @@ public class DefaultMultisampleSource implements IMultisampleSource
      */
     public DefaultMultisampleSource (final File sourceFile, final String [] subPath, final String name, final String mappingName)
     {
+        super (name);
+
         this.sourceFile = sourceFile;
         this.subPath = subPath;
-        this.name = name;
         this.mappingName = mappingName;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public IMetadata getMetadata ()
-    {
-        return this.metadata;
     }
 
 
@@ -134,22 +123,6 @@ public class DefaultMultisampleSource implements IMultisampleSource
                 cleanedGroups.add (group);
         }
         return cleanedGroups;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String getName ()
-    {
-        return this.name;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void setName (final String name)
-    {
-        this.name = name;
     }
 
 

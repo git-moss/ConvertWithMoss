@@ -499,7 +499,7 @@ public class WaldorfQpatCreator extends AbstractCreator
             final double attackTime = Math.clamp (envelope.getAttackTime (), 0, 60);
             parameters.add (new WaldorfQpatParameter (prefix + "Attack", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (attackTime)), (float) convertFromTime (attackTime)));
             // xxxEnvDecay
-            final double decayTime = Math.clamp (envelope.getDecayTime (), 0, 60);
+            final double decayTime = Math.clamp (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()), 0, 60);
             parameters.add (new WaldorfQpatParameter (prefix + "Decay", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (decayTime)), (float) convertFromTime (decayTime)));
         }
 

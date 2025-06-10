@@ -110,19 +110,23 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 The Decent Sampler plugin is a free (but closed source) sample player plugin that allows you to play sample libraries in the DecentSampler format (files with extensions: dspreset and dslibrary). See https://www.decentsamples.com/product/decent-sampler-plugin/
 The format specification is available here: https://www.decentsamples.com/wp-content/uploads/2020/06/format-documentation.html#the-sample-element
 
-A preset file contains a single preset. A dspreset file contains only the description of the multi-sample. The related samples are normally kept in a separate folder. Only WAV files are supported.
-A dslibrary file contains several dspreset files including the samples compressed in ZIP format.
+A dspreset file contains a single preset and the description of the multi-sample. The related samples are normally kept in a separate folder. WAV and FLAC files are supported. A dslibrary file contains several dspreset files including the samples compressed in ZIP format. A dsbundle is similar but uncompressed.
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
+### Source Options
+
+* Log unused XML elements and attributes: If enabled the XML elements and attributes which are not used in the translation process are logged.
+
 ### Destination Options
 
-* Output Format: Choose to create individual presets, libraries or bundles
-* Combine all source multi-samples into one library: If Library or Bundle is selected as output format, all detected source multi-samples are combined into one library or bundle. If the options is off, one library/bundle is created for each detected source multi-sample.
-* Library Filename: Enter a name to use for the library which contains all source multi-samples. If empty, the name of the first found source is used.
+* Output Format - Create Bundle: Choose to create a bundle (instead of single presets or a library).
 * Make monophonic: Restricts the sound to 1 note, use e.g. for lead sounds.
-* Add reverb: Adds a reverb effect and  creates two parameter knobs for it.
-* Options to write/update [WAV Chunk Information](#wav-chunk-information)
+* Templates and resources folder: Allows to modify the UI and effects section of the presets (see below).
+* Options to write/update [WAV Chunk Information](#wav-chunk-information).
+
+If no 'Templates and resources folder' is configured the default templates are used which create a reverb effect with 2 knob controls for the reverb mix and reverb time.
+To modify these templates, first create an empty folder somewhere on your disc. Select this folder in the 'Templates and resources folder' field. Then click on the button 'Create templates in the selected folder'. This copies the 2 templates ('ui.xml' and 'effects.xml') into this folder. You can copy additional images and documentation files to the folder as well. These resource files will be added to the output as well. These templates will be applied to all created dspresets. But note that you can have multiple templates if you use several template folders which can then be switched for each conversion run.
 
 ## Kontakt NKI/NKM
 
@@ -326,7 +330,7 @@ WAV file can contain different sample formats. This converter supports (split) s
 
 This format is used in many Yamaha Workstation. While the format is the same, the content is different.
 
-### Notes on using it as the source format
+### Using it as the source format
 
 The following file formats are supported as a source:
 
@@ -341,11 +345,21 @@ The wave files in professional Yamaha libraries are often compressed. Such files
 
 So far, reading of Performances is only supported for Montage (not Montage M!) and MODX/MODX+ files. This means that for all other formats only the basic multi-sample data is converted (no filter and envelopes data is converted).
 
-### Notes on using it as the destination format
+### Using it as the destination format
 
-Currently, the user and library formats of the Montage (not Montage M!) and MODX/MODX+ are available as the destination format. The backup formats X7A and X8A are supported only as a source.
+Currently, the user and library formats of the Montage (not Montage M!) and MODX/MODX+ are available as the destination format. The backup formats X7A and X8A are supported only as a source. The structure is as follows (bottom-up):
 
-There are no checks that the created libraries stay in the boundaries of the workstation specifications (e.g. the number of the maximum allowed samples or the required memory size)!
+* A key-group references several samples which form a multi-sample setup (key-/velocity ranges)
+* An element references 1 key-group (adds synthesis parameters)
+* A part can contain up to 8 elements (this forms already a complex setup with layers and ranges)
+* A performance can contain up to 16 parts (e.g. to perform a song by muting, soloing parts via scenes)
+* A library contains several performances
+
+When creating presets or libraries as the destination type, each multi-sample source creates one performance with one active part. Each group of the the multi-sample source is assigned to 1 element for which 1 key-group is created as well which contains the samples. If there are more groups than elements, the remaining groups are all added to the last element. If there are no groups all samples will be assigned to key-group/element one.
+
+When creating (ConvertWithMoss) performances as the destination type, each performance source creates one (Yamaha) performance with one active part for each multi-sample (instrument) of the source. If there are more than 16 instruments in the source they are ignored. The rest of the mapping is identical to creating presets/libraries.
+
+Note: There are no checks that the created libraries stay in the boundaries of the workstation specifications (e.g. the number of the maximum allowed samples or the required memory size)!
 
 ### Source Options
 
@@ -357,5 +371,3 @@ There are no checks that the created libraries stay in the boundaries of the wor
 
 * Library Format: Chooses the output format which is created.
 * Create only Waveforms: No Performances will be written. Only Waveform data.
-* Combine all source multi-samples into one library: If this option is off, each source multi-sample is stored in a separate library which the name of the multi-sample. If this option is enabled, all source multi-samples are combined into 1 library.
-* Library Filename: If the previous option is enabled to combine all source multi-samples into one library, this name is used as the filename.

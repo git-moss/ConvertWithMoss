@@ -1,0 +1,10 @@
+<ui>
+	<tab name="main">
+		<labeled-knob label="Reverb Wet Level" maxValue="1000" minValue="0" textColor="FF000000" type="float" value="0.0" x="200" y="0">
+			<binding level="instrument" parameter="FX_REVERB_WET_LEVEL" position="0" translation="linear" translationOutputMax="1" translationOutputMin="0.0" type="effect"/>
+		</labeled-knob>
+		<labeled-knob label="Reverb Room Size" maxValue="1000" minValue="0" textColor="FF000000" type="float" value="0.0" x="300" y="0">
+			<binding level="instrument" parameter="FX_REVERB_ROOM_SIZE" position="0" translation="linear" translationOutputMax="1" translationOutputMin="0.0" type="effect"/>
+		</labeled-knob>
+	</tab>
+</ui>

@@ -13,7 +13,6 @@ import java.util.Optional;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 
 
@@ -22,16 +21,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  *
  * @author Jürgen Moßgraber
  */
-public interface IMultisampleSource
+public interface IMultisampleSource extends ISource
 {
-    /**
-     * Get the metadata description for the source.
-     *
-     * @return The folder
-     */
-    IMetadata getMetadata ();
-
-
     /**
      * Get the folder which contains the multi-sample source or the file itself.
      *
@@ -96,22 +87,6 @@ public interface IMultisampleSource
      * @return The group without empty ones
      */
     List<IGroup> getNonEmptyGroups (final boolean filterReleaseTriggers);
-
-
-    /**
-     * Get the name of the multi-sample.
-     *
-     * @return The name
-     */
-    String getName ();
-
-
-    /**
-     * Set the name of the multi-sample.
-     *
-     * @param name The name
-     */
-    void setName (String name);
 
 
     /**

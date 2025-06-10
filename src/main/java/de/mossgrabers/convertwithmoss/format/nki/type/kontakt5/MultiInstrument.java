@@ -17,7 +17,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class MultiInstrument
 {
-    private int midiChannel;
+    private int midiChannel = 0;
 
 
     /**

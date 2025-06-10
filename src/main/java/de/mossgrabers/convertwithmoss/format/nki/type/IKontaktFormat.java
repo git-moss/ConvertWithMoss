@@ -11,6 +11,7 @@ import java.io.RandomAccessFile;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 
@@ -32,6 +33,19 @@ public interface IKontaktFormat
      * @throws IOException Error reading the file
      */
     List<IMultisampleSource> readNKI (File sourceFolder, File sourceFile, RandomAccessFile fileAccess, IMetadataConfig metadataConfig) throws IOException;
+
+
+    /**
+     * Read and parse a file which uses this format type from the given random access file.
+     *
+     * @param sourceFolder The top source folder for the detection
+     * @param sourceFile The source file which contains the XML document
+     * @param fileAccess The random access file to read from
+     * @return The parsed multi-sample sources
+     * @param metadataConfig Default metadata
+     * @throws IOException Error reading the file
+     */
+    IPerformanceSource readNKM (File sourceFolder, File sourceFile, RandomAccessFile fileAccess, IMetadataConfig metadataConfig) throws IOException;
 
 
     /**

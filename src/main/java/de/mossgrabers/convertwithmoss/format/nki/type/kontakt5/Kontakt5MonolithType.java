@@ -20,6 +20,7 @@ import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -68,6 +69,15 @@ public class Kontakt5MonolithType extends AbstractKontaktType
         {
             return this.readNIMonolithContainer (inputStream, sourceFile, metadataConfig);
         }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    {
+        // TODO Implement reading the NKM
+        return null;
     }
 
 

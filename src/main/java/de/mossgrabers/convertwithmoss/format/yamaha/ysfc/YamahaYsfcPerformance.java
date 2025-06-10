@@ -40,7 +40,6 @@ public class YamahaYsfcPerformance implements IStreamable
     private byte []                               digitalInputPart;
     private byte []                               playSettings;
     private final String []                       assignableKnobs = new String [8];
-    final List<YamahaYsfcPerformancePart>         allParts        = new ArrayList<> ();
     private byte []                               rest;
 
 
@@ -156,8 +155,9 @@ public class YamahaYsfcPerformance implements IStreamable
     private void readParts (final InputStream in) throws IOException
     {
         final int numberOfParts = (int) StreamUtils.readUnsigned32 (in, true);
+        final List<YamahaYsfcPerformancePart> allParts = new ArrayList<> (numberOfParts);
         for (int i = 0; i < numberOfParts; i++)
-            this.allParts.add (new YamahaYsfcPerformancePart (new ByteArrayInputStream (StreamUtils.readDataBlock (in, true)), this.sourceVersion));
+            allParts.add (new YamahaYsfcPerformancePart (new ByteArrayInputStream (StreamUtils.readDataBlock (in, true)), this.sourceVersion));
 
         // Skip AD + Digital input parts
         this.adPart = StreamUtils.readDataBlock (in, true);
@@ -175,7 +175,7 @@ public class YamahaYsfcPerformance implements IStreamable
                 case 0, 1:
                     // 8 for plain AWM or 73 for drums
                     final int numberOfElements = (int) StreamUtils.readUnsigned32 (in, true);
-                    final YamahaYsfcPerformancePart part = this.allParts.get (i);
+                    final YamahaYsfcPerformancePart part = allParts.get (i);
                     this.parts.add (part);
                     for (int el = 0; el < numberOfElements; el++)
                         part.addElement (new YamahaYsfcPartElement (in, this.sourceVersion));
@@ -242,15 +242,15 @@ public class YamahaYsfcPerformance implements IStreamable
 
     private void writeParts (final OutputStream out) throws IOException
     {
-        StreamUtils.writeUnsigned32 (out, this.allParts.size (), true);
+        StreamUtils.writeUnsigned32 (out, this.parts.size (), true);
 
-        for (final YamahaYsfcPerformancePart part: this.allParts)
+        for (final YamahaYsfcPerformancePart part: this.parts)
             part.write (out);
 
         StreamUtils.writeDataBlock (out, this.adPart, true);
         StreamUtils.writeDataBlock (out, this.digitalInputPart, true);
 
-        for (final YamahaYsfcPerformancePart part: this.allParts)
+        for (final YamahaYsfcPerformancePart part: this.parts)
         {
             StreamUtils.writeUnsigned32 (out, part.getType (), true);
 
