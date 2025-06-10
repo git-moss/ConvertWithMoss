@@ -22,8 +22,10 @@ import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
@@ -37,6 +39,8 @@ import de.mossgrabers.convertwithmoss.format.nki.SoundinfoDocument;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt2.monolith.Kontakt2Monolith;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.MultiConfiguration;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.MultiInstrument;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
@@ -92,7 +96,8 @@ public class Kontakt2Type extends AbstractKontaktType
             // Skip padding
             StreamUtils.skipNBytes (fileAccess, 32);
 
-            multiSamples = this.handleFastLZ (sourceFolder, sourceFile, fileAccess, header.getCompressedLength (), decompressedLength, crc32Hash, metadataConfig);
+            this.handleFastLZ (fileAccess, header.getCompressedLength (), decompressedLength, crc32Hash);
+            multiSamples = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
         }
         else
         {
@@ -102,6 +107,43 @@ public class Kontakt2Type extends AbstractKontaktType
 
         this.handleSoundinfo (sourceFile, fileAccess, multiSamples);
         return multiSamples;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    {
+        final Kontakt2Header header = new Kontakt2Header (this.notifier, this.isBigEndian);
+        header.read (fileAccess);
+        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", header.isFourDotTwo () ? "4.2" : "2", header.getKontaktVersion (), header.isMonolith () ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
+
+        final IPerformanceSource performance;
+        if (header.isFourDotTwo ())
+        {
+            final long crc32Hash = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+            final int decompressedLength = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+
+            // Skip padding
+            StreamUtils.skipNBytes (fileAccess, 32);
+
+            this.handleFastLZ (fileAccess, header.getCompressedLength (), decompressedLength, crc32Hash);
+            performance = this.getPerformanceSource (sourceFolder, sourceFile, metadataConfig);
+        }
+        else
+        {
+            // TODO
+            // final Map<String, ISampleData> monolithSamples = header.isMonolith () ? new
+            // Kontakt2Monolith (fileAccess, this.isBigEndian).mapSamples () : Collections.emptyMap
+            // ();
+            // multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess,
+            // monolithSamples, metadataConfig);
+
+            performance = null;
+        }
+
+        // TODO this.handleSoundinfo (sourceFile, fileAccess, multiSamples);
+        return performance;
     }
 
 
@@ -140,17 +182,13 @@ public class Kontakt2Type extends AbstractKontaktType
     /**
      * Handles the Kontakt 4.2 FastLZ section.
      *
-     * @param sourceFolder The top source folder for the detection
-     * @param sourceFile The source file which contains the XML document
      * @param fileAccess The random access file to read from
      * @param compressedDataSize The size of the compressed data
      * @param uncompressedSize The size of the uncompressed data size
      * @param crc32Hash The CRC32 hash of the compressed data
-     * @param metadataConfig Default metadata
-     * @return All parsed multi-samples
      * @throws IOException Could decode the multi-samples
      */
-    private List<IMultisampleSource> handleFastLZ (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final int compressedDataSize, final int uncompressedSize, final long crc32Hash, final IMetadataConfig metadataConfig) throws IOException
+    private void handleFastLZ (final RandomAccessFile fileAccess, final int compressedDataSize, final int uncompressedSize, final long crc32Hash) throws IOException
     {
         final byte [] compressedData = new byte [compressedDataSize];
         fileAccess.readFully (compressedData);
@@ -159,7 +197,40 @@ public class Kontakt2Type extends AbstractKontaktType
             this.notifier.logError ("IDS_NKI_CRC32_MISMATCH");
 
         this.kontakt5Preset.readKontaktPresetChunks (FastLZ.uncompress (compressedData, uncompressedSize));
+    }
 
+
+    private IPerformanceSource getPerformanceSource (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
+    {
+        final List<IMultisampleSource> multisampleSources = getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
+        final MultiConfiguration multiConfiguration = this.kontakt5Preset.getMultiConfiguration ();
+        if (multiConfiguration != null)
+        {
+            final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+            performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
+            final List<MultiInstrument> instruments = multiConfiguration.getMultiInstruments ();
+            for (int i = 0; i < multisampleSources.size (); i++)
+            {
+                final IMultisampleSource multisampleSource = multisampleSources.get (i);
+                final int midiChannel = i < instruments.size () ? instruments.get (i).getMidiChannel () : 0;
+                performanceSource.addInstrument (multisampleSource, midiChannel);
+            }
+            return performanceSource;
+        }
+        return null;
+    }
+
+
+    /**
+     * Get all found multi-sample sources.
+     *
+     * @param sourceFolder The top source folder for the detection
+     * @param metadataConfig Default metadata
+     * @return All parsed multi-samples
+     * @throws IOException Could decode the multi-samples
+     */
+    private List<IMultisampleSource> getMultisampleSources (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
+    {
         final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
 

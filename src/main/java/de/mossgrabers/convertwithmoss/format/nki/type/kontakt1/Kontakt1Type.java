@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.Magic;
@@ -98,6 +99,15 @@ public class Kontakt1Type extends AbstractKontaktType
         }
 
         return Collections.emptyList ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    {
+        // TODO Implement
+        return null;
     }
 
 

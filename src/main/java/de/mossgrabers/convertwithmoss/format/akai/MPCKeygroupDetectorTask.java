@@ -69,7 +69,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File file)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();

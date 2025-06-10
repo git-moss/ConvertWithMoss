@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktFormat;
@@ -31,23 +32,37 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class NkiDetectorTask extends AbstractDetectorTask
 {
+    private static final String [] ENDINGS_ALL          =
+    {
+        ".nki",
+        ".nkm"
+    };
+
+    private static final String [] ENDINGS_PERFORMANCES =
+    {
+        ".nkm"
+    };
+
+
     /**
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multisample sources
+     * @param multisampleSourceConsumer The consumer that handles the detected multi-sample sources
+     * @param performanceSourceConsumer The consumer that handles the detected performance sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
+     * @param detectPerformances If true, performances are detected otherwise presets
      */
-    public NkiDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
+    public NkiDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final File sourceFolder, final IMetadataConfig metadata, final boolean detectPerformances)
     {
-        super (notifier, consumer, sourceFolder, metadata, ".nki", ".nkm");
+        super (notifier, multisampleSourceConsumer, performanceSourceConsumer, sourceFolder, metadata, detectPerformances, detectPerformances ? ENDINGS_PERFORMANCES : ENDINGS_ALL);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File sourceFile)
+    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -65,6 +80,29 @@ public class NkiDetectorTask extends AbstractDetectorTask
             this.notifier.logError (ex, false);
         }
         return Collections.emptyList ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected IPerformanceSource readPerformanceFile (final File sourceFile)
+    {
+        if (this.waitForDelivery ())
+            return null;
+
+        try (final RandomAccessFile fileAccess = new RandomAccessFile (sourceFile, "r"))
+        {
+            final IKontaktFormat format = this.detectFormat (fileAccess);
+            final IPerformanceSource result = format.readNKM (this.sourceFolder, sourceFile, fileAccess, this.metadataConfig);
+            if (result == null || result.getInstruments ().isEmpty ())
+                this.notifier.logError ("IDS_NKI_COULD_NOT_DETECT_GROUPS");
+            return result;
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ex, false);
+        }
+        return null;
     }
 
 

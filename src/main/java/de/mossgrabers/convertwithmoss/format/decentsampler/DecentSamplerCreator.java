@@ -8,8 +8,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -17,10 +19,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -41,7 +46,12 @@ import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Window;
 
 
 /**
@@ -53,7 +63,10 @@ import javafx.scene.control.CheckBox;
  */
 public class DecentSamplerCreator extends AbstractCreator
 {
-    private static final String LIBRARY_INFO_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
+    private static final List<String> IGNORE_FILES          = List.of ("ui.xml", "effects.xml");
+    private static final String       LIBRARY_INFO_CONTENT  = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
+    private static final int          NUMBER_OF_DIRECTORIES = 20;
+    private static final String       TEMPLATE_FOLDER       = "de/mossgrabers/convertwithmoss/templates/dspreset/";
 
 
     private class PresetResult
@@ -65,13 +78,16 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private static final String DS_OUTPUT_CREATE_BUNDLE   = "DsOutputCreateBundle";
-    private static final String DS_OUTPUT_MAKE_MONOPHONIC = "DsOutputMakeMonophonic";
-    private static final String DS_OUTPUT_ADD_REVERB      = "DsOutputAddReverb";
+    private static final String    DS_OUTPUT_CREATE_BUNDLE   = "DsOutputCreateBundle";
+    private static final String    DS_OUTPUT_MAKE_MONOPHONIC = "DsOutputMakeMonophonic";
+    private static final String    DS_TEMPLATE_FOLDER_PATH   = "DsTemplateFolderPath";
 
-    private CheckBox            createBundleBox;
-    private CheckBox            addReverbBox;
-    private CheckBox            makeMonophonicBox;
+    private CheckBox               createBundleBox;
+    private CheckBox               makeMonophonicBox;
+    private final ComboBox<String> templateFolderPathField   = new ComboBox<> ();
+    private Button                 templateFolderPathSelectButton;
+    private final List<String>     templateFolderPathHistory = new ArrayList<> ();
+    private Button                 createTemplatesButton;
 
 
     /**
@@ -108,10 +124,26 @@ public class DecentSamplerCreator extends AbstractCreator
         separator.getStyleClass ().add ("titled-separator-pane");
 
         this.makeMonophonicBox = panel.createCheckBox ("@IDS_DS_MAKE_MONOPHONIC");
-        this.addReverbBox = panel.createCheckBox ("@IDS_DS_ADD_REVERB");
+
+        final BoxPanel templateFolderPathPanel = new BoxPanel (Orientation.VERTICAL, false);
+        final TitledSeparator templateFolderPathTitle = new TitledSeparator (Functions.getText ("@IDS_DS_TEMPLATE_FOLDER"));
+        templateFolderPathTitle.setLabelFor (this.templateFolderPathField);
+        templateFolderPathPanel.addComponent (templateFolderPathTitle);
+
+        this.templateFolderPathSelectButton = new Button (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH"));
+        this.templateFolderPathSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH_TOOLTIP")));
+        this.templateFolderPathSelectButton.setOnAction (event -> this.selectTemplateFolderPath (null));
+
+        this.createTemplatesButton = new Button (Functions.getText ("@IDS_DS_CREATE_TEMPLATES"));
+        this.createTemplatesButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_CREATE_TEMPLATES_TOOLTIP")));
+        this.createTemplatesButton.setOnAction (event -> this.createTemplates ());
+
+        templateFolderPathPanel.addComponent (new BorderPane (this.templateFolderPathField, null, this.templateFolderPathSelectButton, null, null));
+        this.templateFolderPathField.setMaxWidth (Double.MAX_VALUE);
+        panel.addComponent (templateFolderPathPanel);
+        panel.addComponent (this.createTemplatesButton);
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
-
         return panel.getPane ();
     }
 
@@ -122,7 +154,19 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         this.createBundleBox.setSelected (config.getBoolean (DS_OUTPUT_CREATE_BUNDLE, false));
         this.makeMonophonicBox.setSelected (config.getBoolean (DS_OUTPUT_MAKE_MONOPHONIC, false));
-        this.addReverbBox.setSelected (config.getBoolean (DS_OUTPUT_ADD_REVERB, true));
+
+        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
+        {
+            final String templateFolderPath = config.getProperty (DS_TEMPLATE_FOLDER_PATH + i);
+            if (templateFolderPath == null)
+                break;
+            if (!this.templateFolderPathHistory.contains (templateFolderPath))
+                this.templateFolderPathHistory.add (templateFolderPath);
+        }
+        this.templateFolderPathField.getItems ().addAll (this.templateFolderPathHistory);
+        this.templateFolderPathField.setEditable (true);
+        if (!this.templateFolderPathHistory.isEmpty ())
+            this.templateFolderPathField.getEditor ().setText (this.templateFolderPathHistory.get (0));
 
         this.loadWavChunkSettings (config, "Ds");
     }
@@ -134,7 +178,10 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         config.setBoolean (DS_OUTPUT_CREATE_BUNDLE, this.createBundleBox.isSelected ());
         config.setBoolean (DS_OUTPUT_MAKE_MONOPHONIC, this.makeMonophonicBox.isSelected ());
-        config.setBoolean (DS_OUTPUT_ADD_REVERB, this.addReverbBox.isSelected ());
+
+        updateHistory (this.templateFolderPathField.getEditor ().getText (), this.templateFolderPathHistory);
+        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
+            config.setProperty (DS_TEMPLATE_FOLDER_PATH + i, this.templateFolderPathHistory.size () > i ? this.templateFolderPathHistory.get (i) : "");
 
         this.saveWavChunkSettings (config, "Ds");
     }
@@ -146,6 +193,7 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         final List<PresetResult> results = this.create (destinationFolder, Collections.singletonList (multisampleSource), false);
 
+        final File resourceDestination;
         if (this.createBundleBox.isSelected ())
         {
             // Note: method is called for each multi-source individually!
@@ -153,13 +201,21 @@ public class DecentSamplerCreator extends AbstractCreator
             this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
             this.storeBundle (multiFile, Collections.singletonList (results.get (0)));
+
+            resourceDestination = multiFile;
         }
         else
+        {
             for (final PresetResult presetResult: results)
             {
                 this.notifier.log ("IDS_NOTIFY_STORING", presetResult.dsPresetFile.getAbsolutePath ());
                 this.storePreset (destinationFolder, presetResult);
             }
+
+            resourceDestination = destinationFolder;
+        }
+
+        this.copyResources (resourceDestination);
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -184,7 +240,7 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private final List<PresetResult> create (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final boolean isLibrary)
+    private final List<PresetResult> create (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final boolean isLibrary) throws IOException
     {
         if (multisampleSources.isEmpty ())
             return Collections.emptyList ();
@@ -258,6 +314,7 @@ public class DecentSamplerCreator extends AbstractCreator
             presetResult.dsPresetFile = new File (bundleFolder, presetResult.dsPresetFile.getName ());
             this.storePreset (bundleFolder, presetResult);
         }
+        this.copyResources (bundleFolder);
 
         final String libraryName = FileUtils.getNameWithoutType (multiFile);
         Files.writeString (new File (bundleFolder, "DSLibraryInfo.xml").toPath (), LIBRARY_INFO_CONTENT.replace ("%LIBRARY_NAME%", libraryName));
@@ -273,15 +330,17 @@ public class DecentSamplerCreator extends AbstractCreator
      */
     private void storeLibrary (final File multiFile, final List<PresetResult> presetResults) throws IOException
     {
-        final String libraryPath = FileUtils.getNameWithoutType (multiFile) + FORWARD_SLASH;
+        final String libraryPath = FileUtils.getNameWithoutType (multiFile);
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
         {
             for (final PresetResult presetResult: presetResults)
             {
-                AbstractCreator.zipTextFile (zos, libraryPath + presetResult.dsPresetFile.getName (), presetResult.dsPreset);
-                this.zipSampleFiles (zos, libraryPath + presetResult.sampleFolder, presetResult.sampleSource);
+                AbstractCreator.zipTextFile (zos, libraryPath + FORWARD_SLASH + presetResult.dsPresetFile.getName (), presetResult.dsPreset);
+                this.zipSampleFiles (zos, libraryPath + FORWARD_SLASH + presetResult.sampleFolder, presetResult.sampleSource);
             }
+
+            this.copyResources (zos, libraryPath);
         }
     }
 
@@ -292,8 +351,9 @@ public class DecentSamplerCreator extends AbstractCreator
      * @param folderName The name to use for the sample folder
      * @param multisampleSource The multi-sample
      * @return The XML structure
+     * @throws IOException Could not find template
      */
-    private Optional<String> createPresetMetadata (final String folderName, final IMultisampleSource multisampleSource)
+    private Optional<String> createPresetMetadata (final String folderName, final IMultisampleSource multisampleSource) throws IOException
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -303,7 +363,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
         final Element multisampleElement = document.createElement (DecentSamplerTag.DECENTSAMPLER);
         document.appendChild (multisampleElement);
-        multisampleElement.setAttribute ("minVersion", "1.11");
+        multisampleElement.setAttribute (DecentSamplerTag.MIN_VERSION, "1.11");
 
         // No metadata at all
 
@@ -376,7 +436,7 @@ public class DecentSamplerCreator extends AbstractCreator
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.SAMPLE);
-        addVolumeEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource (), sampleElement);
+        setEnvelope (sampleElement, zone.getAmplitudeEnvelopeModulator ().getSource ());
 
         final String filename = zone.getName () + ".wav";
         sampleElement.setAttribute (DecentSamplerTag.PATH, AbstractCreator.formatFileName (folderName, filename));
@@ -484,12 +544,11 @@ public class DecentSamplerCreator extends AbstractCreator
                 break;
         }
 
-        // Note: Resonance is in the range [0..1] but it is not documented what value 1
-        // represents. Therefore, we assume 40dB maximum and a linear range (could also
-        // be logarithmic).
-
-        // There seems to be an issue with resonance (default = 0.7 seems to act like 0)...
-        filterElement.setAttribute ("resonance", formatDouble (filter.getResonance () + 0.7, 3));
+        // The correct acceptable range is 0.001 to 5, where 0.7 is the default value. Values
+        // lower than 0.7 will start to reduce the frequency at the cutoff point, and a value near 0
+        // will actually stop sound altogether. From a practical perspective, it usually makes sense
+        // to think of 0.7 as the minimum value, as this produces no "bump" at the cutoff point.
+        filterElement.setAttribute ("resonance", formatDouble (filter.getResonance () * 4.3 + 0.7, 3));
         filterElement.setAttribute (isNotch ? "q" : "frequency", formatDouble (filter.getCutoff (), 2));
 
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
@@ -500,11 +559,7 @@ public class DecentSamplerCreator extends AbstractCreator
             XMLUtils.setDoubleAttribute (envelopeElement, DecentSamplerTag.MOD_AMOUNT, envelopeDepth, 2);
             envelopeElement.setAttribute ("scope", "voice");
 
-            final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-            setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, filterEnvelope.getAttackTime ());
-            setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, filterEnvelope.getDecayTime ());
-            setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_SUSTAIN, filterEnvelope.getSustainLevel ());
-            setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, filterEnvelope.getReleaseTime ());
+            setEnvelope (envelopeElement, cutoffModulator.getSource ());
 
             final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
             bindingElement.setAttribute ("type", "effect");
@@ -520,19 +575,15 @@ public class DecentSamplerCreator extends AbstractCreator
 
 
     /**
-     * Creates the reverb effect elements.
+     * Creates the effects elements from a template.
      *
      * @param document The XML document
      * @param rootElement Where to add the effect elements
+     * @throws IOException Could not load the template
      */
-    private void createEffects (final Document document, final Element rootElement)
+    private void createEffects (final Document document, final Element rootElement) throws IOException
     {
-        if (!this.addReverbBox.isSelected ())
-            return;
-
-        final Element effectsElement = XMLUtils.addElement (document, rootElement, DecentSamplerTag.EFFECTS);
-        final Element reverbElement = XMLUtils.addElement (document, effectsElement, DecentSamplerTag.EFFECTS_EFFECT);
-        reverbElement.setAttribute ("type", "reverb");
+        rootElement.appendChild (this.readXMLSnippet (document, "effects.xml"));
     }
 
 
@@ -546,11 +597,8 @@ public class DecentSamplerCreator extends AbstractCreator
         final Element envelopeElement = XMLUtils.addElement (document, modulatorsElement, DecentSamplerTag.ENVELOPE);
         XMLUtils.setDoubleAttribute (envelopeElement, DecentSamplerTag.MOD_AMOUNT, envelopeDepth, 2);
 
-        final IEnvelope envelope = pitchModulator.getSource ();
-        setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_ATTACK, envelope.getAttackTime ());
-        setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_DECAY, envelope.getDecayTime ());
-        setEnvelopeAttribute (envelopeElement, DecentSamplerTag.ENV_SUSTAIN, envelope.getSustainLevel ());
-        setEnvelopeTimeAttribute (envelopeElement, DecentSamplerTag.ENV_RELEASE, envelope.getReleaseTime ());
+        setEnvelope (envelopeElement, pitchModulator.getSource ());
+        envelopeElement.setAttribute ("scope", "voice");
 
         final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", "amp");
@@ -566,85 +614,41 @@ public class DecentSamplerCreator extends AbstractCreator
 
 
     /**
-     * Create the static user interface.
+     * Create the static user interface from a template.
      *
      * @param document The XML document
-     * @param root The root XML element
+     * @param rootElement The root XML element
+     * @throws IOException Could not load the template
      */
-    private void createUI (final Document document, final Element root)
+    private void createUI (final Document document, final Element rootElement) throws IOException
     {
-        final Element uiElement = XMLUtils.addElement (document, root, DecentSamplerTag.UI);
-        final Element tabElement = XMLUtils.addElement (document, uiElement, DecentSamplerTag.TAB);
-        tabElement.setAttribute ("name", "main");
-
-        if (this.addReverbBox.isSelected ())
-        {
-            Element knobElement = createKnob (document, tabElement, 200, 0, "Reverb Wet Level", 1000, 0);
-            Element bindingElement = createBinding (document, knobElement, DecentSamplerTag.MOD_EFFECT, "FX_REVERB_WET_LEVEL");
-            bindingElement.setAttribute ("position", "1");
-            bindingElement.setAttribute ("translation", "linear");
-            bindingElement.setAttribute ("translationOutputMax", "1");
-            bindingElement.setAttribute ("translationOutputMin", "0.0");
-
-            knobElement = createKnob (document, tabElement, 300, 0, "Reverb Room Size", 1000, 0);
-            bindingElement = createBinding (document, knobElement, DecentSamplerTag.MOD_EFFECT, "FX_REVERB_ROOM_SIZE");
-            bindingElement.setAttribute ("position", "1");
-            bindingElement.setAttribute ("translation", "linear");
-            bindingElement.setAttribute ("translationOutputMax", "1");
-            bindingElement.setAttribute ("translationOutputMin", "0.0");
-        }
-    }
-
-
-    private static Element createKnob (final Document document, final Element tab, final int x, final int y, final String label, final int maxValue, final double value)
-    {
-        final Element knobElement = XMLUtils.addElement (document, tab, DecentSamplerTag.LABELED_KNOB);
-        knobElement.setAttribute ("x", Integer.toString (x));
-        knobElement.setAttribute ("y", Integer.toString (y));
-        knobElement.setAttribute ("label", label);
-        knobElement.setAttribute ("type", "float");
-        knobElement.setAttribute ("minValue", "0");
-        knobElement.setAttribute ("maxValue", Integer.toString (maxValue));
-        knobElement.setAttribute ("textColor", "FF000000");
-        knobElement.setAttribute ("value", Double.toString (value));
-        return knobElement;
-    }
-
-
-    private static final Element createBinding (final Document document, final Element knobElement, final String type, final String parameter)
-    {
-        final Element bindingElement = XMLUtils.addElement (document, knobElement, DecentSamplerTag.BINDING);
-        bindingElement.setAttribute ("type", type);
-        bindingElement.setAttribute ("level", "instrument");
-        bindingElement.setAttribute ("parameter", parameter);
-        return bindingElement;
+        rootElement.appendChild (this.readXMLSnippet (document, "ui.xml"));
     }
 
 
     /**
-     * Add the amplitude envelope parameters to the given element.
+     * Set the amplitude envelope parameters to the given element.
      *
-     * @param amplitudeEnvelope The amplitude envelope
      * @param element Where to add the parameters
+     * @param envelope The envelope
      */
-    private static void addVolumeEnvelope (final IEnvelope amplitudeEnvelope, final Element element)
+    private static void setEnvelope (final Element element, final IEnvelope envelope)
     {
-        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_ATTACK, amplitudeEnvelope.getAttackTime ());
-        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_DECAY, amplitudeEnvelope.getDecayTime ());
-        setEnvelopeAttribute (element, DecentSamplerTag.ENV_SUSTAIN, amplitudeEnvelope.getSustainLevel ());
-        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_RELEASE, amplitudeEnvelope.getReleaseTime ());
+        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_ATTACK, envelope.getAttackTime ());
+        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_DECAY, Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()));
+        setEnvelopeAttribute (element, DecentSamplerTag.ENV_SUSTAIN, envelope.getSustainLevel ());
+        setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_RELEASE, envelope.getReleaseTime ());
 
-        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_ATTACK_CURVE, amplitudeEnvelope.getAttackSlope () * 100.0);
-        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_DECAY_CURVE, amplitudeEnvelope.getDecaySlope () * 100.0);
-        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_RELEASE_CURVE, amplitudeEnvelope.getReleaseSlope () * 100.0);
+        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_ATTACK_CURVE, envelope.getAttackSlope () * 100.0);
+        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_DECAY_CURVE, envelope.getDecaySlope () * 100.0);
+        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_RELEASE_CURVE, envelope.getReleaseSlope () * 100.0);
     }
 
 
     private static void setEnvelopeTimeAttribute (final Element element, final String attribute, final double value)
     {
-        // Adjust the seconds by factor 2 which seems more fitting!
         if (value >= 0)
-            setEnvelopeAttribute (element, attribute, value / 2.0);
+            setEnvelopeAttribute (element, attribute, value);
     }
 
 
@@ -659,5 +663,169 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         if (value != 0)
             XMLUtils.setDoubleAttribute (element, attribute, value, 3);
+    }
+
+
+    private static void updateHistory (final String newItem, final List<String> history)
+    {
+        history.remove (newItem);
+        history.add (0, newItem);
+    }
+
+
+    private void selectTemplateFolderPath (final Window parentWindow)
+    {
+        final File currentTemplateFolderPath = this.getTemplateFolderPath ();
+        final BasicConfig config = new BasicConfig ("");
+        if (currentTemplateFolderPath.exists () && currentTemplateFolderPath.isDirectory ())
+            config.setActivePath (currentTemplateFolderPath);
+        final Optional<File> file = Functions.getFolderFromUser (parentWindow, config, "@IDS_DS_SELECT_TEMPLATE_FOLDER_HEADER");
+        if (file.isPresent ())
+            this.templateFolderPathField.getEditor ().setText (file.get ().getAbsolutePath ());
+    }
+
+
+    private org.w3c.dom.Node readXMLSnippet (final Document document, final String filename) throws IOException
+    {
+        final String template = this.getTemplateCode (filename);
+        final Document templateDocument;
+        try
+        {
+            templateDocument = XMLUtils.parseDocument (new InputSource (new StringReader (template.trim ())));
+        }
+        catch (final SAXException ex)
+        {
+            throw new IOException (ex);
+        }
+
+        final Element templateDocumentElement = templateDocument.getDocumentElement ();
+        templateDocumentElement.normalize ();
+        trimWhitespace (templateDocumentElement);
+        return document.importNode (templateDocumentElement, true);
+    }
+
+
+    private String getTemplateCode (final String filename) throws IOException
+    {
+        final File currentTemplateFolderPath = this.getTemplateFolderPath ();
+        if (currentTemplateFolderPath.exists () && currentTemplateFolderPath.isDirectory ())
+        {
+            final File templateFile = new File (currentTemplateFolderPath, filename);
+            if (templateFile.exists ())
+                return Files.readString (templateFile.toPath (), StandardCharsets.UTF_8);
+        }
+
+        return Functions.textFileFor (TEMPLATE_FOLDER + filename);
+    }
+
+
+    private static void trimWhitespace (final org.w3c.dom.Node node)
+    {
+        if (node.getNodeType () == org.w3c.dom.Node.TEXT_NODE)
+            node.setTextContent (node.getTextContent ().trim ());
+        for (org.w3c.dom.Node child = node.getFirstChild (); child != null; child = child.getNextSibling ())
+            trimWhitespace (child);
+    }
+
+
+    private void createTemplates ()
+    {
+        final File templateFolderPath = this.getTemplateFolderPath ();
+        if (!templateFolderPath.exists () && !templateFolderPath.mkdirs ())
+        {
+            Functions.message ("@IDS_DS_COULD_NOT_CREATE_TEMPLATE_DIR");
+            return;
+        }
+
+        if (!templateFolderPath.isDirectory ())
+        {
+            Functions.message ("@IDS_DS_TEMPLATE_DIR_IS_FILE");
+            return;
+        }
+
+        try
+        {
+            // Copy both templates from the JAR resources to the given template folder
+            final String effectsTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "effects.xml");
+            final String uiTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ui.xml");
+            final File effectsFile = new File (templateFolderPath, "effects.xml");
+            if (!effectsFile.exists ())
+                Files.write (effectsFile.toPath (), effectsTemplate.getBytes ());
+            final File uiFile = new File (templateFolderPath, "ui.xml");
+            if (!uiFile.exists ())
+                Files.write (uiFile.toPath (), uiTemplate.getBytes ());
+        }
+        catch (final IOException ex)
+        {
+            Functions.message ("@IDS_DS_COULD_NOT_CREATE_TEMPLATES", ex.getMessage ());
+            return;
+        }
+
+        Functions.message ("@IDS_DS_TEMPLATES_CREATED");
+    }
+
+
+    private File getTemplateFolderPath ()
+    {
+        return new File (this.templateFolderPathField.getEditor ().getText ());
+    }
+
+
+    private void copyResources (final File resourceDestination) throws IOException
+    {
+        final File templateFolderPath = this.getTemplateFolderPath ();
+        if (templateFolderPath.exists ())
+            copyFolderWithIgnoreList (templateFolderPath, resourceDestination, IGNORE_FILES);
+    }
+
+
+    private void copyResources (final ZipOutputStream zos, final String basePath) throws IOException
+    {
+        final File templateFolderPath = this.getTemplateFolderPath ();
+        if (templateFolderPath.exists ())
+            zipFolderWithIgnoreList (templateFolderPath, basePath, zos, IGNORE_FILES);
+    }
+
+
+    private static void copyFolderWithIgnoreList (final File sourceFolder, final File destinationFolder, final List<String> ignoreList) throws IOException
+    {
+        if (!destinationFolder.exists () && !destinationFolder.mkdirs ())
+            throw new IOException (Functions.getMessage ("IDS_DS_COULD_NOT_CREATE_TEMPLATE_DIR"));
+
+        final File [] files = sourceFolder.listFiles ();
+        if (files == null)
+            return;
+        for (final File file: files)
+        {
+            if (ignoreList.contains (file.getName ()))
+                continue;
+            final File destFile = new File (destinationFolder, file.getName ());
+            if (file.isDirectory ())
+                copyFolderWithIgnoreList (file, destFile, ignoreList);
+            else
+                Files.copy (file.toPath (), destFile.toPath (), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+
+    private static void zipFolderWithIgnoreList (final File folder, final String baseName, final ZipOutputStream zos, final List<String> ignoreList) throws IOException
+    {
+        final File [] files = folder.listFiles ();
+        if (files == null)
+            return;
+        for (final File file: files)
+        {
+            if (ignoreList.contains (file.getName ()))
+                continue;
+            final String entryName = baseName + FORWARD_SLASH + file.getName ();
+            if (file.isDirectory ())
+                zipFolderWithIgnoreList (file, entryName, zos, ignoreList);
+            else
+            {
+                zos.putNextEntry (new ZipEntry (entryName));
+                Files.copy (file.toPath (), zos);
+                zos.closeEntry ();
+            }
+        }
     }
 }

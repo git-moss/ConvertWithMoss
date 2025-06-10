@@ -392,7 +392,7 @@ public class InternalModulator
             if (PARAMETER_NAME_VOLUME.equals (modulatedParameter.parameterName) && ("LFO_SINE_VOLUME".equals (modulatedParameter.modulatorDescription) || "STEP_VOLUME".equals (modulatedParameter.modulatorDescription)))
                 return 1;
 
-            if ((PARAMETER_NAME_PAN.equals (modulatedParameter.parameterName) && "ENV_DBD_PAN".equals (modulatedParameter.modulatorDescription)) || (PARAMETER_NAME_CUTOFF.equals (modulatedParameter.parameterName) && "LFO_MULTI_CUTOFF".equals (modulatedParameter.modulatorDescription)))
+            if (PARAMETER_NAME_PAN.equals (modulatedParameter.parameterName) && "ENV_DBD_PAN".equals (modulatedParameter.modulatorDescription) || PARAMETER_NAME_CUTOFF.equals (modulatedParameter.parameterName) && "LFO_MULTI_CUTOFF".equals (modulatedParameter.modulatorDescription))
                 return 2;
             if ("vfType".equals (modulatedParameter.parameterName) && "LFO_MULTI_3X2_TYPE".equals (modulatedParameter.modulatorDescription))
                 return 2;
@@ -414,8 +414,12 @@ public class InternalModulator
     private void readBlock2 (final InputStream in) throws IOException
     {
         final ModulatedParameter envelopeParameter = this.getEnvelopeParameter (PARAMETER_NAME_VOLUME, PARAMETER_NAME_CUTOFF, PARAMETER_NAME_PITCH);
+        if (envelopeParameter == null || !this.isEnvelopeModulator ())
+            return;
+
         // Too short but not understood what it contains
-        if ((envelopeParameter == null) || !this.isEnvelopeModulator () || (in.available () == 0x38))
+        final int available = in.available ();
+        if (available < 59)
             return;
 
         if (MODULATOR_SOURCE_NAME_AHDSR.equals (this.modulatorSourceName) || "<none>".equals (this.modulatorSourceName) || "".equals (this.modulatorSourceName))

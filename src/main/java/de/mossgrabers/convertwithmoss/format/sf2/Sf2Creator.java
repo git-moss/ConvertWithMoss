@@ -211,7 +211,7 @@ public class Sf2Creator extends AbstractCreator
 
     /**
      * Create one SF2 preset for the multi-sample source.
-     * 
+     *
      * @param programIndex The index of the program
      * @param multisampleSource The multi-sample source
      * @param globalcounters Contains all counters for numbering which are global to the sf2 file
@@ -222,7 +222,7 @@ public class Sf2Creator extends AbstractCreator
     private Optional<Sf2Preset> createSf2Preset (final int programIndex, final IMultisampleSource multisampleSource, final GlobalCounters globalcounters, final Pair<Integer, Integer> counts) throws IOException
     {
         final String name = multisampleSource.getName ();
-        final String message = Functions.getMessage ("IDS_NOTIFY_ADDING", (programIndex / 128) + ":" + (programIndex % 128) + " " + name);
+        final String message = Functions.getMessage ("IDS_NOTIFY_ADDING", programIndex / 128 + ":" + programIndex % 128 + " " + name);
         this.notifier.logText (message);
         int writtenProgress = message.length ();
 

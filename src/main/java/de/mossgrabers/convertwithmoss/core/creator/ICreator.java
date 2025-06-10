@@ -10,6 +10,7 @@ import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 
 
 /**
@@ -38,6 +39,16 @@ public interface ICreator extends ICoreTask
      * @throws IOException Could not store the file
      */
     void createLibrary (File destinationFolder, List<IMultisampleSource> multisampleSources, String libraryName) throws IOException;
+
+
+    /**
+     * Combines several multi-samples input files and stores them into one library file.
+     *
+     * @param destinationFolder Where to store the created file
+     * @param performanceSource The performance source from which to create
+     * @throws IOException Could not store the file
+     */
+    void createPerformance (File destinationFolder, IPerformanceSource performanceSource) throws IOException;
 
 
     /**

@@ -19,7 +19,9 @@ import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -88,6 +90,40 @@ public class Kontakt5Type extends AbstractKontaktType
 
     /** {@inheritDoc} */
     @Override
+    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    {
+        this.sourceFolder = sourceFolder;
+
+        try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
+        {
+            final NIContainerItem niContainerItem = readNIContainer (inputStream);
+            final List<IMultisampleSource> multisampleSources = this.readMultisampleSources (niContainerItem, sourceFile, metadataConfig, null);
+            final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+            performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
+
+            final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+            if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+            {
+                final MultiConfiguration multiConfiguration = presetChunkData.getMultiConfiguration ();
+                if (multiConfiguration != null)
+                {
+                    final List<MultiInstrument> instruments = multiConfiguration.getMultiInstruments ();
+                    for (int i = 0; i < multisampleSources.size (); i++)
+                    {
+                        final IMultisampleSource multisampleSource = multisampleSources.get (i);
+                        final int midiChannel = i < instruments.size () ? instruments.get (i).getMidiChannel () : 0;
+                        performanceSource.addInstrument (multisampleSource, midiChannel);
+                    }
+                    return performanceSource;
+                }
+            }
+            return null;
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
         final NIContainerItem niContainerItem = new NIContainerItem ();
@@ -119,29 +155,24 @@ public class Kontakt5Type extends AbstractKontaktType
     public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final InputStream inputStream, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples) throws IOException
     {
         this.sourceFolder = sourceFolder;
-
-        final List<IMultisampleSource> sources = this.readNIContainer (inputStream, sourceFile, metadataConfig, monolithSamples != null);
-        for (final IMultisampleSource multisampleSource: sources)
-            if (monolithSamples != null)
-                replaceSamples (multisampleSource, monolithSamples);
-        return sources;
+        final NIContainerItem niContainerItem = readNIContainer (inputStream);
+        return this.readMultisampleSources (niContainerItem, sourceFile, metadataConfig, monolithSamples);
     }
 
 
     /**
-     * Reads an NI container, which hopefully contains a NKI preset.
+     * Reads from an NI container, which hopefully contains a NKI preset.
      *
-     * @param inputStream The input stream to read from
+     * @param niContainerItem The NI container item to read from
      * @param sourceFile The source file to convert
      * @param metadataConfig Default metadata
-     * @param isMonolith True if the NKI is inside a monolith
+     * @param monolithSamples If the NKI is inside a monolith, these are the sample files
      * @return The parsed multi-samples, if any
      * @throws IOException Could not read the container
      */
-    private List<IMultisampleSource> readNIContainer (final InputStream inputStream, final File sourceFile, final IMetadataConfig metadataConfig, final boolean isMonolith) throws IOException
+    private List<IMultisampleSource> readMultisampleSources (final NIContainerItem niContainerItem, final File sourceFile, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples) throws IOException
     {
-        final NIContainerItem niContainerItem = new NIContainerItem ();
-        niContainerItem.read (inputStream);
+        final boolean isMonolith = monolithSamples != null;
 
         final NIContainerDataChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
         if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
@@ -160,6 +191,11 @@ public class Kontakt5Type extends AbstractKontaktType
                 final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
                 for (final IMultisampleSource multisampleSource: sources)
                     updateMetadata (niContainerItem, multisampleSource, metadataConfig, parts);
+
+                for (final IMultisampleSource multisampleSource: sources)
+                    if (monolithSamples != null)
+                        replaceSamples (multisampleSource, monolithSamples);
+
                 return sources;
             }
         }
@@ -170,6 +206,21 @@ public class Kontakt5Type extends AbstractKontaktType
                 this.notifier.logError ("IDS_NKI5_CONTAINS_ENCRYPTED_SUB_TREE");
 
         return Collections.emptyList ();
+    }
+
+
+    /**
+     * Reads an NI container, which hopefully contains a NKI preset.
+     *
+     * @param inputStream The input stream to read from
+     * @return The parsed multi-samples, if any
+     * @throws IOException Could not read the container
+     */
+    private static NIContainerItem readNIContainer (final InputStream inputStream) throws IOException
+    {
+        final NIContainerItem niContainerItem = new NIContainerItem ();
+        niContainerItem.read (inputStream);
+        return niContainerItem;
     }
 
 

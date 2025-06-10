@@ -69,7 +69,7 @@ public class BitwigMultisampleDetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File file)
     {
         try (final ZipFile zipFile = new ZipFile (file))
         {

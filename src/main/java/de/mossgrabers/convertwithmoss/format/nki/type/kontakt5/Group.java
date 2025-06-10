@@ -21,21 +21,21 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Group
 {
-    private String                  name;
-    private float                   volume;
-    private float                   pan;
-    private float                   tune;
-    private boolean                 keyTracking;
-    private boolean                 reverse;
-    private boolean                 releaseTrigger;
-    private boolean                 releaseTriggerNoteMonophonic;
-    private boolean                 muted;
-    private boolean                 soloed;
-    private int                     releaseTriggerCounter;
-    private int                     voiceGroupIdx;
-    private int                     fxIdxAmpSplitPoint;
-    private int                     interpQuality;
-    private int                     midiChannel;
+    private String                        name;
+    private float                         volume;
+    private float                         pan;
+    private float                         tune;
+    private boolean                       keyTracking;
+    private boolean                       reverse;
+    private boolean                       releaseTrigger;
+    private boolean                       releaseTriggerNoteMonophonic;
+    private boolean                       muted;
+    private boolean                       soloed;
+    private int                           releaseTriggerCounter;
+    private int                           voiceGroupIdx;
+    private int                           fxIdxAmpSplitPoint;
+    private int                           interpQuality;
+    private int                           midiChannel;
     private final List<InternalModulator> internalModulators = new ArrayList<> ();
 
 

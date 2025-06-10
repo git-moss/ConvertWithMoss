@@ -59,7 +59,7 @@ public class DataChunk extends AbstractSpecificRIFFChunk
 
     /**
      * Sets the data.
-     * 
+     *
      * @param data The data
      */
     public void setData (final byte [] data)

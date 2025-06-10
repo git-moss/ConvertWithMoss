@@ -16,11 +16,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -121,23 +124,10 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
     /** Bank Select + Program Change. */
-    private static final int     CONTENT_NUMBER = 0x3F2000;
+    private static final int CONTENT_NUMBER = 0x3F2000;
 
-    // Motion Control: 0 = Off
-    // Type Flag: 0 = AWM
-    // Favorite: 0 = off
-    // Attribute: 2 = Only 1st part active, all ARPS + Motion sequences are off
-    private static final byte [] EPFM_FLAGS     =
-    {
-        0,
-        0,
-        0,
-        2
-    };
-
-    private ToggleGroup          outputFormatGroup;
-
-    private CheckBox             createOnlyWaveforms;
+    private ToggleGroup      outputFormatGroup;
+    private CheckBox         createOnlyWaveforms;
 
 
     /**
@@ -148,6 +138,14 @@ public class YamahaYsfcCreator extends AbstractCreator
     public YamahaYsfcCreator (final INotifier notifier)
     {
         super ("Yamaha YSFC", notifier);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        return true;
     }
 
 
@@ -225,6 +223,36 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
+    {
+        final List<IInstrumentSource> instruments = performanceSource.getInstruments ();
+        if (instruments.isEmpty ())
+            return;
+
+        final Integer selectedOutputFormat = Integer.valueOf (this.getSelectedOutputFormat ());
+        final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
+
+        final YsfcFile ysfcFile = new YsfcFile (true);
+        ysfcFile.setVersionStr (format.getMaxVersion ());
+
+        final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
+        final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
+        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+
+        this.storePerformance (performanceSource, multiFile, format, ysfcFile);
+
+        try (final FileOutputStream out = new FileOutputStream (multiFile))
+        {
+            ysfcFile.write (out);
+        }
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
     /**
      * Create all YSFC chunks for the given multi-samples and store the file.
      *
@@ -254,67 +282,165 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
 
+    /**
+     * Create all YSFC chunks for the given performance and store the file.
+     *
+     * @param performanceSource The performance sources to store
+     * @param multiFile The file in which to store
+     * @param format The output format
+     * @param ysfcFile The YSFC file to which to add the performance
+     * @throws IOException Could not store the file
+     */
+    private void storePerformance (final IPerformanceSource performanceSource, final File multiFile, final YamahaYsfcFileFormat format, final YsfcFile ysfcFile) throws IOException
+    {
+        // Numbering is across all(!) samples
+        final LibraryCounters counters = new LibraryCounters ();
+        final int categoryID = getCategoryIndex (performanceSource.getMetadata ());
+
+        final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (PERFORMANCE_TEMPLATES.get (format), format);
+        performance.setName (StringUtils.fixASCII (performanceSource.getName ()));
+
+        // There is exactly 1 part in the template!
+        final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
+        final YamahaYsfcPerformancePart partTemplate = parts.get (0);
+        parts.clear ();
+
+        final List<IInstrumentSource> instrumentSources = limitInstruments (performanceSource.getInstruments ());
+        final int numInstruments = instrumentSources.size ();
+        int max = 1;
+        if (numInstruments > 1 && numInstruments <= 8)
+            max = 8;
+        else if (numInstruments > 8)
+            max = 16;
+
+        // Create one part in the performance for each multi-sample source
+        final List<int []> allWaveReferences = new ArrayList<> ();
+        for (int i = 0; i < max; i++)
+        {
+            final YamahaYsfcPerformancePart part = partTemplate.deepClone ();
+            final IMultisampleSource multisampleSource;
+            final String multisampleName;
+            if (i < numInstruments)
+            {
+                final IInstrumentSource instrumentSource = instrumentSources.get (i);
+                multisampleSource = instrumentSource.getMultisampleSource ();
+                multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
+            }
+            else
+            {
+                multisampleSource = new DefaultMultisampleSource ();
+                multisampleName = "Empty " + (i + 1);
+            }
+
+            allWaveReferences.add (this.fillPart (counters, format, ysfcFile, categoryID, multisampleSource, multisampleName, part));
+            parts.add (part);
+        }
+
+        final int performanceIndex = 0;
+        final YamahaYsfcEntry performanceEntry = createPerformanceEntry (categoryID, performance.getName (), CONTENT_NUMBER + performanceIndex, combineArrays (allWaveReferences), parts.size ());
+        ysfcFile.fillChunkPair (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE, YamahaYsfcChunk.DATA_LIST_PERFORMANCE, performanceEntry, performance);
+    }
+
+
+    private static int [] combineArrays (final List<int []> arrayList)
+    {
+        int totalLength = 0;
+        for (final int [] array: arrayList)
+            totalLength += array.length;
+
+        final int [] combined = new int [totalLength];
+        int currentIndex = 0;
+        for (final int [] array: arrayList)
+        {
+            System.arraycopy (array, 0, combined, currentIndex, array.length);
+            currentIndex += array.length;
+        }
+        return combined;
+    }
+
+
+    /**
+     * Creates a performance for each multi-sample source and adds them to the given YSFC file.
+     *
+     * @param multisampleSources The multi-samples sources
+     * @param format The output format
+     * @param ysfcFile The YSFC file to which to add the performances
+     * @throws IOException Could not create and add the chunks
+     */
     private void createPerformancesForMultiSources (final List<IMultisampleSource> multisampleSources, final YamahaYsfcFileFormat format, final YsfcFile ysfcFile) throws IOException
     {
         // Numbering is across all(!) samples
-        int sampleNumber = 1;
-        int keygroupCounter = 0;
+        final LibraryCounters counters = new LibraryCounters ();
+        final int categoryID = getCategoryIndex (multisampleSources.get (0).getMetadata ());
 
+        // Create one performance for each multi-sample source
         for (int i = 0; i < multisampleSources.size (); i++)
         {
-            final int categoryID = getCategoryIndex (multisampleSources.get (0).getMetadata ());
             final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (PERFORMANCE_TEMPLATES.get (format), format);
 
             final IMultisampleSource multisampleSource = multisampleSources.get (i);
-            final String performanceName = StringUtils.fixASCII (multisampleSource.getName ());
-            performance.setName (performanceName);
+            final String multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
+            performance.setName (multisampleName);
+
             // There is exactly 1 part in the template!
             final YamahaYsfcPerformancePart part = performance.getParts ().get (0);
-            // Set the performance name as well in case one will combine several performances into 1
-            part.setName (performanceName);
-            part.setCategory (categoryID);
-
-            final String multisampleName = StringUtils.optimizeName (performanceName, 17);
-            final List<IGroup> groups = limitGroups (multisampleSource.getGroups ());
-            final int groupCount = groups.size ();
-            final List<YamahaYsfcPartElement> elements = part.getElements ();
-            final int [] waveReferences = new int [groupCount];
-            // Assign all samples of a group to an element
-            for (int g = 0; g < groupCount; g++)
-            {
-                // The template part has already 8 fixed elements!
-                final YamahaYsfcPartElement element = elements.get (g);
-                // Enable the element
-                element.setElementSwitch (1);
-
-                final List<YamahaYsfcKeybank> keybankList = new ArrayList<> ();
-                final List<YamahaYsfcWaveData> waveDataList = new ArrayList<> ();
-
-                final IGroup group = groups.get (g);
-                final List<ISampleZone> sampleZones = group.getSampleZones ();
-                for (final ISampleZone zone: sampleZones)
-                    sampleNumber = this.createWaveData (format, sampleNumber, keybankList, waveDataList, zone);
-
-                keygroupCounter++;
-                final String name = groupCount == 1 ? multisampleName : multisampleName + " E" + (g + 1);
-                final int keyBankIndex = 0x10000 + keygroupCounter;
-                final String waveformName = createCategoryNameText (getCategoryIndex (multisampleSource.getMetadata ()), name);
-                final YamahaYsfcEntry keyBankEntry = createKeyBankEntry (waveformName, keyBankIndex);
-                final YamahaYsfcEntry waveDataEntry = createWaveDataEntry (waveformName, keyBankIndex);
-                ysfcFile.fillWaveChunks (keyBankEntry, keybankList, waveDataEntry, waveDataList);
-
-                // 2, 3, ... addresses libraries but these are outside of the bank!
-                final int waveBank = 1;
-                element.setWaveBank (waveBank);
-                element.setWaveformNumber (keygroupCounter);
-                waveReferences[g] = (waveBank << 16) + keygroupCounter;
-
-                setElementParameters (element, sampleZones.get (0));
-            }
-
-            final YamahaYsfcEntry performanceEntry = createPerformanceEntry (categoryID, multisampleName, CONTENT_NUMBER + i, waveReferences);
+            final int [] waveReferences = this.fillPart (counters, format, ysfcFile, categoryID, multisampleSource, multisampleName, part);
+            final YamahaYsfcEntry performanceEntry = createPerformanceEntry (categoryID, multisampleName, CONTENT_NUMBER + i, waveReferences, 1);
             ysfcFile.fillChunkPair (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE, YamahaYsfcChunk.DATA_LIST_PERFORMANCE, performanceEntry, performance);
         }
+    }
+
+
+    private int [] fillPart (final LibraryCounters counters, final YamahaYsfcFileFormat format, final YsfcFile ysfcFile, final int categoryID, final IMultisampleSource multisampleSource, final String multisampleName, final YamahaYsfcPerformancePart part) throws IOException
+    {
+        // Set the performance name as well in case one will combine several performances into 1
+        part.setName (multisampleName);
+        part.setCategory (categoryID);
+
+        final List<IGroup> groups = limitGroups (multisampleSource.getNonEmptyGroups (true));
+        final int groupCount = groups.size ();
+        final List<YamahaYsfcPartElement> elements = part.getElements ();
+        final int [] waveReferences = new int [groupCount];
+
+        // Assign all samples of a group to an element
+        final String optimizedMultisampleName = StringUtils.optimizeName (multisampleName, 17);
+        for (int g = 0; g < groupCount; g++)
+        {
+            final String name = groupCount == 1 ? optimizedMultisampleName : optimizedMultisampleName + " E" + (g + 1);
+            final String waveformName = createCategoryNameText (getCategoryIndex (multisampleSource.getMetadata ()), name);
+            waveReferences[g] = this.createElement (counters, waveformName, groups.get (g), elements.get (g), format, ysfcFile);
+        }
+        return waveReferences;
+    }
+
+
+    private int createElement (final LibraryCounters counters, final String waveformName, final IGroup group, final YamahaYsfcPartElement element, final YamahaYsfcFileFormat format, final YsfcFile ysfcFile) throws IOException
+    {
+        // Enable the element - the template part has already 8 fixed elements!
+        element.setElementSwitch (1);
+
+        final List<YamahaYsfcKeybank> keybankList = new ArrayList<> ();
+        final List<YamahaYsfcWaveData> waveDataList = new ArrayList<> ();
+
+        final List<ISampleZone> sampleZones = group.getSampleZones ();
+        for (final ISampleZone zone: sampleZones)
+            counters.sampleNumber = this.createWaveData (format, counters.sampleNumber, keybankList, waveDataList, zone);
+
+        counters.keygroupCounter++;
+        final int keyBankIndex = 0x10000 + counters.keygroupCounter;
+        final YamahaYsfcEntry keyBankEntry = createKeyBankEntry (waveformName, keyBankIndex);
+        final YamahaYsfcEntry waveDataEntry = createWaveDataEntry (waveformName, keyBankIndex);
+        ysfcFile.addWaveChunks (keyBankEntry, keybankList, waveDataEntry, waveDataList);
+
+        // 2, 3, ... addresses libraries but these are outside of the bank!
+        final int waveBank = 1;
+        element.setWaveBank (waveBank);
+        element.setWaveformNumber (counters.keygroupCounter);
+
+        setElementParameters (element, sampleZones.get (0));
+
+        // Return the wave reference
+        return (waveBank << 16) + counters.keygroupCounter;
     }
 
 
@@ -341,7 +467,7 @@ public class YamahaYsfcCreator extends AbstractCreator
 
         final IEnvelope ampEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         element.setAegAttackTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (ampEnvelope.getAttackTime () * 6.0));
-        element.setAegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (ampEnvelope.getDecayTime ()));
+        element.setAegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ())));
         element.setAegDecay2Time (0);
         element.setAegReleaseTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (ampEnvelope.getReleaseTime ()));
         final int sustainLevel = (int) Math.round (ampEnvelope.getSustainLevel () * 127.0);
@@ -363,7 +489,7 @@ public class YamahaYsfcCreator extends AbstractCreator
             element.setPegDecay2Level (MathUtils.denormalizeIntegerRange (pitchEnvelope.getEndLevel (), -128, 127, 128));
             element.setPegHoldTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (pitchEnvelope.getDelayTime ()));
             element.setPegAttackTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (pitchEnvelope.getAttackTime () * 6.0));
-            element.setPegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (pitchEnvelope.getDecayTime ()));
+            element.setPegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (Math.max (0, pitchEnvelope.getHoldTime ()) + Math.max (0, pitchEnvelope.getDecayTime ())));
             element.setPegDecay2Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (0));
             element.setPegReleaseTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (pitchEnvelope.getReleaseTime ()));
         }
@@ -392,7 +518,7 @@ public class YamahaYsfcCreator extends AbstractCreator
                 final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();
                 element.setFegHoldTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (cutoffEnvelope.getDelayTime ()));
                 element.setFegAttackTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (cutoffEnvelope.getAttackTime () * 6.0));
-                element.setFegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (cutoffEnvelope.getDecayTime ()));
+                element.setFegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (Math.max (0, cutoffEnvelope.getHoldTime ()) + Math.max (0, cutoffEnvelope.getDecayTime ())));
                 element.setFegDecay2Time (0);
                 element.setFegReleaseTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (cutoffEnvelope.getReleaseTime ()));
                 element.setFegHoldLevel (MathUtils.denormalizeIntegerRange (cutoffEnvelope.getStartLevel (), -128, 127, 128));
@@ -403,6 +529,21 @@ public class YamahaYsfcCreator extends AbstractCreator
                 element.setFegReleaseLevel (MathUtils.denormalizeIntegerRange (cutoffEnvelope.getEndLevel (), -128, 127, 128));
             }
         }
+    }
+
+
+    private static List<IInstrumentSource> limitInstruments (final List<IInstrumentSource> instruments)
+    {
+        int maxInstruments = 16;
+
+        final int size = instruments.size ();
+        if (size <= maxInstruments)
+            return instruments;
+
+        final List<IInstrumentSource> limitedInstruments = new ArrayList<> (maxInstruments);
+        for (int i = 0; i < maxInstruments; i++)
+            limitedInstruments.add (instruments.get (i));
+        return limitedInstruments;
     }
 
 
@@ -427,7 +568,16 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
 
-    private void createKeyBanksForMultiSources (final List<IMultisampleSource> multisampleSources, final YamahaYsfcFileFormat version, final YsfcFile ysfcFile) throws IOException
+    /**
+     * Creates a key-bank and wave-data entry for each multi-sample source and adds them to the
+     * given YSFC file.
+     *
+     * @param multisampleSources The multi-samples sources
+     * @param format The output format
+     * @param ysfcFile The YSFC file to which to add the
+     * @throws IOException Could not create and add the chunks
+     */
+    private void createKeyBanksForMultiSources (final List<IMultisampleSource> multisampleSources, final YamahaYsfcFileFormat format, final YsfcFile ysfcFile) throws IOException
     {
         // Numbering covers all(!) samples
         int sampleNumber = 1;
@@ -437,16 +587,16 @@ public class YamahaYsfcCreator extends AbstractCreator
             final IMultisampleSource multisampleSource = multisampleSources.get (i);
             final List<YamahaYsfcKeybank> keybankList = new ArrayList<> ();
             final List<YamahaYsfcWaveData> waveDataList = new ArrayList<> ();
-            for (final IGroup group: multisampleSource.getGroups ())
+            for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
                 for (final ISampleZone zone: group.getSampleZones ())
-                    sampleNumber = this.createWaveData (version, sampleNumber, keybankList, waveDataList, zone);
+                    sampleNumber = this.createWaveData (format, sampleNumber, keybankList, waveDataList, zone);
 
             final String multisampleName = multisampleSource.getName ();
             final int keyBankIndex = 0x10001 + i;
             final String waveformName = createCategoryNameText (getCategoryIndex (multisampleSource.getMetadata ()), multisampleName);
             final YamahaYsfcEntry keyBankEntry = createKeyBankEntry (waveformName, keyBankIndex);
             final YamahaYsfcEntry waveDataEntry = createWaveDataEntry (waveformName, keyBankIndex);
-            ysfcFile.fillWaveChunks (keyBankEntry, keybankList, waveDataEntry, waveDataList);
+            ysfcFile.addWaveChunks (keyBankEntry, keybankList, waveDataEntry, waveDataList);
         }
     }
 
@@ -493,16 +643,30 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
 
-    private static YamahaYsfcEntry createPerformanceEntry (final int categoryID, final String performanceName, final int programIndex, final int [] waveReferences) throws IOException
+    private static YamahaYsfcEntry createPerformanceEntry (final int categoryID, final String performanceName, final int programIndex, final int [] waveReferences, final int numParts) throws IOException
     {
         final YamahaYsfcEntry performanceEntry = new YamahaYsfcEntry ();
         performanceEntry.setContentNumber (programIndex);
         performanceEntry.setItemName (createCategoryNameText (categoryID, performanceName));
         performanceEntry.setItemTitle (performanceName);
 
-        // Each of the 16 bits represents a category: Bit 0 = Off, Bit 1 = Piano, ...
         final ByteArrayOutputStream flagsOutput = new ByteArrayOutputStream ();
-        flagsOutput.write (EPFM_FLAGS);
+
+        // Motion Control: 0 = Off
+        flagsOutput.write (0);
+        // Type Flag: 0 = AWM
+        flagsOutput.write (0);
+        // Favorite: 0 = off
+        flagsOutput.write (0);
+        // Attribute: 2 = Only 1st part active, all ARPS + Motion sequences are off
+        if (numParts == 1)
+            flagsOutput.write (2);
+        else if (numParts > 8)
+            flagsOutput.write (1);
+        else
+            flagsOutput.write (0);
+
+        // Each of the 16 bits represents a category: Bit 0 = Off, Bit 1 = Piano, ...
         final int mainCategory = categoryID / 16;
         final int categoryBit = categoryID == 256 ? 0 : (int) Math.pow (2, mainCategory);
         StreamUtils.writeUnsigned16 (flagsOutput, categoryBit, true);
@@ -617,5 +781,12 @@ public class YamahaYsfcCreator extends AbstractCreator
     {
         final int selected = Functions.getSelectedToggleIndex (this.outputFormatGroup);
         return selected < 0 ? 1 : selected;
+    }
+
+
+    private final class LibraryCounters
+    {
+        int sampleNumber    = 1;
+        int keygroupCounter = 0;
     }
 }

@@ -22,8 +22,10 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
@@ -109,8 +111,10 @@ import javafx.stage.Stage;
  *
  * @author Jürgen Moßgraber
  */
-public class ConvertWithMossApp extends AbstractFrame implements INotifier, Consumer<IMultisampleSource>
+public class ConvertWithMossApp extends AbstractFrame implements INotifier
 {
+    private static final String            PADDING_LEFT_BOTTOM_RIGHT           = "paddingLeftBottomRight";
+
     private static final int               NUMBER_OF_DIRECTORIES               = 20;
     private static final int               MAXIMUM_NUMBER_OF_LOG_ENTRIES       = 100000;
 
@@ -125,6 +129,10 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private static final String            RENAMING_CSV_FILE                   = "RenamingCSVFile";
     private static final String            RENAMING_SOURCE_ENABLED             = "EnableRenaming";
     private static final String            COMBINE_FILENAME                    = "CombineFilename";
+
+    private static final int               DEST_TYPE_PRESET                    = 0;
+    private static final int               DEST_TYPE_LIBRARY                   = 1;
+    private static final int               DEST_TYPE_PERFORMANCE               = 2;
 
     private final IDetector []             detectors;
     private final ICreator []              creators;
@@ -168,6 +176,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private boolean                        combineWithPreviousMessage          = false;
     private TextField                      combinationFilename;
     private final Map<Tab, ICreator>       creatorTabs                         = new HashMap<> ();
+    private final Map<Tab, IDetector>      sourceTabs                          = new HashMap<> ();
 
 
     /**
@@ -274,13 +283,14 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         sourceUpperPart.addComponent (new BorderPane (this.sourcePathField, null, this.sourceFolderSelectButton, null, null));
         this.sourcePathField.setMaxWidth (Double.MAX_VALUE);
 
-        this.sourceTabPane.getStyleClass ().add ("paddingLeftBottomRight");
+        this.sourceTabPane.getStyleClass ().add (PADDING_LEFT_BOTTOM_RIGHT);
         final ObservableList<Tab> tabs = this.sourceTabPane.getTabs ();
         for (final IDetector detector: this.detectors)
         {
             final Tab tab = new Tab (detector.getName (), detector.getEditPane ());
             tab.setClosable (false);
             tabs.add (tab);
+            this.sourceTabs.put (tab, detector);
         }
         setTabPaneLeftTabsHorizontal (this.sourceTabPane);
 
@@ -321,7 +331,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         destinationUpperPart.addComponent (destinationFolderPanel);
         this.destinationPathField.setMaxWidth (Double.MAX_VALUE);
 
-        this.destinationTabPane.getStyleClass ().add ("paddingLeftBottomRight");
+        this.destinationTabPane.getStyleClass ().add (PADDING_LEFT_BOTTOM_RIGHT);
         final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
         for (final ICreator creator: this.creators)
         {
@@ -391,7 +401,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     private void configureDestinationTypePane ()
     {
         final ObservableList<Tab> destinationTypeTabs = this.destinationTypeTabPane.getTabs ();
-        this.destinationTypeTabPane.getStyleClass ().add ("paddingLeftBottomRight");
+        this.destinationTypeTabPane.getStyleClass ().add (PADDING_LEFT_BOTTOM_RIGHT);
 
         Tab tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_PRESET"), new BorderPane ());
         tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_PRESET_INFO")));
@@ -412,30 +422,54 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
 
         setTabPaneLeftTabsHorizontal (this.destinationTypeTabPane);
 
-        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener (index -> {
+        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener (oberservable -> this.updateFormats ());
+    }
 
-            final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
-            boolean needsSelection = false;
 
-            // Enable only the destination formats which support the selected output type
-            for (final Tab destinationTab: this.destinationTabPane.getTabs ())
-            {
-                final ICreator creator = this.creatorTabs.get (destinationTab);
-                final boolean showTab = selectedType == 0 || selectedType == 1 && creator.supportsLibraries () || selectedType == 2 && creator.supportsPerformances ();
-                destinationTab.setDisable (!showTab);
-                if (!showTab && destinationTab.isSelected ())
-                    needsSelection = true;
-            }
+    private void updateFormats ()
+    {
+        final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+        boolean needsSelection = false;
 
+        // Enable only the destination formats which support the selected output type
+        for (final Tab destinationTab: this.destinationTabPane.getTabs ())
+        {
+            final ICreator creator = this.creatorTabs.get (destinationTab);
+            final boolean showTab = selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_LIBRARY && creator.supportsLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances ();
+            destinationTab.setDisable (!showTab);
+            if (!showTab && destinationTab.isSelected ())
+                needsSelection = true;
+        }
+        if (needsSelection)
+        {
             // Select the first enabled destination format, if required
-            if (needsSelection)
-                for (final Tab destinationTab: this.destinationTabPane.getTabs ())
-                    if (!destinationTab.isDisabled ())
-                    {
-                        this.destinationTabPane.getSelectionModel ().select (destinationTab);
-                        break;
-                    }
-        });
+            for (final Tab destinationTab: this.destinationTabPane.getTabs ())
+                if (!destinationTab.isDisabled ())
+                {
+                    this.destinationTabPane.getSelectionModel ().select (destinationTab);
+                    break;
+                }
+
+            needsSelection = false;
+        }
+
+        // Enable only the source formats which support the selected output type
+        for (final Tab sourceTab: this.sourceTabPane.getTabs ())
+        {
+            final IDetector detector = this.sourceTabs.get (sourceTab);
+            final boolean showTab = selectedType != DEST_TYPE_PERFORMANCE || detector.supportsPerformances ();
+            sourceTab.setDisable (!showTab);
+            if (!showTab && sourceTab.isSelected ())
+                needsSelection = true;
+        }
+        if (needsSelection)
+            // Select the first enabled source format, if required
+            for (final Tab sourceTab: this.sourceTabPane.getTabs ())
+                if (!sourceTab.isDisabled ())
+                {
+                    this.sourceTabPane.getSelectionModel ().select (sourceTab);
+                    break;
+                }
     }
 
 
@@ -546,12 +580,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         for (final ICreator creator: this.creators)
             creator.loadSettings (this.config);
 
-        final int sourceType = this.config.getInteger (SOURCE_TYPE, 0);
-        this.sourceTabPane.getSelectionModel ().select (sourceType);
+        final int sourceFormat = this.config.getInteger (SOURCE_TYPE, 0);
+        this.sourceTabPane.getSelectionModel ().select (sourceFormat);
         final int destinationFormat = this.config.getInteger (DESTINATION_FORMAT, 0);
         this.destinationTabPane.getSelectionModel ().select (destinationFormat);
 
-        final int destinationType = this.config.getInteger (DESTINATION_TYPE, 0);
+        final int destinationType = this.config.getInteger (DESTINATION_TYPE, DEST_TYPE_PRESET);
         this.destinationTypeTabPane.getSelectionModel ().select (destinationType);
 
         this.combinationFilename.setText (this.config.getProperty (COMBINE_FILENAME, ""));
@@ -623,11 +657,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
             return;
 
         final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
-        if (selectedDetector < 0 || !this.detectors[selectedDetector].checkSettings () || !this.detectors[selectedDetector].validateParameters ())
-            return;
-
         final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
-        if (selectedCreator < 0)
+        if (selectedDetector < 0 || selectedCreator < 0 || !this.detectors[selectedDetector].checkSettings () || !this.detectors[selectedDetector].validateParameters ())
             return;
         this.creators[selectedCreator].clearCancelled ();
 
@@ -636,9 +667,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         this.mainPane.setVisible (false);
         this.executePane.setVisible (true);
 
+        final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+
         Platform.runLater ( () -> {
             this.log ("IDS_NOTIFY_DETECTING");
-            this.detectors[selectedDetector].detect (this.sourceFolder, this);
+            this.detectors[selectedDetector].detect (this.sourceFolder, new MultisampleSourceConsumer (), new PerformanceSourceConsumer (), selectedType == DEST_TYPE_PERFORMANCE);
         });
     }
 
@@ -750,9 +783,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public void accept (final IMultisampleSource multisampleSource)
+    private void acceptMultisample (final IMultisampleSource multisampleSource)
     {
         final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
         if (selectedCreator < 0)
@@ -793,10 +824,50 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
     }
 
 
+    private void acceptPerformance (final IPerformanceSource performanceSource)
+    {
+        final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
+        if (selectedCreator < 0)
+            return;
+
+        final List<IInstrumentSource> instrumentSources = performanceSource.getInstruments ();
+        if (instrumentSources.isEmpty ())
+            return;
+
+        IMultisampleSource multisampleSource;
+        for (final IInstrumentSource instrumentSource: instrumentSources)
+        {
+            multisampleSource = instrumentSource.getMultisampleSource ();
+            ensureSafeSampleFileNames (multisampleSource);
+            this.applyRenaming (multisampleSource);
+            this.applyDefaultEnvelope (multisampleSource);
+        }
+
+        if (this.onlyAnalyse)
+            return;
+
+        final ICreator creator = this.creators[selectedCreator];
+
+        try
+        {
+            final boolean createStructure = this.createFolderStructure.isSelected ();
+            final File multisampleOutputFolder = calcOutputFolder (this.outputFolder, instrumentSources.get (0).getMultisampleSource ().getSubPath (), createStructure);
+            creator.createPerformance (multisampleOutputFolder, performanceSource);
+        }
+        catch (final NoSuchFileException | FileNotFoundException ex)
+        {
+            this.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+        }
+        catch (final IOException | RuntimeException ex)
+        {
+            this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
+        }
+    }
+
+
     private boolean wantsMultipleFiles ()
     {
-        final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
-        return selectedType == 1;
+        return this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex () == DEST_TYPE_LIBRARY;
     }
 
 
@@ -1054,17 +1125,17 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         if (!this.collectedSources.isEmpty ())
         {
             final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
-            if (selectedCreator < 0 || this.onlyAnalyse)
-                return;
-
-            try
+            if (selectedCreator >= 0 && !this.onlyAnalyse)
             {
-                final String libraryName = this.getCombinationLibraryName (this.collectedSources);
-                this.creators[selectedCreator].createLibrary (this.outputFolder, this.collectedSources, libraryName);
-            }
-            catch (final IOException | RuntimeException | OutOfMemoryError ex)
-            {
-                this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
+                try
+                {
+                    final String libraryName = this.getCombinationLibraryName (this.collectedSources);
+                    this.creators[selectedCreator].createLibrary (this.outputFolder, this.collectedSources, libraryName);
+                }
+                catch (final IOException | RuntimeException | OutOfMemoryError ex)
+                {
+                    this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
+                }
             }
         }
 
@@ -1187,5 +1258,25 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier, Cons
         }
 
         return AbstractCreator.createSafeFilename (name);
+    }
+
+
+    private class MultisampleSourceConsumer implements Consumer<IMultisampleSource>
+    {
+        @Override
+        public void accept (final IMultisampleSource multisampleSource)
+        {
+            ConvertWithMossApp.this.acceptMultisample (multisampleSource);
+        }
+    }
+
+
+    private class PerformanceSourceConsumer implements Consumer<IPerformanceSource>
+    {
+        @Override
+        public void accept (final IPerformanceSource performanceSource)
+        {
+            ConvertWithMossApp.this.acceptPerformance (performanceSource);
+        }
     }
 }

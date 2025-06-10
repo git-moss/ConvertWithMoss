@@ -79,7 +79,7 @@ public class Sf2DetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File sourceFile)
+    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
         try
         {

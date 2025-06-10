@@ -104,7 +104,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File file)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -566,7 +566,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
                     final double amount = modAmoundAsCent.get ().intValue () / 4800.0;
                     pitchModulator.setDepth (Math.clamp (amount, -1, 1));
 
-                    final Optional<IEnvelope> pitchEnvelope = parseEnvelope (soundShapeElement, modulator.isSource ("ENV1") ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
+                    final Optional<IEnvelope> pitchEnvelope = parsePitchEnvelope (soundShapeElement, modulator.isSource ("ENV1") ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
                     if (pitchEnvelope.isPresent ())
                     {
                         pitchModulator.setSource (pitchEnvelope.get ());
@@ -593,6 +593,30 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         envelope.setStartLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL0));
         envelope.setHoldLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
         envelope.setSustainLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL2));
+        envelope.setEndLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL3));
+
+        envelope.setAttackSlope (parsePercentage (envElement, TX16WxTag.ENV_SHAPE1));
+        envelope.setDecaySlope (parsePercentage (envElement, TX16WxTag.ENV_SHAPE2));
+        envelope.setReleaseSlope (parsePercentage (envElement, TX16WxTag.ENV_SHAPE3));
+
+        return Optional.of (envelope);
+    }
+
+
+    private static Optional<IEnvelope> parsePitchEnvelope (final Element parentElement, final String envelopeTag)
+    {
+        final Element envElement = XMLUtils.getChildElementByName (parentElement, envelopeTag);
+        if (envElement == null)
+            return Optional.empty ();
+
+        final IEnvelope envelope = new DefaultEnvelope ();
+        envelope.setAttackTime (0);
+        envelope.setDecayTime (parseTime (envElement, TX16WxTag.ENV_TIME1));
+        envelope.setReleaseTime (parseTime (envElement, TX16WxTag.ENV_TIME3));
+
+        envelope.setStartLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL0));
+        envelope.setHoldLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL0));
+        envelope.setSustainLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL1));
         envelope.setEndLevel (parseNormalizedVolume (envElement, TX16WxTag.ENV_LEVEL3));
 
         envelope.setAttackSlope (parsePercentage (envElement, TX16WxTag.ENV_SHAPE1));

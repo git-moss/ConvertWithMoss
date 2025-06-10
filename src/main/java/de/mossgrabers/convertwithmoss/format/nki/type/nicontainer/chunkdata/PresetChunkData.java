@@ -34,14 +34,14 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class PresetChunkData extends AbstractChunkData
 {
-    private final List<KontaktPresetChunk> presetChunks        = new ArrayList<> ();
-    private final List<Program>            programs            = new ArrayList<> ();
-    private final List<MultiConfiguration> multiConfigurations = new ArrayList<> ();
+    private final List<KontaktPresetChunk> presetChunks       = new ArrayList<> ();
+    private final List<Program>            programs           = new ArrayList<> ();
+    private final MultiConfiguration       multiConfiguration = new MultiConfiguration ();
 
     private long                           dictionaryType;
-    private long                           unknown             = 0;
-    private long                           padding             = 0;
-    private long                           magic               = 0x8565620D;
+    private long                           unknown            = 0;
+    private long                           padding            = 0;
+    private long                           magic              = 0x8565620D;
     private byte []                        programData;
 
 
@@ -65,6 +65,17 @@ public class PresetChunkData extends AbstractChunkData
     {
         this.programs.clear ();
         this.programs.addAll (programs);
+    }
+
+
+    /**
+     * Get the multi-configuration.
+     * 
+     * @return The multi-configuration, might be null
+     */
+    public MultiConfiguration getMultiConfiguration ()
+    {
+        return this.multiConfiguration;
     }
 
 
@@ -174,7 +185,6 @@ public class PresetChunkData extends AbstractChunkData
         new Bank ().parse (bankChunk);
 
         for (final KontaktPresetChunk childChunk: bankChunk.getChildren ())
-        {
             switch (childChunk.getId ())
             {
                 case KontaktPresetChunkID.SLOT_LIST:
@@ -182,16 +192,13 @@ public class PresetChunkData extends AbstractChunkData
                     break;
 
                 case KontaktPresetChunkID.MULTI_CONFIGURATION:
-                    final MultiConfiguration multiConfiguration = new MultiConfiguration ();
-                    multiConfiguration.parse (childChunk);
-                    multiConfigurations.add (multiConfiguration);
+                    this.multiConfiguration.parse (childChunk);
                     break;
 
                 default:
                     // Not used
                     break;
             }
-        }
     }
 
 

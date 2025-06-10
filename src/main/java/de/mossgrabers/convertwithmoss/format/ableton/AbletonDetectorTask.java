@@ -88,7 +88,7 @@ public class AbletonDetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File file)
     {
         try (final InputStream in = new GZIPInputStream (new FileInputStream (file)))
         {

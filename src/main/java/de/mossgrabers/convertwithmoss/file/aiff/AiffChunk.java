@@ -79,7 +79,7 @@ public class AiffChunk implements IChunk
 
     /**
      * Get the data.
-     * 
+     *
      * @return The data
      */
     public byte [] getData ()
@@ -98,7 +98,7 @@ public class AiffChunk implements IChunk
 
     /** {@inheritDoc} */
     @Override
-    public void writeData (OutputStream out) throws IOException
+    public void writeData (final OutputStream out) throws IOException
     {
         // Not used
     }

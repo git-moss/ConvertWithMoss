@@ -73,7 +73,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File file)
     {
         if (this.waitForDelivery () || !"preset.xml".equals (file.getName ()))
             return Collections.emptyList ();

@@ -85,19 +85,19 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
         if (this.waitForDelivery ())
             return;
 
-        final List<IMultisampleSource> multisample = this.readFile (folder);
+        final List<IMultisampleSource> multisample = this.readPresetFile (folder);
         if (multisample.isEmpty ())
             return;
 
         // Check for task cancellation
         if (!this.isCancelled ())
-            this.consumer.accept (multisample.get (0));
+            this.multisampleSourceConsumer.accept (multisample.get (0));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readFile (final File folder)
+    protected List<IMultisampleSource> readPresetFile (final File folder)
     {
         final List<IMultisampleSource> sources = new ArrayList<> ();
 

@@ -2,13 +2,23 @@
 
 ## 13.0.0 (unreleased)
 
-* Rearranged the destination area of the user interface. There is now a new section which allows to switch between creating single patches, libraries containing multiple patches and performances which contain a certain configuration of patches (e.g. different MIDI channels). Output formats are filtered to the ones which support these options.
-* Improved maximum size of RIFF files that can be written.
+* New: Rearranged the destination area of the user interface. There is now a new section which allows to switch between creating single patches, libraries containing multiple patches and performances which contain a certain configuration of patches (e.g. different MIDI channels). Output formats are filtered to the ones which support these options.
+* New: Improved maximum size of RIFF files that can be written.
+* Fixed: Envelope could be wrong if the input envelope uses the hold-time instead of decay-time and the output format does not support a hold-time.
+* Kontakt
+  * New: Kontakt can be an input format for Performances.
+  * Fixed: Fixed crash with reading envelopes from NI-container.
 * Decent Sampler
-  * Fixed: Loops were not read from wave files when loop info was missing in Decent Sampler file.
-  * Fixed: seqMode and seqPosition were falsely reported as not used.
+  * New: Write: There are now templates for the UI and effect sections which can be modified as well as further resources can be added automatically. See the manual for more info.
+  * New: Read: Filter and pitch envelopes are now read as well.
+  * Fixed: Read: Loops were not read from wave files when loop info was missing in DecentSampler file.
+  * Fixed: Read: seqMode and seqPosition were falsely reported as not used.
+  * Fixed: Write: Curve settings were not applied for filter and pitch envelopes.
+  * Fixed: Write: Pitch envelopes do work now.
 * SF2
   * New: Added support to write as library (adds all found source-multi-samples into 1 sf2 file).
+* Yamaha YSFC
+  * New: Can be a destination format for Performances.
 
 ## 12.2.2
 

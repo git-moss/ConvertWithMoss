@@ -30,6 +30,7 @@ import org.w3c.dom.NamedNodeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -58,35 +59,57 @@ import javafx.concurrent.Task;
  */
 public abstract class AbstractDetectorTask extends Task<Boolean>
 {
-    private static final AudioFileFormat.Type    OGG_TYPE              = new AudioFileFormat.Type ("OGG", "ogg");
-    private static final AudioFileFormat.Type    FLAC_TYPE             = new AudioFileFormat.Type ("FLAC", "flac");
+    private static final String                  IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED = "IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED";
+    private static final AudioFileFormat.Type    OGG_TYPE                            = new AudioFileFormat.Type ("OGG", "ogg");
+    private static final AudioFileFormat.Type    FLAC_TYPE                           = new AudioFileFormat.Type ("FLAC", "flac");
 
     protected final INotifier                    notifier;
-    protected final Consumer<IMultisampleSource> consumer;
+    protected final Consumer<IMultisampleSource> multisampleSourceConsumer;
+    protected final Consumer<IPerformanceSource> performanceSourceConsumer;
     protected final File                         sourceFolder;
     protected String []                          fileEndings;
 
-    protected final Map<String, Set<String>>     unsupportedElements   = new HashMap<> ();
-    protected final Map<String, Set<String>>     unsupportedAttributes = new HashMap<> ();
+    protected final Map<String, Set<String>>     unsupportedElements                 = new HashMap<> ();
+    protected final Map<String, Set<String>>     unsupportedAttributes               = new HashMap<> ();
 
     protected final IMetadataConfig              metadataConfig;
+    protected final boolean                      detectPerformances;
 
 
     /**
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multi-sample sources
+     * @param multisampleSourceConsumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
      * @param fileEndings The file ending(s) identifying the files
      */
-    protected AbstractDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final String... fileEndings)
+    protected AbstractDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> multisampleSourceConsumer, final File sourceFolder, final IMetadataConfig metadata, final String... fileEndings)
+    {
+        this (notifier, multisampleSourceConsumer, null, sourceFolder, metadata, false, fileEndings);
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param notifier The notifier
+     * @param multisampleSourceConsumer The consumer that handles the detected multi-sample sources
+     * @param performanceSourceConsumer The consumer that handles the detected performance sources
+     * @param sourceFolder The top source folder for the detection
+     * @param metadata Additional metadata configuration parameters
+     * @param detectPerformances If true, performances are detected otherwise presets
+     * @param fileEndings The file ending(s) identifying the files
+     */
+    protected AbstractDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final File sourceFolder, final IMetadataConfig metadata, final boolean detectPerformances, final String... fileEndings)
     {
         this.notifier = notifier;
-        this.consumer = consumer;
+        this.multisampleSourceConsumer = multisampleSourceConsumer;
+        this.performanceSourceConsumer = performanceSourceConsumer;
         this.sourceFolder = sourceFolder;
         this.metadataConfig = metadata;
+        this.detectPerformances = detectPerformances;
         this.fileEndings = fileEndings;
     }
 
@@ -109,34 +132,59 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
             return;
         }
         for (final File file: listFiles)
-        {
             // Ignore MacOS crap
-            if (file.getName ().startsWith ("._"))
-                continue;
-
-            this.notifier.log ("IDS_NOTIFY_ANALYZING", file.getAbsolutePath ());
-
-            if (this.waitForDelivery ())
-                break;
-
-            try
+            if (!file.getName ().startsWith ("._"))
             {
-                for (final IMultisampleSource multisample: this.readFile (file))
-                {
-                    if (this.waitForDelivery ())
-                        break;
+                this.notifier.log ("IDS_NOTIFY_ANALYZING", file.getAbsolutePath ());
 
-                    this.updateCreationDateTime (multisample.getMetadata (), file);
-                    this.consumer.accept (multisample);
+                if (this.waitForDelivery ())
+                    break;
 
-                    if (this.isCancelled ())
-                        return;
-                }
+                if (this.detectPerformances)
+                    this.handlePerformanceFile (file);
+                else
+                    this.handlePresetFile (file);
             }
-            catch (final RuntimeException ex)
+    }
+
+
+    private void handlePresetFile (final File file)
+    {
+        try
+        {
+            for (final IMultisampleSource multisample: this.readPresetFile (file))
             {
-                this.notifier.logError (ex);
+                if (this.waitForDelivery ())
+                    break;
+
+                this.updateCreationDateTime (multisample.getMetadata (), file);
+                this.multisampleSourceConsumer.accept (multisample);
+
+                if (this.isCancelled ())
+                    return;
             }
+        }
+        catch (final RuntimeException ex)
+        {
+            this.notifier.logError (ex);
+        }
+    }
+
+
+    private void handlePerformanceFile (final File file)
+    {
+        try
+        {
+            final IPerformanceSource performance = this.readPerformanceFile (file);
+            if ((performance == null) || this.waitForDelivery ())
+                return;
+
+            this.updateCreationDateTime (performance.getMetadata (), file);
+            this.performanceSourceConsumer.accept (performance);
+        }
+        catch (final RuntimeException ex)
+        {
+            this.notifier.logError (ex);
         }
     }
 
@@ -147,7 +195,20 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * @param sourceFile The file to process
      * @return The parsed multi-sample information
      */
-    protected abstract List<IMultisampleSource> readFile (final File sourceFile);
+    protected abstract List<IMultisampleSource> readPresetFile (final File sourceFile);
+
+
+    /**
+     * Read and parse the given performance file. Implement if performance files are supported by
+     * this detector.
+     *
+     * @param sourceFile The file to process
+     * @return The parsed multi-sample information
+     */
+    protected IPerformanceSource readPerformanceFile (final File sourceFile)
+    {
+        throw new RuntimeException (this.getClass ().getName () + " does not support Performance files.");
+    }
 
 
     /** {@inheritDoc} */
@@ -400,7 +461,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
             return new AiffFileSampleData (zipFile, sampleFile);
 
-        throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ()));
+        throw new IOException (Functions.getMessage (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, sampleFile.getName ()));
 
     }
 
@@ -459,14 +520,14 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                     sampleData = new FlacFileSampleData (sampleFile);
 
                 if (sampleData == null)
-                    throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ()));
+                    throw new IOException (Functions.getMessage (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, type.toString ()));
             }
 
             return sampleData;
         }
         catch (final UnsupportedAudioFileException | IOException ex)
         {
-            throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ()), ex);
+            throw new IOException (Functions.getMessage (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, sampleFile.getName ()), ex);
         }
     }
 
