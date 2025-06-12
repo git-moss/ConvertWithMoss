@@ -4,9 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc.tools;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcChunk;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcPerformance;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcPerformancePart;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YsfcFile;
 
 
@@ -35,6 +40,23 @@ public class DumpEntryHeaders
         {
             final YsfcFile ysfcFile = new YsfcFile (new File (args[0]));
             System.out.println (ysfcFile.dump (0));
+
+            final YamahaYsfcChunk dpfmChunk = ysfcFile.getChunks ().get (YamahaYsfcChunk.DATA_LIST_PERFORMANCE);
+            if (dpfmChunk == null)
+                return;
+
+            System.out.println ("\nPerformances:");
+            final List<byte []> dpfmListChunks = dpfmChunk.getDataArrays ();
+            for (int i = 0; i < dpfmListChunks.size (); i++)
+            {
+                final byte [] performanceData = dpfmListChunks.get (i);
+                final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), ysfcFile.getVersion ());
+                final String performanceName = performance.getName ();
+                final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
+                System.out.println ("    " + performanceName);
+                for (int j = 0; j < parts.size (); j++)
+                    System.out.println ("        Part " + (j + 1) + ": " + parts.get (j).getName ());
+            }
         }
         catch (final IOException ex)
         {

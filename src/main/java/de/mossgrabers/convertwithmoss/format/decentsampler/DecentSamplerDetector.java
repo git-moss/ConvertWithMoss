@@ -71,7 +71,7 @@ public class DecentSamplerDetector extends AbstractDetectorWithMetadataPane<Dece
     @Override
     public void saveSettings (final BasicConfig config)
     {
-        this.metadataPane.saveSettings (config);
+        super.saveSettings (config);
 
         config.setBoolean (this.prefix + LOG_UNSUPPORTED_ATTRIBUTES, this.logUnsupportedAttributes.isSelected ());
     }
@@ -81,7 +81,7 @@ public class DecentSamplerDetector extends AbstractDetectorWithMetadataPane<Dece
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.metadataPane.loadSettings (config);
+        super.loadSettings (config);
 
         this.logUnsupportedAttributes.setSelected (config.getBoolean (this.prefix + LOG_UNSUPPORTED_ATTRIBUTES, false));
     }

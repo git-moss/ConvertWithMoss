@@ -23,7 +23,6 @@ import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -307,30 +306,17 @@ public class YamahaYsfcCreator extends AbstractCreator
 
         final List<IInstrumentSource> instrumentSources = limitInstruments (performanceSource.getInstruments ());
         final int numInstruments = instrumentSources.size ();
-        int max = 1;
-        if (numInstruments > 1 && numInstruments <= 8)
-            max = 8;
-        else if (numInstruments > 8)
-            max = 16;
 
         // Create one part in the performance for each multi-sample source
         final List<int []> allWaveReferences = new ArrayList<> ();
-        for (int i = 0; i < max; i++)
+        for (int i = 0; i < numInstruments; i++)
         {
             final YamahaYsfcPerformancePart part = partTemplate.deepClone ();
             final IMultisampleSource multisampleSource;
             final String multisampleName;
-            if (i < numInstruments)
-            {
-                final IInstrumentSource instrumentSource = instrumentSources.get (i);
-                multisampleSource = instrumentSource.getMultisampleSource ();
-                multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
-            }
-            else
-            {
-                multisampleSource = new DefaultMultisampleSource ();
-                multisampleName = "Empty " + (i + 1);
-            }
+            final IInstrumentSource instrumentSource = instrumentSources.get (i);
+            multisampleSource = instrumentSource.getMultisampleSource ();
+            multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
 
             allWaveReferences.add (this.fillPart (counters, format, ysfcFile, categoryID, multisampleSource, multisampleName, part));
             parts.add (part);

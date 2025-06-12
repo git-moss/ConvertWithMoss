@@ -11,6 +11,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadataPane;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
@@ -63,13 +64,13 @@ public class Sf2Detector extends AbstractDetectorWithMetadataPane<Sf2DetectorTas
         // Options
 
         panel.createSeparator ("@IDS_SF2_OPTIONS");
-
         this.logUnsupportedAttributes = panel.createCheckBox ("@IDS_SF2_LOG_UNSUPPORTED_ATTRIBUTES");
 
         ////////////////////////////////////////////////////////////
         // Naming
 
-        panel.createSeparator ("@IDS_SF2_NAMING");
+        final TitledSeparator separator = panel.createSeparator ("@IDS_SF2_NAMING");
+        separator.getStyleClass ().add ("titled-separator-pane");
 
         this.addFileName = panel.createCheckBox ("@IDS_SF2_NAMING_ADD_FILE_NAME");
         this.addProgramNumber = panel.createCheckBox ("@IDS_SF2_NAMING_ADD_PROGRAM_NUMBER");

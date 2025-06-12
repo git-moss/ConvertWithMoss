@@ -16,7 +16,7 @@ date:   \today
 
 # Welcome to the ConvertWithMoss Documentation
 
-This tool converts multisamples in a [specific source format to a different destination format](README-FORMATS.md#). Furthermore, it can create multisample files from plain AIFF and WAV files.
+This tool converts multisamples in a [specific source format to a different destination format](README-FORMATS.md#). Furthermore, it can create multisample files from plain sample files like AIFF and WAV.
 
 Additionally, the conversion process reads and writes metadata (name, category, creator, description and keywords) as well as envelopes and filter settings, if supported by the format. If the source format does not support metadata a guessing algorithm is applied based on the samples names.
 
@@ -24,8 +24,7 @@ Details about the specific converted parameters can be found in a [spreadsheet][
 
 ## Reporting bugs and asking questions
 
-If you run into an error or you are stuck somewhere, feel free to get in touch. But make sure that you have read this manual and also have a look at the tutorial videos on my Youtube channel. To report bugs and/or ask questions write either to the ConvertWithMoss thread on KVR or create an issue in the ConvertWithMoss GitHub projects.
-All links can be found on the ConvertWithMoss [Download][2] page.
+If you run into an error or you are stuck somewhere, feel free to get in touch. But make sure that you have read this manual and also have a look at the tutorial videos on my Youtube channel. To report bugs and/or ask questions write either to the ConvertWithMoss thread on KVR or create an issue in the ConvertWithMoss GitHub projects. All links can be found on the ConvertWithMoss [Download][2] page.
 
 ## Installation
 
@@ -38,7 +37,7 @@ After that you can start the application ConvertWithMoss.
 
 ## Build from sources
 
-Ensure to have the required `JVM`, `JRE`, `JavaFX` and `Maven` dependencies preinstalled and set the `JAVA_HOME` environment variable to specify which Java version to use; the minimum required version is `21`. Then use `mvn install` command to start the build.
+Ensure to have the required `JVM`, `JRE`, `JavaFX` and `Maven` dependencies preinstalled and set the `JAVA_HOME` environment variable to specify which Java version to use; the minimum required version is `24`. Then use `mvn install` command to start the build.
 
 See also the various build scripts in this directory as references on how to build the documentation and/or the application source files.
 

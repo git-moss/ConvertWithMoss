@@ -235,11 +235,11 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
             new KorgmultisampleCreator (this),
             new EXS24Creator (this),
             new SxtCreator (this),
+            new WavCreator (this),
             new SfzCreator (this),
             new Sf2Creator (this),
             new TALSamplerCreator (this),
             new WaldorfQpatCreator (this),
-            new WavCreator (this),
             new YamahaYsfcCreator (this)
         };
     }

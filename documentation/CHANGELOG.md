@@ -15,6 +15,9 @@
   * Fixed: Read: seqMode and seqPosition were falsely reported as not used.
   * Fixed: Write: Curve settings were not applied for filter and pitch envelopes.
   * Fixed: Write: Pitch envelopes do work now.
+* Korg KSC/KMP/KSF - Read
+  * New: Added option to load KSC files (instead of only KMP). Combines related mono files into stereo files.
+  * New: The long name stored in the KMP is now set as the multi-samples name instead of the short filename.
 * SF2
   * New: Added support to write as library (adds all found source-multi-samples into 1 sf2 file).
 * Yamaha YSFC

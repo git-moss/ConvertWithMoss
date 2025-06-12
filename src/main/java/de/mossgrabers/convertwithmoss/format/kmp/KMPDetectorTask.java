@@ -7,30 +7,55 @@ package de.mossgrabers.convertwithmoss.format.kmp;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.ZoneChannels;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
-import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
- * Detects recursively KMP (KORG Multisample Parameter) files in folders. Files must end with
- * <i>.kmp</i>.
+ * Detects recursively KSC or KMP files in folders. Files must end with <i>.KSC</i> or <i>.KMP</i>.
  *
  * @author Jürgen Moßgraber
  */
 public class KMPDetectorTask extends AbstractDetectorTask
 {
+    private static final Pattern   KMP_PATTERN = Pattern.compile ("(.+?)(\\d+)\\.KMP$");
+
+    private static final String [] KSC_ENDINGS =
+    {
+        ".ksc",
+        ".KSC"
+    };
+
+    private static final String [] KMP_ENDINGS =
+    {
+        ".kmp",
+        ".KMP"
+    };
+
+    private final boolean          useKscFiles;
+
+
     /**
      * Constructor.
      *
@@ -38,10 +63,13 @@ public class KMPDetectorTask extends AbstractDetectorTask
      * @param consumer The consumer that handles the detected multi-sample sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
+     * @param useKscFiles Search for KSC files otherwise only KMP
      */
-    public KMPDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
+    public KMPDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final boolean useKscFiles)
     {
-        super (notifier, consumer, sourceFolder, metadata, ".kmp", ".KMP");
+        super (notifier, consumer, sourceFolder, metadata, useKscFiles ? KSC_ENDINGS : KMP_ENDINGS);
+
+        this.useKscFiles = useKscFiles;
     }
 
 
@@ -49,25 +77,251 @@ public class KMPDetectorTask extends AbstractDetectorTask
     @Override
     protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
-        final IGroup group = new DefaultGroup ("Group 1");
+        final List<IMultisampleSource> multiSameplSources = new ArrayList<> ();
 
-        try (final FileInputStream stream = new FileInputStream (sourceFile))
+        if (this.useKscFiles)
+            multiSameplSources.addAll (this.readKSCFile (sourceFile));
+        else
         {
-            new KMPFile (this.notifier, sourceFile, group.getSampleZones ()).read (stream);
+            final Optional<IMultisampleSource> kmpFile = this.readKMPFile (sourceFile);
+            if (kmpFile.isPresent ())
+                multiSameplSources.add (kmpFile.get ());
         }
-        catch (final IOException | ParseException ex)
+
+        return multiSameplSources;
+    }
+
+
+    /**
+     * Reads and parses a KSC file. Collects all referenced KMP files and tries to combine them to
+     * stereo files by their name-prefix.
+     * 
+     * @param sourceFile The KSC file
+     * @return The parsed multi-sample sources
+     */
+    private List<IMultisampleSource> readKSCFile (final File sourceFile)
+    {
+        if (sourceFile.getName ().endsWith ("_UserBank.KSC"))
+        {
+            this.notifier.log ("IDS_KMP_KSC_V2_IGNORED");
+            return Collections.emptyList ();
+        }
+
+        final KSCFile kscFile = new KSCFile ();
+        try
+        {
+            kscFile.read (sourceFile);
+        }
+        catch (final IOException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Collections.emptyList ();
         }
 
-        final String name = FileUtils.getNameWithoutType (sourceFile);
+        final List<String> kmpFiles = kscFile.getKmpFiles ();
+        if (kmpFiles.isEmpty ())
+        {
+            this.notifier.logError ("IDS_KMP_KSC_CONTAINS_NO_KMP");
+            return Collections.emptyList ();
+        }
+
+        // Find matching left/right files to combine into a stereo multi-sample by their prefixes
+        final List<IMultisampleSource> results = new ArrayList<> ();
+        File previousFolder = null;
+        for (final List<String> prefixList: groupAndSortFileNames (kmpFiles))
+        {
+            switch (prefixList.size ())
+            {
+                // Only 1 file with that prefix, must be mono
+                case 1:
+                {
+                    final String kmpFileName = prefixList.get (0);
+                    final File kmpFile = findFile (this.notifier, sourceFile.getParentFile (), previousFolder, kmpFileName, 0, "KMP");
+                    if (kmpFile.exists ())
+                        previousFolder = kmpFile.getParentFile ();
+                    // If it does not exist we still call this method to trigger an error
+                    final Optional<IMultisampleSource> multisampleSource = this.readKMPFile (kmpFile);
+                    if (multisampleSource.isPresent ())
+                        results.add (multisampleSource.get ());
+                    break;
+                }
+
+                // Found 2 files with the same prefix, try to combine them
+                case 2:
+                {
+                    final String kmpFileName1 = prefixList.get (0);
+                    final String kmpFileName2 = prefixList.get (1);
+                    final File kmpFile1 = findFile (this.notifier, sourceFile.getParentFile (), previousFolder, kmpFileName1, 0, "KMP");
+                    if (kmpFile1.exists ())
+                        previousFolder = kmpFile1.getParentFile ();
+                    final File kmpFile2 = findFile (this.notifier, sourceFile.getParentFile (), previousFolder, kmpFileName2, 0, "KMP");
+                    try
+                    {
+                        this.combineToStereo (kmpFile1, kmpFile2, results);
+                    }
+                    catch (final IOException ex)
+                    {
+                        this.notifier.logError (ex);
+                    }
+                    break;
+                }
+
+                default:
+                    this.notifier.logError ("IDS_KMP_KSC_CANNOT_HANDLE_MORE_THAN_2_FILES", Integer.toString (prefixList.size ()), prefixList.get (0));
+                    break;
+            }
+        }
+
+        return results;
+    }
+
+
+    /**
+     * Reads a KMP file and creates a multi-sample source from it.
+     * 
+     * @param sourceFile The KMP file
+     * @return The multi-sample source if found
+     */
+    private Optional<IMultisampleSource> readKMPFile (final File sourceFile)
+    {
+        final IGroup group = new DefaultGroup ("Group 1");
+
+        final KMPFile kmpFile;
+        try (final FileInputStream stream = new FileInputStream (sourceFile))
+        {
+            kmpFile = new KMPFile (this.notifier, sourceFile, group.getSampleZones ());
+            kmpFile.read (stream);
+        }
+        catch (final IOException | ParseException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            return Optional.empty ();
+        }
+
+        final String name = kmpFile.getName ();
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
         final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, name, sourceFile.getName ());
 
         // Use guessing on the filename...
         source.getMetadata ().detectMetadata (this.metadataConfig, parts);
         source.setGroups (Collections.singletonList (group));
-        return Collections.singletonList (source);
+        return Optional.of (source);
+    }
+
+
+    /**
+     * Combines 2 mono KMP files into 1 stereo multi-sample source.
+     * 
+     * @param kmpFile1 The 1st KMP file
+     * @param kmpFile2 The 2nd KMP file
+     * @param results Where to add the found multi-sample source
+     * @throws IOException Could not combine the samples
+     */
+    private void combineToStereo (final File kmpFile1, final File kmpFile2, final List<IMultisampleSource> results) throws IOException
+    {
+        // If it does not exist we still call this method to trigger an error
+        final Optional<IMultisampleSource> multisampleSource1 = this.readKMPFile (kmpFile1);
+        final Optional<IMultisampleSource> multisampleSource2 = this.readKMPFile (kmpFile2);
+        if (multisampleSource1.isEmpty () || multisampleSource2.isEmpty ())
+            return;
+
+        // Make some sanity checks
+        final IMultisampleSource s1 = multisampleSource1.get ();
+        final IMultisampleSource s2 = multisampleSource2.get ();
+        final List<ISampleZone> sampleZones1 = s1.getGroups ().get (0).getSampleZones ();
+        final List<ISampleZone> sampleZones2 = s2.getGroups ().get (0).getSampleZones ();
+        if (sampleZones1.size () != sampleZones2.size ())
+        {
+            this.notifier.logError ("IDS_KMP_KSC_DIFFERENT_NUMBER_OF_ZONES", kmpFile1.getName (), kmpFile2.getName ());
+            return;
+        }
+        if (sampleZones1.isEmpty ())
+        {
+            this.notifier.logError ("IDS_KMP_KSC_NO_ZONES", kmpFile1.getName (), kmpFile2.getName ());
+            return;
+        }
+
+        // Identify which one is the left and right channel via their name
+        final String zoneName1 = sampleZones1.get (0).getName ();
+        final String zoneName2 = sampleZones2.get (0).getName ();
+
+        final IMultisampleSource left;
+        final IMultisampleSource right;
+        if (zoneName1.endsWith ("-L") && zoneName2.endsWith ("-R"))
+        {
+            left = s1;
+            right = s2;
+        }
+        else if (zoneName1.endsWith ("-R") && zoneName2.endsWith ("-L"))
+        {
+            left = s2;
+            right = s1;
+        }
+        else
+        {
+            this.notifier.logError ("IDS_KMP_KSC_2_FILES_ARE_NOT_STEREO", kmpFile1.getName (), kmpFile2.getName ());
+            return;
+        }
+
+        final List<ISampleZone> leftSampleZones = left.getGroups ().get (0).getSampleZones ();
+        final List<ISampleZone> rightSampleZones = right.getGroups ().get (0).getSampleZones ();
+        final Optional<IGroup> optGroup = ZoneChannels.combineSplitStereo (leftSampleZones, rightSampleZones);
+
+        left.setName (getCommonPrefix (left.getName (), right.getName ()));
+        if (optGroup.isPresent ())
+        {
+            left.getGroups ().set (0, optGroup.get ());
+            results.add (left);
+        }
+    }
+
+
+    /**
+     * Creates a list which contains the different prefixes of the given filenames in ordered lists.
+     * 
+     * @param fileNames The filenames
+     * @return The list
+     */
+    private static List<List<String>> groupAndSortFileNames (final List<String> fileNames)
+    {
+        // Sort all filenames with the same prefix into a list
+        final Map<String, List<String>> grouped = new HashMap<> ();
+        for (final String name: fileNames)
+        {
+            final Matcher matcher = KMP_PATTERN.matcher (name);
+            if (matcher.matches ())
+            {
+                final String prefix = matcher.group (1);
+                grouped.computeIfAbsent (prefix, k -> new ArrayList<> ()).add (name);
+            }
+        }
+
+        // Sort the groups by the number
+        final List<List<String>> result = new ArrayList<> ();
+        for (Map.Entry<String, List<String>> entry: grouped.entrySet ())
+        {
+            final List<String> group = entry.getValue ();
+
+            group.sort (Comparator.comparingInt (name -> {
+                final Matcher m = KMP_PATTERN.matcher (name);
+                m.matches (); // We know it's valid
+                return Integer.parseInt (m.group (2));
+            }));
+
+            result.add (group);
+        }
+        return result;
+    }
+
+
+    private static String getCommonPrefix (final String str1, final String str2)
+    {
+        String prefix = StringUtils.getCommonPrefix (str1, str2);
+        if (prefix.endsWith ("-"))
+            prefix = prefix.substring (0, prefix.length () - 1);
+        // IMPROVE: Is this the velocity?
+        if (prefix.endsWith ("0"))
+            prefix = prefix.substring (0, prefix.length () - 1);
+        return prefix.trim ();
     }
 }
