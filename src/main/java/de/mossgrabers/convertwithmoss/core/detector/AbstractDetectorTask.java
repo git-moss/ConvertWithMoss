@@ -625,7 +625,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
     /**
      * If the sample is not found in the given folder, a search is started from one folder up and
-     * search recursively for the wave file.
+     * search recursively for the sample file.
      *
      * @param notifier Where to write logging info to
      * @param folder The folder where the sample is expected
@@ -635,6 +635,24 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * @return The sample file
      */
     public static File findSampleFile (final INotifier notifier, final File folder, final File previousFolder, final String fileName, final int levels)
+    {
+        return findFile (notifier, folder, previousFolder, fileName, levels, "sample");
+    }
+
+
+    /**
+     * If the file is not found in the given folder, a search is started from one folder up and
+     * search recursively for the file.
+     *
+     * @param notifier Where to write logging info to
+     * @param folder The folder where the file is expected
+     * @param previousFolder The folder in which the previous file was found, might be null
+     * @param fileName The name of the file to look for
+     * @param levels The number of levels to move upwards to start the search
+     * @param fileType The name of the file type, e.g. 'sample'
+     * @return The file
+     */
+    public static File findFile (final INotifier notifier, final File folder, final File previousFolder, final String fileName, final int levels, final String fileType)
     {
         final File file = new File (fileName);
 
@@ -663,8 +681,8 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
 
         // ... and search recursively...
         if (notifier != null)
-            notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN", startDirectory.getAbsolutePath ());
-        final File found = findSampleFileRecursively (startDirectory, sampleFile.getName ());
+            notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN", fileType, startDirectory.getAbsolutePath ());
+        final File found = findFileRecursively (startDirectory, sampleFile.getName ());
         // Returning the original file triggers the expected error...
         if (found == null)
         {
@@ -674,7 +692,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         }
 
         if (notifier != null)
-            notifier.log ("IDS_NOTIFY_SEARCH_SAMPLE_IN_FOUND");
+            notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN_FOUND");
         return found;
     }
 
@@ -699,7 +717,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     }
 
 
-    private static File findSampleFileRecursively (final File folder, final String fileName)
+    private static File findFileRecursively (final File folder, final String fileName)
     {
         File sampleFile = new File (folder, fileName);
         if (sampleFile.exists ())
@@ -712,7 +730,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
                 if (subFolder.isHidden () || subFolder.getName ().startsWith ("."))
                     continue;
 
-                sampleFile = findSampleFileRecursively (subFolder, fileName);
+                sampleFile = findFileRecursively (subFolder, fileName);
                 if (sampleFile != null)
                     return sampleFile;
             }

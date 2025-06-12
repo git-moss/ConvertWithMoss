@@ -218,7 +218,14 @@ public class KSFFile
         out.writeInt (KSF_SAMPLE_PARAM_SIZE);
 
         final String name = createSafeFilename (sampleZone.getName ());
-        out.write (pad (name, 16).getBytes ());
+
+        String ext = "";
+        if (kmpChannel == KMPChannel.LEFT)
+            ext = "-L";
+        else if (kmpChannel == KMPChannel.RIGHT)
+            ext = "-R";
+        final String shortName = ext.isEmpty () ? pad (name, 16) : pad (name, 14) + ext;
+        out.write (shortName.getBytes ());
 
         out.writeInt (sampleZone.getStart ());
 
@@ -319,7 +326,8 @@ public class KSFFile
         out.write (KSF_SAMPLE_NAME_ID.getBytes ());
         out.writeInt (KSF_SAMPLE_NAME_SIZE);
 
-        out.write (pad (name, 24).getBytes ());
+        final String longName = ext.isEmpty () ? pad (name, 24) : pad (name, 22) + ext;
+        out.write (longName.getBytes ());
     }
 
 

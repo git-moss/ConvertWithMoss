@@ -30,7 +30,7 @@ public class WavCreator extends AbstractCreator
      */
     public WavCreator (final INotifier notifier)
     {
-        this ("WAV", notifier);
+        this ("Sample Files (WAV)", notifier);
     }
 
 

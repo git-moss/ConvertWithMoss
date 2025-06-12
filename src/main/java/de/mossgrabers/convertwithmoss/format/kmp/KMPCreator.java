@@ -8,9 +8,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -53,7 +53,7 @@ public class KMPCreator extends AbstractCreator
      */
     public KMPCreator (final INotifier notifier)
     {
-        super ("Korg KMP/KSF", notifier);
+        super ("Korg KSC/KMP/KSF", notifier);
     }
 
 
@@ -92,48 +92,64 @@ public class KMPCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
+    public boolean supportsLibraries ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        AbstractCreator.recalculateSamplePositions (multisampleSource, 48000, true);
+        this.createLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
+    }
 
-        final String multiSampleName = createSafeFilename (multisampleSource.getName ());
 
-        // Create a sub-folder for the KMP file(s) and all samples
-        final File subFolder = new File (destinationFolder, createUniqueDOSFileName (destinationFolder, multiSampleName, "", new HashSet<> ()));
-        if (!subFolder.exists () && !subFolder.mkdirs ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
-            return;
-        }
-
-        // KMP format supports only 1 group. Therefore, either create 1 KMP file for each group or
-        // combine them into 1
-        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
-        final ZoneChannels zoneChannels = ZoneChannels.detectChannelConfiguration (groups);
-        this.notifier.log ("IDS_KMP_SOURCE_SAMPLES_FORMAT", zoneChannels.toString ());
-
+    /** {@inheritDoc} */
+    @Override
+    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    {
         final List<String> createdKMPNames = new ArrayList<> ();
         int kmpIndex = 0;
 
-        if (!this.writeGroupKmps.isSelected () || zoneChannels == ZoneChannels.SPLIT_STEREO)
+        for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            final IGroup combinedGroup = new DefaultGroup ();
-            final List<ISampleZone> sampleZones = combinedGroup.getSampleZones ();
-            for (final IGroup group: groups)
-                sampleZones.addAll (group.getSampleZones ());
-            kmpIndex = this.storeKMP (subFolder, multiSampleName, combinedGroup, zoneChannels, kmpIndex, createdKMPNames);
+            AbstractCreator.recalculateSamplePositions (multisampleSource, 48000, true);
+
+            final String multiSampleName = createSafeFilename (multisampleSource.getName ());
+
+            // Create a sub-folder for the KMP file(s) and all samples
+            final File subFolder = new File (destinationFolder, createUniqueDOSFileName (destinationFolder, multiSampleName, "", new HashSet<> ()));
+            if (!subFolder.exists () && !subFolder.mkdirs ())
+            {
+                this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
+                return;
+            }
+
+            // KMP format supports only 1 group. Therefore, either create 1 KMP file for each group
+            // or combine them into 1
+            final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
+            final ZoneChannels zoneChannels = ZoneChannels.detectChannelConfiguration (groups);
+            this.notifier.log ("IDS_KMP_SOURCE_SAMPLES_FORMAT", zoneChannels.toString ());
+
+            if (!this.writeGroupKmps.isSelected () || zoneChannels == ZoneChannels.SPLIT_STEREO)
+            {
+                final IGroup combinedGroup = new DefaultGroup ();
+                final List<ISampleZone> sampleZones = combinedGroup.getSampleZones ();
+                for (final IGroup group: groups)
+                    sampleZones.addAll (group.getSampleZones ());
+                kmpIndex = this.storeKMP (subFolder, multiSampleName, combinedGroup, zoneChannels, kmpIndex, createdKMPNames);
+            }
+            else
+                for (final IGroup group: groups)
+                    kmpIndex = this.storeKMP (subFolder, multiSampleName, group, zoneChannels, kmpIndex, createdKMPNames);
         }
-        else
-            for (final IGroup group: groups)
-                kmpIndex = this.storeKMP (subFolder, multiSampleName, group, zoneChannels, kmpIndex, createdKMPNames);
 
         // Write a KSC file with all created KMP files
-        final StringBuilder sb = new StringBuilder ("#KORG Script Version 1.0\r\n");
-        for (final String kmpFilename: createdKMPNames)
-            sb.append (kmpFilename).append (".KMP\r\n");
-        final File kscFile = new File (subFolder, subFolder.getName () + ".KSC");
-        this.notifier.log ("IDS_NOTIFY_STORING", kscFile.getAbsolutePath ());
-        Files.writeString (kscFile.toPath (), sb.toString ());
+        final File outputFile = new File (destinationFolder, libraryName + ".KSC");
+        this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
+        new KSCFile (createdKMPNames).write (outputFile);
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 

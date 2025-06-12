@@ -372,6 +372,7 @@ public class TagDetector
         {
             CATEGORY_PLUCK,
             "Balalaika",
+            "Hackbrett",
             "Dulcimer",
             "Mandolin",
             "Zither",

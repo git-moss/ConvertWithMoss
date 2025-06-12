@@ -105,7 +105,22 @@ public enum ZoneChannels
         final List<ISampleZone> leftSampleZones = new ArrayList<> ();
         final List<ISampleZone> rightSampleZones = new ArrayList<> ();
         ZoneChannels.getSplitStereo (groups, leftSampleZones, rightSampleZones);
+        return combineSplitStereo (leftSampleZones, rightSampleZones);
+    }
 
+
+    /**
+     * Creates stereo sample zones (with stereo sample files) from split stereo sample zones.
+     * Important: the input must have been checked to be split stereo with the
+     * detectChannelConfiguration method.
+     * 
+     * @param leftSampleZones All sample zones of the left channel
+     * @param rightSampleZones All sample zones of the right channel
+     * @return The group containing all resulting stereo sample zones if combination is possible
+     * @throws IOException Could not combine the files
+     */
+    public static Optional<IGroup> combineSplitStereo (final List<ISampleZone> leftSampleZones, final List<ISampleZone> rightSampleZones) throws IOException
+    {
         // Size of left/right must match
         final int size = leftSampleZones.size ();
         if (size != rightSampleZones.size ())
@@ -142,8 +157,8 @@ public enum ZoneChannels
 
             leftSampleZone.setPanning (0);
             String commonName = KeyMapping.findCommonPrefix (leftSampleZone.getName (), rightSampleZone.getName ());
-            if (commonName.endsWith ("_"))
-                commonName = commonName.substring (0, commonName.length () - 1);
+            if (commonName.endsWith ("_") || commonName.endsWith ("-"))
+                commonName = commonName.substring (0, commonName.length () - 1).trim ();
             leftSampleZone.setName (commonName);
 
             group.addSampleZone (leftSampleZone);
