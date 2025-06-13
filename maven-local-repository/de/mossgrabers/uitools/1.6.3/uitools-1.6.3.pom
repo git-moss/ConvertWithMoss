@@ -66,8 +66,8 @@
 				<version>3.14.0</version>
 				<configuration>
 					<fork>true</fork>
-					<source>21</source>
-					<target>21</target>
+					<source>24</source>
+					<target>24</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
