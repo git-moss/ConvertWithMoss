@@ -56,7 +56,7 @@ jobs:
     - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: 24
+        java-version: 23
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
     - name: Publish jpackage result
