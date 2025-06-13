@@ -9,13 +9,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -125,51 +121,55 @@ public class KMPDetectorTask extends AbstractDetectorTask
             return Collections.emptyList ();
         }
 
-        // Find matching left/right files to combine into a stereo multi-sample by their prefixes
+        // Find matching left/right files to combine into a stereo multi-sample
         final List<IMultisampleSource> results = new ArrayList<> ();
         File previousFolder = null;
-        for (final List<String> prefixList: groupAndSortFileNames (kmpFiles))
+
+        final int numKmpFiles = kmpFiles.size ();
+        int pos = 0;
+        while (pos < numKmpFiles)
         {
-            switch (prefixList.size ())
+            // Find the next KMP file
+            final String kmpFileName = kmpFiles.get (pos);
+            final File kmpFile = findFile (this.notifier, sourceFile.getParentFile (), previousFolder, kmpFileName, 0, "KMP");
+            if (!kmpFile.exists ())
             {
-                // Only 1 file with that prefix, must be mono
-                case 1:
-                {
-                    final String kmpFileName = prefixList.get (0);
-                    final File kmpFile = findFile (this.notifier, sourceFile.getParentFile (), previousFolder, kmpFileName, 0, "KMP");
-                    if (kmpFile.exists ())
-                        previousFolder = kmpFile.getParentFile ();
-                    // If it does not exist we still call this method to trigger an error
-                    final Optional<IMultisampleSource> multisampleSource = this.readKMPFile (kmpFile);
-                    if (multisampleSource.isPresent ())
-                        results.add (multisampleSource.get ());
-                    break;
-                }
-
-                // Found 2 files with the same prefix, try to combine them
-                case 2:
-                {
-                    final String kmpFileName1 = prefixList.get (0);
-                    final String kmpFileName2 = prefixList.get (1);
-                    final File kmpFile1 = findFile (this.notifier, sourceFile.getParentFile (), previousFolder, kmpFileName1, 0, "KMP");
-                    if (kmpFile1.exists ())
-                        previousFolder = kmpFile1.getParentFile ();
-                    final File kmpFile2 = findFile (this.notifier, sourceFile.getParentFile (), previousFolder, kmpFileName2, 0, "KMP");
-                    try
-                    {
-                        this.combineToStereo (kmpFile1, kmpFile2, results);
-                    }
-                    catch (final IOException ex)
-                    {
-                        this.notifier.logError (ex);
-                    }
-                    break;
-                }
-
-                default:
-                    this.notifier.logError ("IDS_KMP_KSC_CANNOT_HANDLE_MORE_THAN_2_FILES", Integer.toString (prefixList.size ()), prefixList.get (0));
-                    break;
+                pos++;
+                continue;
             }
+            previousFolder = kmpFile.getParentFile ();
+
+            // Load the KMP file
+            final Optional<IMultisampleSource> multisampleSource = this.readKMPFile (kmpFile);
+            if (multisampleSource.isEmpty ())
+            {
+                pos++;
+                continue;
+            }
+
+            // Is it a left-channel file? If not, add the mono result
+            final IMultisampleSource ms = multisampleSource.get ();
+            final String zoneName = ms.getGroups ().get (0).getSampleZones ().get (0).getName ();
+            if (!zoneName.endsWith ("-L") || pos + 1 == numKmpFiles)
+            {
+                results.add (ms);
+                pos++;
+                continue;
+            }
+
+            // Combine with the next KMP to a stereo file
+            pos++;
+            final String kmpFileNameRightChannel = kmpFiles.get (pos);
+            final File kmpFileRightChannel = findFile (this.notifier, sourceFile.getParentFile (), previousFolder, kmpFileNameRightChannel, 0, "KMP");
+            try
+            {
+                this.combineToStereo (kmpFile, kmpFileRightChannel, results);
+            }
+            catch (final IOException ex)
+            {
+                this.notifier.logError (ex);
+            }
+            pos++;
         }
 
         return results;
@@ -273,44 +273,6 @@ public class KMPDetectorTask extends AbstractDetectorTask
             left.getGroups ().set (0, optGroup.get ());
             results.add (left);
         }
-    }
-
-
-    /**
-     * Creates a list which contains the different prefixes of the given filenames in ordered lists.
-     * 
-     * @param fileNames The filenames
-     * @return The list
-     */
-    private static List<List<String>> groupAndSortFileNames (final List<String> fileNames)
-    {
-        // Sort all filenames with the same prefix into a list
-        final Map<String, List<String>> grouped = new HashMap<> ();
-        for (final String name: fileNames)
-        {
-            final Matcher matcher = KMP_PATTERN.matcher (name);
-            if (matcher.matches ())
-            {
-                final String prefix = matcher.group (1);
-                grouped.computeIfAbsent (prefix, k -> new ArrayList<> ()).add (name);
-            }
-        }
-
-        // Sort the groups by the number
-        final List<List<String>> result = new ArrayList<> ();
-        for (Map.Entry<String, List<String>> entry: grouped.entrySet ())
-        {
-            final List<String> group = entry.getValue ();
-
-            group.sort (Comparator.comparingInt (name -> {
-                final Matcher m = KMP_PATTERN.matcher (name);
-                m.matches (); // We know it's valid
-                return Integer.parseInt (m.group (2));
-            }));
-
-            result.add (group);
-        }
-        return result;
     }
 
 
