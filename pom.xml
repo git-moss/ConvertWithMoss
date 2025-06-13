@@ -33,11 +33,6 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.openjfx</groupId>
-			<artifactId>javafx-base</artifactId>
-			<version>24.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
 			<version>24.0.1</version>
 		</dependency>
@@ -89,8 +84,8 @@
 				<version>3.14.0</version>
 				<configuration>
 					<fork>true</fork>
-					<source>24</source>
-					<target>24</target>
+					<source>23</source>
+					<target>23</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
