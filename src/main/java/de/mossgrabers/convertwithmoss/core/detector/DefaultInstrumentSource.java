@@ -4,8 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.core.detector;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 
 
 /**
@@ -15,8 +20,10 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
  */
 public class DefaultInstrumentSource extends DefaultSource implements IInstrumentSource
 {
-    private final IMultisampleSource multisampleSource;
+    private IMultisampleSource multisampleSource;
     private int                midiChannel;
+    private int                clipKeyLow  = 0;
+    private int                clipKeyHigh = 127;
 
 
     /**
@@ -41,6 +48,17 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     }
 
 
+    /**
+     * Set the multi-sample source.
+     *
+     * @param multisampleSource The source
+     */
+    public void setMultisampleSource (final IMultisampleSource multisampleSource)
+    {
+        this.multisampleSource = multisampleSource;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public int getMidiChannel ()
@@ -58,5 +76,74 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     public void setMidiChannel (final int midiChannel)
     {
         this.midiChannel = midiChannel;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getClipKeyLow ()
+    {
+        return this.clipKeyLow;
+    }
+
+
+    /**
+     * Set the lower note which should limit the key-range (this note should still sound).
+     * 
+     * @param clipKeyLow The note [0..127]
+     */
+    public void setClipKeyLow (final int clipKeyLow)
+    {
+        this.clipKeyLow = clipKeyLow;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getClipKeyHigh ()
+    {
+        return this.clipKeyHigh;
+    }
+
+
+    /**
+     * Set the upper note which should limit the key-range (this note should still sound).
+     * 
+     * @param clipKeyHigh The note [0..127]
+     */
+    public void setClipKeyHigh (final int clipKeyHigh)
+    {
+        this.clipKeyHigh = clipKeyHigh;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void clipKeyRange ()
+    {
+        // Nothing to do?
+        if (this.clipKeyLow == 0 && this.clipKeyHigh == 127)
+            return;
+
+        for (final IGroup group: this.multisampleSource.getGroups ())
+        {
+            final List<ISampleZone> filteredZones = new ArrayList<> ();
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                int keyLow = zone.getKeyLow ();
+                int keyHigh = zone.getKeyHigh ();
+                // Fully outside -> remove
+                if (keyLow > this.clipKeyHigh || keyHigh < this.clipKeyLow)
+                    continue;
+
+                // Clip lower and upper range
+                if (keyLow < this.clipKeyLow)
+                    zone.setKeyLow (this.clipKeyLow);
+                if (keyHigh > this.clipKeyHigh)
+                    zone.setKeyHigh (this.clipKeyHigh);
+                filteredZones.add (zone);
+            }
+            group.setSampleZones (filteredZones);
+        }
     }
 }

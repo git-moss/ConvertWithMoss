@@ -187,6 +187,8 @@ public class TagDetector
             "Whisper",
             "Vocode",
             "Choral",
+            "Speech",
+            "Speack",
             "Choir",
             "Voice",
             "Shout",

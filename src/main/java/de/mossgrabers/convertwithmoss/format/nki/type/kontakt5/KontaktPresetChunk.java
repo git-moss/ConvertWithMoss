@@ -64,6 +64,10 @@ public class KontaktPresetChunk
                 this.readFixedArray (objectInputStream, 16);
                 break;
 
+            case KontaktPresetChunkID.PARAMETER_ARRAY_32:
+                this.readFixedArray (objectInputStream, 32);
+                break;
+
             case KontaktPresetChunkID.SLOT_LIST, KontaktPresetChunkID.PAR_FX, KontaktPresetChunkID.FILENAME_LIST_EX, KontaktPresetChunkID.FILENAME_LIST:
             default:
                 this.publicData = objectInputStream.readNBytes (objectSize);
@@ -140,14 +144,13 @@ public class KontaktPresetChunk
      * @param size The number of preset chunks to read
      * @throws IOException Could not read
      */
-    public void readFixedArray (final InputStream in, final int size) throws IOException
+    private void readFixedArray (final InputStream in, final int size) throws IOException
     {
-        // TODO
-        final int isXXXX = in.read ();
-        // System.out.println ("isXXXX: " + isXXXX);
+        if (in.read () != 0)
+            throw new IOException ("First byte of fixed array not 0!");
 
-        final int version = StreamUtils.readUnsigned16 (in, false);
-        // check for 0x10, 0x11, 0x12, 0x13
+        // Found 0x10, 0x11, 0x12, 0x13
+        this.version = StreamUtils.readUnsigned16 (in, false);
 
         for (int i = 0; i < size; i++)
             if (in.read () > 0)

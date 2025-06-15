@@ -24,9 +24,29 @@ public interface IInstrumentSource extends ISource
      * Get the MIDI channel of the instrument.
      *
      * @return The MIDI channel in the range of [0..15], -1 and all other values are considered
-     *         omni/all
+     *         OMNI/all
      */
     int getMidiChannel ();
 
-    // TODO Do we need a key-range as well?
+
+    /**
+     * The lower note which should limit the key-range (this note should still sound).
+     * 
+     * @return The note [0..127]
+     */
+    int getClipKeyLow ();
+
+
+    /**
+     * The upper note which should limit the key-range (this note should still sound).
+     * 
+     * @return The note [0..127]
+     */
+    int getClipKeyHigh ();
+
+
+    /**
+     * Clip all samples (or remove them fully) if there are outside of the lower and upper key.
+     */
+    void clipKeyRange ();
 }

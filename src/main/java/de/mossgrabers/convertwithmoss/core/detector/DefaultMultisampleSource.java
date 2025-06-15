@@ -191,9 +191,9 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
     {
         Double globalVelocity = null;
         for (final IGroup group: this.groups)
-            for (final ISampleZone sampleMetadata: group.getSampleZones ())
+            for (final ISampleZone sampleZone: group.getSampleZones ())
             {
-                final double depth = sampleMetadata.getAmplitudeVelocityModulator ().getDepth ();
+                final double depth = sampleZone.getAmplitudeVelocityModulator ().getDepth ();
                 if (globalVelocity == null)
                     globalVelocity = Double.valueOf (depth);
                 else if (globalVelocity.doubleValue () != depth)

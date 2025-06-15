@@ -11,6 +11,7 @@ import java.util.Map;
 import org.w3c.dom.Element;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
@@ -47,6 +48,18 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
             return XMLUtils.getChildElementsByName (top, this.tags.program ());
 
         return Collections.emptyList ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void readInstrumentParameters (final DefaultInstrumentSource instrumentSource, final Map<String, String> programParameters)
+    {
+        final String midiChannel = programParameters.get ("midiChannel");
+        if (midiChannel != null)
+            instrumentSource.setMidiChannel (Integer.parseInt (midiChannel) - 1);
+
+        super.readInstrumentParameters (instrumentSource, programParameters);
     }
 
 

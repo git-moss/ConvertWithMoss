@@ -30,11 +30,15 @@ import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -106,56 +110,102 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Parses the metadata description file.
+     * Parses the XML description file for a multi and its instruments.
      *
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file which contains the XML document
-     * @param content The XML content to parse
+     * @param xmlCode The XML content to parse
      * @param metadataConfig Default metadata
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return The parsed multi-sample source
      * @throws IOException An error occurred parsing the XML document
      */
-    public List<IMultisampleSource> parse (final File sourceFolder, final File sourceFile, final String content, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
+    public IPerformanceSource parseMulti (final File sourceFolder, final File sourceFile, final String xmlCode, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
+    {
+        final Element top = getTopLevelElement (xmlCode);
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
+
+        final Map<String, String> topParameters = this.readParameters (top);
+        final List<IInstrumentSource> instrumentSources = this.parseInstrumentSources (sourceFolder, sourceFile, top, metadataConfig, monolithSamples);
+        final List<IInstrumentSource> instruments = performanceSource.getInstruments ();
+        for (int i = 0; i < instrumentSources.size (); i++)
+        {
+            final IInstrumentSource instrumentSource = instrumentSources.get (i);
+
+            // Only K2
+            final String midiChannelStr = topParameters.get (String.format ("midiChannel_slot0%02d", Integer.valueOf (i)));
+            if (midiChannelStr != null && instrumentSource instanceof DefaultInstrumentSource defSource)
+                defSource.setMidiChannel (Integer.parseInt (midiChannelStr) - 1);
+
+            instruments.add (instrumentSource);
+        }
+        return performanceSource;
+    }
+
+
+    /**
+     * Parses the XML description file for instruments.
+     *
+     * @param sourceFolder The top source folder for the detection
+     * @param sourceFile The source file which contains the XML document
+     * @param xmlCode The XML content to parse
+     * @param metadataConfig Default metadata
+     * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
+     * @return The parsed multi-sample source
+     * @throws IOException An error occurred parsing the XML document
+     */
+    public List<IMultisampleSource> parseInstruments (final File sourceFolder, final File sourceFile, final String xmlCode, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
+    {
+        final Element top = getTopLevelElement (xmlCode);
+        final List<IInstrumentSource> instrumentSources = this.parseInstrumentSources (sourceFolder, sourceFile, top, metadataConfig, monolithSamples);
+        final List<IMultisampleSource> multisampleSource = new ArrayList<> (instrumentSources.size ());
+        for (final IInstrumentSource instrumentSource: instrumentSources)
+            multisampleSource.add (instrumentSource.getMultisampleSource ());
+        return multisampleSource;
+    }
+
+
+    private List<IInstrumentSource> parseInstrumentSources (final File sourceFolder, final File sourceFile, final Element top, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
+    {
+        final List<Element> programElements = this.findProgramElements (top);
+        if (programElements.isEmpty ())
+            return Collections.emptyList ();
+
+        final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
+
+        final List<IInstrumentSource> instrumentSources = new ArrayList<> ();
+        for (final Element programElement: programElements)
+        {
+            final String mappingNameFolder = AudioFileUtils.subtractPaths (sourceFolder, sourceFile);
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingNameFolder);
+            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
+            if (this.parseProgram (programElement, instrumentSource, monolithSamples))
+            {
+                multisampleSource.setMappingName (mappingNameFolder + " : " + multisampleSource.getName ());
+                updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
+                instrumentSources.add (instrumentSource);
+            }
+        }
+        return instrumentSources;
+    }
+
+
+    private Element getTopLevelElement (final String content) throws IOException
     {
         try
         {
-            final Element top = getTopLevelElement (content);
+            final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
+            final Element top = document.getDocumentElement ();
             if (!this.isValidTopLevelElement (top))
-                return Collections.emptyList ();
-
-            final List<Element> programElements = this.findProgramElements (top);
-            if (programElements.isEmpty ())
-                return Collections.emptyList ();
-
-            final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
-            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
-
-            final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-            for (final Element programElement: programElements)
-            {
-                final String mappingNameFolder = AudioFileUtils.subtractPaths (sourceFolder, sourceFile);
-                final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingNameFolder);
-                if (this.parseProgram (programElement, multisampleSource, monolithSamples))
-                {
-                    multisampleSource.setMappingName (mappingNameFolder + " : " + multisampleSource.getName ());
-                    updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
-                    multisampleSources.add (multisampleSource);
-                }
-            }
-            return multisampleSources;
+                throw new IOException (Functions.getMessage ("IDS_NKI_NOT_A_VALID_TOP_LEVEL_ELEMENT", top.getTagName ()));
+            return top;
         }
         catch (final SAXException ex)
         {
             throw new IOException (ex);
         }
-    }
-
-
-    private static Element getTopLevelElement (final String content) throws SAXException
-    {
-        final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-        return document.getDocumentElement ();
     }
 
 
@@ -419,23 +469,69 @@ public abstract class AbstractNKIMetadataFileHandler
 
     /**
      * Parses a program element and retrieves a IMultisampleSource object representing the program.
-     *
+     * 
      * @param programElement The program element to be parsed
-     * @param multisampleSource Where to store the parsed data
+     * @param instrumentSource Where to store the parsed data
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
      * @return True if successful
      * @throws IOException Could not create path for samples
      */
-    private boolean parseProgram (final Element programElement, final DefaultMultisampleSource multisampleSource, final Map<String, ISampleData> monolithSamples) throws IOException
+    private boolean parseProgram (final Element programElement, final DefaultInstrumentSource instrumentSource, final Map<String, ISampleData> monolithSamples) throws IOException
     {
+        final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
+
         final String programName = this.tags.programName ();
         if (!programElement.hasAttribute (programName))
             return false;
 
         final Map<String, String> programParameters = this.readParameters (programElement);
+        readMetadata (programParameters, multisampleSource.getMetadata ());
 
-        final IMetadata metadata = multisampleSource.getMetadata ();
+        // Present only in K1
+        this.readInstrumentParameters (instrumentSource, programParameters);
 
+        final List<Element> groupElements = this.getGroupElements (programElement);
+        final List<Element> zoneElements = this.getZoneElements (programElement);
+
+        final String sourcePath = multisampleSource.getSourceFile ().getParentFile ().getCanonicalPath ();
+        final List<IGroup> groups = this.getGroups (programParameters, groupElements, zoneElements, sourcePath, monolithSamples);
+        if (groups.isEmpty ())
+        {
+            this.notifier.logError ("IDS_NKI_NO_VEL_GROUP_DETECTED");
+            return false;
+        }
+
+        multisampleSource.setGroups (groups);
+
+        String name = programElement.getAttribute (programName);
+        // Kontakt seems to behave like this...
+        if ("Instrument 1".equals (name) && groups.size () == 1)
+            name = groups.get (0).getName ();
+        multisampleSource.setName (name);
+
+        return true;
+    }
+
+
+    /**
+     * Read additional parameter like the MIDI channel which are specific to the instrument.
+     * 
+     * @param instrumentSource The instrument source
+     * @param programParameters The program parameter
+     */
+    protected void readInstrumentParameters (final DefaultInstrumentSource instrumentSource, final Map<String, String> programParameters)
+    {
+        final String lowKey = programParameters.get ("lowKey");
+        if (lowKey != null)
+            instrumentSource.setClipKeyLow (Integer.parseInt (lowKey));
+        final String highKey = programParameters.get ("highKey");
+        if (highKey != null)
+            instrumentSource.setClipKeyLow (Integer.parseInt (highKey));
+    }
+
+
+    private static void readMetadata (final Map<String, String> programParameters, final IMetadata metadata)
+    {
         final String iconIdx = programParameters.get ("catIconIdx");
         if (iconIdx != null && !iconIdx.isBlank ())
             try
@@ -460,27 +556,6 @@ public abstract class AbstractNKIMetadataFileHandler
         final String description = programParameters.get ("instrumentCredits");
         if (description != null && !NULL_ENTRY.equals (description))
             metadata.setDescription (description.replace (NULL_ENTRY, ""));
-
-        final List<Element> groupElements = this.getGroupElements (programElement);
-        final List<Element> zoneElements = this.getZoneElements (programElement);
-
-        final String sourcePath = multisampleSource.getSourceFile ().getParentFile ().getCanonicalPath ();
-        final List<IGroup> groups = this.getGroups (programParameters, groupElements, zoneElements, sourcePath, monolithSamples);
-        if (groups.isEmpty ())
-        {
-            this.notifier.logError ("IDS_NKI_NO_VEL_GROUP_DETECTED");
-            return false;
-        }
-
-        multisampleSource.setGroups (groups);
-
-        String name = programElement.getAttribute (programName);
-        // Kontakt seems to behave like this...
-        if ("Instrument 1".equals (name) && groups.size () == 1)
-            name = groups.get (0).getName ();
-        multisampleSource.setName (name);
-
-        return true;
     }
 
 

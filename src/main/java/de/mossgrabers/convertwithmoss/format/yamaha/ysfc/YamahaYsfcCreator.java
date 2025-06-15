@@ -142,9 +142,18 @@ public class YamahaYsfcCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public boolean supportsPerformances ()
+    public boolean supportsLibraries ()
     {
         return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        // TODO return true; - Ditch this until it is fixed...
+        return false;
     }
 
 
@@ -184,14 +193,6 @@ public class YamahaYsfcCreator extends AbstractCreator
     {
         config.setInteger (YSFC_OUTPUT_FORMAT_LIBRARY, this.getSelectedOutputFormat ());
         config.setBoolean (YSFC_CREATE_ONLY_WAVEFORMS, this.createOnlyWaveforms.isSelected ());
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean supportsLibraries ()
-    {
-        return true;
     }
 
 
@@ -311,13 +312,12 @@ public class YamahaYsfcCreator extends AbstractCreator
         final List<int []> allWaveReferences = new ArrayList<> ();
         for (int i = 0; i < numInstruments; i++)
         {
-            final YamahaYsfcPerformancePart part = partTemplate.deepClone ();
-            final IMultisampleSource multisampleSource;
-            final String multisampleName;
             final IInstrumentSource instrumentSource = instrumentSources.get (i);
-            multisampleSource = instrumentSource.getMultisampleSource ();
-            multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
+            // TODO Used MIDI channel
+            final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
+            final String multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
 
+            final YamahaYsfcPerformancePart part = partTemplate.deepClone ();
             allWaveReferences.add (this.fillPart (counters, format, ysfcFile, categoryID, multisampleSource, multisampleName, part));
             parts.add (part);
         }
@@ -644,7 +644,12 @@ public class YamahaYsfcCreator extends AbstractCreator
         flagsOutput.write (0);
         // Favorite: 0 = off
         flagsOutput.write (0);
-        // Attribute: 2 = Only 1st part active, all ARPS + Motion sequences are off
+
+        // 0x01 = SSS is unavailable (more than eight parts)
+        // 0x02 = single part performance
+        // 0x04 = arpeggiator enabled
+        // 0x08 = motion sequencer enabled
+        // 0x10 = one or more monophonic parts
         if (numParts == 1)
             flagsOutput.write (2);
         else if (numParts > 8)

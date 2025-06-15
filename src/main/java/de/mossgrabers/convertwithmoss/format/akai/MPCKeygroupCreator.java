@@ -343,7 +343,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         final int keyHigh = limitToDefault (zone.getKeyHigh (), 127);
         final String rangeKey = keyLow + "-" + keyHigh;
         final boolean isSequence = zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
-        final List<Keygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, key -> new ArrayList<> ());
+        final List<Keygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, _ -> new ArrayList<> ());
 
         final int layerLimit = this.getLayerLimit ();
 

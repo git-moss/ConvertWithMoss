@@ -298,7 +298,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         {
             final String nodeName = childElement.getNodeName ();
             if (!supportedElements.contains (nodeName))
-                this.unsupportedElements.computeIfAbsent (tagName, tag -> new HashSet<> ()).add (nodeName);
+                this.unsupportedElements.computeIfAbsent (tagName, _ -> new HashSet<> ()).add (nodeName);
         }
     }
 
@@ -339,7 +339,7 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
         {
             final String nodeName = attributes.item (i).getNodeName ();
             if (!supportedAttributes.contains (nodeName))
-                this.unsupportedAttributes.computeIfAbsent (tagName, tag -> new HashSet<> ()).add (nodeName);
+                this.unsupportedAttributes.computeIfAbsent (tagName, _ -> new HashSet<> ()).add (nodeName);
         }
     }
 

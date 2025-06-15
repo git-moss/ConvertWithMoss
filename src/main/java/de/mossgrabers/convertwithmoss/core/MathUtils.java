@@ -203,7 +203,7 @@ public class MathUtils
 
 
     /**
-     * Converts a time in seconds into a normalized logarithmic value in the range [0..1].
+     * Converts a time in seconds into a normalized logarithmic value in the range [0..1000].
      *
      * @param value The value in seconds
      * @param maxValue The maximum for value
@@ -216,7 +216,7 @@ public class MathUtils
 
 
     /**
-     * Converts a time in seconds into a normalized logarithmic value in the range [0..1],
+     * Converts a time in seconds into a normalized logarithmic value in the range [0..1000],
      * multiplies it with 1000 and converts it to an integer.
      *
      * @param value The value in seconds

@@ -5,9 +5,10 @@
 package de.mossgrabers.convertwithmoss.format.music1010;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,16 +17,21 @@ import java.util.Optional;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -96,6 +102,7 @@ public class Music1010Creator extends AbstractCreator
         EMPTY_PARAM_ATTRIBUTES.put ("polymodeslice", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("okegrp", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("midimode", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("midioutchan", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("padnote", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("rootnote", "0");
 
@@ -110,8 +117,6 @@ public class Music1010Creator extends AbstractCreator
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("lforate", "845");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfoamount", "0");
 
-        MULTISAMPLE_PARAM_ATTRIBUTES.put ("midimode", "1");
-        MULTISAMPLE_PARAM_ATTRIBUTES.put ("midioutchan", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("reverse", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("cellmode", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("envattack", "0");
@@ -224,6 +229,78 @@ public class Music1010Creator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
+    public boolean supportsPerformances ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
+    {
+        final String performanceFolder = createSafeFilename (performanceSource.getName ());
+        final File folder = this.createUniqueFilename (destinationFolder, performanceFolder, "");
+        if (!folder.exists () && !folder.mkdir ())
+        {
+            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", folder.getAbsolutePath ());
+            return;
+        }
+
+        final boolean resample = this.resampleTo2448.isSelected ();
+        final boolean trim = this.trimStartToEnd.isSelected ();
+        this.setInterpolationQuality (this.isHighInterpolationQuality ());
+
+        // Create 1 preset which contains up to 16 multi-samples as well as individual presets for
+        // each multi-sample in sub-folders
+
+        // A preset has a maximum of 16 slots!
+        List<IInstrumentSource> instrumentSources = performanceSource.getInstruments ();
+        if (instrumentSources.size () > 16)
+            instrumentSources = performanceSource.getInstruments ().subList (0, 16);
+
+        for (final IInstrumentSource instrumentSource: instrumentSources)
+            instrumentSource.clipKeyRange ();
+
+        // Create the overall performance preset
+        final Optional<String> xmlCode = this.createPreset (instrumentSources, trim, performanceFolder + "\\");
+        if (xmlCode.isPresent ())
+        {
+            final File performanceFile = new File (folder, "preset.xml");
+            this.notifier.log ("IDS_NOTIFY_STORING", performanceFile.getAbsolutePath ());
+            storePreset (performanceFile, xmlCode.get ());
+
+            // Add the workaround silent sample...
+            final byte [] silentSample = Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/Silence24bit48kHz.wav");
+            final File silentSampleFile = new File (folder, "Silence24bit48kHz.wav");
+            Files.write (silentSampleFile.toPath (), silentSample);
+        }
+
+        // Create all samples in their sub-folders
+        for (final IInstrumentSource instrumentSource: instrumentSources)
+        {
+            final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
+
+            final String multisampleName = createSafeFilename (multisampleSource.getName ());
+            final File presetFolder = this.createUniqueFilename (folder, multisampleName, "");
+            if (!presetFolder.mkdir ())
+            {
+                this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", presetFolder.getAbsolutePath ());
+                continue;
+            }
+
+            // Store all samples
+            if (resample)
+                recalculateSamplePositions (multisampleSource, 48000);
+            this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
+        }
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final boolean resample = this.resampleTo2448.isSelected ();
@@ -234,16 +311,19 @@ public class Music1010Creator extends AbstractCreator
         final String sampleName = createSafeFilename (multisampleSource.getName ());
         final File presetFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         if (!presetFolder.mkdir ())
+        {
             this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", presetFolder.getAbsolutePath ());
+            return;
+        }
 
-        final Optional<String> metadata = this.createMetadata (sampleName, multisampleSource, trim);
+        final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
+        final Optional<String> metadata = this.createPreset (Collections.singletonList (instrumentSource), trim, "");
         if (metadata.isEmpty ())
             return;
 
-        final File multiFile = new File (presetFolder, "preset.xml");
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
-
-        storePreset (presetFolder, multisampleSource, multiFile, metadata.get ());
+        final File presetFile = new File (presetFolder, "preset.xml");
+        this.notifier.log ("IDS_NOTIFY_STORING", presetFile.getAbsolutePath ());
+        storePreset (presetFile, metadata.get ());
 
         // Store all samples
         if (resample)
@@ -257,80 +337,106 @@ public class Music1010Creator extends AbstractCreator
     /**
      * Create a preset file.
      *
-     * @param destinationFolder Where to store the preset file
-     * @param multisampleSource The multi-sample to store in the library
      * @param multiFile The file to store the preset
      * @param metadata The preset metadata description file
      * @throws IOException Could not store the file
      */
-    private static void storePreset (final File destinationFolder, final IMultisampleSource multisampleSource, final File multiFile, final String metadata) throws IOException
+    private static void storePreset (final File multiFile, final String metadata) throws IOException
     {
-        try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
-        {
-            writer.write (metadata);
-        }
+        Files.writeString (multiFile.toPath (), metadata);
     }
 
 
     /**
-     * Create the text of the description file.
+     * Create the text of the description file with 1 preset.
      *
-     * @param folderName The name to use for the sample folder
-     * @param multisampleSource The multi-sample
+     * @param instrumentSources The up to 16 instrument sources to add to the preset
      * @param trim Trim to start/end if true
      * @return The XML structure
+     * @throws IOException Could not combine split-stereo files
      */
-    private Optional<String> createMetadata (final String folderName, final IMultisampleSource multisampleSource, final boolean trim)
+    private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final boolean trim, final String subFolder) throws IOException
     {
-        final Optional<Document> optionalDocument = this.createXMLDocument ();
-        if (optionalDocument.isEmpty ())
+        final Pair<Document, Element> sessionDocument = createSessionDocument ();
+        if (sessionDocument == null)
             return Optional.empty ();
-        final Document document = optionalDocument.get ();
-        document.setXmlStandalone (true);
-
-        final Element rootElement = document.createElement (Music1010Tag.ROOT);
-        document.appendChild (rootElement);
-        final Element sessionElement = XMLUtils.addElement (document, rootElement, Music1010Tag.SESSION);
-        sessionElement.setAttribute (Music1010Tag.ATTR_VERSION, "2");
+        final Document document = sessionDocument.getKey ();
+        final Element sessionElement = sessionDocument.getValue ();
 
         // No metadata at all -> can optionally be written to BEXT chunk
 
-        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
-
-        // Create 16 slot cells, multi-sample goes into slot 1
-        final Element firstSlot = this.createSlots (document, sessionElement);
-        final String presetPath = "\\Presets\\" + multisampleSource.getName ();
-        firstSlot.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath);
-
-        createModulators (document, firstSlot, multisampleSource);
-
-        // Add all groups
+        final int numInstruments = instrumentSources.size ();
+        final List<Element> activeSlots = this.createSlots (document, sessionElement, numInstruments);
         int sampleIndex = 0;
-        for (final IGroup group: groups)
-            for (final ISampleZone zone: group.getSampleZones ())
+        for (int i = 0; i < numInstruments; i++)
+        {
+            final IInstrumentSource instrumentSource = instrumentSources.get (i);
+            final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
+            this.notifier.log ("IDS_1010_MUSIC_ADDING_INSTRUMENT", multisampleSource.getName ());
+            final List<IGroup> groups = this.combineSplitStereo (multisampleSource);
+            multisampleSource.setGroups (groups);
+
+            final Element slotElement = activeSlots.get (i);
+            final String presetPath = "\\Presets\\" + subFolder + multisampleSource.getName ();
+            slotElement.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath);
+            // MIDI-channel 1 acts as the OMNI mode (0 = Off) -> offset all other channels by 1,
+            // channel 16 will be turned off
+            final int midiChannel = (instrumentSource.getMidiChannel () + 2) % 17;
+            XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS).setAttribute (Music1010Tag.ATTR_MIDI_MODE, Integer.toString (midiChannel));
+
+            createModulators (document, slotElement, multisampleSource);
+
+            // Add all groups
+            int lowestKey = 127;
+            int highestKey = 0;
+            for (final IGroup group: groups)
+                for (final ISampleZone zone: group.getSampleZones ())
+                {
+                    createSample (document, presetPath, sessionElement, zone, sampleIndex, i, trim);
+                    if (zone.getKeyLow () < lowestKey)
+                        lowestKey = zone.getKeyLow ();
+                    if (zone.getKeyHigh () > highestKey)
+                        highestKey = zone.getKeyHigh ();
+                    sampleIndex++;
+                }
+
+            // Add workaround to have silence outside of the range...
+            final ISampleZone silentZone = new DefaultSampleZone ();
+            silentZone.setName ("Silence24bit48kHz");
+            if (lowestKey > 0)
             {
-                createSample (document, folderName, presetPath, sessionElement, zone, sampleIndex, trim);
+                silentZone.setKeyLow (0);
+                silentZone.setKeyHigh (lowestKey - 1);
+                createSample (document, presetPath, sessionElement, silentZone, sampleIndex, i, false);
+                sampleIndex++;
+            }
+            if (highestKey < 127)
+            {
+                silentZone.setKeyLow (highestKey + 1);
+                silentZone.setKeyHigh (127);
+                createSample (document, presetPath, sessionElement, silentZone, sampleIndex, i, false);
                 sampleIndex++;
             }
 
-        final Element paramsElement = XMLUtils.getChildElementByName (firstSlot, Music1010Tag.PARAMS);
+            final Element paramsElement = XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS);
 
-        // Add amplitude envelope
-        if (!groups.isEmpty ())
-        {
-            final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
-            final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+            // Add amplitude envelope
+            if (!groups.isEmpty ())
+            {
+                final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
+                final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
 
-            final double sustainVal = amplitudeEnvelope.getSustainLevel ();
-            final int sustain = sustainVal < 0 ? 1000 : (int) Math.round (sustainVal * 1000.0);
+                final double sustainVal = amplitudeEnvelope.getSustainLevel ();
+                final int sustain = sustainVal < 0 ? 1000 : (int) Math.round (sustainVal * 1000.0);
 
-            paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_ATTACK, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getAttackTime (), 9.0));
-            paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_DECAY, MathUtils.normalizeTimeFormattedAsInt (Math.max (0, amplitudeEnvelope.getHoldTime ()) + Math.max (0, amplitudeEnvelope.getDecayTime ()), 38.0));
-            paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_RELEASE, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getReleaseTime (), 38.0));
-            paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_SUSTAIN, Integer.toString (sustain));
+                paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_ATTACK, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getAttackTime (), 9.0));
+                paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_DECAY, MathUtils.normalizeTimeFormattedAsInt (Math.max (0, amplitudeEnvelope.getHoldTime ()) + Math.max (0, amplitudeEnvelope.getDecayTime ()), 25.0));
+                paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_RELEASE, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getReleaseTime (), 25.0));
+                paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_SUSTAIN, Integer.toString (sustain));
+            }
+
+            createEffects (document, paramsElement, multisampleSource);
         }
-
-        createEffects (document, paramsElement, multisampleSource);
 
         return this.createXMLString (document);
     }
@@ -345,16 +451,14 @@ public class Music1010Creator extends AbstractCreator
         if (globalAmplitudeVelocity.isPresent ())
         {
             final double depth = globalAmplitudeVelocity.get ().doubleValue ();
-            if (depth != 0)
-                createModulator (document, firstSlot, "velocity", "gaindb", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
+            createModulator (document, firstSlot, "velocity", "gaindb", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
         }
 
         final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
         if (globalFilter.isPresent ())
         {
             final double depth = globalFilter.get ().getCutoffVelocityModulator ().getDepth ();
-            if (depth != 0)
-                createModulator (document, firstSlot, "velocity", "dualfilcutoff", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
+            createModulator (document, firstSlot, "velocity", "dualfilcutoff", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
         }
     }
 
@@ -374,32 +478,40 @@ public class Music1010Creator extends AbstractCreator
      *
      * @param document The document
      * @param sessionElement The session element to which to add the slots
-     * @return The first slot element
+     * @param numActiveSlots The number of active slots, maximum 16
+     * @return The active slot elements
      */
-    private Element createSlots (final Document document, final Element sessionElement)
+    private List<Element> createSlots (final Document document, final Element sessionElement, final int numActiveSlots)
     {
-        Element firstElement = null;
-        for (int row = 0; row < 4; row++)
-            for (int column = 0; column < 4; column++)
-            {
-                final boolean isFirst = row == 0 && column == 0;
+        List<Element> activeSlotElements = new ArrayList<> ();
+        for (int slot = 0; slot < 16; slot++)
+        {
+            final boolean isActive = slot < numActiveSlots;
+            final Element slotElement = createSlot (document, slot, isActive);
+            sessionElement.appendChild (slotElement);
+            if (isActive)
+                activeSlotElements.add (slotElement);
+        }
+        return activeSlotElements;
+    }
 
-                final Element cellElement = XMLUtils.addElement (document, sessionElement, Music1010Tag.CELL);
-                if (isFirst)
-                    firstElement = cellElement;
-                cellElement.setAttribute (Music1010Tag.ATTR_ROW, Integer.toString (row));
-                cellElement.setAttribute (Music1010Tag.ATTR_COLUMN, Integer.toString (column));
-                cellElement.setAttribute (Music1010Tag.ATTR_LAYER, Integer.toString (0));
-                cellElement.setAttribute (Music1010Tag.ATTR_FILENAME, "");
 
-                final Element paramsElement = XMLUtils.addElement (document, cellElement, Music1010Tag.PARAMS);
-                cellElement.setAttribute (Music1010Tag.ATTR_TYPE, isFirst ? "sample" : "samtempl");
-                for (final Map.Entry<String, String> entry: isFirst ? MULTISAMPLE_PARAM_ATTRIBUTES.entrySet () : EMPTY_PARAM_ATTRIBUTES.entrySet ())
-                    paramsElement.setAttribute (entry.getKey (), entry.getValue ());
+    private Element createSlot (final Document document, final int slot, final boolean isActive)
+    {
+        final Element cellElement = document.createElement (Music1010Tag.CELL);
+        cellElement.setAttribute (Music1010Tag.ATTR_ROW, Integer.toString (slot / 4));
+        cellElement.setAttribute (Music1010Tag.ATTR_COLUMN, Integer.toString (slot % 4));
+        cellElement.setAttribute (Music1010Tag.ATTR_LAYER, Integer.toString (0));
+        cellElement.setAttribute (Music1010Tag.ATTR_FILENAME, "");
 
-                paramsElement.setAttribute (Music1010Tag.ATTR_INTERPOLATION_QUALITY, this.isInterpolationQualityHigh ? "1" : "0");
-            }
-        return firstElement;
+        final Element paramsElement = XMLUtils.addElement (document, cellElement, Music1010Tag.PARAMS);
+        cellElement.setAttribute (Music1010Tag.ATTR_TYPE, isActive ? "sample" : "samtempl");
+        for (final Map.Entry<String, String> entry: isActive ? MULTISAMPLE_PARAM_ATTRIBUTES.entrySet () : EMPTY_PARAM_ATTRIBUTES.entrySet ())
+            paramsElement.setAttribute (entry.getKey (), entry.getValue ());
+
+        paramsElement.setAttribute (Music1010Tag.ATTR_INTERPOLATION_QUALITY, this.isInterpolationQualityHigh ? "1" : "0");
+
+        return cellElement;
     }
 
 
@@ -407,27 +519,27 @@ public class Music1010Creator extends AbstractCreator
      * Creates the metadata for one sample.
      *
      * @param document The XML document
-     * @param folderName The name to use for the sample folder
      * @param presetPath The offset path to use
      * @param groupElement The element where to add the sample information
      * @param zone Where to get the sample info from
      * @param sampleIndex The index of the sample
+     * @param slot The slot to which the sample belongs
      * @param trim Trim to start/end if true
      */
-    private static void createSample (final Document document, final String folderName, final String presetPath, final Element groupElement, final ISampleZone zone, final int sampleIndex, final boolean trim)
+    private static void createSample (final Document document, final String presetPath, final Element groupElement, final ISampleZone zone, final int sampleIndex, final int slot, final boolean trim)
     {
         /////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element cellElement = XMLUtils.addElement (document, groupElement, Music1010Tag.CELL);
         final String filename = zone.getName () + ".wav";
-        cellElement.setAttribute (Music1010Tag.ATTR_FILENAME, ".\\" + filename);
+        cellElement.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath + "\\" + filename);
         cellElement.setAttribute (Music1010Tag.ATTR_ROW, Integer.toString (sampleIndex));
         cellElement.setAttribute (Music1010Tag.ATTR_TYPE, "asset");
 
         final Element paramsElement = XMLUtils.addElement (document, cellElement, Music1010Tag.PARAMS);
-        paramsElement.setAttribute (Music1010Tag.ATTR_ASSET_SOURCE_ROW, "0");
-        paramsElement.setAttribute (Music1010Tag.ATTR_ASSET_SOURCE_COLUMN, "0");
+        paramsElement.setAttribute (Music1010Tag.ATTR_ASSET_SOURCE_ROW, Integer.toString (slot / 4));
+        paramsElement.setAttribute (Music1010Tag.ATTR_ASSET_SOURCE_COLUMN, Integer.toString (slot % 4));
 
         // Stored in WAV file: zone.getGain (), zone.getTune ()
 
@@ -524,5 +636,27 @@ public class Music1010Creator extends AbstractCreator
         // be logarithmic).
         final int resonance = (int) (filter.getResonance () * 1000.0);
         paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_RESONANCE, Integer.toString (resonance));
+    }
+
+
+    /**
+     * Create the basic structure for a 1010music session document.
+     * 
+     * @return The document and the session element
+     */
+    private Pair<Document, Element> createSessionDocument ()
+    {
+        final Optional<Document> optionalDocument = this.createXMLDocument ();
+        if (optionalDocument.isEmpty ())
+            return null;
+        final Document document = optionalDocument.get ();
+        document.setXmlStandalone (true);
+
+        final Element rootElement = document.createElement (Music1010Tag.ROOT);
+        document.appendChild (rootElement);
+        final Element sessionElement = XMLUtils.addElement (document, rootElement, Music1010Tag.SESSION);
+        sessionElement.setAttribute (Music1010Tag.ATTR_VERSION, "2");
+
+        return new Pair<> (document, sessionElement);
     }
 }

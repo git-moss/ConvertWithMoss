@@ -462,5 +462,4 @@ public class InternalModulator
     {
         return this.modulationSourceIndex == 0 || this.modulationSourceIndex == 2;
     }
-
 }

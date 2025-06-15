@@ -78,11 +78,11 @@ public abstract class AbstractDetector<T extends AbstractDetectorTask> extends A
     protected void startDetection (final T detectorTask)
     {
         this.detectorTaskOptional = Optional.of (detectorTask);
-        detectorTask.setOnCancelled (event -> this.notifier.updateButtonStates (true));
-        detectorTask.setOnFailed (event -> this.notifier.updateButtonStates (true));
-        detectorTask.setOnSucceeded (event -> this.notifier.updateButtonStates (true));
-        detectorTask.setOnRunning (event -> this.notifier.updateButtonStates (false));
-        detectorTask.setOnScheduled (event -> this.notifier.updateButtonStates (false));
+        detectorTask.setOnCancelled (_ -> this.notifier.updateButtonStates (true));
+        detectorTask.setOnFailed (_ -> this.notifier.updateButtonStates (true));
+        detectorTask.setOnSucceeded (_ -> this.notifier.updateButtonStates (true));
+        detectorTask.setOnRunning (_ -> this.notifier.updateButtonStates (false));
+        detectorTask.setOnScheduled (_ -> this.notifier.updateButtonStates (false));
         this.executor.execute (detectorTask);
     }
 

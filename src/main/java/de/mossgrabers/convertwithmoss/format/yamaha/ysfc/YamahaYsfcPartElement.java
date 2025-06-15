@@ -484,6 +484,17 @@ public class YamahaYsfcPartElement
 
 
     /**
+     * Set the group to which the element belongs.
+     * 
+     * @param elementGroupNumber The number of the group
+     */
+    public void setElementGroupNumber (final int elementGroupNumber)
+    {
+        this.elementGroupNumber = elementGroupNumber;
+    }
+
+
+    /**
      * Get the wave bank.
      *
      * @return 0=Preset, 1=User, 2-9=Library1-8

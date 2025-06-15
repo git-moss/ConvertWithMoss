@@ -67,7 +67,10 @@ public class Kontakt5MonolithType extends AbstractKontaktType
 
         try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
         {
-            return this.readNIMonolithContainer (inputStream, sourceFile, metadataConfig);
+            final Map<Long, MonolithFile> monolithFiles = this.readMonolithFiles (inputStream);
+            final MonolithFile mainFile = findMainFile (monolithFiles, sourceFile.getName ().endsWith (".nki") ? ".nki" : ".nkm");
+            final InputStream dataInputStream = new ByteArrayInputStream (mainFile.data);
+            return this.kontakt5Type.readNKI (this.sourceFolder, sourceFile, dataInputStream, metadataConfig, createSamples (monolithFiles));
         }
     }
 
@@ -76,8 +79,34 @@ public class Kontakt5MonolithType extends AbstractKontaktType
     @Override
     public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
-        // TODO Implement reading the NKM
-        return null;
+        this.sourceFolder = sourceFolder;
+
+        try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
+        {
+            final Map<Long, MonolithFile> monolithFiles = this.readMonolithFiles (inputStream);
+            final InputStream dataInputStream = new ByteArrayInputStream (findMainFile (monolithFiles, ".nkm").data);
+            return this.kontakt5Type.readNKM (sourceFolder, sourceFile, dataInputStream, metadataConfig, createSamples (monolithFiles));
+        }
+    }
+
+
+    private static MonolithFile findMainFile (final Map<Long, MonolithFile> monolithFiles, final String fileEnding) throws IOException
+    {
+        for (final MonolithFile file: monolithFiles.values ())
+        {
+            if (file.name.toLowerCase ().endsWith (fileEnding))
+                return file;
+        }
+        throw new IOException (Functions.getMessage ("IDS_NKI5_NO_NKI_IN_CONTAINER", fileEnding));
+    }
+
+
+    private Map<Long, MonolithFile> readMonolithFiles (final InputStream inputStream) throws IOException
+    {
+        final long fileCount = this.readHeader (inputStream);
+        final Map<Long, MonolithFile> monolithFiles = this.readTableOfContents (inputStream, fileCount);
+        readFiles (inputStream, monolithFiles);
+        return monolithFiles;
     }
 
 
@@ -86,36 +115,6 @@ public class Kontakt5MonolithType extends AbstractKontaktType
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
         // Not yet supported
-    }
-
-
-    /**
-     * Reads an NI file container.
-     *
-     * @param inputStream The input stream to read from
-     * @param sourceFile The source file to convert
-     * @return The parsed multi-samples, if any
-     * @param metadataConfig Default metadata
-     * @throws IOException Could not read the file container
-     */
-    private List<IMultisampleSource> readNIMonolithContainer (final InputStream inputStream, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
-    {
-        final long fileCount = this.readHeader (inputStream);
-        final Map<Long, MonolithFile> monolithFiles = this.readTableOfContents (inputStream, fileCount);
-
-        // Lookup the NKI file
-        MonolithFile nkiFile = null;
-        for (final MonolithFile file: monolithFiles.values ())
-            if (file.name.toLowerCase ().endsWith (".nki"))
-                nkiFile = file;
-        if (nkiFile == null)
-            throw new IOException (Functions.getMessage ("IDS_NKI5_NO_NKI_IN_CONTAINER"));
-
-        readFiles (inputStream, monolithFiles);
-        final Map<Long, ISampleZone> monolithSamples = createSamples (monolithFiles);
-
-        final InputStream dataInputStream = new ByteArrayInputStream (nkiFile.data);
-        return this.kontakt5Type.readNKI (this.sourceFolder, sourceFile, dataInputStream, metadataConfig, monolithSamples);
     }
 
 

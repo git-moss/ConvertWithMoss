@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.ExternalModulator;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Group;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.InternalModulator;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
@@ -68,13 +69,15 @@ public abstract class AbstractKontaktType implements IKontaktFormat
      * @param program The program from which to get the data
      * @param parts Parts of the name for category detection
      * @param filePaths All file paths
+     * @param isMonolith True if all files are stored in a monolith
      * @throws IOException Error finding samples
      */
-    public void fillInto (final IMultisampleSource multiSample, final Program program, final String [] parts, final List<String> filePaths) throws IOException
+    @SuppressWarnings("null")
+    public void fillInto (final IMultisampleSource multiSample, final Program program, final String [] parts, final List<String> filePaths, boolean isMonolith) throws IOException
     {
         setMetadata (multiSample, program, parts);
 
-        final List<File> files = this.lookupFiles (filePaths, multiSample.getSourceFile ().getParent ());
+        final List<File> files = this.lookupFiles (filePaths, multiSample.getSourceFile ().getParent (), isMonolith);
         final Map<Integer, Pair<IGroup, Group>> indexedGroups = createGroups (program);
         for (final Zone kontaktZone: program.getZones ())
         {
@@ -119,9 +122,29 @@ public abstract class AbstractKontaktType implements IKontaktFormat
             // Only on a group level...
             zone.setReversed (kontaktGroup.isReverse ());
 
-            // TODO Fill missing info, when understood where it is stored
-            // Bend Up / Down, Filter
+            // IMPROVE Fill Filter info, when understood where it is stored
             final IFilter filter = null;
+
+            // Set pitch by pitch-bend and amplitude by velocity modulation
+            boolean foundAmpVelocity = false;
+            for (final ExternalModulator modulator: kontaktGroup.getExternalModulators ())
+            {
+                final long sourceType = modulator.getSourceType ();
+                final long destType = modulator.getDestType ();
+                if (sourceType == ExternalModulator.SOURCE_PITCHBEND && (destType == ExternalModulator.DEST_PITCH || destType == ExternalModulator.DEST_PITCH2))
+                {
+                    final int cents = Math.round (modulator.getIntensity () * 12) * 100;
+                    zone.setBendUp (cents);
+                    zone.setBendDown (-cents);
+                }
+                else if (sourceType == ExternalModulator.SOURCE_VELOCITY && (destType == ExternalModulator.DEST_VOLUME || destType == ExternalModulator.DEST_VOLUME2))
+                {
+                    zone.getAmplitudeVelocityModulator ().setDepth (modulator.getIntensity ());
+                    foundAmpVelocity = true;
+                }
+            }
+            if (!foundAmpVelocity)
+                zone.getAmplitudeVelocityModulator ().setDepth (0);
 
             // Set amplitude and pitch modulator
             for (final InternalModulator modulator: kontaktGroup.getInternalModulators ())
@@ -215,7 +238,7 @@ public abstract class AbstractKontaktType implements IKontaktFormat
     }
 
 
-    private List<File> lookupFiles (final List<String> filePaths, final String sourceFilePath)
+    private List<File> lookupFiles (final List<String> filePaths, final String sourceFilePath, final boolean isMonolith)
     {
         int missingFiles = 0;
 
@@ -237,6 +260,9 @@ public abstract class AbstractKontaktType implements IKontaktFormat
 
             files.add (sampleFile);
         }
+
+        if (isMonolith)
+            return files;
 
         // Only search for missing files, if all of them are missing!
         if (missingFiles != files.size ())

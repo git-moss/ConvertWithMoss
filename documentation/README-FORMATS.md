@@ -66,6 +66,11 @@ If the format is selected as the source, there are two things to consider:
 * Option to set the *Interpolation Quality*. Setting it to *High* requires a bit more processing power on the 1010music devices.
 * Option to trim sample to range of zone start to end. Since the format does not support a sample start attribute for multi-sample, this fixes the issue.
 
+If 'Performance' is selected as the destination type, some workarounds are applied:
+
+* MIDI channel: There is no explicit OMNI setting. Instead, if MIDI channel 1 is selected on the device it acts as the OMNI channel, which means it is always sounding and renders MIDI channel 1 to be unusable. As a solution all MIDI channels are increased by 1 (channel 1 is 2, channel 2 is 3, ...) and channel 16 is set to Off. All instruments which have OMNI configured are set to channel 1.
+* Key ranges: The 1010music devices do not support key-ranges which means a multi-sample is always sounding across the full note range. As a workaround a silent sample (a totally empty one-shot sample is used) is applied to the lower and upper range which should not sound.
+
 ## Ableton Sampler
 
 Ableton uses a generic preset format (*.adv) for all of their devices. For combined rack presets another format (*.adg) is used. All their formats are XML documents which are compressed with the open GZIP algorithm.
@@ -155,7 +160,9 @@ A NKM file contains up to 64 instruments and is supported as well as a source.
 
 Encrypted files are not supported.
 
-If selected as a destination, a NKI file is written and all samples are placed in a sub-folder with the same name. 
+If selected as a destination, a NKI file is written and all samples are placed in a sub-folder with the same name.
+
+If selected as a source and 'Performance' is selected as the destination type, only NKM files are used as sources.
 
 ### Destination Options
 
@@ -320,11 +327,9 @@ Currently, the user and library formats of the Montage (not Montage M!) and MODX
 * A performance can contain up to 16 parts (e.g. to perform a song by muting, soloing parts via scenes)
 * A library contains several performances
 
+**Destination Type: Preset or Library**
+
 When creating presets or libraries as the destination type, each multi-sample source creates one performance with one active part. Each group of the the multi-sample source is assigned to 1 element for which 1 key-group is created as well which contains the samples. If there are more groups than elements, the remaining groups are all added to the last element. If there are no groups all samples will be assigned to key-group/element one.
-
-When creating (ConvertWithMoss) performances as the destination type, each performance source creates one (Yamaha) performance with one active part for each multi-sample (instrument) of the source. If there are more than 16 instruments in the source they are ignored. The rest of the mapping is identical to creating presets/libraries.
-
-Note: There are no checks that the created libraries stay in the boundaries of the workstation specifications (e.g. the number of the maximum allowed samples or the required memory size)!
 
 ### Source Options
 

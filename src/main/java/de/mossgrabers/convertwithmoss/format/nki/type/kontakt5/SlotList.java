@@ -56,7 +56,14 @@ public class SlotList
 
                     for (final KontaktPresetChunk child: programContainerChunk.getChildren ())
                         if (child.getId () == KontaktPresetChunkID.PROGRAM_LIST)
-                            programs.addAll (parseProgramList (child));
+                        {
+                            // This should always be only one!
+                            final List<Program> programList = parseProgramList (child);
+                            // Remember the slot index since they are not continuous!
+                            for (final Program program: programList)
+                                program.setSlotIndex (i);
+                            programs.addAll (programList);
+                        }
                 }
         }
 

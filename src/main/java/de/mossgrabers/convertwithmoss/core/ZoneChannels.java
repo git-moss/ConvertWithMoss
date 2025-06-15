@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -59,7 +60,10 @@ public enum ZoneChannels
         for (final IGroup group: groups)
             for (final ISampleZone sampleZone: group.getSampleZones ())
             {
-                final boolean isStereo = sampleZone.getSampleData ().getAudioMetadata ().getChannels () == 2;
+                final ISampleData sampleData = sampleZone.getSampleData ();
+                if (sampleData == null)
+                    continue;
+                final boolean isStereo = sampleData.getAudioMetadata ().getChannels () == 2;
                 if (stereo == null)
                 {
                     // First iteration, store if mono or stereo

@@ -443,7 +443,7 @@ public class KeyMapping
                 // Matcher group "prefix" not used
                 // Matcher group "postfix" not used
                 final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (filename)), si);
-                groups.computeIfAbsent (id, key -> new ArrayList<> ()).add (zone);
+                groups.computeIfAbsent (id, _ -> new ArrayList<> ()).add (zone);
             }
             catch (final NumberFormatException ex)
             {
@@ -512,7 +512,7 @@ public class KeyMapping
             final int midiNote = zone.getKeyRoot ();
             if (midiNote <= 0)
                 throw new NoteNotDetectedException (filename);
-            orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (zone);
+            orderedNotes.computeIfAbsent (Integer.valueOf (midiNote), _ -> new ArrayList<> ()).add (zone);
         }
 
         // All samples are mapped to the same note, seems the metadata does not contain meaningful
@@ -570,7 +570,7 @@ public class KeyMapping
             for (final ISampleZone zone: zones)
             {
                 final int midiNote = lookupMidiNote (keyMap, zone.getName ());
-                orderedByNote.computeIfAbsent (Integer.valueOf (midiNote), key -> new ArrayList<> ()).add (zone);
+                orderedByNote.computeIfAbsent (Integer.valueOf (midiNote), _ -> new ArrayList<> ()).add (zone);
             }
 
             result = decidePreferred (result, orderedByNote);

@@ -18,7 +18,6 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.ZoneChannels;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -132,21 +131,9 @@ public class WaldorfQpatCreator extends AbstractCreator
 
         final String relativeSamplePath = "samples/" + sampleName;
 
-        List<IGroup> groups = reduceGroups (multisampleSource.getNonEmptyGroups (true));
-
-        // Since panning is not working on the sample level, combine split stereo to stereo files
-        // If the combination fails, the file is created anyway but might contain wrong panning.
-        if (ZoneChannels.detectChannelConfiguration (groups) == ZoneChannels.SPLIT_STEREO)
-        {
-            final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
-            if (stereoGroup.isPresent ())
-            {
-                this.notifier.log ("IDS_QPAT_COMBINED_TO_STEREO");
-                groups = Collections.singletonList (stereoGroup.get ());
-            }
-        }
-
+        final List<IGroup> groups = reduceGroups (this.combineSplitStereo (multisampleSource));
         multisampleSource.setGroups (groups);
+
         storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath);
 
         // Store all samples

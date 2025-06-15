@@ -37,6 +37,7 @@ public class Group
     private int                           interpQuality;
     private int                           midiChannel;
     private final List<InternalModulator> internalModulators = new ArrayList<> ();
+    private final List<ExternalModulator> externalModulators = new ArrayList<> ();
 
 
     /**
@@ -83,7 +84,18 @@ public class Group
                     break;
 
                 case KontaktPresetChunkID.PARAMETER_ARRAY_32:
-                    // TODO handle the pitch bend
+
+                    // TODO Remove
+                    // System.out.println ("\n\nArray 32 Version: " + childChunk.getVersion ());
+
+                    for (final KontaktPresetChunk kpc: childChunk.getChildren ())
+                    {
+                        if (kpc.getId () != KontaktPresetChunkID.PAR_EXTERNAL_MOD)
+                            continue;
+                        final ExternalModulator externalModulator = new ExternalModulator ();
+                        externalModulator.read (kpc);
+                        this.externalModulators.add (externalModulator);
+                    }
                     break;
 
                 default:
@@ -312,5 +324,16 @@ public class Group
     public List<InternalModulator> getInternalModulators ()
     {
         return this.internalModulators;
+    }
+
+
+    /**
+     * Get the external modulators.
+     *
+     * @return The modulators
+     */
+    public List<ExternalModulator> getExternalModulators ()
+    {
+        return this.externalModulators;
     }
 }
