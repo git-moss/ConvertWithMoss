@@ -81,6 +81,7 @@ import de.mossgrabers.tools.ui.control.loggerbox.LoggerBoxLogger;
 import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import de.mossgrabers.tools.ui.panel.ButtonPanel;
+import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -104,6 +105,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 
 /**
@@ -266,16 +268,16 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         final ButtonPanel buttonPanel = new ButtonPanel (Orientation.VERTICAL);
         this.convertButton = setupButton (buttonPanel, "Convert", "@IDS_MAIN_CONVERT", "@IDS_MAIN_CONVERT_TOOLTIP");
         this.convertButton.setDefaultButton (true);
-        this.convertButton.setOnAction (event -> this.execute (false));
+        this.convertButton.setOnAction (_ -> this.execute (false));
         this.analyseButton = setupButton (buttonPanel, "Analyse", "@IDS_MAIN_ANALYSE", "@IDS_MAIN_ANALYSE_TOOLTIP");
-        this.analyseButton.setOnAction (event -> this.execute (true));
+        this.analyseButton.setOnAction (_ -> this.execute (true));
 
         /////////////////////////////////////////////////////////////////////////////
         // Source pane
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         this.sourceFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_TOOLTIP")));
-        this.sourceFolderSelectButton.setOnAction (event -> this.selectSourcePath ());
+        this.sourceFolderSelectButton.setOnAction (_ -> this.selectSourcePath ());
         final BoxPanel sourceUpperPart = new BoxPanel (Orientation.VERTICAL);
         final TitledSeparator sourceTitle = new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER"));
         sourceTitle.setLabelFor (this.sourcePathField);
@@ -298,9 +300,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         final BoxPanel srcRenamingCheckboxPanel = new BoxPanel (Orientation.HORIZONTAL, false);
         this.renameCheckbox = srcRenamingCheckboxPanel.createCheckBox ("@IDS_MAIN_RENAMING", "@IDS_MAIN_RENAMING_TOOLTIP");
         this.renameCheckbox.getStyleClass ().add ("paddingRight");
-        this.renameCheckbox.setOnAction (event -> this.updateRenamingControls ());
+        this.renameCheckbox.setOnAction (_ -> this.updateRenamingControls ());
         this.renameFilePathSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE"));
-        this.renameFilePathSelectButton.setOnAction (event -> {
+        this.renameFilePathSelectButton.setOnAction (_ -> {
 
             final Optional<File> file = Functions.getFileFromUser (this.getStage (), true, Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_HEADER"), this.config, new FileChooser.ExtensionFilter (Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_DESCRIPTION"), Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_FILTER")));
             if (file.isPresent ())
@@ -321,7 +323,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
 
         this.destinationFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION"));
         this.destinationFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_DESTINATION_TOOLTIP")));
-        this.destinationFolderSelectButton.setOnAction (event -> this.selectDestinationFolder ());
+        this.destinationFolderSelectButton.setOnAction (_ -> this.selectDestinationFolder ());
         destinationFolderPanel.setRight (this.destinationFolderSelectButton);
 
         final BoxPanel destinationUpperPart = new BoxPanel (Orientation.VERTICAL);
@@ -349,7 +351,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
 
         final BoxPanel bottomRight = new BoxPanel (Orientation.HORIZONTAL);
         this.enableDarkMode = bottomRight.createCheckBox ("@IDS_MAIN_ENABLE_DARK_MODE", "@IDS_MAIN_ENABLE_DARK_MODE_TOOLTIP");
-        this.enableDarkMode.selectedProperty ().addListener ( (obs, wasSelected, isSelected) -> this.setDarkMode (isSelected.booleanValue ()));
+        this.enableDarkMode.selectedProperty ().addListener ( (_, _, isSelected) -> this.setDarkMode (isSelected.booleanValue ()));
 
         this.configureDestinationTypePane ();
 
@@ -378,9 +380,9 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         final ButtonPanel exButtonPanel = new ButtonPanel (Orientation.VERTICAL);
 
         this.cancelButton = setupButton (exButtonPanel, "Cancel", "@IDS_EXEC_CANCEL", "@IDS_EXEC_CANCEL_TOOLTIP");
-        this.cancelButton.setOnAction (event -> this.cancelExecution ());
+        this.cancelButton.setOnAction (_ -> this.cancelExecution ());
         this.closeButton = setupButton (exButtonPanel, "Close", "@IDS_EXEC_CLOSE", "@IDS_EXEC_CLOSE_TOOLTIP");
-        this.closeButton.setOnAction (event -> this.closeExecution ());
+        this.closeButton.setOnAction (_ -> this.closeExecution ());
 
         this.executePane.setCenter (this.loggingArea);
         this.executePane.setRight (exButtonPanel.getPane ());
@@ -422,7 +424,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
 
         setTabPaneLeftTabsHorizontal (this.destinationTypeTabPane);
 
-        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener (oberservable -> this.updateFormats ());
+        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener (_ -> this.updateFormats ());
     }
 
 
@@ -1141,8 +1143,12 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
 
         this.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");
 
-        // Wait a bit till the last message has been added...
-        Platform.runLater ( () -> this.loggingArea.autoScrollToTailProperty ().set (false));
+        this.loggingArea.autoScrollToTailProperty ().set (false);
+
+        // Workaround to always scroll fully to the end of the log
+        final PauseTransition delay = new PauseTransition (Duration.millis (200));
+        delay.setOnFinished (_ -> this.loggingArea.scrollTo (this.loggingArea.getItems ().size () - 1));
+        delay.play ();
     }
 
 

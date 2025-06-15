@@ -51,40 +51,38 @@ public class Kontakt1Type extends AbstractKontaktType
 
     /** {@inheritDoc} */
     @Override
-    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
-        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE_1");
-
-        // The number of bytes in the file where the ZLIB starts. Always 0x24.
-        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-
-        // Header version. Always 0x50.
-        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
-
-        // Unknown. Always 0x01 or 0x02.
-        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
-
-        // Unknown. Always 8 empty bytes.
-        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-
-        // Unknown. Always 0x01.
-        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-
-        // Unix-Timestamp UTC+1
-        final long timeSeconds = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-
-        // The sum of the size of all used samples (only the content data block of a WAV without any
-        // headers)
-        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-
-        // Unknown. Always 4 empty bytes.
-        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-
+        final long timeSeconds = this.readHeader (fileAccess);
         try
         {
             final String xmlCode = CompressionUtils.readZLIB (fileAccess);
-            final List<IMultisampleSource> multisampleSources = this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, Collections.emptyMap ());
+            final IPerformanceSource performanceSource = this.handler.parseMulti (sourceFolder, sourceFile, xmlCode, metadataConfig, Collections.emptyMap ());
+            performanceSource.getMetadata ().setCreationDateTime (new Date (timeSeconds * 1000));
+            return performanceSource;
+        }
+        catch (final UnsupportedEncodingException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+        }
+
+        return null;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    {
+        final long timeSeconds = this.readHeader (fileAccess);
+        try
+        {
+            final String xmlCode = CompressionUtils.readZLIB (fileAccess);
+            final List<IMultisampleSource> multisampleSources = this.handler.parseInstruments (sourceFolder, sourceFile, xmlCode, metadataConfig, Collections.emptyMap ());
             for (final IMultisampleSource multisampleSource: multisampleSources)
                 multisampleSource.getMetadata ().setCreationDateTime (new Date (timeSeconds * 1000));
             return multisampleSources;
@@ -99,15 +97,6 @@ public class Kontakt1Type extends AbstractKontaktType
         }
 
         return Collections.emptyList ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
-    {
-        // TODO Implement
-        return null;
     }
 
 
@@ -147,5 +136,38 @@ public class Kontakt1Type extends AbstractKontaktType
         final Optional<String> result = this.handler.create (safeSampleFolderName, multisampleSource);
         if (result.isPresent ())
             CompressionUtils.writeZLIB (out, result.get (), 6);
+    }
+
+
+    private long readHeader (final RandomAccessFile fileAccess) throws IOException
+    {
+        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE_1");
+
+        // The number of bytes in the file where the ZLIB starts. Always 0x24.
+        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+
+        // Header version. Always 0x50.
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+
+        // Unknown. Always 0x01 or 0x02.
+        StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
+
+        // Unknown. Always 8 empty bytes.
+        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+
+        // Unknown. Always 0x01.
+        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+
+        // Unix-Timestamp UTC+1
+        final long timeSeconds = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+
+        // The sum of the size of all used samples (only the content data block of a WAV without any
+        // headers)
+        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+
+        // Unknown. Always 4 empty bytes.
+        StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
+        return timeSeconds;
     }
 }

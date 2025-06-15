@@ -1,12 +1,17 @@
 # Changes
 
-## 13.0.0 (unreleased)
+## 13.0.0
 
 * New: Rearranged the destination area of the user interface. There is now a new section which allows to switch between creating single patches, libraries containing multiple patches and performances which contain a certain configuration of patches (e.g. different MIDI channels). Output formats are filtered to the ones which support these options.
 * New: Improved maximum size of RIFF files that can be written.
 * Fixed: Envelope could be wrong if the input envelope uses the hold-time instead of decay-time and the output format does not support a hold-time.
+* Fixed: The logging does now always scroll fully to the end when the conversion or analysis process has finished.
+* 1010music format
+  * New: Can be a destination format for Performances (see the manual for details).
+  * New: Stereo-split samples are now combined (if possible) to stereo samples since the format does not support panning on a sample level.
 * Kontakt
-  * New: Kontakt can be an input format for Performances.
+  * New: Kontakt can be an input format for Performances (see the manual for details).
+  * New: Kontakt 4.2-7: Pitchmodulation by Pitchbend and Amplitudemodulation by Velocity are now read.
   * Fixed: Fixed crash with reading envelopes from NI-container.
 * Decent Sampler
   * New: Write: There are now templates for the UI and effect sections which can be modified as well as further resources can be added automatically. See the manual for more info.
@@ -20,8 +25,6 @@
   * New: The long name stored in the KMP is now set as the multi-samples name instead of the short filename.
 * SF2
   * New: Added support to write as library (adds all found source-multi-samples into 1 sf2 file).
-* Yamaha YSFC
-  * New: Can be a destination format for Performances.
 
 ## 12.2.2
 

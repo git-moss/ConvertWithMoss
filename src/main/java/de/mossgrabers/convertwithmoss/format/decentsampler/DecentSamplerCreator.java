@@ -132,11 +132,11 @@ public class DecentSamplerCreator extends AbstractCreator
 
         this.templateFolderPathSelectButton = new Button (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH"));
         this.templateFolderPathSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH_TOOLTIP")));
-        this.templateFolderPathSelectButton.setOnAction (event -> this.selectTemplateFolderPath (null));
+        this.templateFolderPathSelectButton.setOnAction (_ -> this.selectTemplateFolderPath (null));
 
         this.createTemplatesButton = new Button (Functions.getText ("@IDS_DS_CREATE_TEMPLATES"));
         this.createTemplatesButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_CREATE_TEMPLATES_TOOLTIP")));
-        this.createTemplatesButton.setOnAction (event -> this.createTemplates ());
+        this.createTemplatesButton.setOnAction (_ -> this.createTemplates ());
 
         templateFolderPathPanel.addComponent (new BorderPane (this.templateFolderPathField, null, this.templateFolderPathSelectButton, null, null));
         this.templateFolderPathField.setMaxWidth (Double.MAX_VALUE);

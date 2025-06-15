@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -35,8 +34,6 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class KMPDetectorTask extends AbstractDetectorTask
 {
-    private static final Pattern   KMP_PATTERN = Pattern.compile ("(.+?)(\\d+)\\.KMP$");
-
     private static final String [] KSC_ENDINGS =
     {
         ".ksc",

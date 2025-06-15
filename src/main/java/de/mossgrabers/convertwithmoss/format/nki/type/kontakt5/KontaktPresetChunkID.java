@@ -25,7 +25,9 @@ public class KontaktPresetChunkID
     public static final int                   PAR_SCRIPT          = 0x06;
     /** Send levels. */
     public static final int                   PAR_FX_SEND_LEVELS  = 0x17;
-    /** Parameter Internal Modulation. */
+    /** External modulator like Velocity. */
+    public static final int                   PAR_EXTERNAL_MOD    = 0x0C;
+    /** External modulator like envelopes. */
     public static final int                   PAR_INTERNAL_MOD    = 0x0D;
     /** FX. */
     public static final int                   PAR_FX              = 0x25;

@@ -35,6 +35,7 @@ public class Program
     private static final int     CHUNK_VERSION_6_8_0      = 0x95;
     private static final int     ZONE_CHUNK_VERSION_6_8_0 = 0x9A;
 
+    private int                  slotIndex                = -1;
     private String               name;
     private int                  midiTranspose            = 0;
     private int                  clipLowVelocity          = 0;
@@ -75,6 +76,28 @@ public class Program
     public String getName ()
     {
         return this.name;
+    }
+
+
+    /**
+     * The lower note which should limit the key-range (this note should still sound).
+     * 
+     * @return The note [0..127]
+     */
+    public int getClipKeyLow ()
+    {
+        return this.clipLowKey;
+    }
+
+
+    /**
+     * The upper note which should limit the key-range (this note should still sound).
+     * 
+     * @return The note [0..127]
+     */
+    public int getClipKeyHigh ()
+    {
+        return this.clipHighKey;
     }
 
 
@@ -698,5 +721,27 @@ public class Program
     public List<Group> getGroups ()
     {
         return this.groups;
+    }
+
+
+    /**
+     * Set the slot index.
+     * 
+     * @param slotIndex The slot index [0..63]
+     */
+    public void setSlotIndex (final int slotIndex)
+    {
+        this.slotIndex = slotIndex;
+    }
+
+
+    /**
+     * Get the slot index. This is the slot in a performance in which this program is stored.
+     * 
+     * @return The slot index [0..63]
+     */
+    public int getSlotIndex ()
+    {
+        return this.slotIndex;
     }
 }

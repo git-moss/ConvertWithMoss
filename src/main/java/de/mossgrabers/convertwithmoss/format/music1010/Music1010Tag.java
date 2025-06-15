@@ -47,6 +47,8 @@ public class Music1010Tag
     public static final String ATTR_LO_VEL                = "velrangebottom";
     /** The velocity range top attribute. */
     public static final String ATTR_HI_VEL                = "velrangetop";
+    /** The MIDI input channel attribute. */
+    public static final String ATTR_MIDI_MODE             = "midimode";
 
     /** The asset source row attribute. */
     public static final String ATTR_ASSET_SOURCE_ROW      = "asssrcrow";

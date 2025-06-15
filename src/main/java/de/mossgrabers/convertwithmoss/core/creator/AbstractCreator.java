@@ -15,6 +15,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +38,7 @@ import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.ZoneChannels;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -587,6 +589,33 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         this.notifyNewline ();
 
         return writtenFiles;
+    }
+
+
+    /**
+     * Since panning is not working on the sample level, combine split stereo to stereo files If the
+     * combination fails, the file is created anyway but might contain wrong panning.
+     * 
+     * @param multisampleSource The multi-sample source
+     * @return The combined stereo group or the original groups if they could not be combined
+     * @throws IOException Could not combine the groups
+     */
+    protected List<IGroup> combineSplitStereo (final IMultisampleSource multisampleSource) throws IOException
+    {
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
+
+        if (ZoneChannels.detectChannelConfiguration (groups) != ZoneChannels.SPLIT_STEREO)
+            return groups;
+
+        final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
+        if (stereoGroup.isPresent ())
+        {
+            this.notifier.log ("IDS_NOTIFY_COMBINED_TO_STEREO");
+            return Collections.singletonList (stereoGroup.get ());
+        }
+
+        this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
+        return groups;
     }
 
 

@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 
 
@@ -41,12 +40,11 @@ public class DefaultPerformanceSource extends DefaultSource implements IPerforma
 
     /**
      * Create and add an instrument source to the performance source.
-     *
-     * @param multisampleSource The multi-sample source
-     * @param midiChannel The MIDI channel
+     * 
+     * @param instrumentSource The instrument source to add
      */
-    public void addInstrument (final IMultisampleSource multisampleSource, final int midiChannel)
+    public void addInstrument (final IInstrumentSource instrumentSource)
     {
-        this.instruments.add (new DefaultInstrumentSource (multisampleSource, midiChannel));
+        this.instruments.add (instrumentSource);
     }
 }

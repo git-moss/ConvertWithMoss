@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -45,6 +46,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -77,17 +79,10 @@ public class Kontakt2Type extends AbstractKontaktType
 
     /** {@inheritDoc} */
     @Override
-    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
-        final Kontakt2Header header = new Kontakt2Header (this.notifier, this.isBigEndian);
-        header.read (fileAccess);
-        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", header.isFourDotTwo () ? "4.2" : "2", header.getKontaktVersion (), header.isMonolith () ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
+        final Kontakt2Header header = readHeader (fileAccess);
 
-        // NKM header does not contain meaningful metadata
-        if (!sourceFile.getName ().endsWith (".nkm"))
-            this.fillMetadata (header);
-
-        final List<IMultisampleSource> multiSamples;
         if (header.isFourDotTwo ())
         {
             final long crc32Hash = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
@@ -97,28 +92,37 @@ public class Kontakt2Type extends AbstractKontaktType
             StreamUtils.skipNBytes (fileAccess, 32);
 
             this.handleFastLZ (fileAccess, header.getCompressedLength (), decompressedLength, crc32Hash);
-            multiSamples = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
-        }
-        else
-        {
-            final Map<String, ISampleData> monolithSamples = header.isMonolith () ? new Kontakt2Monolith (fileAccess, this.isBigEndian).mapSamples () : Collections.emptyMap ();
-            multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess, monolithSamples, metadataConfig);
+            return this.getPerformanceSource (sourceFolder, sourceFile, metadataConfig);
         }
 
-        this.handleSoundinfo (sourceFile, fileAccess, multiSamples);
-        return multiSamples;
+        final Map<String, ISampleData> monolithSamples = header.isMonolith () ? new Kontakt2Monolith (fileAccess, this.isBigEndian).mapSamples () : Collections.emptyMap ();
+
+        final String xmlCode = CompressionUtils.readZLIB (fileAccess).trim ();
+        try
+        {
+            return this.handler.parseMulti (sourceFolder, sourceFile, xmlCode, metadataConfig, monolithSamples);
+        }
+        catch (final UnsupportedEncodingException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
+        }
+
+        return null;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
-        final Kontakt2Header header = new Kontakt2Header (this.notifier, this.isBigEndian);
-        header.read (fileAccess);
-        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", header.isFourDotTwo () ? "4.2" : "2", header.getKontaktVersion (), header.isMonolith () ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
+        final Kontakt2Header header = readHeader (fileAccess);
 
-        final IPerformanceSource performance;
+        final boolean isNKM = sourceFile.getName ().toLowerCase ().endsWith (".nkm");
+        // NKM header does not contain meaningful metadata
+        if (!isNKM)
+            this.fillMetadata (header);
+
+        final List<IMultisampleSource> multisampleSources;
         if (header.isFourDotTwo ())
         {
             final long crc32Hash = StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
@@ -128,22 +132,19 @@ public class Kontakt2Type extends AbstractKontaktType
             StreamUtils.skipNBytes (fileAccess, 32);
 
             this.handleFastLZ (fileAccess, header.getCompressedLength (), decompressedLength, crc32Hash);
-            performance = this.getPerformanceSource (sourceFolder, sourceFile, metadataConfig);
+            final List<Pair<IMultisampleSource, Program>> sources = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
+            multisampleSources = new ArrayList<> (sources.size ());
+            for (final Pair<IMultisampleSource, Program> source: sources)
+                multisampleSources.add (source.getKey ());
         }
         else
         {
-            // TODO
-            // final Map<String, ISampleData> monolithSamples = header.isMonolith () ? new
-            // Kontakt2Monolith (fileAccess, this.isBigEndian).mapSamples () : Collections.emptyMap
-            // ();
-            // multiSamples = this.handleZLIB (sourceFolder, sourceFile, fileAccess,
-            // monolithSamples, metadataConfig);
-
-            performance = null;
+            final Map<String, ISampleData> monolithSamples = header.isMonolith () ? new Kontakt2Monolith (fileAccess, this.isBigEndian).mapSamples () : Collections.emptyMap ();
+            multisampleSources = this.getInstruments (sourceFolder, sourceFile, fileAccess, monolithSamples, metadataConfig);
         }
 
-        // TODO this.handleSoundinfo (sourceFile, fileAccess, multiSamples);
-        return performance;
+        this.handleSoundinfo (sourceFile, fileAccess, multisampleSources);
+        return multisampleSources;
     }
 
 
@@ -179,45 +180,27 @@ public class Kontakt2Type extends AbstractKontaktType
     }
 
 
-    /**
-     * Handles the Kontakt 4.2 FastLZ section.
-     *
-     * @param fileAccess The random access file to read from
-     * @param compressedDataSize The size of the compressed data
-     * @param uncompressedSize The size of the uncompressed data size
-     * @param crc32Hash The CRC32 hash of the compressed data
-     * @throws IOException Could decode the multi-samples
-     */
-    private void handleFastLZ (final RandomAccessFile fileAccess, final int compressedDataSize, final int uncompressedSize, final long crc32Hash) throws IOException
-    {
-        final byte [] compressedData = new byte [compressedDataSize];
-        fileAccess.readFully (compressedData);
-
-        if (MathUtils.calcCRC32 (compressedData) != crc32Hash)
-            this.notifier.logError ("IDS_NKI_CRC32_MISMATCH");
-
-        this.kontakt5Preset.readKontaktPresetChunks (FastLZ.uncompress (compressedData, uncompressedSize));
-    }
-
-
     private IPerformanceSource getPerformanceSource (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
     {
-        final List<IMultisampleSource> multisampleSources = getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
+        final List<Pair<IMultisampleSource, Program>> sources = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
         final MultiConfiguration multiConfiguration = this.kontakt5Preset.getMultiConfiguration ();
-        if (multiConfiguration != null)
+        if (multiConfiguration == null)
+            return null;
+
+        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
+        final List<MultiInstrument> instruments = multiConfiguration.getMultiInstruments ();
+        for (int i = 0; i < sources.size (); i++)
         {
-            final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
-            performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
-            final List<MultiInstrument> instruments = multiConfiguration.getMultiInstruments ();
-            for (int i = 0; i < multisampleSources.size (); i++)
-            {
-                final IMultisampleSource multisampleSource = multisampleSources.get (i);
-                final int midiChannel = i < instruments.size () ? instruments.get (i).getMidiChannel () : 0;
-                performanceSource.addInstrument (multisampleSource, midiChannel);
-            }
-            return performanceSource;
+            final Pair<IMultisampleSource, Program> source = sources.get (i);
+            final int midiChannel = i < instruments.size () ? instruments.get (i).getMidiChannel () - 1 : 0;
+            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (source.getKey (), midiChannel);
+            final Program program = source.getValue ();
+            instrumentSource.setClipKeyLow (program.getClipKeyLow ());
+            instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
+            performanceSource.addInstrument (instrumentSource);
         }
-        return null;
+        return performanceSource;
     }
 
 
@@ -229,12 +212,12 @@ public class Kontakt2Type extends AbstractKontaktType
      * @return All parsed multi-samples
      * @throws IOException Could decode the multi-samples
      */
-    private List<IMultisampleSource> getMultisampleSources (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
+    private List<Pair<IMultisampleSource, Program>> getMultisampleSources (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
     {
         final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
 
-        final List<IMultisampleSource> results = new ArrayList<> ();
+        final List<Pair<IMultisampleSource, Program>> results = new ArrayList<> ();
         final List<Program> programs = this.kontakt5Preset.getPrograms ();
         final List<String> filePaths = this.kontakt5Preset.getFilePaths ();
         for (final Program program: programs)
@@ -245,8 +228,8 @@ public class Kontakt2Type extends AbstractKontaktType
             this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName
-            } : parts, filePaths);
-            results.add (multisampleSource);
+            } : parts, filePaths, false);
+            results.add (new Pair<> (multisampleSource, program));
         }
         return results;
     }
@@ -263,13 +246,12 @@ public class Kontakt2Type extends AbstractKontaktType
      * @return All parsed multi-samples
      * @throws IOException Could not parse the data
      */
-    private List<IMultisampleSource> handleZLIB (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, ISampleData> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
+    private List<IMultisampleSource> getInstruments (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final Map<String, ISampleData> monolithSamples, final IMetadataConfig metadataConfig) throws IOException
     {
-        String xmlCode = CompressionUtils.readZLIB (fileAccess);
+        final String xmlCode = CompressionUtils.readZLIB (fileAccess).trim ();
         try
         {
-            xmlCode = xmlCode.trim ();
-            return this.handler.parse (sourceFolder, sourceFile, xmlCode, metadataConfig, monolithSamples);
+            return this.handler.parseInstruments (sourceFolder, sourceFile, xmlCode, metadataConfig, monolithSamples);
         }
         catch (final UnsupportedEncodingException ex)
         {
@@ -409,5 +391,35 @@ public class Kontakt2Type extends AbstractKontaktType
             }
             metadata.setDescription (sb.toString ().trim ());
         }
+    }
+
+
+    private Kontakt2Header readHeader (final RandomAccessFile fileAccess) throws IOException
+    {
+        final Kontakt2Header header = new Kontakt2Header (this.notifier, this.isBigEndian);
+        header.read (fileAccess);
+        this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", header.isFourDotTwo () ? "4.2" : "2", header.getKontaktVersion (), header.isMonolith () ? " - monolith" : "", this.isBigEndian ? "Big-Endian" : "Little-Endian");
+        return header;
+    }
+
+
+    /**
+     * Handles the Kontakt 4.2 FastLZ section.
+     *
+     * @param fileAccess The random access file to read from
+     * @param compressedDataSize The size of the compressed data
+     * @param uncompressedSize The size of the uncompressed data size
+     * @param crc32Hash The CRC32 hash of the compressed data
+     * @throws IOException Could decode the multi-samples
+     */
+    private void handleFastLZ (final RandomAccessFile fileAccess, final int compressedDataSize, final int uncompressedSize, final long crc32Hash) throws IOException
+    {
+        final byte [] compressedData = new byte [compressedDataSize];
+        fileAccess.readFully (compressedData);
+
+        if (MathUtils.calcCRC32 (compressedData) != crc32Hash)
+            this.notifier.logError ("IDS_NKI_CRC32_MISMATCH");
+
+        this.kontakt5Preset.readKontaktPresetChunks (FastLZ.uncompress (compressedData, uncompressedSize));
     }
 }

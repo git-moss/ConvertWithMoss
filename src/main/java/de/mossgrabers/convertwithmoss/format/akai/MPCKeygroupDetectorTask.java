@@ -506,7 +506,7 @@ public class MPCKeygroupDetectorTask extends AbstractDetectorTask
         for (final DefaultSampleZone sampleMetadata: samples)
         {
             final String id = sampleMetadata.getVelocityLow () + "-" + sampleMetadata.getVelocityHigh ();
-            final IGroup group = layerMap.computeIfAbsent (id, key -> new DefaultGroup ());
+            final IGroup group = layerMap.computeIfAbsent (id, _ -> new DefaultGroup ());
 
             if (group.getName () == null)
             {
