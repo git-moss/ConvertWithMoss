@@ -19,6 +19,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.ParameterLevel;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -122,7 +123,7 @@ public class SfzCreator extends AbstractCreator
     {
         final String multiSampleName = createSafeFilename (multisampleSource.getName ());
         final String safeSampleFolderName = multiSampleName + FOLDER_POSTFIX;
-        final String metadata = this.createMetadata (safeSampleFolderName, multisampleSource);
+        final String metadata = this.createPresetDocument (safeSampleFolderName, multisampleSource);
 
         final File multiFile = this.createUniqueFilename (destinationFolder, multiSampleName, "sfz");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
@@ -159,7 +160,7 @@ public class SfzCreator extends AbstractCreator
      * @param multisampleSource The multi-sample
      * @return The XML structure
      */
-    private String createMetadata (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
+    private String createPresetDocument (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
     {
         final StringBuilder sb = new StringBuilder (SFZ_HEADER);
 
@@ -184,10 +185,17 @@ public class SfzCreator extends AbstractCreator
         if (name != null && !name.isBlank ())
             addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
 
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
+
+        final ParameterLevel ampEnvParamLevel = getAmpEnvelopeParamLevel (multisampleSource);
+        if (ampEnvParamLevel == ParameterLevel.INSTRUMENT)
+            createVolumeEnvelope (sb, groups.get (0).getSampleZones ().get (0));
+
         // Add all groups with all sample zones (regions)
         final Map<IGroup, Integer> roundRobinGroups = multisampleSource.getRoundRobinGroups ();
-        for (final IGroup group: multisampleSource.getGroups ())
+        for (int groupIndex = 0; groupIndex < groups.size (); groupIndex++)
         {
+            final IGroup group = groups.get (groupIndex);
             final List<ISampleZone> zones = group.getSampleZones ();
             if (zones.isEmpty ())
                 continue;
@@ -221,8 +229,11 @@ public class SfzCreator extends AbstractCreator
             if (trigger != null && trigger != TriggerType.ATTACK)
                 addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
 
+            if (ampEnvParamLevel == ParameterLevel.GROUP)
+                createVolumeEnvelope (sb, zones.get (0));
+
             for (final ISampleZone zone: zones)
-                this.createSample (safeSampleFolderName, sb, zone, isNotRoundRobinGroup);
+                this.createSample (safeSampleFolderName, sb, zone, isNotRoundRobinGroup, ampEnvParamLevel);
         }
 
         return sb.toString ();
@@ -236,8 +247,9 @@ public class SfzCreator extends AbstractCreator
      * @param buffer Where to add the XML code
      * @param zone The sample zone
      * @param isNotRoundRobinGroup If the sample zone does not belong to a round robin group
+     * @param ampEnvParameterLevel The level to which to apply the amplitude envelope parameters
      */
-    private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone, final boolean isNotRoundRobinGroup)
+    private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone, final boolean isNotRoundRobinGroup, final ParameterLevel ampEnvParameterLevel)
     {
         final String ending = this.convertToFlac.isSelected () ? ".flac" : ".wav";
 
@@ -329,7 +341,7 @@ public class SfzCreator extends AbstractCreator
         if (keyTracking != 100)
             addIntegerAttribute (buffer, SfzOpcode.PITCH_KEYTRACK, keyTracking, true);
 
-        createVolume (buffer, zone);
+        createVolume (buffer, zone, ampEnvParameterLevel);
 
         ////////////////////////////////////////////////////////////
         // Pitch Bend / Envelope
@@ -433,8 +445,9 @@ public class SfzCreator extends AbstractCreator
      *
      * @param buffer Where to add the created text
      * @param zone The sample zone
+     * @param ampEnvParameterLevel The level to which to apply the amplitude envelope parameters
      */
-    private static void createVolume (final StringBuilder buffer, final ISampleZone zone)
+    private static void createVolume (final StringBuilder buffer, final ISampleZone zone, final ParameterLevel ampEnvParameterLevel)
     {
         final double volume = zone.getGain ();
         final double velAmpDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
@@ -447,6 +460,13 @@ public class SfzCreator extends AbstractCreator
         if (pan != 0)
             addAttribute (buffer, SfzOpcode.PANNING, Integer.toString ((int) Math.round (pan * 100)), true);
 
+        if (ampEnvParameterLevel == ParameterLevel.ZONE)
+            createVolumeEnvelope (buffer, zone);
+    }
+
+
+    private static void createVolumeEnvelope (final StringBuilder buffer, final ISampleZone zone)
+    {
         final StringBuilder envelopeStr = new StringBuilder ();
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();

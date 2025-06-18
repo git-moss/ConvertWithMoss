@@ -38,7 +38,9 @@ import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.ParameterLevel;
 import de.mossgrabers.convertwithmoss.core.ZoneChannels;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -1150,17 +1152,24 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
      * @param filename The filename to shorten
      * @param extension The file extension
      * @param createdNames Prevent conflicts with these file names
-     * @return The unique DOS file name
+     * @param useForFolder If true only folders will be checked for uniqueness, if false only
+     *            non-folder files
+     * @return The unique DOS file name without the extension
      */
-    public static String createUniqueDOSFileName (final File destinationFolder, final String filename, final String extension, final Collection<String> createdNames)
+    public static String createUniqueDOSFileName (final File destinationFolder, final String filename, final String extension, final Collection<String> createdNames, final boolean useForFolder)
     {
         String dosFilename = filename.toUpperCase ().replace (' ', '_');
         if (dosFilename.length () > 8)
             dosFilename = dosFilename.substring (0, 8);
 
         int counter = 1;
-        while (createdNames.contains (dosFilename) || new File (destinationFolder, dosFilename + extension).exists ())
+        while (true)
         {
+            final File file = new File (destinationFolder, dosFilename + extension);
+            final boolean exists = file.exists ();
+            if (!createdNames.contains (dosFilename) && !exists || (useForFolder && file.isFile ()) || (!useForFolder && file.isDirectory ()))
+                break;
+
             counter++;
             final String counterStr = Integer.toString (counter);
             dosFilename = dosFilename.substring (0, 8 - counterStr.length ()) + counterStr;
@@ -1169,5 +1178,48 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
         createdNames.add (dosFilename);
 
         return dosFilename;
+    }
+
+
+    /**
+     * Get the level to which the amplitude envelope should be applied.
+     * 
+     * @param multisampleSource The multi-sample instrument to check
+     * @return The level to which the amplitude envelope should be applied
+     */
+    protected static ParameterLevel getAmpEnvelopeParamLevel (final IMultisampleSource multisampleSource)
+    {
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
+        if (groups.isEmpty ())
+            return ParameterLevel.INSTRUMENT;
+
+        // First check if all modulators in a group are identical
+        final List<IEnvelopeModulator> groupModulators = new ArrayList<> ();
+        for (final IGroup group: groups)
+        {
+            final List<ISampleZone> sampleZones = group.getSampleZones ();
+            final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZones.get (0).getAmplitudeEnvelopeModulator ();
+            for (int i = 1; i < sampleZones.size (); i++)
+            {
+                final ISampleZone zone = sampleZones.get (i);
+                final IEnvelopeModulator amplitudeEnvelopeModulator2 = zone.getAmplitudeEnvelopeModulator ();
+                if (!amplitudeEnvelopeModulator.equals (amplitudeEnvelopeModulator2))
+                    return ParameterLevel.ZONE;
+            }
+            groupModulators.add (amplitudeEnvelopeModulator);
+        }
+
+        // Then check if the modulators are identical for all groups
+        if (groupModulators.size () == 1)
+            return ParameterLevel.INSTRUMENT;
+        final IEnvelopeModulator groupModulator = groupModulators.get (0);
+        for (int i = 1; i < groupModulators.size (); i++)
+        {
+            final IEnvelopeModulator groupModulator2 = groupModulators.get (i);
+            if (!groupModulator.equals (groupModulator2))
+                return ParameterLevel.GROUP;
+        }
+
+        return ParameterLevel.ZONE;
     }
 }

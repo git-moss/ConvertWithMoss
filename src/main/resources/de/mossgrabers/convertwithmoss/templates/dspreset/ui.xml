@@ -1,10 +1,89 @@
-<ui>
-	<tab name="main">
-		<labeled-knob label="Reverb Wet Level" maxValue="1000" minValue="0" textColor="FF000000" type="float" value="0.0" x="200" y="0">
-			<binding level="instrument" parameter="FX_REVERB_WET_LEVEL" position="0" translation="linear" translationOutputMax="1" translationOutputMin="0.0" type="effect"/>
-		</labeled-knob>
-		<labeled-knob label="Reverb Room Size" maxValue="1000" minValue="0" textColor="FF000000" type="float" value="0.0" x="300" y="0">
-			<binding level="instrument" parameter="FX_REVERB_ROOM_SIZE" position="0" translation="linear" translationOutputMax="1" translationOutputMin="0.0" type="effect"/>
-		</labeled-knob>
-	</tab>
+<modulators>
+    <lfo shape="sine" modAmount="0" frequency="5">
+		<binding type="amp" level="instrument" parameter="GLOBAL_TUNING" modBehavior="add" translation="linear" translationOutputMin="-1" translationOutputMax="1"/>
+    </lfo>
+</modulators>
+<effects>
+    <effect delayTime="12.0" delayTimeFormat="musical_time" feedback="0.4" stereoOffset="0.02" type="delay" wetLevel="0.2300000041723251"/>
+    <effect type="reverb"/>
+</effects>
+<midi>
+    <!-- Modulation Wheel -->	
+    <cc number="1">
+        <binding level="instrument" type="modulator" position="1" parameter="MOD_AMOUNT" translation="linear" translationOutputMin="0.0" translationOutputMax="1.0"/>
+    </cc>
+</midi>
+<ui bgColor="FF101010" height="375" width="812">
+    <tab name="main">
+
+        <!-- Amplitude Controls -->
+        <label text="Amplitude" textColor="FFDD0000" textSize="30" x="10" y="0" width="200" height="30" hAlign="center"/>
+        <labeled-knob style="linear_bar_vertical" maxValue="10" minValue="0" mouseDragSensitivity="100" parameterName="Amp Attack" textColor="FFFFFFFF" type="float" value="%ENV_ATTACK_VALUE%" x="10" y="30" width="40" height="180" label="Attack" textSize="16">
+            <binding type="amp" level="instrument" parameter="ENV_ATTACK" position="0"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" maxValue="15" minValue="0" mouseDragSensitivity="100" parameterName="Amp Decay" textColor="FFFFFFFF" type="float" value="%ENV_DECAY_VALUE%" x="50" y="30" width="40" height="180" label="Decay" textSize="16">
+            <binding type="amp" level="instrument" parameter="ENV_DECAY" position="0"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" maxValue="1" minValue="0" mouseDragSensitivity="100" parameterName="Amp Sustain" textColor="FFFFFFFF" type="float" value="%ENV_SUSTAIN_VALUE%" x="90" y="30" width="40" height="180" label="Sustain" textSize="16">
+            <binding type="amp" level="instrument" parameter="ENV_SUSTAIN" position="0"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" maxValue="3" minValue="0.1" mouseDragSensitivity="100" parameterName="Amp Release" textColor="FFFFFFFF" type="float" value="%ENV_RELEASE_VALUE%" x="130" y="30" width="40" height="180" label="Release" textSize="16">
+            <binding type="amp" level="instrument" parameter="ENV_RELEASE" position="0"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" maxValue="1" minValue="0" mouseDragSensitivity="100" parameterName="Amp Velocity Sensitivity" textColor="FFFFFFFF" type="float" x="170" y="30" width="40" height="180" label="Vel. Sens." textSize="16">
+            <binding type="amp" level="instrument" parameter="AMP_VEL_TRACK" position="0"/>
+        </labeled-knob>
+
+        <!-- Filter Controls -->
+        <label text="Filter" textColor="FFDD0000" textSize="30" x="230" y="0" width="280" height="30" hAlign="center"/>
+        <labeled-knob style="linear_bar_vertical" maxValue="1" minValue="0" mouseDragSensitivity="100" parameterName="Cutoff" type="float" value="1.0" x="230" y="30" width="40" height="180" label="Cutoff" textSize="16" textColor="FFFFFFFF">
+            <binding type="effect" level="group" effectIndex="0" groupIndex="0" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="1" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="2" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="3" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="4" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="5" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" maxValue="5" minValue="0.5" mouseDragSensitivity="100" parameterName="Resonance" type="float" value="0.5" x="270" y="30" width="40" height="180" label="Resonance" textSize="16" textColor="FFFFFFFF">
+            <binding type="effect" level="group" effectIndex="0" groupIndex="0" parameter="FX_FILTER_RESONANCE"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="1" parameter="FX_FILTER_RESONANCE"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="2" parameter="FX_FILTER_RESONANCE"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="3" parameter="FX_FILTER_RESONANCE"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="4" parameter="FX_FILTER_RESONANCE"/>
+            <binding type="effect" level="group" effectIndex="0" groupIndex="5" parameter="FX_FILTER_RESONANCE"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" maxValue="10" minValue="0" mouseDragSensitivity="100" parameterName="Filter Attack" value="0.0" x="310" y="30" width="40" height="180" label="Attack" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorIndex="0" parameter="ENV_ATTACK" type="modulator"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" maxValue="15" minValue="0.05" mouseDragSensitivity="100" parameterName="Filter Decay" value="0.05000000074505806" x="350" y="30" width="40" height="180" label="Decay" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorIndex="0" parameter="ENV_DECAY" type="modulator"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" parameterName="Filter Sustain" value="0.9999999776482582" x="390" y="30" width="40" height="180" label="Sustain" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorIndex="0" parameter="ENV_SUSTAIN" type="modulator"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" maxValue="10" minValue="0.05" mouseDragSensitivity="100" parameterName="Filter Release" value="0.05000000074505806" x="430" y="30" width="40" height="180" label="Release" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorIndex="0" parameter="ENV_RELEASE" type="modulator"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" parameterName="Filter Env Amount" maxValue="1.0" minValue="0" value="0.0" x="470" y="30" width="40" height="180" label="Env. Amount" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorIndex="0" parameter="MOD_AMOUNT" type="modulator"/>
+        </labeled-knob>
+
+        <!-- Delay -->
+        <label text="Delay" textColor="FFDD0000" textSize="30" x="530" y="0" width="80" height="30" hAlign="center"/>
+        <labeled-knob style="linear_bar_vertical" maxValue="0.4" minValue="0" mouseDragSensitivity="100" parameterName="Delay Amount" value="0.2300000041723251" x="530" y="30" width="40" height="180" label="Mix" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" parameter="FX_WET_LEVEL" position="0" type="effect"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" parameterName="Delay Time" value="12.0" valueType="musical_time" x="570" y="30" width="40" height="180" label="Time" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" parameter="FX_DELAY_TIME" position="0" type="effect"/>
+        </labeled-knob>
+
+        <!-- Reverb -->
+        <label text="Reverb" textColor="FFDD0000" textSize="30" x="620" y="0" width="80" height="30" hAlign="center"/>
+        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" maxValue="1" minValue="0" parameterName="Reverb Mix" value="0.0" x="620" y="30" width="40" height="180" label="Mix" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" parameter="FX_REVERB_WET_LEVEL" position="1" type="effect"/>
+        </labeled-knob>
+        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" maxValue="1" minValue="0" parameterName="Reverb Room Size" type="float" value="0.0" x="660" y="30" width="40" height="180" label="Size" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" parameter="FX_REVERB_ROOM_SIZE" position="1" translation="linear" type="effect"/>
+        </labeled-knob>
+    </tab>
 </ui>

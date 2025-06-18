@@ -124,11 +124,24 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 
 * Output Format - Create Bundle: Choose to create a bundle (instead of single presets or a library).
 * Make monophonic: Restricts the sound to 1 note, use e.g. for lead sounds.
-* Templates and resources folder: Allows to modify the UI and effects section of the presets (see below).
+* Add low-pass filter to all groups if none is present: This always adds a low-pass filter on a group level, if no filter is present yet in the source material. Enable it if you want to have controls for a filter envelope in your template.
+* Template and resources folder: Allows to modify the UI and effects section of the presets (see below).
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
 
-If no 'Templates and resources folder' is configured the default templates are used which create a reverb effect with 2 knob controls for the reverb mix and reverb time.
-To modify these templates, first create an empty folder somewhere on your disc. Select this folder in the 'Templates and resources folder' field. Then click on the button 'Create templates in the selected folder'. This copies the 2 templates ('ui.xml' and 'effects.xml') into this folder. You can copy additional images and documentation files to the folder as well. These resource files will be added to the output as well. These templates will be applied to all created dspresets. But note that you can have multiple templates if you use several template folders which can then be switched for each conversion run.
+If no 'Template and resources folder' is configured the default template is used which creates several controls for an amp envelope, a lowpass filter with envelope, a delay and reverb as well as pitch-modulation via mod-wheel.
+To modify this template, first create an empty folder somewhere on your disc. Select this folder in the 'Template and resources folder' field. Then click on the button 'Create template in the selected folder'. This copies the template 'ui.xml' into this folder. You can copy additional images and documentation files to the folder. These resource files will be added to the output as well. This template will be applied to all created dspresets. But note that you can have multiple templates if you use several template folders which can then be switched for each conversion run.
+
+The template can contain 1 effects, modulators, midi and ui tag. The content of the modulators-tag will be added to the existing modulators-tag which gets created by ConvertWithMoss.
+
+There are two issues with amplitude envelopes:
+
+1. If an envelope is applied to a certain level (sample, group or instrument) it does not work to change the values with a knob on a different level. Therefore, ConvertWithMoss tries to set the envelope on the highest possible level (the instrument) if all of the sample envelopes are identical.
+2. If controls are assigned to an envelope value to change it, it will not pick up this value but will use the value set for the control-element instead. To work around this issue the following variables can be used in the template and will be replaced with the instrument amplitude values:
+
+* %ENV_ATTACK_VALUE%
+* %ENV_DECAY_VALUE%
+* %ENV_SUSTAIN_VALUE%
+* %ENV_RELEASE_VALUE%
 
 ## Expert Sleepers disting EX
 
@@ -249,7 +262,8 @@ WAV file can contain different sample formats. This converter supports (split) s
 
 * Crossfade notes: You can automatically create crossfades between the different note ranges. This makes especially sense if you only sampled a couple of notes. Set the number of notes, which should be cross-faded between two samples (0-127). If you set a too high number the crossfade is automatically limited to the maximum number of notes between the two neighboring samples.
 * Crossfade velocities: You can automatically create crossfades between the different groups. This makes especially sense if you sampled several sample groups with different velocity values. Set the number of velocity steps (0-127), which should be crossfaded between two samples. If you set a too high number the crossfade is automatically limited to the maximum number of velocity steps between the two neighbouring samples.
-* Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multi-sample but there might be further text at the end of the name, which you might want to remove. For example the multi-samples I created with SampleRobot have a group information like "_ms0_0". You can set a comma separated list of such postfix texts in that field.
+* Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multi-sample but there might be further text at the end of the name, which you might want to remove. For example the multi-samples I created with SampleRobot have a group information like "_ms0_0". You can set a comma separated list of such post-fix texts in that field.
+* Ignore loops: Sometimes the source files contain wrong loops. Especially helpful for one-shot samples.
 
 ## SFZ
 

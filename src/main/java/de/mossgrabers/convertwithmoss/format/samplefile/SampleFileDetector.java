@@ -42,6 +42,7 @@ public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleF
     private static final String            CROSSFADE_NOTES          = "CrossfadeNotes";
     private static final String            CROSSFADE_VELOCITIES     = "CrossfadeVelocities";
     private static final String            POSTFIX                  = "Postfix";
+    private static final String            IGNORE_LOOPS             = "IgnoreLoops";
 
     private static final SampleFileType [] FILE_TYPES               =
     {
@@ -58,6 +59,7 @@ public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleF
     private TextField                      crossfadeNotesField;
     private TextField                      crossfadeVelocitiesField;
     private TextField                      postfixField;
+    private CheckBox                       ignoreLoops;
     private final CheckBox []              sampleFileTypeCheckBoxes = new CheckBox [FILE_TYPES.length];
 
 
@@ -87,6 +89,7 @@ public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleF
         config.setProperty (this.prefix + CROSSFADE_NOTES, this.crossfadeNotesField.getText ());
         config.setProperty (this.prefix + CROSSFADE_VELOCITIES, this.crossfadeVelocitiesField.getText ());
         config.setProperty (this.prefix + POSTFIX, this.postfixField.getText ());
+        config.setBoolean (this.prefix + IGNORE_LOOPS, this.ignoreLoops.isSelected ());
     }
 
 
@@ -105,6 +108,7 @@ public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleF
         this.crossfadeNotesField.setText (Integer.toString (config.getInteger (this.prefix + CROSSFADE_NOTES, 0)));
         this.crossfadeVelocitiesField.setText (Integer.toString (config.getInteger (this.prefix + CROSSFADE_VELOCITIES, 0)));
         this.postfixField.setText (config.getProperty (this.prefix + POSTFIX, ""));
+        this.ignoreLoops.setSelected (config.getBoolean (this.prefix + IGNORE_LOOPS, false));
     }
 
 
@@ -163,6 +167,7 @@ public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleF
         this.crossfadeNotesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_NOTES");
         this.crossfadeVelocitiesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_VELOCITIES");
         this.postfixField = panel.createField ("@IDS_FILE_POSTFIX", comma, -1);
+        this.ignoreLoops = panel.createCheckBox ("@IDS_WAV_IGNORE_LOOPS");
 
         final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
         scrollPane.fitToWidthProperty ().set (true);
@@ -230,10 +235,11 @@ public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleF
         final String [] groupPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
         final String [] monoSplitPatterns = StringUtils.splitByComma (this.monoSplitsField.getText ());
         final String [] postfixTexts = StringUtils.splitByComma (this.postfixField.getText ());
+        final boolean shouldIgnoreLoops = this.ignoreLoops.isSelected ();
         final int crossfadeNotes = this.getCrossfadeNotes ();
         final int crossfadeVelocities = this.getCrossfadeVelocities ();
 
-        this.startDetection (new SampleFileDetectorTask (this.notifier, consumer, folder, groupPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane, sampleFileTypes));
+        this.startDetection (new SampleFileDetectorTask (this.notifier, consumer, folder, groupPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane, sampleFileTypes, shouldIgnoreLoops));
     }
 
 

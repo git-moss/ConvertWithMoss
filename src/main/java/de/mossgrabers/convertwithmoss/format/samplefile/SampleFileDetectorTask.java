@@ -46,6 +46,7 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
     private final boolean              isAscending;
     private final String []            monoSplitPatterns;
     private final String []            postfixTexts;
+    private final boolean              ignoreLoops;
 
 
     /**
@@ -62,8 +63,9 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
      * @param crossfadeVelocities The number of velocity steps to cross-fade ranges
      * @param metadata Additional metadata configuration parameters
      * @param sampleFileTypes The file endings of the sample files to look for
+     * @param ignoreLoops Should loops be ignored?
      */
-    public SampleFileDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] groupPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities, final IMetadataConfig metadata, final List<SampleFileType> sampleFileTypes)
+    public SampleFileDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final String [] groupPatterns, final boolean isAscending, final String [] monoSplitPatterns, final String [] postfixTexts, final int crossfadeNotes, final int crossfadeVelocities, final IMetadataConfig metadata, final List<SampleFileType> sampleFileTypes, final boolean ignoreLoops)
     {
         super (notifier, consumer, sourceFolder, metadata);
 
@@ -74,6 +76,7 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
         this.postfixTexts = postfixTexts;
         this.crossfadeNotes = crossfadeNotes;
         this.crossfadeVelocities = crossfadeVelocities;
+        this.ignoreLoops = ignoreLoops;
     }
 
 
@@ -211,6 +214,14 @@ public class SampleFileDetectorTask extends AbstractDetectorTask
             for (final IGroup group: groups)
                 for (final ISampleZone zone: group.getSampleZones ())
                     zone.getSampleData ().addZoneData (zone, true, true);
+
+            // Remove all loops if requested
+            if (this.ignoreLoops)
+            {
+                for (final IGroup group: groups)
+                    for (final ISampleZone zone: group.getSampleZones ())
+                        zone.getLoops ().clear ();
+            }
 
             this.notifier.log ("IDS_NOTIFY_DETECTED_GROUPS", Integer.toString (groups.size ()));
             if (this.waitForDelivery ())
