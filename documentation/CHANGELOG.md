@@ -1,5 +1,19 @@
 # Changes
 
+## 13.1.0 (preview)
+
+* DecentSampler
+  * New: Amplitude envelope settings are now aggregated to group or instrument level if they are identical.
+  * New: The template effects.xml is now integrated into the ui.xml for simplicity reasons and brings new features (see the manual!).
+  * New: Added an option to always add a low-pass filter on a group level. Enable it if you want to have controls for a filter envelope in your template.
+  * New: Added a more fancy UI template with a volume envelope, filter incl. envelope, delay, reverb effect and pitch-modulation via mod-wheel.
+* Korg KSC/KMP/KSF
+  * New: KSC files get now a DOS-safe filename as well. Check for duplicated names is now separate for folders and normal files.
+* Sample Files
+  * New: Added option to ignore the loops in the source sample files.
+* SFZ
+  * New: Amplitude envelope settings are now aggregated to group or global level if they are identical.
+
 ## 13.0.0
 
 * New: Rearranged the destination area of the user interface. There is now a new section which allows to switch between creating single patches, libraries containing multiple patches and performances which contain a certain configuration of patches (e.g. different MIDI channels). Output formats are filtered to the ones which support these options.

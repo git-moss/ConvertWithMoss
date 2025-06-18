@@ -24,11 +24,13 @@ import java.util.zip.ZipOutputStream;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.ParameterLevel;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -36,8 +38,10 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
@@ -63,7 +67,7 @@ import javafx.stage.Window;
  */
 public class DecentSamplerCreator extends AbstractCreator
 {
-    private static final List<String> IGNORE_FILES          = List.of ("ui.xml", "effects.xml");
+    private static final List<String> IGNORE_FILES          = Collections.singletonList ("ui.xml");
     private static final String       LIBRARY_INFO_CONTENT  = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
     private static final int          NUMBER_OF_DIRECTORIES = 20;
     private static final String       TEMPLATE_FOLDER       = "de/mossgrabers/convertwithmoss/templates/dspreset/";
@@ -78,12 +82,19 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private static final String    DS_OUTPUT_CREATE_BUNDLE   = "DsOutputCreateBundle";
-    private static final String    DS_OUTPUT_MAKE_MONOPHONIC = "DsOutputMakeMonophonic";
-    private static final String    DS_TEMPLATE_FOLDER_PATH   = "DsTemplateFolderPath";
+    private static final String  DS_OUTPUT_CREATE_BUNDLE        = "DsOutputCreateBundle";
+    private static final String  DS_OUTPUT_MAKE_MONOPHONIC      = "DsOutputMakeMonophonic";
+    private static final String  DS_TEMPLATE_FOLDER_PATH        = "DsTemplateFolderPath";
+    private static final String  DS_OUTPUT_ADD_FILTER_TO_GROUPS = "DsAddFilterToGroups";
+    private static final IFilter DEFAULT_LOW_PASS_FILTER        = new DefaultFilter (FilterType.LOW_PASS, 4, 22000.0, 0.0);
+    static
+    {
+        DEFAULT_LOW_PASS_FILTER.getCutoffEnvelopeModulator ().setDepth (1.0);
+    }
 
     private CheckBox               createBundleBox;
     private CheckBox               makeMonophonicBox;
+    private CheckBox               addFilterToGroups;
     private final ComboBox<String> templateFolderPathField   = new ComboBox<> ();
     private Button                 templateFolderPathSelectButton;
     private final List<String>     templateFolderPathHistory = new ArrayList<> ();
@@ -124,9 +135,11 @@ public class DecentSamplerCreator extends AbstractCreator
         separator.getStyleClass ().add ("titled-separator-pane");
 
         this.makeMonophonicBox = panel.createCheckBox ("@IDS_DS_MAKE_MONOPHONIC");
+        this.addFilterToGroups = panel.createCheckBox ("@IDS_DS_ADD_FILTER_TO_GROUPS");
 
         final BoxPanel templateFolderPathPanel = new BoxPanel (Orientation.VERTICAL, false);
         final TitledSeparator templateFolderPathTitle = new TitledSeparator (Functions.getText ("@IDS_DS_TEMPLATE_FOLDER"));
+        templateFolderPathTitle.getStyleClass ().add ("titled-separator-pane");
         templateFolderPathTitle.setLabelFor (this.templateFolderPathField);
         templateFolderPathPanel.addComponent (templateFolderPathTitle);
 
@@ -154,6 +167,7 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         this.createBundleBox.setSelected (config.getBoolean (DS_OUTPUT_CREATE_BUNDLE, false));
         this.makeMonophonicBox.setSelected (config.getBoolean (DS_OUTPUT_MAKE_MONOPHONIC, false));
+        this.addFilterToGroups.setSelected (config.getBoolean (DS_OUTPUT_ADD_FILTER_TO_GROUPS, true));
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
         {
@@ -178,6 +192,7 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         config.setBoolean (DS_OUTPUT_CREATE_BUNDLE, this.createBundleBox.isSelected ());
         config.setBoolean (DS_OUTPUT_MAKE_MONOPHONIC, this.makeMonophonicBox.isSelected ());
+        config.setBoolean (DS_OUTPUT_ADD_FILTER_TO_GROUPS, this.addFilterToGroups.isSelected ());
 
         updateHistory (this.templateFolderPathField.getEditor ().getText (), this.templateFolderPathHistory);
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -261,7 +276,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
             otherOutputFiles.add (presetResult.dsPresetFile.getAbsolutePath ());
 
-            final Optional<String> metadata = this.createPresetMetadata (presetResult.sampleFolder, multisampleSource);
+            final Optional<String> metadata = this.createPresetDocument (presetResult.sampleFolder, multisampleSource);
             if (metadata.isEmpty ())
                 continue;
             presetResult.dsPreset = metadata.get ();
@@ -353,7 +368,7 @@ public class DecentSamplerCreator extends AbstractCreator
      * @return The XML structure
      * @throws IOException Could not find template
      */
-    private Optional<String> createPresetMetadata (final String folderName, final IMultisampleSource multisampleSource) throws IOException
+    private Optional<String> createPresetDocument (final String folderName, final IMultisampleSource multisampleSource) throws IOException
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -365,20 +380,20 @@ public class DecentSamplerCreator extends AbstractCreator
         document.appendChild (multisampleElement);
         multisampleElement.setAttribute (DecentSamplerTag.MIN_VERSION, "1.11");
 
+        final ParameterLevel ampEnvParameterLevel = getAmpEnvelopeParamLevel (multisampleSource);
+
         // No metadata at all
 
         final Element groupsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.GROUPS);
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-        this.createUI (document, multisampleElement);
-
         // Add all groups
 
         final Element modulatorsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.MODULATORS);
 
-        for (int i = 0; i < groups.size (); i++)
+        for (int groupIndex = 0; groupIndex < groups.size (); groupIndex++)
         {
-            final IGroup group = groups.get (i);
+            final IGroup group = groups.get (groupIndex);
             final Element groupElement = XMLUtils.addElement (document, groupsElement, DecentSamplerTag.GROUP);
 
             final String name = group.getName ();
@@ -391,21 +406,28 @@ public class DecentSamplerCreator extends AbstractCreator
 
             final Set<Double> ampVelDepths = new HashSet<> ();
             final List<ISampleZone> zones = group.getSampleZones ();
-            for (final ISampleZone zone: zones)
+            for (int zoneIndex = 0; zoneIndex < zones.size (); zoneIndex++)
             {
+                final ISampleZone zone = zones.get (zoneIndex);
                 ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
-                createSample (document, folderName, groupElement, zone);
+                final Element sampleElement = createSample (document, folderName, groupElement, zone);
+                if (ampEnvParameterLevel == ParameterLevel.ZONE)
+                    setEnvelope (sampleElement, zone.getAmplitudeEnvelopeModulator ().getSource ());
+                else if (ampEnvParameterLevel == ParameterLevel.GROUP && zoneIndex == 0)
+                    setEnvelope (groupElement, zone.getAmplitudeEnvelopeModulator ().getSource ());
+                else if (ampEnvParameterLevel == ParameterLevel.INSTRUMENT && groupIndex == 0 && zoneIndex == 0)
+                    setEnvelope (groupsElement, zone.getAmplitudeEnvelopeModulator ().getSource ());
             }
             if (ampVelDepths.size () == 1)
                 groupElement.setAttribute (DecentSamplerTag.AMP_VELOCITY_TRACK, Double.toString (ampVelDepths.iterator ().next ().doubleValue ()));
 
-            createFilter (document, modulatorsElement, multisampleSource, groupElement, i);
+            this.createFilter (document, modulatorsElement, multisampleSource, groupElement, groupIndex);
             if (!zones.isEmpty ())
-                createPitchModulator (document, modulatorsElement, zones.get (0).getPitchModulator (), i);
+                createPitchModulator (document, modulatorsElement, zones.get (0).getPitchModulator (), groupIndex);
         }
 
         this.makeMonophonic (document, multisampleElement, groupsElement);
-        this.createEffects (document, multisampleElement);
+        this.applyTemplate (document, multisampleElement, groupsElement, modulatorsElement);
         return this.createXMLString (document);
     }
 
@@ -429,14 +451,14 @@ public class DecentSamplerCreator extends AbstractCreator
      * @param folderName The name to use for the sample folder
      * @param groupElement The element where to add the sample information
      * @param zone Where to get the sample info from
+     * @return The sample element
      */
-    private static void createSample (final Document document, final String folderName, final Element groupElement, final ISampleZone zone)
+    private static Element createSample (final Document document, final String folderName, final Element groupElement, final ISampleZone zone)
     {
         /////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.SAMPLE);
-        setEnvelope (sampleElement, zone.getAmplitudeEnvelopeModulator ().getSource ());
 
         final String filename = zone.getName () + ".wav";
         sampleElement.setAttribute (DecentSamplerTag.PATH, AbstractCreator.formatFileName (folderName, filename));
@@ -485,7 +507,10 @@ public class DecentSamplerCreator extends AbstractCreator
         // Loops
 
         final List<ISampleLoop> loops = zone.getLoops ();
-        if (!loops.isEmpty ())
+        // Loops are enabled by default!
+        if (loops.isEmpty ())
+            sampleElement.setAttribute (DecentSamplerTag.LOOP_ENABLED, "false");
+        else
         {
 
             final ISampleLoop sampleLoop = loops.get (0);
@@ -498,39 +523,37 @@ public class DecentSamplerCreator extends AbstractCreator
             if (crossfade > 0)
                 XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, crossfade);
         }
+
+        return sampleElement;
     }
 
 
-    private static void createFilter (final Document document, final Element modulatorsElement, final IMultisampleSource multisampleSource, final Element groupElement, final int groupIndex)
+    private void createFilter (final Document document, final Element modulatorsElement, final IMultisampleSource multisampleSource, final Element groupElement, final int groupIndex)
     {
         final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
-        if (!globalFilter.isPresent ())
-            return;
+        final IFilter filter;
+        if (globalFilter.isEmpty ())
+        {
+            if (!this.addFilterToGroups.isSelected ())
+                return;
+            filter = DEFAULT_LOW_PASS_FILTER;
+        }
+        else
+            filter = globalFilter.get ();
 
-        // Needs to be added to all groups since there seems to be a bug with envelope
-        // modulation on the instrument level...
+        // Needs to be added to all groups since envelopes seem to only work on a group level (and
+        // not instrument level)...
 
         final Element effectsElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.EFFECTS);
         final Element filterElement = XMLUtils.addElement (document, effectsElement, DecentSamplerTag.EFFECTS_EFFECT);
 
         boolean isNotch = false;
-        final IFilter filter = globalFilter.get ();
         switch (filter.getType ())
         {
             default:
             case LOW_PASS:
-                switch (filter.getPoles ())
-                {
-                    case 4:
-                        filterElement.setAttribute ("type", "lowpass_4pl");
-                        break;
-                    case 1:
-                        filterElement.setAttribute ("type", "lowpass_1pl");
-                        break;
-                    default:
-                        filterElement.setAttribute ("type", "lowpass");
-                        break;
-                }
+                // 'lowpass' is 4 pole filter
+                filterElement.setAttribute ("type", filter.getPoles () == 1 ? "lowpass_1pl" : "lowpass");
                 break;
             case HIGH_PASS:
                 filterElement.setAttribute ("type", "highpass");
@@ -567,23 +590,10 @@ public class DecentSamplerCreator extends AbstractCreator
             bindingElement.setAttribute ("groupIndex", Integer.toString (groupIndex));
             bindingElement.setAttribute ("effectIndex", "0");
             bindingElement.setAttribute ("parameter", "FX_FILTER_FREQUENCY");
-            bindingElement.setAttribute ("modBehavior", "set");
+            bindingElement.setAttribute ("modBehavior", "add");
             bindingElement.setAttribute ("translation", "table");
             bindingElement.setAttribute ("translationTable", "0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000");
         }
-    }
-
-
-    /**
-     * Creates the effects elements from a template.
-     *
-     * @param document The XML document
-     * @param rootElement Where to add the effect elements
-     * @throws IOException Could not load the template
-     */
-    private void createEffects (final Document document, final Element rootElement) throws IOException
-    {
-        rootElement.appendChild (this.readXMLSnippet (document, "effects.xml"));
     }
 
 
@@ -618,11 +628,47 @@ public class DecentSamplerCreator extends AbstractCreator
      *
      * @param document The XML document
      * @param rootElement The root XML element
+     * @param groupsElement The groups element
+     * @param modulatorsElement The modulatorsElement
      * @throws IOException Could not load the template
      */
-    private void createUI (final Document document, final Element rootElement) throws IOException
+    private void applyTemplate (final Document document, final Element rootElement, final Element groupsElement, Element modulatorsElement) throws IOException
     {
-        rootElement.appendChild (this.readXMLSnippet (document, "ui.xml"));
+        final double attackAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_ATTACK, 0.0);
+        final double decayAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_DECAY, 0.0);
+        final double sustainAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_SUSTAIN, 1.0);
+        final double releaseAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_RELEASE, 0.1);
+
+        String template = this.getTemplateCode ("ui.xml").trim ();
+        template = template.replace ("%ENV_ATTACK_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (attackAttribute)));
+        template = template.replace ("%ENV_DECAY_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (decayAttribute)));
+        template = template.replace ("%ENV_SUSTAIN_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (sustainAttribute)));
+        template = template.replace ("%ENV_RELEASE_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (releaseAttribute)));
+
+        final org.w3c.dom.Node xmlSnippet = readXMLSnippet (document, template);
+        addChildByName (rootElement, xmlSnippet, "effects");
+        addChildByName (rootElement, xmlSnippet, "midi");
+        addChildByName (rootElement, xmlSnippet, "ui");
+        final Element childModulatorsElement = XMLUtils.getChildElementByName (xmlSnippet, "modulators");
+        if (childModulatorsElement != null)
+        {
+            final NodeList modulatorsChildrenList = childModulatorsElement.getChildNodes ();
+            int length = modulatorsChildrenList.getLength ();
+            for (int i = length - 1; i >= 0; i--)
+            {
+                org.w3c.dom.Node item = modulatorsChildrenList.item (i);
+                if (item != null)
+                    modulatorsElement.appendChild (item);
+            }
+        }
+    }
+
+
+    private static void addChildByName (final Element rootElement, final org.w3c.dom.Node xmlSnippet, final String childName)
+    {
+        final Element childElement = XMLUtils.getChildElementByName (xmlSnippet, childName);
+        if (childElement != null)
+            rootElement.appendChild (childElement);
     }
 
 
@@ -685,13 +731,14 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private org.w3c.dom.Node readXMLSnippet (final Document document, final String filename) throws IOException
+    private static org.w3c.dom.Node readXMLSnippet (final Document document, final String template) throws IOException
     {
-        final String template = this.getTemplateCode (filename);
         final Document templateDocument;
         try
         {
-            templateDocument = XMLUtils.parseDocument (new InputSource (new StringReader (template.trim ())));
+            // Add a fake root node to make it readable
+            final String xmlCode = "<root>" + template + "</root>";
+            templateDocument = XMLUtils.parseDocument (new InputSource (new StringReader (xmlCode)));
         }
         catch (final SAXException ex)
         {
@@ -745,12 +792,8 @@ public class DecentSamplerCreator extends AbstractCreator
 
         try
         {
-            // Copy both templates from the JAR resources to the given template folder
-            final String effectsTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "effects.xml");
+            // Copy the template from the JAR resources to the given template folder
             final String uiTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ui.xml");
-            final File effectsFile = new File (templateFolderPath, "effects.xml");
-            if (!effectsFile.exists ())
-                Files.write (effectsFile.toPath (), effectsTemplate.getBytes ());
             final File uiFile = new File (templateFolderPath, "ui.xml");
             if (!uiFile.exists ())
                 Files.write (uiFile.toPath (), uiTemplate.getBytes ());

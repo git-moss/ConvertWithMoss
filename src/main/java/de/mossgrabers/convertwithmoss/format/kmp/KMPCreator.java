@@ -120,7 +120,7 @@ public class KMPCreator extends AbstractCreator
             final String multiSampleName = createSafeFilename (multisampleSource.getName ());
 
             // Create a sub-folder for the KMP file(s) and all samples
-            final File subFolder = new File (destinationFolder, createUniqueDOSFileName (destinationFolder, multiSampleName, "", new HashSet<> ()));
+            final File subFolder = new File (destinationFolder, createUniqueDOSFileName (destinationFolder, multiSampleName, "", new HashSet<> (), true));
             if (!subFolder.exists () && !subFolder.mkdirs ())
             {
                 this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", subFolder.getAbsolutePath ());
@@ -147,7 +147,8 @@ public class KMPCreator extends AbstractCreator
         }
 
         // Write a KSC file with all created KMP files
-        final File outputFile = new File (destinationFolder, libraryName + ".KSC");
+        final String dosLibraryName = createUniqueDOSFileName (destinationFolder, libraryName, ".KSC", new HashSet<> (), false);
+        final File outputFile = new File (destinationFolder, dosLibraryName + ".KSC");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
         new KSCFile (createdKMPNames).write (outputFile);
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
@@ -215,7 +216,7 @@ public class KMPCreator extends AbstractCreator
 
     private static String createUniqueFilename (final File subFolder, final String filename, final int kmpIndex, final Collection<String> createdKMPNames)
     {
-        return createUniqueDOSFileName (subFolder, String.format ("%s%02d", filename, Integer.valueOf (kmpIndex)), ".KMP", createdKMPNames) + ".KMP";
+        return createUniqueDOSFileName (subFolder, String.format ("%s%02d", filename, Integer.valueOf (kmpIndex)), ".KMP", createdKMPNames, false) + ".KMP";
     }
 
 
