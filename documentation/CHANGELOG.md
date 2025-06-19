@@ -1,6 +1,6 @@
 # Changes
 
-## 13.1.0 (preview)
+## 13.1.0
 
 * DecentSampler
   * New: Amplitude envelope settings are now aggregated to group or instrument level if they are identical.
