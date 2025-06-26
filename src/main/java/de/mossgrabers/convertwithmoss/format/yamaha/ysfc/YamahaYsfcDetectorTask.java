@@ -105,24 +105,24 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     // A = All, U = User, L = Library
     private static final String []                 ENDINGS                        =
     {
-        ".x0a",                                                                                                                                                                                                                                                                           // Motif
-                                                                                                                                                                                                                                                                                          // XS
+        ".x0a",                                                                                                                                                                                                                                                                                                   // Motif
+                                                                                                                                                                                                                                                                                                                  // XS
         ".x0w",
-        ".x3a",                                                                                                                                                                                                                                                                           // Motif
-                                                                                                                                                                                                                                                                                          // XF
+        ".x3a",                                                                                                                                                                                                                                                                                                   // Motif
+                                                                                                                                                                                                                                                                                                                  // XF
         ".x3w",
-        ".x6a",                                                                                                                                                                                                                                                                           // MOXF
+        ".x6a",                                                                                                                                                                                                                                                                                                   // MOXF
         ".x6w",
-        ".x7u",                                                                                                                                                                                                                                                                           // Montage
+        ".x7u",                                                                                                                                                                                                                                                                                                   // Montage
         ".x7l",
         ".x7a",
-        ".x8u",                                                                                                                                                                                                                                                                           // MODX
-                                                                                                                                                                                                                                                                                          // /
-                                                                                                                                                                                                                                                                                          // MODX+
+        ".x8u",                                                                                                                                                                                                                                                                                                   // MODX
+                                                                                                                                                                                                                                                                                                                  // /
+                                                                                                                                                                                                                                                                                                                  // MODX+
         ".x8l",
         ".x8a",
-        ".y2l",                                                                                                                                                                                                                                                                           // Montage
-                                                                                                                                                                                                                                                                                          // M
+        ".y2l",                                                                                                                                                                                                                                                                                                   // Montage
+                                                                                                                                                                                                                                                                                                                  // M
         ".y2u"
     };
     private static final int                       SAMPLE_RESOLUTION              = 16;
@@ -431,6 +431,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         if (keybank.getFixedPitch () == 1)
             zone.setKeyTracking (0);
         zone.setTune (keybank.getCoarseTune () + keybank.getFineTune () / 100.0);
+
         final int level = keybank.getLevel ();
         zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + (level - 1) * 0.375);
 
@@ -493,24 +494,24 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     }
 
 
-    private static boolean limitKeyrangeAndVelocity (final ISampleZone sampleZone, final YamahaYsfcPartElement element)
+    private static boolean limitKeyrangeAndVelocity (final ISampleZone zone, final YamahaYsfcPartElement element)
     {
         // Is the key-range is fully outside?
         // Is the velocity-range fully outside?
-        if (sampleZone.getKeyHigh () < element.getNoteLimitLow () || sampleZone.getKeyLow () > element.getNoteLimitHigh () || sampleZone.getVelocityHigh () < element.getVelocityLimitLow () || sampleZone.getVelocityLow () > element.getVelocityLimitHigh ())
+        if (zone.getKeyHigh () < element.getNoteLimitLow () || zone.getKeyLow () > element.getNoteLimitHigh () || zone.getVelocityHigh () < element.getVelocityLimitLow () || zone.getVelocityLow () > element.getVelocityLimitHigh ())
             return false;
 
         // Clip key-range if necessary
-        if (sampleZone.getKeyLow () < element.getNoteLimitLow ())
-            sampleZone.setKeyLow (element.getNoteLimitLow ());
-        if (sampleZone.getKeyHigh () > element.getNoteLimitHigh ())
-            sampleZone.setKeyHigh (element.getNoteLimitHigh ());
+        if (zone.getKeyLow () < element.getNoteLimitLow ())
+            zone.setKeyLow (element.getNoteLimitLow ());
+        if (zone.getKeyHigh () > element.getNoteLimitHigh ())
+            zone.setKeyHigh (element.getNoteLimitHigh ());
 
         // Clip velocity-range if necessary
-        if (sampleZone.getVelocityLow () < element.getVelocityLimitLow ())
-            sampleZone.setVelocityLow (element.getVelocityLimitLow ());
-        if (sampleZone.getVelocityHigh () > element.getVelocityLimitHigh ())
-            sampleZone.setVelocityHigh (element.getVelocityLimitHigh ());
+        if (zone.getVelocityLow () < element.getVelocityLimitLow ())
+            zone.setVelocityLow (element.getVelocityLimitLow ());
+        if (zone.getVelocityHigh () > element.getVelocityLimitHigh ())
+            zone.setVelocityHigh (element.getVelocityLimitHigh ());
 
         return true;
     }
@@ -562,6 +563,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
 
         final double pitchOffset = element.getCoarseTune () - 64 + (element.getFineTune () - 64) / 100.0;
         zone.setTune (zone.getTune () + pitchOffset);
+        zone.setKeyTracking (element.getPitchKeyFollowSensitivity () / 100.0);
 
         zone.setPanning ((zone.getPanning () + MathUtils.normalizeIntegerRange (element.getPan (), -63, 63, 64)) / 2.0);
 
