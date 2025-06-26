@@ -54,15 +54,6 @@ public class YamahaYsfcPerformancePart
 
 
     /**
-     * Default constructor.
-     */
-    private YamahaYsfcPerformancePart ()
-    {
-        // Intentionally empty
-    }
-
-
-    /**
      * Get the name of the performance.
      *
      * @return The name
@@ -237,37 +228,6 @@ public class YamahaYsfcPerformancePart
         // Currently not used...
         // MODX has 1 Byte more than Montage! Needs to be considered in case that Scenes are used!
         this.theRest = in.readAllBytes ();
-    }
-
-
-    /**
-     * Create a clone of the object.
-     * 
-     * @return The clone
-     */
-    public YamahaYsfcPerformancePart deepClone ()
-    {
-        final YamahaYsfcPerformancePart copy = new YamahaYsfcPerformancePart ();
-        copy.name = this.name;
-        copy.type = this.type;
-        copy.mainCategory = this.mainCategory;
-        copy.subCategory = this.subCategory;
-        copy.partSwitch = this.partSwitch;
-        copy.keyboardSwitch = this.keyboardSwitch;
-        copy.velocityLimitLow = this.velocityLimitLow;
-        copy.velocityLimitHigh = this.velocityLimitHigh;
-        copy.noteLimitLow = this.noteLimitLow;
-        copy.noteLimitHigh = this.noteLimitHigh;
-        copy.pitchBendRangeUpper = this.pitchBendRangeUpper;
-        copy.pitchBendRangeLower = this.pitchBendRangeLower;
-
-        copy.theRest = new byte [this.theRest.length];
-        System.arraycopy (this.theRest, 0, copy.theRest, 0, this.theRest.length);
-
-        for (final YamahaYsfcPartElement element: this.elements)
-            copy.elements.add (element.deepClone ());
-
-        return copy;
     }
 
 

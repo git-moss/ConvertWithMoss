@@ -1,5 +1,10 @@
 # Changes
 
+## 13.2.0 (unreleased)
+
+* Yamaha YSFC
+  * Fixed: Pitch Key Follow Sensitivity was not read/written.
+
 ## 13.1.0
 
 * DecentSampler
