@@ -38,7 +38,7 @@ public interface ICreator extends ICoreTask
      * @param libraryName The name to use for the library file
      * @throws IOException Could not store the file
      */
-    void createLibrary (File destinationFolder, List<IMultisampleSource> multisampleSources, String libraryName) throws IOException;
+    void createPresetLibrary (File destinationFolder, List<IMultisampleSource> multisampleSources, String libraryName) throws IOException;
 
 
     /**
@@ -52,11 +52,22 @@ public interface ICreator extends ICoreTask
 
 
     /**
+     * Combines several performance input files and stores them into one library file.
+     *
+     * @param destinationFolder Where to store the created file
+     * @param performanceSources The performance sources from which to create
+     * @param libraryName The name to use for the library file
+     * @throws IOException Could not store the file
+     */
+    void createPerformanceLibrary (File destinationFolder, List<IPerformanceSource> performanceSources, String libraryName) throws IOException;
+
+
+    /**
      * Check if the creator supports to combine several multi-samples into one file.
      *
      * @return Returns true if the creator can combine several files
      */
-    boolean supportsLibraries ();
+    boolean supportsPresetLibraries ();
 
 
     /**
@@ -65,6 +76,14 @@ public interface ICreator extends ICoreTask
      * @return Returns true if supported
      */
     boolean supportsPerformances ();
+
+
+    /**
+     * Check if the creator supports to combine several performances into one file.
+     *
+     * @return Returns true if the creator can combine several files
+     */
+    boolean supportsPerformanceLibraries ();
 
 
     /**

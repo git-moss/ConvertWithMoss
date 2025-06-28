@@ -341,13 +341,13 @@ Currently, the user and library formats of the Montage (not Montage M!) and MODX
 * A performance can contain up to 16 parts (e.g. to perform a song by muting, soloing parts via scenes)
 * A library contains several performances
 
-**Destination Type: Preset or Library**
+**Destination Type: Preset or Preset Library**
 
 When creating presets or libraries as the destination type, each multi-sample source creates one performance with one active part. Each group of the the multi-sample source is assigned to 1 element for which 1 key-group is created as well which contains the samples. If there are more groups than elements, the remaining groups are all added to the last element. If there are no groups all samples will be assigned to key-group/element one.
 
 Note: There are no checks that the created libraries stay in the boundaries of the workstation specifications (e.g. the number of the maximum allowed samples or the required memory size)!
 
-**Destination Type: Performance**
+**Destination Type: Performance or Performance Library**
 
 When creating (ConvertWithMoss) performances as the destination type, each performance source creates one (Yamaha) performance with one active part for each multi-sample (instrument) of the source. Since the parts 9-16 can only be addressed externally and even worse they have a fixed MIDI channel only the parts 1-8 are used.
 MIDI channels of the instrument sources are mapped to scenes. Scene 1 represents first MIDI channel of the instrument sources, Scene 2 the second and so on until Scene 8. Each instrument source is assigned to 1 part. The keyboard is enabled for the scene with the respective MIDI channel. If the MIDI channel is set to OMNI it is active for all scenes.
