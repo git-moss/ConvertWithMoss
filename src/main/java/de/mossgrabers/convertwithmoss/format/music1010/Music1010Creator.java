@@ -352,6 +352,7 @@ public class Music1010Creator extends AbstractCreator
      *
      * @param instrumentSources The up to 16 instrument sources to add to the preset
      * @param trim Trim to start/end if true
+     * @param subFolder The sub-folder inside of the Presets folder to write to
      * @return The XML structure
      * @throws IOException Could not combine split-stereo files
      */

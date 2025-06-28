@@ -12,9 +12,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -88,9 +91,7 @@ public class YamahaYsfcCreator extends AbstractCreator
             final String folder = "de/mossgrabers/convertwithmoss/templates/ysfc/";
 
             PERFORMANCE_TEMPLATES_1.put (YamahaYsfcFileFormat.MONTAGE, Functions.rawFileFor (folder + "InitPerf405.bin"));
-            // TODO PERFORMANCE_TEMPLATES_8.put (YamahaYsfcFileFormat.MONTAGE, Functions.rawFileFor
-            // (folder + "InitPerf405-8.bin"));
-
+            PERFORMANCE_TEMPLATES_8.put (YamahaYsfcFileFormat.MONTAGE, Functions.rawFileFor (folder + "InitPerf405-8.bin"));
             PERFORMANCE_TEMPLATES_1.put (YamahaYsfcFileFormat.MODX, Functions.rawFileFor (folder + "InitPerf501.bin"));
             PERFORMANCE_TEMPLATES_8.put (YamahaYsfcFileFormat.MODX, Functions.rawFileFor (folder + "InitPerf501-8.bin"));
         }
@@ -131,7 +132,7 @@ public class YamahaYsfcCreator extends AbstractCreator
     /** Bank Select + Program Change. */
     private static final int CONTENT_NUMBER  = 0x3F2000;
 
-    private static final int MAX_INSTRUMENTS = 16;
+    private static final int MAX_INSTRUMENTS = 8;
 
     private ToggleGroup      outputFormatGroup;
     private CheckBox         createOnlyWaveforms;
@@ -302,10 +303,10 @@ public class YamahaYsfcCreator extends AbstractCreator
         final LibraryCounters counters = new LibraryCounters ();
         final int categoryID = getCategoryIndex (performanceSource.getMetadata ());
 
-        final List<IInstrumentSource> instrumentSources = limitInstruments (performanceSource.getInstruments ());
+        final List<IInstrumentSource> instrumentSources = this.limitInstruments (performanceSource.getInstruments ());
         final int numInstruments = instrumentSources.size ();
         final byte [] templateData = numInstruments == 1 ? PERFORMANCE_TEMPLATES_1.get (format) : PERFORMANCE_TEMPLATES_8.get (format);
-        final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (templateData, format);
+        final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (templateData, format, YsfcFile.parseVersion (format.getMaxVersion ()));
         performance.setName (StringUtils.fixASCII (performanceSource.getName ()));
 
         // There is exactly 1 part in the template!
@@ -314,19 +315,32 @@ public class YamahaYsfcCreator extends AbstractCreator
 
         // Create one part in the performance for each multi-sample source
         final List<int []> allWaveReferences = new ArrayList<> ();
+        final Set<Integer> midiChannelsInUse = new HashSet<> ();
         for (int i = 0; i < numInstruments; i++)
         {
             final IInstrumentSource instrumentSource = instrumentSources.get (i);
-            // TODO Used MIDI channel
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
             final String multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
 
             final YamahaYsfcPerformancePart part = parts.get (i);
+            part.setNoteLimitLow (instrumentSource.getClipKeyLow ());
+            part.setNoteLimitHigh (instrumentSource.getClipKeyHigh ());
+
             allWaveReferences.add (this.fillPart (counters, format, ysfcFile, categoryID, multisampleSource, multisampleName, part));
             filledParts.add (part);
+
+            final int midiChannel = instrumentSource.getMidiChannel ();
+            if (midiChannel != -1)
+                midiChannelsInUse.add (Integer.valueOf (midiChannel));
+            for (int scene = 0; scene < 8; scene++)
+                part.setSceneKeyboardControl (scene, midiChannel == scene || midiChannel == -1);
         }
         parts.clear ();
         parts.addAll (filledParts);
+
+        // Only activate those scenes for which there is a MIDI channel! Ignore OMNI!
+        for (int i = 0; i < midiChannelsInUse.size (); i++)
+            performance.setSceneKeyboardControl (i, true);
 
         final int performanceIndex = 0;
         final YamahaYsfcEntry performanceEntry = createPerformanceEntry (categoryID, performance.getName (), CONTENT_NUMBER + performanceIndex, combineArrays (allWaveReferences), parts.size ());
@@ -351,7 +365,7 @@ public class YamahaYsfcCreator extends AbstractCreator
         // Create one performance for each multi-sample source
         for (int i = 0; i < multisampleSources.size (); i++)
         {
-            final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (PERFORMANCE_TEMPLATES_1.get (format), format);
+            final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (PERFORMANCE_TEMPLATES_1.get (format), format, YsfcFile.parseVersion (format.getMaxVersion ()));
 
             final IMultisampleSource multisampleSource = multisampleSources.get (i);
             final String multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
@@ -508,16 +522,91 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
 
-    private static List<IInstrumentSource> limitInstruments (final List<IInstrumentSource> instruments)
+    private List<IInstrumentSource> limitInstruments (final List<IInstrumentSource> instruments)
     {
-        final int size = instruments.size ();
-        if (size <= MAX_INSTRUMENTS)
+        if (instruments.size () <= MAX_INSTRUMENTS)
             return instruments;
 
         final List<IInstrumentSource> limitedInstruments = new ArrayList<> (MAX_INSTRUMENTS);
-        for (int i = 0; i < MAX_INSTRUMENTS; i++)
-            limitedInstruments.add (instruments.get (i));
+
+        // Group all instrument sources by their MIDI channel
+        final TreeMap<Integer, List<IInstrumentSource>> sortedByMidiChannel = new TreeMap<> ();
+        for (final IInstrumentSource instrumentSource: instruments)
+            sortedByMidiChannel.computeIfAbsent (Integer.valueOf (instrumentSource.getMidiChannel ()), _ -> new ArrayList<> ()).add (instrumentSource);
+
+        // First limit the MIDI channels to a maximum 8 different ones
+        if (sortedByMidiChannel.size () > MAX_INSTRUMENTS)
+            while (sortedByMidiChannel.size () > MAX_INSTRUMENTS)
+            {
+                final Integer highestKey = sortedByMidiChannel.lastKey ();
+                this.notifier.logError ("IDS_YSFC_DROPPED_INSTRUMENTS_BY_MIDI_CHANNEL", highestKey.toString ());
+                sortedByMidiChannel.remove (highestKey);
+            }
+
+        // Is it already limited to 8?
+        for (final Map.Entry<Integer, List<IInstrumentSource>> entry: sortedByMidiChannel.entrySet ())
+            limitedInstruments.addAll (entry.getValue ());
+        if (instruments.size () <= MAX_INSTRUMENTS)
+            return limitedInstruments;
+
+        // How many instruments do we need to aggregate?
+        final int reductionTarget = limitedInstruments.size () - MAX_INSTRUMENTS;
+        this.notifier.logError ("IDS_YSFC_AGGREGATE_INSTRUMENTS_BY_MIDI_CHANNEL", Integer.toString (reductionTarget));
+        this.reduceTreeMap (sortedByMidiChannel, reductionTarget);
+
+        // Collect the rest
+        limitedInstruments.clear ();
+        for (final Map.Entry<Integer, List<IInstrumentSource>> entry: sortedByMidiChannel.entrySet ())
+            limitedInstruments.addAll (entry.getValue ());
         return limitedInstruments;
+    }
+
+
+    private void reduceTreeMap (final TreeMap<Integer, List<IInstrumentSource>> map, final int reductionTarget)
+    {
+        int leftToReduce = reductionTarget;
+
+        while (leftToReduce > 0)
+            for (final Map.Entry<Integer, List<IInstrumentSource>> entry: map.entrySet ())
+            {
+                final List<IInstrumentSource> list = entry.getValue ();
+                if (list.size () >= 2 && leftToReduce > 0)
+                {
+                    // Combine first two elements
+                    final IInstrumentSource instrumentSource1 = list.remove (0);
+                    final IInstrumentSource instrumentSource2 = list.remove (this.findInstrumentSourceWithMatchingRange (instrumentSource1, list));
+                    instrumentSource1.getMultisampleSource ().getGroups ().addAll (instrumentSource2.getMultisampleSource ().getGroups ());
+
+                    // Add back to the end
+                    list.add (instrumentSource1);
+                    leftToReduce--;
+                }
+
+                // Early exit if we've achieved the reduction
+                if (leftToReduce == 0)
+                    break;
+            }
+    }
+
+
+    private int findInstrumentSourceWithMatchingRange (final IInstrumentSource instrumentSource, final List<IInstrumentSource> instrumentSources)
+    {
+        final int clipKeyLow = instrumentSource.getClipKeyLow ();
+        final int clipKeyHigh = instrumentSource.getClipKeyHigh ();
+
+        // Is there another instrument source with the same key-range?
+        for (int i = 0; i < instrumentSources.size (); i++)
+        {
+            final IInstrumentSource instrumentSource2 = instrumentSources.get (i);
+            if (clipKeyLow == instrumentSource2.getClipKeyLow () && clipKeyHigh == instrumentSource2.getClipKeyHigh ())
+                return i;
+        }
+
+        // If not show a warning and combine the ranges
+        instrumentSource.setClipKeyLow (Math.min (instrumentSources.get (0).getClipKeyLow (), clipKeyLow));
+        instrumentSource.setClipKeyHigh (Math.max (instrumentSources.get (0).getClipKeyHigh (), clipKeyHigh));
+        this.notifier.logError ("IDS_YSFC_AGGREGATE_KEY_RANGE");
+        return 0;
     }
 
 

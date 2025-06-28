@@ -87,11 +87,8 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     }
 
 
-    /**
-     * Set the lower note which should limit the key-range (this note should still sound).
-     * 
-     * @param clipKeyLow The note [0..127]
-     */
+    /** {@inheritDoc} */
+    @Override
     public void setClipKeyLow (final int clipKeyLow)
     {
         this.clipKeyLow = clipKeyLow;
@@ -106,12 +103,9 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     }
 
 
-    /**
-     * Set the upper note which should limit the key-range (this note should still sound).
-     * 
-     * @param clipKeyHigh The note [0..127]
-     */
-    public void setClipKeyHigh (final int clipKeyHigh)
+    /** {@inheritDoc} */
+    @Override
+    public void setClipKeyHigh (int clipKeyHigh)
     {
         this.clipKeyHigh = clipKeyHigh;
     }

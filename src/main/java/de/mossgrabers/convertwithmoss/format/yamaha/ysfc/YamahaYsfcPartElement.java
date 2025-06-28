@@ -453,15 +453,6 @@ public class YamahaYsfcPartElement
 
 
     /**
-     * Default constructor.
-     */
-    private YamahaYsfcPartElement ()
-    {
-        // Intentionally empty
-    }
-
-
-    /**
      * Get the element switch.
      *
      * @return 1 if the element is active, 0 if off

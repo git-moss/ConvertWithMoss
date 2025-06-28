@@ -24,6 +24,11 @@ import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.Pres
  */
 public class RewriteChunks
 {
+    /**
+     * The main method.
+     * 
+     * @param args Not used
+     */
     public static void mainX (final String [] args)
     {
         try
@@ -52,6 +57,11 @@ public class RewriteChunks
     }
 
 
+    /**
+     * The main method.
+     * 
+     * @param args The source file and then the output file
+     */
     // TODO Rewrite test - remove
     public static void main (final String [] args)
     {

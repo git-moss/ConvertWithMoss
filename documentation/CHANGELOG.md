@@ -3,6 +3,7 @@
 ## 13.2.0 (unreleased)
 
 * Yamaha YSFC
+  * New: Can be a destination format for Performances.
   * Fixed: Pitch Key Follow Sensitivity was not read/written.
 
 ## 13.1.0

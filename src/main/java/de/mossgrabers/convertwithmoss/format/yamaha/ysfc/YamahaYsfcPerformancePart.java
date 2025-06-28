@@ -35,21 +35,24 @@ public class YamahaYsfcPerformancePart
     private int                               pitchBendRangeUpper;
     private int                               pitchBendRangeLower;
 
-    private byte []                           theRest;
-
-    private final List<YamahaYsfcPartElement> elements = new ArrayList<> ();
+    private final List<YamahaYsfcPartElement> elements        = new ArrayList<> ();
+    private byte []                           manyParameters;
+    private byte []                           scenes;
+    private final String []                   assignableKnobs = new String [8];
+    private byte []                           controlBoxes;
 
 
     /**
      * Constructor which reads the performance from the input stream.
      *
      * @param in The input stream
-     * @param version The format version of the YSFC file
+     * @param format The format of the YSFC file
+     * @param version The exact file version, e.g. 404 or 501
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcPerformancePart (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
+    public YamahaYsfcPerformancePart (final InputStream in, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
-        this.read (in, version);
+        this.read (in, format, version);
     }
 
 
@@ -200,13 +203,27 @@ public class YamahaYsfcPerformancePart
 
 
     /**
+     * Enable keyboard control for one of the scenes.
+     * 
+     * @param scene The scene [0..7]
+     * @param enable True to enable keyboard control for this scene
+     */
+    public void setSceneKeyboardControl (final int scene, final boolean enable)
+    {
+        if (this.scenes.length == 176)
+            this.scenes[22 * scene + 21] = (byte) (enable ? 1 : 0);
+    }
+
+
+    /**
      * Read a performance from the input stream.
      *
      * @param in The input stream
-     * @param version The format version of the YSFC file
+     * @param format The format of the YSFC file
+     * @param version The exact file version, e.g. 404 or 501
      * @throws IOException Could not read the entry item
      */
-    public void read (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
+    public void read (final InputStream in, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
         this.name = StreamUtils.readASCII (in, 21).trim ();
         final int pos = this.name.indexOf (0);
@@ -226,8 +243,22 @@ public class YamahaYsfcPerformancePart
         this.pitchBendRangeLower = in.read ();
 
         // Currently not used...
-        // MODX has 1 Byte more than Montage! Needs to be considered in case that Scenes are used!
-        this.theRest = in.readAllBytes ();
+        if (format == YamahaYsfcFileFormat.MONTAGE)
+            this.manyParameters = in.readNBytes (274);
+        else // MODX has 1 Byte more than Montage!
+            this.manyParameters = in.readNBytes (275);
+
+        if (version < 405)
+            this.scenes = in.readNBytes (8 * 21);
+        else
+            this.scenes = in.readNBytes (8 * 22);
+
+        // Assignable Knob 1-8
+        for (int i = 0; i < 8; i++)
+            this.assignableKnobs[i] = StreamUtils.readASCII (in, 17).trim ();
+
+        // Control Box 1-16
+        this.controlBoxes = in.readNBytes (16 * 9);
     }
 
 
@@ -273,7 +304,15 @@ public class YamahaYsfcPerformancePart
         arrayOut.write (this.pitchBendRangeLower);
 
         // Currently not used...
-        arrayOut.write (this.theRest);
+        arrayOut.write (this.manyParameters);
+        arrayOut.write (this.scenes);
+
+        // Assignable Knob 1-8
+        for (int i = 0; i < 8; i++)
+            StreamUtils.writeASCII (arrayOut, StringUtils.rightPadSpaces (StringUtils.optimizeName (this.assignableKnobs[i], 16), 16), 17);
+
+        // Control Box 1-16
+        arrayOut.write (this.controlBoxes);
 
         StreamUtils.writeDataBlock (out, arrayOut.toByteArray (), true);
     }

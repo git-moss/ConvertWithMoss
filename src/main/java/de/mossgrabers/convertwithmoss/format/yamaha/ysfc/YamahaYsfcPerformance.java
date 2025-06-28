@@ -27,7 +27,8 @@ public class YamahaYsfcPerformance implements IStreamable
 {
     private String                                name;
     private final List<YamahaYsfcPerformancePart> parts           = new ArrayList<> ();
-    private final YamahaYsfcFileFormat            sourceVersion;
+    private final YamahaYsfcFileFormat            sourceFormat;
+    private int                                   sourceVersion;
 
     private byte []                               reverbBlock;
     private byte []                               variationBlock;
@@ -40,21 +41,22 @@ public class YamahaYsfcPerformance implements IStreamable
     private byte []                               digitalInputPart;
     private byte []                               playSettings;
     private final String []                       assignableKnobs = new String [8];
-    private byte []                               rest;
 
 
     /**
      * Constructor which fills the performance from the given data array.
      *
      * @param data The data block (DPFM without the 4 size bytes)
-     * @param version The version to use
+     * @param format The format of the YSFC file
+     * @param version The specific version of the format
      * @throws IOException Could not read the default parameters for the requested version
      */
-    public YamahaYsfcPerformance (final byte [] data, final YamahaYsfcFileFormat version) throws IOException
+    public YamahaYsfcPerformance (final byte [] data, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
-        this.sourceVersion = version;
         if (data == null)
-            throw new IOException (Functions.getMessage ("IDS_YSFC_VERSION_NOT_SUPPORTED", version.getTitle ()));
+            throw new IOException (Functions.getMessage ("IDS_YSFC_VERSION_NOT_SUPPORTED", format.getTitle ()));
+        this.sourceFormat = format;
+        this.sourceVersion = version;
         this.read (new ByteArrayInputStream (data));
     }
 
@@ -63,11 +65,13 @@ public class YamahaYsfcPerformance implements IStreamable
      * Constructor which reads the performance from the input stream.
      *
      * @param in The input stream
-     * @param version The format version of the YSFC file
+     * @param format The format version of the YSFC file
+     * @param version The specific version of the format
      * @throws IOException Could not read the entry item
      */
-    public YamahaYsfcPerformance (final InputStream in, final YamahaYsfcFileFormat version) throws IOException
+    public YamahaYsfcPerformance (final InputStream in, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
+        this.sourceFormat = format;
         this.sourceVersion = version;
         this.read (in);
     }
@@ -106,6 +110,19 @@ public class YamahaYsfcPerformance implements IStreamable
     }
 
 
+    /**
+     * Enable keyboard control for one of the scenes.
+     * 
+     * @param scene The scene [0..7]
+     * @param enable True to enable keyboard control for this scene
+     */
+    public void setSceneKeyboardControl (final int scene, final boolean enable)
+    {
+        if (this.sceneData.length == 168)
+            this.sceneData[21 * scene + 20] = (byte) (enable ? 1 : 0);
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public void read (final InputStream in) throws IOException
@@ -127,7 +144,7 @@ public class YamahaYsfcPerformance implements IStreamable
         this.commonParameters = in.readNBytes (43);
 
         // Scene 1-8
-        if (this.sourceVersion == YamahaYsfcFileFormat.MONTAGE)
+        if (this.sourceFormat == YamahaYsfcFileFormat.MONTAGE)
             this.sceneData = in.readNBytes (8 * 11);
         else // MODX
             this.sceneData = in.readNBytes (8 * 21);
@@ -138,8 +155,6 @@ public class YamahaYsfcPerformance implements IStreamable
 
         // Control Box 1-16
         this.controlBoxes = in.readNBytes (16 * 9);
-
-        this.rest = in.readAllBytes ();
     }
 
 
@@ -157,7 +172,7 @@ public class YamahaYsfcPerformance implements IStreamable
         final int numberOfParts = (int) StreamUtils.readUnsigned32 (in, true);
         final List<YamahaYsfcPerformancePart> allParts = new ArrayList<> (numberOfParts);
         for (int i = 0; i < numberOfParts; i++)
-            allParts.add (new YamahaYsfcPerformancePart (new ByteArrayInputStream (StreamUtils.readDataBlock (in, true)), this.sourceVersion));
+            allParts.add (new YamahaYsfcPerformancePart (new ByteArrayInputStream (StreamUtils.readDataBlock (in, true)), this.sourceFormat, this.sourceVersion));
 
         // Skip AD + Digital input parts
         this.adPart = StreamUtils.readDataBlock (in, true);
@@ -178,7 +193,7 @@ public class YamahaYsfcPerformance implements IStreamable
                     final YamahaYsfcPerformancePart part = allParts.get (i);
                     this.parts.add (part);
                     for (int el = 0; el < numberOfElements; el++)
-                        part.addElement (new YamahaYsfcPartElement (in, this.sourceVersion));
+                        part.addElement (new YamahaYsfcPartElement (in, this.sourceFormat));
                     break;
 
                 // FM - not used
@@ -224,8 +239,6 @@ public class YamahaYsfcPerformance implements IStreamable
 
         // Control Box 1-16
         arrayOut.write (this.controlBoxes);
-
-        arrayOut.write (this.rest);
 
         StreamUtils.writeDataBlock (out, arrayOut.toByteArray (), true);
     }

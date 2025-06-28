@@ -105,24 +105,24 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     // A = All, U = User, L = Library
     private static final String []                 ENDINGS                        =
     {
-        ".x0a",                                                                                                                                                                                                                                                                                                   // Motif
-                                                                                                                                                                                                                                                                                                                  // XS
+        ".x0a",                                                                                                                                                                                                                                                                                                                           // Motif
+                                                                                                                                                                                                                                                                                                                                          // XS
         ".x0w",
-        ".x3a",                                                                                                                                                                                                                                                                                                   // Motif
-                                                                                                                                                                                                                                                                                                                  // XF
+        ".x3a",                                                                                                                                                                                                                                                                                                                           // Motif
+                                                                                                                                                                                                                                                                                                                                          // XF
         ".x3w",
-        ".x6a",                                                                                                                                                                                                                                                                                                   // MOXF
+        ".x6a",                                                                                                                                                                                                                                                                                                                           // MOXF
         ".x6w",
-        ".x7u",                                                                                                                                                                                                                                                                                                   // Montage
+        ".x7u",                                                                                                                                                                                                                                                                                                                           // Montage
         ".x7l",
         ".x7a",
-        ".x8u",                                                                                                                                                                                                                                                                                                   // MODX
-                                                                                                                                                                                                                                                                                                                  // /
-                                                                                                                                                                                                                                                                                                                  // MODX+
+        ".x8u",                                                                                                                                                                                                                                                                                                                           // MODX
+                                                                                                                                                                                                                                                                                                                                          // /
+                                                                                                                                                                                                                                                                                                                                          // MODX+
         ".x8l",
         ".x8a",
-        ".y2l",                                                                                                                                                                                                                                                                                                   // Montage
-                                                                                                                                                                                                                                                                                                                  // M
+        ".y2l",                                                                                                                                                                                                                                                                                                                           // Montage
+                                                                                                                                                                                                                                                                                                                                          // M
         ".y2u"
     };
     private static final int                       SAMPLE_RESOLUTION              = 16;
@@ -160,8 +160,8 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         try
         {
             final YsfcFile ysfcFile = new YsfcFile (file);
-            final YamahaYsfcFileFormat version = ysfcFile.getVersion ();
-            this.notifier.log ("IDS_YSFC_FOUND_TYPE", version.getTitle (), ysfcFile.getVersionStr ());
+            final YamahaYsfcFileFormat format = ysfcFile.getFileFormat ();
+            this.notifier.log ("IDS_YSFC_FOUND_TYPE", format.getTitle (), ysfcFile.getVersionStr ());
 
             final List<IMultisampleSource> waveforms = this.createMultisamplesFromWaveforms (ysfcFile);
             if (!waveforms.isEmpty ())
@@ -171,16 +171,16 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
                 final YamahaYsfcChunk dpfmChunk = chunks.get (YamahaYsfcChunk.DATA_LIST_PERFORMANCE);
                 final boolean hasNoPerformanceData = epfmChunk == null || dpfmChunk == null || epfmChunk.getEntryListChunks ().isEmpty ();
                 // If there are no Performances, create directly from key-groups
-                if (hasNoPerformanceData || !SUPPORTED_PERFORMANCE_VERSIONS.contains (version) || !this.isSourceTypePerformance)
+                if (hasNoPerformanceData || !SUPPORTED_PERFORMANCE_VERSIONS.contains (format) || !this.isSourceTypePerformance)
                 {
                     if (hasNoPerformanceData)
                         this.notifier.log ("IDS_YSFC_NO_PERFORMANCES");
-                    if (!SUPPORTED_PERFORMANCE_VERSIONS.contains (version))
-                        this.notifier.log ("IDS_YSFC_PERFORMANCES_NOT_SUPPORTED", version.getTitle ());
+                    if (!SUPPORTED_PERFORMANCE_VERSIONS.contains (format))
+                        this.notifier.log ("IDS_YSFC_PERFORMANCES_NOT_SUPPORTED", format.getTitle ());
                     return waveforms;
                 }
 
-                return this.createMultisamplesFromPerformances (waveforms, epfmChunk, dpfmChunk, file.getName (), version);
+                return this.createMultisamplesFromPerformances (waveforms, epfmChunk, dpfmChunk, file.getName (), format, ysfcFile.getVersion ());
             }
         }
         catch (final IOException ex)
@@ -198,11 +198,12 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
      * @param epfmChunk The performance entry chunk
      * @param dpfmChunk The performance data chunk
      * @param filename The name of the library file
-     * @param version The version of the format
+     * @param format The version of the format
+     * @param version The specific version of the format
      * @return The multi-sample(s)
      * @throws IOException Could not read the multi-sample
      */
-    private List<IMultisampleSource> createMultisamplesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final String filename, final YamahaYsfcFileFormat version) throws IOException
+    private List<IMultisampleSource> createMultisamplesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final String filename, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
         // Waveforms list is not empty and all of them contain metadata which was detected from the
         // library filename
@@ -215,7 +216,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         {
             final byte [] performanceData = dpfmListChunks.get (i);
 
-            final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), version);
+            final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), format, version);
             final String performanceName = performance.getName ();
             this.notifier.log ("IDS_YSFC_ANALYZING_PERFORMANCE", performanceName);
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (globalMultisample.getSourceFile (), globalMultisample.getSubPath (), performanceName, filename + " : " + performanceName);
@@ -316,7 +317,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         for (int i = 0; i < ewfmListChunks.size (); i++)
         {
-            final List<YamahaYsfcKeybank> keyBanks = readKeyBanks (dwfmChunks.get (i), ysfcFile.getVersion ());
+            final List<YamahaYsfcKeybank> keyBanks = readKeyBanks (dwfmChunks.get (i), ysfcFile.getFileFormat ());
             final List<YamahaYsfcWaveData> waveDataItems = readWaveData (dwimChunks.get (i));
 
             final YamahaYsfcEntry yamahaYsfcEntry = ewfmListChunks.get (i);
@@ -326,7 +327,7 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
                 name = FileUtils.getNameWithoutType (ysfcFile.getSourceFile ());
             final int categoryValue = itemCategoryAndName.getKey ().intValue ();
             final IMultisampleSource multisampleSource = this.createMultisampleSource (ysfcFile, name, categoryValue);
-            final IGroup group = createSampleZones (keyBanks, waveDataItems, name, ysfcFile.getVersion ());
+            final IGroup group = createSampleZones (keyBanks, waveDataItems, name, ysfcFile.getFileFormat ());
             multisampleSource.setGroups (Collections.singletonList (group));
             multisampleSources.add (multisampleSource);
         }

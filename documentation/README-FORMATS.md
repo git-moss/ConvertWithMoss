@@ -345,6 +345,21 @@ Currently, the user and library formats of the Montage (not Montage M!) and MODX
 
 When creating presets or libraries as the destination type, each multi-sample source creates one performance with one active part. Each group of the the multi-sample source is assigned to 1 element for which 1 key-group is created as well which contains the samples. If there are more groups than elements, the remaining groups are all added to the last element. If there are no groups all samples will be assigned to key-group/element one.
 
+Note: There are no checks that the created libraries stay in the boundaries of the workstation specifications (e.g. the number of the maximum allowed samples or the required memory size)!
+
+**Destination Type: Performance**
+
+When creating (ConvertWithMoss) performances as the destination type, each performance source creates one (Yamaha) performance with one active part for each multi-sample (instrument) of the source. Since the parts 9-16 can only be addressed externally and even worse they have a fixed MIDI channel only the parts 1-8 are used.
+MIDI channels of the instrument sources are mapped to scenes. Scene 1 represents first MIDI channel of the instrument sources, Scene 2 the second and so on until Scene 8. Each instrument source is assigned to 1 part. The keyboard is enabled for the scene with the respective MIDI channel. If the MIDI channel is set to OMNI it is active for all scenes.
+
+If there are more than 8 instruments sources the following strategy is applied to reduce them to a maximum of 8:
+
+1. All instrument sources are grouped by their MIDI channel. If there are more than 8 different MIDI channels, the highest of them are removed since they couldn't be mapped to scenes anyway.
+2. If there are still more than 8 instrument sources, 2 instrument sources with the same MIDI channel and (if possible) the same key-range are aggregated into 1 instrument. Such aggregations are repeated until there are no more than 8 instrument sources.
+3. Each of the up to 8 instrument sources is finally mapped to 1 performance part.
+
+Other mappings are identical to creating presets/libraries.
+
 ### Source Options
 
 * Create multi-samples for: 

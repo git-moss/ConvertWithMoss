@@ -452,6 +452,7 @@ public class WaldorfQpatDetectorTask extends AbstractDetectorTask
      *
      * @param in The input stream to read from
      * @param multisampleSource The multi-sample source
+     * @return The QPAT version
      * @throws IOException Could not read
      */
     private static long readHeader (final InputStream in, final IMultisampleSource multisampleSource) throws IOException

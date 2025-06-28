@@ -161,8 +161,10 @@ public class KMPCreator extends AbstractCreator
      * @param subFolder The sub-folder to store to
      * @param sampleName The KMP file to create
      * @param group The group
-     * @param kmpIndex The group to store
+     * @param zoneChannels The channel configuration of the zone
+     * @param kmpIndex The index to use for the KMP
      * @param createdKMPNames The index of the KMP file
+     * @return The increased KMP index to use for the next one
      * @throws IOException Could not store the file
      */
     private int storeKMP (final File subFolder, final String sampleName, final IGroup group, final ZoneChannels zoneChannels, final int kmpIndex, final Collection<String> createdKMPNames) throws IOException
