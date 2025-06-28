@@ -130,11 +130,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
     private static final String            SOURCE_TYPE                         = "SourceType";
     private static final String            RENAMING_CSV_FILE                   = "RenamingCSVFile";
     private static final String            RENAMING_SOURCE_ENABLED             = "EnableRenaming";
-    private static final String            COMBINE_FILENAME                    = "CombineFilename";
+    private static final String            PRESET_LIBRARY_FILENAME             = "PresetLibraryFilename";
+    private static final String            PERFORMANCE_LIBRARY_FILENAME        = "PerformanceLibraryFilename";
 
     private static final int               DEST_TYPE_PRESET                    = 0;
-    private static final int               DEST_TYPE_LIBRARY                   = 1;
+    private static final int               DEST_TYPE_PRESET_LIBRARY            = 1;
     private static final int               DEST_TYPE_PERFORMANCE               = 2;
+    private static final int               DEST_TYPE_PERFORMANCE_LIBRARY       = 3;
 
     private final IDetector []             detectors;
     private final ICreator []              creators;
@@ -172,11 +174,13 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
     private final LoggerBoxLogger          logger                              = new LoggerBoxLogger (MAXIMUM_NUMBER_OF_LOG_ENTRIES);
     private final LoggerBox                loggingArea                         = new LoggerBox (this.logger);
     private final TraversalManager         traversalManager                    = new TraversalManager ();
-    private final List<IMultisampleSource> collectedSources                    = new ArrayList<> ();
+    private final List<IMultisampleSource> collectedPresetSources              = new ArrayList<> ();
+    private final List<IPerformanceSource> collectedPerformanceSources         = new ArrayList<> ();
 
     private FileWriter                     logWriter;
     private boolean                        combineWithPreviousMessage          = false;
-    private TextField                      combinationFilename;
+    private TextField                      presetLibraryFilename;
+    private TextField                      performanceLibraryFilename;
     private final Map<Tab, ICreator>       creatorTabs                         = new HashMap<> ();
     private final Map<Tab, IDetector>      sourceTabs                          = new HashMap<> ();
 
@@ -405,20 +409,31 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         final ObservableList<Tab> destinationTypeTabs = this.destinationTypeTabPane.getTabs ();
         this.destinationTypeTabPane.getStyleClass ().add (PADDING_LEFT_BOTTOM_RIGHT);
 
+        // Add the preset destination type
         Tab tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_PRESET"), new BorderPane ());
         tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_PRESET_INFO")));
         tab.setClosable (false);
         destinationTypeTabs.add (tab);
 
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.combinationFilename = panel.createField ("@IDS_COMBINE_LIBRARY_FILENAME");
+        // Add the preset library destination type
+        BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        this.presetLibraryFilename = panel.createField ("@IDS_COMBINE_LIBRARY_FILENAME");
         tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_LIBRARY"), panel.getPane ());
         tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_LIBRARY_INFO")));
         tab.setClosable (false);
         destinationTypeTabs.add (tab);
 
+        // Add the performance destination type
         tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_PERFORMANCE"), new BorderPane ());
         tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_PERFORMANCE_INFO")));
+        tab.setClosable (false);
+        destinationTypeTabs.add (tab);
+
+        // Add the performance library destination type
+        panel = new BoxPanel (Orientation.VERTICAL);
+        this.performanceLibraryFilename = panel.createField ("@IDS_COMBINE_LIBRARY_FILENAME");
+        tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_PERFORMANCE_LIBRARY"), panel.getPane ());
+        tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_PERFORMANCE_LIBRARY_INFO")));
         tab.setClosable (false);
         destinationTypeTabs.add (tab);
 
@@ -437,7 +452,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         for (final Tab destinationTab: this.destinationTabPane.getTabs ())
         {
             final ICreator creator = this.creatorTabs.get (destinationTab);
-            final boolean showTab = selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_LIBRARY && creator.supportsLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances ();
+            final boolean showTab = selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_PRESET_LIBRARY && creator.supportsPresetLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances () || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY && creator.supportsPerformanceLibraries ();
             destinationTab.setDisable (!showTab);
             if (!showTab && destinationTab.isSelected ())
                 needsSelection = true;
@@ -459,7 +474,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         for (final Tab sourceTab: this.sourceTabPane.getTabs ())
         {
             final IDetector detector = this.sourceTabs.get (sourceTab);
-            final boolean showTab = selectedType != DEST_TYPE_PERFORMANCE || detector.supportsPerformances ();
+            final boolean showTab = (selectedType != DEST_TYPE_PERFORMANCE && selectedType != DEST_TYPE_PERFORMANCE_LIBRARY) || detector.supportsPerformances ();
             sourceTab.setDisable (!showTab);
             if (!showTab && sourceTab.isSelected ())
                 needsSelection = true;
@@ -590,7 +605,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         final int destinationType = this.config.getInteger (DESTINATION_TYPE, DEST_TYPE_PRESET);
         this.destinationTypeTabPane.getSelectionModel ().select (destinationType);
 
-        this.combinationFilename.setText (this.config.getProperty (COMBINE_FILENAME, ""));
+        this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
+        this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
     }
 
 
@@ -626,7 +642,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         final int destinationTypeSelectedIndex = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
         this.config.setInteger (DESTINATION_TYPE, destinationTypeSelectedIndex);
 
-        this.config.setProperty (COMBINE_FILENAME, this.combinationFilename.getText ());
+        this.config.setProperty (PRESET_LIBRARY_FILENAME, this.presetLibraryFilename.getText ());
+        this.config.setProperty (PERFORMANCE_LIBRARY_FILENAME, this.performanceLibraryFilename.getText ());
     }
 
 
@@ -653,7 +670,8 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
     private void execute (final boolean onlyAnalyse)
     {
         this.onlyAnalyse = onlyAnalyse;
-        this.collectedSources.clear ();
+        this.collectedPresetSources.clear ();
+        this.collectedPerformanceSources.clear ();
 
         if (!this.verifyFolders () || !this.verifyRenameFile ())
             return;
@@ -673,7 +691,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
 
         Platform.runLater ( () -> {
             this.log ("IDS_NOTIFY_DETECTING");
-            this.detectors[selectedDetector].detect (this.sourceFolder, new MultisampleSourceConsumer (), new PerformanceSourceConsumer (), selectedType == DEST_TYPE_PERFORMANCE);
+            this.detectors[selectedDetector].detect (this.sourceFolder, new MultisampleSourceConsumer (), new PerformanceSourceConsumer (), selectedType == DEST_TYPE_PERFORMANCE || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY);
         });
     }
 
@@ -795,11 +813,10 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         this.applyRenaming (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
 
-        final ICreator creator = this.creators[selectedCreator];
-        if (this.wantsMultipleFiles ())
+        if (this.wantsMultiplePresetFiles ())
         {
             if (!this.onlyAnalyse)
-                this.collectedSources.add (multisampleSource);
+                this.collectedPresetSources.add (multisampleSource);
             this.log ("IDS_NOTIFY_COLLECTING", multisampleSource.getMappingName ());
             return;
         }
@@ -813,7 +830,7 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
         {
             final boolean createStructure = this.createFolderStructure.isSelected ();
             final File multisampleOutputFolder = calcOutputFolder (this.outputFolder, multisampleSource.getSubPath (), createStructure);
-            creator.createPreset (multisampleOutputFolder, multisampleSource);
+            this.creators[selectedCreator].createPreset (multisampleOutputFolder, multisampleSource);
         }
         catch (final NoSuchFileException | FileNotFoundException ex)
         {
@@ -845,16 +862,22 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
             this.applyDefaultEnvelope (multisampleSource);
         }
 
+        if (this.wantsMultiplePerformanceFiles ())
+        {
+            if (!this.onlyAnalyse)
+                this.collectedPerformanceSources.add (performanceSource);
+            this.log ("IDS_NOTIFY_COLLECTING", performanceSource.getName ());
+            return;
+        }
+
         if (this.onlyAnalyse)
             return;
-
-        final ICreator creator = this.creators[selectedCreator];
 
         try
         {
             final boolean createStructure = this.createFolderStructure.isSelected ();
             final File multisampleOutputFolder = calcOutputFolder (this.outputFolder, instrumentSources.get (0).getMultisampleSource ().getSubPath (), createStructure);
-            creator.createPerformance (multisampleOutputFolder, performanceSource);
+            this.creators[selectedCreator].createPerformance (multisampleOutputFolder, performanceSource);
         }
         catch (final NoSuchFileException | FileNotFoundException ex)
         {
@@ -867,9 +890,15 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
     }
 
 
-    private boolean wantsMultipleFiles ()
+    private boolean wantsMultiplePresetFiles ()
     {
-        return this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex () == DEST_TYPE_LIBRARY;
+        return this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex () == DEST_TYPE_PRESET_LIBRARY;
+    }
+
+
+    private boolean wantsMultiplePerformanceFiles ()
+    {
+        return this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex () == DEST_TYPE_PERFORMANCE_LIBRARY;
     }
 
 
@@ -1124,15 +1153,31 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
     @Override
     public void finished (final boolean cancelled)
     {
-        if (!this.collectedSources.isEmpty ())
+        if (!this.collectedPresetSources.isEmpty ())
         {
             final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
             if (selectedCreator >= 0 && !this.onlyAnalyse)
             {
                 try
                 {
-                    final String libraryName = this.getCombinationLibraryName (this.collectedSources);
-                    this.creators[selectedCreator].createLibrary (this.outputFolder, this.collectedSources, libraryName);
+                    final String libraryName = this.getPresetLibraryName (this.collectedPresetSources);
+                    this.creators[selectedCreator].createPresetLibrary (this.outputFolder, this.collectedPresetSources, libraryName);
+                }
+                catch (final IOException | RuntimeException | OutOfMemoryError ex)
+                {
+                    this.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
+                }
+            }
+        }
+        else if (!this.collectedPerformanceSources.isEmpty ())
+        {
+            final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
+            if (selectedCreator >= 0 && !this.onlyAnalyse)
+            {
+                try
+                {
+                    final String libraryName = this.getPerformanceLibraryName (this.collectedPerformanceSources);
+                    this.creators[selectedCreator].createPerformanceLibrary (this.outputFolder, this.collectedPerformanceSources, libraryName);
                 }
                 catch (final IOException | RuntimeException | OutOfMemoryError ex)
                 {
@@ -1246,19 +1291,41 @@ public class ConvertWithMossApp extends AbstractFrame implements INotifier
 
 
     /**
-     * Get the library name to use for combine multi-sample sources.
+     * Get the preset library name to use.
      *
      * @param multisampleSources If no name was entered, the name of the first multi-sample is used,
      *            if any
      * @return The name
      */
-    protected String getCombinationLibraryName (final List<IMultisampleSource> multisampleSources)
+    protected String getPresetLibraryName (final List<IMultisampleSource> multisampleSources)
     {
         String name = multisampleSources.get (0).getName ();
 
-        if (this.wantsMultipleFiles ())
+        if (this.wantsMultiplePresetFiles ())
         {
-            final String combinationName = this.combinationFilename.getText ().trim ();
+            final String combinationName = this.presetLibraryFilename.getText ().trim ();
+            if (!combinationName.isEmpty ())
+                name = combinationName;
+        }
+
+        return AbstractCreator.createSafeFilename (name);
+    }
+
+
+    /**
+     * Get the preset library name to use.
+     *
+     * @param performanceSources If no name was entered, the name of the first performance is used,
+     *            if any
+     * @return The name
+     */
+    protected String getPerformanceLibraryName (final List<IPerformanceSource> performanceSources)
+    {
+        String name = performanceSources.get (0).getName ();
+
+        if (this.wantsMultiplePerformanceFiles ())
+        {
+            final String combinationName = this.performanceLibraryFilename.getText ().trim ();
             if (!combinationName.isEmpty ())
                 name = combinationName;
         }

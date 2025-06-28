@@ -151,7 +151,7 @@ public class YamahaYsfcCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public boolean supportsLibraries ()
+    public boolean supportsPresetLibraries ()
     {
         return true;
     }
@@ -160,6 +160,14 @@ public class YamahaYsfcCreator extends AbstractCreator
     /** {@inheritDoc} */
     @Override
     public boolean supportsPerformances ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformanceLibraries ()
     {
         return true;
     }
@@ -208,13 +216,13 @@ public class YamahaYsfcCreator extends AbstractCreator
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        this.createLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
+        this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
         if (multisampleSources.isEmpty ())
             return;
@@ -248,7 +256,43 @@ public class YamahaYsfcCreator extends AbstractCreator
 
         final YsfcFile ysfcFile = new YsfcFile (true);
         ysfcFile.setVersionStr (format.getMaxVersion ());
-        this.storePerformance (performanceSource, multiFile, format, ysfcFile);
+
+        // Numbering is across all(!) samples
+        final LibraryCounters counters = new LibraryCounters ();
+        addPerformance (performanceSource, format, ysfcFile, 0, counters);
+
+        try (final FileOutputStream out = new FileOutputStream (multiFile))
+        {
+            ysfcFile.write (out);
+        }
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPerformanceLibrary (final File destinationFolder, final List<IPerformanceSource> performanceSources, final String libraryName) throws IOException
+    {
+        if (performanceSources.isEmpty ())
+            return;
+
+        final Integer selectedOutputFormat = Integer.valueOf (this.getSelectedOutputFormat ());
+        final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
+        final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
+        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+
+        final YsfcFile ysfcFile = new YsfcFile (true);
+        ysfcFile.setVersionStr (format.getMaxVersion ());
+
+        // Numbering is across all(!) samples
+        final LibraryCounters counters = new LibraryCounters ();
+        for (int performanceIndex = 0; performanceIndex < performanceSources.size (); performanceIndex++)
+        {
+            final IPerformanceSource performanceSource = performanceSources.get (performanceIndex);
+            addPerformance (performanceSource, format, ysfcFile, performanceIndex, counters);
+        }
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
@@ -288,20 +332,8 @@ public class YamahaYsfcCreator extends AbstractCreator
     }
 
 
-    /**
-     * Create all YSFC chunks for the given performance and store the file.
-     *
-     * @param performanceSource The performance sources to store
-     * @param multiFile The file in which to store
-     * @param format The output format
-     * @param ysfcFile The YSFC file to which to add the performance
-     * @throws IOException Could not store the file
-     */
-    private void storePerformance (final IPerformanceSource performanceSource, final File multiFile, final YamahaYsfcFileFormat format, final YsfcFile ysfcFile) throws IOException
+    private void addPerformance (final IPerformanceSource performanceSource, final YamahaYsfcFileFormat format, final YsfcFile ysfcFile, final int performanceIndex, final LibraryCounters counters) throws IOException
     {
-        // Numbering is across all(!) samples
-        final LibraryCounters counters = new LibraryCounters ();
-
         final List<IInstrumentSource> instrumentSources = this.limitInstruments (performanceSource.getInstruments ());
         final int numInstruments = instrumentSources.size ();
         final byte [] templateData = numInstruments == 1 ? PERFORMANCE_TEMPLATES_1.get (format) : PERFORMANCE_TEMPLATES_8.get (format);
@@ -309,7 +341,6 @@ public class YamahaYsfcCreator extends AbstractCreator
         performance.setName (StringUtils.fixASCII (performanceSource.getName ()));
         final int categoryID = getCategoryIndex (performanceSource.getMetadata ());
 
-        // There is exactly 1 part in the template!
         final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
         final List<YamahaYsfcPerformancePart> filledParts = new ArrayList<> ();
 
@@ -362,7 +393,6 @@ public class YamahaYsfcCreator extends AbstractCreator
         for (int i = 0; i < midiChannelsInUse.size (); i++)
             performance.setSceneKeyboardControl (i, true);
 
-        final int performanceIndex = 0;
         final YamahaYsfcEntry performanceEntry = createPerformanceEntry (categoryID, performance.getName (), CONTENT_NUMBER + performanceIndex, combineArrays (allWaveReferences), parts.size ());
         ysfcFile.fillChunkPair (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE, YamahaYsfcChunk.DATA_LIST_PERFORMANCE, performanceEntry, performance);
     }

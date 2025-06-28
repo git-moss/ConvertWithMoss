@@ -76,7 +76,7 @@ public class Sf2Creator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public boolean supportsLibraries ()
+    public boolean supportsPresetLibraries ()
     {
         return true;
     }
@@ -93,7 +93,7 @@ public class Sf2Creator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
         this.storeMultisample (multisampleSources, destinationFolder, libraryName);
     }

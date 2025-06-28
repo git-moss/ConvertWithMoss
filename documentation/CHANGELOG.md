@@ -2,6 +2,7 @@
 
 ## 13.2.0 (unreleased)
 
+* The destination type has now a new option which allows to create performance libraries. Currently, only the Yamaha YSFC format is supported.
 * Kontakt
   * Fixed: MIDI channels for Kontakt 4.2 multis were not read.
 * Yamaha YSFC

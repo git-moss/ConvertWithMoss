@@ -92,7 +92,7 @@ public class KMPCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public boolean supportsLibraries ()
+    public boolean supportsPresetLibraries ()
     {
         return true;
     }
@@ -102,13 +102,13 @@ public class KMPCreator extends AbstractCreator
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        this.createLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
+        this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
         final List<String> createdKMPNames = new ArrayList<> ();
         int kmpIndex = 0;

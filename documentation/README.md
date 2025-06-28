@@ -49,7 +49,7 @@ For Linux (BSD not tested) there is also a `Makefile` for build and install with
 2. Select the source folder, which contains one or more multisamples in the selected source format. The files can also be located in sub-folders.
 3. Select the destination format on the right.
 4. Select the output folder where you want to create the multisamples. You can add a non-existing folder to the name, which then is automatically created. E.g. you could select the Desktop and then add a folder *Conversions*.
-5. Choose the type of the created output format: either single presets, a library which contains all found source files, or a performance which contains several presets with settings. Only some destination formats support libraries and performances, all others are greyed out.
+5. Choose the type of the created output format: either single presets, a preset library which contains all found source files, a performance which contains several presets with settings or finally a library of performances. Only some destination formats support libraries and performances, all others are greyed out.
 6. Press the *Convert* button to start the conversion. The progress is shown with notification messages in the log area, which you should check for potential errors like defect source files, skipped folder, etc. This log is also written to a file in the output folder.
 
 Alternatively, press *Analyse* to analyse all potential source file but not to write any files. Use this to check for errors before finally running the conversion.

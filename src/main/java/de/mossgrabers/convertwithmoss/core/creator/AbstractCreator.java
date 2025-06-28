@@ -110,9 +110,9 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
     /** {@inheritDoc} */
     @Override
-    public void createLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
-        // Overwrite as well as supportsLibraries() to support
+        // Overwrite as well as supportsPresetLibraries() to support
     }
 
 
@@ -126,7 +126,15 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
 
     /** {@inheritDoc} */
     @Override
-    public boolean supportsLibraries ()
+    public void createPerformanceLibrary (final File destinationFolder, final List<IPerformanceSource> performanceSources, final String libraryName) throws IOException
+    {
+        // Overwrite as well as supportsPerformanceLibraries() to support
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPresetLibraries ()
     {
         return false;
     }
@@ -135,6 +143,14 @@ public abstract class AbstractCreator extends AbstractCoreTask implements ICreat
     /** {@inheritDoc} */
     @Override
     public boolean supportsPerformances ()
+    {
+        return false;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformanceLibraries ()
     {
         return false;
     }
