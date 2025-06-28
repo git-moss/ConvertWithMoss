@@ -189,13 +189,13 @@ public class Kontakt2Type extends AbstractKontaktType
 
         final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
-        final List<MultiInstrument> instruments = multiConfiguration.getMultiInstruments ();
+        final List<MultiInstrument> multiInstruments = multiConfiguration.getMultiInstruments ();
         for (int i = 0; i < sources.size (); i++)
         {
             final Pair<IMultisampleSource, Program> source = sources.get (i);
-            final int midiChannel = i < instruments.size () ? instruments.get (i).getMidiChannel () - 1 : 0;
-            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (source.getKey (), midiChannel);
             final Program program = source.getValue ();
+            final int midiChannel = i < multiInstruments.size () ? multiInstruments.get (program.getSlotIndex ()).getMidiChannel () - 1 : 0;
+            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (source.getKey (), midiChannel);
             instrumentSource.setClipKeyLow (program.getClipKeyLow ());
             instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
             performanceSource.addInstrument (instrumentSource);

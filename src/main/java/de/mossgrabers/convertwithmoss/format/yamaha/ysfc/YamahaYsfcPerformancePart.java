@@ -216,6 +216,17 @@ public class YamahaYsfcPerformancePart
 
 
     /**
+     * Set the part to off/on.
+     * 
+     * @param partSwitch True to enable
+     */
+    public void setPartSwitch (final boolean partSwitch)
+    {
+        this.partSwitch = partSwitch ? 1 : 0;
+    }
+
+
+    /**
      * Read a performance from the input stream.
      *
      * @param in The input stream

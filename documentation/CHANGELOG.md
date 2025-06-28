@@ -2,6 +2,8 @@
 
 ## 13.2.0 (unreleased)
 
+* Kontakt
+  * Fixed: MIDI channels for Kontakt 4.2 multis were not read.
 * Yamaha YSFC
   * New: Can be a destination format for Performances.
   * Fixed: Pitch Key Follow Sensitivity was not read/written.

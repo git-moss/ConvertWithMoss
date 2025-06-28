@@ -301,13 +301,13 @@ public class YamahaYsfcCreator extends AbstractCreator
     {
         // Numbering is across all(!) samples
         final LibraryCounters counters = new LibraryCounters ();
-        final int categoryID = getCategoryIndex (performanceSource.getMetadata ());
 
         final List<IInstrumentSource> instrumentSources = this.limitInstruments (performanceSource.getInstruments ());
         final int numInstruments = instrumentSources.size ();
         final byte [] templateData = numInstruments == 1 ? PERFORMANCE_TEMPLATES_1.get (format) : PERFORMANCE_TEMPLATES_8.get (format);
         final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (templateData, format, YsfcFile.parseVersion (format.getMaxVersion ()));
         performance.setName (StringUtils.fixASCII (performanceSource.getName ()));
+        final int categoryID = getCategoryIndex (performanceSource.getMetadata ());
 
         // There is exactly 1 part in the template!
         final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
@@ -316,6 +316,7 @@ public class YamahaYsfcCreator extends AbstractCreator
         // Create one part in the performance for each multi-sample source
         final List<int []> allWaveReferences = new ArrayList<> ();
         final Set<Integer> midiChannelsInUse = new HashSet<> ();
+        boolean hasOmni = false;
         for (int i = 0; i < numInstruments; i++)
         {
             final IInstrumentSource instrumentSource = instrumentSources.get (i);
@@ -326,19 +327,38 @@ public class YamahaYsfcCreator extends AbstractCreator
             part.setNoteLimitLow (instrumentSource.getClipKeyLow ());
             part.setNoteLimitHigh (instrumentSource.getClipKeyHigh ());
 
-            allWaveReferences.add (this.fillPart (counters, format, ysfcFile, categoryID, multisampleSource, multisampleName, part));
+            final int partCategory = getCategoryIndex (multisampleSource.getMetadata ());
+
+            allWaveReferences.add (this.fillPart (counters, format, ysfcFile, partCategory, multisampleSource, multisampleName, part));
             filledParts.add (part);
 
             final int midiChannel = instrumentSource.getMidiChannel ();
-            if (midiChannel != -1)
+            if (midiChannel == -1)
+                hasOmni = true;
+            else
                 midiChannelsInUse.add (Integer.valueOf (midiChannel));
             for (int scene = 0; scene < 8; scene++)
                 part.setSceneKeyboardControl (scene, midiChannel == scene || midiChannel == -1);
         }
+
+        // Must be always 8!
+        if (numInstruments > 1)
+        {
+            for (int i = numInstruments; i < 8; i++)
+            {
+                final YamahaYsfcPerformancePart part = parts.get (i);
+                part.setPartSwitch (false);
+                filledParts.add (part);
+            }
+        }
+
         parts.clear ();
         parts.addAll (filledParts);
 
-        // Only activate those scenes for which there is a MIDI channel! Ignore OMNI!
+        // If there are only OMNI MIDI channels create at least 1 scene
+        if (midiChannelsInUse.isEmpty () && hasOmni)
+            midiChannelsInUse.add (Integer.valueOf (0));
+        // Only activate those scenes for which there is a MIDI channel!
         for (int i = 0; i < midiChannelsInUse.size (); i++)
             performance.setSceneKeyboardControl (i, true);
 
