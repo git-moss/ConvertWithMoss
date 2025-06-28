@@ -57,7 +57,7 @@ public class MultiConfiguration
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
         for (int i = 0; i < NUM_INSTRUMENTS; i++)
         {
-            final MultiInstrument multiInstrument = new MultiInstrument ();
+            final MultiInstrument multiInstrument = new MultiInstrument (0);
             multiInstrument.parse (in);
             this.multiInstruments.add (multiInstrument);
         }

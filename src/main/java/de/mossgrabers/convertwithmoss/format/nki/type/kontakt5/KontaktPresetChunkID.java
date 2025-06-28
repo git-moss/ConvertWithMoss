@@ -16,65 +16,67 @@ import java.util.Map;
 public class KontaktPresetChunkID
 {
     /** Parameter Modulation. */
-    public static final int                   PAR_MOD_BASE        = 0x00;
+    public static final int                   PAR_MOD_BASE         = 0x00;
     /** A bank of several programs. */
-    public static final int                   BANK                = 0x03;
+    public static final int                   BANK                 = 0x03;
     /** A group of a program. */
-    public static final int                   GROUP               = 0x04;
+    public static final int                   GROUP                = 0x04;
     /** Scripting. */
-    public static final int                   PAR_SCRIPT          = 0x06;
+    public static final int                   PAR_SCRIPT           = 0x06;
     /** Send levels. */
-    public static final int                   PAR_FX_SEND_LEVELS  = 0x17;
+    public static final int                   PAR_FX_SEND_LEVELS   = 0x17;
     /** External modulator like Velocity. */
-    public static final int                   PAR_EXTERNAL_MOD    = 0x0C;
+    public static final int                   PAR_EXTERNAL_MOD     = 0x0C;
     /** External modulator like envelopes. */
-    public static final int                   PAR_INTERNAL_MOD    = 0x0D;
+    public static final int                   PAR_INTERNAL_MOD     = 0x0D;
     /** FX. */
-    public static final int                   PAR_FX              = 0x25;
+    public static final int                   PAR_FX               = 0x25;
     /** A program. */
-    public static final int                   PROGRAM             = 0x28;
+    public static final int                   PROGRAM              = 0x28;
     /** A program container. */
-    public static final int                   PROGRAM_CONTAINER   = 0x29;
+    public static final int                   PROGRAM_CONTAINER    = 0x29;
     /** A zone of a program. */
-    public static final int                   ZONE                = 0x2C;
+    public static final int                   ZONE                 = 0x2C;
     /** The list with all voice groups. */
-    public static final int                   VOICE_GROUPS        = 0x32;
+    public static final int                   VOICE_GROUPS         = 0x32;
     /** The list with all groups. */
-    public static final int                   GROUP_LIST          = 0x33;
+    public static final int                   GROUP_LIST           = 0x33;
     /** The list with all zones. */
-    public static final int                   ZONE_LIST           = 0x34;
+    public static final int                   ZONE_LIST            = 0x34;
     /** A raw object. */
-    public static final int                   PRIVATE_RAW_OBJECT  = 0x35;
+    public static final int                   PRIVATE_RAW_OBJECT   = 0x35;
     /** The list of programs in a slot. */
-    public static final int                   PROGRAM_LIST        = 0x36;
+    public static final int                   PROGRAM_LIST         = 0x36;
     /** The list of slots in a bank. */
-    public static final int                   SLOT_LIST           = 0x37;
+    public static final int                   SLOT_LIST            = 0x37;
     /** StarCritList. */
-    public static final int                   STAR_CRIT_LIST      = 0x38;
+    public static final int                   STAR_CRIT_LIST       = 0x38;
     /** An array with up to 8 Loops. */
-    public static final int                   LOOP_ARRAY          = 0x39;
+    public static final int                   LOOP_ARRAY           = 0x39;
     /** A parameter array with 8 entries. */
-    public static final int                   PARAMETER_ARRAY_8   = 0x3A;
+    public static final int                   PARAMETER_ARRAY_8    = 0x3A;
     /** A parameter array with 16 entries. */
-    public static final int                   PARAMETER_ARRAY_16  = 0x3B;
+    public static final int                   PARAMETER_ARRAY_16   = 0x3B;
     /** A parameter array with 32 entries. */
-    public static final int                   PARAMETER_ARRAY_32  = 0x3C;
+    public static final int                   PARAMETER_ARRAY_32   = 0x3C;
     /** The list with all file names. */
-    public static final int                   FILENAME_LIST       = 0x3D;
+    public static final int                   FILENAME_LIST        = 0x3D;
+    /** The output configuration. */
+    public static final int                   OUTPUT_CONFIGURATION = 0x3E;
     /** Insert bus settings */
-    public static final int                   INSERT_BUS          = 0x45;
+    public static final int                   INSERT_BUS           = 0x45;
     /** Save settings. */
-    public static final int                   SAVE_SETTINGS       = 0x47;
+    public static final int                   SAVE_SETTINGS        = 0x47;
     /** Multi configuration for NKMs. */
-    public static final int                   MULTI_CONFIGURATION = 0x48;
+    public static final int                   MULTI_CONFIGURATION  = 0x48;
     /** ParGroupDynamics. */
-    public static final int                   PAR_GROUP_DYNAMICS  = 0x4A;
+    public static final int                   PAR_GROUP_DYNAMICS   = 0x4A;
     /** The list with all file names (more recent version). */
-    public static final int                   FILENAME_LIST_EX    = 0x4B;
+    public static final int                   FILENAME_LIST_EX     = 0x4B;
     /** Quick browse info. */
-    public static final int                   QUICK_BROWSE_DATA   = 0x4E;
+    public static final int                   QUICK_BROWSE_DATA    = 0x4E;
 
-    private static final Map<Integer, String> CHUNK_NAMES         = new HashMap<> ();
+    private static final Map<Integer, String> CHUNK_NAMES          = new HashMap<> ();
     static
     {
         CHUNK_NAMES.put (Integer.valueOf (PAR_MOD_BASE), "PAR_MOD_BASE");
@@ -105,6 +107,7 @@ public class KontaktPresetChunkID
         CHUNK_NAMES.put (Integer.valueOf (MULTI_CONFIGURATION), "MULTI_CONFIGURATION");
         CHUNK_NAMES.put (Integer.valueOf (PAR_GROUP_DYNAMICS), "PAR_GROUP_DYNAMICS");
         CHUNK_NAMES.put (Integer.valueOf (FILENAME_LIST_EX), "FILENAME_LIST_EX");
+        CHUNK_NAMES.put (Integer.valueOf (OUTPUT_CONFIGURATION), "OUTPUT_CONFIGURATION");
         CHUNK_NAMES.put (Integer.valueOf (QUICK_BROWSE_DATA), "QUICK_BROWSE_DATA");
     }
 

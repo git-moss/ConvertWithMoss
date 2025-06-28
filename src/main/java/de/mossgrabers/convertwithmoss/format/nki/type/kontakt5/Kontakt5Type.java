@@ -109,29 +109,33 @@ public class Kontakt5Type extends AbstractKontaktType
         final List<Pair<IMultisampleSource, Program>> sources = this.readMultisampleSources (niContainerItem, sourceFile, metadataConfig, monolithSamples);
         final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
+        return readMultiConfiguration (niContainerItem, sources, performanceSource) ? performanceSource : null;
+    }
 
+
+    private static boolean readMultiConfiguration (final NIContainerItem niContainerItem, final List<Pair<IMultisampleSource, Program>> sources, final DefaultPerformanceSource performanceSource)
+    {
         final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
-        if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+        if (presetChunk == null || !(presetChunk.getData () instanceof final PresetChunkData presetChunkData))
+            return false;
+
+        final MultiConfiguration multiConfiguration = presetChunkData.getMultiConfiguration ();
+        if (multiConfiguration == null)
+            return false;
+
+        final List<MultiInstrument> multiInstruments = multiConfiguration.getMultiInstruments ();
+        for (int i = 0; i < sources.size (); i++)
         {
-            final MultiConfiguration multiConfiguration = presetChunkData.getMultiConfiguration ();
-            if (multiConfiguration != null)
-            {
-                final List<MultiInstrument> multiInstruments = multiConfiguration.getMultiInstruments ();
-                for (int i = 0; i < sources.size (); i++)
-                {
-                    final Pair<IMultisampleSource, Program> source = sources.get (i);
-                    final IMultisampleSource multisampleSource = source.getKey ();
-                    final Program program = source.getValue ();
-                    final int midiChannel = i < multiInstruments.size () ? multiInstruments.get (program.getSlotIndex ()).getMidiChannel () - 1 : 0;
-                    final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
-                    instrumentSource.setClipKeyLow (program.getClipKeyLow ());
-                    instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
-                    performanceSource.addInstrument (instrumentSource);
-                }
-                return performanceSource;
-            }
+            final Pair<IMultisampleSource, Program> source = sources.get (i);
+            final IMultisampleSource multisampleSource = source.getKey ();
+            final Program program = source.getValue ();
+            final int midiChannel = i < multiInstruments.size () ? multiInstruments.get (program.getSlotIndex ()).getMidiChannel () - 1 : 0;
+            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
+            instrumentSource.setClipKeyLow (program.getClipKeyLow ());
+            instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
+            performanceSource.addInstrument (instrumentSource);
         }
-        return null;
+        return true;
     }
 
 

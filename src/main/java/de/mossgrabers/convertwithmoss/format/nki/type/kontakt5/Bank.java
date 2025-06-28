@@ -18,6 +18,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class Bank
 {
     private String name;
+    private int [] midiChannels;
 
 
     /**
@@ -41,6 +42,17 @@ public class Bank
 
 
     /**
+     * Get the MIDI channels for the bank presets.
+     * 
+     * @return The MIDI channels
+     */
+    public int [] getMidiChannels ()
+    {
+        return this.midiChannels;
+    }
+
+
+    /**
      * Parse the bank data.
      *
      * @param chunk The chunk from which to read the bank data
@@ -51,17 +63,18 @@ public class Bank
         if (chunk.getId () != KontaktPresetChunkID.BANK)
             throw new IOException ("Not a bank chunk!");
 
-        this.readMasterData (chunk.getPublicData ());
+        this.readPublicData (chunk.getPublicData ());
+        this.readPrivateData (chunk.getPrivateData ());
     }
 
 
     /**
-     * Parses the Bank data.
+     * Parses the public Bank data.
      *
      * @param data The data to parse
      * @throws IOException Could not read the data
      */
-    private void readMasterData (final byte [] data) throws IOException
+    private void readPublicData (final byte [] data) throws IOException
     {
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
@@ -73,5 +86,30 @@ public class Bank
         StreamUtils.readUnsigned32 (in, false);
 
         this.name = StreamUtils.readWithLengthUTF16 (in);
+    }
+
+
+    /**
+     * Parses the private Bank data.
+     *
+     * @param data The data to parse
+     * @throws IOException Could not read the data
+     */
+    private void readPrivateData (final byte [] data) throws IOException
+    {
+        final ByteArrayInputStream in = new ByteArrayInputStream (data);
+
+        // Seem to be always 00 00 01
+        in.readNBytes (3);
+
+        if (in.available () == 0)
+            return;
+
+        final int numMidiChannels = (int) StreamUtils.readUnsigned32 (in, false);
+        this.midiChannels = new int [numMidiChannels];
+        for (int i = 0; i < numMidiChannels; i++)
+            this.midiChannels[i] = StreamUtils.readUnsigned16 (in, false);
+
+        // More unknown data, could be mute, solo and sends like in MultiConfiguration
     }
 }

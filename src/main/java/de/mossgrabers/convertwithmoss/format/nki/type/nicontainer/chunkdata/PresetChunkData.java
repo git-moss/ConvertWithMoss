@@ -22,6 +22,7 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.FileList;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.KontaktPresetChunk;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.KontaktPresetChunkID;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.MultiConfiguration;
+import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.MultiInstrument;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.SlotList;
 import de.mossgrabers.tools.ui.Functions;
@@ -182,7 +183,10 @@ public class PresetChunkData extends AbstractChunkData
         if (bankChunkOpt.isEmpty ())
             return;
         final KontaktPresetChunk bankChunk = bankChunkOpt.get ();
-        new Bank ().parse (bankChunk);
+        final Bank bank = new Bank ();
+        bank.parse (bankChunk);
+
+        boolean hasMultiConfiguration = false;
 
         for (final KontaktPresetChunk childChunk: bankChunk.getChildren ())
             switch (childChunk.getId ())
@@ -193,12 +197,20 @@ public class PresetChunkData extends AbstractChunkData
 
                 case KontaktPresetChunkID.MULTI_CONFIGURATION:
                     this.multiConfiguration.parse (childChunk);
+                    hasMultiConfiguration = true;
                     break;
 
                 default:
                     // Not used
                     break;
             }
+
+        if (!hasMultiConfiguration)
+        {
+            final List<MultiInstrument> multiInstruments = this.multiConfiguration.getMultiInstruments ();
+            for (final int midiChannel: bank.getMidiChannels ())
+                multiInstruments.add (new MultiInstrument (midiChannel));
+        }
     }
 
 

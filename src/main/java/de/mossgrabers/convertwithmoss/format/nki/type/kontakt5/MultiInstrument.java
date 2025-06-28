@@ -17,15 +17,17 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class MultiInstrument
 {
-    private int midiChannel = 0;
+    private int midiChannel;
 
 
     /**
      * Constructor.
+     * 
+     * @param midiChannel The MIDI channel
      */
-    public MultiInstrument ()
+    public MultiInstrument (final int midiChannel)
     {
-        // Intentionally empty
+        this.midiChannel = midiChannel;
     }
 
 
