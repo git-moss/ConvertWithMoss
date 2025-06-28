@@ -208,6 +208,7 @@ public class Kontakt2Type extends AbstractKontaktType
      * Get all found multi-sample sources.
      *
      * @param sourceFolder The top source folder for the detection
+     * @param sourceFile The source file
      * @param metadataConfig Default metadata
      * @return All parsed multi-samples
      * @throws IOException Could decode the multi-samples

@@ -128,11 +128,22 @@ public class YsfcFile
 
 
     /**
+     * Get the version as an integer, e.g. 404 for '4.0.4'.
+     *
+     * @return The version value
+     */
+    public int getVersion ()
+    {
+        return this.version;
+    }
+
+
+    /**
      * Get the YSFC version.
      *
      * @return The version
      */
-    public YamahaYsfcFileFormat getVersion ()
+    public YamahaYsfcFileFormat getFileFormat ()
     {
         return YamahaYsfcFileFormat.get (this.version);
     }
@@ -237,6 +248,7 @@ public class YsfcFile
      * Write the catalog block which consists of tuples of chunk IDs and their offset into the file.
      *
      * @param out The input stream to read from
+     * @param orderedChunks The ordered list of chunks
      * @param startOfChunks The start of the chunks in the file counted from the start of the file
      * @throws IOException Could not process the block
      */
@@ -274,6 +286,7 @@ public class YsfcFile
      * Write all chunks.
      *
      * @param out The output stream to read from
+     * @param orderedChunks The ordered list of chunks to write
      * @throws IOException Could not write the chunks
      */
     private static void writeChunks (final OutputStream out, final List<YamahaYsfcChunk> orderedChunks) throws IOException
@@ -289,7 +302,7 @@ public class YsfcFile
      * @param versionStr The version to parse
      * @return The version as an integer
      */
-    private static int parseVersion (final String versionStr)
+    public static int parseVersion (final String versionStr)
     {
         try
         {

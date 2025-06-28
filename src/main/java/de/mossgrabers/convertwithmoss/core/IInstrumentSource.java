@@ -46,6 +46,22 @@ public interface IInstrumentSource extends ISource
 
 
     /**
+     * Set the lower note which should limit the key-range (this note should still sound).
+     * 
+     * @param clipKeyLow The note [0..127]
+     */
+    void setClipKeyLow (int clipKeyLow);
+
+
+    /**
+     * Set the upper note which should limit the key-range (this note should still sound).
+     * 
+     * @param clipKeyHigh The note [0..127]
+     */
+    void setClipKeyHigh (int clipKeyHigh);
+
+
+    /**
      * Clip all samples (or remove them fully) if there are outside of the lower and upper key.
      */
     void clipKeyRange ();

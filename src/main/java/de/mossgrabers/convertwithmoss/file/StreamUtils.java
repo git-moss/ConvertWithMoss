@@ -815,10 +815,17 @@ public class StreamUtils
     public static String readWith4ByteLengthAscii (final InputStream in) throws IOException
     {
         final int blockLength = (int) StreamUtils.readUnsigned32 (in, false);
-        final byte [] blockData = in.readNBytes (blockLength);
-        if (blockData.length != blockLength)
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_COULD_NOT_READ_STRING", Integer.toString (blockLength), Integer.toString (blockData.length)));
-        return new String (blockData);
+        try
+        {
+            final byte [] blockData = in.readNBytes (blockLength);
+            if (blockData.length != blockLength)
+                throw new IOException (Functions.getMessage ("IDS_NOTIFY_COULD_NOT_READ_STRING", Integer.toString (blockLength), Integer.toString (blockData.length)));
+            return new String (blockData);
+        }
+        catch (final IllegalArgumentException ex)
+        {
+            throw new IOException (ex);
+        }
     }
 
 
