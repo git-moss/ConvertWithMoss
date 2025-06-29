@@ -78,6 +78,7 @@ import de.mossgrabers.tools.ui.Functions;
 public abstract class AbstractNKIMetadataFileHandler
 {
     protected static final String                TEMPLATE_FOLDER     = "de/mossgrabers/convertwithmoss/templates/nki/";
+    protected static final String                XML_HEADER          = "<?xml version=\"1.0\"?>\n";
 
     private static final String                  NULL_ENTRY          = "(null)";
     private static final Pattern                 FILTER_TYPE_PATTERN = Pattern.compile ("^(lp|hp|bp)(\\d+)pole$");
@@ -233,30 +234,62 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Creates a metadata description file.
+     * Creates a metadata description file for a bank of up to 64 programs.
+     *
+     * @param safeSampleFolderNames The folders where the samples are placed. Must be of the same
+     *            size as multisampleSources!
+     * @param instrumentSources The instrument sources
+     * @return The XML document as a text
+     * @throws IOException Could not create the text due to missing templates
+     */
+    public String createBank (final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources) throws IOException
+    {
+        int numInstruments = instrumentSources.size ();
+        if (numInstruments > 64)
+        {
+            this.notifier.logError ("IDS_NKI_LIMITED_TO_64", Integer.toString (numInstruments));
+            numInstruments = 64;
+        }
+
+        final String templatePrefix = this.getTemplatePrefix ();
+        final StringBuilder sb = new StringBuilder (XML_HEADER);
+        sb.append (Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Bank_Start.xml"));
+        for (int i = 0; i < numInstruments; i++)
+            sb.append (this.createRawProgram (safeSampleFolderNames.get (i), instrumentSources.get (i), i));
+        sb.append (Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_06_Bank_End.xml"));
+        return sb.toString ();
+    }
+
+
+    /**
+     * Creates a metadata description file for a single program.
      *
      * @param safeSampleFolderName The folder where the samples are placed
      * @param multisampleSource The multi-sample source
+     * @param programIndex The index of the program to use (starts with 0)
      * @return The XML document as a text
+     * @throws IOException Could not create the text due to missing templates
      */
-    public Optional<String> create (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
+    public String createProgram (final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int programIndex) throws IOException
     {
+        return XML_HEADER + this.createRawProgram (safeSampleFolderName, new DefaultInstrumentSource (multisampleSource, -1), programIndex);
+    }
+
+
+    private String createRawProgram (final String safeSampleFolderName, final IInstrumentSource instrumentSource, final int programIndex) throws IOException
+    {
+        final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
+
         final String templatePrefix = this.getTemplatePrefix ();
 
-        try
-        {
-            String text = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Header.xml").replace ("%PROGRAM_NAME%", multisampleSource.getName ());
+        String text = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Program_Start.xml");
+        text = text.replace ("%PROGRAM_INDEX%", Integer.toString (programIndex));
+        text = text.replace ("%PROGRAM_NAME%", multisampleSource.getName ());
+        text = text.replace ("%PROGRAM_MIDI_CHANNEL%", Integer.toString (instrumentSource.getMidiChannel () + 1));
 
-            // Add all groups
-            final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyGroups (false));
-            text += result + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_06_Footer.xml");
-            return Optional.of (text);
-        }
-        catch (final IOException ex)
-        {
-            this.notifier.logError (ex);
-            return Optional.empty ();
-        }
+        // Add all groups
+        final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyGroups (false));
+        return text + result + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_06_Program_End.xml");
     }
 
 

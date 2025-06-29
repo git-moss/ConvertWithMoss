@@ -3,8 +3,15 @@
 ## 13.2.0 (unreleased)
 
 * The destination type has now a new option which allows to create performance libraries. Currently, only the Yamaha YSFC format is supported.
+* 1010music
+  * New: Can be a source format for performances.
+  * New: Accept sample cells which are set to granular as well as a source.
+  * Fixed: Filter cutoff frequency was not read correctly.
 * Kontakt
+  * New: Can be a destination format for destination types library and performance.
   * Fixed: MIDI channels for Kontakt 4.2 multis were not read.
+* Korgmultisample
+  * Fixed: Potential crash when source file has no creation date set.
 * Yamaha YSFC
   * New: Can be a destination format for Performances.
   * Fixed: Pitch Key Follow Sensitivity was not read/written.

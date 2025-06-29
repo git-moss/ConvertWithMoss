@@ -5,13 +5,18 @@
 package de.mossgrabers.convertwithmoss.format.nki;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktFormat;
@@ -105,24 +110,130 @@ public class NkiCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
+    public boolean supportsPresetLibraries ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        if (multisampleSource.getNonEmptyGroups (false).isEmpty ())
+        {
+            this.notifier.logError ("IDS_ERR_NO_GROUPS_IN_SOURCE");
+            return;
+        }
+
         final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt5Type (this.notifier);
 
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "nki");
+        final String multisampleName = createSafeFilename (multisampleSource.getName ());
+        final File multiFile = this.createUniqueFilename (destinationFolder, multisampleName, "nki");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         // First, store all samples
-        final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
+        final String safeSampleFolderName = multisampleName + FOLDER_POSTFIX;
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
-        final List<File> writeSamples = this.writeSamples (sampleFolder, multisampleSource);
+        final List<File> sampleFiles = this.writeSamples (sampleFolder, multisampleSource);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            kontaktType.writeNKI (out, safeSampleFolderName, multisampleSource, calculateSampleSize (writeSamples));
+            kontaktType.writeNKI (out, safeSampleFolderName, multisampleSource, calculateSampleSize (sampleFiles));
+        }
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    {
+        if (multisampleSources.isEmpty ())
+            return;
+
+        final List<IInstrumentSource> instrumentSources = new ArrayList<> ();
+        for (final IMultisampleSource multisampleSource: multisampleSources)
+        {
+            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
+            instrumentSource.setName (multisampleSource.getName ());
+            instrumentSources.add (instrumentSource);
+        }
+
+        final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
+        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt5Type (this.notifier);
+
+        this.createNKM (destinationFolder, instrumentSources, libraryName, kontaktType);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
+    {
+        final List<IInstrumentSource> instruments = performanceSource.getInstruments ();
+        if (instruments.isEmpty ())
+            return;
+
+        final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
+        final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
+        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt5Type (this.notifier);
+        this.createNKM (destinationFolder, performanceSource.getInstruments (), libraryName, kontaktType);
+    }
+
+
+    private void createNKM (final File destinationFolder, final List<IInstrumentSource> instrumentSources, final String libraryName, final IKontaktFormat kontaktType) throws IOException, FileNotFoundException
+    {
+        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "nkm");
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+
+        final List<IInstrumentSource> safeInstrumentSources = new ArrayList<> (instrumentSources.size ());
+        for (final IInstrumentSource instrumentSource: instrumentSources)
+        {
+            if (instrumentSource.getMultisampleSource ().getNonEmptyGroups (false).isEmpty ())
+            {
+                this.notifier.logError ("IDS_ERR_NO_GROUPS_IN_INST_SOURCE_SKIPPED", instrumentSource.getName ());
+                continue;
+            }
+            safeInstrumentSources.add (instrumentSource);
+
+            final int numInstruments = safeInstrumentSources.size ();
+            if (numInstruments == 64)
+            {
+                this.notifier.logError ("IDS_NKI_LIMITED_TO_64", Integer.toString (numInstruments));
+                break;
+            }
+        }
+
+        final List<File> sampleFiles = new ArrayList<> ();
+        final List<String> sampleFilePaths = new ArrayList<> ();
+        for (final IInstrumentSource instrumentSource: safeInstrumentSources)
+        {
+            final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
+
+            // First, store all samples
+            final String multisampleName = createSafeFilename (multisampleSource.getName ());
+            final String safeSampleFolderName = multisampleName + FOLDER_POSTFIX;
+            sampleFilePaths.add (safeSampleFolderName);
+            final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
+            safeCreateDirectory (sampleFolder);
+            sampleFiles.addAll (this.writeSamples (sampleFolder, multisampleSource));
+        }
+
+        try (final FileOutputStream out = new FileOutputStream (multiFile))
+        {
+            kontaktType.writeNKM (out, sampleFilePaths, safeInstrumentSources, calculateSampleSize (sampleFiles));
         }
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");

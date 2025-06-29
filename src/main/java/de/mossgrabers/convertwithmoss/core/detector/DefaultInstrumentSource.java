@@ -10,6 +10,7 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 
 
@@ -37,6 +38,14 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     {
         this.multisampleSource = multisampleSource;
         this.midiChannel = midiChannel;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public IMetadata getMetadata ()
+    {
+        return this.multisampleSource.getMetadata ();
     }
 
 

@@ -375,7 +375,8 @@ public class KorgmultisampleCreator extends AbstractCreator
     {
         out.write (KorgmultisampleConstants.ID_TIME);
 
-        final int time = (int) (dateTime.getTime () / 1000);
+        final long millis = dateTime == null ? System.currentTimeMillis () : dateTime.getTime ();
+        final int time = (int) (millis / 1000);
         out.write (toBytesLSB (time, 8));
     }
 

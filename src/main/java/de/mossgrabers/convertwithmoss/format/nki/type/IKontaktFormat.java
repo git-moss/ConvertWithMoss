@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
@@ -36,6 +37,18 @@ public interface IKontaktFormat
 
 
     /**
+     * Write a new NKI file from the given multi-sample source.
+     *
+     * @param out Where to write the data
+     * @param safeSampleFolderName The folder where the samples are placed
+     * @param multisampleSource The source
+     * @param sizeOfSamples The size of all samples
+     * @throws IOException Error writing the file
+     */
+    void writeNKI (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int sizeOfSamples) throws IOException;
+
+
+    /**
      * Read and parse a file which uses this format type from the given random access file.
      *
      * @param sourceFolder The top source folder for the detection
@@ -49,13 +62,14 @@ public interface IKontaktFormat
 
 
     /**
-     * Write a new NKI file from the given multi-sample source.
+     * Write a new NKM file from the given instrument sources (up to 64).
      *
      * @param out Where to write the data
-     * @param safeSampleFolderName The folder where the samples are placed
-     * @param multisampleSource The source
+     * @param safeSampleFolderNames The folders where the samples are placed. Must be of the same
+     *            size as multisampleSources!
+     * @param instrumentSources The instrument sources
      * @param sizeOfSamples The size of all samples
      * @throws IOException Error writing the file
      */
-    void writeNKI (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int sizeOfSamples) throws IOException;
+    void writeNKM (OutputStream out, List<String> safeSampleFolderNames, List<IInstrumentSource> instrumentSources, int sizeOfSamples) throws IOException;
 }
