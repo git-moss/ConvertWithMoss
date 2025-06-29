@@ -19,11 +19,15 @@ import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -61,13 +65,15 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multi-sample sources
+     * @param multisampleSourceConsumer The consumer that handles the detected multi-sample sources
+     * @param performanceSourceConsumer The consumer that handles the detected performance sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
+     * @param detectPerformances If true, performances are detected otherwise presets
      */
-    protected Music1010DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata)
+    protected Music1010DetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final File sourceFolder, final IMetadataConfig metadata, final boolean detectPerformances)
     {
-        super (notifier, consumer, sourceFolder, metadata, ENDING_PRESET);
+        super (notifier, multisampleSourceConsumer, performanceSourceConsumer, sourceFolder, metadata, detectPerformances, ENDING_PRESET);
     }
 
 
@@ -78,6 +84,24 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         if (this.waitForDelivery () || !"preset.xml".equals (file.getName ()))
             return Collections.emptyList ();
 
+        final IPerformanceSource performanceSource = this.processPresetFile (file);
+        if (performanceSource == null)
+            return Collections.emptyList ();
+
+        final List<IInstrumentSource> instruments = performanceSource.getInstruments ();
+        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+        for (final IInstrumentSource instrument: instruments)
+            multisampleSources.add (instrument.getMultisampleSource ());
+        return multisampleSources;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected IPerformanceSource readPerformanceFile (final File file)
+    {
+        if (this.waitForDelivery () || !"preset.xml".equals (file.getName ()))
+            return null;
         return this.processPresetFile (file);
     }
 
@@ -88,7 +112,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      * @param file The preset file
      * @return The processed multi-sample (singleton list)
      */
-    private List<IMultisampleSource> processPresetFile (final File file)
+    private IPerformanceSource processPresetFile (final File file)
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
@@ -100,7 +124,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         catch (final IOException | SAXException ex)
         {
             this.notifier.logError (ERR_LOAD_FILE, ex);
-            return Collections.emptyList ();
+            return null;
         }
     }
 
@@ -114,20 +138,20 @@ public class Music1010DetectorTask extends AbstractDetectorTask
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String basePath, final Document document)
+    private IPerformanceSource parseMetadataFile (final File multiSampleFile, final String basePath, final Document document)
     {
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE);
-            return Collections.emptyList ();
+            return null;
         }
 
         final Element sessionElement = XMLUtils.getChildElementByName (top, Music1010Tag.SESSION);
         if (sessionElement == null)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE);
-            return Collections.emptyList ();
+            return null;
         }
 
         final List<Element> cellElements = XMLUtils.getChildElementsByName (sessionElement, Music1010Tag.CELL);
@@ -135,24 +159,27 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         final List<Element> sampleElements = new ArrayList<> ();
         final List<Element> assetElements = new ArrayList<> ();
         filterCells (cellElements, multisampleElements, sampleElements, assetElements);
+
+        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
         if (multisampleElements.isEmpty ())
         {
             this.notifier.log ("IDS_1010_MUSIC_NO_MULTISAMPLE");
-            return Collections.singletonList (this.parseAggregatedMultisample (multiSampleFile, sampleElements, basePath));
+            performanceSource.addInstrument (this.parseAggregatedMultisample (multiSampleFile, sampleElements, basePath));
         }
-
-        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-        for (final Element sampleElement: multisampleElements)
+        else
         {
-            final Optional<IMultisampleSource> multisample = this.parseMultisample (multiSampleFile, sampleElement, assetElements, basePath);
-            if (multisample.isPresent ())
-                multisampleSources.add (multisample.get ());
+            for (final Element sampleElement: multisampleElements)
+            {
+                final Optional<IInstrumentSource> instrumentSource = this.parseMultisample (multiSampleFile, sampleElement, assetElements, basePath);
+                if (instrumentSource.isPresent ())
+                    performanceSource.addInstrument (instrumentSource.get ());
+            }
         }
-        return multisampleSources;
+        return performanceSource;
     }
 
 
-    private IMultisampleSource parseAggregatedMultisample (final File multiSampleFile, final List<Element> sampleElements, final String basePath)
+    private IInstrumentSource parseAggregatedMultisample (final File multiSampleFile, final List<Element> sampleElements, final String basePath)
     {
         final File parentFile = multiSampleFile.getParentFile ();
         final String name = parentFile.getName ();
@@ -169,7 +196,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
                 group.addSampleZone (optZone.get ());
         }
 
-        return multisampleSource;
+        return new DefaultInstrumentSource (multisampleSource, -1);
     }
 
 
@@ -262,7 +289,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
     }
 
 
-    private Optional<IMultisampleSource> parseMultisample (final File multiSampleFile, final Element sampleElement, final List<Element> assetElements, final String basePath)
+    private Optional<IInstrumentSource> parseMultisample (final File multiSampleFile, final Element sampleElement, final List<Element> assetElements, final String basePath)
     {
         final String pathPrefix = sampleElement.getAttribute (Music1010Tag.ATTR_FILENAME);
         if (pathPrefix == null || pathPrefix.isBlank ())
@@ -277,8 +304,18 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         multisampleSource.setGroups (Collections.singletonList (group));
 
         final Element paramsElement = XMLUtils.getChildElementByName (sampleElement, Music1010Tag.PARAMS);
+        int midiChannel = -1;
         if (paramsElement != null)
         {
+
+            // MIDI-channel 1 (value == 1) acts as the OMNI mode. value == 0 is Off and will also be
+            // set to MIDI channel 1.
+            midiChannel = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_MIDI_MODE, 1) - 1;
+            if (midiChannel == 0)
+                midiChannel = -1;
+            else if (midiChannel == -1)
+                midiChannel = 0;
+
             final double ampEnvAttack = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0);
             final double ampEnvDecay = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0);
             final double ampEnvSustain = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0;
@@ -296,7 +333,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
 
         readVelocityModulators (sampleElement, group);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
-        return Optional.of (multisampleSource);
+        return Optional.of (new DefaultInstrumentSource (multisampleSource, midiChannel));
     }
 
 
@@ -442,7 +479,8 @@ public class Music1010DetectorTask extends AbstractDetectorTask
             return;
 
         final FilterType type = frequency < 0 ? FilterType.LOW_PASS : FilterType.HIGH_PASS;
-        final double cutoff = MathUtils.denormalizeFrequency (frequency < 0 ? frequency + 1000 : frequency, IFilter.MAX_FREQUENCY);
+        final double normalizedFrequency = Math.clamp ((frequency < 0 ? frequency + 1000 : frequency) / 1000.0, 0.0, 1.0);
+        final double cutoff = MathUtils.denormalizeFrequency (normalizedFrequency, IFilter.MAX_FREQUENCY);
 
         // Note: Resonance is in the range [0..1] but it is not documented what value 1
         // represents. Therefore, we assume 40dB maximum and a linear range (could also
@@ -472,7 +510,7 @@ public class Music1010DetectorTask extends AbstractDetectorTask
                         continue;
                     if ("1".equals (paramsElement.getAttribute (Music1010Tag.ATTR_MULTISAMPLE_MODE)))
                         multisampleElements.add (cellElement);
-                    else if ("0".equals (paramsElement.getAttribute (Music1010Tag.ATTR_CELL_MODE)))
+                    else
                         sampleElements.add (cellElement);
                     break;
                 case "asset":

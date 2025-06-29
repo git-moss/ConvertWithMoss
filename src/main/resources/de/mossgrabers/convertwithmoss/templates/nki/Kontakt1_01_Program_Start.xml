@@ -1,7 +1,6 @@
-<?xml version="1.0"?>
-<NiSS_Program index="0" name="%PROGRAM_NAME%" version="0.50">
+<NiSS_Program index="%PROGRAM_INDEX%" name="%PROGRAM_NAME%" version="0.50">
   <Parameters>
-    <V name="midiChannel" value="0"/>
+    <V name="midiChannel" value="%PROGRAM_MIDI_CHANNEL%"/>
     <V name="output" value="0"/>
     <V name="transpose" value="0"/>
     <V name="masterVolume" value="0.5"/>

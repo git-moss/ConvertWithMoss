@@ -12,8 +12,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
@@ -76,6 +76,21 @@ public class Kontakt1Type extends AbstractKontaktType
 
     /** {@inheritDoc} */
     @Override
+    public void writeNKM (OutputStream out, List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, int sizeOfSamples) throws IOException
+    {
+        if (instrumentSources.isEmpty ())
+            return;
+
+        final String xmlCode = this.handler.createBank (safeSampleFolderNames, instrumentSources);
+
+        final Date creationDateTime = instrumentSources.get (0).getMetadata ().getCreationDateTime ();
+        final long timestamp = creationDateTime == null ? System.currentTimeMillis () : creationDateTime.getTime ();
+        writeNKx (out, Magic.KONTAKT1_MULTI_BE, xmlCode, timestamp, sizeOfSamples);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
         final long timeSeconds = this.readHeader (fileAccess);
@@ -104,8 +119,26 @@ public class Kontakt1Type extends AbstractKontaktType
     @Override
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
+        final String xmlCode = this.handler.createProgram (safeSampleFolderName, multisampleSource, 0);
+        final long timestamp = multisampleSource.getMetadata ().getCreationDateTime ().getTime ();
+        writeNKx (out, Magic.KONTAKT1_INSTRUMENT_BE, xmlCode, timestamp, sizeOfSamples);
+    }
+
+
+    /**
+     * Writes a NKI or NKM file to the given output stream.
+     * 
+     * @param out Where to write to
+     * @param type The type of document to write
+     * @param xmlCode The XML description text
+     * @param timestamp The creation date in milli-seconds
+     * @param sizeOfSamples The size of the samples
+     * @throws IOException Could not write
+     */
+    private static void writeNKx (final OutputStream out, final int type, final String xmlCode, final long timestamp, final int sizeOfSamples) throws IOException
+    {
         // Kontakt 1 NKI File ID
-        StreamUtils.writeUnsigned32 (out, Magic.KONTAKT1_INSTRUMENT_BE, false);
+        StreamUtils.writeUnsigned32 (out, type, false);
 
         // The number of bytes in the file where the ZLIB starts. Always 0x24.
         StreamUtils.writeUnsigned32 (out, 0x24, false);
@@ -124,7 +157,7 @@ public class Kontakt1Type extends AbstractKontaktType
         StreamUtils.writeUnsigned32 (out, 0x01, false);
 
         // Unix-Timestamp UTC+1
-        StreamUtils.writeUnsigned32 (out, (int) (multisampleSource.getMetadata ().getCreationDateTime ().getTime () / 1000), false);
+        StreamUtils.writeUnsigned32 (out, (int) (timestamp / 1000), false);
 
         // The sum of the size of all used samples (only the content data block of a WAV without any
         // headers)
@@ -133,9 +166,7 @@ public class Kontakt1Type extends AbstractKontaktType
         // Unknown. Always 4 empty bytes.
         StreamUtils.writeUnsigned32 (out, 0x00, false);
 
-        final Optional<String> result = this.handler.create (safeSampleFolderName, multisampleSource);
-        if (result.isPresent ())
-            CompressionUtils.writeZLIB (out, result.get (), 6);
+        CompressionUtils.writeZLIB (out, xmlCode, 6);
     }
 
 

@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.xml.sax.SAXException;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
@@ -81,7 +82,7 @@ public class Kontakt2Type extends AbstractKontaktType
     @Override
     public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
-        final Kontakt2Header header = readHeader (fileAccess);
+        final Kontakt2Header header = this.readHeader (fileAccess);
 
         if (header.isFourDotTwo ())
         {
@@ -113,9 +114,17 @@ public class Kontakt2Type extends AbstractKontaktType
 
     /** {@inheritDoc} */
     @Override
+    public void writeNKM (final OutputStream out, final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, final int sizeOfSamples) throws IOException
+    {
+        // Not supported
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public List<IMultisampleSource> readNKI (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
-        final Kontakt2Header header = readHeader (fileAccess);
+        final Kontakt2Header header = this.readHeader (fileAccess);
 
         final boolean isNKM = sourceFile.getName ().toLowerCase ().endsWith (".nkm");
         // NKM header does not contain meaningful metadata
@@ -152,11 +161,9 @@ public class Kontakt2Type extends AbstractKontaktType
     @Override
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
-        final Optional<String> result = this.handler.create (safeSampleFolderName, multisampleSource);
-        if (result.isEmpty ())
-            throw new IOException (Functions.getMessage ("IDS_NKI_NO_XML"));
+        final String result = this.handler.createProgram (safeSampleFolderName, multisampleSource, 0);
         final ByteArrayOutputStream bout = new ByteArrayOutputStream ();
-        CompressionUtils.writeZLIB (bout, result.get (), 1);
+        CompressionUtils.writeZLIB (bout, result, 1);
         final byte [] zlibContent = bout.toByteArray ();
 
         StreamUtils.writeUnsigned32 (out, Magic.KONTAKT2_INSTRUMENT_LE, false);

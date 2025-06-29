@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
@@ -87,6 +88,14 @@ public class Kontakt5Type extends AbstractKontaktType
         {
             return this.readNKM (sourceFolder, sourceFile, inputStream, metadataConfig, null);
         }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void writeNKM (final OutputStream out, final List<String> safeSampleFolderName, final List<IInstrumentSource> instrumentSources, final int sizeOfSamples) throws IOException
+    {
+        // Not supported
     }
 
 

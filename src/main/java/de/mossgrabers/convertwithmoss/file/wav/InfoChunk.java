@@ -174,7 +174,7 @@ public class InfoChunk extends AbstractListChunk
      */
     public void addCreationDate (final Date date)
     {
-        this.addInfoTextField (RiffID.INFO_ICRD, this.standardDateFormat.format (date), 256);
+        this.addInfoTextField (RiffID.INFO_ICRD, this.standardDateFormat.format (date == null ? new Date () : date), 256);
     }
 
 

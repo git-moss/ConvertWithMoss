@@ -124,6 +124,8 @@ public class SfzCreator extends AbstractCreator
         final String multiSampleName = createSafeFilename (multisampleSource.getName ());
         final String safeSampleFolderName = multiSampleName + FOLDER_POSTFIX;
         final String metadata = this.createPresetDocument (safeSampleFolderName, multisampleSource);
+        if (metadata == null)
+            return;
 
         final File multiFile = this.createUniqueFilename (destinationFolder, multiSampleName, "sfz");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
@@ -186,6 +188,11 @@ public class SfzCreator extends AbstractCreator
             addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
 
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
+        if (groups.isEmpty ())
+        {
+            this.notifier.logError ("IDS_ERR_NO_GROUPS_IN_SOURCE");
+            return null;
+        }
 
         final ParameterLevel ampEnvParamLevel = getAmpEnvelopeParamLevel (multisampleSource);
         if (ampEnvParamLevel == ParameterLevel.INSTRUMENT)
