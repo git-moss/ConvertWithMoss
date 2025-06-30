@@ -76,12 +76,8 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     }
 
 
-    /**
-     * Set the MIDI channel.
-     *
-     * @param midiChannel The MIDI channel in the range of [0..15], -1 and all other values are
-     *            considered omni/all
-     */
+    /** {@inheritDoc} */
+    @Override
     public void setMidiChannel (final int midiChannel)
     {
         this.midiChannel = midiChannel;

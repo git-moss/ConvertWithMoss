@@ -24,12 +24,16 @@ import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -61,6 +65,7 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 {
     private static final String                  ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
     private static final String                  ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
+    private static final String                  ENDING_TXPERFORMANCE  = ".txperf";
     private static final String                  ENDING_TXPROGRAM      = ".txprog";
 
     private static final Map<String, LoopType>   LOOP_MODES            = new HashMap<> ();
@@ -89,14 +94,16 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multi-sample sources
+     * @param multisampleSourceConsumer The consumer that handles the detected multi-sample sources
+     * @param performanceSourceConsumer The consumer that handles the detected performance sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
+     * @param detectPerformances If true, performances are detected otherwise presets
      * @param levelsOfDirectorySearch Combo box to read the directory search level
      */
-    protected TX16WxDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final ComboBox<Integer> levelsOfDirectorySearch)
+    protected TX16WxDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final File sourceFolder, final IMetadataConfig metadata, final boolean detectPerformances, final ComboBox<Integer> levelsOfDirectorySearch)
     {
-        super (notifier, consumer, sourceFolder, metadata, ENDING_TXPROGRAM);
+        super (notifier, multisampleSourceConsumer, performanceSourceConsumer, sourceFolder, metadata, detectPerformances, detectPerformances ? ENDING_TXPERFORMANCE : ENDING_TXPROGRAM);
 
         this.levelsOfDirectorySearch = levelsOfDirectorySearch;
     }
@@ -104,16 +111,44 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readPresetFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
+    {
+        final IInstrumentSource instrumentSource = readPresetFileAsInstrument (sourceFile);
+        return instrumentSource == null ? Collections.emptyList () : Collections.singletonList (instrumentSource.getMultisampleSource ());
+    }
+
+
+    private IInstrumentSource readPresetFileAsInstrument (final File sourceFile)
+    {
+        if (this.waitForDelivery ())
+            return null;
+
+        try (final FileInputStream in = new FileInputStream (sourceFile))
+        {
+            final String content = StreamUtils.readUTF8 (in);
+            final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
+            return this.parsePresetFile (sourceFile, sourceFile.getParent (), document);
+        }
+        catch (final IOException | SAXException ex)
+        {
+            this.notifier.logError (ERR_LOAD_FILE, ex);
+            return null;
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
 
-        try (final FileInputStream in = new FileInputStream (file))
+        try (final FileInputStream in = new FileInputStream (sourceFile))
         {
             final String content = StreamUtils.readUTF8 (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseMetadataFile (file, file.getParent (), document);
+            return this.parsePerformanceFile (sourceFile, sourceFile.getParent (), document);
         }
         catch (final IOException | SAXException ex)
         {
@@ -124,21 +159,77 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
 
     /**
-     * Load and parse the metadata description file.
+     * Load and parse the performance metadata description file.
      *
-     * @param multiSampleFile The preset or library file
+     * @param sourceFile The performance file
      * @param basePath The parent folder, in case of a library the relative folder in the ZIP
      *            directory structure
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String basePath, final Document document)
+    private List<IPerformanceSource> parsePerformanceFile (final File sourceFile, final String basePath, final Document document)
+    {
+        final Element topElement = document.getDocumentElement ();
+        if (!TX16WxTag.PERFORMANCE.equals (topElement.getNodeName ()))
+        {
+            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            return Collections.emptyList ();
+        }
+
+        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
+
+        File previousFolder = null;
+        final File parentFile = new File (basePath);
+        for (final Element slotElement: XMLUtils.getChildElementsByName (topElement, TX16WxTag.SLOT))
+        {
+            final String programPath = slotElement.getAttribute (TX16WxTag.PROGRAM);
+            if (programPath == null || programPath.isBlank ())
+            {
+                this.notifier.logError (ERR_BAD_METADATA_FILE);
+                continue;
+            }
+
+            final int height = this.levelsOfDirectorySearch.getSelectionModel ().getSelectedItem ().intValue ();
+            final File programFile = findFile (this.notifier, parentFile, previousFolder, programPath, height, "program");
+            if (!programFile.exists ())
+            {
+                this.notifier.logError ("IDS_NOTIFY_ERR_PROGRAM_DOES_NOT_EXIST", programFile.getAbsolutePath ());
+                continue;
+            }
+            previousFolder = programFile.getParentFile ();
+
+            final IInstrumentSource instrumentSource = this.readPresetFileAsInstrument (programFile);
+            if (instrumentSource == null)
+                continue;
+
+            final int midiChannel = XMLUtils.getIntegerAttribute (slotElement, TX16WxTag.MIDI_CHANNEL, 0) - 1;
+            instrumentSource.setMidiChannel (midiChannel);
+            // Don't use the name from the XML since it might only be something like "CH01"
+            instrumentSource.setName (FileUtils.getNameWithoutType (programFile));
+            performanceSource.addInstrument (instrumentSource);
+        }
+
+        return performanceSource.getInstruments ().isEmpty () ? Collections.emptyList () : Collections.singletonList (performanceSource);
+    }
+
+
+    /**
+     * Load and parse the preset metadata description file.
+     *
+     * @param sourceFile The preset file
+     * @param basePath The parent folder, in case of a library the relative folder in the ZIP
+     *            directory structure
+     * @param document The XML document to parse
+     * @return The parsed multi-sample source
+     */
+    private IInstrumentSource parsePresetFile (final File sourceFile, final String basePath, final Document document)
     {
         final Element topElement = document.getDocumentElement ();
         if (!TX16WxTag.PROGRAM.equals (topElement.getNodeName ()))
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE);
-            return Collections.emptyList ();
+            return null;
         }
 
         final Map<String, ISampleZone> sampleMap = this.parseSamples (topElement, basePath);
@@ -147,11 +238,11 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
 
         String name = topElement.getAttribute (TX16WxTag.NAME);
         if (name == null || name.isBlank ())
-            name = FileUtils.getNameWithoutType (multiSampleFile);
+            name = FileUtils.getNameWithoutType (sourceFile);
         final String n = this.metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
 
         final String category = topElement.getAttribute (TX16WxTag.PROGRAM_ICON);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, category);
@@ -162,7 +253,16 @@ public class TX16WxDetectorTask extends AbstractDetectorTask
         if (filter.isPresent ())
             multisampleSource.setGlobalFilter (filter.get ());
 
-        return Collections.singletonList (multisampleSource);
+        final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, -1);
+
+        final Element boundsElement = XMLUtils.getChildElementByName (topElement, TX16WxTag.BOUNDS);
+        if (boundsElement != null)
+        {
+            instrumentSource.setClipKeyLow (getNoteAttribute (boundsElement, TX16WxTag.LO_NOTE, TX16WxTag.LO_NOTE_ALT));
+            instrumentSource.setClipKeyHigh (getNoteAttribute (boundsElement, TX16WxTag.HI_NOTE, TX16WxTag.HI_NOTE_ALT));
+        }
+
+        return instrumentSource;
     }
 
 

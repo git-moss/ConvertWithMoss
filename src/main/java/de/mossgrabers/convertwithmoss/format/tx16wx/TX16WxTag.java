@@ -13,8 +13,15 @@ public class TX16WxTag
 {
     /** The name attribute. */
     public static final String NAME                   = "tx:name";
+    /** The MIDI channel attribute. */
+    public static final String MIDI_CHANNEL           = "tx:channel";
 
-    /** The root tag. */
+    /** The performance root tag. */
+    public static final String PERFORMANCE            = "tx:performance";
+    /** A program slot in a performance. */
+    public static final String SLOT                   = "tx:slot";
+
+    /** The program root tag. */
     public static final String PROGRAM                = "tx:program";
     /** The quality attribute. */
     public static final String PROGRAM_QUALITY        = "tx:quality";

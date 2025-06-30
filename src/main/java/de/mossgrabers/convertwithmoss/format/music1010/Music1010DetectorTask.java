@@ -98,11 +98,12 @@ public class Music1010DetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected IPerformanceSource readPerformanceFile (final File file)
+    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
     {
-        if (this.waitForDelivery () || !"preset.xml".equals (file.getName ()))
+        if (this.waitForDelivery () || !"preset.xml".equals (sourceFile.getName ()))
             return null;
-        return this.processPresetFile (file);
+        final IPerformanceSource processPresetFile = this.processPresetFile (sourceFile);
+        return processPresetFile == null ? Collections.emptyList () : Collections.singletonList (processPresetFile);
     }
 
 
@@ -132,13 +133,13 @@ public class Music1010DetectorTask extends AbstractDetectorTask
     /**
      * Load and parse the metadata description file.
      *
-     * @param multiSampleFile The preset or library file
+     * @param sourceFile The preset or library file
      * @param basePath The parent folder, in case of a library the relative folder in the ZIP
      *            directory structure
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private IPerformanceSource parseMetadataFile (final File multiSampleFile, final String basePath, final Document document)
+    private IPerformanceSource parseMetadataFile (final File sourceFile, final String basePath, final Document document)
     {
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
@@ -161,16 +162,18 @@ public class Music1010DetectorTask extends AbstractDetectorTask
         filterCells (cellElements, multisampleElements, sampleElements, assetElements);
 
         final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        // Use the parent folders name since all presets are called preset.xml
+        performanceSource.setName (FileUtils.getNameWithoutType (sourceFile.getParentFile ()));
         if (multisampleElements.isEmpty ())
         {
             this.notifier.log ("IDS_1010_MUSIC_NO_MULTISAMPLE");
-            performanceSource.addInstrument (this.parseAggregatedMultisample (multiSampleFile, sampleElements, basePath));
+            performanceSource.addInstrument (this.parseAggregatedMultisample (sourceFile, sampleElements, basePath));
         }
         else
         {
             for (final Element sampleElement: multisampleElements)
             {
-                final Optional<IInstrumentSource> instrumentSource = this.parseMultisample (multiSampleFile, sampleElement, assetElements, basePath);
+                final Optional<IInstrumentSource> instrumentSource = this.parseMultisample (sourceFile, sampleElement, assetElements, basePath);
                 if (instrumentSource.isPresent ())
                     performanceSource.addInstrument (instrumentSource.get ());
             }

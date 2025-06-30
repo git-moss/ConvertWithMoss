@@ -18,11 +18,14 @@ import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -65,64 +68,67 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     private static final Map<Integer, Integer>    FILTER_POLE_MAP = new HashMap<> ();
     static
     {
-        FILTER_TYPE_MAP.put (Integer.valueOf (0), FilterType.LOW_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (1), FilterType.LOW_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (2), FilterType.LOW_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (3), FilterType.LOW_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (4), FilterType.LOW_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (5), FilterType.LOW_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (6), FilterType.HIGH_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (7), FilterType.HIGH_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (8), FilterType.BAND_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (9), FilterType.BAND_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (10), FilterType.BAND_REJECTION);
-        FILTER_TYPE_MAP.put (Integer.valueOf (11), FilterType.BAND_REJECTION);
-        FILTER_TYPE_MAP.put (Integer.valueOf (12), FilterType.LOW_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (13), FilterType.HIGH_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (14), FilterType.BAND_PASS);
-        FILTER_TYPE_MAP.put (Integer.valueOf (15), FilterType.BAND_REJECTION);
-        FILTER_TYPE_MAP.put (Integer.valueOf (16), FilterType.LOW_PASS);
+        FILTER_TYPE_MAP.put (Integer.valueOf (0), FilterType.LOW_PASS); // LPF24D
+        FILTER_TYPE_MAP.put (Integer.valueOf (1), FilterType.LOW_PASS); // LPF24A
+        FILTER_TYPE_MAP.put (Integer.valueOf (2), FilterType.LOW_PASS); // LPF18
+        FILTER_TYPE_MAP.put (Integer.valueOf (3), FilterType.LOW_PASS); // LPF18s
+        FILTER_TYPE_MAP.put (Integer.valueOf (4), FilterType.LOW_PASS); // LPF12+HPF12
+        FILTER_TYPE_MAP.put (Integer.valueOf (5), FilterType.LOW_PASS); // LPF6+HPF12
+        FILTER_TYPE_MAP.put (Integer.valueOf (6), FilterType.HIGH_PASS); // HPF24D
+        FILTER_TYPE_MAP.put (Integer.valueOf (7), FilterType.HIGH_PASS); // HPF12 == 7
+        // TODO check values
+        FILTER_TYPE_MAP.put (Integer.valueOf (8), FilterType.BAND_PASS); // BPF12D
+        FILTER_TYPE_MAP.put (Integer.valueOf (9), FilterType.BAND_PASS); // BPFw
+        FILTER_TYPE_MAP.put (Integer.valueOf (10), FilterType.BAND_PASS); // BPF6 == 11
+        FILTER_TYPE_MAP.put (Integer.valueOf (11), FilterType.BAND_REJECTION); // BEF12,
+        FILTER_TYPE_MAP.put (Integer.valueOf (12), FilterType.BAND_REJECTION); // BEF6
+        FILTER_TYPE_MAP.put (Integer.valueOf (13), FilterType.LOW_PASS); // DualLPF == 14
+        FILTER_TYPE_MAP.put (Integer.valueOf (14), FilterType.HIGH_PASS); // DualHPF == 15
+        FILTER_TYPE_MAP.put (Integer.valueOf (15), FilterType.BAND_PASS); // DualBPF == 16
+        FILTER_TYPE_MAP.put (Integer.valueOf (16), FilterType.BAND_REJECTION); // DualBEF
+        FILTER_TYPE_MAP.put (Integer.valueOf (17), FilterType.LOW_PASS); // LPF12+BPF6
 
-        FILTER_POLE_MAP.put (Integer.valueOf (0), Integer.valueOf (4));
-        FILTER_POLE_MAP.put (Integer.valueOf (1), Integer.valueOf (4));
-        FILTER_POLE_MAP.put (Integer.valueOf (2), Integer.valueOf (3));
-        FILTER_POLE_MAP.put (Integer.valueOf (3), Integer.valueOf (3));
-        FILTER_POLE_MAP.put (Integer.valueOf (4), Integer.valueOf (2));
-        FILTER_POLE_MAP.put (Integer.valueOf (5), Integer.valueOf (2));
-        FILTER_POLE_MAP.put (Integer.valueOf (6), Integer.valueOf (4));
-        FILTER_POLE_MAP.put (Integer.valueOf (7), Integer.valueOf (2));
-        FILTER_POLE_MAP.put (Integer.valueOf (8), Integer.valueOf (2));
-        FILTER_POLE_MAP.put (Integer.valueOf (9), Integer.valueOf (1));
-        FILTER_POLE_MAP.put (Integer.valueOf (10), Integer.valueOf (2));
-        FILTER_POLE_MAP.put (Integer.valueOf (11), Integer.valueOf (1));
-        FILTER_POLE_MAP.put (Integer.valueOf (12), Integer.valueOf (4));
-        FILTER_POLE_MAP.put (Integer.valueOf (13), Integer.valueOf (4));
-        FILTER_POLE_MAP.put (Integer.valueOf (14), Integer.valueOf (4));
-        FILTER_POLE_MAP.put (Integer.valueOf (15), Integer.valueOf (4));
-        FILTER_POLE_MAP.put (Integer.valueOf (16), Integer.valueOf (2));
+        FILTER_POLE_MAP.put (Integer.valueOf (0), Integer.valueOf (4)); // LPF24D
+        FILTER_POLE_MAP.put (Integer.valueOf (1), Integer.valueOf (4)); // LPF24A
+        FILTER_POLE_MAP.put (Integer.valueOf (2), Integer.valueOf (3)); // LPF18
+        FILTER_POLE_MAP.put (Integer.valueOf (3), Integer.valueOf (3)); // LPF18s
+        FILTER_POLE_MAP.put (Integer.valueOf (4), Integer.valueOf (2)); // LPF12+HPF12
+        FILTER_POLE_MAP.put (Integer.valueOf (5), Integer.valueOf (1)); // LPF6+HPF12
+        FILTER_POLE_MAP.put (Integer.valueOf (6), Integer.valueOf (4)); // HPF24D
+        FILTER_POLE_MAP.put (Integer.valueOf (7), Integer.valueOf (2)); // HPF12
+        FILTER_POLE_MAP.put (Integer.valueOf (8), Integer.valueOf (2)); // BPF12D
+        FILTER_POLE_MAP.put (Integer.valueOf (9), Integer.valueOf (1)); // BPFw
+        FILTER_POLE_MAP.put (Integer.valueOf (10), Integer.valueOf (1)); // BPF6
+        FILTER_POLE_MAP.put (Integer.valueOf (11), Integer.valueOf (2)); // BEF12,
+        FILTER_POLE_MAP.put (Integer.valueOf (12), Integer.valueOf (1)); // BEF6
+        FILTER_POLE_MAP.put (Integer.valueOf (13), Integer.valueOf (4)); // DualLPF
+        FILTER_POLE_MAP.put (Integer.valueOf (14), Integer.valueOf (4)); // DualHPF
+        FILTER_POLE_MAP.put (Integer.valueOf (15), Integer.valueOf (4)); // DualBPF
+        FILTER_POLE_MAP.put (Integer.valueOf (16), Integer.valueOf (4)); // DualBEF
+        FILTER_POLE_MAP.put (Integer.valueOf (17), Integer.valueOf (2)); // LPF12+BPF6
     }
 
     // A = All, U = User, L = Library
     private static final String []                 ENDINGS                        =
     {
-        ".x0a",                                                                                                                                                                                                                                                                                                                           // Motif
-                                                                                                                                                                                                                                                                                                                                          // XS
+        ".x0a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // Motif
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // XS
         ".x0w",
-        ".x3a",                                                                                                                                                                                                                                                                                                                           // Motif
-                                                                                                                                                                                                                                                                                                                                          // XF
+        ".x3a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // Motif
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // XF
         ".x3w",
-        ".x6a",                                                                                                                                                                                                                                                                                                                           // MOXF
+        ".x6a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // MOXF
         ".x6w",
-        ".x7u",                                                                                                                                                                                                                                                                                                                           // Montage
+        ".x7u",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // Montage
         ".x7l",
         ".x7a",
-        ".x8u",                                                                                                                                                                                                                                                                                                                           // MODX
-                                                                                                                                                                                                                                                                                                                                          // /
-                                                                                                                                                                                                                                                                                                                                          // MODX+
+        ".x8u",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // MODX
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // /
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // MODX+
         ".x8l",
         ".x8a",
-        ".y2l",                                                                                                                                                                                                                                                                                                                           // Montage
-                                                                                                                                                                                                                                                                                                                                          // M
+        ".y2l",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // Montage
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // M
         ".y2u"
     };
     private static final int                       SAMPLE_RESOLUTION              = 16;
@@ -136,15 +142,17 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
      * Constructor.
      *
      * @param notifier The notifier
-     * @param consumer The consumer that handles the detected multi-sample sources
+     * @param multisampleSourceConsumer The consumer that handles the detected multi-sample sources
+     * @param performanceSourceConsumer The consumer that handles the detected performance sources
      * @param sourceFolder The top source folder for the detection
      * @param metadata Additional metadata configuration parameters
+     * @param detectPerformances If true, performances are detected otherwise presets
      * @param isSourceTypePerformance Create multi-samples from performances if true otherwise only
      *            from waveforms
      */
-    protected YamahaYsfcDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> consumer, final File sourceFolder, final IMetadataConfig metadata, final boolean isSourceTypePerformance)
+    protected YamahaYsfcDetectorTask (final INotifier notifier, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final File sourceFolder, final IMetadataConfig metadata, final boolean detectPerformances, final boolean isSourceTypePerformance)
     {
-        super (notifier, consumer, sourceFolder, metadata, ENDINGS);
+        super (notifier, multisampleSourceConsumer, performanceSourceConsumer, sourceFolder, metadata, detectPerformances, ENDINGS);
 
         this.isSourceTypePerformance = isSourceTypePerformance;
     }
@@ -191,8 +199,147 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
+    {
+        if (this.waitForDelivery ())
+            return Collections.emptyList ();
+
+        try
+        {
+            final YsfcFile ysfcFile = new YsfcFile (sourceFile);
+            final YamahaYsfcFileFormat format = ysfcFile.getFileFormat ();
+            this.notifier.log ("IDS_YSFC_FOUND_TYPE", format.getTitle (), ysfcFile.getVersionStr ());
+
+            final List<IMultisampleSource> waveforms = this.createMultisamplesFromWaveforms (ysfcFile);
+            if (!waveforms.isEmpty ())
+            {
+                final Map<String, YamahaYsfcChunk> chunks = ysfcFile.getChunks ();
+                final YamahaYsfcChunk epfmChunk = chunks.get (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE);
+                final YamahaYsfcChunk dpfmChunk = chunks.get (YamahaYsfcChunk.DATA_LIST_PERFORMANCE);
+                final boolean hasNoPerformanceData = epfmChunk == null || dpfmChunk == null || epfmChunk.getEntryListChunks ().isEmpty ();
+                // If there are no Performances, create directly from key-groups
+                if (hasNoPerformanceData || !SUPPORTED_PERFORMANCE_VERSIONS.contains (format) || !this.isSourceTypePerformance)
+                {
+                    if (hasNoPerformanceData)
+                        this.notifier.log ("IDS_YSFC_NO_PERFORMANCES");
+                    if (!SUPPORTED_PERFORMANCE_VERSIONS.contains (format))
+                        this.notifier.log ("IDS_YSFC_PERFORMANCES_NOT_SUPPORTED", format.getTitle ());
+                    return Collections.emptyList ();
+                }
+
+                return this.createPerformancesFromPerformances (waveforms, epfmChunk, dpfmChunk, sourceFile.getName (), format, ysfcFile.getVersion ());
+            }
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+        }
+        return Collections.emptyList ();
+    }
+
+
     /**
-     * Create multi-samples from the performance chunk data.
+     * Creates one performance source for each YSFC performance.
+     *
+     * @param waveforms The already read waveform data, each waveform is a IMultisampleSource
+     * @param epfmChunk The performance entry chunk
+     * @param dpfmChunk The performance data chunk
+     * @param filename The name of the library file
+     * @param format The version of the format
+     * @param version The specific version of the format
+     * @return The multi-sample(s)
+     * @throws IOException Could not read the multi-sample
+     */
+    private List<IPerformanceSource> createPerformancesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final String filename, final YamahaYsfcFileFormat format, final int version) throws IOException
+    {
+        // Waveforms list is not empty and all of them contain metadata which was detected from the
+        // library filename
+        final IMultisampleSource globalMultisample = waveforms.get (0);
+        final IMetadata globalMetadata = globalMultisample.getMetadata ();
+        final File globalSourceFile = globalMultisample.getSourceFile ();
+        final String [] globalSubPath = globalMultisample.getSubPath ();
+
+        final List<IPerformanceSource> performanceSources = new ArrayList<> ();
+        final List<byte []> dpfmListChunks = dpfmChunk.getDataArrays ();
+        for (int i = 0; i < dpfmListChunks.size (); i++)
+        {
+            final byte [] performanceData = dpfmListChunks.get (i);
+
+            final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), format, version);
+            final String performanceName = performance.getName ();
+            this.notifier.log ("IDS_YSFC_ANALYZING_PERFORMANCE", performanceName);
+
+            final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+            performanceSource.setName (performanceName);
+
+            final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
+            for (int p = 0; p < parts.size (); p++)
+            {
+                final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (globalSourceFile, globalSubPath, performanceName, filename + " : " + performanceName);
+
+                fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
+
+                final YamahaYsfcPerformancePart part = parts.get (p);
+                final IGroup group = new DefaultGroup ();
+                group.setName (part.getName ());
+                final int commonXaMode = part.getCommonXaMode ();
+                if (commonXaMode == 1)
+                    group.setTrigger (TriggerType.LEGATO);
+                else if (commonXaMode == 2)
+                    group.setTrigger (TriggerType.RELEASE);
+
+                // Convert all active elements
+                final List<YamahaYsfcPartElement> elements = part.getElements ();
+                for (int e = 0; e < elements.size (); e++)
+                {
+                    final YamahaYsfcPartElement element = elements.get (e);
+
+                    final IMultisampleSource waveform = this.checkElement (element, waveforms, e + 1);
+                    if (waveform == null)
+                        continue;
+                    final List<IGroup> waveGroups = waveform.getGroups ();
+                    if (waveGroups.isEmpty ())
+                        return null;
+
+                    for (final ISampleZone waveformSampleZone: waveGroups.get (0).getSampleZones ())
+                    {
+                        // Clone all sample zones since they could be referenced multiple times
+                        final ISampleZone sampleZone = new DefaultSampleZone (waveformSampleZone);
+                        sampleZone.setSampleData (waveformSampleZone.getSampleData ());
+
+                        // Check if the waveformSampleZone is in the key/velocity range
+                        // Ignore if fully outside or clip the ranges it if necessary
+                        if (limitKeyrangeAndVelocity (sampleZone, element))
+                        {
+                            fillParameterValues (sampleZone, element);
+                            sampleZone.setBendDown ((part.getPitchBendRangeLower () - 64) * 100);
+                            sampleZone.setBendUp ((part.getPitchBendRangeUpper () - 64) * 100);
+                            group.addSampleZone (sampleZone);
+                        }
+                    }
+                }
+
+                if (!group.getSampleZones ().isEmpty ())
+                {
+                    multisampleSource.setGroups (Collections.singletonList (group));
+                    final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, -1);
+                    instrumentSource.setName (multisampleSource.getName ());
+                    instrumentSource.setClipKeyLow (part.getNoteLimitLow ());
+                    instrumentSource.setClipKeyHigh (part.getNoteLimitHigh ());
+                    performanceSource.addInstrument (instrumentSource);
+                    performanceSources.add (performanceSource);
+                }
+            }
+        }
+
+        return performanceSources;
+    }
+
+
+    /**
+     * Creates one multi-sample source for each YSFC performance.
      *
      * @param waveforms The already read waveform data, each waveform is a IMultisampleSource
      * @param epfmChunk The performance entry chunk
@@ -222,10 +369,14 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
             final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (globalMultisample.getSourceFile (), globalMultisample.getSubPath (), performanceName, filename + " : " + performanceName);
             fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
 
+            System.out.println (performanceName);
+
             final List<IGroup> groups = new ArrayList<> ();
             final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
             for (int p = 0; p < parts.size (); p++)
             {
+                System.out.println ("Part " + p);
+
                 final YamahaYsfcPerformancePart part = parts.get (p);
                 final IGroup group = new DefaultGroup ();
                 group.setName (part.getName ());
@@ -613,6 +764,8 @@ public class YamahaYsfcDetectorTask extends AbstractDetectorTask
         }
 
         final Integer filterTypeID = Integer.valueOf (element.getFilterType ());
+        // TODO
+        System.out.println (filterTypeID);
         final FilterType filterType = FILTER_TYPE_MAP.get (filterTypeID);
         if (filterType == null)
             return;

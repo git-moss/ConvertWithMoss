@@ -30,6 +30,15 @@ public interface IInstrumentSource extends ISource
 
 
     /**
+     * Set the MIDI channel of the instrument.
+     *
+     * @param midiChannel The MIDI channel in the range of [0..15], -1 and all other values are
+     *            considered OMNI/all
+     */
+    void setMidiChannel (int midiChannel);
+
+
+    /**
      * The lower note which should limit the key-range (this note should still sound).
      * 
      * @return The note [0..127]

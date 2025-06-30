@@ -85,7 +85,7 @@ public class NkiDetectorTask extends AbstractDetectorTask
 
     /** {@inheritDoc} */
     @Override
-    protected IPerformanceSource readPerformanceFile (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return null;
@@ -95,8 +95,11 @@ public class NkiDetectorTask extends AbstractDetectorTask
             final IKontaktFormat format = this.detectFormat (fileAccess);
             final IPerformanceSource result = format.readNKM (this.sourceFolder, sourceFile, fileAccess, this.metadataConfig);
             if (result == null || result.getInstruments ().isEmpty ())
+            {
                 this.notifier.logError ("IDS_NKI_COULD_NOT_DETECT_GROUPS");
-            return result;
+                return Collections.emptyList ();
+            }
+            return Collections.singletonList (result);
         }
         catch (final IOException ex)
         {
