@@ -8,12 +8,14 @@
   * New: Accept sample cells which are set to granular as well as a source.
   * Fixed: Filter cutoff frequency was not read correctly.
 * Kontakt
-  * New: Can be a destination format for destination types library and performance.
+  * New: Can be a source format for destination types library and performance.
   * Fixed: MIDI channels for Kontakt 4.2 multis were not read.
 * Korgmultisample
   * Fixed: Potential crash when source file has no creation date set.
+* TX16Wx
+  * New: Can be a source format for performances.
 * Yamaha YSFC
-  * New: Can be a destination format for Performances.
+  * New: Can be a source and destination format for Performances.
   * Fixed: Pitch Key Follow Sensitivity was not read/written.
 
 ## 13.1.0

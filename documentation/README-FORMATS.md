@@ -6,7 +6,7 @@ The following settings are available in several source and destination formats a
 
 ### Sample File Search
 
-* Go this number of directories upwards to start sample file search: If a referenced sample cannot be found, this option configures how many folders upwards the search should be started. 0 means to start from the current directory where the source file is located and search downwards in the sub-folders as well.
+* Go this number of directories upwards to start file search: If a referenced sample (or other required file types of the format) cannot be found, this option configures how many folders upwards the search should be started. 0 means to start from the current directory where the source file is located and search downwards in the sub-folders as well.
 
 ### Automatic Metadata detection
 

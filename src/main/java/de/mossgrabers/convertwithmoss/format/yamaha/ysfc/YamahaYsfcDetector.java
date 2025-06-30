@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadataPane;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -46,9 +47,25 @@ public class YamahaYsfcDetector extends AbstractDetectorWithMetadataPane<YamahaY
 
     /** {@inheritDoc} */
     @Override
-    public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
+    public boolean supportsPerformances ()
     {
-        this.startDetection (new YamahaYsfcDetectorTask (this.notifier, consumer, folder, this.metadataPane, this.isSourceTypePerformance ()));
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void detect (final File folder, final Consumer<IMultisampleSource> multisampleSourceConsumer)
+    {
+        this.detect (folder, multisampleSourceConsumer, null, false);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void detect (final File folder, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final boolean detectPerformances)
+    {
+        this.startDetection (new YamahaYsfcDetectorTask (this.notifier, multisampleSourceConsumer, performanceSourceConsumer, folder, this.metadataPane, detectPerformances, this.isSourceTypePerformance ()));
     }
 
 

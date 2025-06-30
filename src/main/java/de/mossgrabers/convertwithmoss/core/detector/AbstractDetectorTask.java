@@ -175,12 +175,15 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
     {
         try
         {
-            final IPerformanceSource performance = this.readPerformanceFile (file);
-            if ((performance == null) || this.waitForDelivery ())
+            final List<IPerformanceSource> performances = this.readPerformanceFiles (file);
+            if (performances.isEmpty () || this.waitForDelivery ())
                 return;
 
-            this.updateCreationDateTime (performance.getMetadata (), file);
-            this.performanceSourceConsumer.accept (performance);
+            for (IPerformanceSource performance: performances)
+            {
+                this.updateCreationDateTime (performance.getMetadata (), file);
+                this.performanceSourceConsumer.accept (performance);
+            }
         }
         catch (final RuntimeException ex)
         {
@@ -203,9 +206,9 @@ public abstract class AbstractDetectorTask extends Task<Boolean>
      * this detector.
      *
      * @param sourceFile The file to process
-     * @return The parsed multi-sample information
+     * @return The parsed performance(s)
      */
-    protected IPerformanceSource readPerformanceFile (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
     {
         throw new RuntimeException (this.getClass ().getName () + " does not support Performance files.");
     }
