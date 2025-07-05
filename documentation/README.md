@@ -71,11 +71,12 @@ Open a console window. As soon as you add attributes after the application it wi
 
 First display all of the available attributes by typing:
 
-<pre>./ConvertWithMoss -h</pre>
+```./ConvertWithMoss -h```
 
 The following output is displayed:
 
-<pre>Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY] [-r=RENAME]
+```
+Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY] [-r=RENAME]
                        -s=SOURCE [-t=TYPE] [-p[=KEY=VALUE...]]... SOURCE_FOLDER
                        DESTINATION_FOLDER
       SOURCE_FOLDER        The source folder to process.
@@ -93,35 +94,38 @@ The following output is displayed:
   -s, --source=SOURCE      The source format.
   -t, --type=TYPE          Set to either 'preset' (the default if absent) or
                              'performance' (without the quotes).
-  -V, --version            Print version information and exit.</pre>
+  -V, --version            Print version information and exit.
+```
 
 The parameters should be easy to understand since they are identical to what you can do with the user interface.
 Here is an example for a conversion from Kontakt NKI files to 1010music format:
 
-<pre>./ConvertWithMoss -s nki -d 1010music D:\MySampler\Kontakt C:\ConversionOutput</pre>
+```./ConvertWithMoss -s nki -d 1010music D:\MySampler\Kontakt C:\ConversionOutput```
 
 To get a list of the available detectors simply set a non-existing one like this (same for the creators):
 
-<pre>./ConvertWithMoss -s whatever -d 1010music D:\MySampler\Kontakt C:\ConversionOutput</pre>
+```./ConvertWithMoss -s whatever -d 1010music D:\MySampler\Kontakt C:\ConversionOutput```
 
 All configuration settings for the detector and the creator are available as well. These settings are can be applied with the -p attribute and then adding a list of key/value pairs. To get a list of the available settings for the selected detector and creator simply add an illegel one like this:
 
-<pre>./ConvertWithMoss -s nki -d 1010music -pKey=Value D:\MySampler\Kontakt C:\ConversionOutput</pre>
+```./ConvertWithMoss -s nki -d 1010music -pKey=Value D:\MySampler\Kontakt C:\ConversionOutput```
 
 You will get the following output:
 
-<pre>Unknown parameter: 'key'.
+```
+Unknown parameter: 'key'.
 Accepted source parameters: [NkiPreferFolderName, NkiDefaultCreator, NkiCreators]
-Accepted destination parameters: [1010musicWriteBroadcastAudioChunk, 1010musicWriteInstrumentChunk, 1010musicWriteSampleChunk, 1010musicRemoveJunkChunk, 1010musicInterpolationQuality, 1010musicResampleTo2448, 1010musicTrimStartToEnd]</pre>
+Accepted destination parameters: [1010musicWriteBroadcastAudioChunk, 1010musicWriteInstrumentChunk, 1010musicWriteSampleChunk, 1010musicRemoveJunkChunk, 1010musicInterpolationQuality, 1010musicResampleTo2448, 1010musicTrimStartToEnd]
+```
 
 The names of the parameters should be easy to match when looking at the ConvertWithMoss user interface. Checkboxes are boolean value which can be set with 0 and 1, for example:
 
-<pre>./ConvertWithMoss -s nki -d 1010music -p1010musicResampleTo2448=1 D:\MySampler\Kontakt C:\ConversionOutput</pre>
+```./ConvertWithMoss -s nki -d 1010music -p1010musicResampleTo2448=1 D:\MySampler\Kontakt C:\ConversionOutput```
 
 Multiple settings are concatenated by using a comma:
 
-<pre>./ConvertWithMoss -s nki -d 1010music -pNkiDefaultCreator="Klaus Meier",1010musicResampleTo2448=1 D:\MySampler\Kontakt C:\ConversionOutput</pre>
+```./ConvertWithMoss -s nki -d 1010music -pNkiDefaultCreator="Klaus Meier",1010musicResampleTo2448=1 D:\MySampler\Kontakt C:\ConversionOutput```
 
 Finally, an example for creating a library of performances:
 
-<pre>./ConvertWithMoss -s nki -d ysfc -l Pads -t performance D:\MySampler\Kontakt C:\ConversionOutput</pre>
+```./ConvertWithMoss -s nki -d ysfc -l Pads -t performance D:\MySampler\Kontakt C:\ConversionOutput```
