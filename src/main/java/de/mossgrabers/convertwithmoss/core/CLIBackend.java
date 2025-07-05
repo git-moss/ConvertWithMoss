@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.core;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -122,7 +123,7 @@ public class CLIBackend implements INotifier
         {
             final String [] detectorCliParameterNames = detector.getSettings ().getCLIParameterNames ();
             final String [] creatorCliParameterNames = creator.getSettings ().getCLIParameterNames ();
-            System.err.println (Functions.getMessage ("IDS_CLI_UNKNOWN_PARAMETER", parameters.keySet ().iterator ().next (), detectorCliParameterNames.toString (), creatorCliParameterNames.toString ()));
+            System.err.println (Functions.getMessage ("IDS_CLI_UNKNOWN_PARAMETER", parameters.keySet ().iterator ().next (), Arrays.toString (detectorCliParameterNames), Arrays.toString (creatorCliParameterNames)));
             return 0;
         }
 
@@ -239,6 +240,9 @@ public class CLIBackend implements INotifier
     @Override
     public void finished (final boolean cancelled)
     {
+        // Creates libraries if requested
+        this.backend.finish (cancelled);
+
         this.hasFinished = true;
     }
 
