@@ -66,7 +66,7 @@ public class CLIBackend implements INotifier
             initStrings ();
 
             final CommandSpec spec = CommandSpec.create ().name ("ConvertWithMoss");
-            spec.mixinStandardHelpOptions (true);
+            spec.mixinStandardHelpOptions (true).version (Functions.getMessage ("TITLE"));
 
             spec.addOption (OptionSpec.builder ("-s", "--source").paramLabel ("SOURCE").type (String.class).description ("The source format.").required (true).build ());
             spec.addOption (OptionSpec.builder ("-d", "--destination").paramLabel ("DESTINATION").type (String.class).description ("The destination format.").required (true).build ());
