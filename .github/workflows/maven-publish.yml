@@ -57,6 +57,10 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 23
+    - name: Check icon file
+      run: |
+        ls -l src/main/resources/de/mossgrabers/convertwithmoss/images/
+        file src/main/resources/de/mossgrabers/convertwithmoss/images/ConvertWithMoss.icns || echo "Icon not found!"        
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
     - name: Publish jpackage result
