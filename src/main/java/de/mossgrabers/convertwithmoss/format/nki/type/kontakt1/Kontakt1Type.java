@@ -17,11 +17,11 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.nki.Magic;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 
 
 /**

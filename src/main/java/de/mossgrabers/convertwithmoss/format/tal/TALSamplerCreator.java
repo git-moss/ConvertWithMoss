@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -27,11 +28,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.XMLUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
 
 
 /**
@@ -40,7 +38,7 @@ import javafx.scene.Node;
  *
  * @author Jürgen Moßgraber
  */
-public class TALSamplerCreator extends AbstractCreator
+public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
     /**
      * Constructor.
@@ -49,35 +47,7 @@ public class TALSamplerCreator extends AbstractCreator
      */
     public TALSamplerCreator (final INotifier notifier)
     {
-        super ("TAL Sampler", notifier);
-
-        this.configureWavChunkUpdates (true, false, false, false);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.addWavChunkOptions (panel);
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.loadWavChunkSettings (config, "TALSampler");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        this.saveWavChunkSettings (config, "TALSampler");
+        super ("TAL Sampler", "TALSampler", notifier, new WavChunkSettingsUI ("TALSampler", true, false, false, false));
     }
 
 

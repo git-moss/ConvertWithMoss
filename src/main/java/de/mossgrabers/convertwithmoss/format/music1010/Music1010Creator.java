@@ -22,7 +22,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -33,15 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.control.TitledSeparator;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
 
 
 /**
@@ -51,19 +43,16 @@ import javafx.scene.control.ToggleGroup;
  *
  * @author Jürgen Moßgraber
  */
-public class Music1010Creator extends AbstractCreator
+public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
 {
-    private static final String                 MUSIC_1010_INTERPOLATION_QUALITY = "Music1010InterpolationQuality";
-    private static final String                 MUSIC_1010_RESAMPLE_TO_24_48     = "Music1010ResampleTo2448";
-    private static final String                 MUSIC_1010_TRIM_START_TO_END     = "Music1010TrimStartToEnd";
-    private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT           = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT       = new DestinationAudioFormat (new int []
     {
         24
     }, 48000, true);
-    private static final DestinationAudioFormat DEFEAULT_AUDIO_FORMAT            = new DestinationAudioFormat ();
+    private static final DestinationAudioFormat DEFEAULT_AUDIO_FORMAT        = new DestinationAudioFormat ();
 
-    private static final Map<String, String>    EMPTY_PARAM_ATTRIBUTES           = new HashMap<> ();
-    private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES     = new HashMap<> ();
+    private static final Map<String, String>    EMPTY_PARAM_ATTRIBUTES       = new HashMap<> ();
+    private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
     static
     {
         EMPTY_PARAM_ATTRIBUTES.put ("gaindb", "0");
@@ -158,11 +147,6 @@ public class Music1010Creator extends AbstractCreator
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("recmonoutbus", "0");
     }
 
-    private ToggleGroup interpolationQualityGroup;
-    private boolean     isInterpolationQualityHigh;
-    private CheckBox    resampleTo2448;
-    private CheckBox    trimStartToEnd;
-
 
     /**
      * Constructor.
@@ -171,59 +155,7 @@ public class Music1010Creator extends AbstractCreator
      */
     public Music1010Creator (final INotifier notifier)
     {
-        super ("1010music", notifier);
-
-        this.configureWavChunkUpdates (true, true, true, true);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
-        panel.createSeparator ("@IDS_1010_MUSIC_INTER_QUALITY");
-
-        this.interpolationQualityGroup = new ToggleGroup ();
-        final RadioButton order1 = panel.createRadioButton ("@IDS_1010_MUSIC_INTERPOLATION_QUALITY_NORMAL");
-        order1.setAccessibleHelp (Functions.getMessage ("IDS_1010_MUSIC_INTER_QUALITY"));
-        order1.setToggleGroup (this.interpolationQualityGroup);
-        final RadioButton order2 = panel.createRadioButton ("@IDS_1010_MUSIC_INTERPOLATION_QUALITY_HIGH");
-        order2.setAccessibleHelp (Functions.getMessage ("IDS_1010_MUSIC_INTER_QUALITY"));
-        order2.setToggleGroup (this.interpolationQualityGroup);
-
-        this.resampleTo2448 = panel.createCheckBox ("@IDS_1010_MUSIC_CONVERT_TO_24_48");
-        this.trimStartToEnd = panel.createCheckBox ("@IDS_1010_MUSIC_TRIM_START_TO_END");
-
-        final TitledSeparator separator = this.addWavChunkOptions (panel);
-        separator.getStyleClass ().add ("titled-separator-pane");
-
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.interpolationQualityGroup.selectToggle (this.interpolationQualityGroup.getToggles ().get (config.getBoolean (MUSIC_1010_INTERPOLATION_QUALITY, false) ? 1 : 0));
-        this.resampleTo2448.setSelected (config.getBoolean (MUSIC_1010_RESAMPLE_TO_24_48, true));
-        this.trimStartToEnd.setSelected (config.getBoolean (MUSIC_1010_TRIM_START_TO_END, true));
-
-        this.loadWavChunkSettings (config, "Music1010");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setBoolean (MUSIC_1010_INTERPOLATION_QUALITY, this.isHighInterpolationQuality ());
-        config.setBoolean (MUSIC_1010_RESAMPLE_TO_24_48, this.resampleTo2448.isSelected ());
-        config.setBoolean (MUSIC_1010_TRIM_START_TO_END, this.trimStartToEnd.isSelected ());
-
-        this.saveWavChunkSettings (config, "Music1010");
+        super ("1010music", "1010music", notifier, new Music1010CreatorUI ("1010music"));
     }
 
 
@@ -247,9 +179,8 @@ public class Music1010Creator extends AbstractCreator
             return;
         }
 
-        final boolean resample = this.resampleTo2448.isSelected ();
-        final boolean trim = this.trimStartToEnd.isSelected ();
-        this.setInterpolationQuality (this.isHighInterpolationQuality ());
+        final boolean resample = this.settingsConfiguration.resampleTo2448 ();
+        final boolean trim = this.settingsConfiguration.trimStartToEnd ();
 
         // Create 1 preset which contains up to 16 multi-samples as well as individual presets for
         // each multi-sample in sub-folders
@@ -303,10 +234,8 @@ public class Music1010Creator extends AbstractCreator
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final boolean resample = this.resampleTo2448.isSelected ();
-        final boolean trim = this.trimStartToEnd.isSelected ();
-
-        this.setInterpolationQuality (this.isHighInterpolationQuality ());
+        final boolean resample = this.settingsConfiguration.resampleTo2448 ();
+        final boolean trim = this.settingsConfiguration.trimStartToEnd ();
 
         final String sampleName = createSafeFilename (multisampleSource.getName ());
         final File presetFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
@@ -510,7 +439,7 @@ public class Music1010Creator extends AbstractCreator
         for (final Map.Entry<String, String> entry: isActive ? MULTISAMPLE_PARAM_ATTRIBUTES.entrySet () : EMPTY_PARAM_ATTRIBUTES.entrySet ())
             paramsElement.setAttribute (entry.getKey (), entry.getValue ());
 
-        paramsElement.setAttribute (Music1010Tag.ATTR_INTERPOLATION_QUALITY, this.isInterpolationQualityHigh ? "1" : "0");
+        paramsElement.setAttribute (Music1010Tag.ATTR_INTERPOLATION_QUALITY, this.settingsConfiguration.isInterpolationQualityHigh () ? "1" : "0");
 
         return cellElement;
     }
@@ -581,28 +510,6 @@ public class Music1010Creator extends AbstractCreator
         // Set to one-shot if there are no loops
         if (zone.getLoops ().isEmpty ())
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 0);
-    }
-
-
-    /**
-     * Set the interpolation quality to high or normal.
-     *
-     * @param isInterpolationQualityHigh True to set the interpolation quality to high
-     */
-    public void setInterpolationQuality (final boolean isInterpolationQualityHigh)
-    {
-        this.isInterpolationQualityHigh = isInterpolationQualityHigh;
-    }
-
-
-    /**
-     * Check if the toggle setting is set to high interpolation quality.
-     *
-     * @return True if high quality
-     */
-    private boolean isHighInterpolationQuality ()
-    {
-        return this.interpolationQualityGroup.getToggles ().get (1).isSelected ();
     }
 
 

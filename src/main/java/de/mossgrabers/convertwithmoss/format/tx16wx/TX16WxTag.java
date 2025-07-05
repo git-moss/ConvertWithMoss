@@ -15,6 +15,10 @@ public class TX16WxTag
     public static final String NAME                   = "tx:name";
     /** The MIDI channel attribute. */
     public static final String MIDI_CHANNEL           = "tx:channel";
+    /** The output attribute. */
+    public static final String OUTPUT                 = "tx:output";
+    /** The value attribute. */
+    public static final String VALUE                  = "tx:value";
 
     /** The performance root tag. */
     public static final String PERFORMANCE            = "tx:performance";
@@ -35,8 +39,6 @@ public class TX16WxTag
     public static final String GROUP                  = "tx:group";
     /** The group play mode attribute. */
     public static final String GROUP_PLAYMODE         = "tx:playmode";
-    /** The group output attribute. */
-    public static final String GROUP_OUTPUT           = "tx:output";
     /** The group delay attribute. */
     public static final String GROUP_DELAY            = "tx:delay";
 

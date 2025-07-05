@@ -4,19 +4,20 @@
 
 package de.mossgrabers.convertwithmoss.core;
 
-import de.mossgrabers.tools.ui.BasicConfig;
-import javafx.scene.Node;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 
 
 /**
- * Base interface for creators and detectors providing some descriptive metadata.
+ * Base interface for creators and detectors.
  *
+ * @param <T> The type of the settings
+ * 
  * @author Jürgen Moßgraber
  */
-public interface ICoreTask
+public interface ICoreTask<T extends ICoreTaskSettings>
 {
     /**
-     * Get the name of the object.
+     * Get the descriptive name of the task.
      *
      * @return The name
      */
@@ -24,39 +25,23 @@ public interface ICoreTask
 
 
     /**
-     * Get the pane with the edit widgets.
+     * Get the prefix to use for the metadata properties tags.
      *
-     * @return The pane
+     * @return The short name
      */
-    Node getEditPane ();
+    String getPrefix ();
 
 
     /**
-     * Save the settings of the task.
+     * Get the interface to the settings.
      *
-     * @param configuration Where to store to
+     * @return The settings
      */
-    void saveSettings (BasicConfig configuration);
+    T getSettings ();
 
 
     /**
-     * Load the settings of the task.
-     *
-     * @param configuration Where to load from
-     */
-    void loadSettings (BasicConfig configuration);
-
-
-    /**
-     * Check if the settings which are required for the execution of the task are correct.
-     *
-     * @return True if correct and the task can be executed
-     */
-    boolean checkSettings ();
-
-
-    /**
-     * Shutdown the task. Execute some necessary cleanup.
+     * Shutdown the task. Execute necessary cleanup.
      */
     void shutdown ();
 

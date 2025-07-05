@@ -32,6 +32,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.ParameterLevel;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -44,18 +45,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.control.TitledSeparator;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Tooltip;
-import javafx.scene.layout.BorderPane;
-import javafx.stage.Window;
 
 
 /**
@@ -65,12 +55,10 @@ import javafx.stage.Window;
  *
  * @author Jürgen Moßgraber
  */
-public class DecentSamplerCreator extends AbstractCreator
+public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreatorUI>
 {
-    private static final List<String> IGNORE_FILES          = Collections.singletonList ("ui.xml");
-    private static final String       LIBRARY_INFO_CONTENT  = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
-    private static final int          NUMBER_OF_DIRECTORIES = 20;
-    private static final String       TEMPLATE_FOLDER       = "de/mossgrabers/convertwithmoss/templates/dspreset/";
+    private static final List<String> IGNORE_FILES         = Collections.singletonList ("ui.xml");
+    private static final String       LIBRARY_INFO_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
 
 
     private class PresetResult
@@ -82,23 +70,11 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private static final String  DS_OUTPUT_CREATE_BUNDLE        = "DsOutputCreateBundle";
-    private static final String  DS_OUTPUT_MAKE_MONOPHONIC      = "DsOutputMakeMonophonic";
-    private static final String  DS_TEMPLATE_FOLDER_PATH        = "DsTemplateFolderPath";
-    private static final String  DS_OUTPUT_ADD_FILTER_TO_GROUPS = "DsAddFilterToGroups";
-    private static final IFilter DEFAULT_LOW_PASS_FILTER        = new DefaultFilter (FilterType.LOW_PASS, 4, 22000.0, 0.0);
+    private static final IFilter DEFAULT_LOW_PASS_FILTER = new DefaultFilter (FilterType.LOW_PASS, 4, 22000.0, 0.0);
     static
     {
         DEFAULT_LOW_PASS_FILTER.getCutoffEnvelopeModulator ().setDepth (1.0);
     }
-
-    private CheckBox               createBundleBox;
-    private CheckBox               makeMonophonicBox;
-    private CheckBox               addFilterToGroups;
-    private final ComboBox<String> templateFolderPathField   = new ComboBox<> ();
-    private Button                 templateFolderPathSelectButton;
-    private final List<String>     templateFolderPathHistory = new ArrayList<> ();
-    private Button                 createTemplatesButton;
 
 
     /**
@@ -108,9 +84,7 @@ public class DecentSamplerCreator extends AbstractCreator
      */
     public DecentSamplerCreator (final INotifier notifier)
     {
-        super ("DecentSampler", notifier);
-
-        this.configureWavChunkUpdates (true, false, false, false);
+        super ("DecentSampler", "DecentSampler", notifier, new DecentSamplerCreatorUI ("DecentSampler"));
     }
 
 
@@ -124,92 +98,12 @@ public class DecentSamplerCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
-        panel.createSeparator ("@IDS_DS_OUTPUT_FORMAT");
-        this.createBundleBox = panel.createCheckBox ("@IDS_DS_CREATE_BUNDLE");
-
-        final TitledSeparator separator = panel.createSeparator ("@IDS_DS_USER_INTERFACE");
-        separator.getStyleClass ().add ("titled-separator-pane");
-
-        this.makeMonophonicBox = panel.createCheckBox ("@IDS_DS_MAKE_MONOPHONIC");
-        this.addFilterToGroups = panel.createCheckBox ("@IDS_DS_ADD_FILTER_TO_GROUPS");
-
-        final BoxPanel templateFolderPathPanel = new BoxPanel (Orientation.VERTICAL, false);
-        final TitledSeparator templateFolderPathTitle = new TitledSeparator (Functions.getText ("@IDS_DS_TEMPLATE_FOLDER"));
-        templateFolderPathTitle.getStyleClass ().add ("titled-separator-pane");
-        templateFolderPathTitle.setLabelFor (this.templateFolderPathField);
-        templateFolderPathPanel.addComponent (templateFolderPathTitle);
-
-        this.templateFolderPathSelectButton = new Button (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH"));
-        this.templateFolderPathSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH_TOOLTIP")));
-        this.templateFolderPathSelectButton.setOnAction (_ -> this.selectTemplateFolderPath (null));
-
-        this.createTemplatesButton = new Button (Functions.getText ("@IDS_DS_CREATE_TEMPLATES"));
-        this.createTemplatesButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_CREATE_TEMPLATES_TOOLTIP")));
-        this.createTemplatesButton.setOnAction (_ -> this.createTemplates ());
-
-        templateFolderPathPanel.addComponent (new BorderPane (this.templateFolderPathField, null, this.templateFolderPathSelectButton, null, null));
-        this.templateFolderPathField.setMaxWidth (Double.MAX_VALUE);
-        panel.addComponent (templateFolderPathPanel);
-        panel.addComponent (this.createTemplatesButton);
-
-        this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.createBundleBox.setSelected (config.getBoolean (DS_OUTPUT_CREATE_BUNDLE, false));
-        this.makeMonophonicBox.setSelected (config.getBoolean (DS_OUTPUT_MAKE_MONOPHONIC, false));
-        this.addFilterToGroups.setSelected (config.getBoolean (DS_OUTPUT_ADD_FILTER_TO_GROUPS, true));
-
-        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
-        {
-            final String templateFolderPath = config.getProperty (DS_TEMPLATE_FOLDER_PATH + i);
-            if (templateFolderPath == null)
-                break;
-            if (!this.templateFolderPathHistory.contains (templateFolderPath))
-                this.templateFolderPathHistory.add (templateFolderPath);
-        }
-        this.templateFolderPathField.getItems ().addAll (this.templateFolderPathHistory);
-        this.templateFolderPathField.setEditable (true);
-        if (!this.templateFolderPathHistory.isEmpty ())
-            this.templateFolderPathField.getEditor ().setText (this.templateFolderPathHistory.get (0));
-
-        this.loadWavChunkSettings (config, "Ds");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setBoolean (DS_OUTPUT_CREATE_BUNDLE, this.createBundleBox.isSelected ());
-        config.setBoolean (DS_OUTPUT_MAKE_MONOPHONIC, this.makeMonophonicBox.isSelected ());
-        config.setBoolean (DS_OUTPUT_ADD_FILTER_TO_GROUPS, this.addFilterToGroups.isSelected ());
-
-        updateHistory (this.templateFolderPathField.getEditor ().getText (), this.templateFolderPathHistory);
-        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
-            config.setProperty (DS_TEMPLATE_FOLDER_PATH + i, this.templateFolderPathHistory.size () > i ? this.templateFolderPathHistory.get (i) : "");
-
-        this.saveWavChunkSettings (config, "Ds");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final List<PresetResult> results = this.create (destinationFolder, Collections.singletonList (multisampleSource), false);
 
         final File resourceDestination;
-        if (this.createBundleBox.isSelected ())
+        if (this.settingsConfiguration.createBundle ())
         {
             // Note: method is called for each multi-source individually!
             final File multiFile = this.createUniqueFilename (destinationFolder, multisampleSource.getName (), "dsbundle");
@@ -242,7 +136,7 @@ public class DecentSamplerCreator extends AbstractCreator
     {
         final List<PresetResult> results = this.create (destinationFolder, multisampleSources, true);
 
-        final boolean isBundle = this.createBundleBox.isSelected ();
+        final boolean isBundle = this.settingsConfiguration.createBundle ();
         final String extension = isBundle ? "dsbundle" : "dslibrary";
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, extension);
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
@@ -434,7 +328,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
     private void makeMonophonic (final Document document, final Element multisampleElement, final Element groupsElement)
     {
-        if (!this.makeMonophonicBox.isSelected ())
+        if (!this.settingsConfiguration.makeMonophonic ())
             return;
         groupsElement.setAttribute ("tags", "monophonic");
         final Element tagsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.TAGS);
@@ -534,7 +428,7 @@ public class DecentSamplerCreator extends AbstractCreator
         final IFilter filter;
         if (globalFilter.isEmpty ())
         {
-            if (!this.addFilterToGroups.isSelected ())
+            if (!this.settingsConfiguration.addFilterToGroups ())
                 return;
             filter = DEFAULT_LOW_PASS_FILTER;
         }
@@ -639,7 +533,7 @@ public class DecentSamplerCreator extends AbstractCreator
         final double sustainAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_SUSTAIN, 1.0);
         final double releaseAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_RELEASE, 0.1);
 
-        String template = this.getTemplateCode ("ui.xml").trim ();
+        String template = this.settingsConfiguration.getTemplateCode ("ui.xml").trim ();
         template = template.replace ("%ENV_ATTACK_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (attackAttribute)));
         template = template.replace ("%ENV_DECAY_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (decayAttribute)));
         template = template.replace ("%ENV_SUSTAIN_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (sustainAttribute)));
@@ -712,25 +606,6 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private static void updateHistory (final String newItem, final List<String> history)
-    {
-        history.remove (newItem);
-        history.add (0, newItem);
-    }
-
-
-    private void selectTemplateFolderPath (final Window parentWindow)
-    {
-        final File currentTemplateFolderPath = this.getTemplateFolderPath ();
-        final BasicConfig config = new BasicConfig ("");
-        if (currentTemplateFolderPath.exists () && currentTemplateFolderPath.isDirectory ())
-            config.setActivePath (currentTemplateFolderPath);
-        final Optional<File> file = Functions.getFolderFromUser (parentWindow, config, "@IDS_DS_SELECT_TEMPLATE_FOLDER_HEADER");
-        if (file.isPresent ())
-            this.templateFolderPathField.getEditor ().setText (file.get ().getAbsolutePath ());
-    }
-
-
     private static org.w3c.dom.Node readXMLSnippet (final Document document, final String template) throws IOException
     {
         final Document templateDocument;
@@ -752,20 +627,6 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private String getTemplateCode (final String filename) throws IOException
-    {
-        final File currentTemplateFolderPath = this.getTemplateFolderPath ();
-        if (currentTemplateFolderPath.exists () && currentTemplateFolderPath.isDirectory ())
-        {
-            final File templateFile = new File (currentTemplateFolderPath, filename);
-            if (templateFile.exists ())
-                return Files.readString (templateFile.toPath (), StandardCharsets.UTF_8);
-        }
-
-        return Functions.textFileFor (TEMPLATE_FOLDER + filename);
-    }
-
-
     private static void trimWhitespace (final org.w3c.dom.Node node)
     {
         if (node.getNodeType () == org.w3c.dom.Node.TEXT_NODE)
@@ -775,48 +636,9 @@ public class DecentSamplerCreator extends AbstractCreator
     }
 
 
-    private void createTemplates ()
-    {
-        final File templateFolderPath = this.getTemplateFolderPath ();
-        if (!templateFolderPath.exists () && !templateFolderPath.mkdirs ())
-        {
-            Functions.message ("@IDS_DS_COULD_NOT_CREATE_TEMPLATE_DIR");
-            return;
-        }
-
-        if (!templateFolderPath.isDirectory ())
-        {
-            Functions.message ("@IDS_DS_TEMPLATE_DIR_IS_FILE");
-            return;
-        }
-
-        try
-        {
-            // Copy the template from the JAR resources to the given template folder
-            final String uiTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ui.xml");
-            final File uiFile = new File (templateFolderPath, "ui.xml");
-            if (!uiFile.exists ())
-                Files.write (uiFile.toPath (), uiTemplate.getBytes ());
-        }
-        catch (final IOException ex)
-        {
-            Functions.message ("@IDS_DS_COULD_NOT_CREATE_TEMPLATES", ex.getMessage ());
-            return;
-        }
-
-        Functions.message ("@IDS_DS_TEMPLATES_CREATED");
-    }
-
-
-    private File getTemplateFolderPath ()
-    {
-        return new File (this.templateFolderPathField.getEditor ().getText ());
-    }
-
-
     private void copyResources (final File resourceDestination) throws IOException
     {
-        final File templateFolderPath = this.getTemplateFolderPath ();
+        final File templateFolderPath = this.settingsConfiguration.getTemplateFolderPath ();
         if (templateFolderPath.exists ())
             copyFolderWithIgnoreList (templateFolderPath, resourceDestination, IGNORE_FILES);
     }
@@ -824,7 +646,7 @@ public class DecentSamplerCreator extends AbstractCreator
 
     private void copyResources (final ZipOutputStream zos, final String basePath) throws IOException
     {
-        final File templateFolderPath = this.getTemplateFolderPath ();
+        final File templateFolderPath = this.settingsConfiguration.getTemplateFolderPath ();
         if (templateFolderPath.exists ())
             zipFolderWithIgnoreList (templateFolderPath, basePath, zos, IGNORE_FILES);
     }

@@ -5,64 +5,38 @@
 package de.mossgrabers.convertwithmoss.format.samplefile;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorWithMetadataPane;
-import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.BorderPane;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
+import de.mossgrabers.convertwithmoss.exception.MultisampleException;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.KeyMapping;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Detector for pure sample files (e.g. AIFF, WAV, ...).
+ * Detects recursively sample files in folders (e.g. AIFF, WAV, ...), which can be the source for a
+ * multi-sample. All sample files in a folder which have the same format are considered to belong to
+ * one multi-sample.
  *
  * @author Jürgen Moßgraber
  */
-public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleFileDetectorTask>
+public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
 {
-    private static final String            SAMPLEFILE_TYPE          = "SamplefileType";
-    private static final String            DETECTION_PATTERN        = "DetectionPattern";
-    private static final String            IS_ASCENDING             = "IsAscending";
-    private static final String            MONO_SPLITS_PATTERN      = "MonoSPlitPattern";
-    private static final String            CROSSFADE_NOTES          = "CrossfadeNotes";
-    private static final String            CROSSFADE_VELOCITIES     = "CrossfadeVelocities";
-    private static final String            POSTFIX                  = "Postfix";
-    private static final String            IGNORE_LOOPS             = "IgnoreLoops";
-
-    private static final SampleFileType [] FILE_TYPES               =
-    {
-        new AiffSampleFileType (),
-        new FlacSampleFileType (),
-        new NcwSampleFileType (),
-        new OggSampleFileType (),
-        new WavSampleFileType ()
-    };
-
-    private TextField                      detectionPatternField;
-    private ToggleGroup                    sortAscendingGroup;
-    private TextField                      monoSplitsField;
-    private TextField                      crossfadeNotesField;
-    private TextField                      crossfadeVelocitiesField;
-    private TextField                      postfixField;
-    private CheckBox                       ignoreLoops;
-    private final CheckBox []              sampleFileTypeCheckBoxes = new CheckBox [FILE_TYPES.length];
-
-
     /**
      * Constructor.
      *
@@ -70,205 +44,200 @@ public class SampleFileDetector extends AbstractDetectorWithMetadataPane<SampleF
      */
     public SampleFileDetector (final INotifier notifier)
     {
-        super ("Sample Files", notifier, "samplefile");
+        super ("Sample Files", "samplefile", notifier, new SampleFileDetectorUI ("samplefile"));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void saveSettings (final BasicConfig config)
+    protected void detect (final File folder)
     {
-        this.metadataPane.saveSettings (config);
+        this.notifier.log ("IDS_NOTIFY_ANALYZING", folder.getAbsolutePath ());
+        if (this.waitForDelivery ())
+            return;
 
-        for (int i = 0; i < FILE_TYPES.length; i++)
-            config.setBoolean (this.prefix + SAMPLEFILE_TYPE + i, this.sampleFileTypeCheckBoxes[i].isSelected ());
+        final List<IMultisampleSource> multisample = this.readPresetFile (folder);
+        if (multisample.isEmpty ())
+            return;
 
-        config.setProperty (this.prefix + DETECTION_PATTERN, this.detectionPatternField.getText ());
-        config.setProperty (this.prefix + IS_ASCENDING, Boolean.toString (this.sortAscendingGroup.getToggles ().get (1).isSelected ()));
-        config.setProperty (this.prefix + MONO_SPLITS_PATTERN, this.monoSplitsField.getText ());
-        config.setProperty (this.prefix + CROSSFADE_NOTES, this.crossfadeNotesField.getText ());
-        config.setProperty (this.prefix + CROSSFADE_VELOCITIES, this.crossfadeVelocitiesField.getText ());
-        config.setProperty (this.prefix + POSTFIX, this.postfixField.getText ());
-        config.setBoolean (this.prefix + IGNORE_LOOPS, this.ignoreLoops.isSelected ());
+        // Check for task cancellation
+        if (!this.isCancelled ())
+            this.multisampleSourceConsumer.accept (multisample.get (0));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void loadSettings (final BasicConfig config)
+    protected List<IMultisampleSource> readPresetFile (final File folder)
     {
-        this.metadataPane.loadSettings (config);
+        final List<IMultisampleSource> sources = new ArrayList<> ();
 
-        for (int i = 0; i < FILE_TYPES.length; i++)
-            this.sampleFileTypeCheckBoxes[i].setSelected (config.getBoolean (this.prefix + SAMPLEFILE_TYPE + i, true));
+        for (final SampleFileType sampleFileType: this.settingsConfiguration.getSampleFileTypes ())
+        {
+            this.fileEndings = sampleFileType.getFileEndings ();
 
-        this.detectionPatternField.setText (config.getProperty (this.prefix + DETECTION_PATTERN, "_ms*_,S_*_"));
-        this.sortAscendingGroup.selectToggle (this.sortAscendingGroup.getToggles ().get (config.getBoolean (this.prefix + IS_ASCENDING, true) ? 1 : 0));
-        this.monoSplitsField.setText (config.getProperty (this.prefix + MONO_SPLITS_PATTERN, "_L"));
-        this.crossfadeNotesField.setText (Integer.toString (config.getInteger (this.prefix + CROSSFADE_NOTES, 0)));
-        this.crossfadeVelocitiesField.setText (Integer.toString (config.getInteger (this.prefix + CROSSFADE_VELOCITIES, 0)));
-        this.postfixField.setText (config.getProperty (this.prefix + POSTFIX, ""));
-        this.ignoreLoops.setSelected (config.getBoolean (this.prefix + IGNORE_LOOPS, false));
-    }
+            final File [] files = this.listFiles (folder, this.fileEndings);
+            if (files.length == 0)
+                continue;
 
+            this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (files.length), sampleFileType.getName ());
 
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
-        final String comma = Functions.getMessage ("IDS_NOTIFY_COMMA");
-
-        ////////////////////////////////////////////////////////////
-        // Sample file types
-
-        panel.createSeparator ("@IDS_FILE_TYPES");
-        for (int i = 0; i < FILE_TYPES.length; i++)
-            this.sampleFileTypeCheckBoxes[i] = panel.createCheckBox (FILE_TYPES[i].getName ());
-
-        ////////////////////////////////////////////////////////////
-        // Groups
-
-        panel.createSeparator ("@IDS_FILE_GROUPS").getStyleClass ().add ("titled-separator-pane");
-
-        // Layer detection pattern
-        this.detectionPatternField = panel.createField ("@IDS_FILE_DETECTION", comma, -1);
-
-        // Order of group numbering
-        final BoxPanel orderPanel = new BoxPanel (Orientation.HORIZONTAL);
-        this.sortAscendingGroup = new ToggleGroup ();
-        final RadioButton order1 = orderPanel.createRadioButton ("@IDS_FILE_GROUPS_DESC");
-        order1.setAccessibleHelp (Functions.getMessage ("IDS_FILE_GROUP_NUMBERING"));
-        order1.setToggleGroup (this.sortAscendingGroup);
-        final RadioButton order2 = orderPanel.createRadioButton ("@IDS_FILE_GROUPS_ASC");
-        order2.setToggleGroup (this.sortAscendingGroup);
-        order2.setAccessibleHelp (Functions.getMessage ("IDS_FILE_GROUP_NUMBERING"));
-        final BorderPane borderPane = new BorderPane ();
-        final Label orderLabel = orderPanel.createLabel ("@IDS_FILE_GROUP_NUMBERING");
-        borderPane.setLeft (orderLabel);
-        BorderPane.setAlignment (orderLabel, Pos.CENTER_LEFT);
-        borderPane.setRight (orderPanel.getPane ());
-        panel.addComponent (borderPane);
-
-        this.monoSplitsField = panel.createField ("@IDS_FILE_MONO_STEREO", comma, -1);
-
-        ////////////////////////////////////////////////////////////
-        // Metadata
-
-        this.metadataPane.addTo (panel);
-        this.metadataPane.getSeparator ().getStyleClass ().add ("titled-separator-pane");
-
-        ////////////////////////////////////////////////////////////
-        // Options
-
-        panel.createSeparator ("@IDS_FILE_OPTIONS").getStyleClass ().add ("titled-separator-pane");
-
-        this.crossfadeNotesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_NOTES");
-        this.crossfadeVelocitiesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_VELOCITIES");
-        this.postfixField = panel.createField ("@IDS_FILE_POSTFIX", comma, -1);
-        this.ignoreLoops = panel.createCheckBox ("@IDS_WAV_IGNORE_LOOPS");
-
-        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
-        scrollPane.fitToWidthProperty ().set (true);
-        scrollPane.fitToHeightProperty ().set (true);
-        return scrollPane;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean validateParameters ()
-    {
-        boolean hasSampleFileTypeSelection = false;
-        for (int i = 0; i < FILE_TYPES.length; i++)
-            if (this.sampleFileTypeCheckBoxes[i].isSelected ())
+            // Analyze all files
+            int outputCount = 0;
+            final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.length);
+            for (final File file: files)
             {
-                hasSampleFileTypeSelection = true;
+                // Check for task cancellation
+                if (this.isCancelled ())
+                    return Collections.emptyList ();
+
+                try
+                {
+                    sampleData.add (createSampleData (file, this.notifier));
+                    this.notifyProgress ();
+                    outputCount++;
+                    if (outputCount % 80 == 0)
+                        this.notifyNewline ();
+                }
+                catch (final IOException ex)
+                {
+                    this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), file.getAbsolutePath (), ex.getMessage ());
+                    return Collections.emptyList ();
+                }
+            }
+
+            this.notifyNewline ();
+
+            sources.addAll (this.createMultisample (sampleFileType, folder, sampleData));
+        }
+
+        return sources;
+    }
+
+
+    /**
+     * Detect metadata, order samples and finally create the multi-sample.
+     *
+     * @param sampleFileType The sample file type
+     * @param folder The folder which contains the sample files
+     * @param sampleData The detected sample files
+     * @return The multi-sample
+     */
+    private List<IMultisampleSource> createMultisample (final SampleFileType sampleFileType, final File folder, final List<IFileBasedSampleData> sampleData)
+    {
+        if (sampleData.isEmpty ())
+            return Collections.emptyList ();
+
+        try
+        {
+            // If there are instrument chunks, use them otherwise create the multi-sample from the
+            // file names
+            final List<IGroup> groups;
+            String name;
+            if (sampleFileType.hasInstrumentData (sampleData))
+            {
+                final IGroup group = new DefaultGroup ("Group");
+                groups = Collections.singletonList (group);
+                final List<String> filenames = new ArrayList<> (sampleData.size ());
+                for (final IFileBasedSampleData fileSampleData: sampleData)
+                {
+                    final DefaultSampleZone sampleZone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (fileSampleData.getFilename ())), fileSampleData);
+                    group.addSampleZone (sampleZone);
+                    sampleFileType.fillInstrumentData (sampleZone, fileSampleData);
+                    filenames.add (new File (fileSampleData.getFilename ()).getName ());
+                }
+                name = KeyMapping.findCommonPrefix (filenames);
+                if (name.isBlank ())
+                    name = folder.getName ();
+            }
+            else
+            {
+                final KeyMapping keyMapping = new KeyMapping (new ArrayList<> (sampleData), this.settingsConfiguration.isAscending (), this.settingsConfiguration.getCrossfadeNotes (), this.settingsConfiguration.getCrossfadeVelocities (), this.settingsConfiguration.getGroupPatterns (), this.settingsConfiguration.getMonoSplitPatterns ());
+                if (this.settingsConfiguration.isPreferFolderName ())
+                {
+                    name = cleanupName (folder.getName (), this.settingsConfiguration.getPostfixTexts ());
+                    if (name.isBlank ())
+                        name = keyMapping.getName ();
+                }
+                else
+                    name = keyMapping.getName ();
+                groups = keyMapping.getSampleMetadata ();
+            }
+
+            if (name.isBlank ())
+            {
+                this.notifier.logError ("IDS_NOTIFY_NO_NAME");
+                name = FileUtils.getNameWithoutType (sampleData.get (0).getFilename ());
+            }
+
+            name = cleanupName (name, this.settingsConfiguration.getPostfixTexts ());
+
+            final String [] parts = this.createParts (folder, name);
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (folder, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, folder));
+            final IMetadata metadata = multisampleSource.getMetadata ();
+            this.createMetadata (metadata, sampleData, parts);
+            this.updateCreationDateTime (metadata, new File (sampleData.get (0).getFilename ()));
+            multisampleSource.setGroups (groups);
+
+            for (final IGroup group: groups)
+                for (final ISampleZone zone: group.getSampleZones ())
+                    zone.getSampleData ().addZoneData (zone, true, true);
+
+            // Remove all loops if requested
+            if (this.settingsConfiguration.isShouldIgnoreLoops ())
+            {
+                for (final IGroup group: groups)
+                    for (final ISampleZone zone: group.getSampleZones ())
+                        zone.getLoops ().clear ();
+            }
+
+            this.notifier.log ("IDS_NOTIFY_DETECTED_GROUPS", Integer.toString (groups.size ()));
+            if (this.waitForDelivery ())
+                return Collections.emptyList ();
+
+            return Collections.singletonList (multisampleSource);
+        }
+        catch (final IOException | MultisampleException | CombinationNotPossibleException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
+        }
+
+        return Collections.emptyList ();
+    }
+
+
+    /**
+     * Tests if the name is not empty and removes configured post-fix texts.
+     *
+     * @param name The name to check
+     * @param postfixTexts The post-fix texts to remove
+     * @return The cleaned up name or null if it is empty
+     */
+    private static String cleanupName (final String name, final String... postfixTexts)
+    {
+        String n = name;
+        for (final String pt: postfixTexts)
+            if (name.endsWith (pt))
+            {
+                n = n.substring (0, n.length () - pt.length ());
                 break;
             }
-        if (!hasSampleFileTypeSelection)
-        {
-            Functions.message ("@IDS_NOTIFY_ERR_NO_TYPE_SELECTED");
-            return false;
-        }
-
-        final String [] groupPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
-        for (final String groupPattern: groupPatterns)
-            if (!groupPattern.contains ("*"))
-            {
-                Functions.message ("@IDS_NOTIFY_ERR_SPLIT_REGEX", groupPattern);
-                this.notifier.updateButtonStates (true);
-                this.detectionPatternField.selectAll ();
-                return false;
-            }
-
-        if (this.getCrossfadeNotes () > 127)
-        {
-            Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_NOTES");
-            this.notifier.updateButtonStates (true);
-            this.crossfadeNotesField.selectAll ();
-            return false;
-        }
-
-        if (this.getCrossfadeVelocities () > 127)
-        {
-            this.notifier.updateButtonStates (true);
-            Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_VELOCITIES");
-            return false;
-        }
-
-        return true;
+        n = n.trim ();
+        if (n.endsWith ("-") || n.endsWith ("_"))
+            n = n.substring (0, n.length () - 1);
+        return n;
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public void detect (final File folder, final Consumer<IMultisampleSource> consumer)
+    private String [] createParts (final File folder, final String name)
     {
-        final List<SampleFileType> sampleFileTypes = new ArrayList<> ();
-        for (int i = 0; i < FILE_TYPES.length; i++)
-            if (this.sampleFileTypeCheckBoxes[i].isSelected ())
-                sampleFileTypes.add (FILE_TYPES[i]);
+        final String [] parts = AudioFileUtils.createPathParts (folder, this.sourceFolder, name);
+        if (parts.length <= 1)
+            return parts;
 
-        final boolean isAscending = this.sortAscendingGroup.getToggles ().get (1).isSelected ();
-        final String [] groupPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
-        final String [] monoSplitPatterns = StringUtils.splitByComma (this.monoSplitsField.getText ());
-        final String [] postfixTexts = StringUtils.splitByComma (this.postfixField.getText ());
-        final boolean shouldIgnoreLoops = this.ignoreLoops.isSelected ();
-        final int crossfadeNotes = this.getCrossfadeNotes ();
-        final int crossfadeVelocities = this.getCrossfadeVelocities ();
-
-        this.startDetection (new SampleFileDetectorTask (this.notifier, consumer, folder, groupPatterns, isAscending, monoSplitPatterns, postfixTexts, crossfadeNotes, crossfadeVelocities, this.metadataPane, sampleFileTypes, shouldIgnoreLoops));
-    }
-
-
-    private int getCrossfadeVelocities ()
-    {
-        int crossfadeVelocities;
-        try
-        {
-            crossfadeVelocities = Integer.parseInt (this.crossfadeVelocitiesField.getText ());
-        }
-        catch (final NumberFormatException ex)
-        {
-            crossfadeVelocities = 0;
-        }
-        return crossfadeVelocities;
-    }
-
-
-    private int getCrossfadeNotes ()
-    {
-        int crossfadeNotes;
-        try
-        {
-            crossfadeNotes = Integer.parseInt (this.crossfadeNotesField.getText ());
-        }
-        catch (final NumberFormatException ex)
-        {
-            crossfadeNotes = 0;
-        }
-        return crossfadeNotes;
+        // Remove the samples folder
+        final List<String> subpaths = new ArrayList<> (Arrays.asList (parts));
+        subpaths.remove (1);
+        return subpaths.toArray (new String [subpaths.size ()]);
     }
 }

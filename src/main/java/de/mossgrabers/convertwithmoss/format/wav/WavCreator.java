@@ -9,11 +9,8 @@ import java.io.IOException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
+import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 
 
 /**
@@ -21,7 +18,7 @@ import javafx.scene.Node;
  *
  * @author Jürgen Moßgraber
  */
-public class WavCreator extends AbstractCreator
+public class WavCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
     /**
      * Constructor.
@@ -30,7 +27,7 @@ public class WavCreator extends AbstractCreator
      */
     public WavCreator (final INotifier notifier)
     {
-        this ("Sample Files (WAV)", notifier);
+        super ("Sample Files (WAV)", "Wav", notifier, new WavChunkSettingsUI ("Wav", true, true, true, true));
     }
 
 
@@ -38,39 +35,13 @@ public class WavCreator extends AbstractCreator
      * Constructor.
      *
      * @param name The name of the creator.
+     * @param prefix The prefix to use
      * @param notifier The notifier
+     * @param settingsConfiguration The configuration of the settings
      */
-    protected WavCreator (final String name, final INotifier notifier)
+    protected WavCreator (final String name, final String prefix, final INotifier notifier, final WavChunkSettingsUI settingsConfiguration)
     {
-        super (name, notifier);
-
-        this.configureWavChunkUpdates (true, true, true, true);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.addWavChunkOptions (panel);
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.loadWavChunkSettings (config, "Wav");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        this.saveWavChunkSettings (config, "Wav");
+        super (name, prefix, notifier, settingsConfiguration);
     }
 
 

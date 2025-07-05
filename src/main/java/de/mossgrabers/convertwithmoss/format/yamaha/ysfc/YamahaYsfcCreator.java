@@ -44,14 +44,7 @@ import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
 
 
 /**
@@ -59,22 +52,19 @@ import javafx.scene.control.ToggleGroup;
  *
  * @author Jürgen Moßgraber
  */
-public class YamahaYsfcCreator extends AbstractCreator
+public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 {
-    private static final String                                 YSFC_OUTPUT_FORMAT_LIBRARY = "YsfcOutputFormatPreset";
-    private static final String                                 YSFC_CREATE_ONLY_WAVEFORMS = "YsfcCreateOnlyWaveforms";
-
-    private static final DestinationAudioFormat                 DESTINATION_AUDIO_FORMAT   = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat                 DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16
     }, -1, false);
 
-    private static final Map<YamahaYsfcFileFormat, byte []>     PERFORMANCE_TEMPLATES_1    = new EnumMap<> (YamahaYsfcFileFormat.class);
-    private static final Map<YamahaYsfcFileFormat, byte []>     PERFORMANCE_TEMPLATES_8    = new EnumMap<> (YamahaYsfcFileFormat.class);
-    private static final Map<Integer, YamahaYsfcFileFormat>     FILE_FORMAT_MAP            = new HashMap<> ();
-    private static final Map<Integer, Boolean>                  LIBRARY_FORMAT_MAP         = new HashMap<> ();
-    private static final Map<FilterType, Map<Integer, Integer>> FILTER_TYPE_MAP            = new EnumMap<> (FilterType.class);
-    private static final Map<FilterType, Integer>               DEFAULT_FILTERS            = new EnumMap<> (FilterType.class);
+    private static final Map<YamahaYsfcFileFormat, byte []>     PERFORMANCE_TEMPLATES_1  = new EnumMap<> (YamahaYsfcFileFormat.class);
+    private static final Map<YamahaYsfcFileFormat, byte []>     PERFORMANCE_TEMPLATES_8  = new EnumMap<> (YamahaYsfcFileFormat.class);
+    private static final Map<Integer, YamahaYsfcFileFormat>     FILE_FORMAT_MAP          = new HashMap<> ();
+    private static final Map<Integer, Boolean>                  LIBRARY_FORMAT_MAP       = new HashMap<> ();
+    private static final Map<FilterType, Map<Integer, Integer>> FILTER_TYPE_MAP          = new EnumMap<> (FilterType.class);
+    private static final Map<FilterType, Integer>               DEFAULT_FILTERS          = new EnumMap<> (FilterType.class);
     static
     {
         FILE_FORMAT_MAP.put (Integer.valueOf (0), YamahaYsfcFileFormat.MONTAGE);
@@ -134,9 +124,6 @@ public class YamahaYsfcCreator extends AbstractCreator
 
     private static final int MAX_INSTRUMENTS = 8;
 
-    private ToggleGroup      outputFormatGroup;
-    private CheckBox         createOnlyWaveforms;
-
 
     /**
      * Constructor.
@@ -145,7 +132,7 @@ public class YamahaYsfcCreator extends AbstractCreator
      */
     public YamahaYsfcCreator (final INotifier notifier)
     {
-        super ("Yamaha YSFC", notifier);
+        super ("Yamaha YSFC", "Ysfc", notifier, new YamahaYsfcCreatorUI ());
     }
 
 
@@ -175,45 +162,6 @@ public class YamahaYsfcCreator extends AbstractCreator
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
-        panel.createSeparator ("@IDS_YSFC_LIBRARY_FORMAT");
-        this.outputFormatGroup = new ToggleGroup ();
-        for (int i = 0; i < 4; i++)
-        {
-            final RadioButton order = panel.createRadioButton ("@IDS_YSFC_OUTPUT_FORMAT_OPTION" + i);
-            order.setAccessibleHelp (Functions.getMessage ("IDS_YSFC_LIBRARY_FORMAT"));
-            order.setToggleGroup (this.outputFormatGroup);
-        }
-
-        this.createOnlyWaveforms = panel.createCheckBox ("@IDS_YSFC_DESTINATION_TYPE_WAVEFORMS");
-
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        Functions.setSelectedToggleIndex (this.outputFormatGroup, config.getInteger (YSFC_OUTPUT_FORMAT_LIBRARY, 1));
-        this.createOnlyWaveforms.setSelected (config.getBoolean (YSFC_CREATE_ONLY_WAVEFORMS, false));
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setInteger (YSFC_OUTPUT_FORMAT_LIBRARY, this.getSelectedOutputFormat ());
-        config.setBoolean (YSFC_CREATE_ONLY_WAVEFORMS, this.createOnlyWaveforms.isSelected ());
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
@@ -227,7 +175,7 @@ public class YamahaYsfcCreator extends AbstractCreator
         if (multisampleSources.isEmpty ())
             return;
 
-        final Integer selectedOutputFormat = Integer.valueOf (this.getSelectedOutputFormat ());
+        final Integer selectedOutputFormat = Integer.valueOf (this.settingsConfiguration.selectedOutputFormat ());
         final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
@@ -247,7 +195,7 @@ public class YamahaYsfcCreator extends AbstractCreator
         if (instruments.isEmpty ())
             return;
 
-        final Integer selectedOutputFormat = Integer.valueOf (this.getSelectedOutputFormat ());
+        final Integer selectedOutputFormat = Integer.valueOf (this.settingsConfiguration.selectedOutputFormat ());
         final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
         final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
@@ -277,7 +225,7 @@ public class YamahaYsfcCreator extends AbstractCreator
         if (performanceSources.isEmpty ())
             return;
 
-        final Integer selectedOutputFormat = Integer.valueOf (this.getSelectedOutputFormat ());
+        final Integer selectedOutputFormat = Integer.valueOf (this.settingsConfiguration.selectedOutputFormat ());
         final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
@@ -313,7 +261,7 @@ public class YamahaYsfcCreator extends AbstractCreator
      */
     private void storeMultisamples (final List<IMultisampleSource> multisampleSources, final File multiFile, final YamahaYsfcFileFormat format) throws IOException
     {
-        final boolean addPerformances = !this.createOnlyWaveforms.isSelected ();
+        final boolean addPerformances = !this.settingsConfiguration.createOnlyWaveforms ();
         if (!addPerformances)
             this.notifier.log ("IDS_YSFC_CREATES_ONLY_WAVEFORMS");
 
@@ -892,13 +840,6 @@ public class YamahaYsfcCreator extends AbstractCreator
             pos += 2;
         }
         return channelData;
-    }
-
-
-    private int getSelectedOutputFormat ()
-    {
-        final int selected = Functions.getSelectedToggleIndex (this.outputFormatGroup);
-        return selected < 0 ? 1 : selected;
     }
 
 

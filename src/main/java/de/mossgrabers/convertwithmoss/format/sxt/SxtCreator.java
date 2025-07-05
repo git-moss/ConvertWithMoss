@@ -15,17 +15,14 @@ import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.iff.IffFile;
 import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
 
 
 /**
@@ -33,7 +30,7 @@ import javafx.scene.Node;
  *
  * @author Jürgen Moßgraber
  */
-public class SxtCreator extends AbstractCreator
+public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
     /**
      * Constructor.
@@ -42,33 +39,7 @@ public class SxtCreator extends AbstractCreator
      */
     public SxtCreator (final INotifier notifier)
     {
-        super ("Reason NN-XT", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.addWavChunkOptions (panel);
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.loadWavChunkSettings (config, "SXT");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        this.saveWavChunkSettings (config, "SXT");
+        super ("Reason NN-XT", "SXT", notifier, new WavChunkSettingsUI ("SXT"));
     }
 
 

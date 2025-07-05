@@ -17,16 +17,13 @@ import java.util.UUID;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
 
 
 /**
@@ -34,7 +31,7 @@ import javafx.scene.Node;
  *
  * @author Jürgen Moßgraber
  */
-public class KorgmultisampleCreator extends AbstractCreator
+public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
     /**
      * Constructor.
@@ -43,33 +40,7 @@ public class KorgmultisampleCreator extends AbstractCreator
      */
     public KorgmultisampleCreator (final INotifier notifier)
     {
-        super ("Korg Wavestate/Modwave", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.addWavChunkOptions (panel);
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.loadWavChunkSettings (config, "KorgMultisample");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        this.saveWavChunkSettings (config, "KorgMultisample");
+        super ("Korg Wavestate/Modwave", "KorgMultisample", notifier, new WavChunkSettingsUI ("KorgMultisample"));
     }
 
 

@@ -21,7 +21,7 @@ import org.w3c.dom.Element;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -31,14 +31,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.XMLUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.control.TitledSeparator;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
 
 
 /**
@@ -48,20 +40,14 @@ import javafx.scene.control.ToggleGroup;
  *
  * @author Jürgen Moßgraber
  */
-public class MPCKeygroupCreator extends AbstractCreator
+public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 {
-    private static final String MPC_LAYER_LIMIT_USE_8 = "MPCLayerLimitUse8";
-
-
     private enum SamplePlay
     {
         ONE_SHOT,
         NOTE_OFF,
         NOTE_ON
     }
-
-
-    private ToggleGroup layerLimitGroup;
 
 
     /**
@@ -71,61 +57,7 @@ public class MPCKeygroupCreator extends AbstractCreator
      */
     public MPCKeygroupCreator (final INotifier notifier)
     {
-        super ("Akai MPC Keygroup", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
-        panel.createSeparator ("@IDS_MPC_LAYER_LIMIT");
-
-        this.layerLimitGroup = new ToggleGroup ();
-        final RadioButton order1 = panel.createRadioButton ("@IDS_MPC_LAYER_LIMIT_4");
-        order1.setAccessibleHelp (Functions.getMessage ("IDS_MPC_LAYER_LIMIT"));
-        order1.setToggleGroup (this.layerLimitGroup);
-        final RadioButton order2 = panel.createRadioButton ("@IDS_MPC_LAYER_LIMIT_8");
-        order2.setAccessibleHelp (Functions.getMessage ("IDS_MPC_LAYER_LIMIT"));
-        order2.setToggleGroup (this.layerLimitGroup);
-
-        final TitledSeparator separator = this.addWavChunkOptions (panel);
-        separator.getStyleClass ().add ("titled-separator-pane");
-
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.layerLimitGroup.selectToggle (this.layerLimitGroup.getToggles ().get (config.getBoolean (MPC_LAYER_LIMIT_USE_8, false) ? 1 : 0));
-
-        this.loadWavChunkSettings (config, "MPC");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setBoolean (MPC_LAYER_LIMIT_USE_8, this.getLayerLimit () == 8);
-
-        this.saveWavChunkSettings (config, "MPC");
-    }
-
-
-    /**
-     * Get the limit for the number of layers in key-groups.
-     *
-     * @return 8 or 4
-     */
-    private int getLayerLimit ()
-    {
-        return this.layerLimitGroup.getToggles ().get (1).isSelected () ? 8 : 4;
+        super ("Akai MPC Keygroup", "MPC", notifier, new MPCKeygroupCreatorUI ("MPC"));
     }
 
 
@@ -195,7 +127,7 @@ public class MPCKeygroupCreator extends AbstractCreator
                 final Optional<Keygroup> keygroupOpt = this.getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger);
                 if (keygroupOpt.isEmpty ())
                 {
-                    this.notifier.logError ("IDS_MPC_MORE_THAN_N_LAYERS", Integer.toString (this.getLayerLimit ()), Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
+                    this.notifier.logError ("IDS_MPC_MORE_THAN_N_LAYERS", Integer.toString (this.settingsConfiguration.getLayerLimit ()), Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
                     continue;
                 }
 
@@ -345,7 +277,7 @@ public class MPCKeygroupCreator extends AbstractCreator
         final boolean isSequence = zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
         final List<Keygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, _ -> new ArrayList<> ());
 
-        final int layerLimit = this.getLayerLimit ();
+        final int layerLimit = this.settingsConfiguration.getLayerLimit ();
 
         // Check if a key-group exists to which the layer can be added
         for (final Keygroup keygroup: keygroups)

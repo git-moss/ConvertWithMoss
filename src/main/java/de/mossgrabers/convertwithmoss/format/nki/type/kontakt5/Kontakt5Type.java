@@ -28,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.nki.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.convertwithmoss.format.nki.type.AbstractKontaktType;
@@ -39,7 +40,6 @@ import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.Auth
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.AuthorizationChunkData;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.SoundinfoChunkData;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;

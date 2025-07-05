@@ -11,14 +11,17 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 
 
 /**
  * Creates and stores a multi-sample file.
  *
+ * @param <T> The type of the settings
+ * 
  * @author Jürgen Moßgraber
  */
-public interface ICreator extends ICoreTask
+public interface ICreator<T extends ICoreTaskSettings> extends ICoreTask<T>
 {
     /**
      * Create and store a multi-sample file.

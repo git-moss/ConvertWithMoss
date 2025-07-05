@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.core.model;
 
 import java.util.Date;
 
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 
 
 /**

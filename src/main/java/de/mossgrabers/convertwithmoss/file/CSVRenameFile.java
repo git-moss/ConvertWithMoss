@@ -51,36 +51,29 @@ public class CSVRenameFile
      * Initializes the file renaming by loading the provided CSV file if renaming is active.
      *
      * @param mappingFile The mapping file
-     * @return true if renaming is not active or the provided CSV file could be loaded successfully,
-     *         false else.
+     * @throws IllegalArgumentException if renaming is not active or the provided CSV file could be
+     *             loaded successfully
      */
-    public boolean setRenameFile (final File mappingFile)
+    public void setRenameFile (final File mappingFile) throws IllegalArgumentException
     {
         this.clear ();
 
         try
         {
             final String content = FileUtils.readUTF8 (mappingFile);
-
             final String [] lines = content.split ("\\r?\\n");
             for (int i = 0; i < lines.length; i++)
             {
                 final String [] columns = lines[i].split ("[;,]");
                 if (columns.length != 2)
-                {
-                    Functions.message ("@IDS_NOTIFY_RENAMING_CSV_NOT_TWO_COLUMNS", Integer.toString (columns.length), Integer.toString (i));
-                    return false;
-                }
+                    throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_RENAMING_CSV_NOT_TWO_COLUMNS", Integer.toString (columns.length), Integer.toString (i)));
                 this.renamingTable.put (columns[0].trim (), columns[1].trim ());
             }
         }
         catch (final IOException ex)
         {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_IO_EXCEPTION", ex.getMessage ());
-            return false;
+            throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_RENAMING_CSV_IO_EXCEPTION", ex.getMessage ()));
         }
-
-        return true;
     }
 
 

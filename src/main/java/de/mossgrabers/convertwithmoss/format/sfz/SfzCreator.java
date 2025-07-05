@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.ParameterLevel;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -32,11 +33,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
 
 
 /**
@@ -45,19 +41,18 @@ import javafx.scene.control.CheckBox;
  *
  * @author Jürgen Moßgraber
  */
-public class SfzCreator extends AbstractCreator
+public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 {
-    private static final String                  SFZ_CONVERT_TO_FLAC = "SfzConvertToFlac";
-    private static final AudioFileFormat.Type    TARGET_FORMAT       = new AudioFileFormat.Type ("FLAC", "flac");
-    private static final char                    LINE_FEED           = '\n';
-    private static final String                  SFZ_HEADER          = """
+    private static final AudioFileFormat.Type    TARGET_FORMAT   = new AudioFileFormat.Type ("FLAC", "flac");
+    private static final char                    LINE_FEED       = '\n';
+    private static final String                  SFZ_HEADER      = """
             /////////////////////////////////////////////////////////////////////////////
             ////
             """;
-    private static final String                  COMMENT_PREFIX      = "//// ";
+    private static final String                  COMMENT_PREFIX  = "//// ";
 
-    private static final Map<FilterType, String> FILTER_TYPE_MAP     = new EnumMap<> (FilterType.class);
-    private static final Map<LoopType, String>   LOOP_TYPE_MAP       = new EnumMap<> (LoopType.class);
+    private static final Map<FilterType, String> FILTER_TYPE_MAP = new EnumMap<> (FilterType.class);
+    private static final Map<LoopType, String>   LOOP_TYPE_MAP   = new EnumMap<> (LoopType.class);
 
     static
     {
@@ -71,8 +66,6 @@ public class SfzCreator extends AbstractCreator
         LOOP_TYPE_MAP.put (LoopType.ALTERNATING, "alternate");
     }
 
-    private CheckBox convertToFlac;
-
 
     /**
      * Constructor.
@@ -81,39 +74,7 @@ public class SfzCreator extends AbstractCreator
      */
     public SfzCreator (final INotifier notifier)
     {
-        super ("SFZ", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        panel.createSeparator ("@IDS_OUTPUT_FORMAT");
-        this.convertToFlac = panel.createCheckBox ("@IDS_SFZ_CONVERT_TO_FLAC");
-        this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.convertToFlac.setSelected (config.getBoolean (SFZ_CONVERT_TO_FLAC, false));
-
-        this.loadWavChunkSettings (config, "Sfz");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setBoolean (SFZ_CONVERT_TO_FLAC, this.convertToFlac.isSelected ());
-
-        this.saveWavChunkSettings (config, "Sfz");
+        super ("SFZ", "SFZ", notifier, new SfzCreatorUI ("SFZ"));
     }
 
 
@@ -139,7 +100,7 @@ public class SfzCreator extends AbstractCreator
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
 
-        if (this.convertToFlac.isSelected ())
+        if (this.settingsConfiguration.convertToFlac ())
             try
             {
                 this.writeSamples (sampleFolder, multisampleSource, TARGET_FORMAT);
@@ -258,7 +219,7 @@ public class SfzCreator extends AbstractCreator
      */
     private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone, final boolean isNotRoundRobinGroup, final ParameterLevel ampEnvParameterLevel)
     {
-        final String ending = this.convertToFlac.isSelected () ? ".flac" : ".wav";
+        final String ending = this.settingsConfiguration.convertToFlac () ? ".flac" : ".wav";
 
         buffer.append ("\n<").append (SfzHeader.REGION).append (">\n");
         addAttribute (buffer, SfzOpcode.SAMPLE, AbstractCreator.formatFileName (safeSampleFolderName, zone.getName () + ending), true);

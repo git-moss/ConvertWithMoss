@@ -4,32 +4,38 @@
 
 package de.mossgrabers.convertwithmoss.core;
 
-import de.mossgrabers.tools.ui.BasicConfig;
-import javafx.scene.Node;
-import javafx.scene.layout.BorderPane;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 
 
 /**
  * Base class for creator and detector classes.
  *
+ * @param <T> The type of the settings
+ * 
  * @author Jürgen Moßgraber
  */
-public abstract class AbstractCoreTask implements ICoreTask
+public abstract class AbstractCoreTask<T extends ICoreTaskSettings> implements ICoreTask<T>
 {
     protected final String    name;
+    protected final String    prefix;
     protected final INotifier notifier;
+    protected final T         settingsConfiguration;
 
 
     /**
      * Constructor.
      *
-     * @param name The name of the object.
+     * @param name The descriptive name of the task
+     * @param prefix The prefix to use for the metadata properties tags
      * @param notifier The notifier
+     * @param settingsConfiguration The configuration of the settings
      */
-    protected AbstractCoreTask (final String name, final INotifier notifier)
+    protected AbstractCoreTask (final String name, final String prefix, final INotifier notifier, final T settingsConfiguration)
     {
         this.name = name;
+        this.prefix = prefix;
         this.notifier = notifier;
+        this.settingsConfiguration = settingsConfiguration;
     }
 
 
@@ -43,33 +49,17 @@ public abstract class AbstractCoreTask implements ICoreTask
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public String getPrefix ()
     {
-        return new BorderPane ();
+        return this.prefix;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettings ()
+    public T getSettings ()
     {
-        return true;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        // Intentionally empty
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        // Intentionally empty
+        return this.settingsConfiguration;
     }
 
 

@@ -18,7 +18,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -32,12 +32,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.control.TitledSeparator;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
 
 
 /**
@@ -45,7 +39,7 @@ import javafx.scene.control.CheckBox;
  *
  * @author Jürgen Moßgraber
  */
-public class WaldorfQpatCreator extends AbstractCreator
+public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 {
     private static final String                                SLOPE_RC               = "RC";
     private static final String                                SLOPE_LINEAR           = "Lin";
@@ -56,7 +50,6 @@ public class WaldorfQpatCreator extends AbstractCreator
     private static final int                                   PRESET_VERSION         = 14;
     private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER  = new WaldorfQpatResourceHeader ();
 
-    private static final String                                QPAT_LIMIT_TO_16_441   = "QpatLimitTo16441";
     private static final DestinationAudioFormat                OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16
@@ -71,8 +64,6 @@ public class WaldorfQpatCreator extends AbstractCreator
         TYPE_LOOKUP.put (Integer.valueOf (2), WaldorfQpatResourceType.USER_SAMPLE_MAP3);
     }
 
-    private CheckBox limitTo16441;
-
 
     /**
      * Constructor.
@@ -81,43 +72,7 @@ public class WaldorfQpatCreator extends AbstractCreator
      */
     public WaldorfQpatCreator (final INotifier notifier)
     {
-        super ("Waldorf Quantum/Iridium", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
-        panel.createSeparator ("@IDS_QPAT_SEPARATOR");
-        this.limitTo16441 = panel.createCheckBox ("@IDS_QPAT_RESAMPLE_TO_16_441");
-
-        final TitledSeparator separator = this.addWavChunkOptions (panel);
-        separator.getStyleClass ().add ("titled-separator-pane");
-
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.limitTo16441.setSelected (config.getBoolean (QPAT_LIMIT_TO_16_441, true));
-
-        this.loadWavChunkSettings (config, "QPAT");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setBoolean (QPAT_LIMIT_TO_16_441, this.limitTo16441.isSelected ());
-
-        this.saveWavChunkSettings (config, "QPAT");
+        super ("Waldorf Quantum/Iridium", "QPAT", notifier, new WaldorfQpatCreatorUI ("QPAT"));
     }
 
 
@@ -140,7 +95,7 @@ public class WaldorfQpatCreator extends AbstractCreator
         final File sampleFolder = new File (destinationFolder, relativeSamplePath);
         safeCreateDirectory (sampleFolder);
 
-        final boolean doLimit = this.limitTo16441.isSelected ();
+        final boolean doLimit = this.settingsConfiguration.limitTo16441 ();
         if (doLimit)
             recalculateSamplePositions (multisampleSource, 44100);
         this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT);
