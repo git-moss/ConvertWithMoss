@@ -186,7 +186,13 @@
 							<winPerUserInstall>false</winPerUserInstall>
 							<winDirChooser>true</winDirChooser>
 							<winUpgradeUuid>18d24064-0bfa-425d-8b7f-e5efd5990d26</winUpgradeUuid>
-							<winConsole>true</winConsole>
+							<addLaunchers>
+								<addLauncher>
+									<name>ConvertWithMossCLI</name>
+									<mainClass>${main.class}</mainClass>
+									<winConsole>true</winConsole>
+								</addLauncher>
+							</addLaunchers>
 						</configuration>
 					</execution>
 					<execution>
