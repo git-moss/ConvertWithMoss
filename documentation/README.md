@@ -31,9 +31,56 @@ If you run into an error or you are stuck somewhere, feel free to get in touch. 
 [Download][2] and run the matching installer for your operating system.
 After that you can start the application ConvertWithMoss.
 
-> **Note macOS**
->
-> Read the [macOS installation specifics](README-MACOS.md#) for important notices!
+### macOS issues
+
+Since the build depends on the GitHub build infrastructure, you need a recent macOS version.
+This is currently macOS 13 for Intel and macOS 14 for ARM based Macs. It might work down to macOS 11 but I cannot test that.
+
+After installation macos will complain about different things when you try to run the application, which vary depending on your macOS version:
+
+1. The application is unsafe to run since it is downloaded from the internet.
+2. The application is unsafe to run since it is not signed by Apple.
+3. The application files are corrupted.
+
+To fix this, do the following:
+
+* Run the application again and click away the error.
+* Open the system settings and go to *Privacy & Security Settings*.
+* Scroll to the very end, there should now be a message saying something like 'publisher of ConvertWithMoss could not be identified'.
+* Click on the allow anyway button
+* When you start ConvertWithMoss again you need to confirm again that you want to run the application.
+
+If this did not work for any reason, try this:
+
+Open the Terminal app and enter the application folder:
+
+```sh
+cd /Applications/ConvertWithMoss.app
+```
+
+Then remove the evil flag (Requires your administrator password):
+
+```sh
+sudo xattr -rc .
+```
+
+Since this seems not to work for everybody, there is another solution:
+
+Temporarily, disable the Gatekeeper with
+
+```sh
+sudo spctl --master-disable
+```
+
+Open the application (should work now). Close it and enable Gatekeeper again to feel safe...
+
+```sh
+sudo spctl --master-enable
+```
+
+The application should now run also with Gatekeeper enabled.
+
+Finally, have fun.
 
 ## Build from sources
 
