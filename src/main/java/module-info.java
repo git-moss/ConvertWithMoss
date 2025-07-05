@@ -13,6 +13,7 @@ module de.mossgrabers.convertwithmoss
     requires transitive de.mossgrabers.uitools;
     requires javafx.graphics;
     requires com.github.trilarion.sound;
+    requires info.picocli;
 
 
     exports de.mossgrabers.convertwithmoss.ui;
@@ -20,6 +21,8 @@ module de.mossgrabers.convertwithmoss
     exports de.mossgrabers.convertwithmoss.core.model;
     exports de.mossgrabers.convertwithmoss.core.model.enumeration;
     exports de.mossgrabers.convertwithmoss.core.creator;
+    exports de.mossgrabers.convertwithmoss.core.detector;
+    exports de.mossgrabers.convertwithmoss.core.settings;
     exports de.mossgrabers.convertwithmoss.format.bitwig;
     exports de.mossgrabers.convertwithmoss.format.sfz;
     exports de.mossgrabers.convertwithmoss.format.wav;

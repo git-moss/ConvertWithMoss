@@ -18,7 +18,7 @@ import java.util.zip.GZIPOutputStream;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -29,11 +29,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
-import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
 
 
 /**
@@ -42,7 +39,7 @@ import javafx.scene.Node;
  *
  * @author Jürgen Moßgraber
  */
-public class AbletonCreator extends AbstractCreator
+public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
     private static final String                  TEMPLATE_FOLDER = "de/mossgrabers/convertwithmoss/templates/adv/";
 
@@ -63,33 +60,7 @@ public class AbletonCreator extends AbstractCreator
      */
     public AbletonCreator (final INotifier notifier)
     {
-        super ("Ableton Sampler", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.addWavChunkOptions (panel);
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.loadWavChunkSettings (config, "Adv");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        this.saveWavChunkSettings (config, "Adv");
+        super ("Ableton Sampler", "Ableton", notifier, new WavChunkSettingsUI ("Ableton"));
     }
 
 

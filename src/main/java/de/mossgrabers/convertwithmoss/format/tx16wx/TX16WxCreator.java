@@ -20,9 +20,13 @@ import java.util.UUID;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -32,11 +36,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.XMLUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
 
 
 /**
@@ -45,7 +46,7 @@ import javafx.scene.Node;
  *
  * @author Jürgen Moßgraber
  */
-public class TX16WxCreator extends AbstractCreator
+public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
     private static final Map<String, String>     CATEGORY_ICONS = new HashMap<> ();
     private static final Map<LoopType, String>   LOOP_MODES     = new EnumMap<> (LoopType.class);
@@ -222,33 +223,15 @@ public class TX16WxCreator extends AbstractCreator
      */
     public TX16WxCreator (final INotifier notifier)
     {
-        super ("CWITEC TX16Wx", notifier);
+        super ("CWITEC TX16Wx", "TX16Wx", notifier, new WavChunkSettingsUI ("TX16Wx"));
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public boolean supportsPerformances ()
     {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.addWavChunkOptions (panel);
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.loadWavChunkSettings (config, "TX16Wx");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        this.saveWavChunkSettings (config, "TX16Wx");
+        return true;
     }
 
 
@@ -256,12 +239,57 @@ public class TX16WxCreator extends AbstractCreator
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        this.createPreset (destinationFolder, new DefaultInstrumentSource (multisampleSource, -1));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
+    {
+        final List<IInstrumentSource> instruments = performanceSource.getInstruments ();
+        if (instruments.isEmpty ())
+            return;
+
+        final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
+        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "txperf");
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+
+        final List<File> programFiles = new ArrayList<> ();
+        final List<IInstrumentSource> acceptedInstrumentSources = new ArrayList<> ();
+        for (final IInstrumentSource instrumentSource: performanceSource.getInstruments ())
+        {
+            final File preset = this.createPreset (destinationFolder, instrumentSource);
+            if (preset != null)
+            {
+                programFiles.add (preset);
+                acceptedInstrumentSources.add (instrumentSource);
+            }
+        }
+
+        final Optional<String> xmlCode = this.createPerformanceDocument (performanceSource, acceptedInstrumentSources, programFiles);
+        if (xmlCode.isEmpty ())
+            return;
+
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
+        {
+            writer.write (xmlCode.get ());
+        }
+
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    private File createPreset (final File destinationFolder, final IInstrumentSource instrumentSource) throws IOException
+    {
+        final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
         final String sampleName = createSafeFilename (multisampleSource.getName ());
         final String relativeFolderName = sampleName + FOLDER_POSTFIX;
 
-        final Optional<String> metadata = this.createMetadata (relativeFolderName, multisampleSource);
+        final Optional<String> metadata = this.createPresetDocument (relativeFolderName, instrumentSource);
         if (metadata.isEmpty ())
-            return;
+            return null;
 
         final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "txprog");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
@@ -269,6 +297,8 @@ public class TX16WxCreator extends AbstractCreator
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());
 
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+
+        return multiFile;
     }
 
 
@@ -297,20 +327,22 @@ public class TX16WxCreator extends AbstractCreator
 
 
     /**
-     * Create the text of the description file.
+     * Create the text of the TX program description file.
      *
      * @param folderName The name to use for the sample folder
-     * @param multisampleSource The multi-sample
+     * @param instrumentSource The instrument source
      * @return The XML structure
      * @throws IOException Could not create the metadata
      */
-    private Optional<String> createMetadata (final String folderName, final IMultisampleSource multisampleSource) throws IOException
+    private Optional<String> createPresetDocument (final String folderName, final IInstrumentSource instrumentSource) throws IOException
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
             return Optional.empty ();
         final Document document = optionalDocument.get ();
         document.setXmlStandalone (true);
+
+        final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
 
         final Element programElement = document.createElement (TX16WxTag.PROGRAM);
         document.appendChild (programElement);
@@ -350,7 +382,7 @@ public class TX16WxCreator extends AbstractCreator
             groupElement.setAttribute (TX16WxTag.NAME, group.getName ());
             if (group.getTrigger () == TriggerType.RELEASE)
                 groupElement.setAttribute (TX16WxTag.GROUP_PLAYMODE, "Release");
-            groupElement.setAttribute (TX16WxTag.GROUP_OUTPUT, "--");
+            groupElement.setAttribute (TX16WxTag.OUTPUT, "--");
 
             final List<ISampleZone> zones = group.getSampleZones ();
             for (int i = 0; i < zones.size (); i++)
@@ -360,8 +392,8 @@ public class TX16WxCreator extends AbstractCreator
         }
 
         final Element globalBoundsElement = XMLUtils.addElement (document, programElement, TX16WxTag.BOUNDS);
-        XMLUtils.setIntegerAttribute (globalBoundsElement, TX16WxTag.LO_NOTE, 0);
-        XMLUtils.setIntegerAttribute (globalBoundsElement, TX16WxTag.HI_NOTE, 127);
+        XMLUtils.setIntegerAttribute (globalBoundsElement, TX16WxTag.LO_NOTE, instrumentSource.getClipKeyLow ());
+        XMLUtils.setIntegerAttribute (globalBoundsElement, TX16WxTag.HI_NOTE, instrumentSource.getClipKeyHigh ());
         XMLUtils.setIntegerAttribute (globalBoundsElement, TX16WxTag.LO_VEL, 0);
         XMLUtils.setIntegerAttribute (globalBoundsElement, TX16WxTag.HI_VEL, 127);
 
@@ -369,6 +401,57 @@ public class TX16WxCreator extends AbstractCreator
             programElement.appendChild (soundshapeElement);
         for (final Element groupElement: groupElements)
             programElement.appendChild (groupElement);
+
+        return this.createXMLString (document);
+    }
+
+
+    /**
+     * Create the text of the TX performance description file.
+     *
+     * @param performanceSource The performance source
+     * @param acceptedInstrumentSources Instrument sources which were successfully stored as
+     *            programs
+     * @param programFiles The files of the programs
+     * @return The XML structure
+     * @throws IOException Could not create the metadata
+     */
+    private Optional<String> createPerformanceDocument (final IPerformanceSource performanceSource, final List<IInstrumentSource> acceptedInstrumentSources, final List<File> programFiles) throws IOException
+    {
+        final Optional<Document> optionalDocument = this.createXMLDocument ();
+        if (optionalDocument.isEmpty ())
+            return Optional.empty ();
+        final Document document = optionalDocument.get ();
+        document.setXmlStandalone (true);
+
+        final Element performanceElement = document.createElement (TX16WxTag.PERFORMANCE);
+        document.appendChild (performanceElement);
+        performanceElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, "30601");
+        performanceElement.setAttribute (TX16WxTag.NAME, performanceSource.getName ());
+        performanceElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/ performance");
+        performanceElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/performance");
+        performanceElement.setAttribute ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+
+        for (int i = 0; i < programFiles.size (); i++)
+        {
+            final Element slotElement = XMLUtils.addElement (document, performanceElement, TX16WxTag.SLOT);
+            slotElement.setAttribute (TX16WxTag.NAME, "Ch" + (i + 1));
+            slotElement.setAttribute (TX16WxTag.PROGRAM, programFiles.get (i).getName ());
+            final int midiChannel = acceptedInstrumentSources.get (i).getMidiChannel () + 1;
+            slotElement.setAttribute (TX16WxTag.MIDI_CHANNEL, midiChannel == 0 ? "Omni" : Integer.toString (midiChannel));
+            slotElement.setAttribute (TX16WxTag.OUTPUT, "Out 1");
+
+            // final Element volumeElement = XMLUtils.addElement (document, slotElement,
+            // TX16WxTag.VOLUME);
+            // volumeElement.setAttribute (TX16WxTag.VALUE, "0 dB");
+            // final Element panElement = XMLUtils.addElement (document, slotElement,
+            // TX16WxTag.PANNING);
+            // panElement.setAttribute (TX16WxTag.VALUE, "0%");
+            // final Element transposeElement = XMLUtils.addElement (document, slotElement,
+            // TX16WxTag.TRANSPOSE);
+            // transposeElement.setAttribute (TX16WxTag.VALUE, "0");
+
+        }
 
         return this.createXMLString (document);
     }

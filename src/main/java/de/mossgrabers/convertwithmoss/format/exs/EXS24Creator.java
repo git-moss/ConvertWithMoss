@@ -16,7 +16,7 @@ import java.util.Optional;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -26,12 +26,9 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
 
 
 /**
@@ -39,7 +36,7 @@ import javafx.scene.Node;
  *
  * @author Jürgen Moßgraber
  */
-public class EXS24Creator extends AbstractCreator
+public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
 {
     /**
      * Constructor.
@@ -48,33 +45,7 @@ public class EXS24Creator extends AbstractCreator
      */
     public EXS24Creator (final INotifier notifier)
     {
-        super ("Logic EXS24", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        this.addWavChunkOptions (panel);
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.loadWavChunkSettings (config, "EXS24");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        this.saveWavChunkSettings (config, "EXS24");
+        super ("Logic EXS24", "EXS24", notifier, new WavChunkSettingsUI ("EXS24"));
     }
 
 

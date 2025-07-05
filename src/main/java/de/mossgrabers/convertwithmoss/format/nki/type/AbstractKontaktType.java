@@ -15,7 +15,7 @@ import java.util.TreeMap;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -275,7 +275,7 @@ public abstract class AbstractKontaktType implements IKontaktFormat
         {
             // Find the sample file starting 2 folders up
             final int height = 2;
-            final File file = AbstractDetectorTask.findSampleFile (this.notifier, sampleFile.getParentFile (), previousFolder, sampleFile.getName (), height);
+            final File file = AbstractDetector.findSampleFile (this.notifier, sampleFile.getParentFile (), previousFolder, sampleFile.getName (), height);
             if (file != null && file.exists ())
             {
                 lookedupFiles.add (file);
@@ -297,7 +297,7 @@ public abstract class AbstractKontaktType implements IKontaktFormat
         // Check if it is an absolute path, try to find the sample file...
         final File sampleFile = files.get (filenameId);
         // Ignore non-existing files since it might be in a monolith
-        final ISampleData sampleData = sampleFile.exists () ? AbstractDetectorTask.createSampleData (sampleFile, this.notifier) : null;
+        final ISampleData sampleData = sampleFile.exists () ? AbstractDetector.createSampleData (sampleFile, this.notifier) : null;
         return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
     }
 

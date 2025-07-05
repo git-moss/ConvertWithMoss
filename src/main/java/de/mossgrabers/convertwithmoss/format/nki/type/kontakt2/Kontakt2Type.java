@@ -31,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
+import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.CompressionUtils;
 import de.mossgrabers.convertwithmoss.file.FastLZ;
@@ -45,7 +46,6 @@ import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.MultiConfiguratio
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.MultiInstrument;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.nki.type.nicontainer.chunkdata.PresetChunkData;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;

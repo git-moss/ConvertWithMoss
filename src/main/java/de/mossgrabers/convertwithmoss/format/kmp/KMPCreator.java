@@ -22,12 +22,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
 
 
 /**
@@ -35,17 +30,8 @@ import javafx.scene.control.CheckBox;
  *
  * @author Jürgen Moßgraber
  */
-public class KMPCreator extends AbstractCreator
+public class KMPCreator extends AbstractCreator<KMPCreatorUI>
 {
-    private static final String KMP_WRITE_GROUP_KMPS = "KMPWriteGroupKmps";
-    private static final String KMP_GAIN_PLUS_12     = "KMPGainPlus12";
-    private static final String KMP_MAXIMIZE_VOLUME  = "KMPMaximizeVolume";
-
-    private CheckBox            writeGroupKmps;
-    private CheckBox            gainPlus12;
-    private CheckBox            maximizeVolume;
-
-
     /**
      * Constructor.
      *
@@ -53,40 +39,7 @@ public class KMPCreator extends AbstractCreator
      */
     public KMPCreator (final INotifier notifier)
     {
-        super ("Korg KSC/KMP/KSF", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        panel.createSeparator ("@IDS_KMP_OPTIONS");
-        this.writeGroupKmps = panel.createCheckBox ("@IDS_KMP_WRITE_KMP_FOR_EACH_GROUP", "@IDS_KMP_WRITE_KMP_FOR_EACH_GROUP_TOOLTIP");
-        this.gainPlus12 = panel.createCheckBox ("@IDS_KMP_GAIN_12DB");
-        this.maximizeVolume = panel.createCheckBox ("@IDS_KMP_MAXIMIZE_VOLUME", "@IDS_KMP_MAXIMIZE_VOLUME_TOOLTIP");
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.writeGroupKmps.setSelected (config.getBoolean (KMP_WRITE_GROUP_KMPS, false));
-        this.gainPlus12.setSelected (config.getBoolean (KMP_GAIN_PLUS_12, false));
-        this.maximizeVolume.setSelected (config.getBoolean (KMP_MAXIMIZE_VOLUME, false));
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setBoolean (KMP_WRITE_GROUP_KMPS, this.writeGroupKmps.isSelected ());
-        config.setBoolean (KMP_GAIN_PLUS_12, this.gainPlus12.isSelected ());
-        config.setBoolean (KMP_MAXIMIZE_VOLUME, this.maximizeVolume.isSelected ());
+        super ("Korg KSC/KMP/KSF", "KMP", notifier, new KMPCreatorUI ());
     }
 
 
@@ -133,7 +86,7 @@ public class KMPCreator extends AbstractCreator
             final ZoneChannels zoneChannels = ZoneChannels.detectChannelConfiguration (groups);
             this.notifier.log ("IDS_KMP_SOURCE_SAMPLES_FORMAT", zoneChannels.toString ());
 
-            if (!this.writeGroupKmps.isSelected () || zoneChannels == ZoneChannels.SPLIT_STEREO)
+            if (!this.settingsConfiguration.writeGroupKmps () || zoneChannels == ZoneChannels.SPLIT_STEREO)
             {
                 final IGroup combinedGroup = new DefaultGroup ();
                 final List<ISampleZone> sampleZones = combinedGroup.getSampleZones ();
@@ -169,8 +122,8 @@ public class KMPCreator extends AbstractCreator
      */
     private int storeKMP (final File subFolder, final String sampleName, final IGroup group, final ZoneChannels zoneChannels, final int kmpIndex, final Collection<String> createdKMPNames) throws IOException
     {
-        final boolean gain12dB = this.gainPlus12.isSelected ();
-        final boolean maxVolume = this.maximizeVolume.isSelected ();
+        final boolean gain12dB = this.settingsConfiguration.gainPlus12 ();
+        final boolean maxVolume = this.settingsConfiguration.maximizeVolume ();
         final String filename = StringUtils.rightPadSpaces (sampleName, 6);
 
         switch (zoneChannels)

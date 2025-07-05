@@ -16,21 +16,13 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.nki.type.IKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt1.Kontakt1Type;
 import de.mossgrabers.convertwithmoss.format.nki.type.kontakt5.Kontakt5Type;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.collections.ObservableList;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleGroup;
 
 
 /**
@@ -38,13 +30,8 @@ import javafx.scene.control.ToggleGroup;
  *
  * @author Jürgen Moßgraber
  */
-public class NkiCreator extends AbstractCreator
+public class NkiCreator extends AbstractWavCreator<NkiCreatorUI>
 {
-    private static final String NKI_OUTPUT_FORMAT = "NkiOutputFormat";
-
-    private ToggleGroup         outputFormatGroup;
-
-
     /**
      * Constructor.
      *
@@ -52,59 +39,7 @@ public class NkiCreator extends AbstractCreator
      */
     public NkiCreator (final INotifier notifier)
     {
-        super ("Kontakt NKI", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
-        panel.createSeparator ("@IDS_OUTPUT_FORMAT");
-
-        this.outputFormatGroup = new ToggleGroup ();
-        final RadioButton order1 = panel.createRadioButton ("@IDS_NKI_KONTAKT_1");
-        order1.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
-        order1.setToggleGroup (this.outputFormatGroup);
-        final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_6_8");
-        order2.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
-        order2.setToggleGroup (this.outputFormatGroup);
-        // TODO remove if implementation is finished
-        order2.setDisable (true);
-
-        this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
-
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        final int formatIndex = config.getInteger (NKI_OUTPUT_FORMAT, 0);
-        final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
-        this.outputFormatGroup.selectToggle (toggles.get (formatIndex < toggles.size () ? formatIndex : 0));
-
-        this.loadWavChunkSettings (config, "Nki");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
-        for (int i = 0; i < toggles.size (); i++)
-            if (toggles.get (i).isSelected ())
-            {
-                config.setInteger (NKI_OUTPUT_FORMAT, i);
-                break;
-            }
-
-        this.saveWavChunkSettings (config, "Nki");
+        super ("Kontakt NKI", "Nki", notifier, new NkiCreatorUI ("Nki"));
     }
 
 
@@ -134,7 +69,7 @@ public class NkiCreator extends AbstractCreator
             return;
         }
 
-        final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
+        final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt5Type (this.notifier);
 
         final String multisampleName = createSafeFilename (multisampleSource.getName ());
@@ -171,7 +106,7 @@ public class NkiCreator extends AbstractCreator
             instrumentSources.add (instrumentSource);
         }
 
-        final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
+        final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt5Type (this.notifier);
 
         this.createNKM (destinationFolder, instrumentSources, libraryName, kontaktType);
@@ -187,7 +122,7 @@ public class NkiCreator extends AbstractCreator
             return;
 
         final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
-        final boolean isKontakt1 = this.outputFormatGroup.getToggles ().get (0).isSelected ();
+        final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Type (this.notifier, false) : new Kontakt5Type (this.notifier);
         this.createNKM (destinationFolder, performanceSource.getInstruments (), libraryName, kontaktType);
     }

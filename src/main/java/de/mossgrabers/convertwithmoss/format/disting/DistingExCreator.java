@@ -20,6 +20,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -27,14 +28,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.control.TitledSeparator;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
 
 
 /**
@@ -43,10 +37,8 @@ import javafx.scene.control.CheckBox;
  *
  * @author Jürgen Moßgraber
  */
-public class DistingExCreator extends WavCreator
+public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
 {
-    private static final String                 DEX_LIMIT_TO_16_441    = "DistingLimitTo16441";
-    private static final String                 DEX_TRIM_START_TO_END  = "DistingTrimStartToEnd";
     private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16
@@ -55,8 +47,6 @@ public class DistingExCreator extends WavCreator
 
     private final Map<Integer, Integer>         velocityLayerIndices   = new HashMap<> ();
     private String                              filenamePrefix;
-    private CheckBox                            limitTo16441;
-    private CheckBox                            trimStartToEnd;
 
 
     /**
@@ -66,47 +56,7 @@ public class DistingExCreator extends WavCreator
      */
     public DistingExCreator (final INotifier notifier)
     {
-        super ("Expert Sleepers Disting EX", notifier);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Node getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-
-        panel.createSeparator ("@IDS_DEX_SEPARATOR");
-
-        this.limitTo16441 = panel.createCheckBox ("@IDS_DEX_RESAMPLE_TO_16_441");
-        this.trimStartToEnd = panel.createCheckBox ("@IDS_DEX_TRIM_START_TO_END");
-
-        final TitledSeparator separator = this.addWavChunkOptions (panel);
-        separator.getStyleClass ().add ("titled-separator-pane");
-
-        return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void loadSettings (final BasicConfig config)
-    {
-        this.limitTo16441.setSelected (config.getBoolean (DEX_LIMIT_TO_16_441, true));
-        this.trimStartToEnd.setSelected (config.getBoolean (DEX_TRIM_START_TO_END, true));
-
-        this.loadWavChunkSettings (config, "Disting");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setBoolean (DEX_LIMIT_TO_16_441, this.limitTo16441.isSelected ());
-        config.setBoolean (DEX_TRIM_START_TO_END, this.trimStartToEnd.isSelected ());
-
-        this.saveWavChunkSettings (config, "Disting");
+        super ("Expert Sleepers Disting EX", "distingEX", notifier, new DistingExCreatorUI ("distingEX"));
     }
 
 
@@ -114,7 +64,7 @@ public class DistingExCreator extends WavCreator
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final boolean trim = this.trimStartToEnd.isSelected ();
+        final boolean trim = this.settingsConfiguration.trimStartToEnd ();
 
         this.prepareKeyAndVelocityRanges (multisampleSource);
 
@@ -133,7 +83,7 @@ public class DistingExCreator extends WavCreator
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
 
-        final boolean doLimit = this.limitTo16441.isSelected ();
+        final boolean doLimit = this.settingsConfiguration.limitTo16441 ();
         if (doLimit)
             recalculateSamplePositions (multisampleSource, 44100);
         this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);

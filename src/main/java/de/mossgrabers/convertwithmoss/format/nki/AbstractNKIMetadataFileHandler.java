@@ -35,7 +35,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.MathUtils;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetectorTask;
+import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
@@ -55,6 +55,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.exception.ValueNotAvailableException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffFileSampleData;
@@ -63,7 +64,6 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.nki.type.DecodedPath;
 import de.mossgrabers.convertwithmoss.format.nki.type.KontaktIcon;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -1089,7 +1089,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
             // Search all sub-folders
             final String fileName = absoluteParentPath.getFileName ().toString ();
-            sampleFile = AbstractDetectorTask.findSampleFile (this.notifier, parentFolder, null, fileName, 0);
+            sampleFile = AbstractDetector.findSampleFile (this.notifier, parentFolder, null, fileName, 0);
             if (sampleFile != null)
                 return this.logFoundFolder (sampleFile, originalAbsoluteParentPath);
 

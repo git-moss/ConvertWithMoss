@@ -13,10 +13,11 @@
 * Korgmultisample
   * Fixed: Potential crash when source file has no creation date set.
 * TX16Wx
-  * New: Can be a source format for performances.
+  * New: Can be a source and destination format for performances.
 * Yamaha YSFC
   * New: Can be a source and destination format for Performances.
   * Fixed: Pitch Key Follow Sensitivity was not read/written.
+  * Fixed: Filter types were not always mapped correctly.
 
 ## 13.1.0
 

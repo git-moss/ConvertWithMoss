@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
@@ -52,7 +53,7 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class Sf2Creator extends AbstractCreator
+public class Sf2Creator extends AbstractCreator<EmptySettingsUI>
 {
     private static final DestinationAudioFormat DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -70,7 +71,7 @@ public class Sf2Creator extends AbstractCreator
      */
     public Sf2Creator (final INotifier notifier)
     {
-        super ("SoundFont 2", notifier);
+        super ("SoundFont 2", "Sf2", notifier, EmptySettingsUI.INSTANCE);
     }
 
 

@@ -13,7 +13,7 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
-import de.mossgrabers.convertwithmoss.ui.IMetadataConfig;
+import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 
 
 /**

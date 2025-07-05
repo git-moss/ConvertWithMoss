@@ -10,25 +10,19 @@ import java.util.function.Consumer;
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 
 
 /**
  * Detects all potential multi-sample source files (or aggregates multiple required ones depending
  * on the source format).
  *
+ * @param <T> The type of the settings
+ * 
  * @author Jürgen Moßgraber
  */
-public interface IDetector extends ICoreTask
+public interface IDetector<T extends ICoreTaskSettings> extends ICoreTask<T>, Runnable
 {
-    /**
-     * Start the detection.
-     *
-     * @param folder The folder where to start the detection
-     * @param multisampleSourceConsumer Where to report the found multi-samples
-     */
-    void detect (File folder, Consumer<IMultisampleSource> multisampleSourceConsumer);
-
-
     /**
      * Start the detection.
      *
@@ -38,14 +32,6 @@ public interface IDetector extends ICoreTask
      * @param detectPerformances If true, performances are detected otherwise presets
      */
     void detect (File folder, Consumer<IMultisampleSource> multisampleSourceConsumer, Consumer<IPerformanceSource> performanceSourceConsumer, boolean detectPerformances);
-
-
-    /**
-     * Validate the source parameters.
-     *
-     * @return Returns true if all parameters are valid
-     */
-    boolean validateParameters ();
 
 
     /**
