@@ -168,7 +168,6 @@
 					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
 					<licenseFile>LICENSE</licenseFile>
-					<winConsole>true</winConsole>
 				</configuration>
 				<executions>
 					<execution>
@@ -187,14 +186,14 @@
 							<winPerUserInstall>false</winPerUserInstall>
 							<winDirChooser>true</winDirChooser>
 							<winUpgradeUuid>18d24064-0bfa-425d-8b7f-e5efd5990d26</winUpgradeUuid>
+							<winConsole>true</winConsole>
 						</configuration>
 					</execution>
 					<execution>
 						<id>linux</id>
 						<configuration>
 							<type>DEB</type>
-							<icon>
-								src/main/resources/de/mossgrabers/convertwithmoss/images/AppIcon.png</icon>
+							<icon>src/main/resources/de/mossgrabers/convertwithmoss/images/AppIcon.png</icon>
 						</configuration>
 					</execution>
 				</executions>
