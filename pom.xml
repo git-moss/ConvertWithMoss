@@ -168,7 +168,7 @@
 					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
 					<licenseFile>LICENSE</licenseFile>
-					<winconsole>true</winconsole>
+					<winConsole>true</winConsole>
 				</configuration>
 				<executions>
 					<execution>
