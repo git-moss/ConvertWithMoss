@@ -1,6 +1,6 @@
 # Changes
 
-## 13.2.0
+## 14.0.0
 
 * The application can now be run without the user interface for batch processing via the command line interface (CLI). See the manual for details.
 * The destination type has now a new option which allows to create performance libraries. Currently, only the Yamaha YSFC format is supported.
