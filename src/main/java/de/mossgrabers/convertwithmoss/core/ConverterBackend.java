@@ -206,7 +206,7 @@ public class ConverterBackend
 
 
     /**
-     * If multiple files for a library were collected, create the library .
+     * If multiple files for a library were collected, create the library.
      * 
      * @param cancelled True if the process was cancelled
      */

@@ -14,7 +14,7 @@ date:   \today
 \pagebreak 
 </div>
 
-# Welcome to the ConvertWithMoss Documentation
+# Introduction & Installation
 
 This tool converts multisamples in a [specific source format to a different destination format](README-FORMATS.md#). Furthermore, it can create multisample files from plain sample files like AIFF and WAV.
 
@@ -43,7 +43,7 @@ See also the various build scripts in this directory as references on how to bui
 
 For Linux (BSD not tested) there is also a `Makefile` for build and install with the usual `make` and `make install` commands.
 
-## Usage
+# Usage via the user interface
 
 1. Select the source format on the left.
 2. Select the source folder, which contains one or more multisamples in the selected source format. The files can also be located in sub-folders.
@@ -54,7 +54,7 @@ For Linux (BSD not tested) there is also a `Makefile` for build and install with
 
 Alternatively, press *Analyse* to analyse all potential source file but not to write any files. Use this to check for errors before finally running the conversion.
 
-### Options
+## Options
 
 * **Renaming**: Allows to rename multi-samples. Enable the checkbox to use this feature. If enabled select the file which contains the mapped names. The file is a simple text file in UTF-8 format (important if non-ASCII characters are used!). Each row contains one mapping. A mapping consists of 2 names separated either by ';' or ','. E.g. a row which contains "AcPno;Acoustic Piano" would name a multi-sample with the name "AcPno" into "Acoustic Piano" as output.
 * **Create folder structure**: If enabled, sub-folders from the source folder are created as well in the output folder. For example, if I select my whole "Sounds" folder, there are sub-folders like `Sounds\07 Synth\Lead\01W Emerson'70 Samples`. In that case the output folder would contain e.g. `07 Synth\Lead\01W Emerson'70.multisample` if Bitwig multisample is selected as the destination format.
@@ -63,3 +63,65 @@ Alternatively, press *Analyse* to analyse all potential source file but not to w
 
 [1]: https://github.com/git-moss/ConvertWithMoss/blob/main/documentation/SupportedFeaturesSampleFormats.ods
 [2]: https://mossgrabers.de/Software/ConvertWithMoss/ConvertWithMoss.html
+
+# Usage via the command line interface (CLI)
+
+Locate the ConvertWithMoss executable on your system. On **Windows** use the application ConvertWithMossCLI.exe which is in the same folder as ConvertWithMoss.exe.
+Open a console window. As soon as you add attributes after the application it will run in CLI mode instead of opening the ConvertWithMoss application window.
+
+First display all of the available attributes by typing:
+
+<pre>./ConvertWithMoss -h</pre>
+
+The following output is displayed:
+
+<pre>Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY] [-r=RENAME]
+                       -s=SOURCE [-t=TYPE] [-p[=KEY=VALUE...]]... SOURCE_FOLDER
+                       DESTINATION_FOLDER
+      SOURCE_FOLDER        The source folder to process.
+      DESTINATION_FOLDER   The destination folder to write to.
+  -a, --analyze            If present, only analyzes the potential source files.
+  -d, --destination=DESTINATION
+                           The destination format.
+  -f, --flat               If present, the folder structure is not recreated in
+                             the output folder.
+  -h, --help               Show this help message and exit.
+  -l, --library=LIBRARY    Name for the library. Set to create a library.
+  -p=[KEY=VALUE...]        Key-value pairs in the form -pkey1=value1,
+                             key2=value2,...
+  -r, --rename=RENAME      Configuration file for automatic file renaming.
+  -s, --source=SOURCE      The source format.
+  -t, --type=TYPE          Set to either 'preset' (the default if absent) or
+                             'performance' (without the quotes).
+  -V, --version            Print version information and exit.</pre>
+
+The parameters should be easy to understand since they are identical to what you can do with the user interface.
+Here is an example for a conversion from Kontakt NKI files to 1010music format:
+
+<pre>./ConvertWithMoss -s nki -d 1010music D:\MySampler\Kontakt C:\ConversionOutput</pre>
+
+To get a list of the available detectors simply set a non-existing one like this (same for the creators):
+
+<pre>./ConvertWithMoss -s whatever -d 1010music D:\MySampler\Kontakt C:\ConversionOutput</pre>
+
+All configuration settings for the detector and the creator are available as well. These settings are can be applied with the -p attribute and then adding a list of key/value pairs. To get a list of the available settings for the selected detector and creator simply add an illegel one like this:
+
+<pre>./ConvertWithMoss -s nki -d 1010music -pKey=Value D:\MySampler\Kontakt C:\ConversionOutput</pre>
+
+You will get the following output:
+
+<pre>Unknown parameter: 'key'.
+Accepted source parameters: [NkiPreferFolderName, NkiDefaultCreator, NkiCreators]
+Accepted destination parameters: [1010musicWriteBroadcastAudioChunk, 1010musicWriteInstrumentChunk, 1010musicWriteSampleChunk, 1010musicRemoveJunkChunk, 1010musicInterpolationQuality, 1010musicResampleTo2448, 1010musicTrimStartToEnd]</pre>
+
+The names of the parameters should be easy to match when looking at the ConvertWithMoss user interface. Checkboxes are boolean value which can be set with 0 and 1, for example:
+
+<pre>./ConvertWithMoss -s nki -d 1010music -p1010musicResampleTo2448=1 D:\MySampler\Kontakt C:\ConversionOutput</pre>
+
+Multiple settings are concatenated by using a comma:
+
+<pre>./ConvertWithMoss -s nki -d 1010music -pNkiDefaultCreator="Klaus Meier",1010musicResampleTo2448=1 D:\MySampler\Kontakt C:\ConversionOutput</pre>
+
+Finally, an example for creating a library of performances:
+
+<pre>./ConvertWithMoss -s nki -d ysfc -l Pads -t performance D:\MySampler\Kontakt C:\ConversionOutput</pre>
