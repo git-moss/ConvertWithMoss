@@ -43,11 +43,11 @@ jobs:
           # This is ARM64
           - os: macos-14
             artifact_name: ConvertWithMoss*.dmg
-            build_name: mac-arm
+            build_name: mac
           # This is x64
           - os: macos-13
             artifact_name: ConvertWithMoss*.dmg
-            build_name: mac-x64
+            build_name: mac
     
     name: ${{ matrix.os }}
 

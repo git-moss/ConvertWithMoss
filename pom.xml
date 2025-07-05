@@ -174,7 +174,7 @@
 						<id>mac</id>
 						<configuration>
 							<type>DMG</type>
-							<icon>${project.basedir}/src/main/resources/de/mossgrabers/convertwithmoss/images/ConvertWithMoss.icns</icon>
+							<icon>${project.basedir}/icons/ConvertWithMoss.icns</icon>
 						</configuration>
 					</execution>
 					<execution>
