@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.cmi3.VCDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Detector;
 import de.mossgrabers.convertwithmoss.format.nki.NkiCreator;
@@ -94,6 +95,7 @@ public class ConverterBackend
 
         this.detectors = new IDetector []
         {
+            new VCDetector (notifier),
             new Music1010Detector (notifier),
             new AbletonDetector (notifier),
             new MPCKeygroupDetector (notifier),
