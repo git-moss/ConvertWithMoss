@@ -438,13 +438,16 @@ public class VCFile
 						if (svTune.get(firstID) == -1)
 						{
 							newZone.setKeyTracking(0);
-							newZone.setKeyRoot(60);
+							newZone.setKeyRoot(65);
 						}
 						else
 						{
 							newZone.setKeyTracking(1);
 							newZone.setKeyRoot((int)Math.round(pitchConvert(svTune.get(firstID), voiceTune, svSR.get(firstID))));
-							newZone.setTune((pitchConvert(svTune.get(firstID), voiceTune, svSR.get(firstID)) - newZone.getKeyRoot()) * 100);
+							newZone.setKeyRoot(newZone.getKeyRoot() < 0 ? newZone.getKeyRoot() + 128 : newZone.getKeyRoot());
+							this.notifier.logText(Integer.toString(newZone.getKeyRoot()));
+							this.notifier.logText("\n");
+							newZone.setTune((pitchConvert(svTune.get(firstID), voiceTune, svSR.get(firstID)) - newZone.getKeyRoot()));
 						}
 						if (svLoop.get(firstID) == true)
 						{
@@ -478,7 +481,8 @@ public class VCFile
 							{
 								newZone2.setKeyTracking(1);
 								newZone2.setKeyRoot((int)Math.round(pitchConvert(svTune.get(secondID), voiceTune, svSR.get(secondID))));
-								newZone2.setTune((pitchConvert(svTune.get(secondID), voiceTune, svSR.get(secondID)) - newZone2.getKeyRoot()) * 100);
+								newZone2.setKeyRoot(newZone2.getKeyRoot() < 0 ? newZone2.getKeyRoot() + 128 : newZone2.getKeyRoot());
+								newZone2.setTune((pitchConvert(svTune.get(secondID), voiceTune, svSR.get(secondID)) - newZone2.getKeyRoot()));
 							}
 							if (svLoop.get(secondID) == true)
 							{
