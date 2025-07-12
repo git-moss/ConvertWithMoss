@@ -30,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -136,6 +137,16 @@ public class VCFile
     	List<Boolean> svIL = new ArrayList<Boolean>();
     	List<Boolean> svLoop = new ArrayList<Boolean>();
     	List<Boolean> svReleaseLoop = new ArrayList<Boolean>();
+    	List<Double> svAttackF = new ArrayList<Double>();
+    	List<Double> svAttackS = new ArrayList<Double>();
+    	List<Double> svHold = new ArrayList<Double>();
+    	List<Double> svDecay = new ArrayList<Double>();
+    	List<Double> svSustain = new ArrayList<Double>();
+    	List<Double> svAmp = new ArrayList<Double>();
+    	List<Double> svReleaseF = new ArrayList<Double>();
+    	List<Double> svReleaseS = new ArrayList<Double>();
+    	List<Boolean> svAttackX = new ArrayList<Boolean>();
+    	List<Boolean> svReleaseX = new ArrayList<Boolean>();
 		
 		
         for (int iPre = 0; iPre < 1; iPre++)
@@ -184,6 +195,16 @@ public class VCFile
 				svLEB.add(0);
 				svLoop.add(false);
 				svReleaseLoop.add(false);
+				svAttackF.add(0.0);
+				svAttackS.add(0.0);
+				svHold.add(0.0);
+				svDecay.add(0.0);
+				svSustain.add(0.0);
+				svAmp.add(0.0);
+				svReleaseF.add(0.0);
+				svReleaseS.add(0.0);
+				svAttackX.add(false);
+				svReleaseX.add(false);
 				svIL.add(false);
 			}
 			
@@ -203,9 +224,16 @@ public class VCFile
 					}
 					case 9:
 					{
-						if (headFuncBuff[2] == 24 && headFuncBuff[3] == 1)
+						switch(headFuncBuff[2])
 						{
-							voiceTune = (int) Byte.toUnsignedInt(headFuncBuff[4]) * 256 + Byte.toUnsignedInt(headFuncBuff[5]);
+							case 24:
+							{
+								voiceTune = (int) Byte.toUnsignedInt(headFuncBuff[4]) * 256 + Byte.toUnsignedInt(headFuncBuff[5]);
+							}
+							default:
+							{
+								break;
+							}
 						}
 						break;
 					}
@@ -259,17 +287,95 @@ public class VCFile
 					{
 						case 9:
 						{
-							if (subFuncBuff[2] == 24 && subFuncBuff[3] == 1)
+							switch(subFuncBuff[2])
 							{
-								svTune.set(itera, (int) Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5]));
-							}
-							if (subFuncBuff[2] == 29)
-							{
-								svLoop.set(itera, (int) Byte.toUnsignedInt(subFuncBuff[3]) > 127 ? true : false);
-							}
-							if (subFuncBuff[2] == 42)
-							{
-								svReleaseLoop.set(itera, (int) Byte.toUnsignedInt(subFuncBuff[3]) > 127 ? true : false);
+								case 5:
+								{
+									svAttackF.set(itera, (double) Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5]));
+									if (svAttackF.get(itera) > 32767)
+										svAttackF.set(itera, 65536 - svAttackF.get(itera));
+									svAttackF.set(itera, svAttackF.get(itera) / 4096);
+									break;
+								}
+								case 6:
+								{
+									svHold.set(itera, (double) Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5]));
+									if (svHold.get(itera) > 32767)
+										svHold.set(itera, 65536 - svHold.get(itera));
+									svHold.set(itera, svHold.get(itera) / 4096);
+									break;
+								}
+								case 7:
+								{
+									svDecay.set(itera, (double) Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5]));
+									if (svDecay.get(itera) > 32767)
+										svDecay.set(itera, 65536 - svDecay.get(itera));
+									svDecay.set(itera, svDecay.get(itera) / 2048);
+									break;
+								}
+								case 8:
+								{
+									svSustain.set(itera, (double) levelConvert(Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5])));
+									break;
+								}
+								case 9:
+								{
+									svAmp.set(itera, (double) levelConvertDB(Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5])));
+									break;
+								}
+								case 10:
+								{
+									svReleaseF.set(itera, (double) Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5]));
+									if (svReleaseF.get(itera) > 32767)
+										svReleaseF.set(itera, 65536 - svReleaseF.get(itera));
+									svReleaseF.set(itera, svReleaseF.get(itera) / 2048);
+									break;
+								}
+								case 16:
+								{
+									svAttackS.set(itera, (double) Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5]));
+									if (svAttackS.get(itera) > 32767)
+										svAttackS.set(itera, 65536 - svAttackS.get(itera));
+									svAttackS.set(itera, svAttackS.get(itera) / 4096);
+									break;
+								}
+								case 17:
+								{
+									svReleaseS.set(itera, (double) Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5]));
+									if (svReleaseS.get(itera) > 32767)
+										svReleaseS.set(itera, 65536 - svReleaseS.get(itera));
+									svReleaseS.set(itera, svReleaseS.get(itera) / 2048);
+									break;
+								}
+								case 24:
+								{
+									svTune.set(itera, (int) Byte.toUnsignedInt(subFuncBuff[4]) * 256 + Byte.toUnsignedInt(subFuncBuff[5]));
+									break;
+								}
+								case 27:
+								{
+									svAttackX.set(itera, (int) Byte.toUnsignedInt(subFuncBuff[3]) > 127 ? true : false);
+									break;
+								}
+								case 28:
+								{
+									svReleaseX.set(itera, (int) Byte.toUnsignedInt(subFuncBuff[3]) > 127 ? true : false);
+									break;
+								}
+								case 29:
+								{
+									svLoop.set(itera, (int) Byte.toUnsignedInt(subFuncBuff[3]) > 127 ? true : false);
+									break;
+								}
+								case 42:
+								{
+									svReleaseLoop.set(itera, (int) Byte.toUnsignedInt(subFuncBuff[3]) > 127 ? true : false);
+									break;
+								}
+								default:
+								{
+									break;
+								}
 							}
 							break;
 						}
@@ -428,10 +534,26 @@ public class VCFile
                     		loop.setEnd (svLEA.get(firstID));
 							newZone.addLoop(loop);
 						}
-            			group.addSampleZone(newZone);
+						
+						newZone.setGain(svAmp.get(firstID));
+        				final IEnvelope amplitudeEnvelope = newZone.getAmplitudeEnvelopeModulator ().getSource ();
+						if (svAttackX.get(firstID) == true)
+							amplitudeEnvelope.setAttackTime(svAttackS.get(firstID));
+						else
+							amplitudeEnvelope.setAttackTime(svAttackF.get(firstID));
+						amplitudeEnvelope.setHoldTime(svHold.get(firstID));
+						amplitudeEnvelope.setDecayTime(svDecay.get(firstID));
+						amplitudeEnvelope.setSustainLevel(svSustain.get(firstID));
+						if (svReleaseX.get(firstID) == true)
+							amplitudeEnvelope.setReleaseTime(svReleaseS.get(firstID));
+						else
+							amplitudeEnvelope.setReleaseTime(svReleaseF.get(firstID));
+						
 						if (channels == 2 && svIL.get(firstID) == false)
 						{
+							newZone.setPanning(-1);
 							DefaultSampleZone newZone2 = new DefaultSampleZone();
+							newZone2.setPanning(1);
 							newZone2.setKeyLow(key);
 							for (int key2 = key; key2 < 128; key2++)
 							{
@@ -463,8 +585,24 @@ public class VCFile
                     			loop.setEnd (svLEB.get(secondID));
 								newZone2.addLoop(loop);
 							}
+						
+							newZone2.setGain(svAmp.get(secondID));
+        					final IEnvelope amplitudeEnvelope2 = newZone2.getAmplitudeEnvelopeModulator ().getSource ();
+							if (svAttackX.get(secondID) == true)
+								amplitudeEnvelope2.setAttackTime(svAttackS.get(secondID));
+							else
+								amplitudeEnvelope2.setAttackTime(svAttackF.get(secondID));
+							amplitudeEnvelope2.setHoldTime(svHold.get(secondID));
+							amplitudeEnvelope2.setDecayTime(svDecay.get(secondID));
+							amplitudeEnvelope2.setSustainLevel(svSustain.get(secondID));
+							if (svReleaseX.get(secondID) == true)
+								amplitudeEnvelope2.setReleaseTime(svReleaseS.get(secondID));
+							else
+								amplitudeEnvelope2.setReleaseTime(svReleaseF.get(secondID));
+						
             				group.addSampleZone(newZone2);
 						}
+            			group.addSampleZone(newZone);
 						prevK = Byte.toUnsignedInt(mappingInfo[key]);
 			}
         }
@@ -502,6 +640,24 @@ public class VCFile
 			outGV -= 32768;
 		double sr0 = 3072 * Math.log(srV / 44100) / Math.log(2);
 		return ((-outV - outGV + sr0) / 256 + 65) % 128;
+	}
+	
+	private double levelConvert(final int inV)
+	{
+	    if (inV == 0)
+	        return 1;
+	    double outV = (double) inV;
+	    if (outV >= 32768)
+	        outV -= 65536;
+	    return Math.max(0, 1.01 - Math.pow(10, outV / 256) / 100);
+	}
+    
+	private double levelConvertDB(final int inV)
+	{
+    	double outV = inV;
+    	if (outV >= 32768)
+       	 	outV -= 65536;
+    	return outV / 512;
 	}
 
     // Flip MSB / LSB
