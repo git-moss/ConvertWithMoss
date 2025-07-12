@@ -152,14 +152,10 @@ public class VCFile
 				if (header[i * 4 + 259] == 0 || header[i * 4 + 259] < 0)
 				{
 					numSubVoices = i;
-					this.notifier.logText(Integer.toString(numSubVoices));
-					this.notifier.logText("\n");
 					break;
 				}
 				else
 				{
-					this.notifier.logText(Integer.toString(Byte.toUnsignedInt(header[i * 4 + 259])));
-					this.notifier.logText("\n");
 					subvoiceID.add(Byte.toUnsignedInt(header[i * 4 + 259]));
 				}
 			}
@@ -316,28 +312,8 @@ public class VCFile
 								{
 									svIL.set(itera, true);
 								}
-								else
-								{
-									this.notifier.logText("K");
-									this.notifier.logText("\n");
-								}
-							}
-							else
-							{
-								this.notifier.logText("C");
-								this.notifier.logText("\n");
 							}
 						}
-						else
-						{
-							this.notifier.logText("U");
-							this.notifier.logText("\n");
-						}
-					}
-					else
-					{
-						this.notifier.logText("F");
-						this.notifier.logText("\n");
 					}
 				}
 						
@@ -354,8 +330,6 @@ public class VCFile
 						if (svIDB.get((svIDB).indexOf(svIDB.get(itera))) < 0)
 							fileSeeker2 += svSizeA.get(itera);
 					}
-					this.notifier.logText(Integer.toString(fileSeeker2));
-					this.notifier.logText("\n");
 					byte[] sampleBuff2 = Arrays.copyOfRange(inBytes, fileSeeker2, fileSeeker2 + svSizeA.get(itera));
 					
 					data = new byte[svSizeA.get(itera) * 2];
@@ -444,10 +418,8 @@ public class VCFile
 						{
 							newZone.setKeyTracking(1);
 							newZone.setKeyRoot((int)Math.round(pitchConvert(svTune.get(firstID), voiceTune, svSR.get(firstID))));
-							newZone.setKeyRoot(newZone.getKeyRoot() < 0 ? newZone.getKeyRoot() + 128 : newZone.getKeyRoot());
-							this.notifier.logText(Integer.toString(newZone.getKeyRoot()));
-							this.notifier.logText("\n");
 							newZone.setTune((pitchConvert(svTune.get(firstID), voiceTune, svSR.get(firstID)) - newZone.getKeyRoot()));
+							newZone.setKeyRoot(newZone.getKeyRoot() < 0 ? newZone.getKeyRoot() + 128 : newZone.getKeyRoot());
 						}
 						if (svLoop.get(firstID) == true)
 						{
@@ -481,8 +453,8 @@ public class VCFile
 							{
 								newZone2.setKeyTracking(1);
 								newZone2.setKeyRoot((int)Math.round(pitchConvert(svTune.get(secondID), voiceTune, svSR.get(secondID))));
-								newZone2.setKeyRoot(newZone2.getKeyRoot() < 0 ? newZone2.getKeyRoot() + 128 : newZone2.getKeyRoot());
 								newZone2.setTune((pitchConvert(svTune.get(secondID), voiceTune, svSR.get(secondID)) - newZone2.getKeyRoot()));
+								newZone2.setKeyRoot(newZone2.getKeyRoot() < 0 ? newZone2.getKeyRoot() + 128 : newZone2.getKeyRoot());
 							}
 							if (svLoop.get(secondID) == true)
 							{
