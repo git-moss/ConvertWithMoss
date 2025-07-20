@@ -90,6 +90,7 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
         if (sampleData == null)
         {
             this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
+            this.notifier.logText ("\n");
             return;
         }
 
@@ -228,7 +229,10 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
                     {
                         final ISampleData sampleData = zone.getSampleData ();
                         if (sampleData == null)
+                        {
                             this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
+                            this.notifier.logText ("\n");
+                        }
                         else
                             sampleData.writeSample (fos);
                     }
@@ -503,7 +507,10 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
         zipOutputStream.putNextEntry (entry);
         final ISampleData sampleData = zone.getSampleData ();
         if (sampleData == null)
+        {
             this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
+            this.notifier.logText ("\n");
+        }
         else
             sampleData.writeSample (zipOutputStream);
         zipOutputStream.closeEntry ();

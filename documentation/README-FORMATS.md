@@ -131,7 +131,7 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 If no 'Template and resources folder' is configured the default template is used which creates several controls for an amp envelope, a lowpass filter with envelope, a delay and reverb as well as pitch-modulation via mod-wheel.
 To modify this template, first create an empty folder somewhere on your disc. Select this folder in the 'Template and resources folder' field. Then click on the button 'Create template in the selected folder'. This copies the template 'ui.xml' into this folder. You can copy additional images and documentation files to the folder. These resource files will be added to the output as well. This template will be applied to all created dspresets. But note that you can have multiple templates if you use several template folders which can then be switched for each conversion run.
 
-The template can contain 1 effects, modulators, midi and ui tag. The content of the modulators-tag will be added to the existing modulators-tag which gets created by ConvertWithMoss.
+The template can contain 1 effects, modulators, midi and ui tag. The content of the modulators-tag will be added to the existing modulators-tag which gets created by ConvertWithMoss. Make sure to use the correct indices!
 
 There are two issues with amplitude envelopes:
 
@@ -142,6 +142,7 @@ There are two issues with amplitude envelopes:
 * %ENV_DECAY_VALUE%
 * %ENV_SUSTAIN_VALUE%
 * %ENV_RELEASE_VALUE%
+* %ENV_VELOCITY_SENSITIVITY%
 
 ## Expert Sleepers disting EX
 
