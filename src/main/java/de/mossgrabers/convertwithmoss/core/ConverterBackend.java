@@ -38,8 +38,8 @@ import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCrea
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Detector;
-import de.mossgrabers.convertwithmoss.format.nki.NkiCreator;
-import de.mossgrabers.convertwithmoss.format.nki.NkiDetector;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktCreator;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktDetector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -101,9 +101,10 @@ public class ConverterBackend
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),
             new DistingExDetector (notifier),
-            new NkiDetector (notifier),
+            new KontaktDetector (notifier),
             new KMPDetector (notifier),
             new KorgmultisampleDetector (notifier),
+            // new MaschineDetector (notifier),
             new EXS24Detector (notifier),
             new SxtDetector (notifier),
             new SampleFileDetector (notifier),
@@ -123,7 +124,7 @@ public class ConverterBackend
             new TX16WxCreator (notifier),
             new DecentSamplerCreator (notifier),
             new DistingExCreator (notifier),
-            new NkiCreator (notifier),
+            new KontaktCreator (notifier),
             new KMPCreator (notifier),
             new KorgmultisampleCreator (notifier),
             new EXS24Creator (notifier),

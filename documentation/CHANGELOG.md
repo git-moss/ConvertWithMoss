@@ -1,5 +1,16 @@
 # Changes
 
+## 14.0.1 (unreleased)
+
+* Improved logging output of missing samples.
+* DecentSampler
+  * New: The value for the amplitude velocity sensitivity is now initialised in the template via the new variable %ENV_VELOCITY_SENSITIVITY%.
+  * New: The delay Mix default value is now set to zero in the template.
+* Kontakt
+  * Fixed: Reading of Soundinfo could fail in rare cases with file version 4.2.
+* Yamaha YSFC
+  * Fixed: Montage files were not written correctly
+
 ## 14.0.0
 
 * The application can now be run without the user interface for batch processing via the command line interface (CLI). See the manual for details.

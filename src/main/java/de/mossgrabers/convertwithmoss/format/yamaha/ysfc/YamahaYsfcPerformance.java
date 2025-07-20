@@ -41,6 +41,7 @@ public class YamahaYsfcPerformance implements IStreamable
     private byte []                               digitalInputPart;
     private byte []                               playSettings;
     private final String []                       assignableKnobs = new String [8];
+    private byte []                               rest;
 
 
     /**
@@ -155,6 +156,9 @@ public class YamahaYsfcPerformance implements IStreamable
 
         // Control Box 1-16
         this.controlBoxes = in.readNBytes (16 * 9);
+
+        // Necessary for Montage!
+        this.rest = in.readAllBytes ();
     }
 
 
@@ -239,6 +243,8 @@ public class YamahaYsfcPerformance implements IStreamable
 
         // Control Box 1-16
         arrayOut.write (this.controlBoxes);
+
+        arrayOut.write (this.rest);
 
         StreamUtils.writeDataBlock (out, arrayOut.toByteArray (), true);
     }

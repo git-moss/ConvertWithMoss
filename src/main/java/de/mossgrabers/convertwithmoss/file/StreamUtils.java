@@ -995,6 +995,21 @@ public class StreamUtils
 
 
     /**
+     * Reads one byte and then moves the file pointer back to the beginning of the read.
+     *
+     * @param fileAccess The random access file to read from
+     * @return The read byte
+     * @throws IOException Could not read
+     */
+    public static int peek (final RandomAccessFile fileAccess) throws IOException
+    {
+        final int value = fileAccess.read ();
+        fileAccess.seek (fileAccess.getFilePointer () - 1);
+        return value;
+    }
+
+
+    /**
      * Reads a number of bytes and then moves the file pointer back to the beginning of the read.
      *
      * @param fileAccess The random access file to read from
