@@ -546,8 +546,6 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         final String fileEnding = sampleFile.getName ().toLowerCase ();
         try
         {
-            IFileBasedSampleData sampleData = null;
-
             // Note: only AIF ending is picked up as correct ending below and it also does not
             // accept all AIFF files
             if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
@@ -562,30 +560,29 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                         throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), compressionType));
                 }
 
-                sampleData = new AiffFileSampleData (sampleFile);
+                return new AiffFileSampleData (sampleFile);
             }
-            else if (fileEnding.endsWith (".ncw"))
-                sampleData = new NcwFileSampleData (sampleFile);
-            else
+
+            if (fileEnding.endsWith (".ncw"))
+                return new NcwFileSampleData (sampleFile);
+
+            IFileBasedSampleData sampleData = null;
+            final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
+            final AudioFileFormat.Type type = audioFileFormat.getType ();
+            if (AudioFileFormat.Type.WAVE.equals (type))
             {
-                final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
-                final AudioFileFormat.Type type = audioFileFormat.getType ();
-                if (AudioFileFormat.Type.WAVE.equals (type))
-                {
-                    if (AudioFileUtils.checkSampleFile (sampleFile, notifier))
-                        sampleData = new WavFileSampleData (sampleFile);
-                }
-                else if (AudioFileFormat.Type.AIFF.equals (type))
-                    sampleData = new AiffFileSampleData (sampleFile);
-                else if (OGG_TYPE.equals (type))
-                    sampleData = new OggFileSampleData (sampleFile);
-                else if (FLAC_TYPE.equals (type))
-                    sampleData = new FlacFileSampleData (sampleFile);
-
-                if (sampleData == null)
-                    throw new IOException (Functions.getMessage (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, type.toString ()));
+                if (AudioFileUtils.checkSampleFile (sampleFile, notifier))
+                    sampleData = new WavFileSampleData (sampleFile);
             }
+            else if (AudioFileFormat.Type.AIFF.equals (type))
+                sampleData = new AiffFileSampleData (sampleFile);
+            else if (OGG_TYPE.equals (type))
+                sampleData = new OggFileSampleData (sampleFile);
+            else if (FLAC_TYPE.equals (type))
+                sampleData = new FlacFileSampleData (sampleFile);
 
+            if (sampleData == null)
+                throw new IOException (Functions.getMessage (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, type.toString ()));
             return sampleData;
         }
         catch (final UnsupportedAudioFileException | IOException ex)

@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -81,17 +81,7 @@ public class Maschine2Format implements IMaschineFormat
     public List<IMultisampleSource> readSound (final File sourceFolder, final File sourceFile, final InputStream inputStream, final IMetadataConfig metadataConfig) throws IOException
     {
         final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
-        final Optional<MaschinePresetAccessor> presetAccessor = this.readMaschinePreset (niContainerItem, sourceFolder, sourceFile, metadataConfig);
-        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-        if (presetAccessor.isPresent ())
-        {
-            // final List<Pair<IMultisampleSource, Sound>> sources = this.convertPrograms
-            // (presetAccessor.get (), niContainerItem, sourceFile, metadataConfig,
-            // monolithSamples);
-            // for (final Pair<IMultisampleSource, Sound> source: sources)
-            // multisampleSources.add (source.getKey ());
-        }
-        return multisampleSources;
+        return this.readMaschinePreset (niContainerItem, sourceFolder, sourceFile, metadataConfig);
     }
 
 
@@ -105,7 +95,7 @@ public class Maschine2Format implements IMaschineFormat
      * @return Access to the read Maschine data
      * @throws IOException Could not read the container
      */
-    private Optional<MaschinePresetAccessor> readMaschinePreset (final NIContainerItem niContainerItem, final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
+    private List<IMultisampleSource> readMaschinePreset (final NIContainerItem niContainerItem, final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
     {
         final NIContainerDataChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
         if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
@@ -119,9 +109,9 @@ public class Maschine2Format implements IMaschineFormat
             final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
             if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
             {
-                final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor ();
-                programAccessor.readMaschinePresetChunks (presetChunkData.getPresetData ());
-                return Optional.of (programAccessor);
+                final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
+                final Optional<IMultisampleSource> source = programAccessor.readMaschinePresetChunks (sourceFolder, sourceFile, presetChunkData.getPresetData ());
+                return source.isPresent () ? Collections.singletonList (source.get ()) : Collections.emptyList ();
             }
         }
 
@@ -130,6 +120,6 @@ public class Maschine2Format implements IMaschineFormat
             if (autorizationChunk.getData () instanceof final AuthorizationChunkData authorization && !authorization.getSerialNumberPIDs ().isEmpty ())
                 this.notifier.logError ("IDS_NI_CONTAINER_CONTAINS_ENCRYPTED_SUB_TREE");
 
-        return Optional.empty ();
+        return Collections.emptyList ();
     }
 }

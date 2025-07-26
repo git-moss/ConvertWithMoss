@@ -2,7 +2,7 @@
 
 ## 14.0.1 (unreleased)
 
-* Improved logging output of missing samples.
+* Logging: Improved logging output of missing samples. Added ConvertWithMoss version number to log.
 * DecentSampler
   * New: The value for the amplitude velocity sensitivity is now initialised in the template via the new variable %ENV_VELOCITY_SENSITIVITY%.
   * New: The delay Mix default value is now set to zero in the template.

@@ -5,11 +5,11 @@
 package de.mossgrabers.convertwithmoss.format;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +28,7 @@ public class TagDetector
     private static final Map<String, String>    CATEGORY_LOOKUP               = new TreeMap<> (new StringLengthComparator ());
     private static final Map<String, String>    KEYWORD_LOOKUP                = new TreeMap<> (new StringLengthComparator ());
 
+    public static final String                  CATEGORY_UNKNOWN              = "Unknown";
     public static final String                  CATEGORY_ACOUSTIC_DRUM        = "Acoustic Drum";
     public static final String                  CATEGORY_BASS                 = "Bass";
     public static final String                  CATEGORY_BELL                 = "Bell";
@@ -490,7 +491,7 @@ public class TagDetector
      */
     public static String detectCategory (final String [] texts)
     {
-        return detect (texts, CATEGORY_LOOKUP, "Unknown");
+        return detect (texts, CATEGORY_LOOKUP, CATEGORY_UNKNOWN);
     }
 
 
@@ -500,9 +501,9 @@ public class TagDetector
      * @param texts The texts
      * @return The detected tag
      */
-    public static String detectCategory (final List<String> texts)
+    public static String detectCategory (final Collection<String> texts)
     {
-        return detect (texts, CATEGORY_LOOKUP, "Unknown");
+        return detect (texts, CATEGORY_LOOKUP, CATEGORY_UNKNOWN);
     }
 
 
@@ -524,7 +525,7 @@ public class TagDetector
      * @param texts The texts
      * @return The detected keywords
      */
-    public static String [] detectKeywords (final List<String> texts)
+    public static String [] detectKeywords (final Collection<String> texts)
     {
         final Set<String> keywords = new HashSet<> ();
         for (final String text: texts)
@@ -584,7 +585,7 @@ public class TagDetector
      * @param defaultTag The tag to return if none matched
      * @return The detected tag
      */
-    public static String detect (final List<String> texts, final Map<String, String> lookupMap, final String defaultTag)
+    public static String detect (final Collection<String> texts, final Map<String, String> lookupMap, final String defaultTag)
     {
         final Map<String, String> results = new HashMap<> ();
         for (final String text: texts)
