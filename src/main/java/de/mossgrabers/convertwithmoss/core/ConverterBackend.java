@@ -40,6 +40,7 @@ import de.mossgrabers.convertwithmoss.format.music1010.Music1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Detector;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktCreator;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktDetector;
+import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineDetector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -104,7 +105,7 @@ public class ConverterBackend
             new KontaktDetector (notifier),
             new KMPDetector (notifier),
             new KorgmultisampleDetector (notifier),
-            // new MaschineDetector (notifier),
+            new MaschineDetector (notifier),
             new EXS24Detector (notifier),
             new SxtDetector (notifier),
             new SampleFileDetector (notifier),
@@ -190,6 +191,7 @@ public class ConverterBackend
         this.collectedPresetSources.clear ();
         this.collectedPerformanceSources.clear ();
 
+        this.notifier.log ("TITLE");
         this.notifier.log ("IDS_NOTIFY_DETECTING");
         this.creator.clearCancelled ();
         this.detector.detect (sourceFolder, new MultisampleSourceConsumer (), new PerformanceSourceConsumer (), detectPerformances);
