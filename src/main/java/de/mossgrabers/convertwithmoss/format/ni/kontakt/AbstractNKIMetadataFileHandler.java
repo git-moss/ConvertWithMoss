@@ -1100,6 +1100,11 @@ public abstract class AbstractNKIMetadataFileHandler
         sampleFile = new File (parentFolder, samplePath);
         if (sampleFile.exists () && sampleFile.canRead ())
             return sampleFile;
+        // Search all sub-folders - also triggers searching for different extension cases
+        // Also go up 1 folder in case this is a library
+        sampleFile = AbstractDetector.findSampleFile (this.notifier, parentFolder, null, sampleFile.getAbsolutePath (), 1);
+        if (sampleFile.exists () && sampleFile.canRead ())
+            return sampleFile;
         this.notifier.logError ("IDS_NKI_SAMPLE_FILE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
         return null;
     }

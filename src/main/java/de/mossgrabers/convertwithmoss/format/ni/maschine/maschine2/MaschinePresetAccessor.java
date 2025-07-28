@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -89,11 +90,11 @@ public class MaschinePresetAccessor
      * @return The read multi-sample source
      * @throws IOException Could not parse the data
      */
-    public Optional<IMultisampleSource> readMaschinePresetChunks (final File sourceFolder, final File sourceFile, final byte [] data) throws IOException
+    public List<IMultisampleSource> readMaschinePreset (final File sourceFolder, final File sourceFile, final byte [] data) throws IOException
     {
         // TODO remove
-        // Files.write (new File ("C:/Users/mos/Desktop", "MaschinePreset-" + sourceFile.getName ()
-        // + ".bin").toPath (), data);
+        // Files.write (new File ("C:/Users/mos/Desktop/Logs", "MaschinePreset-" +
+        // sourceFile.getName () + ".bin").toPath (), data);
 
         final List<byte []> parameterArray;
         final byte [] version;
@@ -114,127 +115,211 @@ public class MaschinePresetAccessor
             parameterArray = readArray (inputStream);
         }
 
-        return this.readParameters (sourceFolder, sourceFile, parameterArray, version[1] < 0x0E);
+        final Optional<IMultisampleSource> source = this.readSounds (sourceFolder, sourceFile, parameterArray, version[1] < 0x0E);
+        return source.isPresent () ? Collections.singletonList (source.get ()) : Collections.emptyList ();
     }
 
 
-    private Optional<IMultisampleSource> readParameters (final File sourceFolder, final File sourceFile, final List<byte []> parameterArray, final boolean isOldFormat) throws IOException
+    private Optional<IMultisampleSource> readSounds (final File sourceFolder, final File sourceFile, final List<byte []> parameterArray, final boolean isOldFormat) throws IOException
     {
         // TODO remove
         dumpParameters (parameterArray, sourceFile);
 
-        // 92 / 643 contains the name but it is taken from the SoundInfo
-        final int offsetCountInfo = isOldFormat ? 105 : 660;
-        final int offsetPluginInfo = isOldFormat ? 109 : 665;
-        final int offsetNumberOfSamples = isOldFormat ? 110 : 666;
-        final int offsetFirstZone = isOldFormat ? 111 : 667;
-        final int offsetZone = isOldFormat ? 59 : 80;
+        final boolean isGroup = sourceFile.getName ().toLowerCase (Locale.US).endsWith (".mxgrp");
+        final int numSounds = isGroup ? 16 : 1;
+        int groupOffset = isGroup ? 41 : 0;
 
-        final int numParameters = parameterArray.size ();
-        if (numParameters < offsetFirstZone)
-            return Optional.empty ();
-
-        // Check if there is at least 1 plug-in
-        try
+        boolean finish = false;
+        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+        for (int i = 0; i < numSounds; i++)
         {
-            final int [] values = readIntegerValues (parameterArray.get (offsetCountInfo), 12, isOldFormat);
-            if (values[11] < 1)
-            {
-                this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER_PLUGIN");
+            // Sound starts at 91 / 642
+            // 92 / 643 contains the name but it is taken from the SoundInfo
+            final int offsetCountInfo = groupOffset + (isOldFormat ? 105 : 660);
+            int offsetPluginInfo = groupOffset + (isOldFormat ? 109 : 665);
+            int offsetNumberOfSamples = groupOffset + (isOldFormat ? 110 : 666);
+            int offsetFirstZone = groupOffset + (isOldFormat ? 111 : 667);
+            final int offsetZone = isOldFormat ? 59 : 80;
+
+            final int numParameters = parameterArray.size ();
+            if (numParameters < offsetFirstZone)
                 return Optional.empty ();
-            }
-        }
-        catch (final IOException ex)
-        {
-            // There are some which seems to have non-number content in there but also no sampler
-            this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER_PLUGIN");
-            return Optional.empty ();
-        }
 
-        // 665 must contain "NI::MASCHINE::DATA::Sampler" at index 14 (14 = length)
-        final byte [] pluginInfo = parameterArray.get (offsetPluginInfo);
-        if (pluginInfo.length < 15)
-        {
-            this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER", "Unknown");
-            return Optional.empty ();
-        }
-
-        final ByteArrayInputStream pluginInfoIn = new ByteArrayInputStream (pluginInfo, isOldFormat ? 13 : 14, pluginInfo.length - (isOldFormat ? 13 : 14));
-        String pluginID = StreamUtils.readWith1ByteLengthAscii (pluginInfoIn);
-        if (!PLUGIN_MASCHINE_SAMPLER.equals (pluginID))
-        {
-            if (pluginID.startsWith (NI_MASCHINE_DATA_TAG))
-                pluginID = pluginID.substring (NI_MASCHINE_DATA_TAG.length ());
-            this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER", pluginID);
-            return Optional.empty ();
-        }
-
-        // Create the multi-sample with 1 group
-        final String name = FileUtils.getNameWithoutType (sourceFile);
-        final File parentFile = sourceFile.getParentFile ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFile, sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
-        final IGroup group = new DefaultGroup ();
-        multisampleSource.setGroups (Collections.singletonList (group));
-
-        final byte [] zonesInfo = parameterArray.get (offsetNumberOfSamples);
-        // TODO are there really only 255 samples possible? Is this maybe only 1 layer?
-        final int numberOfSamples = zonesInfo[7] & 0xFF;
-
-        int index = 0;
-        final List<String> filePaths = new ArrayList<> ();
-        for (int i = 0; i < numberOfSamples; i++)
-        {
-            // Sample info parameter: 4 bytes - 5 bytes for libraries; path with a max. of 256
-            // characters; 3 more bytes (01 01 00)
-            final ByteArrayInputStream sampleInfoIn = new ByteArrayInputStream (parameterArray.get (offsetFirstZone + index));
-
-            if (i == 0)
+            final int numberOfSamples;
+            if (i == 0 || parameterArray.get (offsetCountInfo).length > 0)
             {
-                final byte [] introBytes = sampleInfoIn.readNBytes (2);
-                if (introBytes.length == 0)
+                // Check if there is at least 1 plug-in
+                try
                 {
-                    this.notifier.logError ("IDS_NI_MASCHINE_SAMPLER_HAS_NO_SAMPLES");
+                    final int [] values = readIntegerValues (parameterArray.get (offsetCountInfo), 12, isOldFormat);
+                    if (values[11] < 1)
+                    {
+                        this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER_PLUGIN");
+                        // We do not know the offset to the next sound...
+                        return Optional.empty ();
+                    }
+                }
+                catch (final IOException ex)
+                {
+                    // There are some which seems to have non-number content in there but also no
+                    // sampler
+                    this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER_PLUGIN");
+                    // We do not know the offset to the next sound...
                     return Optional.empty ();
                 }
-                if (introBytes[0] != 0 || introBytes[1] != 0)
-                    throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Unknown Sampleinfo structure"));
-            }
 
-            final String samplePath;
-            // Library
-            if (sampleInfoIn.read () > 0)
-            {
-                sampleInfoIn.skip (2);
-                samplePath = StreamUtils.readWith1ByteLengthAscii (sampleInfoIn);
+                // 665 must contain "NI::MASCHINE::DATA::Sampler" at index 14 (14 = length)
+                final byte [] pluginInfo = parameterArray.get (offsetPluginInfo);
+                if (pluginInfo.length < 15)
+                {
+                    this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER", "Unknown");
+                    // We do not know the offset to the next sound...
+                    return Optional.empty ();
+                }
+
+                final ByteArrayInputStream pluginInfoIn = new ByteArrayInputStream (pluginInfo, isOldFormat ? 13 : 14, pluginInfo.length - (isOldFormat ? 13 : 14));
+                String pluginID = StreamUtils.readWith1ByteLengthAscii (pluginInfoIn);
+                if (!PLUGIN_MASCHINE_SAMPLER.equals (pluginID))
+                {
+                    if (pluginID.startsWith (NI_MASCHINE_DATA_TAG))
+                        pluginID = pluginID.substring (NI_MASCHINE_DATA_TAG.length ());
+                    this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER", pluginID);
+                    // We do not know the offset to the next sound...
+                    return Optional.empty ();
+                }
+
+                numberOfSamples = readIntegerValues (parameterArray.get (offsetNumberOfSamples), 6, isOldFormat)[5];
             }
             else
             {
-                sampleInfoIn.skip (1);
-                samplePath = StreamUtils.readWith1ByteLengthAscii (sampleInfoIn);
+                // Group Kit: It seems there are more samplers but without being explicitly named
+                offsetFirstZone -= 4;
+                groupOffset -= 4;
+                numberOfSamples = 1;
             }
-            filePaths.add (samplePath);
 
-            final ISampleZone zone = new DefaultSampleZone ();
-            group.addSampleZone (zone);
-            readZoneParameters (zone, index, parameterArray, isOldFormat);
+            // Create the multi-sample with 1 group
+            final String name = FileUtils.getNameWithoutType (sourceFile);
+            final File parentFile = sourceFile.getParentFile ();
+            final String [] parts = AudioFileUtils.createPathParts (parentFile, sourceFolder, name);
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+            final IGroup group = new DefaultGroup ();
+            multisampleSource.setGroups (Collections.singletonList (group));
 
-            index += offsetZone;
+            int zoneOffset = 0;
+            final List<String> filePaths = new ArrayList<> ();
+            for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex++)
+            {
+                // Sample info parameter: 4 bytes - 5 bytes for libraries; path with a max. of 256
+                // characters; 3 more bytes (01 01 00)
+                final ByteArrayInputStream sampleInfoIn = new ByteArrayInputStream (parameterArray.get (offsetFirstZone + zoneOffset));
+
+                if (i == 0 && sampleIndex == 0)
+                {
+                    final byte [] introBytes = sampleInfoIn.readNBytes (2);
+                    if (introBytes.length == 0)
+                    {
+                        this.notifier.logError ("IDS_NI_MASCHINE_SAMPLER_HAS_NO_SAMPLES");
+                        return Optional.empty ();
+                    }
+                    if (introBytes[0] != 0 || introBytes[1] != 0)
+                        throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Unknown Sampleinfo structure"));
+                }
+
+                if (sampleInfoIn.available () == 0)
+                {
+                    this.notifier.logError ("IDS_NI_MASCHINE_NO_MORE_SAMPLES");
+                    finish = true;
+                    break;
+                }
+
+                final String samplePath;
+                // Library
+                if (sampleInfoIn.read () > 0)
+                {
+                    sampleInfoIn.skip (2);
+                    samplePath = StreamUtils.readWith1ByteLengthAscii (sampleInfoIn);
+                }
+                else
+                {
+                    sampleInfoIn.skip (1);
+                    samplePath = StreamUtils.readWith1ByteLengthAscii (sampleInfoIn);
+                }
+                filePaths.add (samplePath);
+
+                final ISampleZone zone = new DefaultSampleZone ();
+                group.addSampleZone (zone);
+                readZoneParameters (zone, groupOffset + zoneOffset, parameterArray, isOldFormat);
+
+                zoneOffset += offsetZone;
+            }
+
+            if (finish)
+                break;
+
+            final List<File> files = this.lookupFiles (filePaths, sourceFile.getParent ());
+            for (int fileIndex = 0; fileIndex < files.size (); fileIndex++)
+            {
+                final File file = files.get (fileIndex);
+                final ISampleZone zone = group.getSampleZones ().get (fileIndex);
+                zone.setName (FileUtils.getNameWithoutType (file));
+                zone.setSampleData (AbstractDetector.createSampleData (file, this.notifier));
+            }
+
+            readGlobalParameters (multisampleSource, parameterArray, offsetFirstZone + zoneOffset, isOldFormat);
+            int soundinfoIndex = findSoundinfo (parameterArray, offsetFirstZone + zoneOffset);
+            if (soundinfoIndex == -1)
+            {
+                this.notifier.logError ("IDS_NI_MASCHINE_NO_SOUNDINFO");
+                return Optional.empty ();
+            }
+            readSoundinfo (multisampleSource, parameterArray.get (soundinfoIndex), parts);
+            // There is a 2nd one at the end
+            soundinfoIndex = findSoundinfo (parameterArray, soundinfoIndex + 1);
+            if (soundinfoIndex == -1)
+            {
+                this.notifier.logError ("IDS_NI_MASCHINE_NO_SOUNDINFO");
+                return Optional.empty ();
+            }
+
+            groupOffset = soundinfoIndex + 1;
+
+            multisampleSources.add (multisampleSource);
         }
 
-        final List<File> files = this.lookupFiles (filePaths, sourceFile.getParent ());
-        for (int i = 0; i < files.size (); i++)
+        // Another crude hack to combine the 16 single drum sounds into 1 multi-sample
+        final IMultisampleSource multisampleSource = multisampleSources.get (0);
+        if (multisampleSources.size () > 1)
         {
-            final File file = files.get (i);
-            final ISampleZone zone = group.getSampleZones ().get (i);
-            zone.setName (FileUtils.getNameWithoutType (file));
-            zone.setSampleData (AbstractDetector.createSampleData (file, this.notifier));
+            int note = 48;
+            final List<ISampleZone> sampleZones = multisampleSource.getGroups ().get (0).getSampleZones ();
+            final ISampleZone sampleZone = sampleZones.get (0);
+            sampleZone.setKeyLow (note);
+            sampleZone.setKeyHigh (note);
+            for (int i = 1; i < multisampleSources.size (); i++)
+            {
+                note++;
+                final ISampleZone sampleZone2 = multisampleSources.get (i).getGroups ().get (0).getSampleZones ().get (0);
+                sampleZone2.setKeyLow (note);
+                sampleZone2.setKeyHigh (note);
+                sampleZones.add (sampleZone2);
+            }
         }
-
-        readGlobalParameters (multisampleSource, parameterArray, offsetFirstZone + index, isOldFormat);
-        readSoundinfo (multisampleSource, parameterArray.get (numParameters - 1), parts);
 
         return Optional.of (multisampleSource);
+    }
+
+
+    private static int findSoundinfo (final List<byte []> parameterArray, final int startIndex)
+    {
+        for (int i = startIndex; i < parameterArray.size (); i++)
+        {
+            final byte [] data = parameterArray.get (i);
+            // Crude hack which assumes that the SoundInfo content is longer than all other ones
+            if (data != null && data.length > 40 && data[0] != 0)
+                return i;
+        }
+        return -1;
     }
 
 
@@ -377,7 +462,7 @@ public class MaschinePresetAccessor
         zone.setStart (readIntegerValue (parameterArray.get (zoneOffset + (isOldFormat ? 114 : 671)), isOldFormat));
         zone.setStop (readIntegerValue (parameterArray.get (zoneOffset + (isOldFormat ? 116 : 674)), isOldFormat));
 
-        if (readIntegerValue (parameterArray.get (zoneOffset + (isOldFormat ? 127 : 689)), isOldFormat) == 1)
+        if (readIntegerValue (parameterArray.get (zoneOffset + (isOldFormat ? 127 : 685)), isOldFormat) == 1)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (readIntegerValue (parameterArray.get (zoneOffset + (isOldFormat ? 119 : 678)), isOldFormat));
@@ -772,7 +857,7 @@ public class MaschinePresetAccessor
         {
             final byte [] data = parameterArray.get (i);
             if (data.length > 0)
-                sb.append (i + ": " + StringUtils.formatHexStr (data) + "\n");
+                sb.append (i).append (": ").append (StringUtils.formatHexStr (data)).append (" - ").append (StringUtils.fixASCII (new String (data))).append ("\n");
         }
 
         Files.write (new File ("C:/Users/mos/Desktop/Logs", "MaschinePreset-" + sourceFile.getName () + ".txt").toPath (), sb.toString ().getBytes ());

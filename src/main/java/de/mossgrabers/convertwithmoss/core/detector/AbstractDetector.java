@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,7 +61,7 @@ import de.mossgrabers.tools.ui.Functions;
  * Base class for detector descriptors.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public abstract class AbstractDetector<T extends ICoreTaskSettings> extends AbstractCoreTask<T> implements IDetector<T>
@@ -120,7 +121,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     /**
      * Overwrite in case that file endings need to be set dynamically.
-     * 
+     *
      * @param detectPerformances If true, performances are detected otherwise presets
      */
     protected void configureFileEndings (final boolean detectPerformances)
@@ -163,11 +164,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     }
 
 
-    /**
-     * Has the task been cancelled?
-     * 
-     * @return True if cancelled
-     */
+    /** {@inheritDoc} */
+    @Override
     public boolean isCancelled ()
     {
         return this.isCancelled.get ();
@@ -221,9 +219,6 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
                 this.updateCreationDateTime (multisample.getMetadata (), file);
                 this.multisampleSourceConsumer.accept (multisample);
-
-                if (this.isCancelled ())
-                    return;
             }
         }
         catch (final RuntimeException ex)
@@ -243,6 +238,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
             for (IPerformanceSource performance: performances)
             {
+                if (this.waitForDelivery ())
+                    break;
+
                 this.updateCreationDateTime (performance.getMetadata (), file);
                 this.performanceSourceConsumer.accept (performance);
             }
@@ -313,7 +311,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                 return true;
             Thread.currentThread ().interrupt ();
         }
-        return false;
+        return this.isCancelled ();
     }
 
 
@@ -717,6 +715,63 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     public static File findFile (final INotifier notifier, final File folder, final File previousFolder, final String fileName, final int levels, final String fileType)
     {
+        final File localFile = findLocalFile (notifier, folder, previousFolder, fileName, levels, fileType);
+        if (localFile.exists ())
+            return localFile;
+
+        for (final File variantFile: getCaseVariants (localFile))
+        {
+            final File found = findLocalFile (notifier, folder, previousFolder, variantFile.getAbsolutePath (), levels, fileType);
+            if (found.exists ())
+                return found;
+        }
+
+        // Triggers the missing file error
+        return localFile;
+    }
+
+
+    private static List<File> getCaseVariants (final File file)
+    {
+        final String fileName = file.getName ();
+        final int dotIndex = fileName.lastIndexOf ('.');
+
+        final List<File> variants = new ArrayList<> ();
+        // No extension?
+        if (dotIndex == -1 || dotIndex == fileName.length () - 1)
+            return variants;
+
+        final String nameWithoutExt = fileName.substring (0, dotIndex);
+        final String ext = fileName.substring (dotIndex + 1);
+
+        final boolean isAllUpper = ext.equals (ext.toUpperCase ());
+        final boolean isAllLower = ext.equals (ext.toLowerCase ());
+
+        final File parentDir = file.getParentFile ();
+
+        // Another workaround for a single quote which got replaced by an underscore
+        final String nameWithoutExtCleaned = nameWithoutExt.replace ('\'', '_');
+        final boolean addCleaned = !nameWithoutExtCleaned.equals (nameWithoutExt);
+
+        if (isAllUpper || !isAllLower)
+        {
+            variants.add (new File (parentDir, nameWithoutExt + "." + ext.toLowerCase ()));
+            if (addCleaned)
+                variants.add (new File (parentDir, nameWithoutExtCleaned + "." + ext.toLowerCase ()));
+        }
+        if (isAllLower || !isAllUpper)
+        {
+            variants.add (new File (parentDir, nameWithoutExt + "." + ext.toUpperCase ()));
+            if (addCleaned)
+                variants.add (new File (parentDir, nameWithoutExtCleaned + "." + ext.toUpperCase ()));
+        }
+
+        return variants;
+    }
+
+
+    private static File findLocalFile (final INotifier notifier, final File folder, final File previousFolder, final String fileName, final int levels, final String fileType)
+    {
         final File file = new File (fileName);
 
         // First search in the folder where the previous sample file was found
@@ -746,7 +801,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (notifier != null)
             notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN", fileType, startDirectory.getAbsolutePath ());
         final File found = findFileRecursively (startDirectory, sampleFile.getName ());
-        // Returning the original file triggers the expected error...
+        // Returning the original non-existing file triggers the missing file error...
         if (found == null)
         {
             if (notifier != null)
