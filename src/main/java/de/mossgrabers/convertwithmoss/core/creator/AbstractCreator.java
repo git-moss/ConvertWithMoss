@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -59,7 +60,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected static final String                 IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA = "IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA";
     protected static final String                 FORWARD_SLASH                      = "/";
 
-    protected boolean                             isCancelled                        = false;
+    private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
 
 
     /**
@@ -128,7 +129,15 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     @Override
     public void cancel ()
     {
-        this.isCancelled = true;
+        this.isCancelled.set (true);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isCancelled ()
+    {
+        return this.isCancelled.get ();
     }
 
 
@@ -136,7 +145,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     @Override
     public void clearCancelled ()
     {
-        this.isCancelled = false;
+        this.isCancelled.set (false);
     }
 
 
@@ -389,7 +398,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
             final List<ISampleZone> sampleZones = group.getSampleZones ();
             for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
             {
-                if (this.isCancelled)
+                if (this.isCancelled ())
                     return writtenFiles;
 
                 final ISampleZone zone = sampleZones.get (zoneIndex);

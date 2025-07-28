@@ -28,7 +28,8 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final String [] ENDINGS_ALL =
     {
-        ".mxsnd"
+        ".mxsnd",
+        ".mxgrp"
     };
 
 
@@ -39,7 +40,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public MaschineDetector (final INotifier notifier)
     {
-        super ("Maschine (mxsnd)", "Maschine", notifier, new MetadataSettingsUI ("Maschine"));
+        super ("Maschine (mxgrp, mxsnd)", "Maschine", notifier, new MetadataSettingsUI ("Maschine"));
     }
 
 

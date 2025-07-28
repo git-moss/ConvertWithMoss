@@ -26,7 +26,7 @@ public class FileList
 
 
     /**
-     * Parse a file list (or pre 5.1 file list) from a preset chunk.
+     * Parse a file list from a preset chunk.
      *
      * @param chunk The chunk to parse
      * @throws IOException Could not read the chunk
@@ -40,6 +40,7 @@ public class FileList
         final byte [] data = chunk.getPublicData ();
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
+        // Since 5.1
         if (chunkID == KontaktPresetChunkID.FILENAME_LIST_EX)
         {
             final int version = StreamUtils.readUnsigned16 (in, false);
@@ -48,26 +49,14 @@ public class FileList
 
             if (version == 3)
             {
-                final List<String> files = readFilesV3 (in);
-                this.specialFiles = files;
-                this.sampleFiles = files;
+                this.specialFiles = readFilesV2 (in);
+                this.sampleFiles = this.specialFiles;
                 return;
             }
-
-            this.specialFiles = readFilesV2 (in);
-        }
-        else
-        {
-            final long version = StreamUtils.readUnsigned32 (in, false);
-            if (version < 0 || version > 1)
-                throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_VERSION", Long.toString (version)));
-
-            if (version == 1)
-                // absoluteMonolithSourcePath not used currently
-                readFile (in);
         }
 
-        this.sampleFiles = readFilesV2 (in);
+        this.specialFiles = readFiles (in);
+        this.sampleFiles = readFiles (in);
         this.readMetadata (in, chunkID);
     }
 
@@ -90,7 +79,7 @@ public class FileList
             for (int i = 0; i < numFiles; i++)
                 StreamUtils.readUnsigned32 (in, false);
 
-            this.otherFiles = readFilesV2 (in);
+            this.otherFiles = readFiles (in);
         }
         else
             // Final padding
@@ -105,7 +94,7 @@ public class FileList
      * @return The read file paths
      * @throws IOException Could not read
      */
-    private static List<String> readFilesV2 (final ByteArrayInputStream in) throws IOException
+    private static List<String> readFiles (final ByteArrayInputStream in) throws IOException
     {
         final List<String> files = new ArrayList<> ();
         if (in.available () > 0)
@@ -125,7 +114,7 @@ public class FileList
      * @return The read file paths
      * @throws IOException Could not read
      */
-    private static List<String> readFilesV3 (final ByteArrayInputStream in) throws IOException
+    private static List<String> readFilesV2 (final ByteArrayInputStream in) throws IOException
     {
         final List<String> files = new ArrayList<> ();
         if (in.available () > 0)

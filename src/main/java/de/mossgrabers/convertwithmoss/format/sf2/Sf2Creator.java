@@ -124,7 +124,7 @@ public class Sf2Creator extends AbstractCreator<EmptySettingsUI>
         int programIndex = 0;
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            if (this.isCancelled)
+            if (this.isCancelled ())
                 return;
 
             final Optional<Sf2Preset> sf2Preset = this.createSf2Preset (programIndex, multisampleSource, globalcounters, globalcounters.instrumentCounts);
@@ -247,7 +247,7 @@ public class Sf2Creator extends AbstractCreator<EmptySettingsUI>
                 if (writtenProgress > 0 && writtenProgress % 80 == 0)
                     this.notifier.log ("IDS_NOTIFY_LINE_FEED");
 
-                if (this.isCancelled)
+                if (this.isCancelled ())
                     return Optional.empty ();
 
                 // Ensure that the WAV is 16 or 24 bit

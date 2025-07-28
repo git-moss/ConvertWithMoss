@@ -211,7 +211,7 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
             final List<ISampleZone> sampleZones = group.getSampleZones ();
             for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
             {
-                if (this.isCancelled)
+                if (this.isCancelled ())
                     return writtenFiles;
 
                 final ISampleZone zone = sampleZones.get (zoneIndex);

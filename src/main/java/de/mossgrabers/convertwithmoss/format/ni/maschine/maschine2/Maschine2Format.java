@@ -12,7 +12,6 @@ import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -110,8 +109,7 @@ public class Maschine2Format implements IMaschineFormat
             if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
             {
                 final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
-                final Optional<IMultisampleSource> source = programAccessor.readMaschinePresetChunks (sourceFolder, sourceFile, presetChunkData.getPresetData ());
-                return source.isPresent () ? Collections.singletonList (source.get ()) : Collections.emptyList ();
+                return programAccessor.readMaschinePreset (sourceFolder, sourceFile, presetChunkData.getPresetData ());
             }
         }
 
