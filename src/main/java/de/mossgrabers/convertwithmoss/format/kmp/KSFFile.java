@@ -114,7 +114,11 @@ public class KSFFile
 
                     final DefaultSampleLoop loop = new DefaultSampleLoop ();
                     loop.setStart (in.readInt ());
-                    loop.setEnd (in.readInt ());
+                    int loopEnd = in.readInt ();
+                    // Loop end is exclusive
+                    if (loopEnd > 0)
+                        loopEnd--;
+                    loop.setEnd (loopEnd);
                     zone.getLoops ().add (loop);
                     break;
 
@@ -190,6 +194,7 @@ public class KSFFile
         }
 
         final IAudioMetadata audioMetadata = new DefaultAudioMetadata (channels, sampleRate, sampleResolution, numberOfSamples);
+        zone.setStop (audioMetadata.getNumberOfSamples ());
         final InMemorySampleData sampleData = new InMemorySampleData (audioMetadata, data);
         zone.setName (combinedName.trim ());
         zone.setSampleData (sampleData);
@@ -243,7 +248,8 @@ public class KSFFile
             // 2nd start - no idea, but identical to loop start
             out.writeInt (loop.getStart ());
             out.writeInt (loop.getStart ());
-            out.writeInt (loop.getEnd ());
+            // Loop End is exclusive!
+            out.writeInt (loop.getEnd () + 1);
         }
 
         //////////////////////////////////////
