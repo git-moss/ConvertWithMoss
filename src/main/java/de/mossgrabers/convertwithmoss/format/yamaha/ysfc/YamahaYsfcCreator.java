@@ -791,7 +791,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         keybank.setPanning (MathUtils.denormalizeIntegerRange (zone.getPanning (), -63, 63, 64));
 
         keybank.setPlayStart (zone.getStart ());
-        keybank.setPlayEnd (zone.getStop ());
+        keybank.setLoopEnd (zone.getStop ());
 
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
@@ -800,9 +800,9 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         {
             final ISampleLoop loop = loops.get (0);
             keybank.setLoopMode (loop.getType () == LoopType.BACKWARDS ? 2 : 0);
-            keybank.setLoopPoint (loop.getStart ());
+            keybank.setLoopStart (loop.getStart ());
             if (loop.getEnd () < zone.getStop ())
-                keybank.setPlayEnd (loop.getEnd ());
+                keybank.setLoopEnd (loop.getEnd ());
         }
         return keybank;
     }

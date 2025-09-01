@@ -161,7 +161,7 @@ public class MaschinePresetAccessor
                 }
                 catch (final IOException ex)
                 {
-                    // There are some which seems to have non-number content in there but also no
+                    // There are some which seem to have non-number content in there but also no
                     // sampler
                     this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER_PLUGIN");
                     // We do not know the offset to the next sound...

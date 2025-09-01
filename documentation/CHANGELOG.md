@@ -1,5 +1,11 @@
 # Changes
 
+## 14.5.0 (unreleased)
+
+* Korg KSF
+  * Fixed: Reading: The play-back end is now set to the length of the sample to prevent issues with output formats which require the end (e.g. Korg wavestate).
+  * Fixed: The KSF loop end is exclusive and therefore was off by 1.
+
 ## 14.1.0
 
 * Logging: Improved logging output of missing samples. Added ConvertWithMoss version number and source/destination-format to log.
