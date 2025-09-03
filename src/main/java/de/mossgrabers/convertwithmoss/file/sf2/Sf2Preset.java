@@ -155,4 +155,12 @@ public class Sf2Preset extends AbstractGroupedZones<Sf2PresetZone>
         }
         return sb.toString ();
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected Sf2PresetZone createGlobalZone ()
+    {
+        return new Sf2PresetZone (0, 0, 0, 0);
+    }
 }

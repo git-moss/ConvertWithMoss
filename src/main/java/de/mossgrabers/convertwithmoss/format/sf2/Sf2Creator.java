@@ -27,7 +27,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
-import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.RiffID;
@@ -53,7 +52,7 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class Sf2Creator extends AbstractCreator<EmptySettingsUI>
+public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 {
     private static final DestinationAudioFormat DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -71,7 +70,7 @@ public class Sf2Creator extends AbstractCreator<EmptySettingsUI>
      */
     public Sf2Creator (final INotifier notifier)
     {
-        super ("SoundFont 2", "Sf2", notifier, EmptySettingsUI.INSTANCE);
+        super ("SoundFont 2", "Sf2", notifier, new Sf2CreatorUI ());
     }
 
 
@@ -279,8 +278,9 @@ public class Sf2Creator extends AbstractCreator<EmptySettingsUI>
 
                 final boolean is24Bit = formatChunk.getSignificantBitsPerSample () == 24;
                 final boolean isStereo = formatChunk.getNumberOfChannels () == 2;
+                final boolean shouldDownsample = is24Bit && this.settingsConfiguration.isDownsampleTo16Bit ();
 
-                final List<byte []> sampleDataList = convertData (data, numSamples, is24Bit, isStereo);
+                final List<byte []> sampleDataList = convertData (data, numSamples, is24Bit, isStereo, shouldDownsample);
                 if (isStereo)
                 {
                     final Sf2SampleDescriptor leftDesc = createSf2SampleDescriptor (Sf2SampleDescriptor.LEFT, globalcounters.sampleIndex, globalcounters.sampleStartPosition, sampleZone, formatChunk, numSamples, sampleDataList.get (0), sampleDataList.get (1));
@@ -439,30 +439,97 @@ public class Sf2Creator extends AbstractCreator<EmptySettingsUI>
      * @param numSamples The number of samples
      * @param is24Bit Is it a 24-bit?
      * @param isStereo Is it stereo?
+     * @param shouldDownsample If true, downsample 24-bit to 16-bit
      * @return The up to 2 (mono) or 4 (stereo) arrays
      */
-    private static List<byte []> convertData (final byte [] data, final int numSamples, final boolean is24Bit, final boolean isStereo)
+    private static List<byte []> convertData (final byte [] data, final int numSamples, final boolean is24Bit, final boolean isStereo, final boolean shouldDownsample)
     {
         final int numPaddedSamples = numSamples + PADDING;
         final byte [] sampleLeftData = new byte [numPaddedSamples * 2];
-        final byte [] sampleLeft24Data = new byte [is24Bit ? numPaddedSamples : 0];
+        final byte [] sampleLeft24Data = new byte [(is24Bit && !shouldDownsample) ? numPaddedSamples : 0];
         final byte [] sampleRightData = new byte [numPaddedSamples * 2];
-        final byte [] sampleRight24Data = new byte [is24Bit ? numPaddedSamples : 0];
+        final byte [] sampleRight24Data = new byte [(is24Bit && !shouldDownsample) ? numPaddedSamples : 0];
 
         int pos = -1;
         for (int i = 0; i < numSamples; i++)
         {
-            if (is24Bit)
-                sampleLeft24Data[i] = data[++pos];
             final int offset = 2 * i;
-            sampleLeftData[offset] = data[++pos];
-            sampleLeftData[offset + 1] = data[++pos];
+            
+            if (is24Bit)
+            {
+                if (shouldDownsample)
+                {
+                    // Downsample 24-bit to 16-bit
+                    final byte lsb = data[++pos];
+                    final byte msb = data[++pos];
+                    final byte hsb = data[++pos];
+                    
+                    // Convert to 24-bit integer
+                    int sample24 = ((hsb & 0xFF) << 16) | ((msb & 0xFF) << 8) | (lsb & 0xFF);
+                    // Sign extend if negative
+                    if ((sample24 & 0x800000) != 0)
+                        sample24 |= 0xFF000000;
+                    
+                    // Clean, predictable conversion
+                    short sample16 = (short)Math.round(sample24 / 256.0);
+                    
+                    // Store as 16-bit little-endian
+                    sampleLeftData[offset] = (byte)(sample16 & 0xFF);
+                    sampleLeftData[offset + 1] = (byte)((sample16 >> 8) & 0xFF);
+                }
+                else
+                {
+                    // Keep original 24-bit data
+                    sampleLeft24Data[i] = data[++pos];
+                    sampleLeftData[offset] = data[++pos];
+                    sampleLeftData[offset + 1] = data[++pos];
+                }
+            }
+            else
+            {
+                // 16-bit data, just copy
+                sampleLeftData[offset] = data[++pos];
+                sampleLeftData[offset + 1] = data[++pos];
+            }
+            
             if (isStereo)
             {
                 if (is24Bit)
-                    sampleRight24Data[i] = data[++pos];
-                sampleRightData[offset] = data[++pos];
-                sampleRightData[offset + 1] = data[++pos];
+                {
+                    if (shouldDownsample)
+                    {
+                        // Downsample 24-bit to 16-bit
+                        final byte lsb = data[++pos];
+                        final byte msb = data[++pos];
+                        final byte hsb = data[++pos];
+                        
+                        // Convert to 24-bit integer
+                        int sample24 = ((hsb & 0xFF) << 16) | ((msb & 0xFF) << 8) | (lsb & 0xFF);
+                        // Sign extend if negative
+                        if ((sample24 & 0x800000) != 0)
+                            sample24 |= 0xFF000000;
+                        
+                        // Clean, predictable conversion
+                        short sample16 = (short)Math.round(sample24 / 256.0);
+                        
+                        // Store as 16-bit little-endian
+                        sampleRightData[offset] = (byte)(sample16 & 0xFF);
+                        sampleRightData[offset + 1] = (byte)((sample16 >> 8) & 0xFF);
+                    }
+                    else
+                    {
+                        // Keep original 24-bit data
+                        sampleRight24Data[i] = data[++pos];
+                        sampleRightData[offset] = data[++pos];
+                        sampleRightData[offset + 1] = data[++pos];
+                    }
+                }
+                else
+                {
+                    // 16-bit data, just copy
+                    sampleRightData[offset] = data[++pos];
+                    sampleRightData[offset + 1] = data[++pos];
+                }
             }
         }
 
