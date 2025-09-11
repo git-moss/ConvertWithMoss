@@ -528,6 +528,33 @@ public class StreamUtils
 
 
     /**
+     * Parses a variable-length little-endian integer from an InputStream.
+     *
+     * @param in The input stream to read from
+     * @return The parsed integer
+     * @throws IOException If an I/O error occurs or the stream ends prematurely
+     */
+    public static int readVariableLengthNumberLE (final InputStream in) throws IOException
+    {
+        int length = in.read ();
+        if (length < 0 || length > 4)
+            throw new IOException ("Invalid byte length: " + length);
+
+        int result = 0;
+        for (int i = 0; i < length; i++)
+        {
+            int b = in.read ();
+            if (b == -1)
+                throw new IOException ("Unexpected end of stream");
+            // Little-endian
+            result |= (b & 0xFF) << (8 * i);
+        }
+
+        return result;
+    }
+
+
+    /**
      * Reads all bytes from an input stream and interprets it as UTF-8 text.
      *
      * @param in The stream to read from
@@ -991,6 +1018,21 @@ public class StreamUtils
         if (fileAccess.read (buffer) != numBytes)
             throw new IOException (Functions.getMessage ("IDS_ERR_FILE_CORRUPTED"));
         return buffer;
+    }
+
+
+    /**
+     * Reads one byte and then moves the file pointer back to the beginning of the read.
+     *
+     * @param fileAccess The random access file to read from
+     * @return The read byte
+     * @throws IOException Could not read
+     */
+    public static int peek (final RandomAccessFile fileAccess) throws IOException
+    {
+        final int value = fileAccess.read ();
+        fileAccess.seek (fileAccess.getFilePointer () - 1);
+        return value;
     }
 
 

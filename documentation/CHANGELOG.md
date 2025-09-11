@@ -1,5 +1,25 @@
 # Changes
 
+## 14.5.0 (unreleased)
+
+* Korg KSF
+  * Fixed: Reading: The play-back end is now set to the length of the sample to prevent issues with output formats which require the end (e.g. Korg wavestate).
+  * Fixed: The KSF loop end is exclusive and therefore was off by 1.
+
+## 14.1.0
+
+* Logging: Improved logging output of missing samples. Added ConvertWithMoss version number and source/destination-format to log.
+* Sample search: Added support for finding samples with wrong upper/lower case in the extension of the samples name.
+* Improved processing cancellation.
+* DecentSampler
+  * New: The value for the amplitude velocity sensitivity is now initialized in the template via the new variable %ENV_VELOCITY_SENSITIVITY%.
+  * New: The delay Mix default value is now set to zero in the template.
+* Kontakt
+  * Fixed: Reading of Soundinfo could fail in rare cases with file version 4.2.
+  * Fixed: File lists of version 4.2.4 and 5.0.x were not always read correctly.
+* Yamaha YSFC
+  * Fixed: Montage files were not written correctly.
+
 ## 14.0.0
 
 * The application can now be run without the user interface for batch processing via the command line interface (CLI). See the manual for details.

@@ -30,7 +30,7 @@
         <labeled-knob style="linear_bar_vertical" maxValue="3" minValue="0.1" mouseDragSensitivity="100" parameterName="Amp Release" textColor="FFFFFFFF" type="float" value="%ENV_RELEASE_VALUE%" x="130" y="30" width="40" height="180" label="Release" textSize="16">
             <binding type="amp" level="instrument" parameter="ENV_RELEASE" position="0"/>
         </labeled-knob>
-        <labeled-knob style="linear_bar_vertical" maxValue="1" minValue="0" mouseDragSensitivity="100" parameterName="Amp Velocity Sensitivity" textColor="FFFFFFFF" type="float" x="170" y="30" width="40" height="180" label="Vel. Sens." textSize="16">
+        <labeled-knob style="linear_bar_vertical" maxValue="1" minValue="0" mouseDragSensitivity="100" parameterName="Amp Velocity Sensitivity" textColor="FFFFFFFF" type="float" value="%ENV_VELOCITY_SENSITIVITY%" x="170" y="30" width="40" height="180" label="Vel. Sens." textSize="16">
             <binding type="amp" level="instrument" parameter="AMP_VEL_TRACK" position="0"/>
         </labeled-knob>
 
@@ -70,7 +70,7 @@
 
         <!-- Delay -->
         <label text="Delay" textColor="FFDD0000" textSize="30" x="530" y="0" width="80" height="30" hAlign="center"/>
-        <labeled-knob style="linear_bar_vertical" maxValue="0.4" minValue="0" mouseDragSensitivity="100" parameterName="Delay Amount" value="0.2300000041723251" x="530" y="30" width="40" height="180" label="Mix" textSize="16" textColor="FFFFFFFF">
+        <labeled-knob style="linear_bar_vertical" maxValue="0.4" minValue="0" mouseDragSensitivity="100" parameterName="Delay Amount" value="0.0" x="530" y="30" width="40" height="180" label="Mix" textSize="16" textColor="FFFFFFFF">
             <binding level="instrument" parameter="FX_WET_LEVEL" position="0" type="effect"/>
         </labeled-knob>
         <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" parameterName="Delay Time" value="12.0" valueType="musical_time" x="570" y="30" width="40" height="180" label="Time" textSize="16" textColor="FFFFFFFF">

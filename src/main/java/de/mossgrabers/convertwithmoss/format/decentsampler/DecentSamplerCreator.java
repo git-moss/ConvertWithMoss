@@ -305,15 +305,18 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
                 final ISampleZone zone = zones.get (zoneIndex);
                 ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
                 final Element sampleElement = createSample (document, folderName, groupElement, zone);
+
+                // Note: there is no amplitude envelope modulation depth parameter!
+                final IEnvelope modulatorSource = zone.getAmplitudeEnvelopeModulator ().getSource ();
                 if (ampEnvParameterLevel == ParameterLevel.ZONE)
-                    setEnvelope (sampleElement, zone.getAmplitudeEnvelopeModulator ().getSource ());
+                    setEnvelope (sampleElement, modulatorSource);
                 else if (ampEnvParameterLevel == ParameterLevel.GROUP && zoneIndex == 0)
-                    setEnvelope (groupElement, zone.getAmplitudeEnvelopeModulator ().getSource ());
+                    setEnvelope (groupElement, modulatorSource);
                 else if (ampEnvParameterLevel == ParameterLevel.INSTRUMENT && groupIndex == 0 && zoneIndex == 0)
-                    setEnvelope (groupsElement, zone.getAmplitudeEnvelopeModulator ().getSource ());
+                    setEnvelope (groupsElement, modulatorSource);
             }
             if (ampVelDepths.size () == 1)
-                groupElement.setAttribute (DecentSamplerTag.AMP_VELOCITY_TRACK, Double.toString (ampVelDepths.iterator ().next ().doubleValue ()));
+                XMLUtils.setDoubleAttribute (groupElement, DecentSamplerTag.AMP_VELOCITY_TRACK, ampVelDepths.iterator ().next ().doubleValue (), 4);
 
             this.createFilter (document, modulatorsElement, multisampleSource, groupElement, groupIndex);
             if (!zones.isEmpty ())
@@ -528,17 +531,23 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
      */
     private void applyTemplate (final Document document, final Element rootElement, final Element groupsElement, Element modulatorsElement) throws IOException
     {
+        // Read again the created amplitude envelope values...
         final double attackAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_ATTACK, 0.0);
         final double decayAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_DECAY, 0.0);
         final double sustainAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_SUSTAIN, 1.0);
         final double releaseAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_RELEASE, 0.1);
+        final Element groupElement = XMLUtils.getChildElementByName (groupsElement, DecentSamplerTag.GROUP);
+        final double ampVelTrackAttribute = groupElement != null ? XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.AMP_VELOCITY_TRACK, 0.0) : 0.0;
 
+        // ... and apply them to the template variables
         String template = this.settingsConfiguration.getTemplateCode ("ui.xml").trim ();
         template = template.replace ("%ENV_ATTACK_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (attackAttribute)));
         template = template.replace ("%ENV_DECAY_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (decayAttribute)));
         template = template.replace ("%ENV_SUSTAIN_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (sustainAttribute)));
         template = template.replace ("%ENV_RELEASE_VALUE%", String.format (Locale.US, "%.3f", Double.valueOf (releaseAttribute)));
+        template = template.replace ("%ENV_VELOCITY_SENSITIVITY%", String.format (Locale.US, "%.4f", Double.valueOf (ampVelTrackAttribute)));
 
+        // Insert the additional code from the (user) template into the created document
         final org.w3c.dom.Node xmlSnippet = readXMLSnippet (document, template);
         addChildByName (rootElement, xmlSnippet, "effects");
         addChildByName (rootElement, xmlSnippet, "midi");

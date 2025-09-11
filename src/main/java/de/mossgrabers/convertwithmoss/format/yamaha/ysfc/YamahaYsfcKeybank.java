@@ -33,8 +33,8 @@ public class YamahaYsfcKeybank implements IStreamable
     private int                        rootNote;
     private int                        sampleFrequency;
     private int                        playStart;
-    private int                        loopPoint;
-    private int                        playEnd;
+    private int                        loopStart;
+    private int                        loopEnd;
     private int                        number;
     private int                        sampleLength;
     private int                        channels;
@@ -99,8 +99,8 @@ public class YamahaYsfcKeybank implements IStreamable
 
         this.loopTune = in.read ();
 
-        // Play-form on Montage / loop fraction on older formats
-        in.skipNBytes (1);
+        // Play-form on Montage / loop fraction on older formats (Motif)
+        in.read ();
         final int waveFormat = in.read ();
         if (waveFormat != 0 && waveFormat != 5)
             throw new IOException (Functions.getMessage ("IDS_YSFC_WAVE_FORMAT_NOT_SUPPORTED", waveFormat == 4 ? " WXC" : Integer.toString (waveFormat)));
@@ -114,24 +114,23 @@ public class YamahaYsfcKeybank implements IStreamable
 
         final int loopPointRest = in.read ();
 
-        in.skipNBytes (1);
-
         // Compression/Encryption information
-        in.skipNBytes (12);
+        in.skipNBytes (13);
 
         if (!isMotif)
             in.skipNBytes (4);
 
         this.sampleFrequency = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         this.playStart = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        this.loopPoint = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        if (!isVersion1)
-            this.loopPoint = 16 * this.loopPoint + loopPointRest;
-        this.playEnd = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        this.loopStart = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        this.loopEnd = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
 
-        // Padding / reserved
         if (!isVersion1)
         {
+            // Only correct for waveFormat == 0 and 5!
+            this.loopStart = 16 * this.loopStart + loopPointRest;
+
+            // Padding / reserved
             in.skipNBytes (4);
             this.number = (int) StreamUtils.readUnsigned32 (in, false);
         }
@@ -186,19 +185,21 @@ public class YamahaYsfcKeybank implements IStreamable
         out.write (this.fineTune);
         out.write (this.channels);
 
+        // Loop Tune
         out.write (0x00);
-        // Always 2 for Montage
+        // Play Form, always 2
         out.write (0x02);
         // 16-bit linear
         out.write (0x05);
 
         out.write (this.loopMode);
 
-        // Unknown but should be only padding
+        // No encryption
         out.write (0x00);
+        // Pitch up limit
         out.write (0x00);
 
-        out.write (this.loopPoint % 16);
+        out.write (this.loopStart % 16);
 
         // Unknown but should work
         out.write (1);
@@ -211,8 +212,8 @@ public class YamahaYsfcKeybank implements IStreamable
 
         StreamUtils.writeUnsigned32 (out, this.sampleFrequency, false);
         StreamUtils.writeUnsigned32 (out, this.playStart, false);
-        StreamUtils.writeUnsigned32 (out, this.loopPoint / 16, false);
-        StreamUtils.writeUnsigned32 (out, this.playEnd, false);
+        StreamUtils.writeUnsigned32 (out, this.loopStart / 16, false);
+        StreamUtils.writeUnsigned32 (out, this.loopEnd, false);
 
         // Padding / reserved
         StreamUtils.padBytes (out, 4);
@@ -240,9 +241,9 @@ public class YamahaYsfcKeybank implements IStreamable
         sb.append ("High Velocity: ").append (this.velocityRangeUpper).append ('\n');
         sb.append ("Sample Length: ").append (this.sampleLength).append ('\n');
         sb.append ("Play Start: ").append (this.playStart).append ('\n');
-        sb.append ("Play End: ").append (this.playEnd).append ('\n');
         sb.append ("Loop Mode: ").append (this.loopMode).append ('\n');
-        sb.append ("Loop Point: ").append (this.loopPoint).append ('\n');
+        sb.append ("Loop Start: ").append (this.loopStart).append ('\n');
+        sb.append ("Loop End: ").append (this.loopEnd).append ('\n');
         sb.append ("Loop Tuning: ").append (this.loopTune).append ('\n');
         sb.append ("Coarse Tune: ").append (this.getCoarseTune ()).append (" (").append (this.coarseTune).append (")\n");
         sb.append ("Fine Tune: ").append (this.getFineTune ()).append (" (").append (this.fineTune).append (")\n");
@@ -506,46 +507,46 @@ public class YamahaYsfcKeybank implements IStreamable
 
 
     /**
-     * Get the end of the sample play-back.
-     *
-     * @return The end in sample frames
-     */
-    public int getPlayEnd ()
-    {
-        return this.playEnd;
-    }
-
-
-    /**
-     * Set the end of the sample play-back.
-     *
-     * @param playEnd The end in sample frames
-     */
-    public void setPlayEnd (final int playEnd)
-    {
-        this.playEnd = playEnd;
-    }
-
-
-    /**
      * Get the loop start.
      *
      * @return The start of the loop in sample frames
      */
-    public int getLoopPoint ()
+    public int getLoopStart ()
     {
-        return this.loopPoint;
+        return this.loopStart;
     }
 
 
     /**
      * Set the loop start.
      *
-     * @param loopPoint The start of the loop in sample frames
+     * @param loopStart The start of the loop in sample frames
      */
-    public void setLoopPoint (final int loopPoint)
+    public void setLoopStart (final int loopStart)
     {
-        this.loopPoint = loopPoint;
+        this.loopStart = loopStart;
+    }
+
+
+    /**
+     * Get the end of the sample loop.
+     *
+     * @return The end in sample frames
+     */
+    public int getLoopEnd ()
+    {
+        return this.loopEnd;
+    }
+
+
+    /**
+     * Set the end of the sample loop.
+     *
+     * @param loopEnd The end in sample frames
+     */
+    public void setLoopEnd (final int loopEnd)
+    {
+        this.loopEnd = loopEnd;
     }
 
 

@@ -142,4 +142,42 @@ public abstract class AbstractGroupedZones<T extends AbstractZone>
         }
         counts.set (Integer.valueOf (firstGenerator), Integer.valueOf (firstModulator));
     }
+
+
+    /**
+     * Ensures that if there are multiple zones, the first zone is a global zone.
+     * According to SF2 specification, when multiple zones exist, the first should be global.
+     */
+    public void ensureGlobalZone ()
+    {
+        // Only add a global zone if there are multiple zones and the first is not already global
+        if (this.zones.size () > 1 && !this.zones.get (0).isGlobal ())
+        {
+            final T globalZone = this.createGlobalZone ();
+            globalZone.setGlobal (true);
+            this.zones.add (0, globalZone);
+        }
+    }
+    
+    /**
+     * Forces a global zone to be added as the first zone.
+     * Used for presets which should always have a global zone.
+     */
+    public void forceGlobalZone ()
+    {
+        if (!this.zones.isEmpty () && !this.zones.get (0).isGlobal ())
+        {
+            final T globalZone = this.createGlobalZone ();
+            globalZone.setGlobal (true);
+            this.zones.add (0, globalZone);
+        }
+    }
+
+
+    /**
+     * Create a new global zone instance.
+     *
+     * @return The new global zone
+     */
+    protected abstract T createGlobalZone ();
 }

@@ -50,4 +50,12 @@ public interface ICoreTask<T extends ICoreTaskSettings>
      * Cancel the task.
      */
     void cancel ();
+
+
+    /**
+     * Has the task been cancelled?
+     *
+     * @return True if cancelled
+     */
+    boolean isCancelled ();
 }

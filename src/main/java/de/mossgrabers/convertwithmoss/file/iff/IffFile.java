@@ -46,22 +46,29 @@ public class IffFile
      */
     public static IffChunk readChunk (final InputStream in) throws IOException
     {
-        String chunkID = StreamUtils.readASCII (in, 4);
-
-        long size = StreamUtils.readUnsigned32 (in, true);
-
-        // If it is a FORM, LIST or CAT chunk return the actual FORM type
-        if (GROUP_CHUNKS.contains (chunkID))
+        try
         {
-            chunkID = StreamUtils.readASCII (in, 4);
-            size -= 4;
-        }
+            String chunkID = StreamUtils.readASCII (in, 4);
 
-        final byte [] data = in.readNBytes ((int) size);
-        // Chunk length is always 2 aligned!
-        if (size % 2 == 1 && in.available () > 0)
-            in.skipNBytes (1);
-        return new IffChunk (chunkID, data);
+            long size = StreamUtils.readUnsigned32 (in, true);
+
+            // If it is a FORM, LIST or CAT chunk return the actual FORM type
+            if (GROUP_CHUNKS.contains (chunkID))
+            {
+                chunkID = StreamUtils.readASCII (in, 4);
+                size -= 4;
+            }
+
+            final byte [] data = in.readNBytes ((int) size);
+            // Chunk length is always 2 aligned!
+            if (size % 2 == 1 && in.available () > 0)
+                in.skipNBytes (1);
+            return new IffChunk (chunkID, data);
+        }
+        catch (final IllegalArgumentException ex)
+        {
+            throw new IOException (ex);
+        }
     }
 
 

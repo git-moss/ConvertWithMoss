@@ -75,4 +75,12 @@ public class Sf2Instrument extends AbstractGroupedZones<Sf2InstrumentZone>
     {
         return this.name + " (Zone index: " + this.firstZoneIndex + ")";
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected Sf2InstrumentZone createGlobalZone ()
+    {
+        return new Sf2InstrumentZone (0, 0, 0, 0);
+    }
 }
