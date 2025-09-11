@@ -641,7 +641,6 @@ public class VCFile
 		if (outGV >= 16384)
 			outGV -= 32768;
 		double sr0 = Math.log((double)(srV) / 44100.0) / Math.log(2);
-this.notifier.logText(String.valueOf(sr0));
 		return ((-outV - outGV) / 256.0 + (sr0 * 12) + 65) % 128;
 	}
 	
