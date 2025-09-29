@@ -296,6 +296,10 @@ There are metadata fields for creator and some description specified in the form
 * Prefix with file name: If enabled, the name of the Soundfont file is added to all resulting destination files.
 * Prefix with program number: If enabled, the preset number of the preset is added to the resulting destination file.
 
+### Destination Options
+
+* Re-sample 24-bit to 16-bit: If enabled, 24-bit source samples are converted to 16-bit files. Use this prevent issues with certain software which can only handle 16-bit samples.
+
 ## TAL Sampler
 
 TAL-Sampler is an analog modeled synthesizer with a sampler engine as the sound source, including a modulation matrix and self-oscillating filters. Most of the presets in it's library store the sample files in an encrypted format (*.wavsmpl), this format is not supported. Only presets using plain WAV or AIFF files are supported.

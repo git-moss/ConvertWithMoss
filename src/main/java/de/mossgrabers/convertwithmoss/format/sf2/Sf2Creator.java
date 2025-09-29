@@ -439,43 +439,43 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
      * @param numSamples The number of samples
      * @param is24Bit Is it a 24-bit?
      * @param isStereo Is it stereo?
-     * @param shouldDownsample If true, downsample 24-bit to 16-bit
+     * @param shouldDownsample If true, re-sample 24-bit to 16-bit
      * @return The up to 2 (mono) or 4 (stereo) arrays
      */
     private static List<byte []> convertData (final byte [] data, final int numSamples, final boolean is24Bit, final boolean isStereo, final boolean shouldDownsample)
     {
         final int numPaddedSamples = numSamples + PADDING;
         final byte [] sampleLeftData = new byte [numPaddedSamples * 2];
-        final byte [] sampleLeft24Data = new byte [(is24Bit && !shouldDownsample) ? numPaddedSamples : 0];
+        final byte [] sampleLeft24Data = new byte [is24Bit && !shouldDownsample ? numPaddedSamples : 0];
         final byte [] sampleRightData = new byte [numPaddedSamples * 2];
-        final byte [] sampleRight24Data = new byte [(is24Bit && !shouldDownsample) ? numPaddedSamples : 0];
+        final byte [] sampleRight24Data = new byte [is24Bit && !shouldDownsample ? numPaddedSamples : 0];
 
         int pos = -1;
         for (int i = 0; i < numSamples; i++)
         {
             final int offset = 2 * i;
-            
+
             if (is24Bit)
             {
                 if (shouldDownsample)
                 {
-                    // Downsample 24-bit to 16-bit
+                    // Re-sample 24-bit to 16-bit
                     final byte lsb = data[++pos];
                     final byte msb = data[++pos];
                     final byte hsb = data[++pos];
-                    
+
                     // Convert to 24-bit integer
-                    int sample24 = ((hsb & 0xFF) << 16) | ((msb & 0xFF) << 8) | (lsb & 0xFF);
+                    int sample24 = (hsb & 0xFF) << 16 | (msb & 0xFF) << 8 | lsb & 0xFF;
                     // Sign extend if negative
                     if ((sample24 & 0x800000) != 0)
                         sample24 |= 0xFF000000;
-                    
+
                     // Clean, predictable conversion
-                    short sample16 = (short)Math.round(sample24 / 256.0);
-                    
+                    short sample16 = (short) Math.round (sample24 / 256.0);
+
                     // Store as 16-bit little-endian
-                    sampleLeftData[offset] = (byte)(sample16 & 0xFF);
-                    sampleLeftData[offset + 1] = (byte)((sample16 >> 8) & 0xFF);
+                    sampleLeftData[offset] = (byte) (sample16 & 0xFF);
+                    sampleLeftData[offset + 1] = (byte) (sample16 >> 8 & 0xFF);
                 }
                 else
                 {
@@ -491,30 +491,29 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                 sampleLeftData[offset] = data[++pos];
                 sampleLeftData[offset + 1] = data[++pos];
             }
-            
+
             if (isStereo)
-            {
                 if (is24Bit)
                 {
                     if (shouldDownsample)
                     {
-                        // Downsample 24-bit to 16-bit
+                        // Re-sample 24-bit to 16-bit
                         final byte lsb = data[++pos];
                         final byte msb = data[++pos];
                         final byte hsb = data[++pos];
-                        
+
                         // Convert to 24-bit integer
-                        int sample24 = ((hsb & 0xFF) << 16) | ((msb & 0xFF) << 8) | (lsb & 0xFF);
+                        int sample24 = (hsb & 0xFF) << 16 | (msb & 0xFF) << 8 | lsb & 0xFF;
                         // Sign extend if negative
                         if ((sample24 & 0x800000) != 0)
                             sample24 |= 0xFF000000;
-                        
+
                         // Clean, predictable conversion
-                        short sample16 = (short)Math.round(sample24 / 256.0);
-                        
+                        short sample16 = (short) Math.round (sample24 / 256.0);
+
                         // Store as 16-bit little-endian
-                        sampleRightData[offset] = (byte)(sample16 & 0xFF);
-                        sampleRightData[offset + 1] = (byte)((sample16 >> 8) & 0xFF);
+                        sampleRightData[offset] = (byte) (sample16 & 0xFF);
+                        sampleRightData[offset + 1] = (byte) (sample16 >> 8 & 0xFF);
                     }
                     else
                     {
@@ -530,7 +529,6 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                     sampleRightData[offset] = data[++pos];
                     sampleRightData[offset + 1] = data[++pos];
                 }
-            }
         }
 
         final List<byte []> sampleList = new ArrayList<> (4);

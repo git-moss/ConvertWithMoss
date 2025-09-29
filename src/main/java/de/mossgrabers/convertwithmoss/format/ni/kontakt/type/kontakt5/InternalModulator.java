@@ -270,8 +270,11 @@ public class InternalModulator
         if (id == KontaktPresetChunkID.PAR_MOD_BASE)
             StreamUtils.readUnsigned32 (in, false);
 
+        int mainVersion = in.read ();
+        if (mainVersion == 0)
+            mainVersion = in.read ();
         // Always 01
-        if (in.read () != 1)
+        if (mainVersion != 1)
             throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_INTERNAL_MOD_HEADER"));
 
         // Version: 0x80, 0x81

@@ -1,10 +1,13 @@
 # Changes
 
-## 14.5.0 (unreleased)
+## 14.2.0
 
 * Korg KSF
   * Fixed: Reading: The play-back end is now set to the length of the sample to prevent issues with output formats which require the end (e.g. Korg wavestate).
   * Fixed: The KSF loop end is exclusive and therefore was off by 1.
+* Soundfont 2 (thanks @douglas-carmichael)
+  * New: Added option to resample 24bit to 16bit.
+  * Fixed: Always writes a global chunk.
 
 ## 14.1.0
 

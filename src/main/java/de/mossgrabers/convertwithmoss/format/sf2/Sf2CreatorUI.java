@@ -4,9 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.sf2;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -25,19 +22,14 @@ import javafx.scene.control.CheckBox;
  */
 public class Sf2CreatorUI implements ICoreTaskSettings
 {
-    private static final String SF2_DOWNSAMPLE_TO_16BIT = "SF2DownsampleTo16Bit";
-
-    private CheckBox            downsampleTo16BitCheckBox;
-    private boolean             downsampleTo16Bit;
-
-
-    /**
-     * Constructor.
-     */
-    public Sf2CreatorUI ()
+    private static final String    SF2_DOWNSAMPLE_TO_16BIT = "Sf2DownsampleTo16Bit";
+    private static final String [] CLI_PARAMETER_NAMES     =
     {
-        // Default constructor
-    }
+        SF2_DOWNSAMPLE_TO_16BIT
+    };
+
+    private CheckBox               resampleTo16BitCheckBox;
+    private boolean                resampleTo16Bit;
 
 
     /** {@inheritDoc} */
@@ -46,7 +38,7 @@ public class Sf2CreatorUI implements ICoreTaskSettings
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
         panel.createSeparator ("@IDS_OUTPUT_FORMAT");
-        this.downsampleTo16BitCheckBox = panel.createCheckBox ("@IDS_SF2_DOWNSAMPLE_TO_16BIT");
+        this.resampleTo16BitCheckBox = panel.createCheckBox ("@IDS_SF2_RESAMPLE_TO_16BIT");
         return panel.getPane ();
     }
 
@@ -55,7 +47,7 @@ public class Sf2CreatorUI implements ICoreTaskSettings
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.downsampleTo16BitCheckBox.setSelected (config.getBoolean (SF2_DOWNSAMPLE_TO_16BIT, false));
+        this.resampleTo16BitCheckBox.setSelected (config.getBoolean (SF2_DOWNSAMPLE_TO_16BIT, false));
     }
 
 
@@ -63,7 +55,7 @@ public class Sf2CreatorUI implements ICoreTaskSettings
     @Override
     public void saveSettings (final BasicConfig config)
     {
-        config.setBoolean (SF2_DOWNSAMPLE_TO_16BIT, this.downsampleTo16BitCheckBox.isSelected ());
+        config.setBoolean (SF2_DOWNSAMPLE_TO_16BIT, this.resampleTo16BitCheckBox.isSelected ());
     }
 
 
@@ -71,7 +63,7 @@ public class Sf2CreatorUI implements ICoreTaskSettings
     @Override
     public boolean checkSettingsUI (final INotifier notifier)
     {
-        this.downsampleTo16Bit = this.downsampleTo16BitCheckBox.isSelected ();
+        this.resampleTo16Bit = this.resampleTo16BitCheckBox.isSelected ();
         return true;
     }
 
@@ -81,7 +73,7 @@ public class Sf2CreatorUI implements ICoreTaskSettings
     public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
     {
         String value = parameters.remove (SF2_DOWNSAMPLE_TO_16BIT);
-        this.downsampleTo16Bit = "1".equals (value);
+        this.resampleTo16Bit = "1".equals (value);
         return true;
     }
 
@@ -90,17 +82,17 @@ public class Sf2CreatorUI implements ICoreTaskSettings
     @Override
     public String [] getCLIParameterNames ()
     {
-        return new String [] { SF2_DOWNSAMPLE_TO_16BIT };
+        return CLI_PARAMETER_NAMES;
     }
 
 
     /**
-     * Should 24-bit audio be downsampled to 16-bit for Roland compatibility?
-     * 
-     * @return True to downsample
+     * Should 24-bit audio be re-sampled to 16-bit?
+     *
+     * @return True to re-sample
      */
     public boolean isDownsampleTo16Bit ()
     {
-        return this.downsampleTo16Bit;
+        return this.resampleTo16Bit;
     }
 }
