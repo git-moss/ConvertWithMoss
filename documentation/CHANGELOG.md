@@ -2,6 +2,8 @@
 
 ## 14.2.0
 
+* Kontakt
+  * Fixed: Reading: Fixed an issue reading internal modulators.
 * Korg KSF
   * Fixed: Reading: The play-back end is now set to the length of the sample to prevent issues with output formats which require the end (e.g. Korg wavestate).
   * Fixed: The KSF loop end is exclusive and therefore was off by 1.
