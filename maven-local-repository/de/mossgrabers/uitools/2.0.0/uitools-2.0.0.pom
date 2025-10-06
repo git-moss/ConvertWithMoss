@@ -7,7 +7,7 @@
 	<groupId>de.mossgrabers</groupId>
 	<packaging>jar</packaging>
 	<name>UiTools</name>
-	<version>1.6.3</version>
+	<version>2.0.0</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -25,12 +25,12 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>24.0.1</version>
+			<version>25</version>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
-			<version>5.13.1</version>
+			<version>6.0.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -42,7 +42,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>3.6.2</version>
 				<executions>
 					<execution>
 						<id>enforce-maven</id>
@@ -63,11 +63,11 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.14.0</version>
+				<version>3.14.1</version>
 				<configuration>
 					<fork>true</fork>
-					<source>23</source>
-					<target>23</target>
+					<source>25</source>
+					<target>25</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
@@ -89,7 +89,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>versions-maven-plugin</artifactId>
-				<version>2.18.0</version>
+				<version>2.19.1</version>
 				<configuration>
 					<ignoredVersions>.*-M.*,.*-alpha.*,.*-beta.*,.*-ea.*</ignoredVersions>
 					<generateBackupPoms>false</generateBackupPoms>
@@ -130,7 +130,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.3</version>
+				<version>3.5.4</version>
 			</plugin>
 
 		</plugins>
