@@ -67,24 +67,29 @@ jobs:
     - name: Download JDK 25 (ARM + Intel)
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
+        set -e
         mkdir -p /Users/runner/jdks
 
-        echo "Downloading macOS ARM JDK 25..."
-        curl -L --fail -o /Users/runner/jdks/openjdk-arm.tar.gz \
-          https://download.java.net/java/GA/jdk25/13/GPL/openjdk-25_macos-aarch64_bin.tar.gz
+        echo "Downloading macOS AArch64 JDK 25..."
+        curl -L --fail -o /Users/runner/jdks/jdk-25-macos-aarch64.tar.gz \
+          https://download.oracle.com/java/25/latest/jdk-25_macos-aarch64_bin.tar.gz
 
-        echo "Downloading macOS Intel JDK 25..."
-        curl -L --fail -o /Users/runner/jdks/openjdk-x64.tar.gz \
-          https://download.java.net/java/GA/jdk25/13/GPL/openjdk-25_macos-x64_bin.tar.gz
+        echo "Downloading macOS x64 JDK 25..."
+        curl -L --fail -o /Users/runner/jdks/jdk-25-macos-x64.tar.gz \
+          https://download.oracle.com/java/25/latest/jdk-25_macos-x64_bin.tar.gz
+
+        echo "Checking file types (should be gzip/tar)..."
+        file /Users/runner/jdks/jdk-25-macos-aarch64.tar.gz
+        file /Users/runner/jdks/jdk-25-macos-x64.tar.gz
 
         echo "Extracting JDKs..."
         mkdir -p /Users/runner/jdks/jdk-arm /Users/runner/jdks/jdk-x64
+        tar -xzf /Users/runner/jdks/jdk-25-macos-aarch64.tar.gz -C /Users/runner/jdks/jdk-arm --strip-components=1
+        tar -xzf /Users/runner/jdks/jdk-25-macos-x64.tar.gz -C /Users/runner/jdks/jdk-x64 --strip-components=1
 
-        file /Users/runner/jdks/openjdk-arm.tar.gz
-        tar -xzf /Users/runner/jdks/openjdk-arm.tar.gz -C /Users/runner/jdks/jdk-arm --strip-components=1
-
-        file /Users/runner/jdks/openjdk-x64.tar.gz
-        tar -xzf /Users/runner/jdks/openjdk-x64.tar.gz -C /Users/runner/jdks/jdk-x64 --strip-components=1
+        echo "Quick version checks:"
+        /Users/runner/jdks/jdk-arm/bin/java --version || true
+        arch -x86_64 /Users/runner/jdks/jdk-x64/bin/java --version || true
 
     - name: Build ARM app
       if: ${{ matrix.os == 'macos-latest' }}
