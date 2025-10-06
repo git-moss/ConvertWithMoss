@@ -3,7 +3,6 @@ name: Build and publish jpackage result to GitHub
 on:
   push:
     branches: [ master ]
-  # Necessary to manually run the workflow
   workflow_dispatch:
 
 jobs:
@@ -15,8 +14,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Create output folder
-        run: |
-          mkdir output  # create output dir
+        run: mkdir output
       
       - name: Convert MD files to PDF
         uses: docker://pandoc/latex:2.9
@@ -40,25 +38,79 @@ jobs:
           - os: windows-latest
             artifact_name: ConvertWithMoss*.msi
             build_name: win
-          # This is ARM64
-          - os: macos-14
+          - os: macos-latest
             artifact_name: ConvertWithMoss*.dmg
-            build_name: mac
-          # This is x64
-          - os: macos-14-large
-            artifact_name: ConvertWithMoss*.dmg
-            build_name: mac
-    
+            build_name: mac-universal
+
     name: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
+
     - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: 25
-    - name: Build and jpackage with Maven
+
+    - name: Build and jpackage with Maven (Linux/Windows)
+      if: ${{ matrix.os != 'macos-latest' }}
       run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
+
+    # -------------------------------------------------------
+    # macOS universal build (replaces mac-arm and mac-intel)
+    # -------------------------------------------------------
+    - name: Install Rosetta
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        softwareupdate --install-rosetta --agree-to-license
+
+    - name: Download JDK 25 (ARM + Intel)
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        mkdir -p /Users/runner/jdks
+        curl -L -o /Users/runner/jdks/openjdk-arm.tar.gz https://download.java.net/java/GA/jdk25/latest/binaries/openjdk-25_macos-aarch64_bin.tar.gz
+        mkdir -p /Users/runner/jdks/jdk-arm
+        tar -xzf /Users/runner/jdks/openjdk-arm.tar.gz -C /Users/runner/jdks/jdk-arm --strip-components=1
+
+        curl -L -o /Users/runner/jdks/openjdk-x64.tar.gz https://download.java.net/java/GA/jdk25/latest/binaries/openjdk-25_macos-x64_bin.tar.gz
+        mkdir -p /Users/runner/jdks/jdk-x64
+        tar -xzf /Users/runner/jdks/openjdk-x64.tar.gz -C /Users/runner/jdks/jdk-x64 --strip-components=1
+
+    - name: Build ARM app
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        export JAVA_HOME=/Users/runner/jdks/jdk-arm
+        export PATH=$JAVA_HOME/bin:$PATH
+        mvn -B package jpackage::jpackage@mac-arm --file pom.xml
+
+    - name: Build Intel app (under Rosetta)
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        export JAVA_HOME=/Users/runner/jdks/jdk-x64
+        export PATH=$JAVA_HOME/bin:$PATH
+        arch -x86_64 mvn -B package jpackage::jpackage@mac-intel --file pom.xml
+
+    - name: Combine ARM + Intel binaries
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        mkdir -p target/release/build-universal/ConvertWithMoss.app/Contents/MacOS
+        cp -R target/release/mac-arm/ConvertWithMoss.app/Contents target/release/build-universal/ConvertWithMoss.app/Contents
+        lipo -create \
+          target/release/mac-arm/ConvertWithMoss.app/Contents/MacOS/ConvertWithMoss \
+          target/release/mac-intel/ConvertWithMoss.app/Contents/MacOS/ConvertWithMoss \
+          -output target/release/build-universal/ConvertWithMoss.app/Contents/MacOS/ConvertWithMoss
+
+    - name: Create Universal DMG
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        /Users/runner/jdks/jdk-arm/bin/jpackage \
+          --type dmg \
+          --name ConvertWithMoss \
+          --app-version 1.0.0 \
+          --dest target/release \
+          --app-image target/release/build-universal/ConvertWithMoss.app \
+          --icon icons/app.icns
+
     - name: Publish jpackage result
       uses: actions/upload-artifact@v4
       with:
