@@ -34,7 +34,7 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>24.0.2</version>
+			<version>25</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.trilarion</groupId>
@@ -54,7 +54,7 @@
 		<dependency>
 			<artifactId>uitools</artifactId>
 			<groupId>de.mossgrabers</groupId>
-			<version>1.6.3</version>
+			<version>2.0.0</version>
 		</dependency>
 	</dependencies>
 
@@ -65,7 +65,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.6.1</version>
+				<version>3.6.2</version>
 				<executions>
 					<execution>
 						<id>enforce-maven</id>
@@ -86,7 +86,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.14.0</version>
+				<version>3.14.1</version>
 				<configuration>
 					<fork>true</fork>
 					<source>23</source>
@@ -131,7 +131,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.8.1</version>
+				<version>3.9.0</version>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>
@@ -154,7 +154,7 @@
 			<plugin>
 				<groupId>org.panteleyev</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
-				<version>1.6.6</version>
+				<version>1.7.1</version>
 				<configuration>
 					<input>target/lib</input>
 					<destination>target/release</destination>
@@ -208,7 +208,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>versions-maven-plugin</artifactId>
-				<version>2.18.0</version>
+				<version>2.19.1</version>
 				<configuration>
 					<ignoredVersions>.*-M.*,.*-alpha.*,.*-beta.*,.*-ea.*</ignoredVersions>
 					<generateBackupPoms>false</generateBackupPoms>
@@ -244,7 +244,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.3</version>
+				<version>3.5.4</version>
 			</plugin>
 
 		</plugins>
