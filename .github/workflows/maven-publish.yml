@@ -91,12 +91,20 @@ jobs:
         /Users/runner/jdks/jdk-arm/bin/java --version || true
         arch -x86_64 /Users/runner/jdks/jdk-x64/bin/java --version || true
 
+    - name: Set JAVA_HOME for ARM build
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: echo "JAVA_HOME=/Users/runner/jdks/jdk-arm" >> $GITHUB_ENV
+
     - name: Build ARM app
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
         export JAVA_HOME=/Users/runner/jdks/jdk-arm
         export PATH=$JAVA_HOME/bin:$PATH
         mvn -B package jpackage::jpackage@mac-arm --file pom.xml
+
+    - name: Set JAVA_HOME for Intel build
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: echo "JAVA_HOME=/Users/runner/jdks/jdk-x64" >> $GITHUB_ENV
 
     - name: Build Intel app (under Rosetta)
       if: ${{ matrix.os == 'macos-latest' }}
