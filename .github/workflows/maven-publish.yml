@@ -68,12 +68,22 @@ jobs:
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
         mkdir -p /Users/runner/jdks
-        curl -L -o /Users/runner/jdks/openjdk-arm.tar.gz https://download.java.net/java/GA/jdk25/latest/binaries/openjdk-25_macos-aarch64_bin.tar.gz
-        mkdir -p /Users/runner/jdks/jdk-arm
+
+        echo "Downloading macOS ARM JDK 25..."
+        curl -L --fail -o /Users/runner/jdks/openjdk-arm.tar.gz \
+          https://download.java.net/java/GA/jdk25/13/GPL/openjdk-25_macos-aarch64_bin.tar.gz
+
+        echo "Downloading macOS Intel JDK 25..."
+        curl -L --fail -o /Users/runner/jdks/openjdk-x64.tar.gz \
+          https://download.java.net/java/GA/jdk25/13/GPL/openjdk-25_macos-x64_bin.tar.gz
+
+        echo "Extracting JDKs..."
+        mkdir -p /Users/runner/jdks/jdk-arm /Users/runner/jdks/jdk-x64
+
+        file /Users/runner/jdks/openjdk-arm.tar.gz
         tar -xzf /Users/runner/jdks/openjdk-arm.tar.gz -C /Users/runner/jdks/jdk-arm --strip-components=1
 
-        curl -L -o /Users/runner/jdks/openjdk-x64.tar.gz https://download.java.net/java/GA/jdk25/latest/binaries/openjdk-25_macos-x64_bin.tar.gz
-        mkdir -p /Users/runner/jdks/jdk-x64
+        file /Users/runner/jdks/openjdk-x64.tar.gz
         tar -xzf /Users/runner/jdks/openjdk-x64.tar.gz -C /Users/runner/jdks/jdk-x64 --strip-components=1
 
     - name: Build ARM app
