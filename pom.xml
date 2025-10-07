@@ -89,8 +89,8 @@
 				<version>3.14.1</version>
 				<configuration>
 					<fork>true</fork>
-					<source>23</source>
-					<target>23</target>
+					<source>25</source>
+					<target>25</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
