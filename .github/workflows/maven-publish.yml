@@ -55,7 +55,9 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
+        # Crashes with: Error: /usr/lib/jvm/temurin-25-jdk-amd64/lib/ct.sym has been modified
+        # distribution: 'temurin'
+        distribution: 'zulu'
         java-version: 25
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
