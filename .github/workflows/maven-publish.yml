@@ -67,7 +67,7 @@ jobs:
         run: |
           softwareupdate --install-rosetta --agree-to-license
 
-      - name: Download JDK 25 (ARM + Intel)
+      - name: Download and extract JDK 25 (ARM + Intel)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           set -e
@@ -82,17 +82,23 @@ jobs:
             https://download.oracle.com/java/25/latest/jdk-25_macos-x64_bin.tar.gz
 
           echo "Extracting JDKs..."
-          mkdir -p /Users/runner/jdks/jdk-arm /Users/runner/jdks/jdk-x64
-          tar -xzf /Users/runner/jdks/jdk-25-macos-aarch64.tar.gz -C /Users/runner/jdks/jdk-arm --strip-components=1
-          tar -xzf /Users/runner/jdks/jdk-25-macos-x64.tar.gz -C /Users/runner/jdks/jdk-x64 --strip-components=1
+          cd /Users/runner/jdks
+
+          mkdir -p jdk-arm jdk-x64
+          tar -xzf jdk-25-macos-aarch64.tar.gz
+          tar -xzf jdk-25-macos-x64.tar.gz
+
+          # Dynamically detect extracted directories
+          ARM_DIR=$(tar -tzf jdk-25-macos-aarch64.tar.gz | head -1 | cut -f1 -d"/")
+          X64_DIR=$(tar -tzf jdk-25-macos-x64.tar.gz | head -1 | cut -f1 -d"/")
+
+          mv "$ARM_DIR"/* jdk-arm/
+          mv "$X64_DIR"/* jdk-x64/
 
           echo "Verifying JDKs:"
           /Users/runner/jdks/jdk-arm/bin/java --version
           arch -x86_64 /Users/runner/jdks/jdk-x64/bin/java --version
 
-      # -----------------------------
-      # Build ARM version
-      # -----------------------------
       - name: Set JAVA_HOME for ARM
         if: ${{ matrix.os == 'macos-latest' }}
         run: echo "JAVA_HOME=/Users/runner/jdks/jdk-arm" >> $GITHUB_ENV
@@ -104,9 +110,6 @@ jobs:
           java -version
           mvn -B package jpackage::jpackage@mac-arm --file pom.xml
 
-      # -----------------------------
-      # Build Intel version (Rosetta)
-      # -----------------------------
       - name: Set JAVA_HOME for Intel
         if: ${{ matrix.os == 'macos-latest' }}
         run: echo "JAVA_HOME=/Users/runner/jdks/jdk-x64" >> $GITHUB_ENV
