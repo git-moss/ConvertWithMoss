@@ -39,15 +39,16 @@ jobs:
             build_name: linux
           - os: windows-latest
             artifact_name: ConvertWithMoss*.msi
-            build_name: win
-          # This is ARM64
+            build_name: win-x64
+          - os: windows-11-arm
+            artifact_name: ConvertWithMoss*.msi
+            build_name: win-arm
           - os: macos-14
             artifact_name: ConvertWithMoss*.dmg
             build_name: mac-arm
-          # This is x64
           - os: macos-13
             artifact_name: ConvertWithMoss*.dmg
-            build_name: mac-intel
+            build_name: mac-x64
     
     name: ${{ matrix.os }}
 
