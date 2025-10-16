@@ -44,10 +44,10 @@ jobs:
           #- os: windows-11-arm
           #  artifact_name: ConvertWithMoss*.msi
           #  build_name: win-arm
-          - os: macos-14
+          - os: macos-15
             artifact_name: ConvertWithMoss*.dmg
             build_name: mac-arm
-          - os: macos-13
+          - os: macos-15-intel
             artifact_name: ConvertWithMoss*.dmg
             build_name: mac-x64
     
