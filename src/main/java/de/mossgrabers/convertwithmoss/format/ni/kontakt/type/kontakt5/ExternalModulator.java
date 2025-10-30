@@ -121,7 +121,7 @@ public class ExternalModulator
             final String destinationDesc = StreamUtils.readWith4ByteLengthAscii (in);
             // System.out.println ("Destination Desc:" + destinationDesc);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // System.out.println ("Destination Desc: Could not read text");
             return;
@@ -150,14 +150,14 @@ public class ExternalModulator
             modDescription = StreamUtils.readWith4ByteLengthAscii (in);
             // System.out.println ("Mod. Description: " + modDescription);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // System.out.println ("Mod. Description: Could not read text");
             return;
         }
 
         // TODO not correct
-        if (modDescription.length () > 0)
+        if (!modDescription.isEmpty ())
         {
             @SuppressWarnings("unused")
             int unknown4 = in.read ();
@@ -174,7 +174,7 @@ public class ExternalModulator
             final String description = StreamUtils.readWith4ByteLengthAscii (in);
             // System.out.println ("Description: " + description);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // System.out.println ("Description: Could not read text");
             return;

@@ -159,7 +159,7 @@ public class InfoChunk extends AbstractListChunk
                 {
                     return parser.parse (dateTime);
                 }
-                catch (final java.text.ParseException ex)
+                catch (final java.text.ParseException _)
                 {
                     // Ignore
                 }
@@ -185,7 +185,7 @@ public class InfoChunk extends AbstractListChunk
         final StringBuilder sb = new StringBuilder ();
         for (final IChunk chunk: this.subChunks)
         {
-            if (sb.length () > 0)
+            if (!sb.isEmpty ())
                 sb.append ('\n');
             sb.append (RiffID.fromId (chunk.getId ()).getName ()).append (": ").append (chunkDataToAsciiString (chunk));
         }
@@ -200,7 +200,7 @@ public class InfoChunk extends AbstractListChunk
         {
             chunk.writeData (out);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             return "";
         }

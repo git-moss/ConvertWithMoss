@@ -110,7 +110,7 @@ public class DefaultSampleLoop implements ISampleLoop
     {
         final int loopLength = this.getLength ();
         if (loopLength > 0)
-            this.setCrossfade (crossfadeSamples / loopLength);
+            this.setCrossfade (crossfadeSamples / (double) loopLength);
     }
 
 
@@ -118,7 +118,7 @@ public class DefaultSampleLoop implements ISampleLoop
     @Override
     public void setCrossfadeInSeconds (final double crossfadeSeconds, final int sampleRate)
     {
-        final double loopLengthInSeconds = this.getLength () / sampleRate;
+        final double loopLengthInSeconds = this.getLength () / (double) sampleRate;
         this.setCrossfade (crossfadeSeconds / loopLengthInSeconds);
     }
 

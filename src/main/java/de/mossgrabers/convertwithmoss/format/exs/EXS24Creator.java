@@ -131,7 +131,20 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                     final ISampleLoop loop = loops.get (0);
                     exs24Zone.loopStart = loop.getStart ();
                     exs24Zone.loopEnd = loop.getEnd () + 1;
-                    exs24Zone.loopCrossfade = loop.getCrossfadeInSamples ();
+                    final double crossfade = loop.getCrossfade ();
+                    final int loopLength = loop.getLength ();
+                    if (crossfade > 0 && loopLength > 0)
+                    {
+                        try
+                        {
+                            final double loopLengthInSeconds = loopLength / (double) zone.getSampleData ().getAudioMetadata ().getSampleRate ();
+                            exs24Zone.loopCrossfade = (int) Math.round (crossfade * loopLengthInSeconds * 1000.0);
+                        }
+                        catch (final IOException ex)
+                        {
+                            this.notifier.logError (ex);
+                        }
+                    }
                 }
 
                 // Fill sample

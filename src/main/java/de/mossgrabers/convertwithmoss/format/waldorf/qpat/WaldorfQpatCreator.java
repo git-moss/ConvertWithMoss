@@ -178,7 +178,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                if (sb.length () > 0)
+                if (!sb.isEmpty ())
                     sb.append ('\n');
 
                 final ISampleData sampleData = zone.getSampleData ();
@@ -289,7 +289,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
             // Osc1PitchBendRange: [0..48] ~ [-24..24]
             final int pitchbend = Math.clamp (Math.round (firstZone.getBendUp () / 100.0), -24, 24);
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24));
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24.0f));
 
             // Osc1Keytrack: [0..1] ~ [-200..200] - already set in the sample maps
             final double keyTracking = 100.0;

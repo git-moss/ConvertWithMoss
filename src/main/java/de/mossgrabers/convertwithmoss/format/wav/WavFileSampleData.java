@@ -123,7 +123,7 @@ public class WavFileSampleData extends AbstractFileSampleData
             final IAudioMetadata am = new DefaultAudioMetadata (2, formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), frames);
             return new InMemorySampleData (am, stereoData);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             throw new CombinationNotPossibleException (this.filename);
         }
@@ -248,7 +248,7 @@ public class WavFileSampleData extends AbstractFileSampleData
         {
             wavFile = this.getWaveFile ();
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             return;
         }
@@ -264,14 +264,14 @@ public class WavFileSampleData extends AbstractFileSampleData
             final String description = broadcastAudioExtensionChunk.getDescription ().trim ();
             if (!description.isBlank ())
             {
-                if (sb.length () > 0)
+                if (!sb.isEmpty ())
                     sb.append ('\n');
                 sb.append (description);
             }
             metadata.setCreationDateTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
         }
 
-        if (sb.length () > 0)
+        if (!sb.isEmpty ())
             metadata.setDescription (sb.toString ());
     }
 }
