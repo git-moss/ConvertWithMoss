@@ -77,7 +77,7 @@ public class AiffMarkerChunk extends AiffChunk
         final StringBuilder sb = new StringBuilder ();
         for (final Map.Entry<Integer, AiffMarker> entry: this.markers.entrySet ())
         {
-            if (sb.length () > 0)
+            if (!sb.isEmpty ())
                 sb.append ('\n');
             final AiffMarker marker = entry.getValue ();
             sb.append ("Marker ").append (entry.getKey ()).append (": ").append (marker.position).append (" - ").append (marker.name);

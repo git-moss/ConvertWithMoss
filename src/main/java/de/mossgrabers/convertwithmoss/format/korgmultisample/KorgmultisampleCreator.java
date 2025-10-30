@@ -248,14 +248,14 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
         if (tune != 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_TUNE);
-            final float val = (float) Math.min (999, Math.max (-999, tune * 1000));
+            final float val = (float) Math.clamp (tune * 1000, -999, 999);
             writeFloatLittleEndian (sampleOutput, val);
         }
 
         final double gain = sample.getGain ();
         if (gain != 0)
         {
-            final float v = (float) Math.min (1000, Math.max (-1000, gain * 1000));
+            final float v = (float) Math.clamp (gain * 1000, -1000, 1000);
             sampleOutput.write (KorgmultisampleConstants.ID_LEVEL_LEFT);
             writeFloatLittleEndian (sampleOutput, v);
             sampleOutput.write (KorgmultisampleConstants.ID_LEVEL_RIGHT);

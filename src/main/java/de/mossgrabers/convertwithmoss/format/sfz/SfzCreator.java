@@ -344,16 +344,16 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY_SHAPE, pitchEnvelope.getDecaySlope () * 10.0);
             addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE_SHAPE, pitchEnvelope.getReleaseSlope () * 10.0);
 
-            if (envelopeStr.length () > 0)
+            if (!envelopeStr.isEmpty ())
                 buffer.append (envelopeStr).append (LINE_FEED);
         }
 
-        ////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////
         // Sample Loop
 
         this.createLoops (buffer, zone);
 
-        ////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////
         // Filter
 
         createFilter (buffer, zone);
@@ -395,7 +395,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                     {
                         loopLengthInSeconds = loopLength / (double) zone.getSampleData ().getAudioMetadata ().getSampleRate ();
                         final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
-                        buffer.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (Math.round (crossfadeInSeconds));
+                        buffer.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (crossfadeInSeconds);
                     }
                     catch (final IOException ex)
                     {
@@ -452,7 +452,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY_SHAPE, amplitudeEnvelope.getDecaySlope () * 10.0);
         addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE_SHAPE, amplitudeEnvelope.getReleaseSlope () * 10.0);
 
-        if (envelopeStr.length () > 0)
+        if (!envelopeStr.isEmpty ())
             buffer.append (envelopeStr).append (LINE_FEED);
     }
 
@@ -505,7 +505,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY_SHAPE, filterEnvelope.getDecaySlope () * 10.0);
             addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE_SHAPE, filterEnvelope.getReleaseSlope () * 10.0);
 
-            if (envelopeStr.length () > 0)
+            if (!envelopeStr.isEmpty ())
                 buffer.append (envelopeStr).append (LINE_FEED);
         }
     }
@@ -527,7 +527,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     {
         if (value == 0)
             return;
-        if (sb.length () > 0)
+        if (!sb.isEmpty ())
             sb.append (' ');
         sb.append (opcode).append ('=').append (Math.clamp (value, -10.0, 10.0));
     }
@@ -537,7 +537,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     {
         if (value < 0)
             return;
-        if (sb.length () > 0)
+        if (!sb.isEmpty ())
             sb.append (' ');
         sb.append (opcode).append ('=').append (Math.clamp (value, 0.0, 100.0));
     }

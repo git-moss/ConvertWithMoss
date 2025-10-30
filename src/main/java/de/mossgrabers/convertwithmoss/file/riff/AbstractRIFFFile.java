@@ -149,7 +149,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
                 final String value = this.infoChunk.getInfoField (riffID);
                 if (value == null)
                     continue;
-                if (sb.length () > 0)
+                if (!sb.isEmpty ())
                     sb.append ('\n');
                 sb.append (riffID.getName ()).append (": ").append (value.trim ());
             }
@@ -171,7 +171,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
         {
             final int id = chunk.getId ();
             sb.append ("* ").append (RiffID.fromId (id).getName ()).append (" ('").append (RiffID.toASCII (id)).append ("')\n");
-            sb.append ("    " + chunk.infoText ().replace ("\n", "\n    ")).append ('\n');
+            sb.append ("    ").append (chunk.infoText ().replace ("\n", "\n    ")).append ('\n');
         }
         return sb.toString ();
     }

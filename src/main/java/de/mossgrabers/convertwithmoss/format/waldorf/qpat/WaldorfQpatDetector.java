@@ -508,7 +508,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             // "3:" or empty references the internal partition, "4:" is the USB drive
             if (samplePath.length () > 2 && samplePath.charAt (1) == ':')
                 samplePath = samplePath.substring (2);
-            if (samplePath.length () > 0)
+            if (!samplePath.isEmpty ())
                 this.createSampleZone (parentFolder, group, params, samplePath);
         }
 

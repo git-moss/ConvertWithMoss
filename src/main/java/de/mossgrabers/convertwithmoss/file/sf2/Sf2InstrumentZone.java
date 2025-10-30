@@ -78,7 +78,7 @@ public class Sf2InstrumentZone extends AbstractZone
         for (final Entry<Integer, Integer> gen: this.getGenerators ().entrySet ())
         {
             final int generator = gen.getKey ().intValue ();
-            sb.append ("           - Instr. Generator: " + Generator.getGeneratorName (generator) + " : " + gen.getValue () + "\n");
+            sb.append ("           - Instr. Generator: ").append (Generator.getGeneratorName (generator)).append (" : ").append (gen.getValue ()).append ('\n');
         }
 
         if (this.sampleDescriptor != null)

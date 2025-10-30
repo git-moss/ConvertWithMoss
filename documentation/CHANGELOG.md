@@ -1,5 +1,14 @@
 # Changes
 
+## 14.2.1 (unreleased)
+
+* EXS
+  * Fixed: Read loop cross-fade was not calculated correctly (integer instead of double).
+  * Fixed: Loop cross-fade was written as samples not as milliseconds.
+* SFZ
+  * Fixed: Read loop cross-fade was not calculated correctly (integer instead of double).
+  * Fixed: Writing loop cross-fade was not calculated correctly (was rounded to full seconds).
+
 ## 14.2.0
 
 * Kontakt

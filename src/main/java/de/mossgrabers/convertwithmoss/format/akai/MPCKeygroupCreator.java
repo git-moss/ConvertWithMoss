@@ -248,7 +248,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_END, Integer.toString (sampleLoop.getEnd ()));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, zone.isReversed () ? "3" : "1");
 
-        final int loopCrossfade = (int) Math.round (sampleLoop.getCrossfade () * sampleLoop.getLength ());
+        final int loopCrossfade = (int) Math.floor (sampleLoop.getCrossfade () * sampleLoop.getLength ());
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, Integer.toString (loopCrossfade));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_POSITION, "0.500000");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SLICE_TAIL_LENGTH, MPCKeygroupConstants.DOUBLE_ZERO);
@@ -337,14 +337,14 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
                 XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_FILTER_AMOUNT, formatDouble (filterCutoffVelocityAmount, 2));
         }
 
-        /////////////////////////////////////////////////////////////
+        // ///////////////////////////////////////////////////////////
         // Range
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, Integer.toString (keyLow));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, zone.getKeyTracking () == 0 ? "True" : "False");
 
-        /////////////////////////////////////////////////////////////
+        // ///////////////////////////////////////////////////////////
         // Amplitude
 
         final double ampVelocityAmount = zone.getAmplitudeVelocityModulator ().getDepth ();
