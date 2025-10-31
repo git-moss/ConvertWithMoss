@@ -38,6 +38,7 @@ import de.mossgrabers.convertwithmoss.file.sf2.Sf2Modulator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Preset;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2PresetZone;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 
@@ -108,10 +109,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + presetName;
             final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName, mappingName);
             final IMetadata metadata = source.getMetadata ();
-            metadata.detectMetadata (this.settingsConfiguration, parts);
-            metadata.setCreator (sf2File.getSoundDesigner ());
-            metadata.setCreationDateTime (sf2File.getParsedCreationDate ());
-            metadata.setDescription (sf2File.formatInfoFields (RiffID.INFO_CMNT, RiffID.INFO_ICMT, RiffID.INFO_COMM, RiffID.INFO_ICOP, RiffID.INFO_IMIT, RiffID.INFO_IMIU, RiffID.INFO_TORG, RiffID.INFO_TORG));
+            this.fillMetadata (sf2File, parts, metadata);
 
             final GeneratorHierarchy generators = new GeneratorHierarchy ();
 
@@ -156,6 +154,23 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         }
 
         return multisamples;
+    }
+
+
+    private void fillMetadata (final Sf2File sf2File, final String [] parts, final IMetadata metadata)
+    {
+        String description = sf2File.formatInfoFields (RiffID.INFO_CMNT, RiffID.INFO_ICMT, RiffID.INFO_COMM, RiffID.INFO_ICOP, RiffID.INFO_IMIT, RiffID.INFO_IMIU, RiffID.INFO_TORG, RiffID.INFO_TORG);
+        // Remove unnecessary 'Comment' labels. Order is important!
+        description = description.replace (RiffID.INFO_COMM.getName () + ": ", "").replace (RiffID.INFO_ICMT.getName () + ": ", "").replace (RiffID.INFO_CMNT.getName () + ": ", "");
+
+        metadata.detectMetadata (this.settingsConfiguration, parts);
+
+        if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
+            metadata.setCategory (TagDetector.detectCategory (description.split ("\n")));
+
+        metadata.setCreator (sf2File.getSoundDesigner ());
+        metadata.setCreationDateTime (sf2File.getParsedCreationDate ());
+        metadata.setDescription (description);
     }
 
 

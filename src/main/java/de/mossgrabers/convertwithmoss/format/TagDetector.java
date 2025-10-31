@@ -573,6 +573,8 @@ public class TagDetector
      */
     public static String detect (final String [] texts, final Map<String, String> lookupMap, final String defaultTag)
     {
+        if (texts == null)
+            return defaultTag;
         return detect (Arrays.asList (texts), lookupMap, defaultTag);
     }
 

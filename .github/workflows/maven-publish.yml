@@ -41,9 +41,9 @@ jobs:
             artifact_name: ConvertWithMoss*.msi
             build_name: win-x64
           # JDK25 not yet included (which can be fixed) but also JavaFX is not available for Windows on ARM
-          #- os: windows-11-arm
-          #  artifact_name: ConvertWithMoss*.msi
-          #  build_name: win-arm
+          - os: windows-11-arm
+            artifact_name: ConvertWithMoss*.msi
+            build_name: win-arm
           - os: macos-15
             artifact_name: ConvertWithMoss*.dmg
             build_name: mac-arm
@@ -57,7 +57,8 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-java@v4
       with:
-        # Crashes with: Error: /usr/lib/jvm/temurin-25-jdk-amd64/lib/ct.sym has been modified
+        # Temurin crashes with: Error: /usr/lib/jvm/temurin-25-jdk-amd64/lib/ct.sym has been modified
+        # also there is no Windows ARM build
         # distribution: 'temurin'
         distribution: 'zulu'
         java-version: 25
