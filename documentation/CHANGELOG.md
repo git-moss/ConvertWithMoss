@@ -5,6 +5,8 @@
 * EXS
   * Fixed: Read loop cross-fade was not calculated correctly (integer instead of double).
   * Fixed: Loop cross-fade was written as samples not as milliseconds.
+* SF2
+  * New: Use all metadata fields for category detection if none could be extracted from the path.
 * SFZ
   * Fixed: Read loop cross-fade was not calculated correctly (integer instead of double).
   * Fixed: Writing loop cross-fade was not calculated correctly (was rounded to full seconds).
