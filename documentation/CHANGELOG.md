@@ -2,6 +2,7 @@
 
 ## 14.2.1 (unreleased)
 
+* Restoration of main window on startup ensures that it is at least 25% visible on the screen.
 * EXS
   * Fixed: Read loop cross-fade was not calculated correctly (integer instead of double).
   * Fixed: Loop cross-fade was written as samples not as milliseconds.

@@ -827,6 +827,8 @@ public class StreamUtils
     public static String readWith1ByteLengthAscii (final InputStream in) throws IOException
     {
         final int blocklength = in.read ();
+        if (blocklength < 0)
+            throw new IOException ("Negative string length.");
         final byte [] blockData = in.readNBytes (blocklength);
         return new String (blockData);
     }
