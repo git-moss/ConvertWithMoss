@@ -38,11 +38,11 @@ jobs:
             artifact_name: convertwithmoss*.deb
             build_name: linux
           - os: windows-latest
-            artifact_name: ConvertWithMoss*.msi
+            artifact_name: ConvertWithMoss*.exe
             build_name: win-x64
           # JDK25 not yet included (which can be fixed) but also JavaFX is not available for Windows on ARM
           #- os: windows-11-arm
-          #  artifact_name: ConvertWithMoss*.msi
+          #  artifact_name: ConvertWithMoss*.exe
           #  build_name: win-arm
           - os: macos-15
             artifact_name: ConvertWithMoss*.dmg
