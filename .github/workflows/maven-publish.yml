@@ -62,6 +62,10 @@ jobs:
         # distribution: 'temurin'
         distribution: 'zulu'
         java-version: 25
+    # Zulu does not contain WiX Toolset (Temurin does)!
+    - name: Install WiX Toolset
+      if: startsWith(matrix.os, 'windows')
+      run: choco install wixtoolset --no-progress -y
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
     - name: Publish jpackage result
