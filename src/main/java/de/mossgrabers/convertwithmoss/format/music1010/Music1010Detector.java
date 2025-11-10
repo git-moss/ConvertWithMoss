@@ -324,11 +324,12 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
             final double ampEnvSustain = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0;
             final double ampEnvRelease = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_RELEASE, 0), 38.0);
 
+            File previousFolder = null;
             for (final Element assetElement: assetElements)
             {
                 final String filename = assetElement.getAttribute (Music1010Tag.ATTR_FILENAME);
                 if (filename != null && !filename.isBlank ())
-                    this.parseSampleData (group, assetElement, basePath, filename, ampEnvAttack, ampEnvDecay, ampEnvSustain, ampEnvRelease);
+                    this.parseSampleData (group, assetElement, previousFolder, basePath, filename, ampEnvAttack, ampEnvDecay, ampEnvSustain, ampEnvRelease);
             }
 
             parseEffects (paramsElement, multisampleSource);
@@ -384,39 +385,48 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param group The object to fill in the data
      * @param assetElement The XML asset element
+     * @param previousFolder The folder in which previously samples were found
      * @param basePath The base path of the samples
      * @param sampleName The filename of the sample asset
      * @param ampEnvAttack The amplitude attack value
      * @param ampEnvDecay The amplitude decay value
      * @param ampEnvSustain The amplitude sustain value
      * @param ampEnvRelease The amplitude release value
+     * @return The updated previous folder
      */
-    private void parseSampleData (final IGroup group, final Element assetElement, final String basePath, final String sampleName, final double ampEnvAttack, final double ampEnvDecay, final double ampEnvSustain, final double ampEnvRelease)
+    private File parseSampleData (final IGroup group, final Element assetElement, final File previousFolder, final String basePath, final String sampleName, final double ampEnvAttack, final double ampEnvDecay, final double ampEnvSustain, final double ampEnvRelease)
     {
         File sampleFile = new File (basePath, sampleName);
         // If the file does not exist, try to find it outside of the Presets folder
+        File prevFolder = previousFolder;
         if (!sampleFile.exists ())
-            sampleFile = new File (basePath + "/../..", sampleName);
+        {
+            // Find the sample file starting 2 folders up
+            final int height = 2;
+            sampleFile = AbstractDetector.findSampleFile (this.notifier, new File (basePath), prevFolder, sampleFile.getName (), height);
+            if (sampleFile != null && sampleFile.exists ())
+                prevFolder = sampleFile.getParentFile ();
+        }
 
         final String zoneName = FileUtils.getNameWithoutType (sampleFile);
         final ISampleData sampleData;
         try
         {
             if (!AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                return;
+                return prevFolder;
             sampleData = new WavFileSampleData (sampleFile);
         }
         catch (final IOException ex)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
-            return;
+            return prevFolder;
         }
 
         final Element paramsElement = XMLUtils.getChildElementByName (assetElement, Music1010Tag.PARAMS);
         if (paramsElement == null)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE);
-            return;
+            return prevFolder;
         }
 
         final DefaultSampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
@@ -463,6 +473,8 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         amplitudeEnvelope.setReleaseTime (ampEnvRelease);
 
         group.addSampleZone (sampleZone);
+
+        return prevFolder;
     }
 
 
