@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.ni.maschine.maschine2;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,9 +13,11 @@ import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.IMaschineFormat;
 import de.mossgrabers.convertwithmoss.format.ni.nicontainer.NIContainerChunkType;
@@ -24,6 +27,7 @@ import de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata.AuthoringA
 import de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata.AuthoringApplicationChunkData;
 import de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata.AuthorizationChunkData;
 import de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata.PresetChunkData;
+import de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata.SoundinfoChunkData;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -34,6 +38,20 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Maschine2Format implements IMaschineFormat
 {
+    private static final byte [] MASCHINE_TEMPLATE_V2;
+
+    static
+    {
+        try
+        {
+            MASCHINE_TEMPLATE_V2 = Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/maschine/MaschineV2Template.mxsnd");
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException (ex);
+        }
+    }
+
     private final INotifier notifier;
 
 
@@ -59,14 +77,6 @@ public class Maschine2Format implements IMaschineFormat
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public void writeSound (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
-    {
-        // Not supported
-    }
-
-
     /**
      * Read and parse a Maschine Sound file which uses this format type from the given input stream.
      *
@@ -80,22 +90,6 @@ public class Maschine2Format implements IMaschineFormat
     public List<IMultisampleSource> readSound (final File sourceFolder, final File sourceFile, final InputStream inputStream, final IMetadataConfig metadataConfig) throws IOException
     {
         final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
-        return this.readMaschinePreset (niContainerItem, sourceFolder, sourceFile, metadataConfig);
-    }
-
-
-    /**
-     * Reads from an NI container, which hopefully contains a Maschine preset.
-     *
-     * @param niContainerItem The NI container item to read from
-     * @param sourceFolder The top source folder for the detection
-     * @param sourceFile The source file to convert
-     * @param metadataConfig Default metadata
-     * @return Access to the read Maschine data
-     * @throws IOException Could not read the container
-     */
-    private List<IMultisampleSource> readMaschinePreset (final NIContainerItem niContainerItem, final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
-    {
         final NIContainerDataChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
         if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
         {
@@ -103,13 +97,14 @@ public class Maschine2Format implements IMaschineFormat
             if (application != AuthoringApplication.MASCHINE)
                 throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_NOT_A_MASCHINE_FILE", application == null ? "Unknown" : application.getName ()));
 
-            this.notifier.log ("IDS_NI_MASCHINE_FOUND_TYPE", "Container", appChunkData.getApplicationVersion (), "Little-Endian");
+            this.notifier.log ("IDS_NI_MASCHINE_FOUND_TYPE", "Container", appChunkData.getApplicationVersion ());
 
             final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
             if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
             {
                 final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
-                return programAccessor.readMaschinePreset (sourceFolder, sourceFile, presetChunkData.getPresetData ());
+                final Optional<IMultisampleSource> result = programAccessor.readMaschinePreset (sourceFolder, sourceFile, presetChunkData.getPresetData ());
+                return result.isPresent () ? Collections.singletonList (result.get ()) : Collections.emptyList ();
             }
         }
 
@@ -119,5 +114,36 @@ public class Maschine2Format implements IMaschineFormat
                 this.notifier.logError ("IDS_NI_CONTAINER_CONTAINS_ENCRYPTED_SUB_TREE");
 
         return Collections.emptyList ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void writeSound (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
+    {
+        final NIContainerItem niContainerItem = new NIContainerItem ();
+        niContainerItem.read (new ByteArrayInputStream (MASCHINE_TEMPLATE_V2));
+
+        final NIContainerDataChunk soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
+        if (soundInfoChunk != null && soundInfoChunk.getData () instanceof final SoundinfoChunkData soundInfoChunkData)
+        {
+            soundInfoChunkData.setName (multisampleSource.getName ());
+            final IMetadata metadata = multisampleSource.getMetadata ();
+            soundInfoChunkData.setAuthor (metadata.getCreator ());
+            soundInfoChunkData.setVendor (metadata.getCreator ());
+            soundInfoChunkData.setDescription (metadata.getDescription ());
+            soundInfoChunkData.setTags (Collections.singletonList (metadata.getCategory ()));
+            soundInfoChunkData.setAttributes (Collections.singletonList (metadata.getCategory ()));
+        }
+
+        final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+        if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+        {
+            final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
+            final byte [] presetData = programAccessor.writeMaschinePreset (multisampleSource, presetChunkData.getPresetData (), safeSampleFolderName);
+            presetChunkData.setPresetData (presetData);
+        }
+
+        niContainerItem.write (out);
     }
 }

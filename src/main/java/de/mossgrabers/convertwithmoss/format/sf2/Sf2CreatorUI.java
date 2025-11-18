@@ -70,7 +70,7 @@ public class Sf2CreatorUI implements ICoreTaskSettings
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         String value = parameters.remove (SF2_DOWNSAMPLE_TO_16BIT);
         this.resampleTo16Bit = "1".equals (value);

@@ -130,7 +130,7 @@ public class WavChunkSettingsUI implements ICoreTaskSettings
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         String value = parameters.remove (this.prefix + WRITE_BROADCAST_AUDIO_CHUNK);
         this.updateBroadcastAudioChunk = "1".equals (value);

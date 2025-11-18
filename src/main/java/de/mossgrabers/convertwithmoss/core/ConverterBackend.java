@@ -40,6 +40,7 @@ import de.mossgrabers.convertwithmoss.format.music1010.Music1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Detector;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktCreator;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktDetector;
+import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineCreator;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineDetector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
@@ -105,8 +106,8 @@ public class ConverterBackend
             new KontaktDetector (notifier),
             new KMPDetector (notifier),
             new KorgmultisampleDetector (notifier),
-            new MaschineDetector (notifier),
             new EXS24Detector (notifier),
+            new MaschineDetector (notifier),
             new SxtDetector (notifier),
             new SampleFileDetector (notifier),
             new SfzDetector (notifier),
@@ -129,6 +130,7 @@ public class ConverterBackend
             new KMPCreator (notifier),
             new KorgmultisampleCreator (notifier),
             new EXS24Creator (notifier),
+            new MaschineCreator (notifier),
             new SxtCreator (notifier),
             new WavCreator (notifier),
             new SfzCreator (notifier),

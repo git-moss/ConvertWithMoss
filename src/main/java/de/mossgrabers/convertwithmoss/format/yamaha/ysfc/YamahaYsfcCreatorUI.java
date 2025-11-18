@@ -98,7 +98,7 @@ public class YamahaYsfcCreatorUI implements ICoreTaskSettings
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         String value = parameters.remove (YSFC_OUTPUT_FORMAT_LIBRARY);
         if (value == null)

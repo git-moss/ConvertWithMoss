@@ -165,6 +165,17 @@ public class SoundinfoChunkData extends AbstractChunkData
 
 
     /**
+     * Set the name of the sound.
+     *
+     * @param name The name
+     */
+    public void setName (final String name)
+    {
+        this.name = name;
+    }
+
+
+    /**
      * Get the author of the sound.
      *
      * @return The author
@@ -172,6 +183,17 @@ public class SoundinfoChunkData extends AbstractChunkData
     public String getAuthor ()
     {
         return this.author;
+    }
+
+
+    /**
+     * Set the author of the sound.
+     *
+     * @param author The author
+     */
+    public void setAuthor (final String author)
+    {
+        this.author = author;
     }
 
 
@@ -187,6 +209,17 @@ public class SoundinfoChunkData extends AbstractChunkData
 
 
     /**
+     * Set the vendor of the sound.
+     *
+     * @param vendor The vendor
+     */
+    public void setVendor (final String vendor)
+    {
+        this.vendor = vendor;
+    }
+
+
+    /**
      * Get the description of the sound.
      *
      * @return The description
@@ -194,6 +227,17 @@ public class SoundinfoChunkData extends AbstractChunkData
     public String getDescription ()
     {
         return this.description;
+    }
+
+
+    /**
+     * Set the description of the sound.
+     *
+     * @param description The description
+     */
+    public void setDescription (final String description)
+    {
+        this.description = description;
     }
 
 
@@ -209,6 +253,18 @@ public class SoundinfoChunkData extends AbstractChunkData
 
 
     /**
+     * Set the tags.
+     * 
+     * @param tags The tags to set
+     */
+    public void setTags (final List<String> tags)
+    {
+        this.tags.clear ();
+        this.tags.addAll (tags);
+    }
+
+
+    /**
      * Get the attributes.
      *
      * @return The attributes
@@ -216,6 +272,18 @@ public class SoundinfoChunkData extends AbstractChunkData
     public List<String> getAttributes ()
     {
         return this.attributes;
+    }
+
+
+    /**
+     * Set the attributes.
+     * 
+     * @param attributes The attributes to set
+     */
+    public void setAttributes (final List<String> attributes)
+    {
+        this.attributes.clear ();
+        this.attributes.addAll (attributes);
     }
 
 

@@ -67,7 +67,7 @@ public class EmptySettingsUI implements ICoreTaskSettings
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (final INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         return true;
     }
