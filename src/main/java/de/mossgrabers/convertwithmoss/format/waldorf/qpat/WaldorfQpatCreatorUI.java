@@ -93,7 +93,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;

@@ -247,6 +247,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
             presetChunkData.setPresetData (programAccessor.writeKontaktPresetChunks ());
         }
 
+        // TODO Update Metadata in Container
+
         niContainerItem.write (out);
     }
 

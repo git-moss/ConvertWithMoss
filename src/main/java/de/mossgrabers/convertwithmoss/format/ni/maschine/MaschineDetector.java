@@ -28,8 +28,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final String [] ENDINGS_ALL =
     {
-        ".mxsnd",
-        ".mxgrp"
+        ".mxsnd"
     };
 
 
@@ -40,7 +39,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public MaschineDetector (final INotifier notifier)
     {
-        super ("Maschine (mxgrp, mxsnd)", "Maschine", notifier, new MetadataSettingsUI ("Maschine"));
+        super ("Maschine (mxsnd)", "Maschine", notifier, new MetadataSettingsUI ("Maschine"));
     }
 
 
@@ -69,7 +68,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError (ex, false);
+            this.notifier.logError ("IDS_NI_MASCHINE_READ_ERROR", ex);
         }
         return Collections.emptyList ();
     }

@@ -5,14 +5,16 @@
 package de.mossgrabers.convertwithmoss.format.ni.maschine.maschine2;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -36,6 +38,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
+import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -46,13 +49,74 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class MaschinePresetAccessor
 {
-    private static final float                    MIN_DB                  = -82.3f;
-    private static final float                    GAIN                    = 80.05f;
-    /** Results to 0dB. */
-    private static final float                    REFERENCE_DB            = 0.75f;
-    private final static String                   PLUGIN_MASCHINE_SAMPLER = "Sampler";
+    @SuppressWarnings("unused")
+    private static final int                      PRE_X0D_START_OF_SOUND         = 91;
+    @SuppressWarnings("unused")
+    private static final int                      PRE_X0D_NAME                   = 92;
+    private static final int                      PRE_X0D_PLUGIN_INFO            = 109;
+    private static final int                      PRE_X0D_NUMBER_OF_SAMPLES      = 110;
+    private static final int                      PRE_X0D_FIRST_ZONE             = 111;
+    private static final int                      PRE_X0D_FIRST_ZONE_PLUGIN_NAME = 126;
+    private static final int                      PRE_X0D_ZONE_SIZE              = 59;
 
-    private final static Map<Integer, FilterType> FILTER_TYPE_LOOKUP      = new HashMap<> ();
+    private static final int                      PRE_X0D_ZONE_SAMPLE_START      = 3;               // 114
+    private static final int                      PRE_X0D_ZONE_SAMPLE_END        = 5;               // 116
+    private static final int                      PRE_X0D_ZONE_LOOP_ENABLED      = 13;              // 124
+    private static final int                      PRE_X0D_ZONE_LOOP_START        = 8;               // 119
+    private static final int                      PRE_X0D_ZONE_LOOP_END          = 10;              // 121
+    private static final int                      PRE_X0D_ZONE_LOOP_CROSSFADE    = 16;              // 127
+    private static final int                      PRE_X0D_ZONE_ROOT_KEY          = 25;              // 136
+    private static final int                      PRE_X0D_ZONE_LOW_KEY           = 28;              // 139
+    private static final int                      PRE_X0D_ZONE_HIGH_KEY          = 30;              // 141
+    private static final int                      PRE_X0D_ZONE_VELOCITY_LOW      = 33;              // 144
+    private static final int                      PRE_X0D_ZONE_VELOCITY_HIGH     = 35;              // 146;
+    private static final int                      PRE_X0D_ZONE_GAIN              = 38;              // 149
+    private static final int                      PRE_X0D_ZONE_PANNING           = 41;              // 152
+    private static final int                      PRE_X0D_ZONE_TUNE              = 44;              // 155
+
+    @SuppressWarnings("unused")
+    private static final int                      X0D_START_OF_SOUND             = 642;
+    private static final int                      X0D_NAME                       = 643;
+    private static final int                      X0D_PLUGIN_INFO                = 665;
+    private static final int                      X0D_NUMBER_OF_SAMPLES          = 666;
+    private static final int                      X0D_FIRST_ZONE                 = 667;
+    private static final int                      X0D_FIRST_ZONE_PLUGIN_NAME     = 682;
+    private static final int                      X0D_ZONE_SIZE                  = 80;
+
+    private static final int                      X0D_ZONE_SAMPLE_START          = 4;               // 671
+    private static final int                      X0D_ZONE_SAMPLE_END            = 7;               // 674
+    private static final int                      X0D_ZONE_LOOP_ENABLED          = 18;              // 685;
+    private static final int                      X0D_ZONE_LOOP_START            = 11;              // 678;
+    private static final int                      X0D_ZONE_LOOP_END              = 14;              // 681;
+    private static final int                      X0D_ZONE_LOOP_CROSSFADE        = 22;              // 689;
+    private static final int                      X0D_ZONE_ROOT_KEY              = 34;              // 701;
+    private static final int                      X0D_ZONE_LOW_KEY               = 38;              // 705;
+    private static final int                      X0D_ZONE_HIGH_KEY              = 41;              // 708;
+    private static final int                      X0D_ZONE_VELOCITY_LOW          = 45;              // 712;
+    private static final int                      X0D_ZONE_VELOCITY_HIGH         = 48;              // 715;
+    private static final int                      X0D_ZONE_GAIN                  = 52;              // 719;
+    private static final int                      X0D_ZONE_PANNING               = 56;              // 723;
+    private static final int                      X0D_ZONE_TUNE                  = 60;              // 727;
+    private static final int                      X0D_ZONE_LAST_ROW              = 79;              // 746;
+
+    private static final char []                  PLUGIN_HOST_ROW_PARAM_TYPES    = new char []
+    {
+        'i',
+        'i',
+        'i',
+        'i',
+        'i',
+        's',
+        's'
+    };
+    private static final float                    MIN_DB                         = -82.3f;
+    private static final float                    GAIN                           = 80.05f;
+    /** Results to 0dB. */
+    private static final float                    REFERENCE_DB                   = 0.75f;
+    private final static String                   PLUGIN_MASCHINE_SAMPLER        = "Sampler";
+    private final static String                   PLUGIN_HOST                    = "PluginHost";
+
+    private final static Map<Integer, FilterType> FILTER_TYPE_LOOKUP             = new HashMap<> ();
     static
     {
         FILTER_TYPE_LOOKUP.put (Integer.valueOf (1), FilterType.LOW_PASS);
@@ -83,196 +147,369 @@ public class MaschinePresetAccessor
      * @return The read multi-sample source
      * @throws IOException Could not parse the data
      */
-    public List<IMultisampleSource> readMaschinePreset (final File sourceFolder, final File sourceFile, final byte [] data) throws IOException
+    public Optional<IMultisampleSource> readMaschinePreset (final File sourceFolder, final File sourceFile, final byte [] data) throws IOException
     {
         final MaschinePresetParameterArray parameterArray = new MaschinePresetParameterArray (data);
-
-        final boolean isMaschineGroupFile = sourceFile.getName ().toLowerCase (Locale.US).endsWith (".mxgrp");
-        final int numSounds = isMaschineGroupFile ? 16 : 1;
-        int groupOffset = isMaschineGroupFile ? 41 : 0;
         final boolean isOldFormat = parameterArray.isOldFormat ();
+        final Offsets offsets = new Offsets (isOldFormat);
         final List<byte []> parameterArrayRaw = parameterArray.getRawData ();
-        final int offsetZone = isOldFormat ? 59 : 80;
 
-        boolean finish = false;
-        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-        for (int i = 0; i < numSounds; i++)
+        dumpParameters (parameterArrayRaw, sourceFile);
+
+        if (!findMaschineSampler (parameterArray, isOldFormat, offsets))
+            return Optional.empty ();
+
+        final int [] values = parameterArray.readIntegers (offsets.offsetNumberOfSamples, isOldFormat ? 7 : 6);
+        final int numberOfSampleZones = values[isOldFormat ? 6 : 5];
+
+        dumpZoneParameters (parameterArrayRaw, numberOfSampleZones);
+
+        // Create the multi-sample with 1 group
+        final String name = FileUtils.getNameWithoutType (sourceFile);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, name);
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+        final IGroup group = new DefaultGroup ();
+        multisampleSource.setGroups (Collections.singletonList (group));
+
+        int offsetZone = isOldFormat ? PRE_X0D_ZONE_SIZE : X0D_ZONE_SIZE;
+        int zoneOffset = 0;
+        final List<String> filePaths = new ArrayList<> ();
+        for (int sampleIndex = 0; sampleIndex < numberOfSampleZones; sampleIndex++)
         {
-            // 91 / 642: Start of Sound
-            // 92 / 643: contains the name but it is taken from the SoundInfo
-            int offsetCountInfo = groupOffset + (isOldFormat ? 105 : 660);
-            int offsetPluginInfo = groupOffset + (isOldFormat ? 109 : 665);
-            int offsetNumberOfSamples = groupOffset + (isOldFormat ? 110 : 666);
-            int offsetFirstZone = groupOffset + (isOldFormat ? 111 : 667);
-            if (offsetFirstZone > parameterArrayRaw.size ())
-                return Collections.emptyList ();
+            // Sample info parameter: 4 bytes - 5 bytes for libraries; path with a max. of 256
+            // characters; 3 more bytes (01 01 00)
+            final ByteArrayInputStream sampleInfoIn = new ByteArrayInputStream (parameterArrayRaw.get (offsets.offsetFirstZone + zoneOffset));
 
-            final int numberOfSamples;
-            if (i == 0 || parameterArrayRaw.get (offsetCountInfo).length > 0)
+            if (sampleIndex == 0)
             {
-                // Check if there is at least 1 plug-in
-                try
+                final byte [] introBytes = sampleInfoIn.readNBytes (2);
+                if (introBytes.length == 0)
                 {
-                    final int [] values = parameterArray.readIntegerValues (offsetCountInfo, 12);
-                    if (values[11] < 1)
-                    {
-                        this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER_PLUGIN");
-                        // We do not know the offset to the next sound... execute search below
-                    }
+                    this.notifier.logError ("IDS_NI_MASCHINE_SAMPLER_HAS_NO_SAMPLES");
+                    return Optional.empty ();
                 }
-                catch (final IOException ex)
-                {
-                    // There are some which seem to have non-number content in there but also no
-                    // sampler
-                    this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER_PLUGIN");
-                    // We do not know the offset to the next sound... execute search below
-                }
-
-                boolean foundSampler = false;
-                do
-                {
-                    // 665 must contain "NI::MASCHINE::DATA::Sampler" otherwise search is executed
-                    final Pair<Integer, String> nextMaschineDevice = parameterArray.findNextMaschineDevice (offsetPluginInfo);
-                    final int newOffsetPluginInfo = nextMaschineDevice.getKey ().intValue ();
-                    if (newOffsetPluginInfo < 0)
-                        return Collections.emptyList ();
-                    if (newOffsetPluginInfo != offsetPluginInfo)
-                    {
-                        // Adjust all offsets
-                        offsetPluginInfo = newOffsetPluginInfo;
-                        groupOffset = offsetPluginInfo - (isOldFormat ? 109 : 665);
-                        offsetCountInfo = groupOffset + (isOldFormat ? 105 : 660);
-                        offsetNumberOfSamples = groupOffset + (isOldFormat ? 110 : 666);
-                        offsetFirstZone = groupOffset + (isOldFormat ? 111 : 667);
-                    }
-
-                    foundSampler = PLUGIN_MASCHINE_SAMPLER.equals (nextMaschineDevice.getValue ());
-                    if (!foundSampler)
-                    {
-                        this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER", nextMaschineDevice.getValue ());
-                        offsetPluginInfo++;
-                    }
-                } while (!foundSampler);
-
-                numberOfSamples = parameterArray.readIntegerValues (offsetNumberOfSamples, 6)[5];
-            }
-            else
-            {
-                // Group Kit: It seems there are more samplers but without being explicitly named
-                offsetFirstZone -= 4;
-                groupOffset -= 4;
-                numberOfSamples = 1;
+                if (introBytes[0] != 0 || introBytes[1] != 0)
+                    throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Unknown Sampleinfo structure"));
             }
 
-            // Create the multi-sample with 1 group
-            final String name = FileUtils.getNameWithoutType (sourceFile);
-            final File parentFile = sourceFile.getParentFile ();
-            final String [] parts = AudioFileUtils.createPathParts (parentFile, sourceFolder, name);
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
-            final IGroup group = new DefaultGroup ();
-            multisampleSource.setGroups (Collections.singletonList (group));
-
-            int zoneOffset = 0;
-            final List<String> filePaths = new ArrayList<> ();
-            for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex++)
+            if (sampleInfoIn.available () == 0)
             {
-                // Sample info parameter: 4 bytes - 5 bytes for libraries; path with a max. of 256
-                // characters; 3 more bytes (01 01 00)
-                final ByteArrayInputStream sampleInfoIn = new ByteArrayInputStream (parameterArrayRaw.get (offsetFirstZone + zoneOffset));
-
-                if (i == 0 && sampleIndex == 0)
-                {
-                    final byte [] introBytes = sampleInfoIn.readNBytes (2);
-                    if (introBytes.length == 0)
-                    {
-                        this.notifier.logError ("IDS_NI_MASCHINE_SAMPLER_HAS_NO_SAMPLES");
-                        return Collections.emptyList ();
-                    }
-                    if (introBytes[0] != 0 || introBytes[1] != 0)
-                        throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Unknown Sampleinfo structure"));
-                }
-
-                if (sampleInfoIn.available () == 0)
-                {
-                    this.notifier.logError ("IDS_NI_MASCHINE_NO_MORE_SAMPLES");
-                    finish = true;
-                    break;
-                }
-
-                final String samplePath;
-                // Library
-                if (sampleInfoIn.read () > 0)
-                {
-                    sampleInfoIn.skip (2);
-                    samplePath = StreamUtils.readWith1ByteLengthAscii (sampleInfoIn);
-                }
-                else
-                {
-                    sampleInfoIn.skip (1);
-                    samplePath = StreamUtils.readWith1ByteLengthAscii (sampleInfoIn);
-                }
-                filePaths.add (samplePath);
-
-                final ISampleZone zone = new DefaultSampleZone ();
-                group.addSampleZone (zone);
-                readZoneParameters (zone, groupOffset + zoneOffset, parameterArray, isOldFormat);
-
-                zoneOffset += offsetZone;
-            }
-
-            if (finish)
+                this.notifier.logError ("IDS_NI_MASCHINE_NO_MORE_SAMPLES");
                 break;
-
-            final List<File> files = this.lookupFiles (filePaths, sourceFile.getParent ());
-            for (int fileIndex = 0; fileIndex < files.size (); fileIndex++)
-            {
-                final File file = files.get (fileIndex);
-                final ISampleZone zone = group.getSampleZones ().get (fileIndex);
-                zone.setName (FileUtils.getNameWithoutType (file));
-                zone.setSampleData (AbstractDetector.createSampleData (file, this.notifier));
             }
 
-            readGlobalParameters (multisampleSource, parameterArray, offsetFirstZone + zoneOffset, isOldFormat);
-            int soundinfoIndex = findSoundinfo (parameterArrayRaw, offsetFirstZone + zoneOffset);
-            if (soundinfoIndex == -1)
+            final boolean isLibrary = sampleInfoIn.read () > 0;
+            sampleInfoIn.skip (isLibrary ? 2 : 1);
+            final String samplePath = StreamUtils.readWith1ByteLengthAscii (sampleInfoIn);
+
+            // Quick and dirty workaround for some 2.0.0.0 zones being 1 row longer...
+            if ((samplePath.length () == 0 || samplePath.charAt (0) == 0) && sampleIndex == 1 && offsetZone == PRE_X0D_ZONE_SIZE)
             {
-                this.notifier.logError ("IDS_NI_MASCHINE_NO_SOUNDINFO");
-                return Collections.emptyList ();
-            }
-            readSoundinfo (multisampleSource, parameterArrayRaw.get (soundinfoIndex), parts);
-            // There is a 2nd one at the end
-            soundinfoIndex = findSoundinfo (parameterArrayRaw, soundinfoIndex + 1);
-            if (soundinfoIndex == -1)
-            {
-                this.notifier.logError ("IDS_NI_MASCHINE_NO_SOUNDINFO");
-                return Collections.emptyList ();
+                offsetZone = 60;
+                zoneOffset = 60;
+                sampleIndex--;
+                continue;
             }
 
-            groupOffset = soundinfoIndex + 1;
+            filePaths.add (samplePath);
 
-            multisampleSources.add (multisampleSource);
+            final ISampleZone zone = new DefaultSampleZone ();
+            group.addSampleZone (zone);
+            readZoneParameters (zone, offsets.groupOffset + zoneOffset, parameterArray, isOldFormat);
+
+            zoneOffset += offsetZone;
         }
 
-        // Another crude hack to combine the 16 single drum sounds into 1 multi-sample
-        final IMultisampleSource multisampleSource = multisampleSources.get (0);
-        if (multisampleSources.size () > 1)
+        assignSampleFile (sourceFile, group, filePaths);
+
+        int readPosition = offsets.offsetFirstZone + zoneOffset;
+        readPosition = readLibraryReferences (parameterArray, readPosition);
+        readPosition = readGlobalParameters (multisampleSource, parameterArray, readPosition, isOldFormat);
+        int soundinfoIndex = findSoundinfo (parameterArrayRaw, readPosition);
+        if (soundinfoIndex == -1)
         {
-            int note = 48;
-            final List<ISampleZone> sampleZones = multisampleSource.getGroups ().get (0).getSampleZones ();
-            final ISampleZone sampleZone = sampleZones.get (0);
-            sampleZone.setKeyLow (note);
-            sampleZone.setKeyHigh (note);
-            for (int i = 1; i < multisampleSources.size (); i++)
+            this.notifier.logError ("IDS_NI_MASCHINE_NO_SOUNDINFO");
+            return Optional.empty ();
+        }
+        readSoundinfo (multisampleSource, parameterArrayRaw.get (soundinfoIndex), parts);
+        // There is a 2nd one at the end
+        soundinfoIndex = findSoundinfo (parameterArrayRaw, soundinfoIndex + 1);
+        if (soundinfoIndex == -1)
+        {
+            this.notifier.logError ("IDS_NI_MASCHINE_NO_SOUNDINFO");
+            return Optional.empty ();
+        }
+
+        offsets.update (soundinfoIndex + 1);
+
+        return Optional.of (multisampleSource);
+    }
+
+
+    /**
+     * Update the given template data with the data of the multi-sample source. Always expects and
+     * writes x0D and later format.
+     * 
+     * @param source The multi-sample source to insert
+     * @param templateData The template data array
+     * @param safeSampleFolderName The folder which contains the samples
+     * @return The update data array
+     * @throws IOException Could not update data
+     */
+    public byte [] writeMaschinePreset (final IMultisampleSource source, final byte [] templateData, final String safeSampleFolderName) throws IOException
+    {
+        final MaschinePresetParameterArray parameterArray = new MaschinePresetParameterArray (templateData);
+        final List<byte []> data = parameterArray.getRawData ();
+
+        parameterArray.writeString (X0D_NAME, source.getName ());
+
+        // Extract the template (first zone)
+        final List<byte []> templateZone = new ArrayList<> (data.subList (X0D_FIRST_ZONE, X0D_FIRST_ZONE + X0D_ZONE_SIZE));
+
+        // Remove both existing zones which are contained in the template
+        final int totalZoneLength = X0D_ZONE_SIZE * 2;
+        for (int i = 0; i < totalZoneLength; i++)
+            data.remove (X0D_FIRST_ZONE);
+
+        // There are no groups, therefore, collect all sample zones
+        final List<ISampleZone> sampleZones = new ArrayList<> ();
+        for (final IGroup group: source.getNonEmptyGroups (true))
+            sampleZones.addAll (group.getSampleZones ());
+
+        // Update the number of samples
+        final int maxZones = sampleZones.size ();
+        parameterArray.writeIntegers (X0D_NUMBER_OF_SAMPLES, new int []
+        {
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            maxZones,
+            1,
+            0,
+            1,
+            41,
+            1,
+            2
+        });
+
+        // Generate new zones using the template
+        final List<byte []> newZones = new ArrayList<> ();
+        for (int i = 0; i < maxZones; i++)
+        {
+            final ISampleZone sampleZone = sampleZones.get (i);
+            newZones.addAll (fillZone (i, maxZones, templateZone, sampleZone, safeSampleFolderName));
+        }
+
+        // Insert all regenerated zones back in the correct position
+        data.addAll (X0D_FIRST_ZONE, newZones);
+
+        return parameterArray.serialize ();
+    }
+
+
+    private static void dumpZoneParameters (final List<byte []> parameterArray, final int numberOfSampleZones) throws IOException
+    {
+        final StringBuilder sb = new StringBuilder ();
+        for (int i = 0; i < 80; i++)
+        {
+            for (int z = 0; z < numberOfSampleZones; z++)
             {
-                note++;
-                final ISampleZone sampleZone2 = multisampleSources.get (i).getGroups ().get (0).getSampleZones ().get (0);
-                sampleZone2.setKeyLow (note);
-                sampleZone2.setKeyHigh (note);
-                sampleZones.add (sampleZone2);
+                final byte [] data = parameterArray.get (X0D_FIRST_ZONE + z * X0D_ZONE_SIZE + i);
+                if (data.length > 0)
+                    sb.append ("Z").append (z).append (" ").append (i).append (": ").append (StringUtils.formatHexStr (data)).append ("\n");
             }
         }
 
-        return Collections.singletonList (multisampleSource);
+        Files.write (new File ("C:/Users/mos/Desktop/Logs", "MaschinePresetZones.txt").toPath (), sb.toString ().getBytes ());
+    }
+
+
+    private static void dumpParameters (final List<byte []> parameterArray, final File sourceFile) throws IOException
+    {
+        final StringBuilder sb = new StringBuilder ();
+        sb.append ("Read " + parameterArray.size () + " parameters.\n");
+        for (int i = 0; i < parameterArray.size (); i++)
+        {
+            final byte [] data = parameterArray.get (i);
+            if (data.length > 0)
+                sb.append (i).append (": ").append (StringUtils.formatHexStr (data)).append (" - ").append (StringUtils.fixASCII (new String (data))).append ("\n");
+        }
+
+        Files.write (new File ("C:/Users/mos/Desktop/Logs", "MaschinePreset-" + sourceFile.getName () + ".txt").toPath (), sb.toString ().getBytes ());
+    }
+
+
+    private List<byte []> fillZone (final int zoneIndex, final int maxZones, final List<byte []> templateZone, final ISampleZone sampleZone, final String safeSampleFolderName) throws IOException
+    {
+        // Clone the zone
+        final List<byte []> newZone = new ArrayList<> (X0D_ZONE_SIZE);
+        for (int i = 0; i < templateZone.size (); i++)
+            newZone.add (templateZone.get (i).clone ());
+
+        // Update the data
+        newZone.set (0, createSamplePathRow (zoneIndex, sampleZone, safeSampleFolderName));
+        if (zoneIndex > 0)
+            newZone.set (1, new byte [] {});
+
+        // TODO set all parameters
+
+        newZone.set (X0D_ZONE_LAST_ROW, createLastRow (zoneIndex, maxZones, sampleZone));
+
+        return newZone;
+    }
+
+
+    private byte [] createLastRow (final int zoneIndex, final int maxZones, final ISampleZone sampleZone) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        MaschinePresetParameterArray.writeInteger (out, 0);
+        final List<ISampleLoop> loops = sampleZone.getLoops ();
+        final int loopEnd = loops.isEmpty () ? -1 : loops.get (0).getEnd ();
+        final int value = loopEnd == -1 ? sampleZone.getStop () : loopEnd;
+        if (zoneIndex == 0)
+        {
+            MaschinePresetParameterArray.writeInteger (out, value);
+            MaschinePresetParameterArray.writeInteger (out, value);
+            MaschinePresetParameterArray.writeInteger (out, Math.min (sampleZone.getStop (), value + 1));
+            MaschinePresetParameterArray.writeInteger (out, 0);
+            MaschinePresetParameterArray.writeInteger (out, 0);
+        }
+        else
+        {
+            MaschinePresetParameterArray.writeInteger (out, 0);
+            MaschinePresetParameterArray.writeInteger (out, 0);
+            MaschinePresetParameterArray.writeInteger (out, value);
+        }
+        out.write (new byte []
+        {
+            0x00,
+            0x00,
+            0x01,
+            0x08,
+            0x0A,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x29
+        });
+
+        if (zoneIndex + 1 == maxZones)
+        {
+            final int pos = X0D_FIRST_ZONE + zoneIndex * X0D_ZONE_SIZE;
+            MaschinePresetParameterArray.writeInteger (out, pos);
+            out.write (new byte []
+            {
+                0x00,
+                0x00,
+                0x01,
+                0x01,
+                0x00,
+                0x01,
+                0x29
+            });
+            MaschinePresetParameterArray.writeInteger (out, pos);
+        }
+        return out.toByteArray ();
+    }
+
+
+    private static byte [] createSamplePathRow (final int zoneIndex, final ISampleZone sampleZone, final String safeSampleFolderName) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        if (zoneIndex == 0)
+        {
+            MaschinePresetParameterArray.writeInteger (out, 0);
+            MaschinePresetParameterArray.writeInteger (out, 0);
+        }
+        MaschinePresetParameterArray.writeInteger (out, 0);
+        final String samplePath = safeSampleFolderName + "/" + sampleZone.getName () + ".wav";
+        MaschinePresetParameterArray.writeString (out, samplePath);
+        if (zoneIndex == 0)
+        {
+            MaschinePresetParameterArray.writeInteger (out, 1);
+            MaschinePresetParameterArray.writeInteger (out, 0);
+        }
+        return out.toByteArray ();
+    }
+
+
+    private boolean findMaschineSampler (final MaschinePresetParameterArray parameterArray, final boolean isOldFormat, final Offsets offsets) throws IOException
+    {
+        boolean firstRun = true;
+        boolean foundSampler = false;
+        do
+        {
+            // Search for "NI::MASCHINE::DATA::Sampler" (force to search from the beginning
+            // at the first run to not miss shorter header like in version 0x0D)
+            final Pair<Integer, String> nextMaschineDevice = parameterArray.findNextMaschineDevice (firstRun ? 0 : offsets.offsetPluginInfo);
+            firstRun = false;
+            final int newOffsetPluginInfo = nextMaschineDevice.getKey ().intValue ();
+            if (newOffsetPluginInfo < 0)
+            {
+                this.notifier.logError ("IDS_NI_MASCHINE_NO_DEVICE");
+                return false;
+            }
+            if (newOffsetPluginInfo != offsets.offsetPluginInfo)
+            {
+                // Adjust all offsets
+                offsets.update (newOffsetPluginInfo - (isOldFormat ? PRE_X0D_PLUGIN_INFO : X0D_PLUGIN_INFO));
+            }
+
+            final String deviceName = nextMaschineDevice.getValue ();
+            foundSampler = PLUGIN_MASCHINE_SAMPLER.equals (deviceName);
+            if (!foundSampler)
+            {
+                String infoName = deviceName;
+                if (PLUGIN_HOST.equals (deviceName))
+                {
+                    final List<Object> parameterValues = parameterArray.readParameters (offsets.offsetPluginName, PLUGIN_HOST_ROW_PARAM_TYPES);
+                    if (parameterValues.size () == PLUGIN_HOST_ROW_PARAM_TYPES.length)
+                        infoName = parameterValues.get (PLUGIN_HOST_ROW_PARAM_TYPES.length - 1).toString ();
+                }
+                this.notifier.logError ("IDS_NI_MASCHINE_NO_SAMPLER", infoName);
+                offsets.offsetPluginInfo++;
+            }
+        } while (!foundSampler);
+        return true;
+    }
+
+
+    private static int readLibraryReferences (final MaschinePresetParameterArray parameterArray, final int offset)
+    {
+        if (parameterArray.isOldFormat ())
+            return offset;
+
+        final int newOffset = offset + 4;
+        try
+        {
+            final int [] references = parameterArray.readIntegers (newOffset, 10);
+            return newOffset + 32 * references[9];
+        }
+        catch (final IOException ex)
+        {
+            return newOffset;
+        }
+    }
+
+
+    private void assignSampleFile (final File sourceFile, final IGroup group, final List<String> filePaths) throws IOException
+    {
+        final List<File> files = this.lookupFiles (filePaths, sourceFile.getParent ());
+        for (int fileIndex = 0; fileIndex < files.size (); fileIndex++)
+        {
+            final File file = files.get (fileIndex);
+            final ISampleZone zone = group.getSampleZones ().get (fileIndex);
+            zone.setName (FileUtils.getNameWithoutType (file));
+            zone.setSampleData (AbstractDetector.createSampleData (file, this.notifier));
+        }
     }
 
 
@@ -282,71 +519,80 @@ public class MaschinePresetAccessor
         {
             final byte [] data = parameterArray.get (i);
             // Crude hack which assumes that the SoundInfo content is longer than all other ones
-            if (data != null && data.length > 40 && data[0] != 0)
+            if (data != null && data.length > 100 && data[0] != 0)
                 return i;
         }
         return -1;
     }
 
 
-    private static void readGlobalParameters (final IMultisampleSource multisampleSource, final MaschinePresetParameterArray parameterArray, final int offset, final boolean isOldFormat) throws IOException
+    private static int readGlobalParameters (final IMultisampleSource multisampleSource, final MaschinePresetParameterArray parameterArray, final int globalOffset, final boolean isOldFormat) throws IOException
     {
-        // offset + 3 / + 9: Polyphony
+        int offset = globalOffset;
+        int first = offset + (isOldFormat ? 9 : 13);
 
-        // Up to 3 but not always
-        float [] floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 9 : 17), 1);
+        // Workaround for sometimes the global data is 4 rows later (found with 2.2.3.2452)
+        if (parameterArray.getRawData ().get (first).length == 0)
+        {
+            offset += 4;
+            first += 4;
+            if (parameterArray.getRawData ().get (first).length == 0)
+                return globalOffset + 1;
+        }
+
+        float [] floatValues = parameterArray.readFloat (first, 1);
 
         // Translate the pitch-bend from normalized 0..1 to 0..1200 cents
-        final float normalizedPitchend = Math.clamp (floatValues[0], 0, 1f);
-        final int pitchbend = Math.round (100f * (12f * normalizedPitchend * normalizedPitchend));
+        final float normalizedPitchbend = Math.clamp (floatValues[0], 0, 1f);
+        final int pitchbend = Math.round (1200f * normalizedPitchbend * normalizedPitchbend);
 
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 23 : 35), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 23 : 31), 3);
         final float tuning = floatValues[0] * 36f;
 
         // Amp-Envelope: 0 = One-shot, 1 = AHD, 2 = AHDR
-        final int envelopeType = parameterArray.readIntegerValue (offset + (isOldFormat ? 17 : 27));
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 84 : 116), 3);
+        final int envelopeType = parameterArray.readInteger (offset + (isOldFormat ? 17 : 23));
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 84 : 112), 3);
         final double attackTime = mapToAttackMillis (floatValues[0]) / 1000.0;
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 87 : 120), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 87 : 116), 3);
         final double holdTime = mapToAttackMillis (floatValues[0]) / 1000.0;
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 90 : 124), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 90 : 120), 3);
         final double decayTime = mapToDecayAndRelease (floatValues[0]) / 1000.0;
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 93 : 128), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 93 : 124), 3);
         final double sustainLevel = floatValues[0];
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 96 : 132), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 96 : 128), 3);
         final double releaseTime = mapToDecayAndRelease (floatValues[0]) / 1000.0;
 
-        final int reverse = parameterArray.readIntegerValue (offset + (isOldFormat ? 20 : 31));
+        final int reverse = parameterArray.readInteger (offset + (isOldFormat ? 20 : 27));
 
         // Velocity modulation
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 66 : 92), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 66 : 88), 3);
         final double velocityToCutoff = floatValues[0];
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 69 : 96), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 69 : 92), 3);
         final double velocityToVolume = floatValues[0];
 
         // Modulation envelope
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 111 : 152), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 111 : 148), 3);
         final double modulationAttackTime = mapToAttackMillis (floatValues[0]);
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 117 : 160), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 117 : 156), 3);
         final double modulationDecayTime = mapToDecayAndRelease (floatValues[0]);
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 120 : 164), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 120 : 160), 3);
         final double modulationSustainLevel = floatValues[0];
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 123 : 168), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 123 : 164), 3);
         final double modulationReleaseTime = floatValues[0];
 
         // Modulation destinations
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 126 : 172), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 126 : 168), 3);
         final double pitchModulationIntensity = floatValues[0];
-        floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 129 : 176), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 129 : 172), 3);
         final double cutoffModulationIntensity = floatValues[0];
 
         // Filter: 0 = Off, 1 = LP2, 2 = BP2, 3 = HP2, 4 = EQ
-        final int filterType = parameterArray.readIntegerValue (offset + (isOldFormat ? 42 : 60));
+        final int filterType = parameterArray.readInteger (offset + (isOldFormat ? 42 : 56));
         if (filterType > 0 && filterType < 4)
         {
-            floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 45 : 64), 3);
+            floatValues = parameterArray.readFloat (offset + (isOldFormat ? 45 : 60), 3);
             final double cutoff = mapToFrequency (floatValues[0]);
-            floatValues = parameterArray.readFloatValues (offset + (isOldFormat ? 48 : 68), 3);
+            floatValues = parameterArray.readFloat (offset + (isOldFormat ? 48 : 64), 3);
             final double resonance = floatValues[0];
 
             final IFilter filter = new DefaultFilter (FILTER_TYPE_LOOKUP.get (Integer.valueOf (filterType)), 2, cutoff, Math.clamp (resonance, 0, 1));
@@ -412,6 +658,8 @@ public class MaschinePresetAccessor
                 }
             }
         }
+
+        return offset + (isOldFormat ? 130 : 173);
     }
 
 
@@ -426,27 +674,27 @@ public class MaschinePresetAccessor
      */
     private static void readZoneParameters (final ISampleZone zone, final int zoneOffset, final MaschinePresetParameterArray parameterArray, final boolean isOldFormat) throws IOException
     {
-        zone.setStart (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 114 : 671)));
-        zone.setStop (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 116 : 674)));
+        zone.setStart (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_SAMPLE_START : X0D_ZONE_SAMPLE_START)));
+        zone.setStop (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_SAMPLE_END : X0D_ZONE_SAMPLE_END)));
 
-        if (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 127 : 685)) == 1)
+        if (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_ENABLED : X0D_ZONE_LOOP_ENABLED)) == 1)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
-            loop.setStart (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 119 : 678)));
-            loop.setEnd (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 121 : 681)));
-            loop.setCrossfadeInSamples (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 127 : 689)));
+            loop.setStart (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_START : X0D_ZONE_LOOP_START)));
+            loop.setEnd (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_END : X0D_ZONE_LOOP_END)));
+            loop.setCrossfadeInSamples (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_CROSSFADE : X0D_ZONE_LOOP_CROSSFADE)));
             zone.addLoop (loop);
         }
 
-        zone.setKeyRoot (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 136 : 701)));
-        zone.setKeyLow (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 139 : 705)));
-        zone.setKeyHigh (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 141 : 708)));
-        zone.setVelocityLow (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 144 : 712)));
-        zone.setVelocityHigh (parameterArray.readIntegerValue (zoneOffset + (isOldFormat ? 146 : 715)));
+        zone.setKeyRoot (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_ROOT_KEY : X0D_ZONE_ROOT_KEY)));
+        zone.setKeyLow (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOW_KEY : X0D_ZONE_LOW_KEY)));
+        zone.setKeyHigh (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_HIGH_KEY : X0D_ZONE_HIGH_KEY)));
+        zone.setVelocityLow (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_VELOCITY_LOW : X0D_ZONE_VELOCITY_LOW)));
+        zone.setVelocityHigh (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_VELOCITY_HIGH : X0D_ZONE_VELOCITY_HIGH)));
 
-        zone.setGain (inputToDb (parameterArray.readFloatValue (zoneOffset + (isOldFormat ? 149 : 719))));
-        zone.setPanning (parameterArray.readFloatValue (zoneOffset + (isOldFormat ? 152 : 723)));
-        zone.setTune (parameterArray.readFloatValue (zoneOffset + (isOldFormat ? 155 : 727)));
+        zone.setGain (inputToDb (parameterArray.readFloat (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_GAIN : X0D_ZONE_GAIN))));
+        zone.setPanning (parameterArray.readFloat (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_PANNING : X0D_ZONE_PANNING)));
+        zone.setTune (parameterArray.readFloat (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_TUNE : X0D_ZONE_TUNE)));
     }
 
 
@@ -660,5 +908,36 @@ public class MaschinePresetAccessor
     private static double mapToFrequency (final double x)
     {
         return Math.clamp (51.0917 * Math.exp (5.9497 * x), 43.7, 19600);
+    }
+
+
+    private class Offsets
+    {
+        final boolean isOldFormat;
+
+        int           offsetFirstZone;
+        int           offsetPluginInfo;
+        int           offsetNumberOfSamples;
+        int           offsetPluginName;
+        int           groupOffset;
+
+
+        public Offsets (final boolean isOldFormat)
+        {
+            this.isOldFormat = isOldFormat;
+
+            this.update (0);
+        }
+
+
+        public void update (final int groupOffset)
+        {
+            this.groupOffset = groupOffset;
+
+            this.offsetFirstZone = this.groupOffset + (this.isOldFormat ? PRE_X0D_FIRST_ZONE : X0D_FIRST_ZONE);
+            this.offsetPluginInfo = this.groupOffset + (this.isOldFormat ? PRE_X0D_PLUGIN_INFO : X0D_PLUGIN_INFO);
+            this.offsetNumberOfSamples = this.groupOffset + (this.isOldFormat ? PRE_X0D_NUMBER_OF_SAMPLES : X0D_NUMBER_OF_SAMPLES);
+            this.offsetPluginName = this.groupOffset + (this.isOldFormat ? PRE_X0D_FIRST_ZONE_PLUGIN_NAME : X0D_FIRST_ZONE_PLUGIN_NAME);
+        }
     }
 }

@@ -8,6 +8,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,10 +27,9 @@ public class MaschinePresetParameterArray
     private static final String BOOST_ARCHIVE_MAGIC  = "serialization::archive";
     private static final String NI_MASCHINE_DATA_TAG = "NI::MASCHINE::DATA::";
 
-    private final byte []       version;
+    private final int []        version;
     private boolean             isOldFormat;
     private final List<byte []> parameterArray;
-    private final int           deviceRowMinLength;
 
 
     /**
@@ -51,24 +51,66 @@ public class MaschinePresetParameterArray
             if (!BOOST_ARCHIVE_MAGIC.equals (magic))
                 throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Magic boost bytes not found."));
 
-            this.version = inputStream.readNBytes (7);
+            final byte [] versionBytes = inputStream.readNBytes (7);
+            this.version = readIntegers (new ByteArrayInputStream (versionBytes), 4);
+
+            // Always 0, 0, 0, 1, 2, 1
             inputStream.skipNBytes (6);
 
             this.parameterArray = readArray (inputStream);
         }
 
-        this.isOldFormat = this.version[1] < 0x0E;
-
-        // 9 integers which might be 0, last one must contain the string length
-        // TODO check if old version is 1 shorter!
-        this.deviceRowMinLength = 11 + NI_MASCHINE_DATA_TAG.length ();
+        this.isOldFormat = this.version[0] < 0x0D;
     }
 
 
     /**
-     * Returns true if the version is less than 0x0E.
+     * Serializes the parameter array to a byte array.
+     * 
+     * @return The byte array
+     * @throws IOException Could not serialize the parameter array
+     */
+    public byte [] serialize () throws IOException
+    {
+        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream (); final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream ())
+        {
+            arrayOutputStream.write (1);
+            StreamUtils.writeWith1ByteLengthAscii (arrayOutputStream, BOOST_ARCHIVE_MAGIC);
+            writeIntegers (arrayOutputStream, this.version);
+            arrayOutputStream.write (new byte []
+            {
+                0,
+                0,
+                0,
+                1,
+                2,
+                1
+            });
+            writeArray (arrayOutputStream, this.parameterArray);
+            final byte [] byteArray = arrayOutputStream.toByteArray ();
+
+            StreamUtils.writeUnsigned32 (outputStream, byteArray.length, false);
+            outputStream.write (byteArray);
+            return outputStream.toByteArray ();
+        }
+    }
+
+
+    /**
+     * Get the array version.
+     * 
+     * @return The version
+     */
+    public int [] getVersion ()
+    {
+        return this.version;
+    }
+
+
+    /**
+     * Returns true if the version is less than 0x0D.
      *
-     * @return True if the version is less than 0x0E
+     * @return True if the version is less than 0x0D
      */
     public boolean isOldFormat ()
     {
@@ -76,6 +118,11 @@ public class MaschinePresetParameterArray
     }
 
 
+    /**
+     * Get the parameter rows.
+     * 
+     * @return The rows
+     */
     public List<byte []> getRawData ()
     {
         return this.parameterArray;
@@ -93,7 +140,7 @@ public class MaschinePresetParameterArray
     {
         for (int offsetDeviceInfo = startOffset; offsetDeviceInfo < this.parameterArray.size (); offsetDeviceInfo++)
         {
-            if (this.deviceRowMinLength >= this.parameterArray.get (offsetDeviceInfo).length)
+            if (this.parameterArray.get (offsetDeviceInfo).length < NI_MASCHINE_DATA_TAG.length ())
                 continue;
 
             final byte [] data = this.parameterArray.get (offsetDeviceInfo);
@@ -109,7 +156,16 @@ public class MaschinePresetParameterArray
     }
 
 
-    public List<Object> readParameterValues (final int offset, final char [] parameterTypes) throws IOException
+    /**
+     * Reads several parameters from a parameter row.
+     * 
+     * @param offset The row offset
+     * @param parameterTypes The types of the parameters to read; use 'i' for integers, 'f' for
+     *            floats and 's' for a string
+     * @return The read parameters
+     * @throws IOException Could not read the parameters
+     */
+    public List<Object> readParameters (final int offset, final char [] parameterTypes) throws IOException
     {
         final ByteArrayInputStream in = this.createByteArrayInputStream (offset);
         final List<Object> params = new ArrayList<> ();
@@ -142,9 +198,22 @@ public class MaschinePresetParameterArray
      * @return The read integer value
      * @throws IOException Could not read the value
      */
-    public int readIntegerValue (final int offset) throws IOException
+    public int readInteger (final int offset) throws IOException
     {
         return StreamUtils.readVariableLengthNumberLE (this.createByteArrayInputStream (offset));
+    }
+
+
+    /**
+     * Write an integer value to the given output stream.
+     * 
+     * @param out The stream to write to
+     * @param value The integer to write
+     * @throws IOException Could not write the values
+     */
+    public static void writeInteger (final ByteArrayOutputStream out, final int value) throws IOException
+    {
+        StreamUtils.writeVariableLengthNumberLE (out, value);
     }
 
 
@@ -156,13 +225,55 @@ public class MaschinePresetParameterArray
      * @return The read integer values
      * @throws IOException Could not read the values
      */
-    public int [] readIntegerValues (final int offset, final int numberCount) throws IOException
+    public int [] readIntegers (final int offset, final int numberCount) throws IOException
     {
-        final ByteArrayInputStream in = this.createByteArrayInputStream (offset);
+        return readIntegers (this.createByteArrayInputStream (offset), numberCount);
+    }
+
+
+    /**
+     * Reads the first N integer values from an entry in the array.
+     * 
+     * @param in The stream to read from
+     * @param numberCount The number of integers to read
+     * @return The read integer values
+     * @throws IOException Could not read the values
+     */
+    private static int [] readIntegers (final ByteArrayInputStream in, final int numberCount) throws IOException
+    {
         final int [] result = new int [numberCount];
         for (int i = 0; i < numberCount; i++)
             result[i] = StreamUtils.readVariableLengthNumberLE (in);
         return result;
+    }
+
+
+    /**
+     * Write N integer values to an entry in the array.
+     * 
+     * @param offset The offset of the entry in the array to write to
+     * @param values The integers to write
+     * @throws IOException Could not write the values
+     */
+    public void writeIntegers (final int offset, final int [] values) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        writeIntegers (out, values);
+        this.parameterArray.set (offset, out.toByteArray ());
+    }
+
+
+    /**
+     * Write N integer values to the given output stream.
+     * 
+     * @param out The stream to the given output stream
+     * @param values The integers to write
+     * @throws IOException Could not write the values
+     */
+    private static void writeIntegers (final ByteArrayOutputStream out, final int [] values) throws IOException
+    {
+        for (int i = 0; i < values.length; i++)
+            StreamUtils.writeVariableLengthNumberLE (out, values[i]);
     }
 
 
@@ -173,7 +284,7 @@ public class MaschinePresetParameterArray
      * @return The read float value
      * @throws IOException Could not read the value
      */
-    public float readFloatValue (final int offset) throws IOException
+    public float readFloat (final int offset) throws IOException
     {
         return StreamUtils.readFloatLE (this.createByteArrayInputStream (offset));
     }
@@ -187,13 +298,43 @@ public class MaschinePresetParameterArray
      * @return The read float values
      * @throws IOException Could not read the values
      */
-    public float [] readFloatValues (final int offset, final int numberCount) throws IOException
+    public float [] readFloat (final int offset, final int numberCount) throws IOException
     {
         final ByteArrayInputStream in = this.createByteArrayInputStream (offset);
         float [] result = new float [numberCount];
         for (int i = 0; i < numberCount; i++)
             result[i] = StreamUtils.readFloatLE (in);
         return result;
+    }
+
+
+    /**
+     * Write an ASCII string to a row in the array.
+     * 
+     * @param offset The offset of the row
+     * @param text The text to write
+     * @throws IOException Could not write the text
+     */
+    public void writeString (final int offset, final String text) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        out.write (0);
+        writeString (out, text);
+        this.parameterArray.set (offset, out.toByteArray ());
+    }
+
+
+    /**
+     * Write an ASCII string to a row in the array.
+     * 
+     * @param out The stream to write to
+     * @param text The text to write
+     * @throws IOException Could not write the text
+     */
+    public static void writeString (final ByteArrayOutputStream out, final String text) throws IOException
+    {
+        writeInteger (out, text.length ());
+        StreamUtils.writeASCII (out, text, text.length ());
     }
 
 
@@ -220,7 +361,7 @@ public class MaschinePresetParameterArray
         int expectedIndex = 0;
 
         // Read the first index, must be 0
-        int firstIndex = readStrictIndex (inputStream);
+        int firstIndex = StreamUtils.readVariableLengthNumberLE (inputStream);
         if (firstIndex != expectedIndex)
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Array index does not match"));
 
@@ -287,38 +428,24 @@ public class MaschinePresetParameterArray
 
 
     /**
-     * Reads the next index. An index starts with the number of index-bytes (1 or 2) followed by the
-     * index bytes in little-endian order.
+     * Writes an array of bytes. Each array entry starts with its index, stored in the number
+     * representation (they start with 1 byte which contains the number of bytes of which the number
+     * consists followed by the bytes in little-endian order).
      *
-     * @param inputStream The input stream to read from
-     * @return The read index
-     * @throws IOException Could not read the index
+     * @param outputStream The output stream to write to
+     * @param array The parameter array to write
+     * @throws IOException Could not write the data
      */
-    private static int readStrictIndex (final InputStream inputStream) throws IOException
+    private static void writeArray (final OutputStream outputStream, List<byte []> array) throws IOException
     {
-        inputStream.mark (3);
-
-        // Read the number of index bytes to follow
-        int header = inputStream.read ();
-        if (header == -1)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Unexpected end of stream when reading first index"));
-
-        if (header > 2)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Invalid index header at stream start: " + header));
-
-        int b0 = inputStream.read ();
-        if (b0 == -1)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Incomplete index"));
-
-        // There is one index byte
-        if (header == 1)
-            return b0;
-
-        // There are two index bytes as little-endian
-        int b1 = inputStream.read ();
-        if (b1 == -1)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Incomplete index"));
-        return b1 << 8 | b0;
+        // First needs to be written manually to get 2 bytes!
+        outputStream.write (1);
+        outputStream.write (0);
+        for (int i = 1; i < array.size (); i++)
+        {
+            StreamUtils.writeVariableLengthNumberLE (outputStream, i);
+            outputStream.write (array.get (i));
+        }
     }
 
 

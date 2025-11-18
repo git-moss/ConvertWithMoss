@@ -2,7 +2,7 @@
 // (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.ni.kontakt;
+package de.mossgrabers.convertwithmoss.format.ni.maschine;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,16 +23,16 @@ import javafx.scene.control.ToggleGroup;
 
 
 /**
- * Settings for the NkiCreator.
+ * Settings for the MaschineCreator.
  *
  * @author Jürgen Moßgraber
  */
-public class KontaktCreatorUI extends WavChunkSettingsUI
+public class MaschineCreatorUI extends WavChunkSettingsUI
 {
-    private static final String NKI_OUTPUT_FORMAT = "NkiOutputFormat";
+    private static final String MASCHINE_OUTPUT_FORMAT = "MaschineOutputFormat";
 
     private ToggleGroup         outputFormatGroup;
-    private boolean             outputFormat;
+    private int                 outputFormat           = 2;
 
 
     /**
@@ -40,7 +40,7 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
      *
      * @param prefix The prefix to use for the identifier
      */
-    public KontaktCreatorUI (final String prefix)
+    public MaschineCreatorUI (final String prefix)
     {
         super (prefix);
     }
@@ -55,14 +55,19 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         panel.createSeparator ("@IDS_OUTPUT_FORMAT");
 
         this.outputFormatGroup = new ToggleGroup ();
-        final RadioButton order1 = panel.createRadioButton ("@IDS_NKI_KONTAKT_1");
+        final RadioButton order1 = panel.createRadioButton ("@IDS_MASCHINE_MASCHINE_1");
         order1.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order1.setToggleGroup (this.outputFormatGroup);
-        final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_6_8");
+        final RadioButton order2 = panel.createRadioButton ("@IDS_MASCHINE_MASCHINE_2");
         order2.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order2.setToggleGroup (this.outputFormatGroup);
-        // TODO remove if implementation is finished
-        order2.setDisable (true);
+        final RadioButton order3 = panel.createRadioButton ("@IDS_MASCHINE_MASCHINE_3");
+        order3.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
+        order3.setToggleGroup (this.outputFormatGroup);
+
+        // Remove if implementations are finished
+        order1.setDisable (true);
+        order3.setDisable (true);
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
 
@@ -74,9 +79,11 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        final int formatIndex = config.getInteger (NKI_OUTPUT_FORMAT, 0);
+        int formatIndex = config.getInteger (MASCHINE_OUTPUT_FORMAT, 1);
+        // Remove
+        formatIndex = 1;
         final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
-        this.outputFormatGroup.selectToggle (toggles.get (formatIndex < toggles.size () ? formatIndex : 0));
+        this.outputFormatGroup.selectToggle (toggles.get (formatIndex < toggles.size () ? formatIndex : 1));
 
         super.loadSettings (config);
     }
@@ -90,7 +97,7 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         for (int i = 0; i < toggles.size (); i++)
             if (toggles.get (i).isSelected ())
             {
-                config.setInteger (NKI_OUTPUT_FORMAT, i);
+                config.setInteger (MASCHINE_OUTPUT_FORMAT, i);
                 break;
             }
 
@@ -105,7 +112,21 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsUI (notifier))
             return false;
 
-        this.outputFormat = this.outputFormatGroup.getToggles ().get (0).isSelected ();
+        final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
+        for (int i = 0; i < toggles.size (); i++)
+            if (toggles.get (i).isSelected ())
+            {
+                this.outputFormat = i + 1;
+                break;
+            }
+
+        // Remove if other destination formats are supported
+        if (this.outputFormat != 2)
+        {
+            notifier.logError ("IDS_NI_MASCHINE_ONLY_V2_SUPPORTED");
+            return false;
+        }
+
         return true;
     }
 
@@ -117,10 +138,23 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        // TODO Currently only Kontakt 1 supported...
-        @SuppressWarnings("unused")
-        String value = parameters.remove (NKI_OUTPUT_FORMAT);
-        this.outputFormat = true;
+        final String value = parameters.remove (MASCHINE_OUTPUT_FORMAT);
+        try
+        {
+            this.outputFormat = Integer.parseInt (value);
+        }
+        catch (final NumberFormatException ex)
+        {
+            notifier.logError ("IDS_NI_MASCHINE_ONLY_V2_SUPPORTED");
+            return false;
+        }
+
+        // Remove if other destination formats are supported
+        if (this.outputFormat != 2)
+        {
+            notifier.logError ("IDS_NI_MASCHINE_ONLY_V2_SUPPORTED");
+            return false;
+        }
 
         return true;
     }
@@ -131,17 +165,17 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
     public String [] getCLIParameterNames ()
     {
         final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
-        parameterNames.add (NKI_OUTPUT_FORMAT);
+        parameterNames.add (MASCHINE_OUTPUT_FORMAT);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
 
 
     /**
-     * Should Kontakt 1 format be created?
+     * Which output format should be created?
      * 
-     * @return True to create Kontakt 1
+     * @return 1-3 for Maschine 1-3 file format
      */
-    public boolean isKontakt1 ()
+    public int getDestinationVersion ()
     {
         return this.outputFormat;
     }

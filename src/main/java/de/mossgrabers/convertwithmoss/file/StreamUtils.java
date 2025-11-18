@@ -555,6 +555,25 @@ public class StreamUtils
 
 
     /**
+     * Writes a variable-length little-endian integer to an OutputStream. The first byte indicates
+     * the number of following bytes (0..4).
+     * 
+     * @param out The output stream to write to
+     * @param value The integer to write
+     * @throws IOException If an I/O error occurs
+     */
+    public static void writeVariableLengthNumberLE (final OutputStream out, final int value) throws IOException
+    {
+        int length = 0;
+        for (int v = value; v != 0; v >>>= 8)
+            length++;
+        out.write (length);
+        for (int i = 0; i < length; i++)
+            out.write ((value >>> (8 * i)) & 0xFF);
+    }
+
+
+    /**
      * Reads all bytes from an input stream and interprets it as UTF-8 text.
      *
      * @param in The stream to read from
@@ -831,6 +850,20 @@ public class StreamUtils
             throw new IOException ("Negative string length.");
         final byte [] blockData = in.readNBytes (blocklength);
         return new String (blockData);
+    }
+
+
+    /**
+     * Writes an ASCII string. The first byte indicates the length of the string.
+     *
+     * @param out The output stream to write to
+     * @param text The ASCII string to write
+     * @throws IOException Could not write
+     */
+    public static void writeWith1ByteLengthAscii (final OutputStream out, final String text) throws IOException
+    {
+        out.write (text.length ());
+        out.write (text.getBytes ());
     }
 
 
