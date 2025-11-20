@@ -249,17 +249,31 @@ public class MaschinePresetParameterArray
 
 
     /**
-     * Write N integer values to an entry in the array.
+     * Write N integer values to an entry in the parameter array.
      * 
      * @param offset The offset of the entry in the array to write to
      * @param values The integers to write
      * @throws IOException Could not write the values
      */
-    public void writeIntegers (final int offset, final int [] values) throws IOException
+    public void writeIntegers (final int offset, final int... values) throws IOException
+    {
+        writeIntegers (offset, this.parameterArray, values);
+    }
+
+
+    /**
+     * Write N integer values to an entry in the given array.
+     * 
+     * @param offset The offset of the entry in the array to write to
+     * @param array The array into which to write
+     * @param values The integers to write
+     * @throws IOException Could not write the values
+     */
+    public static void writeIntegers (final int offset, final List<byte []> array, final int... values) throws IOException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         writeIntegers (out, values);
-        this.parameterArray.set (offset, out.toByteArray ());
+        array.set (offset, out.toByteArray ());
     }
 
 
@@ -270,7 +284,7 @@ public class MaschinePresetParameterArray
      * @param values The integers to write
      * @throws IOException Could not write the values
      */
-    private static void writeIntegers (final ByteArrayOutputStream out, final int [] values) throws IOException
+    public static void writeIntegers (final ByteArrayOutputStream out, final int... values) throws IOException
     {
         for (int i = 0; i < values.length; i++)
             StreamUtils.writeVariableLengthNumberLE (out, values[i]);

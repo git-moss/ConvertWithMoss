@@ -8,7 +8,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,7 +37,6 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
-import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -97,6 +95,7 @@ public class MaschinePresetAccessor
     private static final int                      X0D_ZONE_GAIN                  = 52;              // 719;
     private static final int                      X0D_ZONE_PANNING               = 56;              // 723;
     private static final int                      X0D_ZONE_TUNE                  = 60;              // 727;
+    private static final int                      X0D_ZONE_SAMPLE_LENGTH         = 75;              // 742;
     private static final int                      X0D_ZONE_LAST_ROW              = 79;              // 746;
 
     private static final char []                  PLUGIN_HOST_ROW_PARAM_TYPES    = new char []
@@ -140,7 +139,7 @@ public class MaschinePresetAccessor
 
     /**
      * Reads a Maschine 2+ preset chunk structure and the contained Maschine sounds.
-     * 
+     *
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file to convert
      * @param data The preset data
@@ -154,15 +153,11 @@ public class MaschinePresetAccessor
         final Offsets offsets = new Offsets (isOldFormat);
         final List<byte []> parameterArrayRaw = parameterArray.getRawData ();
 
-        dumpParameters (parameterArrayRaw, sourceFile);
-
-        if (!findMaschineSampler (parameterArray, isOldFormat, offsets))
+        if (!this.findMaschineSampler (parameterArray, isOldFormat, offsets))
             return Optional.empty ();
 
         final int [] values = parameterArray.readIntegers (offsets.offsetNumberOfSamples, isOldFormat ? 7 : 6);
         final int numberOfSampleZones = values[isOldFormat ? 6 : 5];
-
-        dumpZoneParameters (parameterArrayRaw, numberOfSampleZones);
 
         // Create the multi-sample with 1 group
         final String name = FileUtils.getNameWithoutType (sourceFile);
@@ -220,7 +215,7 @@ public class MaschinePresetAccessor
             zoneOffset += offsetZone;
         }
 
-        assignSampleFile (sourceFile, group, filePaths);
+        this.assignSampleFile (sourceFile, group, filePaths);
 
         int readPosition = offsets.offsetFirstZone + zoneOffset;
         readPosition = readLibraryReferences (parameterArray, readPosition);
@@ -249,7 +244,7 @@ public class MaschinePresetAccessor
     /**
      * Update the given template data with the data of the multi-sample source. Always expects and
      * writes x0D and later format.
-     * 
+     *
      * @param source The multi-sample source to insert
      * @param templateData The template data array
      * @param safeSampleFolderName The folder which contains the samples
@@ -262,6 +257,8 @@ public class MaschinePresetAccessor
         final List<byte []> data = parameterArray.getRawData ();
 
         parameterArray.writeString (X0D_NAME, source.getName ());
+
+        // TODO write global parameters
 
         // Extract the template (first zone)
         final List<byte []> templateZone = new ArrayList<> (data.subList (X0D_FIRST_ZONE, X0D_FIRST_ZONE + X0D_ZONE_SIZE));
@@ -278,22 +275,7 @@ public class MaschinePresetAccessor
 
         // Update the number of samples
         final int maxZones = sampleZones.size ();
-        parameterArray.writeIntegers (X0D_NUMBER_OF_SAMPLES, new int []
-        {
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            maxZones,
-            1,
-            0,
-            1,
-            41,
-            1,
-            2
-        });
+        parameterArray.writeIntegers (X0D_NUMBER_OF_SAMPLES, 0, 0, 0, 0, 0, 0, maxZones, 1, 0, 1, 41, 1, 2);
 
         // Generate new zones using the template
         final List<byte []> newZones = new ArrayList<> ();
@@ -306,43 +288,80 @@ public class MaschinePresetAccessor
         // Insert all regenerated zones back in the correct position
         data.addAll (X0D_FIRST_ZONE, newZones);
 
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        out.write (new byte []
+        {
+            (byte) 0xFF,
+            0x01,
+            0x00,
+            0x00,
+            0x01,
+            0x3F
+        });
+        MaschinePresetParameterArray.writeInteger (out, 887 + maxZones * X0D_ZONE_SIZE);
+        out.write (new byte []
+        {
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x01,
+            0x01,
+            0x01,
+            0x00,
+            0x01,
+            0x01,
+            0x01,
+            0x48,
+            0x01,
+            0x01,
+            0x00
+        });
+        data.set (897 + maxZones * X0D_ZONE_SIZE, out.toByteArray ());
+
+        final ByteArrayOutputStream out2 = new ByteArrayOutputStream ();
+        out2.write (new byte []
+        {
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x48
+        });
+        MaschinePresetParameterArray.writeInteger (out2, 898 + maxZones * X0D_ZONE_SIZE);
+        out2.write (new byte []
+        {
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            (byte) 0xFF,
+            0x01
+        });
+        data.set (907 + maxZones * X0D_ZONE_SIZE, out2.toByteArray ());
+
         return parameterArray.serialize ();
+
     }
 
 
-    private static void dumpZoneParameters (final List<byte []> parameterArray, final int numberOfSampleZones) throws IOException
-    {
-        final StringBuilder sb = new StringBuilder ();
-        for (int i = 0; i < 80; i++)
-        {
-            for (int z = 0; z < numberOfSampleZones; z++)
-            {
-                final byte [] data = parameterArray.get (X0D_FIRST_ZONE + z * X0D_ZONE_SIZE + i);
-                if (data.length > 0)
-                    sb.append ("Z").append (z).append (" ").append (i).append (": ").append (StringUtils.formatHexStr (data)).append ("\n");
-            }
-        }
-
-        Files.write (new File ("C:/Users/mos/Desktop/Logs", "MaschinePresetZones.txt").toPath (), sb.toString ().getBytes ());
-    }
-
-
-    private static void dumpParameters (final List<byte []> parameterArray, final File sourceFile) throws IOException
-    {
-        final StringBuilder sb = new StringBuilder ();
-        sb.append ("Read " + parameterArray.size () + " parameters.\n");
-        for (int i = 0; i < parameterArray.size (); i++)
-        {
-            final byte [] data = parameterArray.get (i);
-            if (data.length > 0)
-                sb.append (i).append (": ").append (StringUtils.formatHexStr (data)).append (" - ").append (StringUtils.fixASCII (new String (data))).append ("\n");
-        }
-
-        Files.write (new File ("C:/Users/mos/Desktop/Logs", "MaschinePreset-" + sourceFile.getName () + ".txt").toPath (), sb.toString ().getBytes ());
-    }
-
-
-    private List<byte []> fillZone (final int zoneIndex, final int maxZones, final List<byte []> templateZone, final ISampleZone sampleZone, final String safeSampleFolderName) throws IOException
+    private static List<byte []> fillZone (final int zoneIndex, final int maxZones, final List<byte []> templateZone, final ISampleZone sampleZone, final String safeSampleFolderName) throws IOException
     {
         // Clone the zone
         final List<byte []> newZone = new ArrayList<> (X0D_ZONE_SIZE);
@@ -354,7 +373,63 @@ public class MaschinePresetAccessor
         if (zoneIndex > 0)
             newZone.set (1, new byte [] {});
 
-        // TODO set all parameters
+        final int start = sampleZone.getStart ();
+        final int stop = sampleZone.getStop ();
+        final int length = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_START, newZone, 0, start, start, 0, 0, 0);
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_END, newZone, 0, stop, stop, 0, 0, 0);
+
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        MaschinePresetParameterArray.writeIntegers (out, 0, length - 1, length - 1);
+        out.write (new byte []
+        {
+            (byte) 0xFF,
+            0x01,
+            0x00,
+            0x00
+        });
+        newZone.set (X0D_ZONE_SAMPLE_LENGTH, out.toByteArray ());
+
+        final List<ISampleLoop> loops = sampleZone.getLoops ();
+        final boolean hasLoop = !loops.isEmpty ();
+        // TODO Check if this is correct!
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_ENABLED, newZone, 0, hasLoop ? 1 : 0, hasLoop ? 1 : 0, 0, 0, 0);
+        if (hasLoop)
+        {
+            final ISampleLoop loop = loops.get (0);
+            final int loopStart = loop.getStart ();
+            final int loopEnd = loop.getEnd ();
+            final int crossfade = loop.getCrossfadeInSamples ();
+            // Not sure about the 3rd numbers...
+            MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_START, newZone, 0, loopStart, loopStart, loopStart, 0, 0);
+            MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_END, newZone, 0, loopEnd, loopEnd, 0, 0, 0);
+            MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_CROSSFADE, newZone, 0, crossfade, crossfade,
+                    0/* crossfade */, 0, 0);
+        }
+        else
+        {
+            MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_START, newZone, 0, start, start, 0, 0, 0);
+            MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_END, newZone, 0, stop, stop, 0, 0, 0);
+            MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_CROSSFADE, newZone, 0, 0, 0, 0, 0, 0);
+        }
+
+        final int keyRoot = sampleZone.getKeyRoot ();
+        final int keyLow = sampleZone.getKeyLow ();
+        final int keyHigh = sampleZone.getKeyHigh ();
+        final int velocityLow = sampleZone.getVelocityLow ();
+        final int velocityHigh = sampleZone.getVelocityHigh ();
+        // Not sure about the 3rd numbers...
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_ROOT_KEY, newZone, 0, keyRoot, keyRoot, keyRoot - 1, 0, 0);
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOW_KEY, newZone, 0, keyLow, keyLow, keyLow - 1, 0, 0);
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_HIGH_KEY, newZone, 0, keyHigh, keyHigh, keyHigh + 1, 0, 0);
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_VELOCITY_LOW, newZone, 0, velocityLow, velocityLow, 0, 0, 0);
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_VELOCITY_HIGH, newZone, 0, velocityHigh, velocityHigh, 0, 0, 0);
+
+        // TODO create test file
+        // MaschinePresetParameterArray.writeFloat (X0D_ZONE_GAIN, dbToInput (sampleZone.getGain
+        // ()));
+        // MaschinePresetParameterArray.writeFloat (X0D_ZONE_PANNING, sampleZone.getPanning ());
+        // MaschinePresetParameterArray.writeFloat (X0D_ZONE_TUNE, sampleZone.getTune ());
 
         newZone.set (X0D_ZONE_LAST_ROW, createLastRow (zoneIndex, maxZones, sampleZone));
 
@@ -362,27 +437,27 @@ public class MaschinePresetAccessor
     }
 
 
-    private byte [] createLastRow (final int zoneIndex, final int maxZones, final ISampleZone sampleZone) throws IOException
+    private static byte [] createLastRow (final int zoneIndex, final int maxZones, final ISampleZone sampleZone) throws IOException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         MaschinePresetParameterArray.writeInteger (out, 0);
         final List<ISampleLoop> loops = sampleZone.getLoops ();
-        final int loopEnd = loops.isEmpty () ? -1 : loops.get (0).getEnd ();
-        final int value = loopEnd == -1 ? sampleZone.getStop () : loopEnd;
-        if (zoneIndex == 0)
-        {
-            MaschinePresetParameterArray.writeInteger (out, value);
-            MaschinePresetParameterArray.writeInteger (out, value);
-            MaschinePresetParameterArray.writeInteger (out, Math.min (sampleZone.getStop (), value + 1));
-            MaschinePresetParameterArray.writeInteger (out, 0);
-            MaschinePresetParameterArray.writeInteger (out, 0);
-        }
+        final int loopStart = loops.isEmpty () ? -1 : loops.get (0).getStart ();
+        final int value = loopStart == -1 ? sampleZone.getStop () : loopStart;
+        final boolean isLastZone = zoneIndex + 1 == maxZones;
+        if (zoneIndex == 0 && !isLastZone)
+            MaschinePresetParameterArray.writeIntegers (out, value, value,
+                    0 /* Math.min (sampleZone.getStop (), value + 1) */, 0, 0);
         else
-        {
-            MaschinePresetParameterArray.writeInteger (out, 0);
-            MaschinePresetParameterArray.writeInteger (out, 0);
-            MaschinePresetParameterArray.writeInteger (out, value);
-        }
+            MaschinePresetParameterArray.writeIntegers (out, 0, 0, value);
+
+        if (zoneIndex == 0 && maxZones < 4)
+            out.write (new byte []
+            {
+                0x00,
+                0x00
+            });
+
         out.write (new byte []
         {
             0x00,
@@ -401,7 +476,7 @@ public class MaschinePresetAccessor
             0x29
         });
 
-        if (zoneIndex + 1 == maxZones)
+        if (isLastZone)
         {
             final int pos = X0D_FIRST_ZONE + zoneIndex * X0D_ZONE_SIZE;
             MaschinePresetParameterArray.writeInteger (out, pos);
@@ -458,10 +533,8 @@ public class MaschinePresetAccessor
                 return false;
             }
             if (newOffsetPluginInfo != offsets.offsetPluginInfo)
-            {
                 // Adjust all offsets
                 offsets.update (newOffsetPluginInfo - (isOldFormat ? PRE_X0D_PLUGIN_INFO : X0D_PLUGIN_INFO));
-            }
 
             final String deviceName = nextMaschineDevice.getValue ();
             foundSampler = PLUGIN_MASCHINE_SAMPLER.equals (deviceName);
@@ -615,7 +688,6 @@ public class MaschinePresetAccessor
         }
 
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setReversed (reverse == 1);
@@ -657,7 +729,6 @@ public class MaschinePresetAccessor
                     pitchModulator.setSource (pitchEnvelope);
                 }
             }
-        }
 
         return offset + (isOldFormat ? 130 : 173);
     }
@@ -665,7 +736,7 @@ public class MaschinePresetAccessor
 
     /**
      * Read the parameters for a sample zone.
-     * 
+     *
      * @param zone The sample zone to fill
      * @param zoneOffset The offset to the zone
      * @param parameterArray The parameters
@@ -700,7 +771,7 @@ public class MaschinePresetAccessor
 
     /**
      * Reads the SoundInfo data and fills the metadata of the given multi-sample source with it.
-     * 
+     *
      * @param multisampleSource The multi-sample source in which to store the read data
      * @param data The sound info data
      * @param parts The file parts for category detection if no categories are stored in the sound
@@ -758,10 +829,8 @@ public class MaschinePresetAccessor
             categoryPart = StreamUtils.readWithLengthUTF16 (soundInfoIn);
         final String [] categoryParts = categoryPart.split ("\\\\:");
         for (int i = categoryParts.length - 1; i >= 0; i--)
-        {
             if (!categoryParts[i].isBlank ())
                 categoryPath.add (categoryParts[i]);
-        }
         String detectedCategory = TagDetector.detectCategory (categoryPath);
         if (TagDetector.CATEGORY_UNKNOWN.equals (detectedCategory))
             detectedCategory = TagDetector.detectCategory (parts);
@@ -785,7 +854,7 @@ public class MaschinePresetAccessor
     /**
      * File paths are either absolute or relative to a library root (which is not known). Therefore,
      * the sample files need to be located.
-     * 
+     *
      * @param filePaths The read paths
      * @param sourceFilePath The location of the Maschine file
      * @return The corrected file paths
@@ -845,7 +914,7 @@ public class MaschinePresetAccessor
     /**
      * Converts gain in the range of [0..1] to the range [-82.3f..10.0f]. -82.3f is very close to
      * -Inf.
-     * 
+     *
      * @param input The input value in the range of 0..1[]
      * @return The gain value in dB
      */
@@ -863,18 +932,14 @@ public class MaschinePresetAccessor
     {
         final float x = Math.clamp (v, 0, 1f);
         if (x <= 0.5f)
-        {
             // from (0,0) to (0.5,171)
-            return (171f / 0.5f) * x;
-        }
+            return 171f / 0.5f * x;
         if (x <= 0.85f)
-        {
             // from (0.5,171) to (0.85,2100)
-            return 171f + ((2100f - 171f) / (0.85f - 0.5f)) * (x - 0.5f);
-        }
+            return 171f + (2100f - 171f) / (0.85f - 0.5f) * (x - 0.5f);
 
         // from (0.85,2100) to (1,7700)
-        return 2100f + ((7700f - 2100f) / (1f - 0.85f)) * (x - 0.85f);
+        return 2100f + (7700f - 2100f) / (1f - 0.85f) * (x - 0.85f);
     }
 
 
@@ -883,20 +948,14 @@ public class MaschinePresetAccessor
     {
         final float x = Math.clamp (v, 0, 1f);
         if (x <= 0.29f)
-        {
             // 0.00 → 2.9 ; 0.29 → 72.7
             return 2.9f + (72.7f - 2.9f) / 0.29f * x;
-        }
         if (x <= 0.50f)
-        {
             // 0.29 → 72.7 ; 0.50 → 217.0
             return 72.7f + (217f - 72.7f) / (0.50f - 0.29f) * (x - 0.29f);
-        }
         if (x <= 0.77f)
-        {
             // 0.50 → 217.0; 0.77 → 1500.0
             return 217f + (1500f - 217f) / (0.77f - 0.50f) * (x - 0.50f);
-        }
 
         // 0.77 → 1500.0; 1.00 → 12300.0
         return 1500f + (12300f - 1500f) / (1.00f - 0.77f) * (x - 0.77f);
