@@ -202,8 +202,9 @@ public class MaschinePresetAccessor
             }
 
             final boolean isLibrary = sampleInfoIn.read () > 0;
-            sampleInfoIn.skip (isLibrary ? 2 : 1);
-            final String samplePath = StreamUtils.readWith1ByteLengthAscii (sampleInfoIn);
+            if (isLibrary)
+                sampleInfoIn.skip (1);
+            final String samplePath = MaschinePresetParameterArray.readString (sampleInfoIn);
 
             // Quick and dirty workaround for some 2.0.0.0 zones being 1 row longer...
             if ((samplePath.length () == 0 || samplePath.charAt (0) == 0) && sampleIndex == 1 && offsetZone == PRE_X0D_ZONE_SIZE)

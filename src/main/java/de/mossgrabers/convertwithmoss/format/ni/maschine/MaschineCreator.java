@@ -46,7 +46,7 @@ public class MaschineCreator extends AbstractWavCreator<MaschineCreatorUI>
         }
 
         final int maschineFormat = this.settingsConfiguration.getDestinationVersion ();
-        if (maschineFormat == 2)
+        if (maschineFormat > 1)
         {
             final IMaschineFormat maschineType = new Maschine2Format (this.notifier);
 
@@ -62,7 +62,7 @@ public class MaschineCreator extends AbstractWavCreator<MaschineCreatorUI>
 
             try (final FileOutputStream out = new FileOutputStream (multiFile))
             {
-                maschineType.writeSound (out, safeSampleFolderName, multisampleSource, calculateSampleSize (sampleFiles));
+                maschineType.writeSound (out, safeSampleFolderName, multisampleSource, calculateSampleSize (sampleFiles), maschineFormat);
             }
         }
 

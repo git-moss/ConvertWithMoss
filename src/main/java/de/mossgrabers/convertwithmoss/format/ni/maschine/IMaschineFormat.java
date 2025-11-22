@@ -41,7 +41,8 @@ public interface IMaschineFormat
      * @param safeSampleFolderName The folder where the samples are placed
      * @param multisampleSource The source
      * @param sizeOfSamples The size of all samples
+     * @param maschineFormat The version number of the format
      * @throws IOException Error writing the file
      */
-    void writeSound (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int sizeOfSamples) throws IOException;
+    void writeSound (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int sizeOfSamples, int maschineFormat) throws IOException;
 }

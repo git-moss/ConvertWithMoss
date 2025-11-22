@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -369,7 +370,22 @@ public class MaschinePresetParameterArray
 
 
     /**
-     * Write an ASCII string to a row in the array.
+     * Write an UTF-8 string to a row in the array.
+     *
+     * @param in The stream to read from
+     * @return The read text
+     * @throws IOException Could not read the text
+     */
+    public static String readString (final InputStream in) throws IOException
+    {
+        final int blocklength = StreamUtils.readVariableLengthNumberLE (in);
+        final byte [] blockData = in.readNBytes (blocklength);
+        return new String (blockData, StandardCharsets.UTF_8);
+    }
+
+
+    /**
+     * Write an UTF-8 string to a row in the array.
      *
      * @param out The stream to write to
      * @param text The text to write
@@ -377,8 +393,9 @@ public class MaschinePresetParameterArray
      */
     public static void writeString (final ByteArrayOutputStream out, final String text) throws IOException
     {
-        writeInteger (out, text.length ());
-        StreamUtils.writeASCII (out, text, text.length ());
+        final byte [] textData = text.getBytes (StandardCharsets.UTF_8);
+        writeInteger (out, textData.length);
+        out.write (textData);
     }
 
 

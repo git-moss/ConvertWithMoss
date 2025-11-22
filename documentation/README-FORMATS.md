@@ -237,7 +237,7 @@ Note that Maschine contains an auto-sampler with which you can sample plugins or
 
 ### Destination Options
 
-* Output Format: Select the Maschine output format. Currently, only the Maschine 2 format is supported.
+* Output Format: Select the Maschine output format. Currently, only the Maschine 2 and 3 format is supported.
 
 ## Propellerhead Reason NN-XT
 
