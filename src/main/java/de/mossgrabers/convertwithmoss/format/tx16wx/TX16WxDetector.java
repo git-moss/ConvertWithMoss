@@ -121,7 +121,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
     @Override
     protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
-        final IInstrumentSource instrumentSource = readPresetFileAsInstrument (sourceFile);
+        final IInstrumentSource instrumentSource = this.readPresetFileAsInstrument (sourceFile);
         return instrumentSource == null ? Collections.emptyList () : Collections.singletonList (instrumentSource.getMultisampleSource ());
     }
 

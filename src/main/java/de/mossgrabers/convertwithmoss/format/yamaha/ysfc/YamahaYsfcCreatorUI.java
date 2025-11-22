@@ -131,7 +131,7 @@ public class YamahaYsfcCreatorUI implements ICoreTaskSettings
 
     /**
      * Get the output format.
-     * 
+     *
      * @return The index of the output format
      */
     public int selectedOutputFormat ()
@@ -142,7 +142,7 @@ public class YamahaYsfcCreatorUI implements ICoreTaskSettings
 
     /**
      * Should only waveforms be created (no performances)?
-     * 
+     *
      * @return Create only waveforms if true
      */
     public boolean createOnlyWaveforms ()

@@ -42,6 +42,7 @@ The following multi-sample formats are supported:
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
 * [Logic EXS24](#logic-exs24)
+* [Maschine MXSND](#maschine-mxsnd)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
@@ -225,6 +226,18 @@ Since the format supports only one group of a multi-sample, multiple destination
 The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digital audio workstation. It is primarily used for storing and playback of sampled instruments and sounds within Logic Pro. The format allows for comprehensive mapping and editing of samples, as well as providing various modulation and performance options.
 
 The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. *The number of folders can be configured*.
+
+## Maschine MXSND
+
+The MXSND format is a proprietary binary format from Native Instruments used by Maschine 2 and 3. MXSND uses the same container wrapper format as Kontakt 5+. Maschine 1 used a different format with the ending MSND which is currently not supported.
+
+Only MXSND files which contain an instance of a Maschine Sampler can be read. The Maschine Sampler supports basic features but has e.g. no groups or release layers (see the detailed parameter documentation).
+
+Note that Maschine contains an auto-sampler with which you can sample plugins or external synths and writes MXSND as the output. This means that you can then convert it to other formats with ConvertWithMoss.
+
+### Destination Options
+
+* Output Format: Select the Maschine output format. Currently, only the Maschine 2 format is supported.
 
 ## Propellerhead Reason NN-XT
 

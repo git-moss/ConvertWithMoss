@@ -254,7 +254,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Set the tags.
-     * 
+     *
      * @param tags The tags to set
      */
     public void setTags (final List<String> tags)
@@ -277,7 +277,7 @@ public class SoundinfoChunkData extends AbstractChunkData
 
     /**
      * Set the attributes.
-     * 
+     *
      * @param attributes The attributes to set
      */
     public void setAttributes (final List<String> attributes)

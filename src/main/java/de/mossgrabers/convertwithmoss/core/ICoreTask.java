@@ -11,7 +11,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
  * Base interface for creators and detectors.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public interface ICoreTask<T extends ICoreTaskSettings>

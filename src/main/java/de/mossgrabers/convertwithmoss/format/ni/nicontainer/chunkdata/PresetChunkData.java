@@ -31,7 +31,7 @@ public class PresetChunkData extends AbstractChunkData
 
     /**
      * Get the preset data.
-     * 
+     *
      * @return The preset data
      */
     public byte [] getPresetData ()
@@ -42,7 +42,7 @@ public class PresetChunkData extends AbstractChunkData
 
     /**
      * Set the preset data.
-     * 
+     *
      * @param presetData The preset data
      */
     public void setPresetData (final byte [] presetData)

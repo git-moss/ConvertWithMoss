@@ -87,7 +87,7 @@ public class ConverterBackend
 
     /**
      * Constructor.
-     * 
+     *
      * @param notifier The notifier for log-feedback
      */
     public ConverterBackend (final INotifier notifier)
@@ -144,7 +144,7 @@ public class ConverterBackend
 
     /**
      * Get all detectors.
-     * 
+     *
      * @return The detectors
      */
     public IDetector<?> [] getDetectors ()
@@ -155,7 +155,7 @@ public class ConverterBackend
 
     /**
      * Get all creators.
-     * 
+     *
      * @return The creators
      */
     public ICreator<?> [] getCreators ()
@@ -166,7 +166,7 @@ public class ConverterBackend
 
     /**
      * Start the detection.
-     * 
+     *
      * @param detector The file detector
      * @param creator The file creator
      * @param sourceFolder The folder where to start the detection process
@@ -212,13 +212,12 @@ public class ConverterBackend
 
     /**
      * If multiple files for a library were collected, create the library.
-     * 
+     *
      * @param cancelled True if the process was cancelled
      */
     public void finish (final boolean cancelled)
     {
         if (!cancelled && !this.onlyAnalyse)
-        {
             try
             {
                 if (!this.collectedPresetSources.isEmpty ())
@@ -236,7 +235,6 @@ public class ConverterBackend
             {
                 this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
             }
-        }
 
         this.notifier.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");
     }
@@ -435,7 +433,7 @@ public class ConverterBackend
         @Override
         public void accept (final IMultisampleSource multisampleSource)
         {
-            acceptMultisample (multisampleSource);
+            ConverterBackend.this.acceptMultisample (multisampleSource);
         }
     }
 
@@ -445,7 +443,7 @@ public class ConverterBackend
         @Override
         public void accept (final IPerformanceSource performanceSource)
         {
-            acceptPerformance (performanceSource);
+            ConverterBackend.this.acceptPerformance (performanceSource);
         }
     }
 }

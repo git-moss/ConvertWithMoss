@@ -26,7 +26,7 @@ public class RewriteChunks
 {
     /**
      * The main method.
-     * 
+     *
      * @param args Not used
      */
     public static void mainX (final String [] args)
@@ -57,7 +57,7 @@ public class RewriteChunks
 
     /**
      * The main method.
-     * 
+     *
      * @param args The source file and then the output file
      */
     // TODO Rewrite test - remove

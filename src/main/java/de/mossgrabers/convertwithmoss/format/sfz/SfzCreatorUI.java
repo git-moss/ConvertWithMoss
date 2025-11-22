@@ -112,7 +112,7 @@ public class SfzCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the output samples be converted to FLAC?
-     * 
+     *
      * @return True to convert
      */
     public boolean convertToFlac ()

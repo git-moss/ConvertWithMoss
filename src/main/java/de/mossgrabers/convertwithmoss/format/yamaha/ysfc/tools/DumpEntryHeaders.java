@@ -47,9 +47,8 @@ public class DumpEntryHeaders
 
             System.out.println ("\nPerformances:");
             final List<byte []> dpfmListChunks = dpfmChunk.getDataArrays ();
-            for (int i = 0; i < dpfmListChunks.size (); i++)
+            for (final byte [] performanceData: dpfmListChunks)
             {
-                final byte [] performanceData = dpfmListChunks.get (i);
                 final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), ysfcFile.getFileFormat (), ysfcFile.getVersion ());
                 final String performanceName = performance.getName ();
                 final List<YamahaYsfcPerformancePart> parts = performance.getParts ();

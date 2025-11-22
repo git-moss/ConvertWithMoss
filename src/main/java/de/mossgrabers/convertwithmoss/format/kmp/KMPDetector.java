@@ -86,7 +86,7 @@ public class KMPDetector extends AbstractDetector<KMPDetectorUI>
     /**
      * Reads and parses a KSC file. Collects all referenced KMP files and tries to combine them to
      * stereo files by their name-prefix.
-     * 
+     *
      * @param sourceFile The KSC file
      * @return The parsed multi-sample sources
      */
@@ -173,7 +173,7 @@ public class KMPDetector extends AbstractDetector<KMPDetectorUI>
 
     /**
      * Reads a KMP file and creates a multi-sample source from it.
-     * 
+     *
      * @param sourceFile The KMP file
      * @return The multi-sample source if found
      */
@@ -206,7 +206,7 @@ public class KMPDetector extends AbstractDetector<KMPDetectorUI>
 
     /**
      * Combines 2 mono KMP files into 1 stereo multi-sample source.
-     * 
+     *
      * @param kmpFile1 The 1st KMP file
      * @param kmpFile2 The 2nd KMP file
      * @param results Where to add the found multi-sample source

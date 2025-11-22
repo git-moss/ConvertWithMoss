@@ -126,7 +126,7 @@ public class KMPDetectorUI extends MetadataSettingsUI
 
     /**
      * Should KSC instead of KMP files be used as the input?
-     * 
+     *
      * @return True if they should be used
      */
     public boolean useKscFiles ()

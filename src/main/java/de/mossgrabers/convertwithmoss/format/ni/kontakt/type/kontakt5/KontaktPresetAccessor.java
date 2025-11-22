@@ -97,7 +97,7 @@ public class KontaktPresetAccessor
 
     /**
      * Get the multi-configuration.
-     * 
+     *
      * @return The multi-configuration, might be null
      */
     public MultiConfiguration getMultiConfiguration ()

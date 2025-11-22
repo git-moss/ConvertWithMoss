@@ -11,7 +11,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
  * Base class for creator and detector classes.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public abstract class AbstractCoreTask<T extends ICoreTaskSettings> implements ICoreTask<T>

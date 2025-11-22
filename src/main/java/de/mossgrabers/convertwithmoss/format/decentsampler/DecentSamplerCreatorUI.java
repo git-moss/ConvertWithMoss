@@ -205,7 +205,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
 
     /**
      * Get the content of a template.
-     * 
+     *
      * @param filename The filename of the template
      * @return The template content
      * @throws IOException If the template cannot be found or not be loaded
@@ -226,7 +226,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
 
     /**
      * Get the path to the template folder.
-     * 
+     *
      * @return The template folder
      */
     public File getTemplateFolderPath ()
@@ -237,7 +237,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should a filter be added to groups?
-     * 
+     *
      * @return True to add a filter
      */
     public boolean addFilterToGroups ()
@@ -248,7 +248,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should a bundle be created?
-     * 
+     *
      * @return True to create a bundle
      */
     public boolean createBundle ()
@@ -259,7 +259,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should it be made mono-phonic?
-     * 
+     *
      * @return True for mono-phonic mode
      */
     public boolean makeMonophonic ()

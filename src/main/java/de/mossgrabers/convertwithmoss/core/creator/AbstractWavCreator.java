@@ -51,7 +51,7 @@ import de.mossgrabers.tools.XMLUtils;
  * A creator which uses WAV files to store the samples.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends AbstractCreator<T>

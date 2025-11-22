@@ -66,7 +66,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Serializes the parameter array to a byte array.
-     * 
+     *
      * @return The byte array
      * @throws IOException Could not serialize the parameter array
      */
@@ -98,7 +98,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Get the array version.
-     * 
+     *
      * @return The version
      */
     public int [] getVersion ()
@@ -120,7 +120,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Get the parameter rows.
-     * 
+     *
      * @return The rows
      */
     public List<byte []> getRawData ()
@@ -158,7 +158,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Reads several parameters from a parameter row.
-     * 
+     *
      * @param offset The row offset
      * @param parameterTypes The types of the parameters to read; use 'i' for integers, 'f' for
      *            floats and 's' for a string
@@ -206,7 +206,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Write an integer value to the given output stream.
-     * 
+     *
      * @param out The stream to write to
      * @param value The integer to write
      * @throws IOException Could not write the values
@@ -233,7 +233,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Reads the first N integer values from an entry in the array.
-     * 
+     *
      * @param in The stream to read from
      * @param numberCount The number of integers to read
      * @return The read integer values
@@ -250,7 +250,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Write N integer values to an entry in the parameter array.
-     * 
+     *
      * @param offset The offset of the entry in the array to write to
      * @param values The integers to write
      * @throws IOException Could not write the values
@@ -263,7 +263,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Write N integer values to an entry in the given array.
-     * 
+     *
      * @param offset The offset of the entry in the array to write to
      * @param array The array into which to write
      * @param values The integers to write
@@ -279,15 +279,15 @@ public class MaschinePresetParameterArray
 
     /**
      * Write N integer values to the given output stream.
-     * 
+     *
      * @param out The stream to the given output stream
      * @param values The integers to write
      * @throws IOException Could not write the values
      */
     public static void writeIntegers (final ByteArrayOutputStream out, final int... values) throws IOException
     {
-        for (int i = 0; i < values.length; i++)
-            StreamUtils.writeVariableLengthNumberLE (out, values[i]);
+        for (final int value: values)
+            StreamUtils.writeVariableLengthNumberLE (out, value);
     }
 
 
@@ -323,8 +323,38 @@ public class MaschinePresetParameterArray
 
 
     /**
+     * Write N integer values to an entry in the given array.
+     *
+     * @param offset The offset of the entry in the array to write to
+     * @param array The array into which to write
+     * @param values The integers to write
+     * @throws IOException Could not write the values
+     */
+    public static void writeFloats (final int offset, final List<byte []> array, final float... values) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        writeFloats (out, values);
+        array.set (offset, out.toByteArray ());
+    }
+
+
+    /**
+     * Reads the first float value from an entry in the array.
+     *
+     * @param out The stream to write to
+     * @param values The float values to write
+     * @throws IOException Could not write the values
+     */
+    public static void writeFloats (final ByteArrayOutputStream out, final float... values) throws IOException
+    {
+        for (final float value: values)
+            StreamUtils.writeFloatLE (out, value);
+    }
+
+
+    /**
      * Write an ASCII string to a row in the array.
-     * 
+     *
      * @param offset The offset of the row
      * @param text The text to write
      * @throws IOException Could not write the text
@@ -340,7 +370,7 @@ public class MaschinePresetParameterArray
 
     /**
      * Write an ASCII string to a row in the array.
-     * 
+     *
      * @param out The stream to write to
      * @param text The text to write
      * @throws IOException Could not write the text

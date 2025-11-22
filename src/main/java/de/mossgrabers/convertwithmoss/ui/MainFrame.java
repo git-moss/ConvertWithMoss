@@ -371,7 +371,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         for (final Tab sourceTab: this.sourceTabPane.getTabs ())
         {
             final IDetector<?> detector = this.sourceTabs.get (sourceTab);
-            final boolean showTab = (selectedType != DEST_TYPE_PERFORMANCE && selectedType != DEST_TYPE_PERFORMANCE_LIBRARY) || detector.supportsPerformances ();
+            final boolean showTab = selectedType != DEST_TYPE_PERFORMANCE && selectedType != DEST_TYPE_PERFORMANCE_LIBRARY || detector.supportsPerformances ();
             sourceTab.setDisable (!showTab);
             if (!showTab && sourceTab.isSelected ())
                 needsSelection = true;

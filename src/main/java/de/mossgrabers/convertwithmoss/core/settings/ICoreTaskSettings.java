@@ -45,7 +45,7 @@ public interface ICoreTaskSettings
     /**
      * Check if the settings which are required for the execution of the task are correct, when set
      * from the user interface.
-     * 
+     *
      * @param notifier Where to report errors
      * @return True if correct and the task can be executed
      */
@@ -55,7 +55,7 @@ public interface ICoreTaskSettings
     /**
      * Check if the settings which are required for the execution of the task are correct, when set
      * from the command line interface.
-     * 
+     *
      * @param notifier Where to report errors
      * @param parameters The parameters from which to configure the settings
      * @return True if correct and the task can be executed
@@ -65,7 +65,7 @@ public interface ICoreTaskSettings
 
     /**
      * Get all parameter names which are used by these settings.
-     * 
+     *
      * @return The names
      */
     String [] getCLIParameterNames ();

@@ -18,7 +18,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
  * on the source format).
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public interface IDetector<T extends ICoreTaskSettings> extends ICoreTask<T>, Runnable

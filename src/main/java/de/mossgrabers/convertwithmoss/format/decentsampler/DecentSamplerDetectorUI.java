@@ -126,7 +126,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
 
     /**
      * Should unsupported attributes be logged?
-     * 
+     *
      * @return True if they should be logged
      */
     public boolean logUnsupportedAttributes ()

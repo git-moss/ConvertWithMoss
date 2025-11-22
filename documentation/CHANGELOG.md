@@ -1,8 +1,9 @@
 # Changes
 
-## 14.2.1 (unreleased)
+## 15.0.0 (unreleased)
 
 * Restoration of main window on startup ensures that it is at least 25% visible on the screen.
+* Added support for Maschine MXSND files.
 * 1010music
   * Fixed: Improved lookup of samples when reading presets.
 * EXS

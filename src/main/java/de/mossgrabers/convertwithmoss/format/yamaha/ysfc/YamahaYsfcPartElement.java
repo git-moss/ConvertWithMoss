@@ -476,7 +476,7 @@ public class YamahaYsfcPartElement
 
     /**
      * Set the group to which the element belongs.
-     * 
+     *
      * @param elementGroupNumber The number of the group
      */
     public void setElementGroupNumber (final int elementGroupNumber)

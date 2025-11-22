@@ -113,7 +113,7 @@ public class YamahaYsfcPerformance implements IStreamable
 
     /**
      * Enable keyboard control for one of the scenes.
-     * 
+     *
      * @param scene The scene [0..7]
      * @param enable True to enable keyboard control for this scene
      */

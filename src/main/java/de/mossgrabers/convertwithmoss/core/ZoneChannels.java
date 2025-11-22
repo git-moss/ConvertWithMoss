@@ -117,7 +117,7 @@ public enum ZoneChannels
      * Creates stereo sample zones (with stereo sample files) from split stereo sample zones.
      * Important: the input must have been checked to be split stereo with the
      * detectChannelConfiguration method.
-     * 
+     *
      * @param leftSampleZones All sample zones of the left channel
      * @param rightSampleZones All sample zones of the right channel
      * @return The group containing all resulting stereo sample zones if combination is possible

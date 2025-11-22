@@ -204,7 +204,7 @@ public class YamahaYsfcPerformancePart
 
     /**
      * Enable keyboard control for one of the scenes.
-     * 
+     *
      * @param scene The scene [0..7]
      * @param enable True to enable keyboard control for this scene
      */
@@ -217,7 +217,7 @@ public class YamahaYsfcPerformancePart
 
     /**
      * Set the part to off/on.
-     * 
+     *
      * @param partSwitch True to enable
      */
     public void setPartSwitch (final boolean partSwitch)

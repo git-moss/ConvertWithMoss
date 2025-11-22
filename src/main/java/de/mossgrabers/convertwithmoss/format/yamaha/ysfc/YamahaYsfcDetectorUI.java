@@ -134,7 +134,7 @@ public class YamahaYsfcDetectorUI extends MetadataSettingsUI
 
     /**
      * Is the source type a performance?
-     * 
+     *
      * @return True if it is performance
      */
     public boolean isSourceTypePerformance ()

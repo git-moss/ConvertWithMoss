@@ -126,7 +126,7 @@ public class SfzDetectorUI extends MetadataSettingsUI
 
     /**
      * Should unsupported opcodes be logged?
-     * 
+     *
      * @return True to activate logging
      */
     public boolean logUnsupportedOpcodes ()

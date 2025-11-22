@@ -117,7 +117,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the output samples be limited to a maximum of 16bit / 44.1kHz?
-     * 
+     *
      * @return True to limit
      */
     public boolean limitTo16441 ()

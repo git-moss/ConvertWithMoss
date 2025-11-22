@@ -363,7 +363,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the cross-fade velocity value.
-     * 
+     *
      * @return The cross-fade velocity value
      */
     public int getCrossfadeVelocities ()
@@ -374,7 +374,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the cross-fade notes value.
-     * 
+     *
      * @return The cross-fade notes value
      */
     public int getCrossfadeNotes ()
@@ -385,7 +385,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the patterns to detect groups.
-     * 
+     *
      * @return The group detection patterns
      */
     public String [] getGroupPatterns ()
@@ -396,7 +396,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get how to sort groups.
-     * 
+     *
      * @return True if they should be sorted ascending
      */
     public boolean isAscending ()
@@ -407,7 +407,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the patterns to detect mono files.
-     * 
+     *
      * @return The mono split patterns
      */
     public String [] getMonoSplitPatterns ()
@@ -418,7 +418,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the post-fix texts to remove.
-     * 
+     *
      * @return The texts
      */
     public String [] getPostfixTexts ()
@@ -429,7 +429,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Should loop values be ignored?
-     * 
+     *
      * @return True to ignore loops
      */
     public boolean isShouldIgnoreLoops ()
