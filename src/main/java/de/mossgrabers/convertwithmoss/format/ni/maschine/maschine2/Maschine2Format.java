@@ -39,12 +39,14 @@ import de.mossgrabers.tools.ui.Functions;
 public class Maschine2Format implements IMaschineFormat
 {
     private static final byte [] MASCHINE_TEMPLATE_V2;
+    private static final byte [] MASCHINE_TEMPLATE_V3;
 
     static
     {
         try
         {
             MASCHINE_TEMPLATE_V2 = Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/maschine/MaschineV2Template.mxsnd");
+            MASCHINE_TEMPLATE_V3 = Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/maschine/MaschineV3Template.mxsnd");
         }
         catch (final IOException ex)
         {
@@ -119,10 +121,10 @@ public class Maschine2Format implements IMaschineFormat
 
     /** {@inheritDoc} */
     @Override
-    public void writeSound (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
+    public void writeSound (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples, final int version) throws IOException
     {
         final NIContainerItem niContainerItem = new NIContainerItem ();
-        niContainerItem.read (new ByteArrayInputStream (MASCHINE_TEMPLATE_V2));
+        niContainerItem.read (new ByteArrayInputStream (version == 2 ? MASCHINE_TEMPLATE_V2 : MASCHINE_TEMPLATE_V3));
 
         final NIContainerDataChunk soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
         if (soundInfoChunk != null && soundInfoChunk.getData () instanceof final SoundinfoChunkData soundInfoChunkData)

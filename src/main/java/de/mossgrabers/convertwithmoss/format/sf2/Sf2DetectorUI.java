@@ -131,13 +131,13 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.get (SF2_LOG_UNSUPPORTED_ATTRIBUTES);
+        String value = parameters.remove (SF2_LOG_UNSUPPORTED_ATTRIBUTES);
         this.logUnsupportedAttributes = "1".equals (value);
 
-        value = parameters.get (SF2_ADD_FILE_NAME_TAG);
+        value = parameters.remove (SF2_ADD_FILE_NAME_TAG);
         this.addFileName = "1".equals (value);
 
-        value = parameters.get (SF2_ADD_PROGRAM_NUMBER_TAG);
+        value = parameters.remove (SF2_ADD_PROGRAM_NUMBER_TAG);
         this.addProgramNumber = "1".equals (value);
 
         return true;
