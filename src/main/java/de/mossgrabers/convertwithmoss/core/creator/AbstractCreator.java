@@ -48,7 +48,7 @@ import de.mossgrabers.tools.ui.Functions;
  * Base class for creator classes.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public abstract class AbstractCreator<T extends ICoreTaskSettings> extends AbstractCoreTask<T> implements ICreator<T>
@@ -339,7 +339,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     /**
      * Since panning is not working on the sample level, combine split stereo to stereo files If the
      * combination fails, the file is created anyway but might contain wrong panning.
-     * 
+     *
      * @param multisampleSource The multi-sample source
      * @return The combined stereo group or the original groups if they could not be combined
      * @throws IOException Could not combine the groups
@@ -566,7 +566,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         {
             final File file = new File (destinationFolder, dosFilename + extension);
             final boolean exists = file.exists ();
-            if (!createdNames.contains (dosFilename) && !exists || (useForFolder && file.isFile ()) || (!useForFolder && file.isDirectory ()))
+            if (!createdNames.contains (dosFilename) && !exists || useForFolder && file.isFile () || !useForFolder && file.isDirectory ())
                 break;
 
             counter++;
@@ -582,7 +582,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Get the level to which the amplitude envelope should be applied.
-     * 
+     *
      * @param multisampleSource The multi-sample instrument to check
      * @return The level to which the amplitude envelope should be applied
      */

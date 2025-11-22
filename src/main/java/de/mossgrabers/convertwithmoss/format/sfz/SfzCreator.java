@@ -161,9 +161,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         // Add all groups with all sample zones (regions)
         final Map<IGroup, Integer> roundRobinGroups = multisampleSource.getRoundRobinGroups ();
-        for (int groupIndex = 0; groupIndex < groups.size (); groupIndex++)
+        for (final IGroup group: groups)
         {
-            final IGroup group = groups.get (groupIndex);
             final List<ISampleZone> zones = group.getSampleZones ();
             if (zones.isEmpty ())
                 continue;

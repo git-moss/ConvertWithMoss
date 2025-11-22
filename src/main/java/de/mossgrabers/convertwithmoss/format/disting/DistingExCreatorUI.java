@@ -129,7 +129,7 @@ public class DistingExCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the samples be trimmed?
-     * 
+     *
      * @return True to trim the samples
      */
     public boolean trimStartToEnd ()
@@ -140,7 +140,7 @@ public class DistingExCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the samples be limited to a maximum of 16bit / 44.1kHz?
-     * 
+     *
      * @return True to limit
      */
     public boolean limitTo16441 ()

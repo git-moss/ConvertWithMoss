@@ -158,7 +158,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
 
     /**
      * Should the preset name be added to the filename?
-     * 
+     *
      * @return True to add it
      */
     public boolean addFileName ()
@@ -169,7 +169,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
 
     /**
      * Should a program number be added?
-     * 
+     *
      * @return True if a program number should be added
      */
     public boolean addProgramNumber ()
@@ -180,7 +180,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
 
     /**
      * Should unsupported attributes in the source be logged?
-     * 
+     *
      * @return True if they should be logged
      */
     public boolean logUnsupportedAttributes ()

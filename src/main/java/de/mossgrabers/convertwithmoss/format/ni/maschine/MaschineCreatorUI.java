@@ -172,7 +172,7 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
 
     /**
      * Which output format should be created?
-     * 
+     *
      * @return 1-3 for Maschine 1-3 file format
      */
     public int getDestinationVersion ()

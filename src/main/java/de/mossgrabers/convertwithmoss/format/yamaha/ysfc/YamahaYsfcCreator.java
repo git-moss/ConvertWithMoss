@@ -207,7 +207,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
         // Numbering is across all(!) samples
         final LibraryCounters counters = new LibraryCounters ();
-        addPerformance (performanceSource, format, ysfcFile, 0, counters);
+        this.addPerformance (performanceSource, format, ysfcFile, 0, counters);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
@@ -239,7 +239,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         for (int performanceIndex = 0; performanceIndex < performanceSources.size (); performanceIndex++)
         {
             final IPerformanceSource performanceSource = performanceSources.get (performanceIndex);
-            addPerformance (performanceSource, format, ysfcFile, performanceIndex, counters);
+            this.addPerformance (performanceSource, format, ysfcFile, performanceIndex, counters);
         }
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
@@ -322,14 +322,12 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
         // Must be always 8!
         if (numInstruments > 1)
-        {
             for (int i = numInstruments; i < 8; i++)
             {
                 final YamahaYsfcPerformancePart part = parts.get (i);
                 part.setPartSwitch (false);
                 filledParts.add (part);
             }
-        }
 
         parts.clear ();
         parts.addAll (filledParts);

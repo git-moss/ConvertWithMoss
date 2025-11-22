@@ -261,11 +261,8 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             files.add (sampleFile);
         }
 
-        if (isMonolith)
-            return files;
-
         // Only search for missing files, if all of them are missing!
-        if (missingFiles != files.size ())
+        if (isMonolith || (missingFiles != files.size ()))
             return files;
 
         final List<File> lookedupFiles = new ArrayList<> ();

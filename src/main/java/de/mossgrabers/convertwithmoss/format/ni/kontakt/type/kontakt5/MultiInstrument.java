@@ -22,7 +22,7 @@ public class MultiInstrument
 
     /**
      * Constructor.
-     * 
+     *
      * @param midiChannel The MIDI channel
      */
     public MultiInstrument (final int midiChannel)

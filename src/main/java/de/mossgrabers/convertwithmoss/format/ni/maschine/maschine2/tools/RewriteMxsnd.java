@@ -21,7 +21,7 @@ public class RewriteMxsnd
 {
     /**
      * The main method.
-     * 
+     *
      * @param args The source file and then the output file
      */
     // TODO Rewrite test - remove

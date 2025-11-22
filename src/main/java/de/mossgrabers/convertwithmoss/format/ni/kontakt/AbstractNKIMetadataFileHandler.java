@@ -123,7 +123,7 @@ public abstract class AbstractNKIMetadataFileHandler
      */
     public IPerformanceSource parseMulti (final File sourceFolder, final File sourceFile, final String xmlCode, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
     {
-        final Element top = getTopLevelElement (xmlCode);
+        final Element top = this.getTopLevelElement (xmlCode);
         final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
 
@@ -158,7 +158,7 @@ public abstract class AbstractNKIMetadataFileHandler
      */
     public List<IMultisampleSource> parseInstruments (final File sourceFolder, final File sourceFile, final String xmlCode, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
     {
-        final Element top = getTopLevelElement (xmlCode);
+        final Element top = this.getTopLevelElement (xmlCode);
         final List<IInstrumentSource> instrumentSources = this.parseInstrumentSources (sourceFolder, sourceFile, top, metadataConfig, monolithSamples);
         final List<IMultisampleSource> multisampleSource = new ArrayList<> (instrumentSources.size ());
         for (final IInstrumentSource instrumentSource: instrumentSources)
@@ -502,7 +502,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
     /**
      * Parses a program element and retrieves a IMultisampleSource object representing the program.
-     * 
+     *
      * @param programElement The program element to be parsed
      * @param instrumentSource Where to store the parsed data
      * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
@@ -548,7 +548,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
     /**
      * Read additional parameter like the MIDI channel which are specific to the instrument.
-     * 
+     *
      * @param instrumentSource The instrument source
      * @param programParameters The program parameter
      */

@@ -98,6 +98,10 @@ public class MaschinePresetAccessor
     private static final int                      X0D_ZONE_SAMPLE_LENGTH         = 75;              // 742;
     private static final int                      X0D_ZONE_LAST_ROW              = 79;              // 746;
 
+    private static final int                      X0D_GLOBAL_PITCHBEND           = 13;
+    private static final int                      X0D_GLOBAL_TUNING              = 31;
+    private static final int                      X0D_GLOBAL_AMP_ENVELOPE_TYPE   = 23;
+
     private static final char []                  PLUGIN_HOST_ROW_PARAM_TYPES    = new char []
     {
         'i',
@@ -116,11 +120,15 @@ public class MaschinePresetAccessor
     private final static String                   PLUGIN_HOST                    = "PluginHost";
 
     private final static Map<Integer, FilterType> FILTER_TYPE_LOOKUP             = new HashMap<> ();
+    private final static Map<FilterType, Integer> INV_FILTER_TYPE_LOOKUP         = new HashMap<> ();
     static
     {
         FILTER_TYPE_LOOKUP.put (Integer.valueOf (1), FilterType.LOW_PASS);
         FILTER_TYPE_LOOKUP.put (Integer.valueOf (2), FilterType.BAND_PASS);
         FILTER_TYPE_LOOKUP.put (Integer.valueOf (3), FilterType.HIGH_PASS);
+        INV_FILTER_TYPE_LOOKUP.put (FilterType.LOW_PASS, Integer.valueOf (1));
+        INV_FILTER_TYPE_LOOKUP.put (FilterType.BAND_PASS, Integer.valueOf (2));
+        INV_FILTER_TYPE_LOOKUP.put (FilterType.HIGH_PASS, Integer.valueOf (3));
     }
 
     private final INotifier notifier;
@@ -258,8 +266,6 @@ public class MaschinePresetAccessor
 
         parameterArray.writeString (X0D_NAME, source.getName ());
 
-        // TODO write global parameters
-
         // Extract the template (first zone)
         final List<byte []> templateZone = new ArrayList<> (data.subList (X0D_FIRST_ZONE, X0D_FIRST_ZONE + X0D_ZONE_SIZE));
 
@@ -287,6 +293,8 @@ public class MaschinePresetAccessor
 
         // Insert all regenerated zones back in the correct position
         data.addAll (X0D_FIRST_ZONE, newZones);
+
+        fillGlobalParameters (X0D_FIRST_ZONE + maxZones * X0D_ZONE_SIZE + 4, data, source, sampleZones.get (0));
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         out.write (new byte []
@@ -357,7 +365,86 @@ public class MaschinePresetAccessor
         data.set (907 + maxZones * X0D_ZONE_SIZE, out2.toByteArray ());
 
         return parameterArray.serialize ();
+    }
 
+
+    private static void fillGlobalParameters (final int globalOffset, final List<byte []> data, final IMultisampleSource source, final ISampleZone firstSampleZone) throws IOException
+    {
+        final float normalizedPitchbend = (float) Math.clamp (Math.sqrt (firstSampleZone.getBendUp () / 1200f), 0, 1);
+        writeFloatValueRow (globalOffset + X0D_GLOBAL_PITCHBEND, data, normalizedPitchbend);
+
+        final int isReversed = firstSampleZone.isReversed () ? 1 : 0;
+        MaschinePresetParameterArray.writeIntegers (globalOffset + 27, data, 0, isReversed, isReversed, 0, 0, 0);
+
+        // X0D_GLOBAL_TUNING not used, tuning is already set in zones
+
+        final Optional<IEnvelopeModulator> globalAmplitudeModulator = source.getGlobalAmplitudeModulator ();
+        if (globalAmplitudeModulator.isPresent ())
+        {
+            final IEnvelopeModulator envelopeModulator = globalAmplitudeModulator.get ();
+            final IEnvelope ampEnvelope = envelopeModulator.getSource ();
+
+            // Always set to ADSR envelope type
+            MaschinePresetParameterArray.writeIntegers (globalOffset + X0D_GLOBAL_AMP_ENVELOPE_TYPE, data, 0, 2, 2, 0, 0, 0);
+            writeFloatValueRow (globalOffset + 92, data, (float) envelopeModulator.getDepth ());
+
+            final double attackTime = Math.max (0, ampEnvelope.getAttackTime ());
+            final double decayTime = Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ());
+            final double sustainLevel = ampEnvelope.getSustainLevel ();
+            final double releaseTime = Math.max (0, ampEnvelope.getReleaseTime ());
+            writeFloatValueRow (globalOffset + 112, data, attackMillisToInput ((float) (attackTime * 1000.0)));
+            writeFloatValueRow (globalOffset + 120, data, decayAndReleaseMillisToInput ((float) (decayTime * 1000.0)));
+            writeFloatValueRow (globalOffset + 124, data, (float) (sustainLevel < 0 ? 1 : sustainLevel));
+            writeFloatValueRow (globalOffset + 128, data, decayAndReleaseMillisToInput ((float) (releaseTime * 1000.0)));
+        }
+
+        // There is only 1 modulation envelope, prefer the filter envelope if present
+        IEnvelope modEnvelope = null;
+        final Optional<IFilter> globalFilter = source.getGlobalFilter ();
+        if (globalFilter.isPresent ())
+        {
+            final IFilter filter = globalFilter.get ();
+            final Integer filterType = INV_FILTER_TYPE_LOOKUP.get (filter.getType ());
+            if (filterType != null)
+            {
+                MaschinePresetParameterArray.writeIntegers (globalOffset + 56, data, 0, filterType.intValue (), filterType.intValue (), 0, 0, 0);
+                writeFloatValueRow (globalOffset + 60, data, frequencyToNorm (filter.getCutoff ()));
+                writeFloatValueRow (globalOffset + 64, data, (float) filter.getResonance ());
+
+                final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+                final double cutoffModulationIntensity = cutoffEnvelopeModulator.getDepth ();
+                if (cutoffModulationIntensity > 0)
+                {
+                    modEnvelope = cutoffEnvelopeModulator.getSource ();
+                    writeFloatValueRow (globalOffset + 172, data, (float) cutoffModulationIntensity);
+                }
+                writeFloatValueRow (globalOffset + 88, data, (float) filter.getCutoffVelocityModulator ().getDepth ());
+            }
+        }
+
+        // If the modulation envelope was not used for the filter use it for pitch
+        if (modEnvelope == null)
+        {
+            final IEnvelopeModulator pitchModulator = firstSampleZone.getPitchModulator ();
+            final double pitchModulationIntensity = pitchModulator.getDepth ();
+            if (pitchModulationIntensity > 0)
+            {
+                modEnvelope = pitchModulator.getSource ();
+                writeFloatValueRow (globalOffset + 168, data, (float) pitchModulationIntensity);
+            }
+        }
+
+        if (modEnvelope != null)
+        {
+            final double attackTime = Math.max (0, modEnvelope.getAttackTime ());
+            final double decayTime = Math.max (0, modEnvelope.getHoldTime ()) + Math.max (0, modEnvelope.getDecayTime ());
+            final double sustainLevel = modEnvelope.getSustainLevel ();
+            final double releaseTime = Math.max (0, modEnvelope.getReleaseTime ());
+            writeFloatValueRow (globalOffset + 148, data, attackMillisToInput ((float) (attackTime * 1000.0)));
+            writeFloatValueRow (globalOffset + 156, data, decayAndReleaseMillisToInput ((float) (decayTime * 1000.0)));
+            writeFloatValueRow (globalOffset + 160, data, (float) (sustainLevel < 0 ? 1 : sustainLevel));
+            writeFloatValueRow (globalOffset + 164, data, (float) (releaseTime * 1000.0));
+        }
     }
 
 
@@ -374,10 +461,11 @@ public class MaschinePresetAccessor
             newZone.set (1, new byte [] {});
 
         final int start = sampleZone.getStart ();
-        final int stop = sampleZone.getStop ();
+        // End seems to be off by 1, looks like a bug in Maschine to me...
+        final int stop = Math.max (0, sampleZone.getStop () - 1);
         final int length = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_START, newZone, 0, start, start, 0, 0, 0);
-        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_END, newZone, 0, stop, stop, 0, 0, 0);
+        MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_END, newZone, 0, stop, stop, stop + 1, 0, 0);
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         MaschinePresetParameterArray.writeIntegers (out, 0, length - 1, length - 1);
@@ -392,7 +480,6 @@ public class MaschinePresetAccessor
 
         final List<ISampleLoop> loops = sampleZone.getLoops ();
         final boolean hasLoop = !loops.isEmpty ();
-        // TODO Check if this is correct!
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_ENABLED, newZone, 0, hasLoop ? 1 : 0, hasLoop ? 1 : 0, 0, 0, 0);
         if (hasLoop)
         {
@@ -403,8 +490,7 @@ public class MaschinePresetAccessor
             // Not sure about the 3rd numbers...
             MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_START, newZone, 0, loopStart, loopStart, loopStart, 0, 0);
             MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_END, newZone, 0, loopEnd, loopEnd, 0, 0, 0);
-            MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_CROSSFADE, newZone, 0, crossfade, crossfade,
-                    0/* crossfade */, 0, 0);
+            MaschinePresetParameterArray.writeIntegers (X0D_ZONE_LOOP_CROSSFADE, newZone, 0, crossfade, crossfade, Math.max (0, crossfade - 1), 0, 0);
         }
         else
         {
@@ -425,11 +511,9 @@ public class MaschinePresetAccessor
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_VELOCITY_LOW, newZone, 0, velocityLow, velocityLow, 0, 0, 0);
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_VELOCITY_HIGH, newZone, 0, velocityHigh, velocityHigh, 0, 0, 0);
 
-        // TODO create test file
-        // MaschinePresetParameterArray.writeFloat (X0D_ZONE_GAIN, dbToInput (sampleZone.getGain
-        // ()));
-        // MaschinePresetParameterArray.writeFloat (X0D_ZONE_PANNING, sampleZone.getPanning ());
-        // MaschinePresetParameterArray.writeFloat (X0D_ZONE_TUNE, sampleZone.getTune ());
+        writeFloatValueRow (X0D_ZONE_GAIN, newZone, dbToInput (sampleZone.getGain ()));
+        writeFloatValueRow (X0D_ZONE_PANNING, newZone, (float) sampleZone.getPanning ());
+        writeFloatValueRow (X0D_ZONE_TUNE, newZone, (float) sampleZone.getTune ());
 
         newZone.set (X0D_ZONE_LAST_ROW, createLastRow (zoneIndex, maxZones, sampleZone));
 
@@ -443,15 +527,14 @@ public class MaschinePresetAccessor
         MaschinePresetParameterArray.writeInteger (out, 0);
         final List<ISampleLoop> loops = sampleZone.getLoops ();
         final int loopStart = loops.isEmpty () ? -1 : loops.get (0).getStart ();
-        final int value = loopStart == -1 ? sampleZone.getStop () : loopStart;
+        final int value = loopStart == -1 ? Math.max (0, sampleZone.getStop () - 1) : loopStart;
         final boolean isLastZone = zoneIndex + 1 == maxZones;
         if (zoneIndex == 0 && !isLastZone)
-            MaschinePresetParameterArray.writeIntegers (out, value, value,
-                    0 /* Math.min (sampleZone.getStop (), value + 1) */, 0, 0);
+            MaschinePresetParameterArray.writeIntegers (out, value, value, 0, 0, 0);
         else
             MaschinePresetParameterArray.writeIntegers (out, 0, 0, value);
 
-        if (zoneIndex == 0 && maxZones < 4)
+        if (zoneIndex == 0 && maxZones < 2)
             out.write (new byte []
             {
                 0x00,
@@ -602,7 +685,7 @@ public class MaschinePresetAccessor
     private static int readGlobalParameters (final IMultisampleSource multisampleSource, final MaschinePresetParameterArray parameterArray, final int globalOffset, final boolean isOldFormat) throws IOException
     {
         int offset = globalOffset;
-        int first = offset + (isOldFormat ? 9 : 13);
+        int first = offset + (isOldFormat ? 9 : X0D_GLOBAL_PITCHBEND);
 
         // Workaround for sometimes the global data is 4 rows later (found with 2.2.3.2452)
         if (parameterArray.getRawData ().get (first).length == 0)
@@ -619,11 +702,11 @@ public class MaschinePresetAccessor
         final float normalizedPitchbend = Math.clamp (floatValues[0], 0, 1f);
         final int pitchbend = Math.round (1200f * normalizedPitchbend * normalizedPitchbend);
 
-        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 23 : 31), 3);
+        floatValues = parameterArray.readFloat (offset + (isOldFormat ? 23 : X0D_GLOBAL_TUNING), 3);
         final float tuning = floatValues[0] * 36f;
 
-        // Amp-Envelope: 0 = One-shot, 1 = AHD, 2 = AHDR
-        final int envelopeType = parameterArray.readInteger (offset + (isOldFormat ? 17 : 23));
+        // Amp-Envelope: 0 = One-shot, 1 = AHD, 2 = ADSR
+        final int envelopeType = parameterArray.readInteger (offset + (isOldFormat ? 17 : X0D_GLOBAL_AMP_ENVELOPE_TYPE));
         floatValues = parameterArray.readFloat (offset + (isOldFormat ? 84 : 112), 3);
         final double attackTime = mapToAttackMillis (floatValues[0]) / 1000.0;
         floatValues = parameterArray.readFloat (offset + (isOldFormat ? 87 : 116), 3);
@@ -911,6 +994,16 @@ public class MaschinePresetAccessor
     }
 
 
+    private static void writeFloatValueRow (final int offset, final List<byte []> array, final float value) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        out.write (0);
+        MaschinePresetParameterArray.writeFloats (out, value, value);
+        StreamUtils.padBytes (out, 9);
+        array.set (offset, out.toByteArray ());
+    }
+
+
     /**
      * Converts gain in the range of [0..1] to the range [-82.3f..10.0f]. -82.3f is very close to
      * -Inf.
@@ -918,12 +1011,20 @@ public class MaschinePresetAccessor
      * @param input The input value in the range of 0..1[]
      * @return The gain value in dB
      */
-    public static float inputToDb (final float input)
+    private static float inputToDb (final float input)
     {
         if (input <= 0.0f)
             return MIN_DB;
         float db = GAIN * (float) Math.log10 (input / REFERENCE_DB);
         return Math.max (db, MIN_DB);
+    }
+
+
+    private static float dbToInput (final double db)
+    {
+        if (db <= MIN_DB)
+            return 0.0f;
+        return (float) (REFERENCE_DB * Math.pow (10.0, db / GAIN));
     }
 
 
@@ -940,6 +1041,18 @@ public class MaschinePresetAccessor
 
         // from (0.85,2100) to (1,7700)
         return 2100f + (7700f - 2100f) / (1f - 0.85f) * (x - 0.85f);
+    }
+
+
+    // Inverse of mapToAttackMillis
+    private static float attackMillisToInput (final float millis)
+    {
+        final float y = Math.clamp (millis, 0f, 7700f);
+        if (y <= 171f)
+            return y / 342f;
+        if (y <= 2100f)
+            return 0.5f + (y - 171f) / 5520f;
+        return 0.85f + (y - 2100f) / 37333.333f;
     }
 
 
@@ -962,11 +1075,37 @@ public class MaschinePresetAccessor
     }
 
 
+    // Inverse of mapToDecayAndRelease
+    private static float decayAndReleaseMillisToInput (final float millis)
+    {
+        final float y = Math.clamp (millis, 2.9f, 12300f);
+
+        if (y <= 72.7f)
+            return (y - 2.9f) / 241.37931f;
+
+        if (y <= 217f)
+            return 0.29f + (y - 72.7f) / 687.6190f;
+
+        if (y <= 1500f)
+            return 0.50f + (y - 217f) / 4733.3333f;
+
+        return 0.77f + (y - 1500f) / 46956.5217f;
+    }
+
+
     // Maps input x in [0,1] to frequency in Hz using exponential curve, does not match 100% but
     // very close
     private static double mapToFrequency (final double x)
     {
         return Math.clamp (51.0917 * Math.exp (5.9497 * x), 43.7, 19600);
+    }
+
+
+    // Inverse of mapToFrequency
+    private static float frequencyToNorm (final double freq)
+    {
+        final double y = Math.clamp (freq, 43.7, 19600.0);
+        return (float) (Math.log (y / 51.0917) / 5.9497);
     }
 
 

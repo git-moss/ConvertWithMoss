@@ -111,7 +111,7 @@ public class KMPCreatorUI implements ICoreTaskSettings
 
     /**
      * Should groups be written as separate KMPs?
-     * 
+     *
      * @return True if they should be written as separate files
      */
     public boolean writeGroupKmps ()
@@ -122,7 +122,7 @@ public class KMPCreatorUI implements ICoreTaskSettings
 
     /**
      * Should the volume be maximized?
-     * 
+     *
      * @return True if volume should be set to maximum
      */
     public boolean maximizeVolume ()
@@ -133,7 +133,7 @@ public class KMPCreatorUI implements ICoreTaskSettings
 
     /**
      * Should the gain +12dB be activated?
-     * 
+     *
      * @return True if it should be activated
      */
     public boolean gainPlus12 ()

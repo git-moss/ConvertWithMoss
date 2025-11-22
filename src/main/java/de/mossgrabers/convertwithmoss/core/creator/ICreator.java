@@ -18,7 +18,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
  * Creates and stores a multi-sample file.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public interface ICreator<T extends ICoreTaskSettings> extends ICoreTask<T>

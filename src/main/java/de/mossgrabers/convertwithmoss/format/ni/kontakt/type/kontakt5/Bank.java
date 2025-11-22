@@ -43,7 +43,7 @@ public class Bank
 
     /**
      * Get the MIDI channels for the bank presets.
-     * 
+     *
      * @return The MIDI channels
      */
     public int [] getMidiChannels ()

@@ -138,7 +138,7 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should Kontakt 1 format be created?
-     * 
+     *
      * @return True to create Kontakt 1
      */
     public boolean isKontakt1 ()

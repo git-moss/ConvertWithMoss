@@ -127,7 +127,7 @@ public class Kontakt1Format extends AbstractKontaktFormat
 
     /**
      * Writes a NKI or NKM file to the given output stream.
-     * 
+     *
      * @param out Where to write to
      * @param type The type of document to write
      * @param xmlCode The XML description text

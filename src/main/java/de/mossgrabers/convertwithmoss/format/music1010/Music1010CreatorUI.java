@@ -173,7 +173,7 @@ public class Music1010CreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the sample be trimmed?
-     * 
+     *
      * @return True if it should be trimmed
      */
     public boolean trimStartToEnd ()

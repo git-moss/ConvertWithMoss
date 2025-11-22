@@ -185,11 +185,9 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
 
             // Remove all loops if requested
             if (this.settingsConfiguration.isShouldIgnoreLoops ())
-            {
                 for (final IGroup group: groups)
                     for (final ISampleZone zone: group.getSampleZones ())
                         zone.getLoops ().clear ();
-            }
 
             this.notifier.log ("IDS_NOTIFY_DETECTED_GROUPS", Integer.toString (groups.size ()));
             if (this.waitForDelivery ())

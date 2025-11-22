@@ -56,7 +56,7 @@ public class CLIBackend implements INotifier
 
     /**
      * Parse the given command line arguments and executes a conversion.
-     * 
+     *
      * @param arguments The arguments
      */
     public void parseCommandLine (final String [] arguments)
@@ -153,7 +153,6 @@ public class CLIBackend implements INotifier
         this.backend.detect (detector, creator, sourceFolder, destinationFolder, renamer, libraryName, detectPerformances, wantsMultipleFiles, createFolderStructure, onlyAnalyse);
 
         while (!this.hasFinished)
-        {
             try
             {
                 Thread.sleep (10);
@@ -162,7 +161,6 @@ public class CLIBackend implements INotifier
             {
                 Thread.currentThread ().interrupt ();
             }
-        }
 
         return 0;
     }
@@ -267,7 +265,7 @@ public class CLIBackend implements INotifier
 
     /**
      * Set and check folder for existence.
-     * 
+     *
      * @param sourceFolder The source folder to check
      * @param destinationFolder The destination folder to check
      * @throws IllegalArgumentException Source of destination folder has a problem
@@ -288,7 +286,7 @@ public class CLIBackend implements INotifier
 
     /**
      * Set and check folder for existence.
-     * 
+     *
      * @param renamingCSVFile The renaming file
      * @return The parsed rename file
      */

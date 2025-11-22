@@ -287,7 +287,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
      */
     private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final boolean trim, final String subFolder) throws IOException
     {
-        final Pair<Document, Element> sessionDocument = createSessionDocument ();
+        final Pair<Document, Element> sessionDocument = this.createSessionDocument ();
         if (sessionDocument == null)
             return Optional.empty ();
         final Document document = sessionDocument.getKey ();
@@ -417,7 +417,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         for (int slot = 0; slot < 16; slot++)
         {
             final boolean isActive = slot < numActiveSlots;
-            final Element slotElement = createSlot (document, slot, isActive);
+            final Element slotElement = this.createSlot (document, slot, isActive);
             sessionElement.appendChild (slotElement);
             if (isActive)
                 activeSlotElements.add (slotElement);
@@ -549,7 +549,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
 
     /**
      * Create the basic structure for a 1010music session document.
-     * 
+     *
      * @return The document and the session element
      */
     private Pair<Document, Element> createSessionDocument ()
