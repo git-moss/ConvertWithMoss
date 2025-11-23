@@ -1,6 +1,6 @@
 # Changes
 
-## 15.0.0 (unreleased)
+## 15.0.0
 
 * Restoration of main window on startup ensures that it is at least 25% visible on the screen.
 * Added support for Maschine MXSND files.
