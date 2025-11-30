@@ -296,7 +296,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
 
                     zone.setFilter (filter);
 
-                    this.readMissingData (isDrum, isOneShot, zone);
+                    this.readMissingData (isDrum, zone);
                 }
         }
 
@@ -436,16 +436,15 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
      * Read missing metadata from the WAV file if necessary.
      *
      * @param isDrum True if it is a Drum patch
-     * @param isOneShot If it is a one shot there is no need to read loop data
      * @param zone Where to store the data
      * @throws FileNotFoundException The WAV file does not exist
      */
-    private void readMissingData (final boolean isDrum, final boolean isOneShot, final DefaultSampleZone zone) throws FileNotFoundException
+    private void readMissingData (final boolean isDrum, final DefaultSampleZone zone) throws FileNotFoundException
     {
-        if (zone.getStop () <= 0 || zone.getKeyRoot () < 0 || !isOneShot && zone.getLoops ().isEmpty ())
+        if (zone.getStop () <= 0 || zone.getKeyRoot () < 0)
             try
             {
-                zone.getSampleData ().addZoneData (zone, !isDrum, !isDrum && !isOneShot);
+                zone.getSampleData ().addZoneData (zone, !isDrum, false);
             }
             catch (final FileNotFoundException ex)
             {

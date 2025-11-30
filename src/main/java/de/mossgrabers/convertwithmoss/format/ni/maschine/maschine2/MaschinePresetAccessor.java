@@ -224,7 +224,7 @@ public class MaschinePresetAccessor
             zoneOffset += offsetZone;
         }
 
-        this.assignSampleFile (sourceFile, group, filePaths);
+        assignSampleFile (sourceFile, group, filePaths, this.notifier);
 
         int readPosition = offsets.offsetFirstZone + zoneOffset;
         readPosition = readLibraryReferences (parameterArray, readPosition);
@@ -464,11 +464,11 @@ public class MaschinePresetAccessor
         final int start = sampleZone.getStart ();
         // End seems to be off by 1, looks like a bug in Maschine to me...
         final int stop = Math.max (0, sampleZone.getStop () - 1);
-        final int length = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_START, newZone, 0, start, start, 0, 0, 0);
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_END, newZone, 0, stop, stop, stop + 1, 0, 0);
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        final int length = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
         MaschinePresetParameterArray.writeIntegers (out, 0, length - 1, length - 1);
         out.write (new byte []
         {
@@ -657,15 +657,26 @@ public class MaschinePresetAccessor
     }
 
 
-    private void assignSampleFile (final File sourceFile, final IGroup group, final List<String> filePaths) throws IOException
+    /**
+     * File paths are either absolute or relative to a library root (which is not known). Therefore,
+     * the sample files need to be located.
+     *
+     * @param filePaths The read paths
+     * @param sourceFile The location of the Maschine file
+     * @param group The group which contains the sample zones of the files
+     * @param notifier For notifications
+     * @throws IOException Could not access the files
+     */
+    public static void assignSampleFile (final File sourceFile, final IGroup group, final List<String> filePaths, final INotifier notifier) throws IOException
     {
-        final List<File> files = this.lookupFiles (filePaths, sourceFile.getParent ());
+        final List<File> files = lookupFiles (filePaths, sourceFile.getParent (), notifier);
+        final List<ISampleZone> sampleZones = group.getSampleZones ();
         for (int fileIndex = 0; fileIndex < files.size (); fileIndex++)
         {
             final File file = files.get (fileIndex);
-            final ISampleZone zone = group.getSampleZones ().get (fileIndex);
+            final ISampleZone zone = sampleZones.get (fileIndex);
             zone.setName (FileUtils.getNameWithoutType (file));
-            zone.setSampleData (AbstractDetector.createSampleData (file, this.notifier));
+            zone.setSampleData (AbstractDetector.createSampleData (file, notifier));
         }
     }
 
@@ -941,9 +952,10 @@ public class MaschinePresetAccessor
      *
      * @param filePaths The read paths
      * @param sourceFilePath The location of the Maschine file
+     * @param notifier For notifications
      * @return The corrected file paths
      */
-    private List<File> lookupFiles (final List<String> filePaths, final String sourceFilePath)
+    private static List<File> lookupFiles (final List<String> filePaths, final String sourceFilePath, final INotifier notifier)
     {
         int missingFiles = 0;
 
@@ -982,7 +994,7 @@ public class MaschinePresetAccessor
         {
             // Find the sample file starting 2 folders up, which should work for libraries
             final int height = 2;
-            final File file = AbstractDetector.findSampleFile (this.notifier, sampleFile.getParentFile (), previousFolder, sampleFile.getName (), height);
+            final File file = AbstractDetector.findSampleFile (notifier, sampleFile.getParentFile (), previousFolder, sampleFile.getName (), height);
             if (file != null && file.exists ())
             {
                 lookedupFiles.add (file);
@@ -1012,7 +1024,7 @@ public class MaschinePresetAccessor
      * @param input The input value in the range of 0..1[]
      * @return The gain value in dB
      */
-    private static float inputToDb (final float input)
+    public static float inputToDb (final float input)
     {
         if (input <= 0.0f)
             return MIN_DB;
@@ -1030,7 +1042,7 @@ public class MaschinePresetAccessor
 
 
     // Not perfect but close
-    private static float mapToAttackMillis (final float v)
+    public static float mapToAttackMillis (final float v)
     {
         final float x = Math.clamp (v, 0, 1f);
         if (x <= 0.5f)
@@ -1058,7 +1070,7 @@ public class MaschinePresetAccessor
 
 
     // Not perfect but close
-    private static float mapToDecayAndRelease (final float v)
+    public static float mapToDecayAndRelease (final float v)
     {
         final float x = Math.clamp (v, 0, 1f);
         if (x <= 0.29f)
@@ -1096,7 +1108,7 @@ public class MaschinePresetAccessor
 
     // Maps input x in [0,1] to frequency in Hz using exponential curve, does not match 100% but
     // very close
-    private static double mapToFrequency (final double x)
+    public static double mapToFrequency (final double x)
     {
         return Math.clamp (51.0917 * Math.exp (5.9497 * x), 43.7, 19600);
     }
