@@ -74,48 +74,32 @@ public class Maschine2Format implements IMaschineFormat
     {
         try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
         {
-            return this.readSound (sourceFolder, sourceFile, inputStream, metadataConfig);
-        }
-    }
-
-
-    /**
-     * Read and parse a Maschine Sound file which uses this format type from the given input stream.
-     *
-     * @param sourceFolder The top source folder for the detection
-     * @param sourceFile The source file which contains the Maschine sound
-     * @param inputStream The input stream to read from
-     * @param metadataConfig Default metadata
-     * @return The parsed multi-sample sources
-     * @throws IOException Error reading the file
-     */
-    public List<IMultisampleSource> readSound (final File sourceFolder, final File sourceFile, final InputStream inputStream, final IMetadataConfig metadataConfig) throws IOException
-    {
-        final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
-        final NIContainerDataChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
-        if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
-        {
-            final AuthoringApplication application = appChunkData.getApplication ();
-            if (application != AuthoringApplication.MASCHINE)
-                throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_NOT_A_MASCHINE_FILE", application == null ? "Unknown" : application.getName ()));
-
-            this.notifier.log ("IDS_NI_MASCHINE_FOUND_TYPE", "Container", appChunkData.getApplicationVersion ());
-
-            final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
-            if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+            final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
+            final NIContainerDataChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
+            if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
             {
-                final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
-                final Optional<IMultisampleSource> result = programAccessor.readMaschinePreset (sourceFolder, sourceFile, presetChunkData.getPresetData ());
-                return result.isPresent () ? Collections.singletonList (result.get ()) : Collections.emptyList ();
+                final AuthoringApplication application = appChunkData.getApplication ();
+                if (application != AuthoringApplication.MASCHINE)
+                    throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_NOT_A_MASCHINE_FILE", application == null ? "Unknown" : application.getName ()));
+
+                this.notifier.log ("IDS_NI_MASCHINE_FOUND_TYPE", "Container", appChunkData.getApplicationVersion ());
+
+                final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+                if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+                {
+                    final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
+                    final Optional<IMultisampleSource> result = programAccessor.readMaschinePreset (sourceFolder, sourceFile, presetChunkData.getPresetData ());
+                    return result.isPresent () ? Collections.singletonList (result.get ()) : Collections.emptyList ();
+                }
             }
+
+            // Check for encrypted sections
+            for (final NIContainerDataChunk autorizationChunk: niContainerItem.findAll (NIContainerChunkType.AUTHORIZATION))
+                if (autorizationChunk.getData () instanceof final AuthorizationChunkData authorization && !authorization.getSerialNumberPIDs ().isEmpty ())
+                    this.notifier.logError ("IDS_NI_CONTAINER_CONTAINS_ENCRYPTED_SUB_TREE");
+
+            return Collections.emptyList ();
         }
-
-        // Check for encrypted sections
-        for (final NIContainerDataChunk autorizationChunk: niContainerItem.findAll (NIContainerChunkType.AUTHORIZATION))
-            if (autorizationChunk.getData () instanceof final AuthorizationChunkData authorization && !authorization.getSerialNumberPIDs ().isEmpty ())
-                this.notifier.logError ("IDS_NI_CONTAINER_CONTAINS_ENCRYPTED_SUB_TREE");
-
-        return Collections.emptyList ();
     }
 
 

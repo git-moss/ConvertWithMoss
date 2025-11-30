@@ -34,15 +34,15 @@ The following multi-sample formats are supported:
 * [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
 * [Ableton Sampler](#ableton-sampler)
 * [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
+* [Apple Logic EXS24](#logic-exs24)
 * [Bitwig Multisample](#bitwig-multisample)
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
-* [Kontakt NKI/NKM](#kontakt-nkinkm)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
-* [Logic EXS24](#logic-exs24)
-* [Maschine MXSND](#maschine-mxsnd)
+* [Native Instruments Kontakt NKI/NKM](#kontakt-nkinkm)
+* [Native Instruments Maschine](#native-instruments-maschine)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
@@ -227,9 +227,15 @@ The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digit
 
 The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. *The number of folders can be configured*.
 
-## Maschine MXSND
+## Native Instruments Maschine
 
-The MXSND format is a proprietary binary format from Native Instruments used by Maschine 2 and 3. MXSND uses the same container wrapper format as Kontakt 5+. Maschine 1 used a different format with the ending MSND which is currently not supported.
+### MSND (read only)
+
+MSND is a binary format for Maschine 1. It got dropped completely in later versions and it cannot even be opened in Maschine 2/3. You can use ConvertWithMoss to convert it into Maschine 2 or 3 format (MXSND).
+
+### MXSND
+
+The MXSND format is a proprietary binary format used by Maschine 2 and 3. MXSND uses the same container wrapper format as Kontakt 5+. Maschine 1 used a different format with the ending MSND which is currently not supported.
 
 Only MXSND files which contain an instance of a Maschine Sampler can be read. The Maschine Sampler supports basic features but has e.g. no groups or release layers (see the detailed parameter documentation).
 
