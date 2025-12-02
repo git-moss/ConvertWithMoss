@@ -50,6 +50,7 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.SoundinfoDocument;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.IMaschineFormat;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine2.MaschinePresetAccessor;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -190,122 +191,126 @@ public class Maschine1Format implements IMaschineFormat
 
         // Apply all parameters
         int size = this.globalParametersVriTags.size ();
-        if (size == 54)
+        if (size != 43 && size != 54)
+            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNKNOWN_NUMBER_OF_GLOBAL_PARAMS", Integer.toString (size)));
+
+        int envelopeType = this.globalParametersVriTags.get (Integer.valueOf (10)).integerValue;
+        int pitchbend = 2;
+        if (size > 43)
         {
-            // TODO
+            envelopeType++;
+
+            final float normalizedPitchbend = this.globalParametersVriTags.get (Integer.valueOf (48)).floatValue;
+            pitchbend = Math.round (1200f * normalizedPitchbend * normalizedPitchbend);
         }
-        else if (size == 43)
+
+        final float modEnvAttack = MaschinePresetAccessor.mapToAttackMillis (this.globalParametersVriTags.get (Integer.valueOf (26)).floatValue);
+        final float modEnvHold = MaschinePresetAccessor.mapToAttackMillis (this.globalParametersVriTags.get (Integer.valueOf (27)).floatValue);
+        final float modEnvDecay = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (28)).floatValue);
+        final float modEnvSustain = this.globalParametersVriTags.get (Integer.valueOf (29)).floatValue;
+        final float modEnvRelease = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (30)).floatValue);
+
+        final FilterType filterType = FILTER_TYPES.get (Integer.valueOf (this.globalParametersVriTags.get (Integer.valueOf (20)).integerValue));
+        if (filterType != null)
         {
-            final int envelopeType = this.globalParametersVriTags.get (Integer.valueOf (10)).integerValue;
+            final float cutoffValue = this.globalParametersVriTags.get (Integer.valueOf (21)).floatValue;
+            final double cutoff = MathUtils.denormalize (cutoffValue, 43.6, 19600.0);
+            final float resonance = this.globalParametersVriTags.get (Integer.valueOf (22)).floatValue;
+            final IFilter filter = new DefaultFilter (filterType, 2, cutoff, resonance);
+            multisampleSource.setGlobalFilter (filter);
 
-            final float modEnvAttack = MaschinePresetAccessor.mapToAttackMillis (this.globalParametersVriTags.get (Integer.valueOf (26)).floatValue);
-            final float modEnvHold = MaschinePresetAccessor.mapToAttackMillis (this.globalParametersVriTags.get (Integer.valueOf (27)).floatValue);
-            final float modEnvDecay = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (28)).floatValue);
-            final float modEnvSustain = this.globalParametersVriTags.get (Integer.valueOf (29)).floatValue;
-            final float modEnvRelease = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (30)).floatValue);
+            filter.getCutoffVelocityModulator ().setDepth (this.globalParametersVriTags.get (Integer.valueOf (5)).floatValue);
 
-            final FilterType filterType = FILTER_TYPES.get (Integer.valueOf (this.globalParametersVriTags.get (Integer.valueOf (20)).integerValue));
-            if (filterType != null)
+            final float envelopeModulation = this.globalParametersVriTags.get (Integer.valueOf (32)).floatValue;
+            if (envelopeModulation > 0)
             {
-                final float cutoffValue = this.globalParametersVriTags.get (Integer.valueOf (21)).floatValue;
-                final double cutoff = MathUtils.denormalize (cutoffValue, 43.6, 19600.0);
-                final float resonance = this.globalParametersVriTags.get (Integer.valueOf (22)).floatValue;
-                final IFilter filter = new DefaultFilter (filterType, 2, cutoff, resonance);
-                multisampleSource.setGlobalFilter (filter);
-
-                filter.getCutoffVelocityModulator ().setDepth (this.globalParametersVriTags.get (Integer.valueOf (5)).floatValue);
-
-                final float envelopeModulation = this.globalParametersVriTags.get (Integer.valueOf (32)).floatValue;
-                if (envelopeModulation > 0)
-                {
-                    final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
-                    cutoffEnvelopeModulator.setDepth (envelopeModulation);
-                    final IEnvelope envelope = cutoffEnvelopeModulator.getSource ();
-                    // AHD
-                    if (envelopeType == 0)
-                    {
-                        envelope.setAttackTime (modEnvAttack);
-                        envelope.setHoldTime (modEnvHold);
-                        envelope.setDecayTime (modEnvDecay);
-                    }
-                    // ADSR
-                    else if (envelopeType == 1)
-                    {
-                        envelope.setAttackTime (modEnvAttack);
-                        envelope.setDecayTime (modEnvDecay);
-                        envelope.setSustainLevel (modEnvSustain);
-                        envelope.setReleaseTime (modEnvRelease);
-                    }
-                }
-            }
-
-            // Apply zone parameters
-            final float ampEnvAttack = MaschinePresetAccessor.mapToAttackMillis (this.globalParametersVriTags.get (Integer.valueOf (11)).floatValue);
-            final float ampEnvHold = MaschinePresetAccessor.mapToAttackMillis (this.globalParametersVriTags.get (Integer.valueOf (12)).floatValue);
-            final float ampEnvDecay = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (13)).floatValue);
-            final float ampEnvSustain = this.globalParametersVriTags.get (Integer.valueOf (14)).floatValue;
-            final float ampEnvRelease = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (15)).floatValue);
-
-            final float velocityAmpModulation = this.globalParametersVriTags.get (Integer.valueOf (6)).floatValue;
-            final double tuning = this.globalParametersVriTags.get (Integer.valueOf (7)).floatValue * 72.0 - 36.0;
-            final boolean isReverse = this.globalParametersVriTags.get (Integer.valueOf (7)).integerValue > 0;
-            final float pitchEnvelopeModulation = this.globalParametersVriTags.get (Integer.valueOf (31)).floatValue;
-
-            for (final ISampleZone zone: multisampleSource.getGroups ().get (0).getSampleZones ())
-            {
-                // Tuning
-                zone.setTune (tuning + zone.getTune ());
-
-                // Reverse play-back
-                zone.setReversed (isReverse);
-
-                // Pitch Envelope Modulation
-                if (pitchEnvelopeModulation > 0)
-                {
-                    final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchModulator ();
-                    pitchEnvelopeModulator.setDepth (pitchEnvelopeModulation);
-                    final IEnvelope envelope = pitchEnvelopeModulator.getSource ();
-                    // AHD
-                    if (envelopeType == 0)
-                    {
-                        envelope.setAttackTime (modEnvAttack);
-                        envelope.setHoldTime (modEnvHold);
-                        envelope.setDecayTime (modEnvDecay);
-                    }
-                    // ADSR
-                    else if (envelopeType == 1)
-                    {
-                        envelope.setAttackTime (modEnvAttack);
-                        envelope.setDecayTime (modEnvDecay);
-                        envelope.setSustainLevel (modEnvSustain);
-                        envelope.setReleaseTime (modEnvRelease);
-                    }
-                }
-
-                // Amplitude
-                zone.getAmplitudeVelocityModulator ().setDepth (velocityAmpModulation);
-                final IEnvelopeModulator amplitudeEnvelopeModulator = zone.getAmplitudeEnvelopeModulator ();
-                amplitudeEnvelopeModulator.setDepth (1.0);
-                final IEnvelope ampEnvelope = amplitudeEnvelopeModulator.getSource ();
+                final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+                cutoffEnvelopeModulator.setDepth (envelopeModulation);
+                final IEnvelope envelope = cutoffEnvelopeModulator.getSource ();
                 // AHD
-                if (envelopeType == 0)
+                if (envelopeType == 1)
                 {
-                    ampEnvelope.setAttackTime (ampEnvAttack);
-                    ampEnvelope.setHoldTime (ampEnvHold);
-                    ampEnvelope.setDecayTime (ampEnvDecay);
+                    envelope.setAttackTime (modEnvAttack);
+                    envelope.setHoldTime (modEnvHold);
+                    envelope.setDecayTime (modEnvDecay);
                 }
                 // ADSR
-                else if (envelopeType == 1)
+                else if (envelopeType == 2)
                 {
-                    ampEnvelope.setAttackTime (ampEnvAttack);
-                    ampEnvelope.setDecayTime (ampEnvDecay);
-                    ampEnvelope.setSustainLevel (ampEnvSustain);
-                    ampEnvelope.setReleaseTime (ampEnvRelease);
+                    envelope.setAttackTime (modEnvAttack);
+                    envelope.setDecayTime (modEnvDecay);
+                    envelope.setSustainLevel (modEnvSustain);
+                    envelope.setReleaseTime (modEnvRelease);
                 }
             }
         }
-        else
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNKNOWN_NUMBER_OF_GLOBAL_PARAMS", Integer.toString (size)));
+
+        // Apply zone parameters
+        final float ampEnvAttack = MaschinePresetAccessor.mapToAttackMillis (this.globalParametersVriTags.get (Integer.valueOf (11)).floatValue);
+        final float ampEnvHold = MaschinePresetAccessor.mapToAttackMillis (this.globalParametersVriTags.get (Integer.valueOf (12)).floatValue);
+        final float ampEnvDecay = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (13)).floatValue);
+        final float ampEnvSustain = this.globalParametersVriTags.get (Integer.valueOf (14)).floatValue;
+        final float ampEnvRelease = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (15)).floatValue);
+
+        final float velocityAmpModulation = this.globalParametersVriTags.get (Integer.valueOf (6)).floatValue;
+        final double tuning = this.globalParametersVriTags.get (Integer.valueOf (7)).floatValue * 72.0 - 36.0;
+        final boolean isReverse = this.globalParametersVriTags.get (Integer.valueOf (9)).integerValue > 0;
+        final float pitchEnvelopeModulation = this.globalParametersVriTags.get (Integer.valueOf (31)).floatValue;
+
+        for (final ISampleZone zone: multisampleSource.getGroups ().get (0).getSampleZones ())
+        {
+            // Tuning
+            zone.setTune (tuning + zone.getTune ());
+            zone.setBendUp (pitchbend);
+            zone.setBendDown (-pitchbend);
+
+            // Reverse play-back
+            zone.setReversed (isReverse);
+
+            // Pitch Envelope Modulation
+            if (pitchEnvelopeModulation > 0)
+            {
+                final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchModulator ();
+                pitchEnvelopeModulator.setDepth (pitchEnvelopeModulation);
+                final IEnvelope envelope = pitchEnvelopeModulator.getSource ();
+                // AHD
+                if (envelopeType == 1)
+                {
+                    envelope.setAttackTime (modEnvAttack);
+                    envelope.setHoldTime (modEnvHold);
+                    envelope.setDecayTime (modEnvDecay);
+                }
+                // ADSR
+                else if (envelopeType == 2)
+                {
+                    envelope.setAttackTime (modEnvAttack);
+                    envelope.setDecayTime (modEnvDecay);
+                    envelope.setSustainLevel (modEnvSustain);
+                    envelope.setReleaseTime (modEnvRelease);
+                }
+            }
+
+            // Amplitude
+            zone.getAmplitudeVelocityModulator ().setDepth (velocityAmpModulation);
+            final IEnvelopeModulator amplitudeEnvelopeModulator = zone.getAmplitudeEnvelopeModulator ();
+            amplitudeEnvelopeModulator.setDepth (1.0);
+            final IEnvelope ampEnvelope = amplitudeEnvelopeModulator.getSource ();
+            // AHD
+            if (envelopeType == 1)
+            {
+                ampEnvelope.setAttackTime (ampEnvAttack);
+                ampEnvelope.setHoldTime (ampEnvHold);
+                ampEnvelope.setDecayTime (ampEnvDecay);
+            }
+            // ADSR
+            else if (envelopeType == 2)
+            {
+                ampEnvelope.setAttackTime (ampEnvAttack);
+                ampEnvelope.setDecayTime (ampEnvDecay);
+                ampEnvelope.setSustainLevel (ampEnvSustain);
+                ampEnvelope.setReleaseTime (ampEnvRelease);
+            }
+        }
     }
 
 
@@ -554,7 +559,7 @@ public class Maschine1Format implements IMaschineFormat
         // Is it a start (all lower case) or end tag (all upper case)?
 
         // Start tag -> add as a child
-        if (isLowerCase (section.name))
+        if (StringUtils.isLowerCase (section.name))
         {
             section.parent = currentDataSection;
             currentDataSection.children.add (section);
@@ -723,7 +728,7 @@ public class Maschine1Format implements IMaschineFormat
         while (in.available () > 4)
         {
             final String tag1 = StreamUtils.readASCII (in, 4, !isBigEndian);
-            if (isLowerCase (tag1))
+            if (StringUtils.isLowerCase (tag1))
             {
                 final String tag2 = StreamUtils.readASCII (in, 4, !isBigEndian);
                 if (tag1.equals (tag2))
@@ -760,7 +765,7 @@ public class Maschine1Format implements IMaschineFormat
                     dataTag.parameter.name = tag1;
                     dataTag.parameter.indexID = lastOsID;
                 }
-                else if (!isLowerCase (tag2))
+                else if (!StringUtils.isLowerCase (tag2))
                     dataTag = findMatchingStartTag (dataTag, tag2);
                 else
                     throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
@@ -796,24 +801,18 @@ public class Maschine1Format implements IMaschineFormat
             final DataTag child = childTags.get (i);
 
             StreamUtils.writeASCII (out, child.name, 4, true);
-
             StreamUtils.writeASCII (out, child.name, 4, true);
             // Also found 3...
             StreamUtils.writeUnsigned32 (out, 0, false);
             if ("osid".equals (child.name))
             {
-                // vr -> vri -> tv
+                // RV -> IRV -> VT
                 final int indexID = child.children.get (0).children.get (0).parameter.indexID;
                 StreamUtils.writeUnsigned32 (out, indexID, false);
             }
 
             if (child.parameter != null)
-            {
-                StreamUtils.writeASCII (out, child.parameter.name, 4, true);
-                StreamUtils.writeASCII (out, "vt  ", 4, true);
-                StreamUtils.writeASCII (out, "vt  ", 4, true);
                 writeParameter (out, child.parameter);
-            }
             else
                 writeChildTags (out, child.children);
 
@@ -886,8 +885,18 @@ public class Maschine1Format implements IMaschineFormat
     }
 
 
+    /**
+     * Write one parameter.
+     * 
+     * @param out The output stream to write to
+     * @param parameter The parameter to write
+     * @throws IOException Could not write the parameter
+     */
     private static void writeParameter (final OutputStream out, final DataParameter parameter) throws IOException
     {
+        StreamUtils.writeASCII (out, parameter.name, 4, true);
+        StreamUtils.writeASCII (out, "vt  ", 4, true);
+        StreamUtils.writeASCII (out, "vt  ", 4, true);
         StreamUtils.writeUnsigned32 (out, 0, false);
         out.write (1);
 
@@ -924,12 +933,6 @@ public class Maschine1Format implements IMaschineFormat
             default:
                 throw new IOException ("Unknown parameter type: " + parameter.type);
         }
-    }
-
-
-    private static boolean isLowerCase (final String text)
-    {
-        return text.equals (text.toLowerCase ());
     }
 
 
@@ -995,7 +998,10 @@ public class Maschine1Format implements IMaschineFormat
 
     public static void main ()
     {
-        File file = new File ("L:\\Native Instruments\\Maschine 1 Factory Library\\Sounds\\Bass\\Analog Classic A.msnd");
+
+        File file = new File ("L:\\Native Instruments\\Maschine 1 Factory Library\\Sounds\\Bass\\Adrenaline.msnd");
+        // File file = new File ("L:\\Native Instruments\\Maschine 1 Factory
+        // Library\\Sounds\\Bass\\Analog Classic A.msnd");
         try (RandomAccessFile inputStream = new RandomAccessFile (file, "r"); FileOutputStream out = new FileOutputStream ("C:\\Users\\mos\\Desktop\\TEST\\Copy.msnd");)
         {
             final Maschine1Format maschine1Format = new Maschine1Format (null);
@@ -1009,21 +1015,15 @@ public class Maschine1Format implements IMaschineFormat
     }
 
 
+    // TODO Remove
     public static void mainOld (String [] args) throws Exception
     {
-        // File [] listFiles = new File ("L:\\Native Instruments\\Vintage Heat\\Sounds").listFiles
-        // (pathname -> pathname.getName ().endsWith (".msnd"));
         List<File> listFiles = new ArrayList<> ();
         collectFile (new File ("L:\\Native Instruments\\Maschine 1 Factory Library\\Sounds"), listFiles);
 
         for (int i = 0; i < listFiles.size (); i++)
         {
             File file = listFiles.get (i);
-
-            // File file = new File ("L:\\Native Instruments\\Maschine 1 Factory
-            // Library\\Sounds\\Bass\\Analog Classic A.msnd");
-            // File file = new File ("L:\\Native Instruments\\Maschine 1 Factory
-            // Library\\Sounds\\Guitar\\African Plucks.msnd");
 
             System.out.println (file);
             try (RandomAccessFile inputStream = new RandomAccessFile (file, "r"))

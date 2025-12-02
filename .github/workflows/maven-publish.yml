@@ -34,22 +34,23 @@ jobs:
     strategy:
       matrix:
         include:
+        # Important: build_name is used in the pom.xml and must match!
           - os: ubuntu-latest
             artifact_name: convertwithmoss*.deb
             build_name: linux
           - os: windows-latest
             artifact_name: ConvertWithMoss*.exe
-            build_name: win-x64
+            build_name: win
           # JDK25 not yet included (which can be fixed) but also JavaFX is not available for Windows on ARM
           #- os: windows-11-arm
           #  artifact_name: ConvertWithMoss*.exe
-          #  build_name: win-arm
+          #  build_name: win
           - os: macos-15
             artifact_name: ConvertWithMoss*.dmg
-            build_name: mac-arm
+            build_name: mac
           - os: macos-15-intel
             artifact_name: ConvertWithMoss*.dmg
-            build_name: mac-x64
+            build_name: mac
     
     name: ${{ matrix.os }}
 
