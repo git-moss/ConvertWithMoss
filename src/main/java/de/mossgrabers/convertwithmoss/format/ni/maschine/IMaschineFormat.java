@@ -22,6 +22,14 @@ import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 public interface IMaschineFormat
 {
     /**
+     * Get the file ending to use.
+     * 
+     * @return The file ending
+     */
+    String getFileEnding ();
+
+
+    /**
      * Read and parse a sound file which uses this format type from the given random access file.
      *
      * @param sourceFolder The top source folder for the detection
@@ -40,9 +48,8 @@ public interface IMaschineFormat
      * @param out Where to write the data
      * @param safeSampleFolderName The folder where the samples are placed
      * @param multisampleSource The source
-     * @param sizeOfSamples The size of all samples
      * @param maschineFormat The version number of the format
      * @throws IOException Error writing the file
      */
-    void writeSound (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int sizeOfSamples, int maschineFormat) throws IOException;
+    void writeSound (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int maschineFormat) throws IOException;
 }

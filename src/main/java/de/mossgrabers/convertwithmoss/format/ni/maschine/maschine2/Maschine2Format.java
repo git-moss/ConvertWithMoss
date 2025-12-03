@@ -70,6 +70,14 @@ public class Maschine2Format implements IMaschineFormat
 
     /** {@inheritDoc} */
     @Override
+    public String getFileEnding ()
+    {
+        return "mxsnd";
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public List<IMultisampleSource> readSound (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
         try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
@@ -105,7 +113,7 @@ public class Maschine2Format implements IMaschineFormat
 
     /** {@inheritDoc} */
     @Override
-    public void writeSound (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples, final int version) throws IOException
+    public void writeSound (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int version) throws IOException
     {
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (new ByteArrayInputStream (version == 2 ? MASCHINE_TEMPLATE_V2 : MASCHINE_TEMPLATE_V3));

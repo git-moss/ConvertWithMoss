@@ -65,9 +65,6 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
         order3.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order3.setToggleGroup (this.outputFormatGroup);
 
-        // Remove if implementation is finished
-        order1.setDisable (true);
-
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
 
         return panel.getPane ();
@@ -79,9 +76,6 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
     public void loadSettings (final BasicConfig config)
     {
         int formatIndex = config.getInteger (MASCHINE_OUTPUT_FORMAT, 1);
-        // Remove if V1 is implemented
-        if (formatIndex == 0)
-            formatIndex = 1;
         final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
         this.outputFormatGroup.selectToggle (toggles.get (formatIndex < toggles.size () ? formatIndex : 1));
 
@@ -120,13 +114,6 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
                 break;
             }
 
-        // Remove if V1 is supported
-        if (this.outputFormat == 1)
-        {
-            notifier.logError ("IDS_NI_MASCHINE_ONLY_V1_NOT_SUPPORTED");
-            return false;
-        }
-
         return true;
     }
 
@@ -144,13 +131,6 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
             this.outputFormat = Integer.parseInt (value);
         }
         catch (final NumberFormatException ex)
-        {
-            notifier.logError ("IDS_NI_MASCHINE_ONLY_V1_NOT_SUPPORTED");
-            return false;
-        }
-
-        // Remove if V1 is supported
-        if (this.outputFormat == 1)
         {
             notifier.logError ("IDS_NI_MASCHINE_ONLY_V1_NOT_SUPPORTED");
             return false;
