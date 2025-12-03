@@ -13,7 +13,6 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine1.Maschine1Format;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine2.Maschine2Format;
@@ -25,12 +24,16 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
+public class MaschineDetector extends AbstractDetector<MaschineDetectorUI>
 {
-    private static final String [] ENDINGS_ALL =
+    private static final String [] ENDINGS_ALL        =
     {
-        // TODO ".mxsnd",
+        ".mxsnd",
         ".msnd"
+    };
+    private static final String [] ENDINGS_ONLY_MXSND =
+    {
+        ".mxsnd"
     };
 
 
@@ -41,7 +44,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public MaschineDetector (final INotifier notifier)
     {
-        super ("Maschine (mxsnd)", "Maschine", notifier, new MetadataSettingsUI ("Maschine"));
+        super ("Maschine Sound", "Maschine", notifier, new MaschineDetectorUI ());
     }
 
 
@@ -49,7 +52,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
     @Override
     protected void configureFileEndings (final boolean detectPerformances)
     {
-        this.fileEndings = ENDINGS_ALL;
+        this.fileEndings = this.settingsConfiguration.scanForMsnd () ? ENDINGS_ALL : ENDINGS_ONLY_MXSND;
     }
 
 

@@ -2,15 +2,16 @@
 
 ## 15.1.0 (unreleased)
 
-* Added support for Maschine 1 MSND files.
+* New: Added support for Maschine 1 MSND files.
+* Fixed: Application icons show up again.
 * MPC Keygroups
   * Fixed: Don't read loops from WAV files which can cause unwanted full loops.
 
 ## 15.0.0
 
-* Restoration of main window on startup ensures that it is at least 25% visible on the screen.
-* Added support for Maschine MXSND files.
-* CLI: Some parameters could be falsely rejected.
+* New: Added support for Maschine MXSND files.
+* Fixed: Restoration of main window on startup ensures that it is at least 25% visible on the screen.
+* Fixed: CLI: Some parameters could be falsely rejected.
 * 1010music
   * Fixed: Improved lookup of samples when reading presets.
 * EXS

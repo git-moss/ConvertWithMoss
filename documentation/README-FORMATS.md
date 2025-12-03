@@ -229,9 +229,9 @@ The format only stores absolute paths to the sample files. Therefore, the easies
 
 ## Native Instruments Maschine
 
-### MSND (read only)
+### MSND
 
-MSND is a binary format for Maschine 1. It got dropped completely in later versions and it cannot even be opened in Maschine 2/3. You can use ConvertWithMoss to convert it into Maschine 2 or 3 format (MXSND).
+MSND is a binary format for Maschine 1. It got dropped completely in later versions and it cannot even be opened in Maschine 2/3. You can use ConvertWithMoss to convert it e.g. into Maschine 2 or 3 format (MXSND).
 
 ### MXSND
 
@@ -241,9 +241,13 @@ Only MXSND files which contain an instance of a Maschine Sampler can be read. Th
 
 Note that Maschine contains an auto-sampler with which you can sample plugins or external synths and writes MXSND as the output. This means that you can then convert it to other formats with ConvertWithMoss.
 
+### Source Options
+
+* Scan for Maschine 1 MSND files: Scans the source folder for files ending with *.msnd (Maschine 1 format) as well. If the source is a library which contains both version, deactivate this option to prevent duplicates.
+
 ### Destination Options
 
-* Output Format: Select the Maschine output format. Currently, only the Maschine 2 and 3 format is supported.
+* Output Format: Select the Maschine output format. Selecting **Maschine 1** will create a MSND file, otherwise a MXSND file is created.
 
 ## Propellerhead Reason NN-XT
 

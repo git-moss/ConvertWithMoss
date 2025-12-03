@@ -1021,7 +1021,7 @@ public class MaschinePresetAccessor
      * Converts gain in the range of [0..1] to the range [-82.3f..10.0f]. -82.3f is very close to
      * -Inf.
      *
-     * @param input The input value in the range of 0..1[]
+     * @param input The input value in the range of [0..1]
      * @return The gain value in dB
      */
     public static float inputToDb (final float input)
@@ -1033,7 +1033,14 @@ public class MaschinePresetAccessor
     }
 
 
-    private static float dbToInput (final double db)
+    /**
+     * Converts gain in the range of [-82.3f..10.0f] to the range [0..1]. -82.3f is very close to
+     * -Inf.
+     *
+     * @param db The gain value in dB
+     * @return The input value in the range of [0..1]
+     */
+    public static float dbToInput (final double db)
     {
         if (db <= MIN_DB)
             return 0.0f;
@@ -1041,7 +1048,13 @@ public class MaschinePresetAccessor
     }
 
 
-    // Not perfect but close
+    /**
+     * Converts the given normalized value to milli-seconds. Tweaked for the attack part of the
+     * envelope.
+     * 
+     * @param v The normalized value in the range of [0..1]
+     * @return The value in milli-seconds
+     */
     public static float mapToAttackMillis (final float v)
     {
         final float x = Math.clamp (v, 0, 1f);
@@ -1057,8 +1070,14 @@ public class MaschinePresetAccessor
     }
 
 
-    // Inverse of mapToAttackMillis
-    private static float attackMillisToInput (final float millis)
+    /**
+     * Converts the given milli-seconds to normalized value. Tweaked for the attack part of the
+     * envelope.
+     * 
+     * @param millis The value in milli-seconds
+     * @return The normalized value in the range of [0..1]
+     */
+    public static float attackMillisToInput (final float millis)
     {
         final float y = Math.clamp (millis, 0f, 7700f);
         if (y <= 171f)
@@ -1069,7 +1088,13 @@ public class MaschinePresetAccessor
     }
 
 
-    // Not perfect but close
+    /**
+     * Converts the given normalized value to milli-seconds. Tweaked for the decay and release part
+     * of the envelope.
+     * 
+     * @param v The normalized value in the range of [0..1]
+     * @return The value in milli-seconds
+     */
     public static float mapToDecayAndRelease (final float v)
     {
         final float x = Math.clamp (v, 0, 1f);
@@ -1088,8 +1113,14 @@ public class MaschinePresetAccessor
     }
 
 
-    // Inverse of mapToDecayAndRelease
-    private static float decayAndReleaseMillisToInput (final float millis)
+    /**
+     * Converts the given milli-seconds to normalized value. Tweaked for the decay and release part
+     * of the envelope.
+     * 
+     * @param millis The value in milli-seconds
+     * @return The normalized value in the range of [0..1]
+     */
+    public static float decayAndReleaseMillisToInput (final float millis)
     {
         final float y = Math.clamp (millis, 2.9f, 12300f);
 
@@ -1106,18 +1137,29 @@ public class MaschinePresetAccessor
     }
 
 
-    // Maps input x in [0,1] to frequency in Hz using exponential curve, does not match 100% but
-    // very close
-    public static double mapToFrequency (final double x)
+    /**
+     * Maps the normalized input value to frequency in Hz using exponential curve, does not match
+     * 100% but very close.
+     * 
+     * @param value The normalized value in the range of [0..1]
+     * @return The frequency in the range of [43.7..19600] Hertz
+     */
+    public static double mapToFrequency (final double value)
     {
-        return Math.clamp (51.0917 * Math.exp (5.9497 * x), 43.7, 19600);
+        return Math.clamp (51.0917 * Math.exp (5.9497 * value), 43.7, 19600);
     }
 
 
-    // Inverse of mapToFrequency
-    private static float frequencyToNorm (final double freq)
+    /**
+     * Maps the frequency in Hz to normalized input value using exponential curve, does not match
+     * 100% but very close.
+     * 
+     * @param frequency The frequency in the range of [43.7..19600] Hertz
+     * @return The normalized value in the range of [0..1]
+     */
+    public static float frequencyToNorm (final double frequency)
     {
-        final double y = Math.clamp (freq, 43.7, 19600.0);
+        final double y = Math.clamp (frequency, 43.7, 19600.0);
         return (float) (Math.log (y / 51.0917) / 5.9497);
     }
 

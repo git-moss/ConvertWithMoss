@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
@@ -314,6 +315,29 @@ public class WaveFile extends AbstractRIFFFile
                 System.arraycopy (rightData, count, combinedData, count * 2 + blockSize, Math.min (blockSize, rightData.length - count));
         }
         return combinedData;
+    }
+
+
+    /**
+     * Calculates the size of all WAV files.
+     *
+     * @param sampleFiles The sample files (must be all WAV files).
+     * @return The summed size
+     * @throws IOException Could not read a file
+     */
+    public static int calculateSampleSize (final List<File> sampleFiles) throws IOException
+    {
+        int size = 0;
+        try
+        {
+            for (final File file: sampleFiles)
+                size += new WaveFile (file, true).getDataChunk ().getData ().length;
+        }
+        catch (final ParseException ex)
+        {
+            throw new IOException (ex);
+        }
+        return size;
     }
 
 
