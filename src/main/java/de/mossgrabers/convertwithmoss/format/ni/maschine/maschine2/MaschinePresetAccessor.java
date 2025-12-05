@@ -219,7 +219,7 @@ public class MaschinePresetAccessor
 
             final ISampleZone zone = new DefaultSampleZone ();
             group.addSampleZone (zone);
-            readZoneParameters (zone, offsets.groupOffset + zoneOffset, parameterArray, isOldFormat);
+            readZoneParameters (zone, offsets.offsetFirstZone + zoneOffset, parameterArray, isOldFormat);
 
             zoneOffset += offsetZone;
         }
@@ -840,27 +840,27 @@ public class MaschinePresetAccessor
      */
     private static void readZoneParameters (final ISampleZone zone, final int zoneOffset, final MaschinePresetParameterArray parameterArray, final boolean isOldFormat) throws IOException
     {
-        zone.setStart (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_SAMPLE_START : X0D_ZONE_SAMPLE_START)));
-        zone.setStop (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_SAMPLE_END : X0D_ZONE_SAMPLE_END)));
+        zone.setStart (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_SAMPLE_START : X0D_ZONE_SAMPLE_START)));
+        zone.setStop (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_SAMPLE_END : X0D_ZONE_SAMPLE_END)));
 
-        if (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_ENABLED : X0D_ZONE_LOOP_ENABLED)) == 1)
+        if (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_ENABLED : X0D_ZONE_LOOP_ENABLED)) == 1)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
-            loop.setStart (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_START : X0D_ZONE_LOOP_START)));
-            loop.setEnd (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_END : X0D_ZONE_LOOP_END)));
-            loop.setCrossfadeInSamples (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_CROSSFADE : X0D_ZONE_LOOP_CROSSFADE)));
+            loop.setStart (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_START : X0D_ZONE_LOOP_START)));
+            loop.setEnd (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_END : X0D_ZONE_LOOP_END)));
+            loop.setCrossfadeInSamples (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOOP_CROSSFADE : X0D_ZONE_LOOP_CROSSFADE)));
             zone.addLoop (loop);
         }
 
-        zone.setKeyRoot (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_ROOT_KEY : X0D_ZONE_ROOT_KEY)));
-        zone.setKeyLow (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOW_KEY : X0D_ZONE_LOW_KEY)));
-        zone.setKeyHigh (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_HIGH_KEY : X0D_ZONE_HIGH_KEY)));
-        zone.setVelocityLow (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_VELOCITY_LOW : X0D_ZONE_VELOCITY_LOW)));
-        zone.setVelocityHigh (parameterArray.readInteger (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_VELOCITY_HIGH : X0D_ZONE_VELOCITY_HIGH)));
+        zone.setKeyRoot (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_ROOT_KEY : X0D_ZONE_ROOT_KEY)));
+        zone.setKeyLow (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_LOW_KEY : X0D_ZONE_LOW_KEY)));
+        zone.setKeyHigh (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_HIGH_KEY : X0D_ZONE_HIGH_KEY)));
+        zone.setVelocityLow (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_VELOCITY_LOW : X0D_ZONE_VELOCITY_LOW)));
+        zone.setVelocityHigh (parameterArray.readInteger (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_VELOCITY_HIGH : X0D_ZONE_VELOCITY_HIGH)));
 
-        zone.setGain (inputToDb (parameterArray.readFloat (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_GAIN : X0D_ZONE_GAIN))));
-        zone.setPanning (parameterArray.readFloat (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_PANNING : X0D_ZONE_PANNING)));
-        zone.setTune (parameterArray.readFloat (X0D_FIRST_ZONE + zoneOffset + (isOldFormat ? PRE_X0D_ZONE_TUNE : X0D_ZONE_TUNE)));
+        zone.setGain (inputToDb (parameterArray.readFloat (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_GAIN : X0D_ZONE_GAIN))));
+        zone.setPanning (parameterArray.readFloat (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_PANNING : X0D_ZONE_PANNING)));
+        zone.setTune (parameterArray.readFloat (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_TUNE : X0D_ZONE_TUNE)));
     }
 
 

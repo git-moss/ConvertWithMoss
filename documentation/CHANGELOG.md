@@ -1,9 +1,11 @@
 # Changes
 
-## 15.1.0 (unreleased)
+## 15.1.0
 
 * New: Added support for Maschine 1 MSND files.
 * Fixed: Application icons show up again.
+* Maschine MXSND
+  * Fixed: Older Maschine 2 files were not converted correctly or did show exceptions.
 * MPC Keygroups
   * Fixed: Don't read loops from WAV files which can cause unwanted full loops.
 
