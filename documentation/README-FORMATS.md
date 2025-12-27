@@ -31,25 +31,46 @@ If the format uses WAV files to store the samples, the following options to addi
 
 The following multi-sample formats are supported:
 
-* [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
-* [Ableton Sampler](#ableton-sampler)
-* [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
-* [Apple Logic EXS24](#logic-exs24)
-* [Bitwig Multisample](#bitwig-multisample)
-* [CWITEC TX16Wx](#cwitec-tx16wx)
-* [DecentSampler](#decentsampler)
-* [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
-* [Korg KSC/KMP/KSF](#korg-ksckmpksf)
-* [Korg wavestate/modwave](#korg-wavestatemodwave)
-* [Native Instruments Kontakt NKI/NKM](#kontakt-nkinkm)
-* [Native Instruments Maschine](#native-instruments-maschine)
-* [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
-* [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
-* [SFZ](#sfz)
-* [SoundFont 2](#soundfont-2)
-* [TAL Sampler](#tal-sampler)
-* [Waldorf Quantum MkI,MkII/Iridium/Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
-* [Yamaha YSFC](#yamaha-ysfc)
+- [1010music bento](#1010music-bento)
+- [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
+- [Ableton Sampler](#ableton-sampler)
+- [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
+- [Bitwig Multisample](#bitwig-multisample)
+- [CWITEC TX16Wx](#cwitec-tx16wx)
+- [DecentSampler](#decentsampler)
+- [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
+- [Kontakt NKI/NKM](#kontakt-nkinkm)
+- [Korg KSC/KMP/KSF](#korg-ksckmpksf)
+- [Korg wavestate/modwave](#korg-wavestatemodwave)
+- [Logic EXS24](#logic-exs24)
+- [Native Instruments Maschine](#native-instruments-maschine)
+- [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+- [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
+- [SFZ](#sfz)
+- [SoundFont 2](#soundfont-2)
+- [TAL Sampler](#tal-sampler)
+- [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
+- [Yamaha YSFC](#yamaha-ysfc)
+
+## 1010music bento
+
+This format can contain either a single *patch* (1 track) or all 8 tracks of a *project*. Each track contains an instrument engine. ConvertWithMoss only supports the multi-sample engine. All user patches need to be placed in the *UserPatches/SampInst* folder on the SD-card. The factory patches reside in *Patches/SampInst*. The main information of a preset is stored in a file which is always called *patch.xml* or *project.xml* for a project file. This file is located in a folder with the name of the preset/project.
+
+The related samples need to be in the same folder as the patch.xml file.
+
+If the format is selected as the source, there are two things to consider:
+
+* One or multiple tracks contain a multi-sample: for each of the multi-samples a file in the destination format is created.
+
+### Destination Options
+
+* Option to set the *Interpolation Quality*. Setting it to *High* requires a bit more processing power on the 1010music devices.
+* Option to trim sample to range of zone start to end. Since the format does not support a sample start attribute for multi-sample, this fixes the issue.
+
+If 'Performance' is selected as the destination type, some workarounds are applied:
+
+* MIDI channel: There is no OMNI setting. They are currently set to Off.
+* Key ranges: The 1010music devices do not support key-ranges which means a multi-sample is always sounding across the full note range. As a workaround a silent sample (a totally empty one-shot sample is used) is applied to the lower and upper range which should not sound.
 
 ## 1010music blackbox, tangerine, bitbox
 
@@ -162,7 +183,7 @@ Kontakt is a sampler from Native Instruments which uses a plethora of file forma
 However, the format changed many times across the different Kontakt versions. So far, the following formats are known and supported as a source:
 
 | Kontakt Version |
-|:----------------|
+| :-------------- |
 | 1               |
 | 1.5             |
 | 2 - 4.1.x       |
@@ -351,13 +372,28 @@ The following file formats are supported as a source:
 * Motif XS: X0A, X0W
 * Motif XF: X3A, X3W
 * MOXF: X6A, X6W
-* Montage: X7A, X7L, X7U with Performance Data
-* MODX/MODX+: X8A, X8L, X8U with Performance Data
+* Montage: X7A, X7L, X7U
+* MODX/MODX+: X8A, X8L, X8U
 * Montage M: Y2U, Y2L
 
 The wave files in professional Yamaha libraries are often compressed. Such files are not supported. Furthermore, only self-contained libraries (= libraries which do not reference samples in other libraries) are supported.
 
-So far, reading of Performances is only supported for Montage (not Montage M!) and MODX/MODX+ files. This means that for all other formats only the basic multi-sample data is converted (no filter and envelopes data is converted).
+So far, reading of Performances is only supported for some formats. This means that for all other formats only the basic multi-sample data is converted (no filter and envelopes data is converted).
+
+| Format                                          | Performance Data |
+| :---------------------------------------------- | :--------------- |
+| Motif XS: X0A, X0W                              |                  |
+| Motif XF: X3A, X3W                              |                  |
+| MOXF: X6A, X6W                                  |                  |
+| Montage: X7A, X7L, X7U with Performance Data    | Yes              |
+| MODX/MODX+: X8A, X8L, X8U with Performance Data | Yes              |
+| Montage M: Y2U, Y2L                             |                  |
+
+### Source Options
+
+* Create multi-samples for: 
+  * Waveforms: this reads only the raw-multi-sample(s) without additional Performance information. Use this option if the Performances do not reference all multi-samples in the library/user-bank.
+  * Performances: Only supported for Montage and MODX/MODX+ files and when Performance data is present in the file. This sill create one multi-sample source for each Performance.
 
 ### Using it as the destination format
 
@@ -388,13 +424,7 @@ If there are more than 8 instruments sources the following strategy is applied t
 
 Other mappings are identical to creating presets/libraries.
 
-### Source Options
-
-* Create multi-samples for: 
-  * Waveforms: this reads only the raw-multi-sample(s) without additional Performance information. Use this option as well if the Performances do not reference all multi-samples in the library/user-bank.
-  * Performances: Only supported for Montage and MODX/MODX+ files and when Performance data is present in the file. Will create a multi-sample source for each Performance.
-
 ### Destination Options
 
-* Library Format: Chooses the output format which is created.
+* File Format: Chooses the output format which is created.
 * Create only Waveforms: No Performances will be written. Only Waveform data.

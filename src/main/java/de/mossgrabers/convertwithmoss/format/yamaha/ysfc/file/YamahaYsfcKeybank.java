@@ -2,7 +2,7 @@
 // (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
+package de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +27,7 @@ public class YamahaYsfcKeybank implements IStreamable
     private int                        velocityRangeLower;
     private int                        velocityRangeUpper;
     private int                        level;
-    private int                        panning    = 64;
+    private int                        panning            = 64;
     private int                        coarseTune;
     private int                        fineTune;
     private int                        rootNote;
@@ -35,12 +35,16 @@ public class YamahaYsfcKeybank implements IStreamable
     private int                        playStart;
     private int                        loopStart;
     private int                        loopEnd;
-    private int                        number;
+    private int                        sampleNumber;
     private int                        sampleLength;
     private int                        channels;
     private int                        loopMode;
-    private int                        fixedPitch = 0xFF;
+    private int                        fixedPitch         = 0xFF;
     private int                        loopTune;
+
+    // TODO
+    private int                        totalSampleOffset  = -1;
+    private int                        totalChannelOffset = -1;
 
 
     /**
@@ -72,6 +76,8 @@ public class YamahaYsfcKeybank implements IStreamable
     @Override
     public void read (final InputStream in) throws IOException
     {
+        final int start = in.available ();
+
         final boolean isVersion1 = this.version.isVersion1 ();
         final boolean isMotif = this.version.isMotif ();
         final boolean isBigEndian = isVersion1 && !isMotif;
@@ -81,7 +87,7 @@ public class YamahaYsfcKeybank implements IStreamable
         this.velocityRangeLower = in.read ();
         this.velocityRangeUpper = in.read ();
         this.level = in.read ();
-        // Range is only 0-128
+        // Range is only 0-128 in version 1.x
         if (isVersion1)
             this.level = Math.clamp (2L * this.level, 0, 255);
         // Bit 7 contains the Pan-Curve
@@ -102,8 +108,10 @@ public class YamahaYsfcKeybank implements IStreamable
         // Play-form on Montage / loop fraction on older formats (Motif)
         in.read ();
         final int waveFormat = in.read ();
-        if (waveFormat != 0 && waveFormat != 5)
-            throw new IOException (Functions.getMessage ("IDS_YSFC_WAVE_FORMAT_NOT_SUPPORTED", waveFormat == 4 ? " WXC" : Integer.toString (waveFormat)));
+        // TODO enable again
+        // if (waveFormat != 0 && waveFormat != 5)
+        // throw new IOException (Functions.getMessage ("IDS_YSFC_WAVE_FORMAT_NOT_SUPPORTED",
+        // waveFormat == 4 ? " WXC" : Integer.toString (waveFormat)));
 
         this.loopMode = in.read ();
 
@@ -118,7 +126,7 @@ public class YamahaYsfcKeybank implements IStreamable
         in.skipNBytes (13);
 
         if (!isMotif)
-            in.skipNBytes (4);
+            in.skipNBytes (4); // 0x00 0x00 0x00 0xFF
 
         this.sampleFrequency = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         this.playStart = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
@@ -132,7 +140,7 @@ public class YamahaYsfcKeybank implements IStreamable
 
             // Padding / reserved
             in.skipNBytes (4);
-            this.number = (int) StreamUtils.readUnsigned32 (in, false);
+            this.sampleNumber = (int) StreamUtils.readUnsigned32 (in, false);
         }
         this.sampleLength = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
 
@@ -148,21 +156,33 @@ public class YamahaYsfcKeybank implements IStreamable
 
         // v1.0.3 MOXF
 
+        // TODO
         // Offset to something?!
-        StreamUtils.readUnsigned32 (in, true);
+        final int x = StreamUtils.readUnsigned16 (in, true);
+        final int y = StreamUtils.readUnsigned16 (in, true);
         // Always FF FF FF FF
-        StreamUtils.readUnsigned32 (in, true);
+        in.skipNBytes (4);
 
-        this.number = StreamUtils.readUnsigned16 (in, true);
+        this.sampleNumber = StreamUtils.readUnsigned16 (in, true);
 
         // Padding
         in.skipNBytes (2);
 
-        // Size of something?!
-        StreamUtils.readUnsigned32 (in, true);
+        // Size of all channels
+        long sampleSizeOfAllChannels = StreamUtils.readUnsigned32 (in, true);
 
         // Padding
         in.skipNBytes (4);
+
+        // TODO remove
+        // final int rest = in.available ();
+
+        System.out.println (x + " " + y + "    " + sampleNumber + " (" + this.channels + ")" + (this.channels * this.sampleLength) + "/" + sampleSizeOfAllChannels + "   " + waveFormat);
+        // System.out.println (start + ":" + rest + "=" + (start - rest));
+        // ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        // write (out);
+        // nBytes = out.toByteArray ();
+        // System.out.println ("" + nBytes.length);
     }
 
 
@@ -170,27 +190,31 @@ public class YamahaYsfcKeybank implements IStreamable
     @Override
     public void write (final OutputStream out) throws IOException
     {
+        final boolean isVersion1 = this.version.isVersion1 ();
+        final boolean isMotif = this.version.isMotif ();
+        final boolean isBigEndian = isVersion1 && !isMotif;
+
         out.write (this.keyRangeLower);
         out.write (this.keyRangeUpper);
         out.write (this.velocityRangeLower);
         out.write (this.velocityRangeUpper);
-        out.write (this.level);
+        out.write (isVersion1 ? this.level / 2 : this.level);
         out.write (this.panning);
 
         out.write (0x00);
-        out.write (this.fixedPitch);
+        out.write (isVersion1 ? 0x00 : this.fixedPitch);
 
         out.write (this.rootNote);
         out.write (this.coarseTune);
         out.write (this.fineTune);
         out.write (this.channels);
 
-        // Loop Tune
+        // Loop Tune - always 2 for Montage, 0 for MOXF
         out.write (0x00);
         // Play Form, always 2
-        out.write (0x02);
-        // 16-bit linear
-        out.write (0x05);
+        out.write (isVersion1 ? 0x00 : 0x02);
+        // 16-bit linear - Montage: 16-bit: 0x05, MOXF - 16-bit: 0x0, 8-bit: 0x02
+        out.write (isVersion1 ? 0x00 : 0x05);
 
         out.write (this.loopMode);
 
@@ -199,27 +223,77 @@ public class YamahaYsfcKeybank implements IStreamable
         // Pitch up limit
         out.write (0x00);
 
-        out.write (this.loopStart % 16);
+        out.write (isVersion1 ? 0x00 : this.loopStart % 16);
 
         // Unknown but should work
-        out.write (1);
+        out.write (isVersion1 ? 0xFF : 1);
 
+        // Encryption
         StreamUtils.padBytes (out, 12);
 
-        // Padding / reserved
-        StreamUtils.padBytes (out, 3);
-        out.write (0xFF);
+        if (!isMotif)
+        {
+            // Padding / reserved
+            StreamUtils.padBytes (out, 3);
+            out.write (0xFF);
+        }
 
-        StreamUtils.writeUnsigned32 (out, this.sampleFrequency, false);
-        StreamUtils.writeUnsigned32 (out, this.playStart, false);
-        StreamUtils.writeUnsigned32 (out, this.loopStart / 16, false);
-        StreamUtils.writeUnsigned32 (out, this.loopEnd, false);
+        StreamUtils.writeUnsigned32 (out, this.sampleFrequency, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.playStart, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, isVersion1 ? this.loopStart : this.loopStart / 16, isBigEndian);
+        StreamUtils.writeUnsigned32 (out, this.loopEnd, isBigEndian);
 
-        // Padding / reserved
-        StreamUtils.padBytes (out, 4);
+        if (!isVersion1)
+        {
+            // Padding / reserved
+            StreamUtils.padBytes (out, 4);
+            StreamUtils.writeUnsigned32 (out, this.sampleNumber, isBigEndian);
+        }
 
-        StreamUtils.writeUnsigned32 (out, this.number, false);
-        StreamUtils.writeUnsigned32 (out, this.sampleLength, false);
+        StreamUtils.writeUnsigned32 (out, this.sampleLength, isBigEndian);
+
+        if (!isVersion1)
+            return;
+
+        if (isMotif)
+        {
+            StreamUtils.padBytes (out, 8, 0x00);
+            StreamUtils.padBytes (out, 8, 0xFF);
+            return;
+        }
+
+        StreamUtils.writeUnsigned16 (out, this.totalChannelOffset, isBigEndian);
+        StreamUtils.writeUnsigned16 (out, // TODO
+                this.totalSampleOffset /* + this.sampleLength * this.channels */, isBigEndian);
+
+        // 1 channel only, pad information for second channel with 0xFF 0xFF 0xFF 0xFF
+        StreamUtils.padBytes (out, 4, 0xFF);
+
+        StreamUtils.writeUnsigned16 (out, this.sampleNumber, true);
+
+        // Padding
+        StreamUtils.padBytes (out, 2, 0x00);
+
+        // Size of all channels - only stereo samples with both mono of same length are supported
+        StreamUtils.writeUnsigned32 (out, this.channels * this.sampleLength, true);
+
+        // Padding
+        StreamUtils.padBytes (out, 4, 0x00);
+    }
+
+
+    /**
+     * Set the global sample and channel offset, relevant for Yamaha MOXF.
+     * 
+     * @param totalChannelOffset a field that for each channel data stores its total index in DWIM
+     *            block (counting channels of all samples in the library starting at 1.
+     * @param totalSampleOffset a field that for each key-group (across all key-banks) stores total
+     *            index of the samples in the library starting at 0x10
+     */
+    public void setOffsets (final int totalChannelOffset, final int totalSampleOffset)
+    {
+        this.totalChannelOffset = totalChannelOffset;
+        this.totalSampleOffset = totalSampleOffset;
     }
 
 
@@ -231,7 +305,7 @@ public class YamahaYsfcKeybank implements IStreamable
     public String infoText ()
     {
         final StringBuilder sb = new StringBuilder ();
-        sb.append ("\nSample Number: ").append (this.number).append ('\n');
+        sb.append ("\nSample Number: ").append (this.sampleNumber).append ('\n');
         sb.append ("Frequency: ").append (this.sampleFrequency).append ('\n');
         sb.append ("Channels: ").append (this.channels).append ('\n');
         sb.append ("Root Note: ").append (this.rootNote).append ('\n');
@@ -551,24 +625,24 @@ public class YamahaYsfcKeybank implements IStreamable
 
 
     /**
-     * Get the position of the sample in the device memory.
+     * Get the number of the sample.
      *
-     * @return The position
+     * @return The number, 1-based
      */
     public int getNumber ()
     {
-        return this.number;
+        return this.sampleNumber;
     }
 
 
     /**
-     * Set the position of the sample in the device memory.
+     * Set the number of the sample.
      *
-     * @param number The position
+     * @param number The numer, 1-based
      */
     public void setNumber (final int number)
     {
-        this.number = number;
+        this.sampleNumber = number;
     }
 
 

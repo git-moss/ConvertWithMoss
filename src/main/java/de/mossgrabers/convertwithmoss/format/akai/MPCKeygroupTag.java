@@ -24,6 +24,8 @@ public class MPCKeygroupTag
 
     /** The file version element. */
     public static final String VERSION_FILE_VERSION                 = "File_Version";
+    /** The platform version element. */
+    public static final String VERSION_PLATFORM                     = "Platform";
 
     /** The program name element. */
     public static final String PROGRAM_NAME                         = "ProgramName";

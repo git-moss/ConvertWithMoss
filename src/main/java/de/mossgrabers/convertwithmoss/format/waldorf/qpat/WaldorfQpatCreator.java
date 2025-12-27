@@ -190,7 +190,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!
-                sb.append (formatMapDouble (zone.getKeyRoot () - zone.getTune ())).append ('\t');
+                sb.append (formatMapDouble (zone.getKeyRoot () - zone.getTuning ())).append ('\t');
 
                 // FromNote / ToNote
                 sb.append (zone.getKeyLow ()).append ('\t').append (zone.getKeyHigh ()).append ('\t');
@@ -203,7 +203,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 sb.append (zone.getVelocityLow ()).append ('\t').append (zone.getVelocityHigh ()).append ('\t');
 
                 // Pan - CURRENTLY IGNORED
-                sb.append (formatMapDouble ((zone.getPanning () + 1.0) / 2.0)).append ('\t');
+                sb.append (formatMapDouble ((zone.getTuning () + 1.0) / 2.0)).append ('\t');
 
                 // Start / End
                 sb.append (formatMapDouble (zone.getStart () / numSampleFrames)).append ('\t');

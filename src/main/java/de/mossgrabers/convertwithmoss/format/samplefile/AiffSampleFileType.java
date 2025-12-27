@@ -58,7 +58,7 @@ public class AiffSampleFileType implements SampleFileType
             zone.setVelocityLow (instrumentChunk.getLowVelocity ());
             zone.setVelocityHigh (instrumentChunk.getHighVelocity ());
             zone.setGain (instrumentChunk.getGain ());
-            zone.setTune (instrumentChunk.getDetune () / 100.0);
+            zone.setTuning (instrumentChunk.getDetune () / 100.0);
         }
     }
 

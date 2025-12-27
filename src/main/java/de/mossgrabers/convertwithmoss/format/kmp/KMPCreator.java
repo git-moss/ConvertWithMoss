@@ -144,7 +144,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
                 final IGroup leftGroup = new DefaultGroup ();
                 final IGroup rightGroup = new DefaultGroup ();
                 for (final ISampleZone zone: group.getSampleZones ())
-                    if (zone.getPanning () <= -1)
+                    if (zone.getTuning () <= -1)
                         leftGroup.addSampleZone (zone);
                     else
                         rightGroup.addSampleZone (zone);

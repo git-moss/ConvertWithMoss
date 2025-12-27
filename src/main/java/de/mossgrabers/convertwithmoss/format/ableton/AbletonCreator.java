@@ -285,7 +285,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
         zoneContent = zoneContent.replace ("%VEL_RANGE_LOW_CROSSFADE%", Integer.toString (Math.max (0, velLow - zone.getVelocityCrossfadeLow ())));
         zoneContent = zoneContent.replace ("%VEL_RANGE_HIGH_CROSSFADE%", Integer.toString (Math.min (127, velHigh + zone.getVelocityCrossfadeLow ())));
 
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         int semitones = (int) tune;
         int cents = (int) ((tune - semitones) * 100);
         if (cents > 50)
@@ -302,7 +302,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
         zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (Math.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - semitones, 0, 127)));
         zoneContent = zoneContent.replace ("%DETUNE%", Integer.toString (cents));
         zoneContent = zoneContent.replace ("%TUNE_SCALE%", Integer.toString ((int) (zone.getKeyTracking () * 100)));
-        zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getPanning ()));
+        zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getTuning ()));
         zoneContent = zoneContent.replace ("%VOLUME%", formatDouble (Math.pow (2, zone.getGain () / 6.0)));
 
         final List<ISampleLoop> loops = zone.getLoops ();

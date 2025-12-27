@@ -2,7 +2,7 @@
 // (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
+package de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file;
 
 import java.util.HashMap;
 import java.util.Map;

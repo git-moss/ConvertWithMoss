@@ -222,7 +222,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         final double sampleFine = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 2.0 - 1.0;
         final double transpose = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, 0.5) * 48.0 - 24.0);
         final double detune = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, 0.5) * 48.0 - 24.0);
-        zone.setTune (layerTranspose + sampleTune + transpose + detune + sampleFine);
+        zone.setTuning (layerTranspose + sampleTune + transpose + detune + sampleFine);
         zone.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PITCH_KEY_TRACK, 1));
 
         zone.setKeyRoot (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, -1));

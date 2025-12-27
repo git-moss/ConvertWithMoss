@@ -8,6 +8,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,6 +21,11 @@ import java.util.Map;
 import de.mossgrabers.convertwithmoss.core.IStreamable;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcFileFormat;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcKeybank;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData;
 import de.mossgrabers.tools.StringUtils;
 
 
@@ -32,6 +38,8 @@ public class YsfcFile
 {
     private static final String                YAMAHA_YSFC              = "YAMAHA-YSFC";
     private static final int                   HEADER_SIZE              = 64;
+    // The size of the library block - fixed
+    private static final int                   LIBRARY_SIZE             = 81;
 
     private static final String []             CHUNKS_ONLY_WAVEFORMS    = new String []
     {
@@ -224,23 +232,28 @@ public class YsfcFile
         StreamUtils.writeASCII (outputStream, YAMAHA_YSFC, 16);
         StreamUtils.writeASCII (outputStream, this.versionStr, 16);
         StreamUtils.writeUnsigned32 (outputStream, catalogSize, true);
+
         StreamUtils.padBytes (outputStream, 12, 0xFF);
 
-        // The size of the library block - fixed
-        final int librarySize = 81;
+        final int librarySize = this.version <= YamahaYsfcFileFormat.MOXF.getMaxVersion () ? 0 : LIBRARY_SIZE;
         StreamUtils.writeUnsigned32 (outputStream, librarySize, true);
-
         StreamUtils.padBytes (outputStream, 8, 0xFF);
 
-        StreamUtils.writeUnsigned32 (outputStream, this.maxEntryID, true);
+        if (this.version <= YamahaYsfcFileFormat.MOXF.getMaxVersion ())
+            StreamUtils.padBytes (outputStream, 4, 0xFF);
+        else
+            StreamUtils.writeUnsigned32 (outputStream, this.maxEntryID, true);
 
-        writeCatalog (outputStream, orderedChunks, HEADER_SIZE + catalogSize + librarySize);
+        this.writeCatalog (outputStream, orderedChunks, HEADER_SIZE + catalogSize + librarySize);
 
-        // Write empty library references
-        StreamUtils.padBytes (outputStream, librarySize - 1, 0xFF);
-        StreamUtils.padBytes (outputStream, 1, 0x00);
+        if (this.version > YamahaYsfcFileFormat.MOXF.getMaxVersion ())
+        {
+            // Write empty library references
+            StreamUtils.padBytes (outputStream, LIBRARY_SIZE - 1, 0xFF);
+            StreamUtils.padBytes (outputStream, 1, 0x00);
+        }
 
-        writeChunks (outputStream, orderedChunks);
+        this.writeChunks (outputStream, orderedChunks);
     }
 
 
@@ -252,14 +265,14 @@ public class YsfcFile
      * @param startOfChunks The start of the chunks in the file counted from the start of the file
      * @throws IOException Could not process the block
      */
-    private static void writeCatalog (final OutputStream out, final List<YamahaYsfcChunk> orderedChunks, final int startOfChunks) throws IOException
+    private void writeCatalog (final OutputStream out, final List<YamahaYsfcChunk> orderedChunks, final int startOfChunks) throws IOException
     {
         int offset = startOfChunks;
         for (final YamahaYsfcChunk chunk: orderedChunks)
         {
             StreamUtils.writeASCII (out, chunk.getChunkID (), 4);
             StreamUtils.writeUnsigned32 (out, offset, true);
-            offset += 8 + chunk.getChunkLength ();
+            offset += 8 + chunk.getChunkLength (this.version);
         }
     }
 
@@ -289,10 +302,10 @@ public class YsfcFile
      * @param orderedChunks The ordered list of chunks to write
      * @throws IOException Could not write the chunks
      */
-    private static void writeChunks (final OutputStream out, final List<YamahaYsfcChunk> orderedChunks) throws IOException
+    private void writeChunks (final OutputStream out, final List<YamahaYsfcChunk> orderedChunks) throws IOException
     {
         for (final YamahaYsfcChunk chunk: orderedChunks)
-            chunk.write (out);
+            chunk.write (out, this.version);
     }
 
 
@@ -338,7 +351,7 @@ public class YsfcFile
         updateCorrespondingDataOffsets (ewfm, dwfm);
         updateCorrespondingDataOffsets (ewim, dwim);
 
-        this.maxEntryID = 10001; // 0x2711
+        this.maxEntryID = this.version <= YamahaYsfcFileFormat.MOXF.getMaxVersion () ? 0 : 10001; // 0x2711
 
         if (epfm != null && dpfm != null)
         {
@@ -470,5 +483,20 @@ public class YsfcFile
             sb.append (chunk.dump (level + 2));
 
         return sb.toString ();
+    }
+
+
+    public static void main (final String [] args)
+    {
+        try (final FileOutputStream out = new FileOutputStream ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\YamahaYSFC\\X6 - MOXF\\01W Magnetic-CLONE.X6W"))
+        {
+            final YsfcFile file = new YsfcFile (new File ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\YamahaYSFC\\X6 - MOXF\\01W Magnetic.X6W"));
+            file.write (out);
+        }
+        catch (IOException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace ();
+        }
     }
 }

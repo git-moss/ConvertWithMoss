@@ -167,7 +167,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
         XMLUtils.setIntegerAttribute (keyElement, "high", limitToDefault (zone.getKeyHigh (), 127));
         XMLUtils.setIntegerAttribute (keyElement, "high-fade", limitToDefault (zone.getNoteCrossfadeHigh (), 0));
         XMLUtils.setDoubleAttribute (keyElement, "track", zone.getKeyTracking (), 4);
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         if (tune != 0)
             XMLUtils.setDoubleAttribute (keyElement, "tune", tune, 2);
 

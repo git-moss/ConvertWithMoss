@@ -257,7 +257,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
                     default:
                     case Sf2SampleDescriptor.MONO:
-                        final double panning = zone.getPanning ();
+                        final double panning = zone.getTuning ();
                         if (panning == 0)
                             resultSamples.add (zone);
                         else if (panning < 0)
@@ -313,7 +313,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                         // Store the matching right side sample with the left side one
                         leftSampleData.setRightSample (sample);
                         updateFilename (leftSampleZone, rightSampleZone);
-                        leftSampleZone.setPanning (Math.clamp (leftSampleZone.getPanning () + rightSampleZone.getPanning (), -1.0, 1.0));
+                        leftSampleZone.setPanning (Math.clamp (leftSampleZone.getTuning () + rightSampleZone.getTuning (), -1.0, 1.0));
                         resultSamples.add (leftSampleZone);
                         rightSampleZones.remove (i);
                         found = true;
@@ -368,7 +368,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                         final Sf2SampleData leftSampleData = (Sf2SampleData) panLeftSampleZone.getSampleData ();
                         updateFilename (panLeftSampleZone, panRightSampleZone);
                         leftSampleData.setRightSample (((Sf2SampleData) panRightSampleZone.getSampleData ()).getSample ());
-                        panLeftSampleZone.setPanning (Math.clamp (panLeftSampleZone.getPanning () + panRightSampleZone.getPanning (), -1.0, 1.0));
+                        panLeftSampleZone.setPanning (Math.clamp (panLeftSampleZone.getTuning () + panRightSampleZone.getTuning (), -1.0, 1.0));
                         resultSamples.add (panLeftSampleZone);
                         panRightSamples.remove (i);
                         found = true;
@@ -451,7 +451,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
             final int pitchCorrection = sample.getPitchCorrection ();
             final double tune = Math.clamp ((pitchCorrection + (double) fineTune) / 100, -1, 1);
-            zone.setTune (tune);
+            zone.setTuning (tune);
             final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
             zone.setKeyTracking (Math.clamp (scaleTuning / 100.0, 0, 100));
 

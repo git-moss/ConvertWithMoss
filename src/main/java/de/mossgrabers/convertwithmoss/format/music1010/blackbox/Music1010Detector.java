@@ -2,7 +2,7 @@
 // (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.music1010;
+package de.mossgrabers.convertwithmoss.format.music1010.blackbox;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,6 +42,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -65,7 +66,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public Music1010Detector (final INotifier notifier)
     {
-        super ("1010music", "1010music", notifier, new MetadataSettingsUI ("1010music"), ".xml");
+        super ("1010music blackbox", "1010music", notifier, new MetadataSettingsUI ("1010music"), ".xml");
     }
 
 
@@ -117,7 +118,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
-            // There is a null byte at the end of the which gets dropped by trim
+            // There is a null byte at the end of the file which gets dropped by trim
             final String content = StreamUtils.readUTF8 (in).trim ();
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (file, file.getParent (), document);
@@ -246,7 +247,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
 
         // Gain - "gaindb" -> unknown conversion
 
-        sampleZone.setTune (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PITCH, 0) / 1000.0);
+        sampleZone.setTuning (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PITCH, 0) / 1000.0);
         sampleZone.setPanning (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PANNING, 0) / 1000.0);
 
         // No zone logic

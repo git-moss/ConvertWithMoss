@@ -9,10 +9,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcChunk;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcPerformance;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcPerformancePart;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YsfcFile;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformance;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformancePart;
 
 
 /**

@@ -2,7 +2,7 @@
 // (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
+package de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -127,34 +127,59 @@ public class YamahaYsfcEntry
      * Write an entry item to the output stream.
      *
      * @param out The output stream
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not write the entry item
      */
-    public void write (final OutputStream out) throws IOException
+    public void write (final OutputStream out, final int version) throws IOException
     {
-        final byte [] content = this.createContent ();
+        final byte [] content = this.createContent (version);
         StreamUtils.writeUnsigned32 (out, content.length, true);
         out.write (content);
     }
 
 
-    private byte [] createContent () throws IOException
+    private byte [] createContent (final int version) throws IOException
     {
-        // Only creates 4.0.5 format!
-
         final ByteArrayOutputStream contentStream = new ByteArrayOutputStream ();
+
+        if (version <= 102)
+            StreamUtils.padBytes (contentStream, 4);
 
         // Size of the item corresponding to this entry
         StreamUtils.writeUnsigned32 (contentStream, this.correspondingDataSize, true);
+
+        if (version <= 102)
+            StreamUtils.padBytes (contentStream, 4);
+
         // Offset of the item chunk within the data block
         StreamUtils.writeUnsigned32 (contentStream, this.correspondingDataOffset, true);
         // Type specific - e.g. Program number
         StreamUtils.writeUnsigned32 (contentStream, this.contentNumber, true);
 
-        // Flags - type specific
-        contentStream.write (this.flags);
+        if (version <= 102)
+        {
+            StreamUtils.padBytes (contentStream, version <= 101 ? 1 : 2);
+        }
+        else if (version >= 400)
+        {
+            // Flags - type specific
+            contentStream.write (this.flags);
 
-        // ID of the entry object for ordering
-        StreamUtils.writeUnsigned32 (contentStream, this.entryID, true);
+            // ID of the entry object for ordering
+            if (version > 402 && version < 410 || version >= 500)
+                StreamUtils.writeUnsigned32 (contentStream, this.entryID, true);
+
+            if (version >= 410 && version < 500)
+            {
+                // Additional 9 unknown bytes for Montage M
+                // 0F - 0 0 0 0 0 0 - 28 AA
+                // FF - 0 0 0 0 0 0 - 28 F7
+                // 05 - 0 0 0 0 0 0 - 28 AA
+                // 03 - 0 0 0 0 0 0 - 28 AA
+
+                // TODO implement
+            }
+        }
 
         StreamUtils.writeNullTerminatedASCII (contentStream, this.itemName);
         StreamUtils.writeNullTerminatedASCII (contentStream, this.itemTitle);
@@ -217,11 +242,12 @@ public class YamahaYsfcEntry
      * Get the length of the chunk.
      *
      * @return The length
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not calculate the length
      */
-    public int getLength () throws IOException
+    public int getLength (final int version) throws IOException
     {
-        return this.createContent ().length;
+        return this.createContent (version).length;
     }
 
 

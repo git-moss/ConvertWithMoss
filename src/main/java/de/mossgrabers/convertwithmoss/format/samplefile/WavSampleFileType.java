@@ -57,7 +57,7 @@ public class WavSampleFileType implements SampleFileType
             zone.setVelocityLow (instrumentChunk.getLowVelocity ());
             zone.setVelocityHigh (instrumentChunk.getHighVelocity ());
             zone.setGain (instrumentChunk.getGain ());
-            zone.setTune (instrumentChunk.getFineTune () / 100.0);
+            zone.setTuning (instrumentChunk.getFineTune () / 100.0);
         }
     }
 

@@ -335,7 +335,7 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
         final List<ISampleLoop> loops = zone.getLoops ();
         final SampleChunk sampleChunk = new SampleChunk (loops.size ());
         sampleChunk.setSamplePeriod ((int) (1000000000.0 / wavFile.getFormatChunk ().getSampleRate ()));
-        sampleChunk.setPitch (unityNote, (int) Math.round (zone.getTune () * 100.0));
+        sampleChunk.setPitch (unityNote, (int) Math.round (zone.getTuning () * 100.0));
 
         final List<SampleChunkLoop> chunkLoops = sampleChunk.getLoops ();
         for (int i = 0; i < loops.size (); i++)
@@ -373,7 +373,7 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
         }
 
         instrumentChunk.setUnshiftedNote (unityNote);
-        instrumentChunk.setFineTune (Math.clamp ((int) (zone.getTune () * 100), -50, 50));
+        instrumentChunk.setFineTune (Math.clamp ((int) (zone.getTuning () * 100), -50, 50));
         instrumentChunk.setGain (Math.clamp ((int) zone.getGain (), -127, 127));
         instrumentChunk.setLowNote (Math.clamp (zone.getKeyLow (), 0, 127));
         instrumentChunk.setHighNote (Math.clamp (limitToDefault (zone.getKeyHigh (), 127), 0, 127));

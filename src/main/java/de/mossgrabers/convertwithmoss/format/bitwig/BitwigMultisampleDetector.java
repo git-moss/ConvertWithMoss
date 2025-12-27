@@ -318,7 +318,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
             zone.setKeyHigh (XMLUtils.getIntegerAttribute (keyElement, "high", -1));
             zone.setNoteCrossfadeLow (XMLUtils.getIntegerAttribute (keyElement, "low-fade", -1));
             zone.setNoteCrossfadeHigh (XMLUtils.getIntegerAttribute (keyElement, "high-fade", -1));
-            zone.setTune (XMLUtils.getDoubleAttribute (keyElement, "tune", 0));
+            zone.setTuning (XMLUtils.getDoubleAttribute (keyElement, "tune", 0));
 
             // Older multisample files use true/false
             final String attribute = keyElement.getAttribute ("track");

@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -46,6 +48,15 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcCategories;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcFileFormat;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcKeybank;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPartElement;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformance;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformancePart;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
@@ -109,27 +120,28 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         FILTER_POLE_MAP.put (Integer.valueOf (19), Integer.valueOf (2)); // LPF12+BPF6
     }
 
-    // A = All, U = User, L = Library
+    // A = All, U = User, L = Library, W = Waveforms
     private static final String []                 ENDINGS                        =
     {
-        ".x0a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // Motif
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // XS
+        // Motif XS
+        ".x0a",
         ".x0w",
-        ".x3a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // Motif
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // XF
+        // Motif XF
+        ".x3a",
         ".x3w",
-        ".x6a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // MOXF
+        // MOXF
+        ".x6a",
         ".x6w",
-        ".x7u",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // Montage
+        // Montage
+        ".x7u",
         ".x7l",
         ".x7a",
-        ".x8u",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // MODX
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // /
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // MODX+
+        // MODX / MODX+
+        ".x8u",
         ".x8l",
         ".x8a",
-        ".y2l",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   // Montage
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  // M
+        // Montage M
+        ".y2l",
         ".y2u"
     };
     private static final int                       SAMPLE_RESOLUTION              = 16;
@@ -451,6 +463,12 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         final List<YamahaYsfcEntry> ewfmListChunks = ewfmChunk.getEntryListChunks ();
         final List<YamahaYsfcEntry> ewimListChunks = ewimChunk.getEntryListChunks ();
         final List<byte []> dwfmChunks = dwfmChunk.getDataArrays ();
+
+        // TODO remove
+        final String id = UUID.randomUUID ().toString ();
+        for (int i = 0; i < dwfmChunks.size (); i++)
+            Files.write (new File ("C:\\Users\\mos\\Desktop\\Compare\\" + id + "." + i + ".bin").toPath (), dwfmChunks.get (i));
+
         final List<byte []> dwimChunks = dwimChunk.getDataArrays ();
         if (ewfmListChunks.size () != ewimListChunks.size () || dwfmChunks.size () != dwimChunks.size () || ewfmListChunks.size () != dwfmChunks.size ())
         {
@@ -575,7 +593,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         zone.setVelocityHigh (keybank.getVelocityRangeUpper ());
         if (keybank.getFixedPitch () == 1)
             zone.setKeyTracking (0);
-        zone.setTune (keybank.getCoarseTune () + keybank.getFineTune () / 100.0);
+        zone.setTuning (keybank.getCoarseTune () + keybank.getFineTune () / 100.0);
 
         final int level = keybank.getLevel ();
         zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + (level - 1) * 0.375);
@@ -588,7 +606,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             final ISampleLoop loop = new DefaultSampleLoop ();
             zone.getLoops ().add (loop);
             loop.setStart (keybank.getLoopStart ());
-            loop.setEnd (keybank.getSampleLength ());
+            loop.setEnd (keybank.getLoopEnd ());
             if (loopMode == 2)
                 loop.setType (LoopType.BACKWARDS);
         }
@@ -707,10 +725,10 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
 
         final double pitchOffset = element.getCoarseTune () - 64 + (element.getFineTune () - 64) / 100.0;
-        zone.setTune (zone.getTune () + pitchOffset);
+        zone.setTuning (zone.getTuning () + pitchOffset);
         zone.setKeyTracking (element.getPitchKeyFollowSensitivity () / 100.0);
 
-        zone.setPanning ((zone.getPanning () + MathUtils.normalizeIntegerRange (element.getPan (), -63, 63, 64)) / 2.0);
+        zone.setPanning ((zone.getTuning () + MathUtils.normalizeIntegerRange (element.getPan (), -63, 63, 64)) / 2.0);
 
         final int level = element.getElementLevel ();
         zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + 2 * level * 0.375);

@@ -244,7 +244,7 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
             sampleOutput.write (1);
         }
 
-        final double tune = sample.getTune ();
+        final double tune = sample.getTuning ();
         if (tune != 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_TUNE);

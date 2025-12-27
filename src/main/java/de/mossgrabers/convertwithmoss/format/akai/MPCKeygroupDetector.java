@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -122,21 +123,11 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private List<IMultisampleSource> parseDescription (final File file, final Document document) throws FileNotFoundException
     {
-        final Element top = document.getDocumentElement ();
-
-        if (!MPCKeygroupTag.ROOT.equals (top.getNodeName ()))
-        {
-            this.notifier.logError (BAD_METADATA_FILE);
+        final Optional<Element> programElementOpt = this.getProgramElement (document);
+        if (programElementOpt.isEmpty ())
             return Collections.emptyList ();
-        }
 
-        final Element programElement = XMLUtils.getChildElementByName (top, MPCKeygroupTag.ROOT_PROGRAM);
-        if (programElement == null)
-        {
-            this.notifier.logError (BAD_METADATA_FILE);
-            return Collections.emptyList ();
-        }
-
+        final Element programElement = programElementOpt.get ();
         String type = programElement.getAttribute (MPCKeygroupTag.PROGRAM_TYPE);
         if (type == null)
             type = MPCKeygroupTag.TYPE_KEYGROUP;
@@ -152,15 +143,13 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
         final String name = programNameElement == null ? FileUtils.getNameWithoutType (file) : programNameElement.getTextContent ();
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, n);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
 
         final Element instrumentsElement = XMLUtils.getChildElementByName (programElement, MPCKeygroupTag.PROGRAM_INSTRUMENTS);
         if (instrumentsElement == null)
             return Collections.emptyList ();
-
-        final int numKeygroups = XMLUtils.getChildElementIntegerContent (programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, 128);
-
         final List<Element> instrumentElements = XMLUtils.getChildElementsByName (instrumentsElement, MPCKeygroupTag.INSTRUMENTS_INSTRUMENT);
+        final int numKeygroups = XMLUtils.getChildElementIntegerContent (programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, 128);
         final List<IGroup> groups = this.parseGroups (file.getParentFile (), numKeygroups, instrumentElements, isDrum);
 
         if (isDrum)
@@ -169,19 +158,38 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
         multisampleSource.setGroups (groups);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, isDrum ? "Drums" : null);
 
-        final double pitchBendRange = XMLUtils.getChildElementDoubleContent (programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, 0);
-        if (pitchBendRange != 0)
-        {
-            final int pitchBend = (int) Math.round (pitchBendRange * 1200.0);
-            for (final IGroup group: groups)
-                for (final ISampleZone zone: group.getSampleZones ())
-                {
-                    zone.setBendUp (pitchBend);
-                    zone.setBendDown (-pitchBend);
-                }
-        }
+        applyPitchbend (programElement, groups);
 
         return Collections.singletonList (multisampleSource);
+    }
+
+
+    /**
+     * Get the top program element and issues some checks.
+     * 
+     * @param document The XML document from which to get the program element
+     * @return The program element if present
+     */
+    private Optional<Element> getProgramElement (final Document document)
+    {
+        final Element top = document.getDocumentElement ();
+        if (MPCKeygroupTag.ROOT.equals (top.getNodeName ()))
+        {
+            final Element versionElement = XMLUtils.getChildElementByName (top, MPCKeygroupTag.ROOT_VERSION);
+            if (versionElement != null)
+            {
+                final String fileVersion = XMLUtils.getChildElementContent (versionElement, MPCKeygroupTag.VERSION_FILE_VERSION);
+                final String platform = XMLUtils.getChildElementContent (versionElement, MPCKeygroupTag.VERSION_PLATFORM);
+                this.notifier.log ("IDS_MPC_VERSION", fileVersion, platform);
+
+                final Element programElement = XMLUtils.getChildElementByName (top, MPCKeygroupTag.ROOT_PROGRAM);
+                if (programElement != null)
+                    return Optional.of (programElement);
+            }
+        }
+
+        this.notifier.logError (BAD_METADATA_FILE);
+        return Optional.empty ();
     }
 
 
@@ -189,16 +197,15 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
      * Parses all groups (= regions in SFZ).
      *
      * @param basePath The path where the XPM file is located, this is the base path for samples
-     * @param numKeygroups The number of valid keygroups
+     * @param numKeygroups The number of valid key-groups
      * @param instrumentElements The instrument elements
-     * @param isDrum True, if it is a drum type (not a keygroup)
+     * @param isDrum True, if it is a drum type (not a key-group)
      * @return The parsed groups
      * @throws FileNotFoundException The WAV file could not be found
      */
     private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final List<Element> instrumentElements, final boolean isDrum) throws FileNotFoundException
     {
-        final List<DefaultSampleZone> samples = new ArrayList<> ();
-
+        final List<ISampleZone> zones = new ArrayList<> ();
         for (final Element instrumentElement: instrumentElements)
         {
             final int instrumentNumber = XMLUtils.getIntegerAttribute (instrumentElement, MPCKeygroupTag.INSTRUMENT_NUMBER, 0);
@@ -228,79 +235,104 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
             boolean isOneShot = false;
             final int triggerMode = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, -1);
             TriggerType triggerType = TriggerType.ATTACK;
-            switch (triggerMode)
-            {
-                // One-Shot
-                case 0:
-                    isOneShot = true;
-                    break;
-                case 1:
-                    triggerType = TriggerType.RELEASE;
-                    break;
-                default:
-                case 2:
-                    // Attack
-                    break;
-            }
             if (triggerMode < 0)
             {
                 final String oneShotStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_ONE_SHOT);
                 isOneShot = oneShotStr == null || MPCKeygroupTag.TRUE.equalsIgnoreCase (oneShotStr);
             }
-
-            final String ignoreBaseNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE);
-            final boolean ignoreBaseNote = ignoreBaseNoteStr != null && MPCKeygroupTag.TRUE.equals (ignoreBaseNoteStr);
-
-            final IFilter filter = parseFilter (instrumentElement);
-
-            final IEnvelope volumeEnvelope = parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK_CURVE, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY_CURVE, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE_CURVE);
-            final IEnvelope pitchEnvelope = parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK_CURVE, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY_CURVE, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE_CURVE);
-
-            final Element layersElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LAYERS);
-            if (layersElement != null)
-                for (final Element layerElement: XMLUtils.getChildElementsByName (layersElement, MPCKeygroupTag.LAYERS_LAYER))
+            else
+            {
+                switch (triggerMode)
                 {
-                    final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
-                    final int velEnd = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_END, 0);
-
-                    final DefaultSampleZone zone = this.parseSampleData (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
-                    if (zone == null)
-                        continue;
-                    samples.add (zone);
-
-                    /////////////////////////////////////////////////////////////
-                    // Amplitude
-
-                    final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
-                    amplitudeModulator.setDepth (1.0);
-                    amplitudeModulator.getSource ().set (volumeEnvelope);
-
-                    final double ampVelocityAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_AMP_AMOUNT, 0);
-                    if (ampVelocityAmount > 0)
-                        zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityAmount);
-
-                    /////////////////////////////////////////////////////////////
-                    // Pitch
-
-                    final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
-                    if (pitchEnvAmount != 0.5)
-                    {
-                        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
-                        pitchModulator.setDepth ((pitchEnvAmount - 0.5) * 2.0);
-                        pitchModulator.getSource ().set (pitchEnvelope);
-                    }
-
-                    // No loop if it is a one-shot
-                    if (!isOneShot)
-                        parseLoop (layerElement, zone);
-
-                    zone.setFilter (filter);
-
-                    this.readMissingData (isDrum, zone);
+                    // One-Shot
+                    case 0:
+                        isOneShot = true;
+                        break;
+                    case 1:
+                        triggerType = TriggerType.RELEASE;
+                        break;
+                    default:
+                    case 2:
+                        // Attack
+                        break;
                 }
+            }
+
+            this.readZones (basePath, isDrum, zones, instrumentElement, keyLow, keyHigh, zonePlay, isOneShot, triggerType);
         }
 
-        return groupIntoLayers (samples);
+        return groupIntoLayers (zones);
+    }
+
+
+    private void readZones (final File basePath, final boolean isDrum, final List<ISampleZone> zones, final Element instrumentElement, int keyLow, int keyHigh, PlayLogic zonePlay, boolean isOneShot, TriggerType triggerType) throws FileNotFoundException
+    {
+        final String ignoreBaseNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE);
+        final boolean ignoreBaseNote = ignoreBaseNoteStr != null && MPCKeygroupTag.TRUE.equals (ignoreBaseNoteStr);
+        final IFilter filter = parseFilter (instrumentElement);
+        final IEnvelope volumeEnvelope = parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK_CURVE, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY_CURVE, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE_CURVE);
+        final IEnvelope pitchEnvelope = parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK_CURVE, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY_CURVE, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE_CURVE);
+
+        final Element layersElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LAYERS);
+        if (layersElement == null)
+            return;
+
+        for (final Element layerElement: XMLUtils.getChildElementsByName (layersElement, MPCKeygroupTag.LAYERS_LAYER))
+        {
+            final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
+            final int velEnd = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_END, 0);
+
+            final ISampleZone zone = this.parseSampleZone (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
+            if (zone == null)
+                continue;
+            zones.add (zone);
+
+            /////////////////////////////////////////////////////////////
+            // Amplitude
+
+            final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
+            amplitudeModulator.setDepth (1.0);
+            amplitudeModulator.getSource ().set (volumeEnvelope);
+
+            final double ampVelocityAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_AMP_AMOUNT, 0);
+            if (ampVelocityAmount > 0)
+                zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityAmount);
+
+            /////////////////////////////////////////////////////////////
+            // Pitch
+
+            final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
+            if (pitchEnvAmount != 0.5)
+            {
+                final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                pitchModulator.setDepth ((pitchEnvAmount - 0.5) * 2.0);
+                pitchModulator.getSource ().set (pitchEnvelope);
+            }
+
+            // No loop if it is a one-shot
+            if (!isOneShot)
+                parseLoop (layerElement, zone);
+
+            zone.setFilter (filter);
+
+            this.readMissingData (isDrum, zone, isOneShot);
+        }
+    }
+
+
+    private static void applyPitchbend (final Element programElement, final List<IGroup> groups)
+    {
+        final double pitchBendRange = XMLUtils.getChildElementDoubleContent (programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, 0);
+        if (pitchBendRange == 0)
+            return;
+
+        final int pitchBend = (int) Math.round (pitchBendRange * 1200.0);
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                zone.setBendUp (pitchBend);
+                zone.setBendDown (-pitchBend);
+            }
     }
 
 
@@ -338,7 +370,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Parse the loop settings from the layer element.
+     * Parse the parameters of a sample zone from the layer element.
      *
      * @param layerElement The layer element
      * @param basePath The path where the XPM file is located, this is the base path for samples
@@ -351,7 +383,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
      * @param triggerType The trigger type
      * @return The sample metadata or null
      */
-    private DefaultSampleZone parseSampleData (final Element layerElement, final File basePath, final int keyLow, final int keyHigh, final int velStart, final int velEnd, final PlayLogic zonePlay, final boolean ignoreBaseNote, final TriggerType triggerType)
+    private ISampleZone parseSampleZone (final Element layerElement, final File basePath, final int keyLow, final int keyHigh, final int velStart, final int velEnd, final PlayLogic zonePlay, final boolean ignoreBaseNote, final TriggerType triggerType)
     {
         final Element sampleNameElement = XMLUtils.getChildElementByName (layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME);
         if (sampleNameElement == null)
@@ -372,63 +404,64 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.logError ("IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY");
             return null;
         }
-        final DefaultSampleZone sampleMetadata = new DefaultSampleZone (sampleName, sampleData);
+        final ISampleZone zone = new DefaultSampleZone (sampleName, sampleData);
 
-        sampleMetadata.setKeyLow (keyLow);
-        sampleMetadata.setKeyHigh (keyHigh);
+        zone.setKeyLow (keyLow);
+        zone.setKeyHigh (keyHigh);
         try
         {
-            sampleMetadata.setPlayLogic (zonePlay);
+            zone.setPlayLogic (zonePlay);
         }
         catch (final RuntimeException ex)
         {
             this.notifier.logError ("IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY");
         }
         if (triggerType != TriggerType.ATTACK)
-            sampleMetadata.setTrigger (triggerType);
+            zone.setTrigger (triggerType);
 
-        sampleMetadata.setVelocityLow (velStart);
-        sampleMetadata.setVelocityHigh (velEnd);
+        zone.setVelocityLow (velStart);
+        zone.setVelocityHigh (velEnd);
 
         final String activeStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_ACTIVE);
         if (activeStr != null && !activeStr.equalsIgnoreCase (MPCKeygroupTag.TRUE))
-            return sampleMetadata;
+            return zone;
 
         final String volumeStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_VOLUME);
         if (volumeStr != null && !volumeStr.isBlank ())
-            sampleMetadata.setGain (convertGain (Double.parseDouble (volumeStr)));
+            zone.setGain (convertGain (Double.parseDouble (volumeStr)));
 
         final String panStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PAN);
         if (panStr != null && !panStr.isBlank ())
-            sampleMetadata.setPanning (Math.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
+            zone.setPanning (Math.clamp (Double.parseDouble (panStr) * 2.0d - 1.0d, -1.0d, 1.0d));
 
         final String pitchStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_PITCH);
         if (pitchStr != null && !pitchStr.isBlank ())
-            sampleMetadata.setTune (Double.parseDouble (pitchStr));
+            zone.setTuning (Double.parseDouble (pitchStr));
         else
         {
             double pitch = XMLUtils.getChildElementDoubleContent (layerElement, MPCKeygroupTag.LAYER_COARSE_TUNE, 0);
             pitch += XMLUtils.getChildElementDoubleContent (layerElement, MPCKeygroupTag.LAYER_FINE_TUNE, 0);
-            sampleMetadata.setTune (pitch);
+            zone.setTuning (pitch);
         }
 
         // The root note is strangely one more then the lower upper keys!
         final String rootNoteStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_ROOT_NOTE);
         if (rootNoteStr != null && !rootNoteStr.isBlank ())
-            sampleMetadata.setKeyRoot (Integer.parseInt (rootNoteStr) - 1);
+            zone.setKeyRoot (Integer.parseInt (rootNoteStr) - 1);
 
         final String keyTrackStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_KEY_TRACK);
         if (keyTrackStr != null && !keyTrackStr.isBlank () && ignoreBaseNote)
-            sampleMetadata.setKeyTracking (MPCKeygroupTag.TRUE.equals (keyTrackStr) ? 1.0 : 0.0);
+            zone.setKeyTracking (MPCKeygroupTag.TRUE.equals (keyTrackStr) ? 1.0 : 0.0);
 
+        // Play-back start/end
         final String sliceStartStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_SLICE_START);
         if (sliceStartStr != null && !sliceStartStr.isBlank ())
-            sampleMetadata.setStart (Integer.parseInt (sliceStartStr));
+            zone.setStart (Integer.parseInt (sliceStartStr));
         final String sliceEndStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_SLICE_END);
         if (sliceEndStr != null && !sliceEndStr.isBlank ())
-            sampleMetadata.setStop (Integer.parseInt (sliceEndStr));
+            zone.setStop (Integer.parseInt (sliceEndStr));
 
-        return sampleMetadata;
+        return zone;
     }
 
 
@@ -437,23 +470,28 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param isDrum True if it is a Drum patch
      * @param zone Where to store the data
+     * @param isOneShot True if it is a one-shot
      * @throws FileNotFoundException The WAV file does not exist
      */
-    private void readMissingData (final boolean isDrum, final DefaultSampleZone zone) throws FileNotFoundException
+    private void readMissingData (final boolean isDrum, final ISampleZone zone, boolean isOneShot) throws FileNotFoundException
     {
-        if (zone.getStop () <= 0 || zone.getKeyRoot () < 0)
-            try
-            {
-                zone.getSampleData ().addZoneData (zone, !isDrum, false);
-            }
-            catch (final FileNotFoundException ex)
-            {
-                throw ex;
-            }
-            catch (final IOException ex)
-            {
-                this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
-            }
+        final boolean needsUpdate = zone.getStop () > 0;
+        final boolean needsRootKey = !isDrum && zone.getKeyRoot () >= 0;
+        final boolean needsLoop = !isOneShot && zone.getLoops ().isEmpty ();
+
+        try
+        {
+            if (needsUpdate || needsRootKey || needsLoop)
+                zone.getSampleData ().addZoneData (zone, needsRootKey, needsLoop);
+        }
+        catch (final FileNotFoundException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
+        }
     }
 
 
@@ -461,9 +499,9 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
      * Parse the loop settings from the layer element.
      *
      * @param layerElement THe layer element
-     * @param sampleMetadata Where to store the data
+     * @param zone Where to store the data
      */
-    private static void parseLoop (final Element layerElement, final DefaultSampleZone sampleMetadata)
+    private static void parseLoop (final Element layerElement, final ISampleZone zone)
     {
         // There might be no loop, forward or reverse
         final int sliceLoop = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, -1);
@@ -472,35 +510,38 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
 
         // There is a loop, is it reversed?
         if (sliceLoop == 3)
-            sampleMetadata.setReversed (true);
+            zone.setReversed (true);
 
         final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
         final int sliceLoopStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START, -1);
         if (sliceLoopStart >= 0)
             sampleLoop.setStart (sliceLoopStart);
-        sampleLoop.setEnd (sampleMetadata.getStop ());
+        final int stop = zone.getStop ();
+        if (stop <= 0)
+            return;
+        sampleLoop.setEnd (stop);
         final int loopCrossfade = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_CROSSFADE, 0);
         sampleLoop.setCrossfade (loopCrossfade / (double) sampleLoop.getLength ());
 
-        sampleMetadata.getLoops ().add (sampleLoop);
+        zone.getLoops ().add (sampleLoop);
     }
 
 
     /**
      * Create groups from the velocity values of the individual samples.
      *
-     * @param samples The samples to group into groups
+     * @param zones The sample zones to group into groups
      * @return The layers
      */
-    private static List<IGroup> groupIntoLayers (final List<DefaultSampleZone> samples)
+    private static List<IGroup> groupIntoLayers (final List<ISampleZone> zones)
     {
         final Map<String, IGroup> layerMap = new HashMap<> ();
 
         int count = 1;
 
-        for (final DefaultSampleZone sampleMetadata: samples)
+        for (final ISampleZone zone: zones)
         {
-            final String id = sampleMetadata.getVelocityLow () + "-" + sampleMetadata.getVelocityHigh ();
+            final String id = zone.getVelocityLow () + "-" + zone.getVelocityHigh ();
             final IGroup group = layerMap.computeIfAbsent (id, _ -> new DefaultGroup ());
 
             if (group.getName () == null)
@@ -509,7 +550,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
                 count++;
             }
 
-            group.addSampleZone (sampleMetadata);
+            group.addSampleZone (zone);
         }
 
         return new ArrayList<> (layerMap.values ());
@@ -544,9 +585,9 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         for (final IGroup layer: groups)
-            for (final ISampleZone sampleMetadata: layer.getSampleZones ())
+            for (final ISampleZone zone: layer.getSampleZones ())
             {
-                final Integer noteNumber = padNoteMap.get (Integer.valueOf (sampleMetadata.getKeyLow ()));
+                final Integer noteNumber = padNoteMap.get (Integer.valueOf (zone.getKeyLow ()));
                 if (noteNumber == null)
                 {
                     this.notifier.logError ("IDS_MPC_PAD_OUT_OF_RANGE", "null");
@@ -554,10 +595,10 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
                 }
 
                 final int nn = noteNumber.intValue ();
-                sampleMetadata.setKeyLow (nn);
-                sampleMetadata.setKeyHigh (nn);
-                if (sampleMetadata.getKeyRoot () < 0)
-                    sampleMetadata.setKeyRoot (nn);
+                zone.setKeyLow (nn);
+                zone.setKeyHigh (nn);
+                if (zone.getKeyRoot () < 0)
+                    zone.setKeyRoot (nn);
             }
     }
 

@@ -86,13 +86,13 @@ public class Music1010Tag
     /** The attribute for cell mode. */
     public static final String ATTR_CELL_MODE             = "cellmode";
 
-    /** The attribute for reverse sample playback. */
+    /** The attribute for reverse sample play-back. */
     public static final String ATTR_REVERSE               = "reverse";
     /** The attribute for the sample start. */
     public static final String ATTR_SAMPLE_START          = "samstart";
     /** The attribute for the sample length. */
     public static final String ATTR_SAMPLE_LENGTH         = "samlen";
-    /** The attribute for the sample trigger type: 0 (Trigger), 1 (Normal),2 (Toggle). */
+    /** The attribute for the sample trigger type: 0 (Trigger), 1 (Normal), 2 (Toggle). */
     public static final String ATTR_SAMPLE_TRIGGER_TYPE   = "samtrigtype";
 
     /** The attribute for the sample pitch. */
@@ -108,6 +108,17 @@ public class Music1010Tag
     public static final String ATTR_LOOP_END              = "loopend";
     /** The attribute for the loop fade amount. */
     public static final String ATTR_LOOP_FADE_AMOUNT      = "loopfadeamt";
+
+    ////////////////////// Bento specific
+
+    /** The track tag. */
+    public static final String TRACK                      = "track";
+    /** The name of a track. */
+    public static final String ATTR_CELLNAME              = "cellname";
+    /** The velocity range bottom attribute. */
+    public static final String ATTR_ROOT_VEL              = "velroot";
+    /** The MIDI input channel attribute. */
+    public static final String ATTR_MIDI_INPUT_CHANNEL    = "midiinchan";
 
 
     /**

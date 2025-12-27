@@ -363,12 +363,12 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         final double gain = zone.getGain ();
         if (gain != 0)
             sampleElement.setAttribute (DecentSamplerTag.VOLUME, gain + "dB");
-        sampleElement.setAttribute (DecentSamplerTag.PANNING, Integer.toString ((int) (zone.getPanning () * 100.0)));
+        sampleElement.setAttribute (DecentSamplerTag.PANNING, Integer.toString ((int) (zone.getTuning () * 100.0)));
         XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.START, Math.max (0, zone.getStart ()), 3);
         final int stop = zone.getStop ();
         if (stop >= 0)
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.END, stop, 3);
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         if (tune != 0)
             XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, tune, 2);
 
@@ -648,7 +648,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
     private void copyResources (final File resourceDestination) throws IOException
     {
         final File templateFolderPath = this.settingsConfiguration.getTemplateFolderPath ();
-        if (templateFolderPath.exists ())
+        if (!templateFolderPath.getPath ().isEmpty () && templateFolderPath.exists ())
             copyFolderWithIgnoreList (templateFolderPath, resourceDestination, IGNORE_FILES);
     }
 
@@ -656,7 +656,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
     private void copyResources (final ZipOutputStream zos, final String basePath) throws IOException
     {
         final File templateFolderPath = this.settingsConfiguration.getTemplateFolderPath ();
-        if (templateFolderPath.exists ())
+        if (!templateFolderPath.getPath ().isEmpty () && templateFolderPath.exists ())
             zipFolderWithIgnoreList (templateFolderPath, basePath, zos, IGNORE_FILES);
     }
 

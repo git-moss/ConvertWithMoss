@@ -513,8 +513,8 @@ public class MaschinePresetAccessor
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_VELOCITY_HIGH, newZone, 0, velocityHigh, velocityHigh, 0, 0, 0);
 
         writeFloatValueRow (X0D_ZONE_GAIN, newZone, dbToInput (sampleZone.getGain ()));
-        writeFloatValueRow (X0D_ZONE_PANNING, newZone, (float) sampleZone.getPanning ());
-        writeFloatValueRow (X0D_ZONE_TUNE, newZone, (float) sampleZone.getTune ());
+        writeFloatValueRow (X0D_ZONE_PANNING, newZone, (float) sampleZone.getTuning ());
+        writeFloatValueRow (X0D_ZONE_TUNE, newZone, (float) sampleZone.getTuning ());
 
         newZone.set (X0D_ZONE_LAST_ROW, createLastRow (zoneIndex, maxZones, sampleZone));
 
@@ -788,7 +788,7 @@ public class MaschinePresetAccessor
                 zone.setReversed (reverse == 1);
                 zone.setBendUp (pitchbend);
                 zone.setBendDown (-pitchbend);
-                zone.setTune (tuning + zone.getTune ());
+                zone.setTuning (tuning + zone.getTuning ());
 
                 // Amplitude envelope
                 final IEnvelopeModulator amplitudeEnvelopeModulator = zone.getAmplitudeEnvelopeModulator ();
@@ -860,7 +860,7 @@ public class MaschinePresetAccessor
 
         zone.setGain (inputToDb (parameterArray.readFloat (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_GAIN : X0D_ZONE_GAIN))));
         zone.setPanning (parameterArray.readFloat (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_PANNING : X0D_ZONE_PANNING)));
-        zone.setTune (parameterArray.readFloat (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_TUNE : X0D_ZONE_TUNE)));
+        zone.setTuning (parameterArray.readFloat (zoneOffset + (isOldFormat ? PRE_X0D_ZONE_TUNE : X0D_ZONE_TUNE)));
     }
 
 
@@ -887,7 +887,7 @@ public class MaschinePresetAccessor
         soundInfoIn.skipNBytes (11);
 
         final String soundName = StreamUtils.readWithLengthUTF16 (soundInfoIn);
-        if (!soundName.isBlank ())
+        if (!soundName.isBlank () && !"Sampler".equals (soundName))
             multisampleSource.setName (soundName);
         final String soundAuthor = StreamUtils.readWithLengthUTF16 (soundInfoIn);
         if (!soundAuthor.isBlank ())

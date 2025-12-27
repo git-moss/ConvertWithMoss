@@ -459,7 +459,7 @@ class SxtZone
         zone.setKeyRoot (this.rootKey);
         zone.setStart ((int) this.sampleStart);
         zone.setStop ((int) this.sampleEnd);
-        zone.setTune (this.octave * 12 + this.semitone + this.cent / 100.0 + this.sampleTune / 100.0);
+        zone.setTuning (this.octave * 12 + this.semitone + this.cent / 100.0 + this.sampleTune / 100.0);
         zone.setBendUp (this.pitchWheelRange * 100);
         zone.setBendDown (-this.pitchWheelRange * 100);
 
@@ -635,7 +635,7 @@ class SxtZone
         final IAudioMetadata audioMetadata = zone.getSampleData ().getAudioMetadata ();
         this.sampleSize = audioMetadata.getNumberOfSamples ();
 
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         final int semitones = (int) (tune / 100);
         this.octave = semitones / 12;
         this.semitone = semitones % 12;
@@ -806,7 +806,7 @@ class SxtZone
         final double gainRatio = Math.pow (10, dBValue / 20);
         this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3) * 1440 - 1440);
 
-        this.pan = (int) (zone.getPanning () * 1000.0);
+        this.pan = (int) (zone.getTuning () * 1000.0);
     }
 
 
