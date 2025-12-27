@@ -146,7 +146,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             final int numInstruments = safeInstrumentSources.size ();
             if (numInstruments == 64)
             {
-                this.notifier.logError ("IDS_NKI_LIMITED_TO_64", Integer.toString (numInstruments));
+                this.notifier.logError ("IDS_ERR_LIMITED_INSTRUMENTS", Integer.toString (64), Integer.toString (numInstruments));
                 break;
             }
         }

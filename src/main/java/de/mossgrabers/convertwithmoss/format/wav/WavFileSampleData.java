@@ -160,10 +160,10 @@ public class WavFileSampleData extends AbstractFileSampleData
         if (addRootKey && zone.getKeyRoot () == -1)
             zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
 
-        if (zone.getTune () == 0)
+        if (zone.getTuning () == 0)
         {
             final double tune = Math.clamp (sampleChunk.getMIDIPitchFractionAsCents () / 100.0, -0.5, 0.5);
-            zone.setTune (tune);
+            zone.setTuning (tune);
             // Root note needs to be updated as well!
             if (tune < 0)
                 zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
@@ -176,7 +176,7 @@ public class WavFileSampleData extends AbstractFileSampleData
 
     private static void addLoops (final SampleChunk sampleChunk, final List<ISampleLoop> loops)
     {
-        // Check if are already present
+        // Check if a loop is already present
         if (!loops.isEmpty ())
             return;
 
@@ -196,8 +196,12 @@ public class WavFileSampleData extends AbstractFileSampleData
                     loop.setType (LoopType.BACKWARDS);
                     break;
             }
-            loop.setStart (sampleLoop.getStart ());
-            loop.setEnd (sampleLoop.getEnd ());
+            final int start = sampleLoop.getStart ();
+            final int end = sampleLoop.getEnd ();
+            if (start < 0 || end <= 0 || start > end)
+                continue;
+            loop.setStart (start);
+            loop.setEnd (end);
             loops.add (loop);
         }
     }

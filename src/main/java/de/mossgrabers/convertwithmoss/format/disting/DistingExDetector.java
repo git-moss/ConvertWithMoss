@@ -268,7 +268,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
         for (final IGroup group: groups)
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                zone.setTune (tune);
+                zone.setTuning (tune);
                 zone.setGain (gain);
                 zone.setBendUp (pitchBendRange);
                 zone.setBendDown (-pitchBendRange);

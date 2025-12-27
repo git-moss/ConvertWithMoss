@@ -138,4 +138,48 @@ public interface IMultisampleSource extends ISource
      * @return The amplitude if a global envelope setting is found
      */
     Optional<IEnvelopeModulator> getGlobalAmplitudeModulator ();
+
+
+    /**
+     * Checks all samples in all groups for panning. Only if all samples contain the same panning
+     * value a result is returned.
+     *
+     * @return The global panning value in the range of [-1..1], -1 is full left, 0 centered and 1
+     *         full right
+     */
+    Optional<Double> getGlobalPanning ();
+
+
+    /**
+     * Checks all samples in all groups for gain. Only if all samples contain the same gain value a
+     * result is returned.
+     *
+     * @return The global gain value
+     */
+    Optional<Double> getGlobalGain ();
+
+
+    /**
+     * Checks all samples in all groups for tuning. Only if all samples contain the same tuning
+     * value a result is returned.
+     *
+     * @return The global tuning value
+     */
+    Optional<Double> getGlobalTuning ();
+
+
+    /**
+     * Get the lowest key covered by a sample in all of the groups.
+     * 
+     * @return The lowest playing key (0-127)
+     */
+    int getLowestKey ();
+
+
+    /**
+     * Get the highest key covered by a sample in all of the groups.
+     * 
+     * @return The highest playing key (0-127)
+     */
+    int getHighestKey ();
 }

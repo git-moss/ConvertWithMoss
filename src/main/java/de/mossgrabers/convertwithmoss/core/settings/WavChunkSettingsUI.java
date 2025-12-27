@@ -29,7 +29,7 @@ public class WavChunkSettingsUI implements ICoreTaskSettings
     private static final String WRITE_SAMPLE_CHUNK           = "WriteSampleChunk";
     private static final String REMOVE_JUNK_CHUNK            = "RemoveJunkChunk";
 
-    private final String        prefix;
+    protected final String      prefix;
 
     // Metadata options
     private CheckBox            updateBroadcastAudioChunkBox = null;

@@ -899,6 +899,10 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                 }
             }
         }
+        catch (final FileNotFoundException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+        }
         catch (final IOException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);

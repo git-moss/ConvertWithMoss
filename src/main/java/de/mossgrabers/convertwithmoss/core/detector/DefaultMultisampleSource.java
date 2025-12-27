@@ -219,4 +219,88 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
             }
         return modulator == null ? Optional.empty () : Optional.ofNullable (modulator);
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<Double> getGlobalPanning ()
+    {
+        Double globalPanning = null;
+        for (final IGroup group: this.groups)
+            for (final ISampleZone sampleZone: group.getSampleZones ())
+            {
+                final double pan = sampleZone.getPanning ();
+                if (globalPanning == null)
+                    globalPanning = Double.valueOf (pan);
+                else if (globalPanning.doubleValue () != pan)
+                    return Optional.empty ();
+            }
+        return globalPanning == null ? Optional.empty () : Optional.of (globalPanning);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<Double> getGlobalGain ()
+    {
+        Double globalGain = null;
+        for (final IGroup group: this.groups)
+            for (final ISampleZone sampleZone: group.getSampleZones ())
+            {
+                final double gain = sampleZone.getGain ();
+                if (globalGain == null)
+                    globalGain = Double.valueOf (gain);
+                else if (globalGain.doubleValue () != gain)
+                    return Optional.empty ();
+            }
+        return globalGain == null ? Optional.empty () : Optional.of (globalGain);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<Double> getGlobalTuning ()
+    {
+        Double globalTuning = null;
+        for (final IGroup group: this.groups)
+            for (final ISampleZone sampleZone: group.getSampleZones ())
+            {
+                final double tuning = sampleZone.getTuning ();
+                if (globalTuning == null)
+                    globalTuning = Double.valueOf (tuning);
+                else if (globalTuning.doubleValue () != tuning)
+                    return Optional.empty ();
+            }
+        return globalTuning == null ? Optional.empty () : Optional.of (globalTuning);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getLowestKey ()
+    {
+        int lowestKey = 127;
+        for (final IGroup group: this.groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                if (zone.getKeyLow () < lowestKey)
+                    lowestKey = zone.getKeyLow ();
+            }
+        return lowestKey;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getHighestKey ()
+    {
+        int highestKey = 0;
+        for (final IGroup group: this.groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                if (zone.getKeyHigh () > highestKey)
+                    highestKey = zone.getKeyHigh ();
+            }
+        return highestKey;
+    }
 }

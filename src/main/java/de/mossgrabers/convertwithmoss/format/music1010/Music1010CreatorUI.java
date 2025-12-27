@@ -23,15 +23,15 @@ import javafx.scene.control.ToggleGroup;
 
 
 /**
- * Settings for the 1010music creator.
+ * Settings for the 1010music creators.
  *
  * @author Jürgen Moßgraber
  */
 public class Music1010CreatorUI extends WavChunkSettingsUI
 {
-    private static final String MUSIC_1010_INTERPOLATION_QUALITY = "1010musicInterpolationQuality";
-    private static final String MUSIC_1010_RESAMPLE_TO_24_48     = "1010musicResampleTo2448";
-    private static final String MUSIC_1010_TRIM_START_TO_END     = "1010musicTrimStartToEnd";
+    private static final String INTERPOLATION_QUALITY = "InterpolationQuality";
+    private static final String RESAMPLE_TO_24_48     = "ResampleTo2448";
+    private static final String TRIM_START_TO_END     = "TrimStartToEnd";
 
     private ToggleGroup         interpolationQualityGroup;
     private CheckBox            resampleTo2448CheckBox;
@@ -83,9 +83,9 @@ public class Music1010CreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.interpolationQualityGroup.selectToggle (this.interpolationQualityGroup.getToggles ().get (config.getBoolean (MUSIC_1010_INTERPOLATION_QUALITY, false) ? 1 : 0));
-        this.resampleTo2448CheckBox.setSelected (config.getBoolean (MUSIC_1010_RESAMPLE_TO_24_48, true));
-        this.trimStartToEndCheckBox.setSelected (config.getBoolean (MUSIC_1010_TRIM_START_TO_END, true));
+        this.interpolationQualityGroup.selectToggle (this.interpolationQualityGroup.getToggles ().get (config.getBoolean (this.prefix + INTERPOLATION_QUALITY, false) ? 1 : 0));
+        this.resampleTo2448CheckBox.setSelected (config.getBoolean (this.prefix + RESAMPLE_TO_24_48, true));
+        this.trimStartToEndCheckBox.setSelected (config.getBoolean (this.prefix + TRIM_START_TO_END, true));
 
         super.loadSettings (config);
     }
@@ -95,9 +95,9 @@ public class Music1010CreatorUI extends WavChunkSettingsUI
     @Override
     public void saveSettings (final BasicConfig config)
     {
-        config.setBoolean (MUSIC_1010_INTERPOLATION_QUALITY, this.interpolationQualityGroup.getToggles ().get (1).isSelected ());
-        config.setBoolean (MUSIC_1010_RESAMPLE_TO_24_48, this.resampleTo2448CheckBox.isSelected ());
-        config.setBoolean (MUSIC_1010_TRIM_START_TO_END, this.trimStartToEndCheckBox.isSelected ());
+        config.setBoolean (this.prefix + INTERPOLATION_QUALITY, this.interpolationQualityGroup.getToggles ().get (1).isSelected ());
+        config.setBoolean (this.prefix + RESAMPLE_TO_24_48, this.resampleTo2448CheckBox.isSelected ());
+        config.setBoolean (this.prefix + TRIM_START_TO_END, this.trimStartToEndCheckBox.isSelected ());
 
         super.saveSettings (config);
     }
@@ -124,13 +124,13 @@ public class Music1010CreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (MUSIC_1010_INTERPOLATION_QUALITY);
+        String value = parameters.remove (this.prefix + INTERPOLATION_QUALITY);
         this.interpolationQuality = "1".equals (value);
 
-        value = parameters.remove (MUSIC_1010_RESAMPLE_TO_24_48);
+        value = parameters.remove (this.prefix + RESAMPLE_TO_24_48);
         this.resampleTo2448 = "1".equals (value);
 
-        value = parameters.remove (MUSIC_1010_TRIM_START_TO_END);
+        value = parameters.remove (this.prefix + TRIM_START_TO_END);
         this.trimStartToEnd = "1".equals (value);
 
         return true;
@@ -142,9 +142,9 @@ public class Music1010CreatorUI extends WavChunkSettingsUI
     public String [] getCLIParameterNames ()
     {
         final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
-        parameterNames.add (MUSIC_1010_INTERPOLATION_QUALITY);
-        parameterNames.add (MUSIC_1010_RESAMPLE_TO_24_48);
-        parameterNames.add (MUSIC_1010_TRIM_START_TO_END);
+        parameterNames.add (this.prefix + INTERPOLATION_QUALITY);
+        parameterNames.add (this.prefix + RESAMPLE_TO_24_48);
+        parameterNames.add (this.prefix + TRIM_START_TO_END);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
 

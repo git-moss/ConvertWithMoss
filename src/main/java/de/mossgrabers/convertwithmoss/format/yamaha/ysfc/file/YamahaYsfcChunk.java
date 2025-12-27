@@ -2,7 +2,7 @@
 // (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
+package de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -104,11 +104,12 @@ public class YamahaYsfcChunk
      * Write the chunk to the output stream.
      *
      * @param out The output stream
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @throws IOException Could not write the chunk
      */
-    public void write (final OutputStream out) throws IOException
+    public void write (final OutputStream out, final int version) throws IOException
     {
-        this.updateChunkLength ();
+        this.updateChunkLength (version);
 
         StreamUtils.writeASCII (out, this.chunkID, 4);
         StreamUtils.writeUnsigned32 (out, this.chunkLength, true);
@@ -125,12 +126,12 @@ public class YamahaYsfcChunk
             for (final YamahaYsfcEntry entryListChunk: this.entryListEntries)
             {
                 StreamUtils.writeASCII (out, MAGIC_ENTRY, 4);
-                entryListChunk.write (out);
+                entryListChunk.write (out, version);
             }
     }
 
 
-    private void updateChunkLength () throws IOException
+    private void updateChunkLength (final int version) throws IOException
     {
         this.chunkLength = 4;
         if (this.entryListEntries.isEmpty ())
@@ -142,7 +143,7 @@ public class YamahaYsfcChunk
         else
         {
             for (final YamahaYsfcEntry entryListChunk: this.entryListEntries)
-                this.chunkLength += 8 + entryListChunk.getLength ();
+                this.chunkLength += 8 + entryListChunk.getLength (version);
             this.numItemsInChunk = this.entryListEntries.size ();
         }
     }
@@ -161,13 +162,14 @@ public class YamahaYsfcChunk
 
     /**
      * Get the length of the chunk.
-     *
+     * 
+     * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @return The chunk length
      * @throws IOException Could not calculate the length
      */
-    public int getChunkLength () throws IOException
+    public int getChunkLength (final int version) throws IOException
     {
-        this.updateChunkLength ();
+        this.updateChunkLength (version);
         return this.chunkLength;
     }
 

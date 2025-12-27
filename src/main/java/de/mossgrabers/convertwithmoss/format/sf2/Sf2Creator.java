@@ -332,7 +332,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         instrumentZone.addModulator (Sf2Modulator.MODULATOR_PITCH_BEND.intValue (), Generator.FINE_TUNE, bendUp, 0x10, 0);
 
         // Set panning
-        double pan = sampleZone.getPanning ();
+        double pan = sampleZone.getTuning ();
         final int sampleType = sampleDescriptor.getSampleType ();
         if (sampleType == Sf2SampleDescriptor.LEFT)
             pan = -1;
@@ -343,7 +343,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         // Set the pitch
         instrumentZone.addGenerator (Generator.OVERRIDING_ROOT_KEY, sampleZone.getKeyRoot ());
 
-        final double tune = sampleZone.getTune ();
+        final double tune = sampleZone.getTuning ();
         final int coarse = (int) tune;
         instrumentZone.addSignedGenerator (Generator.COARSE_TUNE, coarse);
         instrumentZone.addSignedGenerator (Generator.FINE_TUNE, (int) ((tune - coarse) * 100.0));
@@ -559,7 +559,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         sampleDescriptor.setSampleType (sampleType);
         sampleDescriptor.setSampleRate (formatChunk.getSampleRate ());
         sampleDescriptor.setOriginalPitch (Math.clamp (sampleZone.getKeyRoot (), 0, 127));
-        sampleDescriptor.setPitchCorrection ((int) (sampleZone.getTune () * 100));
+        sampleDescriptor.setPitchCorrection ((int) (sampleZone.getTuning () * 100));
 
         String name = sampleZone.getName ();
         if (name.endsWith ("-") || name.endsWith ("_"))

@@ -10,9 +10,9 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcChunk;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcEntry;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YsfcFile;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
 
 
 /**

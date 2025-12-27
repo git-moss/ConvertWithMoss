@@ -2,7 +2,7 @@
 // (c) 2019-2025
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.music1010;
+package de.mossgrabers.convertwithmoss.format.music1010.blackbox;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +31,8 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010CreatorUI;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -45,6 +47,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
 {
+    private static final int                    MAX_INSTRUMENTS              = 16;
     private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT       = new DestinationAudioFormat (new int []
     {
         24
@@ -155,7 +158,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
      */
     public Music1010Creator (final INotifier notifier)
     {
-        super ("1010music", "1010music", notifier, new Music1010CreatorUI ("1010music"));
+        super ("1010music blackbox", "1010music", notifier, new Music1010CreatorUI ("1010music"));
     }
 
 
@@ -182,19 +185,21 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         final boolean resample = this.settingsConfiguration.resampleTo2448 ();
         final boolean trim = this.settingsConfiguration.trimStartToEnd ();
 
-        // Create 1 preset which contains up to 16 multi-samples as well as individual presets for
-        // each multi-sample in sub-folders
-
-        // A preset has a maximum of 16 slots!
+        // Create 1 preset which contains up to 16 multi-samples (A preset has a maximum of 16
+        // slots) as well as individual presets for each multi-sample in sub-folders
         List<IInstrumentSource> instrumentSources = performanceSource.getInstruments ();
-        if (instrumentSources.size () > 16)
-            instrumentSources = performanceSource.getInstruments ().subList (0, 16);
+        final int numInstruments = instrumentSources.size ();
+        if (numInstruments > MAX_INSTRUMENTS)
+        {
+            instrumentSources = instrumentSources.subList (0, MAX_INSTRUMENTS);
+            this.notifier.logError ("IDS_ERR_LIMITED_INSTRUMENTS", Integer.toString (MAX_INSTRUMENTS), Integer.toString (numInstruments));
+        }
 
         for (final IInstrumentSource instrumentSource: instrumentSources)
             instrumentSource.clipKeyRange ();
 
         // Create the overall performance preset
-        final Optional<String> xmlCode = this.createPreset (instrumentSources, trim, performanceFolder + "\\");
+        final Optional<String> xmlCode = this.createPreset (instrumentSources, trim, performanceFolder + "\\", true);
         if (xmlCode.isPresent ())
         {
             final File performanceFile = new File (folder, "preset.xml");
@@ -246,7 +251,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         }
 
         final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
-        final Optional<String> metadata = this.createPreset (Collections.singletonList (instrumentSource), trim, "");
+        final Optional<String> metadata = this.createPreset (Collections.singletonList (instrumentSource), trim, "", false);
         if (metadata.isEmpty ())
             return;
 
@@ -282,10 +287,11 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
      * @param instrumentSources The up to 16 instrument sources to add to the preset
      * @param trim Trim to start/end if true
      * @param subFolder The sub-folder inside of the Presets folder to write to
+     * @param isPerformance True if the preset is part of a performance
      * @return The XML structure
      * @throws IOException Could not combine split-stereo files
      */
-    private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final boolean trim, final String subFolder) throws IOException
+    private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final boolean trim, final String subFolder, final boolean isPerformance) throws IOException
     {
         final Pair<Document, Element> sessionDocument = this.createSessionDocument ();
         if (sessionDocument == null)
@@ -316,36 +322,33 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
 
             createModulators (document, slotElement, multisampleSource);
 
-            // Add all groups
-            int lowestKey = 127;
-            int highestKey = 0;
+            // Create sample entries for all sample zones of all groups, adds workaround for silence
+            // outside of range
+            if (isPerformance)
+            {
+                final int lowestKey = multisampleSource.getLowestKey ();
+                if (lowestKey > 0)
+                {
+                    final ISampleZone silentZone = new DefaultSampleZone ("Silence24bit48kHz", 0, lowestKey - 1);
+                    createSample (document, presetPath, sessionElement, silentZone, sampleIndex, i, false);
+                    sampleIndex++;
+                }
+            }
             for (final IGroup group: groups)
                 for (final ISampleZone zone: group.getSampleZones ())
                 {
                     createSample (document, presetPath, sessionElement, zone, sampleIndex, i, trim);
-                    if (zone.getKeyLow () < lowestKey)
-                        lowestKey = zone.getKeyLow ();
-                    if (zone.getKeyHigh () > highestKey)
-                        highestKey = zone.getKeyHigh ();
                     sampleIndex++;
                 }
-
-            // Add workaround to have silence outside of the range...
-            final ISampleZone silentZone = new DefaultSampleZone ();
-            silentZone.setName ("Silence24bit48kHz");
-            if (lowestKey > 0)
+            if (isPerformance)
             {
-                silentZone.setKeyLow (0);
-                silentZone.setKeyHigh (lowestKey - 1);
-                createSample (document, presetPath, sessionElement, silentZone, sampleIndex, i, false);
-                sampleIndex++;
-            }
-            if (highestKey < 127)
-            {
-                silentZone.setKeyLow (highestKey + 1);
-                silentZone.setKeyHigh (127);
-                createSample (document, presetPath, sessionElement, silentZone, sampleIndex, i, false);
-                sampleIndex++;
+                final int highestKey = multisampleSource.getHighestKey ();
+                if (highestKey < 127)
+                {
+                    final ISampleZone silentZone = new DefaultSampleZone ("Silence24bit48kHz", highestKey + 1, 127);
+                    createSample (document, presetPath, sessionElement, silentZone, sampleIndex, i, false);
+                    sampleIndex++;
+                }
             }
 
             final Element paramsElement = XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS);
@@ -359,9 +362,9 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
                 final double sustainVal = amplitudeEnvelope.getSustainLevel ();
                 final int sustain = sustainVal < 0 ? 1000 : (int) Math.round (sustainVal * 1000.0);
 
-                paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_ATTACK, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getAttackTime (), 9.0));
+                paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_ATTACK, MathUtils.normalizeTimeFormattedAsInt (Math.max (0, amplitudeEnvelope.getAttackTime ()), 9.0));
                 paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_DECAY, MathUtils.normalizeTimeFormattedAsInt (Math.max (0, amplitudeEnvelope.getHoldTime ()) + Math.max (0, amplitudeEnvelope.getDecayTime ()), 25.0));
-                paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_RELEASE, MathUtils.normalizeTimeFormattedAsInt (amplitudeEnvelope.getReleaseTime (), 25.0));
+                paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_RELEASE, MathUtils.normalizeTimeFormattedAsInt (Math.max (0, amplitudeEnvelope.getReleaseTime ()), 25.0));
                 paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_SUSTAIN, Integer.toString (sustain));
             }
 
@@ -369,6 +372,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         }
 
         return this.createXMLString (document);
+
     }
 
 
@@ -413,7 +417,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
      */
     private List<Element> createSlots (final Document document, final Element sessionElement, final int numActiveSlots)
     {
-        List<Element> activeSlotElements = new ArrayList<> ();
+        final List<Element> activeSlotElements = new ArrayList<> ();
         for (int slot = 0; slot < 16; slot++)
         {
             final boolean isActive = slot < numActiveSlots;

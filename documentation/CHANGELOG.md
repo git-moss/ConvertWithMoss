@@ -1,5 +1,20 @@
 # Changes
 
+## 15.2.0 (unreleased)
+
+* Added support for 1010music Bento
+* 1010music blackbox
+  * Fixed: Empty sample trick for silent ranges was applied to single presets as well but the sample was not added.
+* DecentSampler
+  * Fixed: If the *Template and resources folder* was not set, the current folder was copied completely.
+* Maschine 2/3
+  * Fixed: Added workaround for presets which have set *Sampler* in the sound info as their name.
+* MPC
+  * New: The file version and source platform is now logged.
+  * New: Improved check for valid loops. If none is present it is loaded from the WAV file if present.
+* Yamaha YSFC
+  * Fixed: End of loop was always set to the end of the sample.
+
 ## 15.1.0
 
 * New: Added support for Maschine 1 MSND files.

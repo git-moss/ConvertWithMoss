@@ -159,7 +159,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             zone.setGain (exs24Zone.volumeAdjust);
 
             if (exs24Zone.pitch && (exs24Zone.coarseTuning != 0 || exs24Zone.fineTuning != 0))
-                zone.setTune (exs24Zone.coarseTuning + exs24Zone.fineTuning / 100.0);
+                zone.setTuning (exs24Zone.coarseTuning + exs24Zone.fineTuning / 100.0);
 
             zone.setPanning (Math.clamp (exs24Zone.pan, -50, 50) / 50.0);
 
@@ -277,7 +277,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             {
                 zone.setBendUp (bendUp);
                 zone.setBendDown (bendDown);
-                zone.setTune (zone.getTune () + tuneOffset);
+                zone.setTuning (zone.getTuning () + tuneOffset);
 
                 final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
                 amplitudeModulator.setDepth (1.0);
@@ -382,7 +382,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         if (exs24Group.volume != 0)
             zone.setGain (zone.getGain () + exs24Group.volume);
         if (exs24Group.pan != 0)
-            zone.setPanning (zone.getPanning () + exs24Group.pan);
+            zone.setPanning (zone.getTuning () + exs24Group.pan);
 
         // Zone is completely outside of the groups' velocity range
         if (zone.getVelocityHigh () < exs24Group.minVelocity)

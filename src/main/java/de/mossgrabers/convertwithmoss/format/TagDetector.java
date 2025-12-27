@@ -303,7 +303,8 @@ public class TagDetector
         {
             CATEGORY_ORCHESTRAL,
             "Orchestra",
-            "Score"
+            "Score",
+            "Cinema"
         });
         CATEGORIES.put (CATEGORY_ORGAN, new String []
         {
@@ -415,8 +416,10 @@ public class TagDetector
             "Sweep",
             "Swell",
             "Virus",
+            "Juno",
             "Mini",
             "Moog",
+            "2600",
             "Syn",
             "SAW",
             "OB6",

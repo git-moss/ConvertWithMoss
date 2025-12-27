@@ -92,6 +92,21 @@ public class DefaultSampleZone implements ISampleZone
     }
 
 
+    /**
+     * Constructor for setting the sample data later.
+     * 
+     * @param sampleName The name of the sample
+     * @param keyLow The lowest key covered by the range
+     * @param keyHigh The highest key covered by the range
+     */
+    public DefaultSampleZone (final String sampleName, final int keyLow, final int keyHigh)
+    {
+        this.name = sampleName;
+        this.keyLow = keyLow;
+        this.keyHigh = keyHigh;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public String getName ()
@@ -398,7 +413,7 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public void setTune (final double tune)
+    public void setTuning (final double tune)
     {
         this.tune = tune;
     }
@@ -406,7 +421,7 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public double getTune ()
+    public double getTuning ()
     {
         return this.tune;
     }
@@ -534,8 +549,8 @@ public class DefaultSampleZone implements ISampleZone
         this.velocityCrossfadeLow = other.getVelocityCrossfadeLow ();
         this.velocityCrossfadeHigh = other.getVelocityCrossfadeHigh ();
         this.gain = other.getGain ();
-        this.panning = other.getPanning ();
-        this.tune = other.getTune ();
+        this.panning = other.getTuning ();
+        this.tune = other.getTuning ();
         this.keyTracking = other.getKeyTracking ();
         this.bendUp = other.getBendUp ();
         this.bendDown = other.getBendDown ();

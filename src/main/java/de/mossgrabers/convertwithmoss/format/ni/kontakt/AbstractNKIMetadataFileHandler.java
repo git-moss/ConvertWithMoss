@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.ni.kontakt;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
@@ -247,7 +248,7 @@ public abstract class AbstractNKIMetadataFileHandler
         int numInstruments = instrumentSources.size ();
         if (numInstruments > 64)
         {
-            this.notifier.logError ("IDS_NKI_LIMITED_TO_64", Integer.toString (numInstruments));
+            this.notifier.logError ("IDS_ERR_LIMITED_INSTRUMENTS", Integer.toString (64), Integer.toString (numInstruments));
             numInstruments = 64;
         }
 
@@ -380,8 +381,8 @@ public abstract class AbstractNKIMetadataFileHandler
         zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getNoteCrossfadeHigh (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (limitToDefault (zone.getKeyRoot (), keyLow)));
         zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, zone.getGain () / 20.0d)));
-        zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (zone.getTune () / 0.12d * Math.log (2))));
-        zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (zone.getPanning ())));
+        zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.exp (zone.getTuning () / 0.12d * Math.log (2))));
+        zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (zone.getTuning ())));
 
         // Note: we need to use backward slashes otherwise Kontakt can read but not save the file
         // again!
@@ -798,6 +799,10 @@ public abstract class AbstractNKIMetadataFileHandler
         {
             zone.getSampleData ().addZoneData (zone, true, true);
         }
+        catch (final FileNotFoundException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+        }
         catch (final IOException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
@@ -838,7 +843,7 @@ public abstract class AbstractNKIMetadataFileHandler
             final double zoneTune = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneTuneParam ());
             final double groupTune = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ());
             final double progTune = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progTuneParam ());
-            zone.setTune (this.tags.calculateTune (zoneTune, groupTune, progTune));
+            zone.setTuning (this.tags.calculateTune (zoneTune, groupTune, progTune));
 
             final double zonePan = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zonePanParam ());
             final double groupPan = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ());

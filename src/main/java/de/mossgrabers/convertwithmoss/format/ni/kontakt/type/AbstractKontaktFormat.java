@@ -108,7 +108,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             zone.setGain (MathUtils.valueToDb (volume));
             zone.setPanning (Math.clamp (program.getInstrumentPan () + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
 
-            zone.setTune (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (), program.getInstrumentTune ()));
+            zone.setTuning (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (), program.getInstrumentTune ()));
             zone.setKeyTracking (kontaktGroup.isKeyTracking () ? 1 : 0);
 
             zone.setVelocityLow (kontaktZone.getLowVelocity ());

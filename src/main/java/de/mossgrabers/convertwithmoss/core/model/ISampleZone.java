@@ -328,7 +328,7 @@ public interface ISampleZone
      * @return The tuning positive or negative semi-tones, which means that 0.01 represents 1 cent
      *         (1 semi-tone is 100 cent)
      */
-    double getTune ();
+    double getTuning ();
 
 
     /**
@@ -337,7 +337,7 @@ public interface ISampleZone
      * @param tune The tuning positive or negative semi-tones, which means that 0.01 represents 1
      *            cent (1 semi-tone is 100 cent)
      */
-    void setTune (double tune);
+    void setTuning (double tune);
 
 
     /**

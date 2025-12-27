@@ -141,7 +141,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
                     parameters[18] = bendUp > 0 ? bendUp : 2;
 
                     // Octave + Transpose + fine tune
-                    double tune = zone.getTune ();
+                    double tune = zone.getTuning ();
                     final int octaves = (int) (tune / 12);
                     parameters[11] = octaves;
                     tune -= octaves * 12;

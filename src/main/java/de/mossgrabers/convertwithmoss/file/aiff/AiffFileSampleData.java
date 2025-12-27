@@ -174,8 +174,8 @@ public class AiffFileSampleData extends AbstractFileSampleData
         if (addRootKey && zone.getKeyRoot () == -1)
             zone.setKeyRoot (instrumentChunk.baseNote);
 
-        if (zone.getTune () == 0)
-            zone.setTune (Math.clamp (instrumentChunk.detune / 100.0, -0.5, 0.5));
+        if (zone.getTuning () == 0)
+            zone.setTuning (Math.clamp (instrumentChunk.detune / 100.0, -0.5, 0.5));
 
         if (addLoops)
             addLoops (instrumentChunk, aifFile.getMarkerChunk (), zone.getLoops ());

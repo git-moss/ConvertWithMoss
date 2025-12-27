@@ -43,6 +43,15 @@ import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcCategories;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcFileFormat;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcKeybank;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPartElement;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformance;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformancePart;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -71,10 +80,13 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         FILE_FORMAT_MAP.put (Integer.valueOf (1), YamahaYsfcFileFormat.MONTAGE);
         FILE_FORMAT_MAP.put (Integer.valueOf (2), YamahaYsfcFileFormat.MODX);
         FILE_FORMAT_MAP.put (Integer.valueOf (3), YamahaYsfcFileFormat.MODX);
+        FILE_FORMAT_MAP.put (Integer.valueOf (4), YamahaYsfcFileFormat.MOXF);
+        // Is it a user library?
         LIBRARY_FORMAT_MAP.put (Integer.valueOf (0), Boolean.TRUE);
         LIBRARY_FORMAT_MAP.put (Integer.valueOf (1), Boolean.FALSE);
         LIBRARY_FORMAT_MAP.put (Integer.valueOf (2), Boolean.TRUE);
         LIBRARY_FORMAT_MAP.put (Integer.valueOf (3), Boolean.FALSE);
+        LIBRARY_FORMAT_MAP.put (Integer.valueOf (4), Boolean.FALSE);
 
         try
         {
@@ -203,7 +215,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final YsfcFile ysfcFile = new YsfcFile (true);
-        ysfcFile.setVersionStr (format.getMaxVersion ());
+        ysfcFile.setVersionStr (format.getMaxVersionStr ());
 
         // Numbering is across all(!) samples
         final LibraryCounters counters = new LibraryCounters ();
@@ -232,7 +244,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final YsfcFile ysfcFile = new YsfcFile (true);
-        ysfcFile.setVersionStr (format.getMaxVersion ());
+        ysfcFile.setVersionStr (format.getMaxVersionStr ());
 
         // Numbering is across all(!) samples
         final LibraryCounters counters = new LibraryCounters ();
@@ -266,9 +278,10 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             this.notifier.log ("IDS_YSFC_CREATES_ONLY_WAVEFORMS");
 
         final YsfcFile ysfcFile = new YsfcFile (addPerformances);
-        ysfcFile.setVersionStr (format.getMaxVersion ());
+        ysfcFile.setVersionStr (format.getMaxVersionStr ());
 
-        if (addPerformances)
+        // Version 1 performances not supported!
+        if (addPerformances && !format.isVersion1 ())
             this.createPerformancesForMultiSources (multisampleSources, format, ysfcFile);
         else
             this.createKeyBanksForMultiSources (multisampleSources, format, ysfcFile);
@@ -285,7 +298,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final List<IInstrumentSource> instrumentSources = this.limitInstruments (performanceSource.getInstruments ());
         final int numInstruments = instrumentSources.size ();
         final byte [] templateData = numInstruments == 1 ? PERFORMANCE_TEMPLATES_1.get (format) : PERFORMANCE_TEMPLATES_8.get (format);
-        final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (templateData, format, YsfcFile.parseVersion (format.getMaxVersion ()));
+        final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (templateData, format, YsfcFile.parseVersion (format.getMaxVersionStr ()));
         performance.setName (StringUtils.fixASCII (performanceSource.getName ()));
         final int categoryID = getCategoryIndex (performanceSource.getMetadata ());
 
@@ -361,7 +374,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         // Create one performance for each multi-sample source
         for (int i = 0; i < multisampleSources.size (); i++)
         {
-            final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (PERFORMANCE_TEMPLATES_1.get (format), format, YsfcFile.parseVersion (format.getMaxVersion ()));
+            final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (PERFORMANCE_TEMPLATES_1.get (format), format, YsfcFile.parseVersion (format.getMaxVersionStr ()));
 
             final IMultisampleSource multisampleSource = multisampleSources.get (i);
             final String multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
@@ -409,7 +422,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
         final List<ISampleZone> sampleZones = group.getSampleZones ();
         for (final ISampleZone zone: sampleZones)
-            counters.sampleNumber = this.createWaveData (format, counters.sampleNumber, keybankList, waveDataList, zone);
+            this.createWaveData (format, counters, keybankList, waveDataList, zone);
 
         counters.keygroupCounter++;
         final int keyBankIndex = 0x10000 + counters.keygroupCounter;
@@ -435,13 +448,13 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
         // Tuning
 
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         final int semitones = (int) tune;
         element.setCoarseTune (semitones + 64);
         element.setFineTune ((int) ((tune - semitones) * 100) + 64);
         element.setPitchKeyFollowSensitivity ((int) Math.round (zone.getKeyTracking () * 100));
 
-        element.setPan (MathUtils.denormalizeIntegerRange (zone.getPanning (), -63, 63, 64));
+        element.setPan (MathUtils.denormalizeIntegerRange (zone.getTuning (), -63, 63, 64));
 
         // Gain & Level envelope
 
@@ -639,7 +652,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
     private void createKeyBanksForMultiSources (final List<IMultisampleSource> multisampleSources, final YamahaYsfcFileFormat format, final YsfcFile ysfcFile) throws IOException
     {
         // Numbering covers all(!) samples
-        int sampleNumber = 1;
+        final LibraryCounters counters = new LibraryCounters ();
 
         for (int i = 0; i < multisampleSources.size (); i++)
         {
@@ -648,7 +661,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             final List<YamahaYsfcWaveData> waveDataList = new ArrayList<> ();
             for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
                 for (final ISampleZone zone: group.getSampleZones ())
-                    sampleNumber = this.createWaveData (format, sampleNumber, keybankList, waveDataList, zone);
+                    this.createWaveData (format, counters, keybankList, waveDataList, zone);
 
             final String multisampleName = multisampleSource.getName ();
             final int keyBankIndex = 0x10001 + i;
@@ -660,10 +673,8 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
     }
 
 
-    private int createWaveData (final YamahaYsfcFileFormat version, final int sampleNumber, final List<YamahaYsfcKeybank> keybankList, final List<YamahaYsfcWaveData> waveDataList, final ISampleZone zone) throws IOException
+    private void createWaveData (final YamahaYsfcFileFormat version, final LibraryCounters counters, final List<YamahaYsfcKeybank> keybankList, final List<YamahaYsfcWaveData> waveDataList, final ISampleZone zone) throws IOException
     {
-        int newSampleNumber = sampleNumber;
-
         // Ensure that the WAV is 16 bit
         final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData (), DESTINATION_AUDIO_FORMAT);
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
@@ -686,19 +697,26 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final byte [] data = dataChunk.getData ();
         final boolean isStereo = numberOfChannels == 2;
 
+        // TODO check if this is correct to move it out of the loop!!!
+        final YamahaYsfcKeybank keybank = createKeybank (version, counters.sampleNumber, zone, formatChunk, numSamples);
+        keybankList.add (keybank);
+        keybank.setOffsets (counters.numberOfChannelsWritten, counters.numberOfSamplesWritten);
+
+        counters.numberOfChannelsWritten += numberOfChannels;
+        counters.numberOfSamplesWritten += data.length + 8;
+        // TODO remove
+        System.out.println (counters.numberOfSamplesWritten);
+
         for (int channel = 0; channel < numberOfChannels; channel++)
         {
-            keybankList.add (createKeybank (version, newSampleNumber, zone, formatChunk, numSamples));
-
             final YamahaYsfcWaveData waveData = new YamahaYsfcWaveData ();
             waveDataList.add (waveData);
             waveData.setData (isStereo ? getChannelData (channel, data) : data);
-
-            this.notifyProgress ();
-            this.notifyNewline (newSampleNumber);
-            newSampleNumber++;
         }
-        return newSampleNumber;
+
+        this.notifyProgress ();
+        this.notifyNewline (counters.sampleNumber);
+        counters.sampleNumber++;
     }
 
 
@@ -778,7 +796,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         keybank.setVelocityRangeLower (zone.getVelocityLow ());
         keybank.setVelocityRangeUpper (zone.getVelocityHigh ());
 
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         final int semitones = (int) Math.floor (tune);
         keybank.setCoarseTune (semitones);
         keybank.setFineTune ((int) Math.floor ((tune - semitones) * 100.0));
@@ -786,7 +804,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final double gain = zone.getGain ();
         keybank.setLevel (gain < -95.25 ? 0 : (int) Math.round ((Math.clamp (gain, -95.25, 0) + 95.25) / 0.375) + 1);
 
-        keybank.setPanning (MathUtils.denormalizeIntegerRange (zone.getPanning (), -63, 63, 64));
+        keybank.setPanning (MathUtils.denormalizeIntegerRange (zone.getTuning (), -63, 63, 64));
 
         keybank.setPlayStart (zone.getStart ());
         keybank.setLoopEnd (zone.getStop ());
@@ -843,8 +861,10 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
     private final class LibraryCounters
     {
-        int sampleNumber    = 1;
-        int keygroupCounter = 0;
+        int sampleNumber            = 1;
+        int keygroupCounter         = 0;
+        int numberOfSamplesWritten  = 16;
+        int numberOfChannelsWritten = 0x400C;
     }
 
 
