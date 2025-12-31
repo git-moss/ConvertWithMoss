@@ -4,6 +4,16 @@
 
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 
+import de.mossgrabers.convertwithmoss.core.IStreamable;
+import de.mossgrabers.convertwithmoss.exception.FormatException;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcFileFormat;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcKeybank;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData;
+import de.mossgrabers.tools.StringUtils;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -17,16 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import de.mossgrabers.convertwithmoss.core.IStreamable;
-import de.mossgrabers.convertwithmoss.exception.FormatException;
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcFileFormat;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcKeybank;
-import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData;
-import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -64,7 +64,6 @@ public class YsfcFile
     private int                                version;
     private int                                maxEntryID               = 0xFFFFFFFF;
     private final Map<String, YamahaYsfcChunk> chunks                   = HashMap.newHashMap (4);
-
 
     /**
      * Default constructor.
@@ -486,6 +485,7 @@ public class YsfcFile
     }
 
 
+    // TODO Remove
     public static void main (final String [] args)
     {
         try (final FileOutputStream out = new FileOutputStream ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\YamahaYSFC\\X6 - MOXF\\01W Magnetic-CLONE.X6W"))
