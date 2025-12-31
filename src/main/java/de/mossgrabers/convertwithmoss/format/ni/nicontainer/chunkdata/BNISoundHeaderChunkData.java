@@ -4,15 +4,15 @@
 
 package de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata;
 
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.StringUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;
-
-import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -27,7 +27,6 @@ public class BNISoundHeaderChunkData extends AbstractChunkData
     private byte [] uuid;
     private byte [] restBytes;
     private Date    timestamp;
-
 
     /** {@inheritDoc} */
     @Override
@@ -57,7 +56,6 @@ public class BNISoundHeaderChunkData extends AbstractChunkData
 
 
     /** {@inheritDoc} */
-
     @Override
     public int hashCode ()
     {
@@ -72,6 +70,7 @@ public class BNISoundHeaderChunkData extends AbstractChunkData
     }
 
 
+    /** {@inheritDoc} */
     @Override
     public boolean equals (final Object obj)
     {
