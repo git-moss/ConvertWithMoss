@@ -8,7 +8,6 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -483,20 +482,5 @@ public class YsfcFile
             sb.append (chunk.dump (level + 2));
 
         return sb.toString ();
-    }
-
-
-    public static void main (final String [] args)
-    {
-        try (final FileOutputStream out = new FileOutputStream ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\YamahaYSFC\\X6 - MOXF\\01W Magnetic-CLONE.X6W"))
-        {
-            final YsfcFile file = new YsfcFile (new File ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\YamahaYSFC\\X6 - MOXF\\01W Magnetic.X6W"));
-            file.write (out);
-        }
-        catch (IOException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace ();
-        }
     }
 }

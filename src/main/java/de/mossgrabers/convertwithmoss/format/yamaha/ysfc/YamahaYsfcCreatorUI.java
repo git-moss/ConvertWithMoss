@@ -36,7 +36,8 @@ public class YamahaYsfcCreatorUI implements ICoreTaskSettings
         OUTPUT_FORMAT_BY_NAME.put ("X7L", Integer.valueOf (1));
         OUTPUT_FORMAT_BY_NAME.put ("X8U", Integer.valueOf (2));
         OUTPUT_FORMAT_BY_NAME.put ("X8L", Integer.valueOf (3));
-        OUTPUT_FORMAT_BY_NAME.put ("X6W", Integer.valueOf (4));
+        // IMPROVE MOXF - Activate when MOXF writing is fixed
+        // OUTPUT_FORMAT_BY_NAME.put ("X6W", Integer.valueOf (4));
     }
 
     private ToggleGroup outputFormatToggleGroup;

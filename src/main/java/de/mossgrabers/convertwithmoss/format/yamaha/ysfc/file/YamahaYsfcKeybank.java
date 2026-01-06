@@ -42,7 +42,6 @@ public class YamahaYsfcKeybank implements IStreamable
     private int                        fixedPitch         = 0xFF;
     private int                        loopTune;
 
-    // TODO
     private int                        totalSampleOffset  = -1;
     private int                        totalChannelOffset = -1;
 
@@ -76,8 +75,6 @@ public class YamahaYsfcKeybank implements IStreamable
     @Override
     public void read (final InputStream in) throws IOException
     {
-        final int start = in.available ();
-
         final boolean isVersion1 = this.version.isVersion1 ();
         final boolean isMotif = this.version.isMotif ();
         final boolean isBigEndian = isVersion1 && !isMotif;
@@ -107,11 +104,10 @@ public class YamahaYsfcKeybank implements IStreamable
 
         // Play-form on Montage / loop fraction on older formats (Motif)
         in.read ();
+
         final int waveFormat = in.read ();
-        // TODO enable again
-        // if (waveFormat != 0 && waveFormat != 5)
-        // throw new IOException (Functions.getMessage ("IDS_YSFC_WAVE_FORMAT_NOT_SUPPORTED",
-        // waveFormat == 4 ? " WXC" : Integer.toString (waveFormat)));
+        if (waveFormat != 0 && waveFormat != 5)
+            throw new IOException (Functions.getMessage ("IDS_YSFC_WAVE_FORMAT_NOT_SUPPORTED", waveFormat == 4 ? " WXC" : Integer.toString (waveFormat)));
 
         this.loopMode = in.read ();
 
@@ -156,10 +152,10 @@ public class YamahaYsfcKeybank implements IStreamable
 
         // v1.0.3 MOXF
 
-        // TODO
         // Offset to something?!
-        final int x = StreamUtils.readUnsigned16 (in, true);
-        final int y = StreamUtils.readUnsigned16 (in, true);
+        StreamUtils.readUnsigned16 (in, true);
+        StreamUtils.readUnsigned16 (in, true);
+
         // Always FF FF FF FF
         in.skipNBytes (4);
 
@@ -168,21 +164,11 @@ public class YamahaYsfcKeybank implements IStreamable
         // Padding
         in.skipNBytes (2);
 
-        // Size of all channels
-        long sampleSizeOfAllChannels = StreamUtils.readUnsigned32 (in, true);
+        // Sample Size of all channels
+        StreamUtils.readUnsigned32 (in, true);
 
         // Padding
         in.skipNBytes (4);
-
-        // TODO remove
-        // final int rest = in.available ();
-
-        System.out.println (x + " " + y + "    " + sampleNumber + " (" + this.channels + ")" + (this.channels * this.sampleLength) + "/" + sampleSizeOfAllChannels + "   " + waveFormat);
-        // System.out.println (start + ":" + rest + "=" + (start - rest));
-        // ByteArrayOutputStream out = new ByteArrayOutputStream ();
-        // write (out);
-        // nBytes = out.toByteArray ();
-        // System.out.println ("" + nBytes.length);
     }
 
 
@@ -262,9 +248,12 @@ public class YamahaYsfcKeybank implements IStreamable
             return;
         }
 
+        // MOXF only
+
         StreamUtils.writeUnsigned16 (out, this.totalChannelOffset, isBigEndian);
-        StreamUtils.writeUnsigned16 (out, // TODO
-                this.totalSampleOffset /* + this.sampleLength * this.channels */, isBigEndian);
+
+        // IMPROVE MOXF The calculation is not correct
+        StreamUtils.writeUnsigned16 (out, this.totalSampleOffset + this.sampleLength * this.channels, isBigEndian);
 
         // 1 channel only, pad information for second channel with 0xFF 0xFF 0xFF 0xFF
         StreamUtils.padBytes (out, 4, 0xFF);
