@@ -7,7 +7,6 @@ package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -15,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -463,11 +461,6 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         final List<YamahaYsfcEntry> ewfmListChunks = ewfmChunk.getEntryListChunks ();
         final List<YamahaYsfcEntry> ewimListChunks = ewimChunk.getEntryListChunks ();
         final List<byte []> dwfmChunks = dwfmChunk.getDataArrays ();
-
-        // TODO remove
-        final String id = UUID.randomUUID ().toString ();
-        for (int i = 0; i < dwfmChunks.size (); i++)
-            Files.write (new File ("C:\\Users\\mos\\Desktop\\Compare\\" + id + "." + i + ".bin").toPath (), dwfmChunks.get (i));
 
         final List<byte []> dwimChunks = dwimChunk.getDataArrays ();
         if (ewfmListChunks.size () != ewimListChunks.size () || dwfmChunks.size () != dwimChunks.size () || ewfmListChunks.size () != dwfmChunks.size ())

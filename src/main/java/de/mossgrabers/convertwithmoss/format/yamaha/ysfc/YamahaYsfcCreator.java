@@ -697,21 +697,21 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final byte [] data = dataChunk.getData ();
         final boolean isStereo = numberOfChannels == 2;
 
-        // TODO check if this is correct to move it out of the loop!!!
-        final YamahaYsfcKeybank keybank = createKeybank (version, counters.sampleNumber, zone, formatChunk, numSamples);
-        keybankList.add (keybank);
-        keybank.setOffsets (counters.numberOfChannelsWritten, counters.numberOfSamplesWritten);
-
-        counters.numberOfChannelsWritten += numberOfChannels;
-        counters.numberOfSamplesWritten += data.length + 8;
-        // TODO remove
-        System.out.println (counters.numberOfSamplesWritten);
-
         for (int channel = 0; channel < numberOfChannels; channel++)
         {
+            final YamahaYsfcKeybank keybank = createKeybank (version, counters.sampleNumber, zone, formatChunk, numSamples);
+            keybankList.add (keybank);
+            keybank.setOffsets (counters.numberOfChannelsWritten, counters.numberOfSamplesWritten);
+
+            final byte [] waveDataContent = isStereo ? getChannelData (channel, data) : data;
+
+            counters.numberOfChannelsWritten++;
+            // IMPROVE MOXF - The calculation is not correct
+            counters.numberOfSamplesWritten += waveDataContent.length + 8;
+
             final YamahaYsfcWaveData waveData = new YamahaYsfcWaveData ();
             waveDataList.add (waveData);
-            waveData.setData (isStereo ? getChannelData (channel, data) : data);
+            waveData.setData (waveDataContent);
         }
 
         this.notifyProgress ();

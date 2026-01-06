@@ -171,13 +171,13 @@ public class YamahaYsfcEntry
 
             if (version >= 410 && version < 500)
             {
+                // IMPROVE Implement for Montage M support
+
                 // Additional 9 unknown bytes for Montage M
                 // 0F - 0 0 0 0 0 0 - 28 AA
                 // FF - 0 0 0 0 0 0 - 28 F7
                 // 05 - 0 0 0 0 0 0 - 28 AA
                 // 03 - 0 0 0 0 0 0 - 28 AA
-
-                // TODO implement
             }
         }
 
