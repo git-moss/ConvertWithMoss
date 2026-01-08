@@ -42,10 +42,10 @@
 			<version>1.2.1</version>
 		</dependency>
 		<dependency>
-			<groupId>com.tianscar.javasound</groupId>
-			<artifactId>javasound-flac</artifactId>
-			<version>1.4.1</version>
-		</dependency>
+			<groupId>com.io7m.flannel</groupId>
+			<artifactId>com.io7m.flannel.core</artifactId>
+			<version>1.0.0</version>
+		</dependency>		
 		<dependency>
 			<groupId>info.picocli</groupId>
 			<artifactId>picocli</artifactId>
@@ -154,7 +154,7 @@
 			<plugin>
 				<groupId>org.panteleyev</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
-				<version>1.7.1</version>
+				<version>1.7.2</version>
 				<configuration>
 					<input>target/lib</input>
 					<destination>target/release</destination>
