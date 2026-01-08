@@ -379,11 +379,11 @@ public final class AudioFileUtils
      *
      * @param sampleData The sample data
      * @param targetFormat The target format
-     * @return The byte contents of the file
+     * @param file The file to write to
      * @throws IOException Could not read/write
      * @throws UnsupportedAudioFileException The target audio format is not supported
      */
-    public static byte [] compressToFLAC (final ISampleData sampleData, final AudioFileFormat.Type targetFormat) throws IOException, UnsupportedAudioFileException
+    public static void compressToFLAC (final ISampleData sampleData, final AudioFileFormat.Type targetFormat, final File file) throws IOException, UnsupportedAudioFileException
     {
         final byte [] wavData = convertToWavData (sampleData, new DestinationAudioFormat ());
 
@@ -392,11 +392,12 @@ public final class AudioFileUtils
         {
             final AudioFormat sourceFormat = ais.getFormat ();
             final AudioFormat targetAudioFormat = new AudioFormat (sourceFormat.getSampleRate (), sourceFormat.getSampleSizeInBits (), sourceFormat.getChannels (), true, sourceFormat.isBigEndian ());
-            final AudioInputStream convertedAIS = AudioSystem.getAudioInputStream (targetAudioFormat, ais);
-
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ();
-            AudioSystem.write (convertedAIS, targetFormat, outputStream);
-            return outputStream.toByteArray ();
+            try (final AudioInputStream convertedAIS = AudioSystem.getAudioInputStream (targetAudioFormat, ais))
+            {
+                // IMPORTANT: we must write to a file not a stream since with a stream the FLAC
+                // header is not updated!
+                AudioSystem.write (convertedAIS, targetFormat, file);
+            }
         }
     }
 

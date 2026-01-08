@@ -3,6 +3,7 @@
 ## 15.2.0 (unreleased)
 
 * Added support for 1010music Bento
+* Fixed: The header of written FLAC files did not contain the sample length, which is valid but many readers rely on that value and crash otherwise.
 * 1010music blackbox
   * Fixed: Empty sample trick for silent ranges was applied to single presets as well but the sample was not added.
 * DecentSampler

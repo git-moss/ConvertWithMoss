@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.core.creator;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
@@ -404,18 +403,17 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 final ISampleZone zone = sampleZones.get (zoneIndex);
 
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, extension));
-                try (final FileOutputStream fos = new FileOutputStream (file))
+                this.notifyProgress ();
+                outputCount++;
+                this.notifyNewline (outputCount);
+                final ISampleData sampleData = zone.getSampleData ();
+                if (sampleData == null)
+                    this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
+                else
                 {
-                    this.notifyProgress ();
-                    outputCount++;
-                    this.notifyNewline (outputCount);
-                    final ISampleData sampleData = zone.getSampleData ();
-                    if (sampleData == null)
-                        this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
-                    else
-                        fos.write (AudioFileUtils.compressToFLAC (sampleData, targetFormat));
+                    AudioFileUtils.compressToFLAC (sampleData, targetFormat, file);
+                    writtenFiles.add (file);
                 }
-                writtenFiles.add (file);
             }
         }
 
