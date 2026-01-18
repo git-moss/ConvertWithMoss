@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.tal;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -150,7 +151,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             final List<IGroup> groups = new ArrayList<> (4);
             for (int groupCounter = 0; groupCounter < 4; groupCounter++)
                 // Group is disabled?
-                if (XMLUtils.getIntegerAttribute (programElement, TALSamplerTag.PROGRAM_LAYER_ON + TALSamplerConstants.LAYERS[groupCounter], 0) == 1)
+                if (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PROGRAM_LAYER_ON + TALSamplerConstants.LAYERS[groupCounter], 0) > 0)
                 {
                     final Element groupElement = XMLUtils.getChildElementByName (programElement, TALSamplerTag.SAMPLE_LAYER + groupCounter);
                     if (groupElement != null)
@@ -208,7 +209,16 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.IS_ROM_SAMPLE, 0) == 1)
             throw new IOException (Functions.getMessage ("IDS_TAL_ROM_SAMPLES_NOT_SUPPORTED", filename));
 
-        final ISampleZone zone = this.createSampleZone (new File (parentFolder, filename));
+        final ISampleZone zone;
+        try
+        {
+            zone = this.createSampleZone (new File (parentFolder, filename));
+        }
+        catch (final FileNotFoundException ex)
+        {
+            this.notifier.logError (ex, false);
+            return null;
+        }
 
         zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
         zone.setPanning (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANNING, 0.5) * 2.0 - 1.0);
@@ -231,7 +241,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, -1));
         zone.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, -1));
 
-        // No note and velocity crossfades
+        // No note and velocity cross-fades
 
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ENABLED, 0) == 1)
         {
