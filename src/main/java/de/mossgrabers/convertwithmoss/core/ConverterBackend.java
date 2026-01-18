@@ -96,6 +96,9 @@ public class ConverterBackend
     {
         this.notifier = notifier;
 
+        // Workaround for attribute limit of 200 which e.g. causes issues with TAL Sampler format
+        System.setProperty ("jdk.xml.elementAttributeLimit", "1000");
+
         this.detectors = new IDetector []
         {
             new BentoDetector (notifier),

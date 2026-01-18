@@ -1,6 +1,6 @@
 # Changes
 
-## 15.2.0 (unreleased)
+## 15.5.0
 
 * Added support for 1010music Bento
 * Fixed: The header of written FLAC files did not contain the sample length, which is valid but many readers rely on that value and crash otherwise.
@@ -13,6 +13,10 @@
 * MPC
   * New: The file version and source platform is now logged.
   * New: Improved check for valid loops. If none is present it is loaded from the WAV file if present.
+* TAL Sampler
+  * New: Conversion does not stop after first missing sample. All missing samples are logged.
+  * Fixed: Could not read file when the program element had more than 200 attributes.
+  * Fixed: Version 11 of the format has now a double to indicate of a layer is enabled or not which led to empty results.
 * Yamaha YSFC
   * Fixed: End of loop was always set to the end of the sample.
 
