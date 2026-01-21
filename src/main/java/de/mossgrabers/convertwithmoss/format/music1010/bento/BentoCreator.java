@@ -327,22 +327,6 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
                 paramsElement.setAttribute (entry.getKey (), entry.getValue ());
             paramsElement.setAttribute (Music1010Tag.ATTR_INTERPOLATION_QUALITY, this.settingsConfiguration.isInterpolationQualityHigh () ? "1" : "0");
 
-            // TODO Ask 1010music about these 3 parameters:
-
-            // The following parameters (panning, gain and pitch) are only available on instrument
-            // level
-            // Panning: -100..100% -> -1000..1000
-            // final Optional<Double> globalPanning = multisampleSource.getGlobalPanning ();
-            // if (globalPanning.isPresent ())
-            // paramsElement.setAttribute (Music1010Tag.ATTR_PANNING, Integer.toString ((int)
-            // Math.clamp (globalPanning.get ().doubleValue () * 1000.0, -1000.0, 1000.0)));
-
-            // -12..12dB -> -12000..12000
-            // gaindb="4300"
-            // -24..24 -> -24000..24000
-            // pitch="-19350"
-            // panpos="-352"
-
             // Add amplitude envelope
             if (!groups.isEmpty ())
             {
@@ -447,6 +431,17 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
 
         final String filename = this.createSampleFilename (zone, 0, ".wav");
         paramsElement.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath + filename);
+
+        // IMPROVE The following parameters (panning, gain and pitch) are only available on
+        // instrument level (1010music needs to implement it on sample level first)
+        // Panning: -100..100% -> -1000..1000
+        // paramsElement.setAttribute (Music1010Tag.ATTR_PANNING, Integer.toString ((int) Math.clamp
+        // (zone.getPanning () * 1000.0, -1000.0, 1000.0)));
+        // -12..12dB -> -12000..12000
+        // gaindb="4300"
+        // -24..24 -> -24000..24000
+        // pitch="-19350"
+        // panpos="-352"
 
         /////////////////////////////////////////////////////
         // Key & Velocity attributes
