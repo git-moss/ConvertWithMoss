@@ -1,5 +1,9 @@
 # Changes
 
+## 15.5.1
+
+* Fixed: Split-stereo files were not combined into stereo files for formats which require it (e.g. Bento).
+
 ## 15.5.0
 
 * Added support for 1010music Bento

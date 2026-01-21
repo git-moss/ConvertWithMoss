@@ -81,7 +81,7 @@ public enum ZoneChannels
                     // Check for split stereo which needs to be hard panned left or right
                     if (!isStereo && (splitStereo == null || splitStereo.booleanValue ()))
                     {
-                        final double panning = sampleZone.getTuning ();
+                        final double panning = sampleZone.getPanning ();
                         splitStereo = Boolean.valueOf (panning <= -1 || panning >= 1);
                     }
                 }
@@ -183,7 +183,7 @@ public enum ZoneChannels
     {
         for (final IGroup group: groups)
             for (final ISampleZone sampleZone: group.getSampleZones ())
-                if (sampleZone.getTuning () <= -1)
+                if (sampleZone.getPanning () <= -1)
                     leftSampleZones.add (sampleZone);
                 else
                     rightSampleZones.add (sampleZone);
