@@ -36,7 +36,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -48,7 +47,7 @@ import de.mossgrabers.tools.XMLUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
+public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 {
     private static final String BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
 
@@ -60,7 +59,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public MPCKeygroupDetector (final INotifier notifier)
     {
-        super ("Akai MPC Keygroup", "MPC", notifier, new MetadataSettingsUI ("MPC"), ".xpm");
+        super ("Akai MPC Keygroup", "MPC", notifier, new MPCKeygroupDetectorUI ("MPC"), ".xpm");
     }
 
 
@@ -311,7 +310,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
 
             // No loop if it is a one-shot
             if (!isOneShot)
-                parseLoop (layerElement, zone);
+                this.parseLoop (layerElement, zone);
 
             zone.setFilter (filter);
 
@@ -477,7 +476,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
     {
         final boolean needsUpdate = zone.getStop () > 0;
         final boolean needsRootKey = !isDrum && zone.getKeyRoot () >= 0;
-        final boolean needsLoop = !isOneShot && zone.getLoops ().isEmpty ();
+        final boolean needsLoop = !isOneShot && zone.getLoops ().isEmpty () && !this.settingsConfiguration.ignoreLoops ();
 
         try
         {
@@ -501,8 +500,11 @@ public class MPCKeygroupDetector extends AbstractDetector<MetadataSettingsUI>
      * @param layerElement THe layer element
      * @param zone Where to store the data
      */
-    private static void parseLoop (final Element layerElement, final ISampleZone zone)
+    private void parseLoop (final Element layerElement, final ISampleZone zone)
     {
+        if (this.settingsConfiguration.ignoreLoops ())
+            return;
+
         // There might be no loop, forward or reverse
         final int sliceLoop = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP, -1);
         if (sliceLoop <= 0)
