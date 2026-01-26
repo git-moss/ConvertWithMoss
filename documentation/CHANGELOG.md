@@ -1,5 +1,10 @@
 # Changes
 
+## 15.5.2 (unreleased)
+
+* MPC Keygroups
+  * New: Added an option to ignore loops
+
 ## 15.5.1
 
 * Fixed: Split-stereo files were not combined into stereo files for formats which require it (e.g. Bento).
