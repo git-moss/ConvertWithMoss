@@ -105,7 +105,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IPerformanceSource> readPerformanceFiles (final File file)
+    protected List<IPerformanceSource> readPerformanceFile (final File file)
     {
         if (this.waitForDelivery () || !"project.xml".equals (file.getName ()))
             return null;

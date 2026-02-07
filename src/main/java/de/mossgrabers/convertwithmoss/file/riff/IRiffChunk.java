@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.file;
+package de.mossgrabers.convertwithmoss.file.riff;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,14 +13,14 @@ import java.io.OutputStream;
  *
  * @author Jürgen Moßgraber
  */
-public interface IChunk
+public interface IRiffChunk
 {
     /**
      * Get the chunk ID.
      *
      * @return The id
      */
-    int getId ();
+    RiffChunkId getId ();
 
 
     /**
@@ -55,17 +55,4 @@ public interface IChunk
      * @return The formatted string
      */
     String infoText ();
-
-
-    /**
-     * Converts the first four letters of the string into an RIFF Identifier.
-     *
-     * @param text The string to be converted
-     * @return ID representation of the string
-     */
-    public static int toId (final String text)
-    {
-        final byte [] bytes = text.getBytes ();
-        return bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
-    }
 }

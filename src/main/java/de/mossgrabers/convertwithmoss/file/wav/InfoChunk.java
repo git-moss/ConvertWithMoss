@@ -14,10 +14,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
-import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractListChunk;
+import de.mossgrabers.convertwithmoss.file.riff.IRiffChunk;
+import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 
 
 /**
@@ -56,7 +57,7 @@ public class InfoChunk extends AbstractListChunk
      */
     public InfoChunk ()
     {
-        super (RiffID.INFO_ID.getId ());
+        super (InfoRiffChunkId.INFO_ID.getFourCC ());
     }
 
 
@@ -68,8 +69,8 @@ public class InfoChunk extends AbstractListChunk
     public Map<String, String> getInfoFields ()
     {
         final Map<String, String> fields = new TreeMap<> ();
-        for (final IChunk chunk: this.subChunks)
-            fields.put (RiffID.fromId (chunk.getId ()).getName (), chunkDataToAsciiString (chunk));
+        for (final IRiffChunk chunk: this.subChunks)
+            fields.put (chunk.getId ().getDescription (), chunkDataToAsciiString (chunk));
         return fields;
     }
 
@@ -80,11 +81,11 @@ public class InfoChunk extends AbstractListChunk
      * @param infoChunkID The ID of the info chunk to get
      * @return The sub-chunk content as an ASCII string
      */
-    public String getInfoField (final RiffID infoChunkID)
+    public String getInfoField (final RiffChunkId infoChunkID)
     {
-        final int id = infoChunkID.getId ();
-        for (final IChunk chunk: this.subChunks)
-            if (chunk.getId () == id)
+        final int id = infoChunkID.getFourCC ();
+        for (final IRiffChunk chunk: this.subChunks)
+            if (chunk.getId ().getFourCC () == id)
                 return chunkDataToAsciiString (chunk);
         return null;
     }
@@ -96,9 +97,9 @@ public class InfoChunk extends AbstractListChunk
      * @param riffIDs The IDs of the info fields to check
      * @return The first present value of the given IDs is returned
      */
-    public String getInfoField (final RiffID... riffIDs)
+    public String getInfoField (final RiffChunkId... riffIDs)
     {
-        for (final RiffID id: riffIDs)
+        for (final RiffChunkId id: riffIDs)
         {
             final String value = this.getInfoField (id);
             if (value != null)
@@ -115,7 +116,7 @@ public class InfoChunk extends AbstractListChunk
      * @param value The sub-chunk content
      * @param maxLength The maximum text length including 2 zero bytes at the end
      */
-    public void addInfoTextField (final RiffID infoChunkID, final String value, final int maxLength)
+    public void addInfoTextField (final RiffChunkId infoChunkID, final String value, final int maxLength)
     {
         byte [] content = value.getBytes (StandardCharsets.US_ASCII);
 
@@ -137,9 +138,9 @@ public class InfoChunk extends AbstractListChunk
      * @param infoChunkID The ID of the info sub-chunk to create
      * @param content The sub-chunk content
      */
-    public void addInfoField (final RiffID infoChunkID, final byte [] content)
+    public void addInfoField (final RiffChunkId infoChunkID, final byte [] content)
     {
-        final RawRIFFChunk riffChunk = new RawRIFFChunk (RiffID.INFO_ID.getId (), infoChunkID.getId (), content.length);
+        final RawRIFFChunk riffChunk = new RawRIFFChunk (InfoRiffChunkId.INFO_ID.getFourCC (), infoChunkID, content.length);
         riffChunk.setData (content);
         this.add (riffChunk);
     }
@@ -152,7 +153,7 @@ public class InfoChunk extends AbstractListChunk
      */
     public Date getCreationDate ()
     {
-        final String dateTime = this.getInfoField (RiffID.INFO_ICRD, RiffID.INFO_IDIT, RiffID.INFO_YEAR);
+        final String dateTime = this.getInfoField (InfoRiffChunkId.INFO_ICRD, InfoRiffChunkId.INFO_IDIT, InfoRiffChunkId.INFO_YEAR);
         if (dateTime != null)
             for (final SimpleDateFormat parser: this.creationDateParsers)
                 try
@@ -174,7 +175,7 @@ public class InfoChunk extends AbstractListChunk
      */
     public void addCreationDate (final Date date)
     {
-        this.addInfoTextField (RiffID.INFO_ICRD, this.standardDateFormat.format (date == null ? new Date () : date), 256);
+        this.addInfoTextField (InfoRiffChunkId.INFO_ICRD, this.standardDateFormat.format (date == null ? new Date () : date), 256);
     }
 
 
@@ -183,17 +184,17 @@ public class InfoChunk extends AbstractListChunk
     public String infoText ()
     {
         final StringBuilder sb = new StringBuilder ();
-        for (final IChunk chunk: this.subChunks)
+        for (final IRiffChunk chunk: this.subChunks)
         {
             if (!sb.isEmpty ())
                 sb.append ('\n');
-            sb.append (RiffID.fromId (chunk.getId ()).getName ()).append (": ").append (chunkDataToAsciiString (chunk));
+            sb.append (chunk.getId ().getDescription ()).append (": ").append (chunkDataToAsciiString (chunk));
         }
         return sb.toString ();
     }
 
 
-    private static String chunkDataToAsciiString (final IChunk chunk)
+    private static String chunkDataToAsciiString (final IRiffChunk chunk)
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         try

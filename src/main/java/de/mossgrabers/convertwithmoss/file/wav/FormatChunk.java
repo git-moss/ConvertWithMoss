@@ -10,7 +10,6 @@ import java.util.Map;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -97,7 +96,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public FormatChunk (final int numberOfChannels, final int sampleRate, final int bitsPerSample, final boolean addFormatEx)
     {
-        super (RiffID.FMT_ID, addFormatEx ? CHUNK_SIZE_EX : CHUNK_SIZE);
+        super (WaveRiffChunkId.FMT_ID, addFormatEx ? CHUNK_SIZE_EX : CHUNK_SIZE);
 
         this.setCompressionCode (WAVE_FORMAT_PCM);
         this.setNumberOfChannels (numberOfChannels);
@@ -114,7 +113,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public FormatChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.FMT_ID, chunk);
+        super (WaveRiffChunkId.FMT_ID, chunk);
     }
 
 

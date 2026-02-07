@@ -171,7 +171,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (gain != 0)
             // Not sure if this is correct or if proper dB conversion would need to be applied...
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, convertGain (gain), 6);
-        XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.PANNING, (zone.getTuning () + 1.0) / 2.0, 2);
+        XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.PANNING, (zone.getPanning () + 1.0) / 2.0, 2);
 
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.START_SAMPLE, Math.max (0, zone.getStart ()));
         final int stop = zone.getStop ();

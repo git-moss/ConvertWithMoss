@@ -232,7 +232,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     {
         try
         {
-            final List<IPerformanceSource> performances = this.readPerformanceFiles (file);
+            final List<IPerformanceSource> performances = this.readPerformanceFile (file);
             if (performances.isEmpty () || this.waitForDelivery ())
                 return;
 
@@ -268,7 +268,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param sourceFile The file to process
      * @return The parsed performance(s)
      */
-    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         throw new RuntimeException (this.getClass ().getName () + " does not support Performance files.");
     }

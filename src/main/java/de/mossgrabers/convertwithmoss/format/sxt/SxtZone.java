@@ -806,7 +806,7 @@ class SxtZone
         final double gainRatio = Math.pow (10, dBValue / 20);
         this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3) * 1440 - 1440);
 
-        this.pan = (int) (zone.getTuning () * 1000.0);
+        this.pan = (int) (zone.getPanning () * 1000.0);
     }
 
 

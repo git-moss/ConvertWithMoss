@@ -511,7 +511,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final Element regionElement = XMLUtils.addElement (document, groupElement, TX16WxTag.REGION);
         XMLUtils.setIntegerAttribute (regionElement, TX16WxTag.SAMPLE, zoneIndex);
         regionElement.setAttribute (TX16WxTag.ATTENUATION, String.format (Locale.US, "%.2f dB", Double.valueOf (zone.getGain ())));
-        XMLUtils.setDoubleAttribute (regionElement, TX16WxTag.PANNING, zone.getTuning (), 2);
+        XMLUtils.setDoubleAttribute (regionElement, TX16WxTag.PANNING, zone.getPanning (), 2);
         regionElement.setAttribute (TX16WxTag.SAMPLE_LOOP, "0");
         XMLUtils.setBooleanAttribute (regionElement, TX16WxTag.REVERSE, zone.isReversed ());
 

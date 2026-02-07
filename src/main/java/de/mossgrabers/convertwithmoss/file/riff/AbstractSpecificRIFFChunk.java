@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -17,7 +16,7 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public abstract class AbstractSpecificRIFFChunk implements IChunk
+public abstract class AbstractSpecificRIFFChunk implements IRiffChunk
 {
     protected final RawRIFFChunk rawRiffChunk;
 
@@ -30,10 +29,11 @@ public abstract class AbstractSpecificRIFFChunk implements IChunk
      * @throws ParseException The raw chunk is not of the specific type or the length of data does
      *             not match the expected chunk size
      */
-    protected AbstractSpecificRIFFChunk (final RiffID riffID, final RawRIFFChunk chunk) throws ParseException
+    protected AbstractSpecificRIFFChunk (final RiffChunkId riffID, final RawRIFFChunk chunk) throws ParseException
     {
-        if (riffID != chunk.getRiffID ())
-            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_WRONG_CHUNK_ID", riffID.toString (), chunk.getRiffID ().toString ()));
+        final RiffChunkId id = chunk.getId ();
+        if (riffID.getFourCC () != id.getFourCC ())
+            throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_WRONG_CHUNK_ID", riffID.toString (), id.toString ()));
         this.rawRiffChunk = chunk;
     }
 
@@ -44,7 +44,7 @@ public abstract class AbstractSpecificRIFFChunk implements IChunk
      * @param riffID The RIFF ID
      * @param size The expected size of the chunk
      */
-    protected AbstractSpecificRIFFChunk (final RiffID riffID, final int size)
+    protected AbstractSpecificRIFFChunk (final RiffChunkId riffID, final int size)
     {
         this (riffID, new byte [size]);
     }
@@ -56,7 +56,7 @@ public abstract class AbstractSpecificRIFFChunk implements IChunk
      * @param riffID The RIFF ID
      * @param data The data of the chunk
      */
-    protected AbstractSpecificRIFFChunk (final RiffID riffID, final byte [] data)
+    protected AbstractSpecificRIFFChunk (final RiffChunkId riffID, final byte [] data)
     {
         this.rawRiffChunk = new RawRIFFChunk (riffID, data, data.length);
     }
@@ -72,7 +72,7 @@ public abstract class AbstractSpecificRIFFChunk implements IChunk
 
     /** {@inheritDoc} */
     @Override
-    public int getId ()
+    public RiffChunkId getId ()
     {
         return this.rawRiffChunk.getId ();
     }

@@ -147,7 +147,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
     /** {@inheritDoc} */
     @Override
-    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();

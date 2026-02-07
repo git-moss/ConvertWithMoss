@@ -1,7 +1,14 @@
 # Changes
 
-## 15.5.2 (unreleased)
+## 16.0.0
 
+* Added reading support for S5000/S6000 AKP format.
+* User Interface
+  * Moved several setting to a specific Settings dialog.
+  * Updated button icons.
+* Fixed: Tuning value was set for panning.
+* Kontakt
+  * Fixed: Tuning was not written correctly.
 * MPC Keygroups
   * New: Added an option to ignore loops
 

@@ -7,7 +7,7 @@ package de.mossgrabers.convertwithmoss.file.wav;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 
 
 /**
@@ -25,7 +25,7 @@ public class UnknownChunk extends AbstractSpecificRIFFChunk
      * @throws ParseException The raw chunk is not of the specific type or the length of data does
      *             not match the expected chunk size
      */
-    public UnknownChunk (final RiffID riffId, final RawRIFFChunk chunk) throws ParseException
+    public UnknownChunk (final RiffChunkId riffId, final RawRIFFChunk chunk) throws ParseException
     {
         super (riffId, chunk);
     }

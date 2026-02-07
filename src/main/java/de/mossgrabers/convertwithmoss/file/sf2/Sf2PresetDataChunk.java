@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.file.sf2;
 
 import de.mossgrabers.convertwithmoss.file.riff.AbstractListChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -20,6 +19,6 @@ public class Sf2PresetDataChunk extends AbstractListChunk
      */
     public Sf2PresetDataChunk ()
     {
-        super (RiffID.SF_PDTA_ID.getId ());
+        super (Sf2RiffChunkId.PDTA_ID.getFourCC ());
     }
 }

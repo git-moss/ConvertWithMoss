@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai;
+package de.mossgrabers.convertwithmoss.format.akai.mpc.xpm;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -59,7 +60,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      */
     public MPCKeygroupDetector (final INotifier notifier)
     {
-        super ("Akai MPC Keygroup", "MPC", notifier, new MPCKeygroupDetectorUI ("MPC"), ".xpm");
+        super ("Akai MPC Keygroup v2", "MPC", notifier, new MPCKeygroupDetectorUI ("MPC"), ".xpm");
     }
 
 
@@ -514,7 +515,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         if (sliceLoop == 3)
             zone.setReversed (true);
 
-        final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
+        final ISampleLoop sampleLoop = new DefaultSampleLoop ();
         final int sliceLoopStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_SLICE_LOOP_START, -1);
         if (sliceLoopStart >= 0)
             sampleLoop.setStart (sliceLoopStart);

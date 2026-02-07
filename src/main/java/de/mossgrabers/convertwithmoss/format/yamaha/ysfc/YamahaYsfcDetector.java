@@ -208,7 +208,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -721,7 +721,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         zone.setTuning (zone.getTuning () + pitchOffset);
         zone.setKeyTracking (element.getPitchKeyFollowSensitivity () / 100.0);
 
-        zone.setPanning ((zone.getTuning () + MathUtils.normalizeIntegerRange (element.getPan (), -63, 63, 64)) / 2.0);
+        zone.setPanning ((zone.getPanning () + MathUtils.normalizeIntegerRange (element.getPan (), -63, 63, 64)) / 2.0);
 
         final int level = element.getElementLevel ();
         zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + 2 * level * 0.375);

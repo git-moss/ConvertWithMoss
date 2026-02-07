@@ -902,7 +902,7 @@ public class Maschine1Format implements IMaschineFormat
             findParameterByName (newZoneTag, "zhvl").integerValue = zone.getVelocityHigh ();
 
             findParameterByName (newZoneTag, "zvol").floatValue = MaschinePresetAccessor.dbToInput (zone.getGain ());
-            findParameterByName (newZoneTag, "zpan").floatValue = (float) zone.getTuning ();
+            findParameterByName (newZoneTag, "zpan").floatValue = (float) zone.getPanning ();
             findParameterByName (newZoneTag, "ztun").floatValue = (float) pitchToTune (zone.getTuning ());
         }
     }

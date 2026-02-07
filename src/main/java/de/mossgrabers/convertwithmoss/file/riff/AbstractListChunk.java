@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
@@ -22,7 +21,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public abstract class AbstractListChunk extends RawRIFFChunk
 {
-    protected final List<IChunk> subChunks = new ArrayList<> ();
+    protected final List<IRiffChunk> subChunks = new ArrayList<> ();
 
 
     /**
@@ -32,7 +31,7 @@ public abstract class AbstractListChunk extends RawRIFFChunk
      */
     protected AbstractListChunk (final int type)
     {
-        super (type, RiffID.LIST_ID.getId (), 0, null);
+        super (type, CommonRiffChunkId.LIST_ID, 0, null);
     }
 
 
@@ -52,7 +51,7 @@ public abstract class AbstractListChunk extends RawRIFFChunk
      *
      * @return The sub-chunks
      */
-    public List<IChunk> getSubChunks ()
+    public List<IRiffChunk> getSubChunks ()
     {
         return this.subChunks;
     }
@@ -72,7 +71,7 @@ public abstract class AbstractListChunk extends RawRIFFChunk
     public long getDataSize ()
     {
         int size = 4;
-        for (final IChunk chunk: this.subChunks)
+        for (final IRiffChunk chunk: this.subChunks)
         {
             final long dataSize = chunk.getDataSize ();
             size += 8 + dataSize + dataSize % 2;
@@ -105,7 +104,7 @@ public abstract class AbstractListChunk extends RawRIFFChunk
     public void writeData (final OutputStream out) throws IOException
     {
         StreamUtils.writeUnsigned32 (out, this.getType (), true);
-        for (final IChunk chunk: this.subChunks)
+        for (final IRiffChunk chunk: this.subChunks)
             chunk.write (out);
     }
 

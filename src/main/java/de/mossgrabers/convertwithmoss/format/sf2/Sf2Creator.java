@@ -29,7 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2File;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Instrument;
@@ -37,6 +37,7 @@ import de.mossgrabers.convertwithmoss.file.sf2.Sf2InstrumentZone;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Modulator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Preset;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2PresetZone;
+import de.mossgrabers.convertwithmoss.file.sf2.Sf2RiffChunkId;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
@@ -185,7 +186,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         }
 
         // Version number
-        infoChunk.addInfoField (RiffID.SF_IFIL_ID, new byte []
+        infoChunk.addInfoField (Sf2RiffChunkId.IFIL_ID, new byte []
         {
             2,
             0,
@@ -195,17 +196,17 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
         // Mandatory info fields
         // Wave-table sound engine
-        infoChunk.addInfoTextField (RiffID.SF_ISNG_ID, "EMU8000", 256);
-        infoChunk.addInfoTextField (RiffID.INFO_INAM, StringUtils.fixASCII (name), 256);
+        infoChunk.addInfoTextField (Sf2RiffChunkId.ISNG_ID, "EMU8000", 256);
+        infoChunk.addInfoTextField (InfoRiffChunkId.INFO_INAM, StringUtils.fixASCII (name), 256);
 
         // Optional info fields
         infoChunk.addCreationDate (multisampleSources.get (0).getMetadata ().getCreationDateTime ());
         final String creator = String.join (", ", creators);
         if (!creator.isBlank ())
-            infoChunk.addInfoTextField (RiffID.INFO_IENG, StringUtils.fixASCII (creator), 256);
+            infoChunk.addInfoTextField (InfoRiffChunkId.INFO_IENG, StringUtils.fixASCII (creator), 256);
         final String description = String.join ("\n", descriptions);
         if (!description.isBlank ())
-            infoChunk.addInfoTextField (RiffID.INFO_ICMT, StringUtils.fixASCII (description), 65536);
+            infoChunk.addInfoTextField (InfoRiffChunkId.INFO_ICMT, StringUtils.fixASCII (description), 65536);
     }
 
 
@@ -332,7 +333,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         instrumentZone.addModulator (Sf2Modulator.MODULATOR_PITCH_BEND.intValue (), Generator.FINE_TUNE, bendUp, 0x10, 0);
 
         // Set panning
-        double pan = sampleZone.getTuning ();
+        double pan = sampleZone.getPanning ();
         final int sampleType = sampleDescriptor.getSampleType ();
         if (sampleType == Sf2SampleDescriptor.LEFT)
             pan = -1;

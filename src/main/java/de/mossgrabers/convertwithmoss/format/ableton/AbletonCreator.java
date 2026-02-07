@@ -302,7 +302,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
         zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (Math.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - semitones, 0, 127)));
         zoneContent = zoneContent.replace ("%DETUNE%", Integer.toString (cents));
         zoneContent = zoneContent.replace ("%TUNE_SCALE%", Integer.toString ((int) (zone.getKeyTracking () * 100)));
-        zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getTuning ()));
+        zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getPanning ()));
         zoneContent = zoneContent.replace ("%VOLUME%", formatDouble (Math.pow (2, zone.getGain () / 6.0)));
 
         final List<ISampleLoop> loops = zone.getLoops ();

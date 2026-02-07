@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.InfoChunk;
 
@@ -27,20 +26,20 @@ import de.mossgrabers.convertwithmoss.file.wav.InfoChunk;
  */
 public abstract class AbstractRIFFFile implements RIFFVisitor
 {
-    protected final List<IChunk> chunkStack = new ArrayList<> ();
+    protected final List<IRiffChunk> chunkStack = new ArrayList<> ();
     protected InfoChunk          infoChunk  = null;
 
-    protected final RiffID       topRiffID;
+    protected final RiffChunkId  topRiffChunkId;
 
 
     /**
      * Constructor.
      *
-     * @param topRiffID The top RIFF ID of the file
+     * @param topRiffChunkId The top RIFF ID of the file
      */
-    protected AbstractRIFFFile (final RiffID topRiffID)
+    protected AbstractRIFFFile (final RiffChunkId topRiffChunkId)
     {
-        this.topRiffID = topRiffID;
+        this.topRiffChunkId = topRiffChunkId;
     }
 
 
@@ -105,10 +104,10 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
     {
         this.fillChunkStack ();
 
-        StreamUtils.writeUnsigned32 (out, RiffID.RIFF_ID.getId (), true);
+        StreamUtils.writeUnsigned32 (out, CommonRiffChunkId.RIFF_ID.getFourCC (), true);
         StreamUtils.writeUnsigned32 (out, this.calculateFileSize (), false);
-        StreamUtils.writeUnsigned32 (out, this.topRiffID.getId (), true);
-        for (final IChunk chunk: this.chunkStack)
+        StreamUtils.writeUnsigned32 (out, this.topRiffChunkId.getFourCC (), true);
+        for (final IRiffChunk chunk: this.chunkStack)
             chunk.write (out);
     }
 
@@ -118,15 +117,15 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
      *
      * @param identifiers Some IDs
      */
-    public void removeChunks (final RiffID... identifiers)
+    public void removeChunks (final RiffChunkId... identifiers)
     {
         final Set<Integer> ignore = new HashSet<> ();
-        for (final RiffID riffID: identifiers)
-            ignore.add (Integer.valueOf (riffID.getId ()));
+        for (final RiffChunkId riffChunkId: identifiers)
+            ignore.add (Integer.valueOf (riffChunkId.getFourCC ()));
 
-        final List<IChunk> newChunkStack = new ArrayList<> ();
-        for (final IChunk chunk: this.chunkStack)
-            if (!ignore.contains (Integer.valueOf (chunk.getId ())))
+        final List<IRiffChunk> newChunkStack = new ArrayList<> ();
+        for (final IRiffChunk chunk: this.chunkStack)
+            if (!ignore.contains (Integer.valueOf (chunk.getId ().getFourCC ())))
                 newChunkStack.add (chunk);
 
         this.chunkStack.clear ();
@@ -137,21 +136,21 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
     /**
      * Format all info values as a string.
      *
-     * @param riffIDs The IDs of the info RIFFs to format
+     * @param riffChunkIds The IDs of the info RIFFs to format
      * @return The formatted string
      */
-    public String formatInfoFields (final RiffID... riffIDs)
+    public String formatInfoFields (final RiffChunkId... riffChunkIds)
     {
         final StringBuilder sb = new StringBuilder ();
         if (this.infoChunk != null)
-            for (final RiffID riffID: riffIDs)
+            for (final RiffChunkId riffChunkId: riffChunkIds)
             {
-                final String value = this.infoChunk.getInfoField (riffID);
+                final String value = this.infoChunk.getInfoField (riffChunkId);
                 if (value == null)
                     continue;
                 if (!sb.isEmpty ())
                     sb.append ('\n');
-                sb.append (riffID.getName ()).append (": ").append (value.trim ());
+                sb.append (riffChunkId.getDescription ()).append (": ").append (value.trim ());
             }
         return sb.toString ();
     }
@@ -167,10 +166,10 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
         this.fillChunkStack ();
 
         final StringBuilder sb = new StringBuilder ();
-        for (final IChunk chunk: this.chunkStack)
+        for (final IRiffChunk chunk: this.chunkStack)
         {
-            final int id = chunk.getId ();
-            sb.append ("* ").append (RiffID.fromId (id).getName ()).append (" ('").append (RiffID.toASCII (id)).append ("')\n");
+            final RiffChunkId id = chunk.getId ();
+            sb.append ("* ").append (id.getDescription ()).append (" ('").append (RiffChunkId.toASCII (id.getFourCC ())).append ("')\n");
             sb.append ("    ").append (chunk.infoText ().replace ("\n", "\n    ")).append ('\n');
         }
         return sb.toString ();
@@ -191,7 +190,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
     private long calculateFileSize ()
     {
         int fullSize = 4;
-        for (final IChunk chunk: this.chunkStack)
+        for (final IRiffChunk chunk: this.chunkStack)
         {
             final long length = chunk.getDataSize ();
             fullSize += 8 + length;

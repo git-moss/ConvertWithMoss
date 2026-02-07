@@ -122,7 +122,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 final double tune = zone.getTuning ();
                 exs24Zone.coarseTuning = (int) (tune / 100);
                 exs24Zone.fineTuning = (int) (tune % 100);
-                exs24Zone.pan = (int) (zone.getTuning () * 50);
+                exs24Zone.pan = (int) (zone.getPanning () * 50);
 
                 final List<ISampleLoop> loops = zone.getLoops ();
                 exs24Zone.loopOn = !loops.isEmpty ();

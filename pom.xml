@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.mossgrabers</groupId>
 	<artifactId>convertwithmoss</artifactId>
-	<version>15.5.2</version>
+	<version>16.0.0</version>
 	<packaging>jar</packaging>
 	<name>ConvertWithMoss</name>
 	<organization>
@@ -31,11 +31,7 @@
 	</repositories>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.openjfx</groupId>
-			<artifactId>javafx-controls</artifactId>
-			<version>25.0.2</version>
-		</dependency>
+		<!-- Audio file support -->
 		<dependency>
 			<groupId>com.github.trilarion</groupId>
 			<artifactId>java-vorbis-support</artifactId>
@@ -45,16 +41,29 @@
 			<groupId>com.io7m.flannel</groupId>
 			<artifactId>com.io7m.flannel.core</artifactId>
 			<version>1.0.0</version>
-		</dependency>		
+		</dependency>
+		<!-- Command line support -->		
 		<dependency>
 			<groupId>info.picocli</groupId>
 			<artifactId>picocli</artifactId>
 			<version>4.7.7</version>
 		</dependency>
+		<!-- User interface support -->		
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-controls</artifactId>
+			<version>25.0.2</version>
+		</dependency>
 		<dependency>
 			<artifactId>uitools</artifactId>
 			<groupId>de.mossgrabers</groupId>
 			<version>2.0.1</version>
+		</dependency>
+		<!-- JSON support -->		
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.21.0</version>
 		</dependency>
 	</dependencies>
 
