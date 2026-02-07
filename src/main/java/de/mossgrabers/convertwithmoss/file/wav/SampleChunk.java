@@ -10,7 +10,6 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -40,7 +39,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public SampleChunk (final int numSampleLoops)
     {
-        super (RiffID.SMPL_ID, CHUNK_SIZE + numSampleLoops * LOOP_SIZE);
+        super (WaveRiffChunkId.SMPL_ID, CHUNK_SIZE + numSampleLoops * LOOP_SIZE);
 
         this.setNumSampleLoops (numSampleLoops);
         this.setSamplerData (numSampleLoops * LOOP_SIZE);
@@ -59,7 +58,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public SampleChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.SMPL_ID, chunk);
+        super (WaveRiffChunkId.SMPL_ID, chunk);
 
         final byte [] data = chunk.getData ();
 

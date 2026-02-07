@@ -11,18 +11,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
+import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
+import de.mossgrabers.convertwithmoss.file.riff.IRiffChunk;
+import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 import de.mossgrabers.convertwithmoss.file.wav.InfoChunk;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -39,21 +43,27 @@ import de.mossgrabers.tools.ui.Functions;
 public class Sf2File extends AbstractRIFFFile
 {
     /** The length of the PBAG structure. */
-    private static final int          LENGTH_PBAG   = 4;
+    private static final int                                      LENGTH_PBAG        = 4;
     /** The length of the PMOD structure. */
-    private static final int          LENGTH_PMOD   = 10;
+    private static final int                                      LENGTH_PMOD        = 10;
     /** The length of the PGEN structure. */
-    private static final int          LENGTH_PGEN   = 4;
+    private static final int                                      LENGTH_PGEN        = 4;
     /** The length of the INST structure. */
-    private static final int          LENGTH_INST   = 22;
+    private static final int                                      LENGTH_INST        = 22;
     /** The length of the IBAG structure. */
-    private static final int          LENGTH_IBAG   = 4;
+    private static final int                                      LENGTH_IBAG        = 4;
     /** The length of the IMOD structure. */
-    private static final int          LENGTH_IMOD   = 10;
+    private static final int                                      LENGTH_IMOD        = 10;
     /** The length of the IGEN structure. */
-    private static final int          LENGTH_IGEN   = 4;
+    private static final int                                      LENGTH_IGEN        = 4;
     /** The length of the SHDR structure. */
-    private static final int          LENGTH_SHDR   = 46;
+    private static final int                                      LENGTH_SHDR        = 46;
+
+    private static final Collection<Class<? extends RiffChunkId>> SF2_RIFF_CHUNK_IDS = new ArrayList<> ();
+    static
+    {
+        Collections.addAll (SF2_RIFF_CHUNK_IDS, CommonRiffChunkId.class, InfoRiffChunkId.class, Sf2RiffChunkId.class);
+    }
 
     private final List<Sf2Preset>     presets       = new ArrayList<> ();
     private final List<Sf2Instrument> instruments   = new ArrayList<> ();
@@ -72,7 +82,7 @@ public class Sf2File extends AbstractRIFFFile
      */
     public Sf2File (final File sf2File) throws IOException, ParseException
     {
-        super (RiffID.SF_SFBK_ID);
+        super (Sf2RiffChunkId.SFBK_ID);
 
         try (final FileInputStream stream = new FileInputStream (sf2File))
         {
@@ -86,7 +96,7 @@ public class Sf2File extends AbstractRIFFFile
      */
     public Sf2File ()
     {
-        super (RiffID.SF_SFBK_ID);
+        super (Sf2RiffChunkId.SFBK_ID);
 
         this.infoChunk = new InfoChunk ();
         this.dataChunk = new Sf2DataChunk ();
@@ -117,7 +127,7 @@ public class Sf2File extends AbstractRIFFFile
     {
         if (this.infoChunk == null)
             return "";
-        final String result = this.infoChunk.getInfoField (RiffID.INFO_IENG, RiffID.INFO_IART, RiffID.INFO_ITCH, RiffID.INFO_ISTR, RiffID.INFO_STAR);
+        final String result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IENG, InfoRiffChunkId.INFO_IART, InfoRiffChunkId.INFO_ITCH, InfoRiffChunkId.INFO_ISTR, InfoRiffChunkId.INFO_STAR);
         return result == null ? "" : result.trim ();
     }
 
@@ -131,7 +141,7 @@ public class Sf2File extends AbstractRIFFFile
     {
         if (this.infoChunk == null)
             return "";
-        final String result = this.infoChunk.getInfoField (RiffID.INFO_IKEY);
+        final String result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IKEY);
         return result == null ? "" : result.trim ();
     }
 
@@ -190,12 +200,12 @@ public class Sf2File extends AbstractRIFFFile
      */
     private void read (final InputStream inputStream) throws IOException, ParseException
     {
-        final RIFFParser riffParser = new RIFFParser ();
-        riffParser.declareGroupChunk (RiffID.SF_SFBK_ID.getId (), RiffID.RIFF_ID.getId ());
-        riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
-        riffParser.declareGroupChunk (RiffID.SF_DATA_ID.getId (), RiffID.LIST_ID.getId ());
-        riffParser.declareGroupChunk (RiffID.SF_PDTA_ID.getId (), RiffID.LIST_ID.getId ());
-        riffParser.parse (inputStream, this, true, true);
+        final RIFFParser riffParser = new RIFFParser (SF2_RIFF_CHUNK_IDS);
+        riffParser.declareGroupChunk (Sf2RiffChunkId.SFBK_ID.getFourCC (), CommonRiffChunkId.RIFF_ID);
+        riffParser.declareGroupChunk (InfoRiffChunkId.INFO_ID.getFourCC (), CommonRiffChunkId.LIST_ID);
+        riffParser.declareGroupChunk (Sf2RiffChunkId.DATA_ID.getFourCC (), CommonRiffChunkId.LIST_ID);
+        riffParser.declareGroupChunk (Sf2RiffChunkId.PDTA_ID.getFourCC (), CommonRiffChunkId.LIST_ID);
+        riffParser.parse (inputStream, this);
     }
 
 
@@ -203,24 +213,14 @@ public class Sf2File extends AbstractRIFFFile
     @Override
     public void enterGroup (final RawRIFFChunk group) throws ParseException
     {
-        switch (RiffID.fromId (group.getType ()))
-        {
-            case INFO_ID:
-                this.infoChunk = new InfoChunk ();
-                break;
+        final int type = group.getType ();
 
-            case SF_DATA_ID:
-                this.dataChunk = new Sf2DataChunk ();
-                break;
-
-            case SF_PDTA_ID:
-                this.presetDataChunk = new Sf2PresetDataChunk ();
-                break;
-
-            default:
-                // Not used
-                break;
-        }
+        if (type == InfoRiffChunkId.INFO_ID.getFourCC ())
+            this.infoChunk = new InfoChunk ();
+        else if (type == Sf2RiffChunkId.DATA_ID.getFourCC ())
+            this.dataChunk = new Sf2DataChunk ();
+        else if (type == Sf2RiffChunkId.PDTA_ID.getFourCC ())
+            this.presetDataChunk = new Sf2PresetDataChunk ();
     }
 
 
@@ -228,66 +228,89 @@ public class Sf2File extends AbstractRIFFFile
     @Override
     public void visitChunk (final RawRIFFChunk group, final RawRIFFChunk chunk) throws ParseException
     {
-        final RiffID fromId = RiffID.fromId (chunk.getId ());
-        switch (fromId)
+        final int id = chunk.getId ().getFourCC ();
+
+        ////////////////////////////////////////////
+        // Data chunk sub-chunks
+
+        if (id == Sf2RiffChunkId.SMPL_ID.getFourCC () || id == Sf2RiffChunkId.SM24_ID.getFourCC ())
         {
-            ////////////////////////////////////////////
-            // Data chunk sub-chunks
-
-            case SMPL_ID:
-            case SF_SM24_ID:
-                this.dataChunk.add (chunk);
-                break;
-
-            ////////////////////////////////////////////////////
-            // Preset, Instrument, and Sample Header chunks
-
-            case SF_PHDR_ID:
-                this.presetDataChunk.add (chunk);
-                this.parsePresets (chunk);
-                break;
-            case SF_PBAG_ID:
-                this.presetDataChunk.add (chunk);
-                this.parsePresetZones (chunk);
-                break;
-            case SF_PGEN_ID:
-                this.presetDataChunk.add (chunk);
-                this.parsePresetGenerators (chunk);
-                break;
-            case SF_PMOD_ID:
-                this.presetDataChunk.add (chunk);
-                this.parsePresetModulators (chunk);
-                break;
-            case INST_ID:
-                this.presetDataChunk.add (chunk);
-                this.parseInstruments (chunk);
-                break;
-            case SF_IBAG_ID:
-                this.presetDataChunk.add (chunk);
-                this.parseInstrumentZones (chunk);
-                break;
-            case SF_IMOD_ID:
-                this.presetDataChunk.add (chunk);
-                this.parseInstrumentModulators (chunk);
-                break;
-            case SF_IGEN_ID:
-                this.presetDataChunk.add (chunk);
-                this.parseInstrumentGenerators (chunk);
-                break;
-            case SF_SHDR_ID:
-                this.presetDataChunk.add (chunk);
-                this.parseSampleHeader (chunk);
-                break;
-
-            default:
-                // Info chunk sub-chunks
-                if (chunk.getType () == RiffID.INFO_ID.getId ())
-                    this.infoChunk.add (chunk);
-                else
-                    // Ignore other chunks
-                    this.ignoredChunks.add (RiffID.toASCII (chunk.getId ()));
-                break;
+            this.dataChunk.add (chunk);
+            return;
         }
+
+        ////////////////////////////////////////////////////
+        // Preset, Instrument, and Sample Header chunks
+
+        if (id == Sf2RiffChunkId.PHDR_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parsePresets (chunk);
+            return;
+        }
+
+        if (id == Sf2RiffChunkId.PBAG_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parsePresetZones (chunk);
+            return;
+        }
+
+        if (id == Sf2RiffChunkId.PGEN_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parsePresetGenerators (chunk);
+            return;
+        }
+
+        if (id == Sf2RiffChunkId.PMOD_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parsePresetModulators (chunk);
+            return;
+        }
+
+        if (id == Sf2RiffChunkId.INST_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parseInstruments (chunk);
+            return;
+        }
+
+        if (id == Sf2RiffChunkId.IBAG_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parseInstrumentZones (chunk);
+            return;
+        }
+
+        if (id == Sf2RiffChunkId.IMOD_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parseInstrumentModulators (chunk);
+            return;
+        }
+
+        if (id == Sf2RiffChunkId.IGEN_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parseInstrumentGenerators (chunk);
+            return;
+        }
+
+        if (id == Sf2RiffChunkId.SHDR_ID.getFourCC ())
+        {
+            this.presetDataChunk.add (chunk);
+            this.parseSampleHeader (chunk);
+            return;
+        }
+
+        // Info chunk sub-chunks
+        if (chunk.getType () == InfoRiffChunkId.INFO_ID.getFourCC ())
+            this.infoChunk.add (chunk);
+        else
+            // Ignore other chunks
+            this.ignoredChunks.add (RiffChunkId.toASCII (chunk.getId ().getFourCC ()));
     }
 
 
@@ -675,7 +698,7 @@ public class Sf2File extends AbstractRIFFFile
      */
     public void createPresetDataChunks () throws IOException
     {
-        final List<IChunk> subChunks = this.presetDataChunk.getSubChunks ();
+        final List<IRiffChunk> subChunks = this.presetDataChunk.getSubChunks ();
         subChunks.clear ();
 
         // Update the zone offsets
@@ -715,13 +738,13 @@ public class Sf2File extends AbstractRIFFFile
         }
 
         // Fill data chunk
-        final RawRIFFChunk sampleChunk = new RawRIFFChunk (0, RiffID.SMPL_ID.getId (), tempSampleDataFile.length ());
+        final RawRIFFChunk sampleChunk = new RawRIFFChunk (0, Sf2RiffChunkId.SMPL_ID, tempSampleDataFile.length ());
         sampleChunk.setData (tempSampleDataFile);
         this.dataChunk.add (sampleChunk);
         final long length24 = tempSampleData24File.length ();
         if (length24 > 0)
         {
-            final RawRIFFChunk sample24Chunk = new RawRIFFChunk (0, RiffID.SF_SM24_ID.getId (), length24);
+            final RawRIFFChunk sample24Chunk = new RawRIFFChunk (0, Sf2RiffChunkId.SM24_ID, length24);
             sample24Chunk.setData (tempSampleData24File);
             this.dataChunk.add (sample24Chunk);
         }
@@ -732,7 +755,7 @@ public class Sf2File extends AbstractRIFFFile
             for (final Sf2Preset sf2Preset: this.presets)
                 sf2Preset.writeHeader (out);
             final byte [] data = out.toByteArray ();
-            final RawRIFFChunk chunk = new RawRIFFChunk (0, RiffID.SF_PHDR_ID.getId (), data.length);
+            final RawRIFFChunk chunk = new RawRIFFChunk (0, Sf2RiffChunkId.PHDR_ID, data.length);
             chunk.setData (data);
             subChunks.add (chunk);
         }
@@ -747,7 +770,7 @@ public class Sf2File extends AbstractRIFFFile
      * @param subChunks Where to add the chunk
      * @throws IOException Could not write the chunk
      */
-    private void createPresetZonesChunk (final List<IChunk> subChunks) throws IOException
+    private void createPresetZonesChunk (final List<IRiffChunk> subChunks) throws IOException
     {
         try (final ByteArrayOutputStream pbagOut = new ByteArrayOutputStream (); final ByteArrayOutputStream pmodOut = new ByteArrayOutputStream (); final ByteArrayOutputStream pgenOut = new ByteArrayOutputStream (); final ByteArrayOutputStream instOut = new ByteArrayOutputStream (); final ByteArrayOutputStream ibagOut = new ByteArrayOutputStream (); final ByteArrayOutputStream imodOut = new ByteArrayOutputStream (); final ByteArrayOutputStream igenOut = new ByteArrayOutputStream (); final ByteArrayOutputStream shdrOut = new ByteArrayOutputStream ())
         {
@@ -858,22 +881,22 @@ public class Sf2File extends AbstractRIFFFile
             // Final SHDR element
             Sf2SampleDescriptor.writeLastHeader (shdrOut);
 
-            createChunk (RiffID.SF_PBAG_ID, pbagOut, subChunks);
-            createChunk (RiffID.SF_PMOD_ID, pmodOut, subChunks);
-            createChunk (RiffID.SF_PGEN_ID, pgenOut, subChunks);
-            createChunk (RiffID.INST_ID, instOut, subChunks);
-            createChunk (RiffID.SF_IBAG_ID, ibagOut, subChunks);
-            createChunk (RiffID.SF_IMOD_ID, imodOut, subChunks);
-            createChunk (RiffID.SF_IGEN_ID, igenOut, subChunks);
-            createChunk (RiffID.SF_SHDR_ID, shdrOut, subChunks);
+            createChunk (Sf2RiffChunkId.PBAG_ID, pbagOut, subChunks);
+            createChunk (Sf2RiffChunkId.PMOD_ID, pmodOut, subChunks);
+            createChunk (Sf2RiffChunkId.PGEN_ID, pgenOut, subChunks);
+            createChunk (Sf2RiffChunkId.INST_ID, instOut, subChunks);
+            createChunk (Sf2RiffChunkId.IBAG_ID, ibagOut, subChunks);
+            createChunk (Sf2RiffChunkId.IMOD_ID, imodOut, subChunks);
+            createChunk (Sf2RiffChunkId.IGEN_ID, igenOut, subChunks);
+            createChunk (Sf2RiffChunkId.SHDR_ID, shdrOut, subChunks);
         }
     }
 
 
-    private static void createChunk (final RiffID riffID, final ByteArrayOutputStream out, final List<IChunk> subChunks)
+    private static void createChunk (final RiffChunkId riffID, final ByteArrayOutputStream out, final List<IRiffChunk> subChunks)
     {
         final byte [] data = out.toByteArray ();
-        final RawRIFFChunk chunk = new RawRIFFChunk (0, riffID.getId (), data.length);
+        final RawRIFFChunk chunk = new RawRIFFChunk (0, riffID, data.length);
         chunk.setData (data);
         subChunks.add (chunk);
     }

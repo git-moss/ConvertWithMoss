@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.exception.NoDataInChunkException;
-import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -27,10 +26,9 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class RawRIFFChunk implements IChunk
+public class RawRIFFChunk implements IRiffChunk
 {
-    private final RiffID                          riffID;
-    private final int                             id;
+    private final RiffChunkId                     id;
     private int                                   type;
     private long                                  size;
     private byte []                               data;
@@ -49,7 +47,7 @@ public class RawRIFFChunk implements IChunk
      * @param type The type of the chunk
      * @param id The chunk ID
      */
-    public RawRIFFChunk (final int type, final int id)
+    public RawRIFFChunk (final int type, final RiffChunkId id)
     {
         this (type, id, -1);
     }
@@ -62,7 +60,7 @@ public class RawRIFFChunk implements IChunk
      * @param id The chunk ID
      * @param size The size of the chunk
      */
-    public RawRIFFChunk (final int type, final int id, final long size)
+    public RawRIFFChunk (final int type, final RiffChunkId id, final long size)
     {
         this (type, id, size, null);
     }
@@ -75,9 +73,9 @@ public class RawRIFFChunk implements IChunk
      * @param data The data of the chunk
      * @param size The expected size of the chunk
      */
-    protected RawRIFFChunk (final RiffID riffID, final byte [] data, final int size)
+    protected RawRIFFChunk (final RiffChunkId riffID, final byte [] data, final int size)
     {
-        this (0, riffID.getId (), size);
+        this (0, riffID, size);
 
         this.setData (data);
     }
@@ -91,10 +89,9 @@ public class RawRIFFChunk implements IChunk
      * @param size The size of the chunk
      * @param propGroup The property group chunk
      */
-    public RawRIFFChunk (final int type, final int id, final long size, final RawRIFFChunk propGroup)
+    public RawRIFFChunk (final int type, final RiffChunkId id, final long size, final RawRIFFChunk propGroup)
     {
         this.id = id;
-        this.riffID = RiffID.fromId (id);
         this.type = type;
         this.size = size;
 
@@ -105,20 +102,9 @@ public class RawRIFFChunk implements IChunk
     }
 
 
-    /**
-     * Get the RIFF ID.
-     *
-     * @return The RIFF ID
-     */
-    public RiffID getRiffID ()
-    {
-        return this.riffID;
-    }
-
-
     /** {@inheritDoc} */
     @Override
-    public int getId ()
+    public RiffChunkId getId ()
     {
         return this.id;
     }
@@ -138,7 +124,7 @@ public class RawRIFFChunk implements IChunk
     /**
      * Get the size of the chunk.
      *
-     * @return THe size
+     * @return The size
      */
     public long getSize ()
     {
@@ -163,7 +149,7 @@ public class RawRIFFChunk implements IChunk
      * @param id The ID
      * @return The property chunk
      */
-    public RawRIFFChunk getPropertyChunk (final int id)
+    public RawRIFFChunk getPropertyChunk (final RiffChunkId id)
     {
         final RawRIFFChunk chunk = new RawRIFFChunk (this.type, id);
         return this.propertyChunks.get (chunk);
@@ -198,11 +184,11 @@ public class RawRIFFChunk implements IChunk
      * @param id The ID
      * @return The chunks
      */
-    public List<RawRIFFChunk> getCollectionChunks (final int id)
+    public List<RawRIFFChunk> getCollectionChunks (final RiffChunkId id)
     {
         final List<RawRIFFChunk> array = new ArrayList<> ();
         for (final RawRIFFChunk chunk: this.collectionChunks)
-            if (chunk.id == id)
+            if (chunk.getId ().getFourCC () == id.getFourCC ())
                 array.add (chunk);
         return array;
     }
@@ -229,8 +215,8 @@ public class RawRIFFChunk implements IChunk
     public void setData (final byte [] data)
     {
         // Check expected length
-        if (this.id != RiffID.LIST_ID.getId () && data.length < this.size)
-            throw new IllegalArgumentException (Functions.getMessage ("IDS_WAV_ERR_IN_CHUNK", this.getRiffID ().getName (), RiffID.toASCII (this.id), Long.toString (this.size), Integer.toString (data.length)));
+        if (this.id.getFourCC () != CommonRiffChunkId.LIST_ID.getFourCC () && data.length < this.size)
+            throw new IllegalArgumentException (Functions.getMessage ("IDS_WAV_ERR_IN_CHUNK", this.id.getDescription (), RiffChunkId.toASCII (this.id.getFourCC ()), Long.toString (this.size), Integer.toString (data.length)));
 
         this.data = data;
     }
@@ -271,7 +257,7 @@ public class RawRIFFChunk implements IChunk
 
     private void checkValidity ()
     {
-        if (this.id != RiffID.LIST_ID.getId () && this.data == null && this.dataFile == null)
+        if (this.id.getFourCC () != CommonRiffChunkId.LIST_ID.getFourCC () && this.data == null && this.dataFile == null)
         {
             if (this.tooLarge)
                 throw new NoDataInChunkException ("Chunk contains no data since it was too large to be loaded.");
@@ -524,7 +510,7 @@ public class RawRIFFChunk implements IChunk
     @Override
     public void write (final OutputStream out) throws IOException
     {
-        StreamUtils.writeUnsigned32 (out, this.id, true);
+        StreamUtils.writeUnsigned32 (out, this.id.getFourCC (), true);
 
         final long length = this.getDataSize ();
         final boolean needsPadByte = length % 2 == 1;
@@ -543,7 +529,7 @@ public class RawRIFFChunk implements IChunk
     public boolean equals (final Object another)
     {
         if (another instanceof final RawRIFFChunk that)
-            return that.id == this.id && that.type == this.type;
+            return that.getId ().getFourCC () == this.id.getFourCC () && that.type == this.type;
         return false;
     }
 
@@ -552,7 +538,7 @@ public class RawRIFFChunk implements IChunk
     @Override
     public int hashCode ()
     {
-        return this.id;
+        return this.id.getFourCC ();
     }
 
 
@@ -560,7 +546,7 @@ public class RawRIFFChunk implements IChunk
     @Override
     public String toString ()
     {
-        return super.toString () + "{" + RiffID.toASCII (this.getType ()) + "," + RiffID.toASCII (this.getId ()) + "}";
+        return super.toString () + "{" + RiffChunkId.toASCII (this.getType ()) + "," + RiffChunkId.toASCII (this.id.getFourCC ()) + "}";
     }
 
 

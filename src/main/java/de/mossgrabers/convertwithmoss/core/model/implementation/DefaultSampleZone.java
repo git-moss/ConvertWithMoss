@@ -549,7 +549,7 @@ public class DefaultSampleZone implements ISampleZone
         this.velocityCrossfadeLow = other.getVelocityCrossfadeLow ();
         this.velocityCrossfadeHigh = other.getVelocityCrossfadeHigh ();
         this.gain = other.getGain ();
-        this.panning = other.getTuning ();
+        this.panning = other.getPanning ();
         this.tune = other.getTuning ();
         this.keyTracking = other.getKeyTracking ();
         this.bendUp = other.getBendUp ();

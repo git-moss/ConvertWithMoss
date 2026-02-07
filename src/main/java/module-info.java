@@ -14,6 +14,7 @@ module de.mossgrabers.convertwithmoss
     requires javafx.graphics;
     requires com.github.trilarion.sound;
     requires info.picocli;
+    requires com.fasterxml.jackson.databind;
 
 
     exports de.mossgrabers.convertwithmoss.ui;

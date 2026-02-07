@@ -43,7 +43,6 @@ import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
@@ -52,11 +51,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -97,13 +96,15 @@ public class MainFrame extends AbstractFrame implements INotifier
     private final ComboBox<String>       destinationPathField                = new ComboBox<> ();
     private File                         sourceFolder;
     private File                         outputFolder;
+
     private Button                       convertButton;
     private Button                       analyseButton;
+    private Button                       settingsButton;
+    private Button                       closeButton;
+    private Button                       cancelButton;
+
     private Button                       sourceFolderSelectButton;
     private Button                       destinationFolderSelectButton;
-    private CheckBox                     createFolderStructure;
-    private CheckBox                     addNewFiles;
-    private CheckBox                     enableDarkMode;
 
     private final TabPane                sourceTabPane                       = new TabPane ();
     private final TabPane                destinationTabPane                  = new TabPane ();
@@ -111,13 +112,6 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private final List<String>           sourcePathHistory                   = new ArrayList<> ();
     private final List<String>           destinationPathHistory              = new ArrayList<> ();
-
-    private Button                       closeButton;
-    private Button                       cancelButton;
-
-    private CheckBox                     renameCheckbox;
-    private final TextField              renameFilePathField                 = new TextField ();
-    private Button                       renameFilePathSelectButton;
 
     private final CSVRenameFile          csvRenameFile                       = new CSVRenameFile ();
     private final LoggerBoxLogger        logger                              = new LoggerBoxLogger (MAXIMUM_NUMBER_OF_LOG_ENTRIES);
@@ -131,6 +125,15 @@ public class MainFrame extends AbstractFrame implements INotifier
     private final Map<Tab, ICreator<?>>  creatorTabs                         = new HashMap<> ();
     private final Map<Tab, IDetector<?>> sourceTabs                          = new HashMap<> ();
     private final ConverterBackend       backend;
+
+    private SettingsDialog               settingsDialog;
+
+    private boolean                      createFolderStructure;
+    private boolean                      addNewFiles;
+    private boolean                      enableDarkMode;
+    private boolean                      renameSourceEnable;
+
+    private String                       renamingFilePath;
 
 
     /**
@@ -146,30 +149,25 @@ public class MainFrame extends AbstractFrame implements INotifier
     }
 
 
-    /**
-     * Enables/disables the renaming controls depending on the selection status of the renaming
-     * checkbox.
-     */
-    private void updateRenamingControls ()
-    {
-        this.renameFilePathField.setDisable (!this.renameCheckbox.isSelected ());
-        this.renameFilePathSelectButton.setDisable (!this.renameCheckbox.isSelected ());
-    }
-
-
     /** {@inheritDoc} */
     @Override
     public void initialise (final Stage stage, final Optional<String> baseTitleOptional) throws EndApplicationException
     {
         super.initialise (stage, baseTitleOptional, true, true, true);
 
+        this.settingsDialog = new SettingsDialog (this.getStage ());
+
         // The main button panel
-        final ButtonPanel buttonPanel = new ButtonPanel (Orientation.VERTICAL);
-        this.convertButton = setupButton (buttonPanel, "Convert", "@IDS_MAIN_CONVERT", "@IDS_MAIN_CONVERT_TOOLTIP");
+        final ButtonPanel upperButtonPanel = new ButtonPanel (Orientation.VERTICAL);
+        this.convertButton = setupButton (upperButtonPanel, "Convert", "@IDS_MAIN_CONVERT", "@IDS_MAIN_CONVERT_TOOLTIP");
         this.convertButton.setDefaultButton (true);
         this.convertButton.setOnAction (_ -> this.execute (false));
-        this.analyseButton = setupButton (buttonPanel, "Analyse", "@IDS_MAIN_ANALYSE", "@IDS_MAIN_ANALYSE_TOOLTIP");
+        this.analyseButton = setupButton (upperButtonPanel, "Analyse", "@IDS_MAIN_ANALYSE", "@IDS_MAIN_ANALYSE_TOOLTIP");
         this.analyseButton.setOnAction (_ -> this.execute (true));
+
+        final ButtonPanel lowerButtonPanel = new ButtonPanel (Orientation.VERTICAL);
+        this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
+        this.settingsButton.setOnAction (_ -> this.openSettings ());
 
         /////////////////////////////////////////////////////////////////////////////
         // Source pane
@@ -177,11 +175,11 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         this.sourceFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_TOOLTIP")));
         this.sourceFolderSelectButton.setOnAction (_ -> this.selectSourcePath ());
-        final BoxPanel sourceUpperPart = new BoxPanel (Orientation.VERTICAL);
+        final BoxPanel sourceUpperPane = new BoxPanel (Orientation.VERTICAL);
         final TitledSeparator sourceTitle = new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER"));
         sourceTitle.setLabelFor (this.sourcePathField);
-        sourceUpperPart.addComponent (sourceTitle);
-        sourceUpperPart.addComponent (new BorderPane (this.sourcePathField, null, this.sourceFolderSelectButton, null, null));
+        sourceUpperPane.addComponent (sourceTitle);
+        sourceUpperPane.addComponent (new BorderPane (this.sourcePathField, null, this.sourceFolderSelectButton, null, null));
         this.sourcePathField.setMaxWidth (Double.MAX_VALUE);
 
         this.sourceTabPane.getStyleClass ().add (PADDING_LEFT_BOTTOM_RIGHT);
@@ -196,25 +194,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         }
         setTabPaneLeftTabsHorizontal (this.sourceTabPane);
 
-        // Rename CSV file section
-        final BoxPanel srcRenamingCheckboxPanel = new BoxPanel (Orientation.HORIZONTAL, false);
-        this.renameCheckbox = srcRenamingCheckboxPanel.createCheckBox ("@IDS_MAIN_RENAMING", "@IDS_MAIN_RENAMING_TOOLTIP");
-        this.renameCheckbox.getStyleClass ().add ("paddingRight");
-        this.renameCheckbox.setOnAction (_ -> this.updateRenamingControls ());
-        this.renameFilePathSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE"));
-        this.renameFilePathSelectButton.setOnAction (_ -> {
-
-            final Optional<File> file = Functions.getFileFromUser (this.getStage (), true, Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_HEADER"), this.config, new FileChooser.ExtensionFilter (Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_DESCRIPTION"), Functions.getText ("@IDS_MAIN_SELECT_RENAMING_FILE_FILTER")));
-            if (file.isPresent ())
-                this.renameFilePathField.setText (file.get ().getAbsolutePath ());
-
-        });
-        final BorderPane sourceBottomPane = new BorderPane (this.renameFilePathField, null, this.renameFilePathSelectButton, null, srcRenamingCheckboxPanel.getPane ());
-        sourceBottomPane.getStyleClass ().add ("paddingRenameBar");
-
         final BorderPane sourcePane = new BorderPane (this.sourceTabPane);
-        sourcePane.setTop (sourceUpperPart.getPane ());
-        sourcePane.setBottom (sourceBottomPane);
+        sourcePane.setTop (sourceUpperPane.getPane ());
 
         /////////////////////////////////////////////////////////////////////////////
         // Destination pane
@@ -245,23 +226,11 @@ public class MainFrame extends AbstractFrame implements INotifier
         }
         setTabPaneLeftTabsHorizontal (this.destinationTabPane);
 
-        final BoxPanel bottomLeft = new BoxPanel (Orientation.HORIZONTAL);
-        this.createFolderStructure = bottomLeft.createCheckBox ("@IDS_MAIN_CREATE_FOLDERS", "@IDS_MAIN_CREATE_FOLDERS_TOOLTIP");
-        this.createFolderStructure.setSelected (true);
-        this.addNewFiles = bottomLeft.createCheckBox ("@IDS_MAIN_ADD_NEW", "@IDS_MAIN_ADD_NEW_TOOLTIP");
-
-        final BoxPanel bottomRight = new BoxPanel (Orientation.HORIZONTAL);
-        this.enableDarkMode = bottomRight.createCheckBox ("@IDS_MAIN_ENABLE_DARK_MODE", "@IDS_MAIN_ENABLE_DARK_MODE_TOOLTIP");
-        this.enableDarkMode.selectedProperty ().addListener ( (_, _, isSelected) -> this.setDarkMode (isSelected.booleanValue ()));
-
         this.configureDestinationTypePane ();
 
-        final BorderPane destinationCenterPane = new BorderPane (this.destinationTabPane);
-        destinationCenterPane.setBottom (this.destinationTypeTabPane);
-
-        final BorderPane destinationPane = new BorderPane (destinationCenterPane);
+        final BorderPane destinationPane = new BorderPane (this.destinationTabPane);
         destinationPane.setTop (destinationUpperPart.getPane ());
-        destinationPane.setBottom (new BorderPane (null, null, bottomRight.getPane (), null, bottomLeft.getPane ()));
+        destinationPane.setBottom (this.destinationTypeTabPane);
 
         // Tie it all together ...
         final HBox grid = new HBox ();
@@ -270,9 +239,13 @@ public class MainFrame extends AbstractFrame implements INotifier
         HBox.setHgrow (sourcePane, Priority.ALWAYS);
         HBox.setHgrow (destinationPane, Priority.ALWAYS);
 
+        final BorderPane buttonColumn = new BorderPane ();
+        buttonColumn.setCenter (upperButtonPanel.getPane ());
+        buttonColumn.setBottom (lowerButtonPanel.getPane ());
+
         this.mainPane = new BorderPane ();
         this.mainPane.setCenter (grid);
-        this.mainPane.setRight (buttonPanel.getPane ());
+        this.mainPane.setRight (buttonColumn);
 
         // Execution pane
         this.executePane = new BorderPane ();
@@ -409,14 +382,7 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         this.traversalManager.add (this.convertButton);
         this.traversalManager.add (this.analyseButton);
-
-        this.traversalManager.add (this.renameCheckbox);
-        this.traversalManager.add (this.renameFilePathField);
-        this.traversalManager.add (this.renameFilePathSelectButton);
-        this.traversalManager.add (this.createFolderStructure);
-        this.traversalManager.add (this.addNewFiles);
-        this.traversalManager.add (this.enableDarkMode);
-
+        this.traversalManager.add (this.settingsButton);
         this.traversalManager.add (this.cancelButton);
         this.traversalManager.add (this.closeButton);
         this.traversalManager.add (this.loggingArea);
@@ -450,6 +416,9 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void loadConfiguration ()
     {
+        //////////////////////////////////////////////////////////
+        // Source configuration
+
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
         {
             final String sourcePath = this.config.getProperty (SOURCE_PATH + i);
@@ -463,6 +432,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.sourcePathHistory.isEmpty ())
             this.sourcePathField.getEditor ().setText (this.sourcePathHistory.get (0));
 
+        /////////////////////////////////////////////////////////
+        // Destination Configuration
+
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
         {
             final String destinationPath = this.config.getProperty (DESTINATION_PATH + i);
@@ -475,19 +447,6 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.destinationPathField.setEditable (true);
         if (!this.destinationPathHistory.isEmpty ())
             this.destinationPathField.getEditor ().setText (this.destinationPathHistory.get (0));
-
-        final String renamingFilePath = this.config.getProperty (RENAMING_CSV_FILE);
-        if (renamingFilePath != null)
-            this.renameFilePathField.setText (renamingFilePath);
-
-        this.createFolderStructure.setSelected (this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true));
-        this.addNewFiles.setSelected (this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false));
-        final boolean isDarkmode = this.config.getBoolean (ENABLE_DARK_MODE, false);
-        this.enableDarkMode.setSelected (isDarkmode);
-        this.setDarkMode (isDarkmode);
-        this.renameCheckbox.setSelected (this.config.getBoolean (RENAMING_SOURCE_ENABLED, false));
-
-        this.updateRenamingControls ();
 
         for (final IDetector<?> detector: this.backend.getDetectors ())
             detector.getSettings ().loadSettings (this.config);
@@ -504,6 +463,17 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
+
+        /////////////////////////////////////////////////////////
+        // Options
+
+        this.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
+        this.addNewFiles = this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false);
+        this.enableDarkMode = this.config.getBoolean (ENABLE_DARK_MODE, false);
+        this.renameSourceEnable = this.config.getBoolean (RENAMING_SOURCE_ENABLED, false);
+        this.renamingFilePath = this.config.getProperty (RENAMING_CSV_FILE);
+
+        this.setDarkMode (this.enableDarkMode);
     }
 
 
@@ -520,11 +490,11 @@ public class MainFrame extends AbstractFrame implements INotifier
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
             this.config.setProperty (DESTINATION_PATH + i, this.destinationPathHistory.size () > i ? this.destinationPathHistory.get (i) : "");
 
-        this.config.setProperty (RENAMING_CSV_FILE, this.renameFilePathField.getText ());
-        this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure.isSelected ());
-        this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles.isSelected ());
-        this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode.isSelected ());
-        this.config.setBoolean (RENAMING_SOURCE_ENABLED, this.renameCheckbox.isSelected ());
+        this.config.setProperty (RENAMING_CSV_FILE, this.renamingFilePath);
+        this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure);
+        this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles);
+        this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode);
+        this.config.setBoolean (RENAMING_SOURCE_ENABLED, this.renameSourceEnable);
 
         for (final IDetector<?> detector: this.backend.getDetectors ())
             detector.getSettings ().saveSettings (this.config);
@@ -560,13 +530,48 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
+     * Open the settings dialog.
+     */
+    private void openSettings ()
+    {
+        this.settingsDialog.createFolderStructureCheckbox.setSelected (this.createFolderStructure);
+        this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
+        this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);
+        this.settingsDialog.renameCheckbox.setSelected (this.renameSourceEnable);
+        this.settingsDialog.renameFilePathField.setText (this.renamingFilePath);
+
+        if (this.settingsDialog.display ())
+        {
+            this.createFolderStructure = this.settingsDialog.createFolderStructureCheckbox.isSelected ();
+            this.addNewFiles = this.settingsDialog.addNewFilesCheckbox.isSelected ();
+            this.enableDarkMode = this.settingsDialog.enableDarkModeCheckbox.isSelected ();
+            this.renameSourceEnable = this.settingsDialog.renameCheckbox.isSelected ();
+            this.renamingFilePath = this.settingsDialog.renameFilePathField.getText ();
+
+            this.csvRenameFile.clear ();
+            try
+            {
+                if (this.renameSourceEnable)
+                    this.csvRenameFile.setRenameFile (new File (this.renamingFilePath));
+            }
+            catch (final IllegalArgumentException ex)
+            {
+                Functions.message (ex.getMessage ());
+            }
+
+            this.setDarkMode (this.enableDarkMode);
+        }
+    }
+
+
+    /**
      * Execute the conversion.
      *
      * @param onlyAnalyse Do not create output files if true
      */
     private void execute (final boolean onlyAnalyse)
     {
-        if (!this.verifyFolders () || !this.verifyRenameFile ())
+        if (!this.verifyFolders ())
             return;
 
         final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
@@ -588,7 +593,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final boolean wantsMultipleFiles = detectPerformances ? this.wantsMultiplePerformanceFiles () : this.wantsMultiplePresetFiles ();
         final String libraryName = (detectPerformances ? this.performanceLibraryFilename : this.presetLibraryFilename).getText ().trim ();
 
-        Platform.runLater ( () -> this.backend.detect (detector, creator, this.sourceFolder, this.outputFolder, this.csvRenameFile, libraryName, detectPerformances, wantsMultipleFiles, this.createFolderStructure.isSelected (), onlyAnalyse));
+        Platform.runLater ( () -> this.backend.detect (detector, creator, this.sourceFolder, this.outputFolder, this.csvRenameFile, libraryName, detectPerformances, wantsMultipleFiles, this.createFolderStructure, onlyAnalyse));
     }
 
 
@@ -645,56 +650,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.destinationPathHistory.add (0, this.outputFolder.getAbsolutePath ());
 
         // Output folder must be empty or add new must be active
-        return this.addNewFiles.isSelected () || this.isEmptyFolder (this.outputFolder.getPath ());
-    }
-
-
-    /**
-     * Set and check folder for existence.
-     *
-     * @return True if OK
-     */
-    private boolean verifyRenameFile ()
-    {
-        this.csvRenameFile.clear ();
-
-        if (!this.renameCheckbox.isSelected ())
-            return true;
-
-        final String renamingCSVFile = this.renameFilePathField.getText ();
-        if (renamingCSVFile.isBlank ())
-        {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_NO_FILE_SPECIFIED");
-            this.renameFilePathField.requestFocus ();
-            return false;
-        }
-
-        final File renamingCSV = new File (renamingCSVFile);
-        if (!renamingCSV.exists ())
-        {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_DOES_NOT_EXIST", renamingCSVFile);
-            this.renameFilePathField.requestFocus ();
-            return false;
-        }
-
-        if (!renamingCSV.canRead ())
-        {
-            Functions.message ("@IDS_NOTIFY_RENAMING_CSV_NOT_READABLE", renamingCSVFile);
-            this.renameFilePathField.requestFocus ();
-            return false;
-        }
-
-        try
-        {
-            this.csvRenameFile.setRenameFile (renamingCSV);
-        }
-        catch (final IllegalArgumentException ex)
-        {
-            Functions.message (ex.getMessage ());
-            this.renameFilePathField.requestFocus ();
-            return false;
-        }
-        return true;
+        return this.addNewFiles || this.isEmptyFolder (this.outputFolder.getPath ());
     }
 
 
@@ -891,19 +847,25 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private static Button setupButton (final BasePanel panel, final String iconName, final String labelName, final String mnemonic) throws EndApplicationException
     {
-        Image icon;
         try
         {
-            icon = Functions.iconFor ("de/mossgrabers/convertwithmoss/images/" + iconName + ".png");
+            final Image icon = Functions.iconFor ("de/mossgrabers/convertwithmoss/images/" + iconName + ".png");
+
+            final Button button = panel.createButton (icon, labelName, mnemonic);
+            button.alignmentProperty ().set (Pos.CENTER_LEFT);
+            button.graphicTextGapProperty ().set (12);
+
+            final ImageView image = (ImageView) button.getGraphic ();
+            image.setFitWidth (24);
+            // image.setFitHeight (24);
+            image.setPreserveRatio (true);
+
+            return button;
         }
         catch (final IOException ex)
         {
             throw new EndApplicationException (ex);
         }
-        final Button button = panel.createButton (icon, labelName, mnemonic);
-        button.alignmentProperty ().set (Pos.CENTER_LEFT);
-        button.graphicTextGapProperty ().set (12);
-        return button;
     }
 
 

@@ -124,7 +124,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
         final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
         final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Format (this.notifier, false) : new Kontakt5Format (this.notifier);
-        this.createNKM (destinationFolder, performanceSource.getInstruments (), libraryName, kontaktType);
+        this.createNKM (destinationFolder, instruments, libraryName, kontaktType);
     }
 
 

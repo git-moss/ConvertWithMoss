@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai;
+package de.mossgrabers.convertwithmoss.format.akai.mpc.xpm;
 
 /**
  * Some constants for the MPC keygroup format.

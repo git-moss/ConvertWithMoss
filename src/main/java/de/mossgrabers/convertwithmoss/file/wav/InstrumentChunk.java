@@ -7,7 +7,6 @@ package de.mossgrabers.convertwithmoss.file.wav;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -25,7 +24,7 @@ public class InstrumentChunk extends AbstractSpecificRIFFChunk
      */
     public InstrumentChunk ()
     {
-        super (RiffID.INST_ID, CHUNK_SIZE);
+        super (WaveRiffChunkId.INST_ID, CHUNK_SIZE);
     }
 
 
@@ -38,7 +37,7 @@ public class InstrumentChunk extends AbstractSpecificRIFFChunk
      */
     public InstrumentChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.INST_ID, chunk);
+        super (WaveRiffChunkId.INST_ID, chunk);
     }
 
 

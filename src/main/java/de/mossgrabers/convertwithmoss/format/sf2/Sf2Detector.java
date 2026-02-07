@@ -29,7 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2File;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Instrument;
@@ -159,9 +159,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
     private void fillMetadata (final Sf2File sf2File, final String [] parts, final IMetadata metadata)
     {
-        String description = sf2File.formatInfoFields (RiffID.INFO_CMNT, RiffID.INFO_ICMT, RiffID.INFO_COMM, RiffID.INFO_ICOP, RiffID.INFO_IMIT, RiffID.INFO_IMIU, RiffID.INFO_TORG, RiffID.INFO_TORG);
+        String description = sf2File.formatInfoFields (InfoRiffChunkId.INFO_CMNT, InfoRiffChunkId.INFO_ICMT, InfoRiffChunkId.INFO_COMM, InfoRiffChunkId.INFO_ICOP, InfoRiffChunkId.INFO_IMIT, InfoRiffChunkId.INFO_IMIU, InfoRiffChunkId.INFO_TORG, InfoRiffChunkId.INFO_TORG);
         // Remove unnecessary 'Comment' labels. Order is important!
-        description = description.replace (RiffID.INFO_COMM.getName () + ": ", "").replace (RiffID.INFO_ICMT.getName () + ": ", "").replace (RiffID.INFO_CMNT.getName () + ": ", "");
+        description = description.replace (InfoRiffChunkId.INFO_COMM.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_ICMT.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_CMNT.getDescription () + ": ", "");
 
         metadata.detectMetadata (this.settingsConfiguration, parts);
 
@@ -257,7 +257,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
                     default:
                     case Sf2SampleDescriptor.MONO:
-                        final double panning = zone.getTuning ();
+                        final double panning = zone.getPanning ();
                         if (panning == 0)
                             resultSamples.add (zone);
                         else if (panning < 0)
@@ -313,7 +313,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                         // Store the matching right side sample with the left side one
                         leftSampleData.setRightSample (sample);
                         updateFilename (leftSampleZone, rightSampleZone);
-                        leftSampleZone.setPanning (Math.clamp (leftSampleZone.getTuning () + rightSampleZone.getTuning (), -1.0, 1.0));
+                        leftSampleZone.setPanning (Math.clamp (leftSampleZone.getPanning () + rightSampleZone.getPanning (), -1.0, 1.0));
                         resultSamples.add (leftSampleZone);
                         rightSampleZones.remove (i);
                         found = true;
@@ -368,7 +368,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                         final Sf2SampleData leftSampleData = (Sf2SampleData) panLeftSampleZone.getSampleData ();
                         updateFilename (panLeftSampleZone, panRightSampleZone);
                         leftSampleData.setRightSample (((Sf2SampleData) panRightSampleZone.getSampleData ()).getSample ());
-                        panLeftSampleZone.setPanning (Math.clamp (panLeftSampleZone.getTuning () + panRightSampleZone.getTuning (), -1.0, 1.0));
+                        panLeftSampleZone.setPanning (Math.clamp (panLeftSampleZone.getPanning () + panRightSampleZone.getPanning (), -1.0, 1.0));
                         resultSamples.add (panLeftSampleZone);
                         panRightSamples.remove (i);
                         found = true;

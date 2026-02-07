@@ -423,7 +423,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (velAmpDepth < 1)
             addAttribute (buffer, SfzOpcode.AMP_VELOCITY_TRACK, formatDouble (velAmpDepth * 100.0, 2), true);
 
-        final double pan = zone.getTuning ();
+        final double pan = zone.getPanning ();
         if (pan != 0)
             addAttribute (buffer, SfzOpcode.PANNING, Integer.toString ((int) Math.round (pan * 100)), true);
 

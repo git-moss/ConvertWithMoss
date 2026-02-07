@@ -6,7 +6,6 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 
 import de.mossgrabers.convertwithmoss.file.riff.AbstractListChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -25,7 +24,7 @@ public class Sf2DataChunk extends AbstractListChunk
      */
     public Sf2DataChunk ()
     {
-        super (RiffID.SF_DATA_ID.getId ());
+        super (Sf2RiffChunkId.DATA_ID.getFourCC ());
     }
 
 
@@ -35,10 +34,10 @@ public class Sf2DataChunk extends AbstractListChunk
     {
         super.add (chunk);
 
-        final RiffID riffID = chunk.getRiffID ();
-        if (riffID == RiffID.SMPL_ID)
+        final int id = chunk.getId ().getFourCC ();
+        if (id == Sf2RiffChunkId.SMPL_ID.getFourCC ())
             this.sampleDataChunk = chunk;
-        else if (riffID == RiffID.SF_SM24_ID)
+        else if (id == Sf2RiffChunkId.SM24_ID.getFourCC ())
             this.sampleData24Chunk = chunk;
     }
 

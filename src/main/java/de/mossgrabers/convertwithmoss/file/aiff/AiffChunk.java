@@ -8,8 +8,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.IChunk;
 import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
+import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 
 
 /**
@@ -17,7 +17,7 @@ import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
  *
  * @author Jürgen Moßgraber
  */
-public class AiffChunk implements IChunk
+public class AiffChunk implements IAiffChunk
 {
     protected final IffChunk chunk;
 
@@ -65,7 +65,7 @@ public class AiffChunk implements IChunk
     @Override
     public int getId ()
     {
-        return IChunk.toId (this.chunk.getId ());
+        return RiffChunkId.toFourCC (this.chunk.getId ());
     }
 
 

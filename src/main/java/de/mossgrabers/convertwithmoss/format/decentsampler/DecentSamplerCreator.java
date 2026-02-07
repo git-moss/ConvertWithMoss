@@ -363,7 +363,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         final double gain = zone.getGain ();
         if (gain != 0)
             sampleElement.setAttribute (DecentSamplerTag.VOLUME, gain + "dB");
-        sampleElement.setAttribute (DecentSamplerTag.PANNING, Integer.toString ((int) (zone.getTuning () * 100.0)));
+        sampleElement.setAttribute (DecentSamplerTag.PANNING, Integer.toString ((int) (zone.getPanning () * 100.0)));
         XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.START, Math.max (0, zone.getStart ()), 3);
         final int stop = zone.getStop ();
         if (stop >= 0)

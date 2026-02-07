@@ -99,7 +99,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery () || !"preset.xml".equals (sourceFile.getName ()))
             return null;

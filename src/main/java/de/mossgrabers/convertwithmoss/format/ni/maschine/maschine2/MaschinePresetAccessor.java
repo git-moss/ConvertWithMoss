@@ -513,7 +513,7 @@ public class MaschinePresetAccessor
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_VELOCITY_HIGH, newZone, 0, velocityHigh, velocityHigh, 0, 0, 0);
 
         writeFloatValueRow (X0D_ZONE_GAIN, newZone, dbToInput (sampleZone.getGain ()));
-        writeFloatValueRow (X0D_ZONE_PANNING, newZone, (float) sampleZone.getTuning ());
+        writeFloatValueRow (X0D_ZONE_PANNING, newZone, (float) sampleZone.getPanning ());
         writeFloatValueRow (X0D_ZONE_TUNE, newZone, (float) sampleZone.getTuning ());
 
         newZone.set (X0D_ZONE_LAST_ROW, createLastRow (zoneIndex, maxZones, sampleZone));
