@@ -40,6 +40,8 @@ public class AkmFile extends AbstractRIFFFile
 
     private final Set<String>   ignoredChunks = new HashSet<> ();
     private final List<AkmPart> parts         = new ArrayList<> ();
+    private String              version;
+    private boolean             isS5000Series;
 
 
     /**
@@ -61,13 +63,35 @@ public class AkmFile extends AbstractRIFFFile
 
 
     /**
+     * Get the multi-version.
+     *
+     * @return The multi-version
+     */
+    public String getVersion ()
+    {
+        return this.version;
+    }
+
+
+    /**
      * Get the parts.
-     * 
+     *
      * @return The parts
      */
     public List<AkmPart> getParts ()
     {
         return this.parts;
+    }
+
+
+    /**
+     * Check if the AKP/AKM format is for the old S-series models.
+     *
+     * @return True if it is the first format
+     */
+    public boolean isS5000Series ()
+    {
+        return this.isS5000Series;
     }
 
 
@@ -83,6 +107,7 @@ public class AkmFile extends AbstractRIFFFile
         final RIFFParser riffParser = new RIFFParser (AKM_RIFF_CHUNK_IDS, AkmRiffChunkId.AMUL_ID);
         riffParser.declareGroupChunk (AkmRiffChunkId.AMUL_ID.getFourCC (), CommonRiffChunkId.RIFF_ID);
         riffParser.parse (inputStream, this);
+        this.isS5000Series = riffParser.hasEmptyTopSize ();
     }
 
 
@@ -101,10 +126,8 @@ public class AkmFile extends AbstractRIFFFile
         final int id = chunk.getId ().getFourCC ();
 
         if (id == AkmRiffChunkId.FX_ID.getFourCC ())
-        {
             // Not used
             return;
-        }
 
         if (id == AkmRiffChunkId.PART_ID.getFourCC ())
         {
@@ -117,7 +140,8 @@ public class AkmFile extends AbstractRIFFFile
 
         if (id == AkmRiffChunkId.VERSION_ID.getFourCC ())
         {
-            // Not used
+            final byte [] data = chunk.getData ();
+            this.version = String.format ("%d.%d.%d.%d", Byte.valueOf (data[0]), Byte.valueOf (data[1]), Byte.valueOf (data[2]), Byte.valueOf (data[3]));
             return;
         }
 

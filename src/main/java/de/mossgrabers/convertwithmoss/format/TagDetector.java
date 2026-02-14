@@ -638,7 +638,7 @@ public class TagDetector
     /**
      * Creates camel case from the given input string. All categories and keywords are considered
      * for upper-case.
-     * 
+     *
      * @param input The input string
      * @return The output string in camel case notation
      */

@@ -236,7 +236,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             if (performances.isEmpty () || this.waitForDelivery ())
                 return;
 
-            for (IPerformanceSource performance: performances)
+            for (final IPerformanceSource performance: performances)
             {
                 if (this.waitForDelivery ())
                     break;
@@ -629,7 +629,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected void createMetadata (final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts, final String category)
     {
-        if (this.settingsConfiguration instanceof MetadataSettingsUI metadataSettings)
+        if (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings)
         {
             metadata.detectMetadata (metadataSettings, parts, category);
             if (sampleData != null)

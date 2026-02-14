@@ -754,7 +754,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         final boolean hasNoEnvelope = pegHoldLevel == 128 && pegAttackLevel == 128 && pegDecay1Level == 128 && pegDecay2Level == 128 || pegHoldTime == 0 && pegAttackTime == 0 && pegDecay1Time == 0 && pegDecay2Time == 0 && pegReleaseTime == 0;
         if (!hasNoEnvelope)
         {
-            final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
             pitchEnvelopeModulator.setDepth (MathUtils.normalizeIntegerRange (element.getPegDepth (), -64, 63, 64));
             final IEnvelope pitchEnvelope = pitchEnvelopeModulator.getSource ();
             pitchEnvelope.setDelayTime (YamahaYsfcPartElement.convertEnvelopeTimeToSeconds (pegHoldTime));

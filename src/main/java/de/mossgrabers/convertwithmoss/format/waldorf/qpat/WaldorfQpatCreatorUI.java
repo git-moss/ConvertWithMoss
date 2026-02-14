@@ -98,7 +98,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (QPAT_LIMIT_TO_16_441);
+        final String value = parameters.remove (QPAT_LIMIT_TO_16_441);
         this.limitTo16441 = "1".equals (value);
 
         return true;

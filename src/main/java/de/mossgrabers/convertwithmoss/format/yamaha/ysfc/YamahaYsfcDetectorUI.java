@@ -116,7 +116,7 @@ public class YamahaYsfcDetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (YSFC_SOURCE_TYPE);
+        final String value = parameters.remove (YSFC_SOURCE_TYPE);
         this.sourceType = "1".equals (value);
         return true;
     }

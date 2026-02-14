@@ -23,7 +23,7 @@ public interface IMaschineFormat
 {
     /**
      * Get the file ending to use.
-     * 
+     *
      * @return The file ending
      */
     String getFileEnding ();

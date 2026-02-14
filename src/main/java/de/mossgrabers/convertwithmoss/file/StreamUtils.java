@@ -565,18 +565,18 @@ public class StreamUtils
      */
     public static int readVariableLengthNumberLE (final InputStream in) throws IOException
     {
-        int length = in.read ();
+        final int length = in.read ();
         if (length < 0 || length > 4)
             throw new IOException ("Invalid byte length: " + length);
 
         int result = 0;
         for (int i = 0; i < length; i++)
         {
-            int b = in.read ();
+            final int b = in.read ();
             if (b == -1)
                 throw new IOException ("Unexpected end of stream");
             // Little-endian
-            result |= (b & 0xFF) << (8 * i);
+            result |= (b & 0xFF) << 8 * i;
         }
 
         return result;
@@ -586,7 +586,7 @@ public class StreamUtils
     /**
      * Writes a variable-length little-endian integer to an OutputStream. The first byte indicates
      * the number of following bytes (0..4).
-     * 
+     *
      * @param out The output stream to write to
      * @param value The integer to write
      * @throws IOException If an I/O error occurs
@@ -598,7 +598,7 @@ public class StreamUtils
             length++;
         out.write (length);
         for (int i = 0; i < length; i++)
-            out.write ((value >>> (8 * i)) & 0xFF);
+            out.write (value >>> 8 * i & 0xFF);
     }
 
 
@@ -628,7 +628,7 @@ public class StreamUtils
      */
     public static String readUTF8 (final ByteBuffer buffer) throws IOException
     {
-        byte [] bytes = new byte [buffer.remaining ()];
+        final byte [] bytes = new byte [buffer.remaining ()];
         buffer.get (bytes);
         String content = new String (bytes, StandardCharsets.UTF_8);
         // Remove UTF-8 BOM
@@ -914,7 +914,6 @@ public class StreamUtils
         final int size = (int) readUnsigned32 (in, isBigEndian);
         final byte [] content = in.readNBytes (size * 2);
         if (isBigEndian)
-        {
             for (int i = 0; i < size; i++)
             {
                 final int pos = i * 2;
@@ -922,7 +921,6 @@ public class StreamUtils
                 content[pos] = content[pos + 1];
                 content[pos + 1] = store;
             }
-        }
         return new String (content, StandardCharsets.UTF_16LE);
     }
 

@@ -426,7 +426,7 @@ public class MaschinePresetAccessor
         // If the modulation envelope was not used for the filter use it for pitch
         if (modEnvelope == null)
         {
-            final IEnvelopeModulator pitchModulator = firstSampleZone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = firstSampleZone.getPitchEnvelopeModulator ();
             final double pitchModulationIntensity = pitchModulator.getDepth ();
             if (pitchModulationIntensity > 0)
             {
@@ -819,7 +819,7 @@ public class MaschinePresetAccessor
                     pitchEnvelope.setSustainLevel (modulationSustainLevel);
                     pitchEnvelope.setReleaseTime (modulationReleaseTime);
 
-                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     pitchModulator.setDepth (pitchModulationIntensity);
                     pitchModulator.setSource (pitchEnvelope);
                 }
@@ -1028,7 +1028,7 @@ public class MaschinePresetAccessor
     {
         if (input <= 0.0f)
             return MIN_DB;
-        float db = GAIN * (float) Math.log10 (input / REFERENCE_DB);
+        final float db = GAIN * (float) Math.log10 (input / REFERENCE_DB);
         return Math.max (db, MIN_DB);
     }
 
@@ -1051,7 +1051,7 @@ public class MaschinePresetAccessor
     /**
      * Converts the given normalized value to milli-seconds. Tweaked for the attack part of the
      * envelope.
-     * 
+     *
      * @param v The normalized value in the range of [0..1]
      * @return The value in milli-seconds
      */
@@ -1073,7 +1073,7 @@ public class MaschinePresetAccessor
     /**
      * Converts the given milli-seconds to normalized value. Tweaked for the attack part of the
      * envelope.
-     * 
+     *
      * @param millis The value in milli-seconds
      * @return The normalized value in the range of [0..1]
      */
@@ -1091,7 +1091,7 @@ public class MaschinePresetAccessor
     /**
      * Converts the given normalized value to milli-seconds. Tweaked for the decay and release part
      * of the envelope.
-     * 
+     *
      * @param v The normalized value in the range of [0..1]
      * @return The value in milli-seconds
      */
@@ -1116,7 +1116,7 @@ public class MaschinePresetAccessor
     /**
      * Converts the given milli-seconds to normalized value. Tweaked for the decay and release part
      * of the envelope.
-     * 
+     *
      * @param millis The value in milli-seconds
      * @return The normalized value in the range of [0..1]
      */
@@ -1140,7 +1140,7 @@ public class MaschinePresetAccessor
     /**
      * Maps the normalized input value to frequency in Hz using exponential curve, does not match
      * 100% but very close.
-     * 
+     *
      * @param value The normalized value in the range of [0..1]
      * @return The frequency in the range of [43.7..19600] Hertz
      */
@@ -1153,7 +1153,7 @@ public class MaschinePresetAccessor
     /**
      * Maps the frequency in Hz to normalized input value using exponential curve, does not match
      * 100% but very close.
-     * 
+     *
      * @param frequency The frequency in the range of [43.7..19600] Hertz
      * @return The normalized value in the range of [0..1]
      */

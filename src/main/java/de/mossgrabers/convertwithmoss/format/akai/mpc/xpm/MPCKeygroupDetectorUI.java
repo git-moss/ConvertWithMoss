@@ -108,7 +108,7 @@ public class MPCKeygroupDetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (MPC_IGNORE_LOOPS);
+        final String value = parameters.remove (MPC_IGNORE_LOOPS);
         this.ignoreLoops = "1".equals (value);
         return true;
     }

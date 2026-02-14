@@ -52,11 +52,12 @@ public class RIFFParser
     private boolean                         isStopChunks;
     /** Stream offset. */
     private long                            streamOffset;
+    private boolean                         hasEmptyTopSize     = false;
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param riffChunkIdEnums The RIFF chunk IDs which might occur in a specific RIFF based file
      *            format, must contain RiffChunkId
      */
@@ -77,14 +78,12 @@ public class RIFFParser
     public RIFFParser (final Collection<Class<? extends RiffChunkId>> riffChunkIdEnums, final RiffChunkId allBytesChunk)
     {
         for (final Class<? extends RiffChunkId> e: riffChunkIdEnums)
-        {
-            for (RiffChunkId id: e.getEnumConstants ())
+            for (final RiffChunkId id: e.getEnumConstants ())
             {
                 final RiffChunkId old = this.riffChunkIds.put (Integer.valueOf (id.getFourCC ()), id);
                 if (old != null)
                     throw new IllegalStateException ("Duplicate FourCC: " + id.getDescription ());
             }
-        }
 
         this.allBytesChunk = allBytesChunk;
     }
@@ -109,6 +108,18 @@ public class RIFFParser
     public void setIgnoreChunkErrors (final boolean ignoreChunkErrors)
     {
         this.ignoreChunkErrors = ignoreChunkErrors;
+    }
+
+
+    /**
+     * Check if this RIFF file has no size set for the top RIFF chunk (workaround for AKP/AKM
+     * format).
+     *
+     * @return True if it has an empty size
+     */
+    public boolean hasEmptyTopSize ()
+    {
+        return this.hasEmptyTopSize;
     }
 
 
@@ -185,7 +196,10 @@ public class RIFFParser
             throw new ParseException ("Invalid FORM Type: \"" + RiffChunkId.toASCII (type) + "\"");
 
         if (size == 0 && type == this.allBytesChunk.getFourCC ())
+        {
+            this.hasEmptyTopSize = true;
             size = this.in.available ();
+        }
 
         final RawRIFFChunk propGroup = props == null ? null : props.get (Integer.valueOf (type));
         final RawRIFFChunk chunk = new RawRIFFChunk (type, CommonRiffChunkId.RIFF_ID, size, propGroup);

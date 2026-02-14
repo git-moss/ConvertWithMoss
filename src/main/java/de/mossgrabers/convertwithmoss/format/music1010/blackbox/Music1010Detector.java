@@ -171,14 +171,12 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
             performanceSource.addInstrument (this.parseAggregatedMultisample (sourceFile, sampleElements, basePath));
         }
         else
-        {
             for (final Element sampleElement: multisampleElements)
             {
                 final Optional<IInstrumentSource> instrumentSource = this.parseMultisample (sourceFile, sampleElement, assetElements, basePath);
                 if (instrumentSource.isPresent ())
                     performanceSource.addInstrument (instrumentSource.get ());
             }
-        }
         return performanceSource;
     }
 
@@ -325,7 +323,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
             final double ampEnvSustain = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_SUSTAIN, 1) / 1000.0;
             final double ampEnvRelease = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_RELEASE, 0), 38.0);
 
-            File previousFolder = null;
+            final File previousFolder = null;
             for (final Element assetElement: assetElements)
             {
                 final String filename = assetElement.getAttribute (Music1010Tag.ATTR_FILENAME);

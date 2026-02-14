@@ -87,7 +87,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
         final String filename = file.getName ();
         final boolean isProject = "project.xml".equals (filename);
-        if (!isProject && !("patch.xml".equals (filename)))
+        if (!isProject && !"patch.xml".equals (filename))
             return Collections.emptyList ();
 
         final String basePath = isProject ? file.getParentFile ().getParentFile ().getParent () : file.getParent ();
@@ -187,7 +187,6 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             Element instElement = null;
 
             for (final Element cellElement: XMLUtils.getChildElementsByName (trackElement, Music1010Tag.CELL))
-            {
                 switch (cellElement.getAttribute (Music1010Tag.ATTR_TYPE))
                 {
                     case "saminst":
@@ -199,7 +198,6 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
                     default:
                         break;
                 }
-            }
             if (instElement == null || assetElements.isEmpty ())
                 return null;
 
@@ -326,7 +324,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private void parseSampleData (final IGroup group, final Element paramsElement, final String basePath, final String sampleName, final double ampEnvAttack, final double ampEnvDecay, final double ampEnvSustain, final double ampEnvRelease, final ISampleLoop defaultLoop, final boolean isReversed)
     {
-        File sampleFile = new File (basePath, sampleName);
+        final File sampleFile = new File (basePath, sampleName);
         // If the file does not exist, try to find it outside of the Presets folder
         if (!sampleFile.exists ())
         {

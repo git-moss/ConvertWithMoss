@@ -110,7 +110,7 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
 
     /** {@inheritDoc} */
     @Override
-    public void setClipKeyHigh (int clipKeyHigh)
+    public void setClipKeyHigh (final int clipKeyHigh)
     {
         this.clipKeyHigh = clipKeyHigh;
     }
@@ -129,8 +129,8 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
             final List<ISampleZone> filteredZones = new ArrayList<> ();
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                int keyLow = zone.getKeyLow ();
-                int keyHigh = zone.getKeyHigh ();
+                final int keyLow = zone.getKeyLow ();
+                final int keyHigh = zone.getKeyHigh ();
                 // Fully outside -> remove
                 if (keyLow > this.clipKeyHigh || keyHigh < this.clipKeyLow)
                     continue;

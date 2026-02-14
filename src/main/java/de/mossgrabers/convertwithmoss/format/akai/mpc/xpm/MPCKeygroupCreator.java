@@ -30,6 +30,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCFilter;
+import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCKeygroupConstants;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCKeygroupCreatorUI;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -365,7 +367,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         /////////////////////////////////////////////////////////////
         // Pitch
 
-        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
         final double pitchDepth = pitchModulator.getDepth ();
         // Only positive modulation values are supported with MPC
         if (pitchDepth > 0)

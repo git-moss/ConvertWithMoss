@@ -73,7 +73,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
      * @throws IOException Error finding samples
      */
     @SuppressWarnings("null")
-    public void fillInto (final IMultisampleSource multiSample, final Program program, final String [] parts, final List<String> filePaths, boolean isMonolith) throws IOException
+    public void fillInto (final IMultisampleSource multiSample, final Program program, final String [] parts, final List<String> filePaths, final boolean isMonolith) throws IOException
     {
         setMetadata (multiSample, program, parts);
 
@@ -160,7 +160,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
                 final Optional<IEnvelopeModulator> pitchEnvelope = modulator.getPitchEnvelope ();
                 if (pitchEnvelope.isPresent ())
                 {
-                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     final IEnvelopeModulator kontaktPitchModulator = pitchEnvelope.get ();
                     pitchModulator.setDepth (kontaktPitchModulator.getDepth ());
                     pitchModulator.setSource (kontaktPitchModulator.getSource ());
@@ -262,7 +262,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
         }
 
         // Only search for missing files, if all of them are missing!
-        if (isMonolith || (missingFiles != files.size ()))
+        if (isMonolith || missingFiles != files.size ())
             return files;
 
         final List<File> lookedupFiles = new ArrayList<> ();

@@ -282,10 +282,8 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
         int lowestKey = 127;
         for (final IGroup group: this.groups)
             for (final ISampleZone zone: group.getSampleZones ())
-            {
                 if (zone.getKeyLow () < lowestKey)
                     lowestKey = zone.getKeyLow ();
-            }
         return lowestKey;
     }
 
@@ -297,10 +295,8 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
         int highestKey = 0;
         for (final IGroup group: this.groups)
             for (final ISampleZone zone: group.getSampleZones ())
-            {
                 if (zone.getKeyHigh () > highestKey)
                     highestKey = zone.getKeyHigh ();
-            }
         return highestKey;
     }
 }

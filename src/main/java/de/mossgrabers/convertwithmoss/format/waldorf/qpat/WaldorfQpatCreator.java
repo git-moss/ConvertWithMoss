@@ -303,7 +303,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // Osc1Pan: [0..1] ~ [L..R] - already set in the sample maps
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Pan", "Center", 0.5f));
 
-            createPitchEnvelopeModulator (parameters, firstZone.getPitchModulator (), i + 1);
+            createPitchEnvelopeModulator (parameters, firstZone.getPitchEnvelopeModulator (), i + 1);
 
             if (i == 0)
             {

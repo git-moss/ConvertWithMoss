@@ -8,11 +8,15 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -43,16 +47,17 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
  */
 public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 {
-    private static final AudioFileFormat.Type    TARGET_FORMAT   = new AudioFileFormat.Type ("FLAC", "flac");
-    private static final char                    LINE_FEED       = '\n';
-    private static final String                  SFZ_HEADER      = """
+    private static final AudioFileFormat.Type      TARGET_FORMAT   = new AudioFileFormat.Type ("FLAC", "flac");
+    private static final char                      LINE_FEED       = '\n';
+    private static final String                    SFZ_HEADER      = """
             /////////////////////////////////////////////////////////////////////////////
             ////
             """;
-    private static final String                  COMMENT_PREFIX  = "//// ";
+    private static final String                    COMMENT_PREFIX  = "//// ";
 
-    private static final Map<FilterType, String> FILTER_TYPE_MAP = new EnumMap<> (FilterType.class);
-    private static final Map<LoopType, String>   LOOP_TYPE_MAP   = new EnumMap<> (LoopType.class);
+    private static final Map<FilterType, String>   FILTER_TYPE_MAP = new EnumMap<> (FilterType.class);
+    private static final Map<String, Set<Integer>> FILTER_POLES    = new HashMap<> ();
+    private static final Map<LoopType, String>     LOOP_TYPE_MAP   = new EnumMap<> (LoopType.class);
 
     static
     {
@@ -60,6 +65,19 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         FILTER_TYPE_MAP.put (FilterType.HIGH_PASS, "hpf");
         FILTER_TYPE_MAP.put (FilterType.BAND_PASS, "bpf");
         FILTER_TYPE_MAP.put (FilterType.BAND_REJECTION, "brf");
+
+        final Set<Integer> BPF_POLES = new HashSet<> ();
+        Collections.addAll (BPF_POLES, Integer.valueOf (1), Integer.valueOf (2));
+        FILTER_POLES.put ("bpf", BPF_POLES);
+        final Set<Integer> BRF_POLES = new HashSet<> ();
+        Collections.addAll (BRF_POLES, Integer.valueOf (1), Integer.valueOf (2));
+        FILTER_POLES.put ("brf", BRF_POLES);
+        final Set<Integer> HPF_POLES = new HashSet<> ();
+        Collections.addAll (HPF_POLES, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
+        FILTER_POLES.put ("hpf", HPF_POLES);
+        final Set<Integer> LPF_POLES = new HashSet<> ();
+        Collections.addAll (LPF_POLES, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
+        FILTER_POLES.put ("lpf", LPF_POLES);
 
         LOOP_TYPE_MAP.put (LoopType.FORWARDS, "forward");
         LOOP_TYPE_MAP.put (LoopType.BACKWARDS, "backward");
@@ -322,7 +340,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         final StringBuilder envelopeStr = new StringBuilder ();
 
-        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
         final double envelopeDepth = pitchModulator.getDepth ();
         if (envelopeDepth != 0)
         {
@@ -330,18 +348,18 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
 
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DELAY, pitchEnvelope.getDelayTime ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK, pitchEnvelope.getAttackTime ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_HOLD, pitchEnvelope.getHoldTime ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY, pitchEnvelope.getDecayTime ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE, pitchEnvelope.getReleaseTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.PITCHEG_DELAY, pitchEnvelope.getDelayTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK, pitchEnvelope.getAttackTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.PITCHEG_HOLD, pitchEnvelope.getHoldTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY, pitchEnvelope.getDecayTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE, pitchEnvelope.getReleaseTime ());
 
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_START, pitchEnvelope.getStartLevel () * 100.0);
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.PITCHEG_SUSTAIN, pitchEnvelope.getSustainLevel () * 100.0);
+            addEnvelopeLevelAttribute (envelopeStr, SfzOpcode.PITCHEG_START, pitchEnvelope.getStartLevel ());
+            addEnvelopeLevelAttribute (envelopeStr, SfzOpcode.PITCHEG_SUSTAIN, pitchEnvelope.getSustainLevel ());
 
-            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK_SHAPE, pitchEnvelope.getAttackSlope () * 10.0);
-            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY_SHAPE, pitchEnvelope.getDecaySlope () * 10.0);
-            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE_SHAPE, pitchEnvelope.getReleaseSlope () * 10.0);
+            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK_SHAPE, pitchEnvelope.getAttackSlope ());
+            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_DECAY_SHAPE, pitchEnvelope.getDecaySlope ());
+            addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE_SHAPE, pitchEnvelope.getReleaseSlope ());
 
             if (!envelopeStr.isEmpty ())
                 buffer.append (envelopeStr).append (LINE_FEED);
@@ -438,18 +456,18 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
 
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DELAY, amplitudeEnvelope.getDelayTime ());
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK, amplitudeEnvelope.getAttackTime ());
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_HOLD, amplitudeEnvelope.getHoldTime ());
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY, amplitudeEnvelope.getDecayTime ());
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE, amplitudeEnvelope.getReleaseTime ());
+        addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.AMPEG_DELAY, amplitudeEnvelope.getDelayTime ());
+        addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK, amplitudeEnvelope.getAttackTime ());
+        addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.AMPEG_HOLD, amplitudeEnvelope.getHoldTime ());
+        addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY, amplitudeEnvelope.getDecayTime ());
+        addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE, amplitudeEnvelope.getReleaseTime ());
 
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_START, amplitudeEnvelope.getStartLevel () * 100.0);
-        addEnvelopeAttribute (envelopeStr, SfzOpcode.AMPEG_SUSTAIN, amplitudeEnvelope.getSustainLevel () * 100.0);
+        addEnvelopeLevelAttribute (envelopeStr, SfzOpcode.AMPEG_START, amplitudeEnvelope.getStartLevel ());
+        addEnvelopeLevelAttribute (envelopeStr, SfzOpcode.AMPEG_SUSTAIN, amplitudeEnvelope.getSustainLevel ());
 
-        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK_SHAPE, amplitudeEnvelope.getAttackSlope () * 10.0);
-        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY_SHAPE, amplitudeEnvelope.getDecaySlope () * 10.0);
-        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE_SHAPE, amplitudeEnvelope.getReleaseSlope () * 10.0);
+        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_ATTACK_SHAPE, amplitudeEnvelope.getAttackSlope ());
+        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_DECAY_SHAPE, amplitudeEnvelope.getDecaySlope ());
+        addSlopeAttribute (envelopeStr, SfzOpcode.AMPEG_RELEASE_SHAPE, amplitudeEnvelope.getReleaseSlope ());
 
         if (!envelopeStr.isEmpty ())
             buffer.append (envelopeStr).append (LINE_FEED);
@@ -470,7 +488,14 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         final IFilter filter = optFilter.get ();
         final String type = FILTER_TYPE_MAP.get (filter.getType ());
-        addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + Math.clamp (filter.getPoles (), 1, 4) + "p", false);
+        final Set<Integer> allowedPoles = FILTER_POLES.get (type);
+        if (allowedPoles == null)
+            return;
+
+        int numPoles = filter.getPoles ();
+        if (!allowedPoles.contains (Integer.valueOf (numPoles)))
+            numPoles = 2;
+        addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + numPoles + "p", false);
         addAttribute (buffer, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
 
         final double velFilterDepth = filter.getCutoffVelocityModulator ().getDepth ();
@@ -491,18 +516,18 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
             final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DELAY, filterEnvelope.getDelayTime ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK, filterEnvelope.getAttackTime ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_HOLD, filterEnvelope.getHoldTime ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY, filterEnvelope.getDecayTime ());
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE, filterEnvelope.getReleaseTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.FILEG_DELAY, filterEnvelope.getDelayTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK, filterEnvelope.getAttackTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.FILEG_HOLD, filterEnvelope.getHoldTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY, filterEnvelope.getDecayTime ());
+            addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE, filterEnvelope.getReleaseTime ());
 
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_START, filterEnvelope.getStartLevel () * 100.0);
-            addEnvelopeAttribute (envelopeStr, SfzOpcode.FILEG_SUSTAIN, filterEnvelope.getSustainLevel () * 100.0);
+            addEnvelopeLevelAttribute (envelopeStr, SfzOpcode.FILEG_START, filterEnvelope.getStartLevel ());
+            addEnvelopeLevelAttribute (envelopeStr, SfzOpcode.FILEG_SUSTAIN, filterEnvelope.getSustainLevel ());
 
-            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK_SHAPE, filterEnvelope.getAttackSlope () * 10.0);
-            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY_SHAPE, filterEnvelope.getDecaySlope () * 10.0);
-            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE_SHAPE, filterEnvelope.getReleaseSlope () * 10.0);
+            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_ATTACK_SHAPE, filterEnvelope.getAttackSlope ());
+            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_DECAY_SHAPE, filterEnvelope.getDecaySlope ());
+            addSlopeAttribute (envelopeStr, SfzOpcode.FILEG_RELEASE_SHAPE, filterEnvelope.getReleaseSlope ());
 
             if (!envelopeStr.isEmpty ())
                 buffer.append (envelopeStr).append (LINE_FEED);
@@ -522,22 +547,32 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     }
 
 
+    private static void addEnvelopeTimeAttribute (final StringBuilder sb, final String opcode, final double value)
+    {
+        if (value <= 0)
+            return;
+        if (!sb.isEmpty ())
+            sb.append (' ');
+        sb.append (opcode).append ('=').append (Math.clamp (value, 0.0, 100.0));
+    }
+
+
+    private static void addEnvelopeLevelAttribute (final StringBuilder sb, final String opcode, final double value)
+    {
+        if (value < 0)
+            return;
+        if (!sb.isEmpty ())
+            sb.append (' ');
+        sb.append (opcode).append ('=').append (Math.clamp (value * 100.0, 0.0, 100.0));
+    }
+
+
     private static void addSlopeAttribute (final StringBuilder sb, final String opcode, final double value)
     {
         if (value == 0)
             return;
         if (!sb.isEmpty ())
             sb.append (' ');
-        sb.append (opcode).append ('=').append (Math.clamp (value, -10.0, 10.0));
-    }
-
-
-    private static void addEnvelopeAttribute (final StringBuilder sb, final String opcode, final double value)
-    {
-        if (value < 0)
-            return;
-        if (!sb.isEmpty ())
-            sb.append (' ');
-        sb.append (opcode).append ('=').append (Math.clamp (value, 0.0, 100.0));
+        sb.append (opcode).append ('=').append (Math.clamp (value * 10.0, -10.0, 10.0));
     }
 }

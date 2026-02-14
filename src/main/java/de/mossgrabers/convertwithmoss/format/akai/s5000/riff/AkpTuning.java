@@ -33,7 +33,7 @@ public class AkpTuning extends AbstractSpecificRIFFChunk
 
     /**
      * Get an unsigned value from the data.
-     * 
+     *
      * @param position First data item is at 0x32
      * @return The data value
      */
@@ -45,7 +45,7 @@ public class AkpTuning extends AbstractSpecificRIFFChunk
 
     /**
      * Get a signed value from the data.
-     * 
+     *
      * @param position First data item is at 0x32
      * @return The data value
      */

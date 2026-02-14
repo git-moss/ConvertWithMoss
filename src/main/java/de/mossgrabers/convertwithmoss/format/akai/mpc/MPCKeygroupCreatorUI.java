@@ -72,7 +72,8 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.layerLimitGroup.selectToggle (this.layerLimitGroup.getToggles ().get (config.getBoolean (MPC_LAYER_LIMIT_USE_8, true) ? 1 : 0));
+        final boolean use8Layers = config.getBoolean (MPC_LAYER_LIMIT_USE_8, true);
+        this.layerLimitGroup.selectToggle (this.layerLimitGroup.getToggles ().get (use8Layers ? 1 : 0));
 
         super.loadSettings (config);
     }
@@ -109,7 +110,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
 
         try
         {
-            String value = parameters.remove (MPC_LAYER_LIMIT_USE_8);
+            final String value = parameters.remove (MPC_LAYER_LIMIT_USE_8);
             if (value == null || value.isBlank ())
                 this.layerLimit = 8;
             else

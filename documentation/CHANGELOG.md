@@ -1,8 +1,22 @@
 # Changes
 
+## 16.1.0
+
+* Added support for reading Akai MPC XPJ and XTY files.
+* Akai AKP/AKM
+  * New: Renamed "Akai S5000/S6000" to "Akai AKP/AKM"
+  * New: Added reading support for Akai Z4/Z8/MPC4000 AKP/AKM format.
+  * New: Added version information to the log file.
+  * New: Improved conversion of filter resonance.
+  * New: The root note is now modified instead re-pitching it via tuning parameter.
+* Akai XPM
+  * Fixed: Never read loops from WAV files.
+* SFZ
+  * Fixed: Prevent creation of filter type with poles not supported by SFZ (2 poles will be set in such a case).
+
 ## 16.0.0
 
-* Added reading support for S5000/S6000 AKP format.
+* Added reading support for Akai S5000/S6000 AKP/AKM format.
 * User Interface
   * Moved several setting to a specific Settings dialog.
   * Updated button icons.

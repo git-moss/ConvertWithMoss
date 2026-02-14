@@ -24,7 +24,8 @@ import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupDetector;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.S5000Detector;
+import de.mossgrabers.convertwithmoss.format.akai.mpc.xty.XtyDetector;
+import de.mossgrabers.convertwithmoss.format.akai.s5000.AkpDetector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
@@ -105,9 +106,9 @@ public class ConverterBackend
             new BentoDetector (notifier),
             new Music1010Detector (notifier),
             new AbletonDetector (notifier),
+            new AkpDetector (notifier),
             new MPCKeygroupDetector (notifier),
-            // TODO new XtyDetector (notifier),
-            new S5000Detector (notifier),
+            new XtyDetector (notifier),
             new BitwigMultisampleDetector (notifier),
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),

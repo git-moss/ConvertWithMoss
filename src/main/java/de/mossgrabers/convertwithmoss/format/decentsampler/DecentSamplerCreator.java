@@ -320,7 +320,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
             this.createFilter (document, modulatorsElement, multisampleSource, groupElement, groupIndex);
             if (!zones.isEmpty ())
-                createPitchModulator (document, modulatorsElement, zones.get (0).getPitchModulator (), groupIndex);
+                createPitchModulator (document, modulatorsElement, zones.get (0).getPitchEnvelopeModulator (), groupIndex);
         }
 
         this.makeMonophonic (document, multisampleElement, groupsElement);
@@ -529,7 +529,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
      * @param modulatorsElement The modulatorsElement
      * @throws IOException Could not load the template
      */
-    private void applyTemplate (final Document document, final Element rootElement, final Element groupsElement, Element modulatorsElement) throws IOException
+    private void applyTemplate (final Document document, final Element rootElement, final Element groupsElement, final Element modulatorsElement) throws IOException
     {
         // Read again the created amplitude envelope values...
         final double attackAttribute = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.ENV_ATTACK, 0.0);
@@ -556,10 +556,10 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         if (childModulatorsElement != null)
         {
             final NodeList modulatorsChildrenList = childModulatorsElement.getChildNodes ();
-            int length = modulatorsChildrenList.getLength ();
+            final int length = modulatorsChildrenList.getLength ();
             for (int i = length - 1; i >= 0; i--)
             {
-                org.w3c.dom.Node item = modulatorsChildrenList.item (i);
+                final org.w3c.dom.Node item = modulatorsChildrenList.item (i);
                 if (item != null)
                     modulatorsElement.appendChild (item);
             }

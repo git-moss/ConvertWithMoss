@@ -376,7 +376,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
         // Set the pitch envelope. It might be overwritten in the filter section since Sf2 only
         // supports one modulation envelope
-        final IEnvelopeModulator pitchModulator = sampleZone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = sampleZone.getPitchEnvelopeModulator ();
         final double pitchModDepth = pitchModulator.getDepth ();
         if (pitchModDepth > 0)
         {
@@ -472,7 +472,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                         sample24 |= 0xFF000000;
 
                     // Clean, predictable conversion
-                    short sample16 = (short) Math.round (sample24 / 256.0);
+                    final short sample16 = (short) Math.round (sample24 / 256.0);
 
                     // Store as 16-bit little-endian
                     sampleLeftData[offset] = (byte) (sample16 & 0xFF);
@@ -510,7 +510,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                             sample24 |= 0xFF000000;
 
                         // Clean, predictable conversion
-                        short sample16 = (short) Math.round (sample24 / 256.0);
+                        final short sample16 = (short) Math.round (sample24 / 256.0);
 
                         // Store as 16-bit little-endian
                         sampleRightData[offset] = (byte) (sample16 & 0xFF);

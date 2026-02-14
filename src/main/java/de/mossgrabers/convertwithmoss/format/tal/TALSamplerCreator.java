@@ -311,7 +311,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         //////////////////////////////////////////////////
         // Pitch
 
-        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
         final double pitchModDepth = pitchModulator.getDepth ();
         if (pitchModDepth > 0)
         {

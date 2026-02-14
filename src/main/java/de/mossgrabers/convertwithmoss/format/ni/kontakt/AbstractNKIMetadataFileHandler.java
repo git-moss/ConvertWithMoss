@@ -137,7 +137,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
             // Only K2
             final String midiChannelStr = topParameters.get (String.format ("midiChannel_slot0%02d", Integer.valueOf (i)));
-            if (midiChannelStr != null && instrumentSource instanceof DefaultInstrumentSource defSource)
+            if (midiChannelStr != null && instrumentSource instanceof final DefaultInstrumentSource defSource)
                 defSource.setMidiChannel (Integer.parseInt (midiChannelStr) - 1);
 
             instruments.add (instrumentSource);
@@ -415,7 +415,7 @@ public abstract class AbstractNKIMetadataFileHandler
         groupContent = groupContent.replace ("%ENVELOPE_RELEASE%", formatDouble (limitToDefault (amplitudeEnvelope.getReleaseTime (), 1) * 1000.0d));
         groupContent = groupContent.replace ("%ENVELOPE_SUSTAIN%", formatDouble (limitToDefault (amplitudeEnvelope.getSustainLevel (), 1)));
 
-        final IEnvelopeModulator pitchModulator = sampleMetadata == null ? new DefaultEnvelopeModulator (0) : sampleMetadata.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = sampleMetadata == null ? new DefaultEnvelopeModulator (0) : sampleMetadata.getPitchEnvelopeModulator ();
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (pitchModulator.getDepth ()));
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK_CURVE%", formatDouble (-pitchEnvelope.getAttackSlope ()));
@@ -902,7 +902,7 @@ public abstract class AbstractNKIMetadataFileHandler
         if (groupPitchModulator != null)
         {
             final IEnvelope source = groupPitchModulator.getSource ();
-            final IEnvelopeModulator pitchModulator = sampleMetadata.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = sampleMetadata.getPitchEnvelopeModulator ();
             pitchModulator.setDepth (groupPitchModulator.getDepth ());
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();

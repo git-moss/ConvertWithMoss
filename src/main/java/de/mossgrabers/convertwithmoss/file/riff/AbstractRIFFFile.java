@@ -27,9 +27,9 @@ import de.mossgrabers.convertwithmoss.file.wav.InfoChunk;
 public abstract class AbstractRIFFFile implements RIFFVisitor
 {
     protected final List<IRiffChunk> chunkStack = new ArrayList<> ();
-    protected InfoChunk          infoChunk  = null;
+    protected InfoChunk              infoChunk  = null;
 
-    protected final RiffChunkId  topRiffChunkId;
+    protected final RiffChunkId      topRiffChunkId;
 
 
     /**

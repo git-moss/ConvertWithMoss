@@ -564,7 +564,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
                     if (auxEnvelope != null)
                     {
-                        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                         pitchModulator.setDepth (auxDepth);
                         pitchModulator.setSource (auxEnvelope);
                     }

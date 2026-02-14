@@ -33,7 +33,7 @@ public class AkpModulations extends AbstractSpecificRIFFChunk
 
     /**
      * Get a value from the data.
-     * 
+     *
      * @param position First data item is at 0x78
      * @return The data value
      */

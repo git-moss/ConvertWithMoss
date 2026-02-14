@@ -395,7 +395,7 @@ public interface ISampleZone
      *
      * @return The modulator, never null
      */
-    IEnvelopeModulator getPitchModulator ();
+    IEnvelopeModulator getPitchEnvelopeModulator ();
 
 
     /**

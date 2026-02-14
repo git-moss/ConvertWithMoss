@@ -52,7 +52,7 @@ public class AkmPart extends AbstractSpecificRIFFChunk
 
     /**
      * Get the MIDI of the part.
-     * 
+     *
      * @return The index, 1A-16A, 1B-16B, no Omni-Mode!
      */
     public int getMidiChannel ()
@@ -63,7 +63,7 @@ public class AkmPart extends AbstractSpecificRIFFChunk
 
     /**
      * Get the lower key bound.
-     * 
+     *
      * @return The lower key
      */
     public int getLowKey ()
@@ -74,7 +74,7 @@ public class AkmPart extends AbstractSpecificRIFFChunk
 
     /**
      * Get the upper key bound.
-     * 
+     *
      * @return The upper key
      */
     public int getHighKey ()
@@ -85,7 +85,7 @@ public class AkmPart extends AbstractSpecificRIFFChunk
 
     /**
      * Get the volume of the part.
-     * 
+     *
      * @return The volume in the range of [0..100]
      */
     public int getVolume ()
@@ -96,7 +96,7 @@ public class AkmPart extends AbstractSpecificRIFFChunk
 
     /**
      * Get the panning of the part.
-     * 
+     *
      * @return The panning in the range of [-50..50]
      */
     public int getPanning ()
