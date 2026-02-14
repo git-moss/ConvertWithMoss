@@ -108,7 +108,7 @@ public class SfzDetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (SFZ_LOG_OPCODES);
+        final String value = parameters.remove (SFZ_LOG_OPCODES);
         this.logUnsupportedOpcodes = "1".equals (value);
         return true;
     }

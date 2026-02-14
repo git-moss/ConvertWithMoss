@@ -273,7 +273,7 @@ public class YamahaYsfcKeybank implements IStreamable
 
     /**
      * Set the global sample and channel offset, relevant for Yamaha MOXF.
-     * 
+     *
      * @param totalChannelOffset a field that for each channel data stores its total index in DWIM
      *            block (counting channels of all samples in the library starting at 1.
      * @param totalSampleOffset a field that for each key-group (across all key-banks) stores total

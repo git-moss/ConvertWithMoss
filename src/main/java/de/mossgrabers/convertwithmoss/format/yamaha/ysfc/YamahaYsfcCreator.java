@@ -475,7 +475,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
         // Pitch Envelope
 
-        final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
         final double pitchDepth = pitchEnvelopeModulator.getDepth ();
         if (pitchDepth > 0)
         {

@@ -170,7 +170,7 @@ public interface IMultisampleSource extends ISource
 
     /**
      * Get the lowest key covered by a sample in all of the groups.
-     * 
+     *
      * @return The lowest playing key (0-127)
      */
     int getLowestKey ();
@@ -178,7 +178,7 @@ public interface IMultisampleSource extends ISource
 
     /**
      * Get the highest key covered by a sample in all of the groups.
-     * 
+     *
      * @return The highest playing key (0-127)
      */
     int getHighestKey ();

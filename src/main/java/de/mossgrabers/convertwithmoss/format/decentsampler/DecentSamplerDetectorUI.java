@@ -108,7 +108,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES);
+        final String value = parameters.remove (DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES);
         this.logUnsupportedAttributes = "1".equals (value);
         return true;
     }

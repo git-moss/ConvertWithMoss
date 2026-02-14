@@ -504,7 +504,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         int envelopeDepth = this.getIntegerValue (SfzOpcode.PITCHEG_DEPTH, 0);
         if (envelopeDepth == 0)
             envelopeDepth = this.getIntegerValue (SfzOpcode.PITCH_DEPTH, 0);
-        final IEnvelopeModulator pitchModulator = sampleMetadata.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = sampleMetadata.getPitchEnvelopeModulator ();
         pitchModulator.setDepth (envelopeDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
 
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();

@@ -38,6 +38,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCFilter;
+import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCKeygroupConstants;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -60,7 +62,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      */
     public MPCKeygroupDetector (final INotifier notifier)
     {
-        super ("Akai MPC Keygroup v2", "MPC", notifier, new MPCKeygroupDetectorUI ("MPC"), ".xpm");
+        super ("Akai MPC Keygroup", "MPC", notifier, new MPCKeygroupDetectorUI ("MPC"), ".xpm");
     }
 
 
@@ -166,7 +168,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
     /**
      * Get the top program element and issues some checks.
-     * 
+     *
      * @param document The XML document from which to get the program element
      * @return The program element if present
      */
@@ -241,7 +243,6 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 isOneShot = oneShotStr == null || MPCKeygroupTag.TRUE.equalsIgnoreCase (oneShotStr);
             }
             else
-            {
                 switch (triggerMode)
                 {
                     // One-Shot
@@ -256,7 +257,6 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                         // Attack
                         break;
                 }
-            }
 
             this.readZones (basePath, isDrum, zones, instrumentElement, keyLow, keyHigh, zonePlay, isOneShot, triggerType);
         }
@@ -265,7 +265,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     }
 
 
-    private void readZones (final File basePath, final boolean isDrum, final List<ISampleZone> zones, final Element instrumentElement, int keyLow, int keyHigh, PlayLogic zonePlay, boolean isOneShot, TriggerType triggerType) throws FileNotFoundException
+    private void readZones (final File basePath, final boolean isDrum, final List<ISampleZone> zones, final Element instrumentElement, final int keyLow, final int keyHigh, final PlayLogic zonePlay, final boolean isOneShot, final TriggerType triggerType) throws FileNotFoundException
     {
         final String ignoreBaseNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE);
         final boolean ignoreBaseNote = ignoreBaseNoteStr != null && MPCKeygroupTag.TRUE.equals (ignoreBaseNoteStr);
@@ -304,7 +304,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
             if (pitchEnvAmount != 0.5)
             {
-                final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                 pitchModulator.setDepth ((pitchEnvAmount - 0.5) * 2.0);
                 pitchModulator.getSource ().set (pitchEnvelope);
             }
@@ -466,36 +466,6 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
 
     /**
-     * Read missing metadata from the WAV file if necessary.
-     *
-     * @param isDrum True if it is a Drum patch
-     * @param zone Where to store the data
-     * @param isOneShot True if it is a one-shot
-     * @throws FileNotFoundException The WAV file does not exist
-     */
-    private void readMissingData (final boolean isDrum, final ISampleZone zone, boolean isOneShot) throws FileNotFoundException
-    {
-        final boolean needsUpdate = zone.getStop () > 0;
-        final boolean needsRootKey = !isDrum && zone.getKeyRoot () >= 0;
-        final boolean needsLoop = !isOneShot && zone.getLoops ().isEmpty () && !this.settingsConfiguration.ignoreLoops ();
-
-        try
-        {
-            if (needsUpdate || needsRootKey || needsLoop)
-                zone.getSampleData ().addZoneData (zone, needsRootKey, needsLoop);
-        }
-        catch (final FileNotFoundException ex)
-        {
-            this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
-        }
-        catch (final IOException ex)
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
-        }
-    }
-
-
-    /**
      * Parse the loop settings from the layer element.
      *
      * @param layerElement THe layer element
@@ -527,6 +497,35 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         sampleLoop.setCrossfade (loopCrossfade / (double) sampleLoop.getLength ());
 
         zone.getLoops ().add (sampleLoop);
+    }
+
+
+    /**
+     * Read missing metadata from the WAV file if necessary.
+     *
+     * @param isDrum True if it is a Drum patch
+     * @param zone Where to store the data
+     * @param isOneShot True if it is a one-shot
+     * @throws FileNotFoundException The WAV file does not exist
+     */
+    private void readMissingData (final boolean isDrum, final ISampleZone zone, final boolean isOneShot) throws FileNotFoundException
+    {
+        final boolean needsUpdate = zone.getStop () > 0;
+        final boolean needsRootKey = !isDrum && zone.getKeyRoot () >= 0;
+
+        try
+        {
+            if (needsUpdate || needsRootKey)
+                zone.getSampleData ().addZoneData (zone, needsRootKey, false);
+        }
+        catch (final FileNotFoundException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
+        }
     }
 
 

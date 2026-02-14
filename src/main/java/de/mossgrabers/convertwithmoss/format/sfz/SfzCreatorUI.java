@@ -93,7 +93,7 @@ public class SfzCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (SFZ_CONVERT_TO_FLAC);
+        final String value = parameters.remove (SFZ_CONVERT_TO_FLAC);
         this.convertToFlac = "1".equals (value);
 
         return true;

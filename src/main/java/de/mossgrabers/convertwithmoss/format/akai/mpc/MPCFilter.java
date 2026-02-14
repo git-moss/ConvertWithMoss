@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.mpc.xpm;
+package de.mossgrabers.convertwithmoss.format.akai.mpc;
 
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;

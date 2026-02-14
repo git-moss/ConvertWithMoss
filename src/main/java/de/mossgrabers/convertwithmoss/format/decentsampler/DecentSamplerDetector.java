@@ -304,7 +304,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                 // Parse the filter envelope
                 final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
                 if (modulatorsElement != null)
-                {
                     for (final Element envelopeElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.ENVELOPE))
                     {
                         final Element bindingElement = XMLUtils.getChildElementByName (envelopeElement, DecentSamplerTag.BINDING);
@@ -318,7 +317,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                             break;
                         }
                     }
-                }
 
                 return Optional.of (filter);
             }
@@ -330,7 +328,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
     /**
      * Parses all groups.
-     * 
+     *
      * @param topElement The top element
      * @param groupElements The XML element containing all groups
      * @param basePath The base path of the samples
@@ -377,7 +375,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
     /**
      * Parse a group.
-     * 
+     *
      * @param topElement The top element
      * @param group The object to fill in the data
      * @param groupElement The XML group element
@@ -428,7 +426,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             if (pitchModulation.isPresent ())
             {
                 final IEnvelopeModulator envelopeModulator = pitchModulation.get ();
-                final IEnvelopeModulator pitchModulator = sampleZone.getPitchModulator ();
+                final IEnvelopeModulator pitchModulator = sampleZone.getPitchEnvelopeModulator ();
                 pitchModulator.setDepth (envelopeModulator.getDepth ());
                 pitchModulator.setSource (envelopeModulator.getSource ());
             }
@@ -561,7 +559,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         // Parse the pitch envelope
         final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
         if (modulatorsElement != null)
-        {
             for (final Element envelopeElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.ENVELOPE))
             {
                 final Element bindingElement = XMLUtils.getChildElementByName (envelopeElement, DecentSamplerTag.BINDING);
@@ -573,7 +570,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                     return Optional.of (pitchEnvelopeModulator);
                 }
             }
-        }
         return Optional.empty ();
     }
 

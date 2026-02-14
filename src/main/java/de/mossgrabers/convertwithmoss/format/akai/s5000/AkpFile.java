@@ -59,6 +59,7 @@ public class AkpFile extends AbstractRIFFFile
     private final AkpTuning         tuningChunk   = new AkpTuning ();
     private final List<AkpKeygroup> keygroups     = new ArrayList<> ();
     private final File              akpFile;
+    private boolean                 isS5000Series;
 
 
     /**
@@ -104,12 +105,24 @@ public class AkpFile extends AbstractRIFFFile
         final RIFFParser riffParser = new RIFFParser (AKP_RIFF_CHUNK_IDS, AkpRiffChunkId.APRG_ID);
         riffParser.declareGroupChunk (AkpRiffChunkId.APRG_ID.getFourCC (), CommonRiffChunkId.RIFF_ID);
         riffParser.parse (inputStream, this);
+        this.isS5000Series = riffParser.hasEmptyTopSize ();
+    }
+
+
+    /**
+     * Check if the AKP/AKM format is for the old S-series models.
+     *
+     * @return True if it is the first format
+     */
+    public boolean isS5000Series ()
+    {
+        return this.isS5000Series;
     }
 
 
     /**
      * Create a multi-sample source from the read AKP file.
-     * 
+     *
      * @param sourceFolder The starting source folder
      * @param metadataSettings The metadata settings for detection
      * @return The multi-sample source
@@ -125,10 +138,8 @@ public class AkpFile extends AbstractRIFFFile
         multisampleSource.setGroups (Collections.singletonList (group));
 
         for (final AkpKeygroup keygroup: this.keygroups)
-        {
             for (final ISampleZone sampleZone: keygroup.createSampleZones (this.modsChunk, this.tuningChunk, this.outputChunk))
                 group.addSampleZone (sampleZone);
-        }
         fixPanning (group);
 
         multisampleSource.getMetadata ().detectMetadata (metadataSettings, parts);
@@ -141,7 +152,7 @@ public class AkpFile extends AbstractRIFFFile
      * If all sample zones are panned hard left or hard right, it means only a mono assignment to an
      * output channel. In that case we need to remove the panning otherwise the conversion will be
      * only sound left or right.
-     * 
+     *
      * @param group The group which contains all sample zones
      */
     private static void fixPanning (final IGroup group)
@@ -195,10 +206,8 @@ public class AkpFile extends AbstractRIFFFile
         }
 
         if (id == AkpRiffChunkId.LFO_ID.getFourCC ())
-        {
             // Not used
             return;
-        }
 
         if (id == AkpRiffChunkId.TUNE_ID.getFourCC ())
         {

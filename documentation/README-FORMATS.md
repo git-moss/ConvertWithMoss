@@ -34,8 +34,9 @@ The following multi-sample formats are supported:
 - [1010music bento](#1010music-bento)
 - [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
 - [Ableton Sampler](#ableton-sampler)
-- [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
-- [Akai S5000/S6000](#akai-s5000s6000)
+- [Akai MPC Keygroups/Drum](#akai-mpc-keygroups--drum)
+- [Akai MPC Project/Track](#akai-mpc-projecttrack)
+- [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000)
 - [Bitwig Multisample](#bitwig-multisample)
 - [CWITEC TX16Wx](#cwitec-tx16wx)
 - [DecentSampler](#decentsampler)
@@ -113,13 +114,22 @@ Restrictions are:
 
 ### Source Options
 
-* Ignore Loops: There are XPM files which do not contain loops but there related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
+* Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
 
 ### Destination Options
 
 * Limit layers to: MPC Firmware 3.4 increased the number of possible layers in a keygroup to 8. This option allows you to choose between 4 (for older firmware revisions) or 8.
 
-## Akai S5000/S6000
+## Akai MPC Project/Track
+
+A track file (*.xty) is a MPC v3 specific file that saves all settings, samples, macros, FX and MIDI data associated with a track. A track consists of two elements; the track file itself and a trackData folder containing the samples used within the track (ending with '_\[TrackData\]'). If the track contains a keygroup it is extracted as a multi-sample source.
+A project file (*.xpj) contains all track and project settings. All tracks which contain a keygroup are extracted as a multi-sample source.
+
+### Source Options
+
+* Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
+
+## Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
 
 This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume and key-range.
 AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library. 

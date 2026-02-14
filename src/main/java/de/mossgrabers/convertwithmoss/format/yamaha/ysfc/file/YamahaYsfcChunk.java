@@ -162,7 +162,7 @@ public class YamahaYsfcChunk
 
     /**
      * Get the length of the chunk.
-     * 
+     *
      * @param version The format version of the key-bank, e.g. 404 for version 4.0.4
      * @return The chunk length
      * @throws IOException Could not calculate the length

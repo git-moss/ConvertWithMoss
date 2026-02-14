@@ -28,7 +28,7 @@ public class YamahaYsfcPerformance implements IStreamable
     private String                                name;
     private final List<YamahaYsfcPerformancePart> parts           = new ArrayList<> ();
     private final YamahaYsfcFileFormat            sourceFormat;
-    private int                                   sourceVersion;
+    private final int                             sourceVersion;
 
     private byte []                               reverbBlock;
     private byte []                               variationBlock;

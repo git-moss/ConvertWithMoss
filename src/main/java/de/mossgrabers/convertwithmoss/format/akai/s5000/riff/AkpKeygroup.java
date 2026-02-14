@@ -71,13 +71,13 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
     }
 
     // Full key-group data
-    private byte [] data;
+    private final byte [] data;
 
 
     /**
      * Default constructor. The length of the Output structure (including the 8 byte RIFF header) is
      * 344 or 336.
-     * 
+     *
      * @param chunk The raw chunk
      */
     public AkpKeygroup (final RawRIFFChunk chunk)
@@ -90,19 +90,19 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
     /**
      * A key-group is a note range with up to 4 velocity layers.
-     * 
+     *
      * @param modsChunk The modulations chunk
      * @param tuningChunk The tuning chunk
      * @param outChunk The output chunk
-     * 
+     *
      * @return 1-4 sample zones depending on the number of active key-group zones
      */
     public List<ISampleZone> createSampleZones (final AkpModulations modsChunk, final AkpTuning tuningChunk, final AkpOutput outChunk)
     {
         final List<ISampleZone> sampleZones = new ArrayList<> ();
 
-        final int lowNote = getValue (0xB2);
-        final int highNote = getValue (0xB3);
+        final int lowNote = this.getValue (0xB2);
+        final int highNote = this.getValue (0xB3);
 
         // -36..36
         final int globalSemiToneTune = tuningChunk.getValue (0x33);
@@ -208,16 +208,16 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
                 final int fineTune = this.getValue (zonePosition + 0x2C);
                 // -36..36
                 final int semiToneTune = this.getValue (zonePosition + 0x2D);
-                sampleZone.setTuning (keygroupTuning + semiToneTune + fineTune / 100.0 + 12.0);
+                sampleZone.setTuning (keygroupTuning + semiToneTune + fineTune / 100.0);
 
                 if (filterType != null)
                 {
-                    // Resonance is much too high, therefore apply another factor 2
-                    final IFilter filter = new DefaultFilter (filterType, filterPoles.intValue (), cutoff, (filterResonance / 12.0) / 2.0);
+                    // Exponential resonance conversion to normalized 0..1 range and damped by
+                    // factor 4
+                    final double res = Math.pow (Math.clamp (filterResonance / 12.0, 0, 1.0), 1.0 / 3.0) / 4.0;
+                    final IFilter filter = new DefaultFilter (filterType, filterPoles.intValue (), cutoff, res);
                     sampleZone.setFilter (filter);
 
-                    // -100..100
-                    // final int filterDepth = this.getValue (zonePosition + 0x2E);
                     final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
                     cutoffEnvelopeModulator.setDepth (filterEnvDepth / 100.0);
                     final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();
@@ -245,7 +245,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
                 if (pitchMod1UsesAuxEnv || pitchMod2UsesAuxEnv)
                 {
-                    final IEnvelopeModulator pitchModulator = sampleZone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = sampleZone.getPitchEnvelopeModulator ();
                     pitchModulator.setDepth ((pitchMod1UsesAuxEnv ? pitchMod1 : pitchMod2) / 100.0);
                     pitchModulator.setSource (auxEnvelope);
                 }

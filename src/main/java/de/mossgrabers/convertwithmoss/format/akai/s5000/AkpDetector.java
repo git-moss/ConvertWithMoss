@@ -32,7 +32,7 @@ import de.mossgrabers.tools.FileUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class S5000Detector extends AbstractDetector<MetadataSettingsUI>
+public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final String [] ENDINGS_PRESET       =
     {
@@ -50,9 +50,9 @@ public class S5000Detector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param notifier The notifier
      */
-    public S5000Detector (final INotifier notifier)
+    public AkpDetector (final INotifier notifier)
     {
-        super ("Akai S5000/S6000", "S5000", notifier, new MetadataSettingsUI ("AKP"));
+        super ("Akai AKP/AKM", "S5000", notifier, new MetadataSettingsUI ("AKP"));
     }
 
 
@@ -76,21 +76,40 @@ public class S5000Detector extends AbstractDetector<MetadataSettingsUI>
     @Override
     protected List<IMultisampleSource> readPresetFile (final File file)
     {
+        return this.createMultisample (file, true);
+    }
+
+
+    private List<IMultisampleSource> createMultisample (final File file, final boolean logVersion)
+    {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
 
         try
         {
             final AkpFile akpFile = new AkpFile (file);
+            if (logVersion)
+                this.notifier.log ("IDS_AKP_VERSION", akpFile.isS5000Series () ? "S5000/S6000" : "Z4/Z8");
+
             final IMultisampleSource multisampleSource = akpFile.createMultisampleSource (this.sourceFolder, this.settingsConfiguration);
 
             // Check and set wave file sample data
             boolean hasError = false;
             for (final IGroup group: multisampleSource.getGroups ())
-            {
                 for (final ISampleZone sampleZone: group.getSampleZones ())
                 {
-                    final File sampleFile = new File (file.getParentFile (), sampleZone.getName () + ".wav");
+                    final String n = sampleZone.getName ();
+                    File sampleFile = new File (file.getParentFile (), n + ".wav");
+                    if (!sampleFile.exists ())
+                    {
+                        // Workaround for several samples seem to have 1 space before the note name
+                        // but are stored with 2 or more spaces
+                        final String n2 = n.replaceFirst ("\\s{2,}(?=\\S*$)", " ");
+                        File sampleFile2 = new File (file.getParentFile (), n2 + ".wav");
+                        if (sampleFile2.exists ())
+                            sampleFile = sampleFile2;
+                    }
+
                     if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
                     {
                         final WavFileSampleData sampleData = new WavFileSampleData (sampleFile);
@@ -99,13 +118,17 @@ public class S5000Detector extends AbstractDetector<MetadataSettingsUI>
                         final boolean addLoops = !sampleZone.getLoops ().isEmpty ();
                         sampleZone.getLoops ().clear ();
                         sampleData.addZoneData (sampleZone, true, addLoops);
-                        // Root key is off by 1 octave
-                        sampleZone.setKeyRoot (sampleZone.getKeyRoot () + 12);
+
+                        // Several programs have set C3 as root and use pitch instead which leads to
+                        // very bad sounding conversion results. Therefore, move the root key
+                        // instead
+                        final double tuning = sampleZone.getTuning ();
+                        sampleZone.setTuning (tuning % 100);
+                        sampleZone.setKeyRoot (sampleZone.getKeyRoot () - (int) Math.round (tuning / 100));
                     }
                     else
                         hasError = true;
                 }
-            }
             if (hasError)
                 return Collections.emptyList ();
 
@@ -135,8 +158,7 @@ public class S5000Detector extends AbstractDetector<MetadataSettingsUI>
         try
         {
             final AkmFile akmFile = new AkmFile (file);
-
-            // this.settingsConfiguration
+            this.notifier.log ("IDS_AKM_VERSION", akmFile.getVersion (), akmFile.isS5000Series () ? "S5000/S6000" : "Z4/Z8");
 
             final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
             performanceSource.setName (FileUtils.getNameWithoutType (file));
@@ -173,7 +195,7 @@ public class S5000Detector extends AbstractDetector<MetadataSettingsUI>
         if (this.waitForDelivery ())
             return null;
 
-        final List<IMultisampleSource> multisampleSources = readPresetFile (sourceFile);
+        final List<IMultisampleSource> multisampleSources = this.createMultisample (sourceFile, false);
         if (multisampleSources.isEmpty ())
             return null;
 
@@ -189,13 +211,11 @@ public class S5000Detector extends AbstractDetector<MetadataSettingsUI>
         final double panningFactor = part.getPanning () / 50.0 * 2.0;
         final double volumeFactor = part.getVolume () / 100.0;
         if (panningFactor != 0 || volumeFactor != 1)
-        {
             for (final ISampleZone zone: groups.get (0).getSampleZones ())
             {
                 zone.setPanning (Math.clamp (zone.getPanning () + panningFactor, -1.0, 1.0));
                 zone.setGain (zone.getGain () * volumeFactor);
             }
-        }
 
         return instrumentSource;
     }

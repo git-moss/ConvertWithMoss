@@ -36,24 +36,22 @@ public class KSCFile
 
     /**
      * Constructor.
-     * 
+     *
      * @param kmpFileNames The list with all KMP file names to add to the list
      */
     public KSCFile (final List<String> kmpFileNames)
     {
         for (final String kmpFileName: kmpFileNames)
-        {
             if (kmpFileName.endsWith (KMP_EXTENSION))
                 this.kmpFiles.add (kmpFileName);
             else
                 this.kmpFiles.add (kmpFileName + KMP_EXTENSION);
-        }
     }
 
 
     /**
      * Get all KMP files.
-     * 
+     *
      * @return The KMP files
      */
     public List<String> getKmpFiles ()
@@ -64,7 +62,7 @@ public class KSCFile
 
     /**
      * Read a KSC file.
-     * 
+     *
      * @param kscFile The file to read from
      * @throws IOException Could not read the KSC file
      */
@@ -78,7 +76,7 @@ public class KSCFile
 
     /**
      * Write a KSC file.
-     * 
+     *
      * @param kscFile The file to write to
      * @throws IOException Could not write the KSC file
      */

@@ -361,7 +361,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
                 if (globalPitchEnvelopeDepth > 0)
                 {
-                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     pitchModulator.setDepth (globalPitchEnvelopeDepth);
 
                     final IEnvelope pitchEnvelope = pitchModulator.getSource ();

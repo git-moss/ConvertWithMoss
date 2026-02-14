@@ -29,7 +29,7 @@ public class MaschinePresetParameterArray
     private static final String NI_MASCHINE_DATA_TAG = "NI::MASCHINE::DATA::";
 
     private final int []        version;
-    private boolean             isOldFormat;
+    private final boolean       isOldFormat;
     private final List<byte []> parameterArray;
 
 
@@ -170,7 +170,7 @@ public class MaschinePresetParameterArray
     {
         final ByteArrayInputStream in = this.createByteArrayInputStream (offset);
         final List<Object> params = new ArrayList<> ();
-        for (char c: parameterTypes)
+        for (final char c: parameterTypes)
             switch (c)
             {
                 case 'i':
@@ -316,7 +316,7 @@ public class MaschinePresetParameterArray
     public float [] readFloat (final int offset, final int numberCount) throws IOException
     {
         final ByteArrayInputStream in = this.createByteArrayInputStream (offset);
-        float [] result = new float [numberCount];
+        final float [] result = new float [numberCount];
         for (int i = 0; i < numberCount; i++)
             result[i] = StreamUtils.readFloatLE (in);
         return result;
@@ -422,7 +422,7 @@ public class MaschinePresetParameterArray
         int expectedIndex = 0;
 
         // Read the first index, must be 0
-        int firstIndex = StreamUtils.readVariableLengthNumberLE (inputStream);
+        final int firstIndex = StreamUtils.readVariableLengthNumberLE (inputStream);
         if (firstIndex != expectedIndex)
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Array index does not match"));
 
@@ -436,21 +436,21 @@ public class MaschinePresetParameterArray
             while (true)
             {
                 inputStream.mark (3);
-                int header = inputStream.read ();
+                final int header = inputStream.read ();
                 if (header == -1)
                     break;
 
                 // Is this a 1 byte index?
                 if (header == 1)
                 {
-                    int b0 = inputStream.read ();
+                    final int b0 = inputStream.read ();
                     if (b0 == -1)
                     {
                         inputStream.reset ();
                         break;
                     }
 
-                    int indexVal = b0;
+                    final int indexVal = b0;
                     if (indexVal == expectedIndex)
                     {
                         nextIndex = indexVal;
@@ -460,14 +460,14 @@ public class MaschinePresetParameterArray
                 // Is this a 2 byte index?
                 else if (header == 2)
                 {
-                    int b0 = inputStream.read ();
-                    int b1 = inputStream.read ();
+                    final int b0 = inputStream.read ();
+                    final int b1 = inputStream.read ();
                     if (b0 == -1 || b1 == -1)
                     {
                         inputStream.reset ();
                         break;
                     }
-                    int indexVal = b1 << 8 | b0;
+                    final int indexVal = b1 << 8 | b0;
                     if (indexVal == expectedIndex)
                     {
                         nextIndex = indexVal;
@@ -497,7 +497,7 @@ public class MaschinePresetParameterArray
      * @param array The parameter array to write
      * @throws IOException Could not write the data
      */
-    private static void writeArray (final OutputStream outputStream, List<byte []> array) throws IOException
+    private static void writeArray (final OutputStream outputStream, final List<byte []> array) throws IOException
     {
         // First needs to be written manually to get 2 bytes!
         outputStream.write (1);
@@ -512,8 +512,8 @@ public class MaschinePresetParameterArray
 
     private static int indexOf (final byte [] data, final byte [] pattern)
     {
-        int n = data.length;
-        int m = pattern.length;
+        final int n = data.length;
+        final int m = pattern.length;
         if (m == 0 || n < m)
             return -1;
 

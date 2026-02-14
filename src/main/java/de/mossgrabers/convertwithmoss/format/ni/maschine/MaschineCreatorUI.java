@@ -75,7 +75,7 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        int formatIndex = config.getInteger (MASCHINE_OUTPUT_FORMAT, 1);
+        final int formatIndex = config.getInteger (MASCHINE_OUTPUT_FORMAT, 1);
         final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
         this.outputFormatGroup.selectToggle (toggles.get (formatIndex < toggles.size () ? formatIndex : 1));
 

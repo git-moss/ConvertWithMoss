@@ -119,7 +119,7 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
 
         // TODO Currently only Kontakt 1 supported...
         @SuppressWarnings("unused")
-        String value = parameters.remove (NKI_OUTPUT_FORMAT);
+        final String value = parameters.remove (NKI_OUTPUT_FORMAT);
         this.outputFormat = true;
 
         return true;

@@ -106,7 +106,7 @@ public class MaschineDetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (MASCHINE_SCAN_FOR_MSND);
+        final String value = parameters.remove (MASCHINE_SCAN_FOR_MSND);
         this.scanForMsnd = value == null || "1".equals (value);
         return true;
     }

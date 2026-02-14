@@ -509,7 +509,7 @@ class SxtZone
 
         if (this.modEnvToPitch > 0)
         {
-            final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
             pitchModulator.setDepth (this.modEnvToPitch / 1000.0);
             final IEnvelope modEnvelope = pitchModulator.getSource ();
             if (this.modEnvDelayIsOff == 0)
@@ -665,7 +665,7 @@ class SxtZone
         //////////////////////////////////////////////////////////
         // Pitch
 
-        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
         final double depth = pitchModulator.getDepth ();
         if (depth > 0)
         {

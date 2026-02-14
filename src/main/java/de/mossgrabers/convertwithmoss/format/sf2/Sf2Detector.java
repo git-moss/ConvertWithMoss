@@ -541,7 +541,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 }
             }
 
-            final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
             final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
             pitchModulator.setDepth (pitchModDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
             if (pitchModDepth != 0)

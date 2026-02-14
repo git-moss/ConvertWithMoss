@@ -94,7 +94,7 @@ public class DefaultSampleZone implements ISampleZone
 
     /**
      * Constructor for setting the sample data later.
-     * 
+     *
      * @param sampleName The name of the sample
      * @param keyLow The lowest key covered by the range
      * @param keyHigh The highest key covered by the range
@@ -509,7 +509,7 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public IEnvelopeModulator getPitchModulator ()
+    public IEnvelopeModulator getPitchEnvelopeModulator ()
     {
         return this.pitchModulator;
     }
@@ -556,7 +556,7 @@ public class DefaultSampleZone implements ISampleZone
         this.bendDown = other.getBendDown ();
         this.isReversed = other.isReversed ();
         this.amplitudeEnvelopeModulator = other.getAmplitudeEnvelopeModulator ();
-        this.pitchModulator = other.getPitchModulator ();
+        this.pitchModulator = other.getPitchEnvelopeModulator ();
         final Optional<IFilter> filterOpt = other.getFilter ();
         this.filter = filterOpt.isPresent () ? filterOpt.get () : null;
 

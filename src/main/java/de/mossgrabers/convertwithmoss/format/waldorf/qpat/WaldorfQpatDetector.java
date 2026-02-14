@@ -315,7 +315,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                     zone.setFilter (filter.get ());
                 if (modulator.isPresent ())
                 {
-                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     pitchModulator.setDepth (modulator.get ().getDepth ());
                     pitchModulator.setSource (modulator.get ().getSource ());
                 }

@@ -454,7 +454,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 if (pitchModulator.isPresent ())
                 {
                     final IEnvelopeModulator modulator = pitchModulator.get ();
-                    final IEnvelopeModulator zonePitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator zonePitchModulator = zone.getPitchEnvelopeModulator ();
                     zonePitchModulator.setDepth (modulator.getDepth ());
                     zonePitchModulator.setSource (modulator.getSource ());
                 }

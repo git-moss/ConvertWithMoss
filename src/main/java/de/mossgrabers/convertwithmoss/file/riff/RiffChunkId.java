@@ -16,7 +16,7 @@ public interface RiffChunkId
 {
     /**
      * Get the four character ID as an integer.
-     * 
+     *
      * @return The ID as a value
      */
     int getFourCC ();

@@ -105,7 +105,6 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
         if (value == null || value.isBlank ())
             this.directorySearch = 1;
         else
-        {
             try
             {
                 this.directorySearch = Integer.parseInt (value);
@@ -115,7 +114,6 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
                 notifier.logError ("IDS_CLI_VALUE_MUST_BE_INTEGER", this.prefix + DIRECTORY_SEARCH);
                 return false;
             }
-        }
         return true;
     }
 
@@ -132,7 +130,7 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
 
     /**
      * Get the directory search height.
-     * 
+     *
      * @return The number of directories to go upwards to start searching for files.
      */
     public int getDirectorySearchHeight ()

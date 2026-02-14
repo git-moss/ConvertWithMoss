@@ -290,7 +290,7 @@ public class Maschine1Format implements IMaschineFormat
      */
     private void applyGlobalParameters (final IMultisampleSource multisampleSource) throws IOException
     {
-        int size = this.globalParametersVriTags.size ();
+        final int size = this.globalParametersVriTags.size ();
         if (size != 43 && size != 54)
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNKNOWN_NUMBER_OF_GLOBAL_PARAMS", Integer.toString (size)));
 
@@ -370,7 +370,7 @@ public class Maschine1Format implements IMaschineFormat
             // Pitch Envelope Modulation
             if (pitchEnvelopeModulation > 0)
             {
-                final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchModulator ();
+                final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
                 pitchEnvelopeModulator.setDepth (pitchEnvelopeModulation);
                 final IEnvelope envelope = pitchEnvelopeModulator.getSource ();
                 // AHD
@@ -421,7 +421,7 @@ public class Maschine1Format implements IMaschineFormat
      * @param filePaths The file path of the sample is added here
      * @return The created sample zone
      */
-    private static ISampleZone createSampleZone (Map<String, DataParameter> params, final List<String> filePaths)
+    private static ISampleZone createSampleZone (final Map<String, DataParameter> params, final List<String> filePaths)
     {
         final ISampleZone zone = new DefaultSampleZone ();
 
@@ -505,7 +505,7 @@ public class Maschine1Format implements IMaschineFormat
      * @return The parameters of the zone mapped by their names
      * @throws IOException Could not collect the parameters
      */
-    private static Map<String, DataParameter> collectZoneParameters (final DataTag gslParameterTag, DataTag dfpParameterTag) throws IOException
+    private static Map<String, DataParameter> collectZoneParameters (final DataTag gslParameterTag, final DataTag dfpParameterTag) throws IOException
     {
         final Map<String, DataParameter> params = new HashMap<> ();
         if (gslParameterTag == null || dfpParameterTag == null)
@@ -536,7 +536,7 @@ public class Maschine1Format implements IMaschineFormat
      * @return The top section
      * @throws IOException Could not read the data sections
      */
-    private DataSection readDataSections (final InputStream in, boolean isBigEndian) throws IOException
+    private DataSection readDataSections (final InputStream in, final boolean isBigEndian) throws IOException
     {
         DataSection currentSection = this.topSection;
         while (in.available () >= 16)
@@ -576,8 +576,8 @@ public class Maschine1Format implements IMaschineFormat
         section.name = StreamUtils.readASCII (in, 4, !isBigEndian);
         // Always 'none'
         StreamUtils.readASCII (in, 4, !isBigEndian);
-        int size1 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
-        int size2 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        final int size1 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
+        final int size2 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         if (size1 != size2 || size1 < 0 || size1 > in.available ())
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
 
@@ -780,7 +780,7 @@ public class Maschine1Format implements IMaschineFormat
     {
         final int parameterVersion = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         // No idea about this but it is always 1
-        if ((parameterVersion != 0) || ((in.read () & 0xFF) != 1))
+        if (parameterVersion != 0 || (in.read () & 0xFF) != 1)
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
 
         final DataParameter parameter = new DataParameter ();
@@ -910,7 +910,7 @@ public class Maschine1Format implements IMaschineFormat
 
     /**
      * Fill in the global parameters.
-     * 
+     *
      * @param multisampleSource The multi-sample source
      * @param firstSampleZone The first sample zone
      */
@@ -962,7 +962,7 @@ public class Maschine1Format implements IMaschineFormat
         // If the modulation envelope was not used for the filter use it for pitch
         if (modEnvelope == null)
         {
-            final IEnvelopeModulator pitchModulator = firstSampleZone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = firstSampleZone.getPitchEnvelopeModulator ();
             final double pitchModulationIntensity = pitchModulator.getDepth ();
             if (pitchModulationIntensity > 0)
             {
@@ -1216,7 +1216,7 @@ public class Maschine1Format implements IMaschineFormat
 
         for (final DataTag child: src.children)
         {
-            DataTag childCopy = deepCloneDataTag (child);
+            final DataTag childCopy = deepCloneDataTag (child);
             childCopy.parent = copy;
             copy.children.add (childCopy);
         }

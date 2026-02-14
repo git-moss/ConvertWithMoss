@@ -64,7 +64,7 @@ public class AkpOutput extends AbstractSpecificRIFFChunk
 
     /**
      * Get the panning modulation 1.
-     * 
+     *
      * @return The panning modulation
      */
     public int getPanMod1 ()
@@ -75,7 +75,7 @@ public class AkpOutput extends AbstractSpecificRIFFChunk
 
     /**
      * Get the panning modulation 2.
-     * 
+     *
      * @return The panning modulation
      */
     public int getPanMod2 ()
@@ -86,7 +86,7 @@ public class AkpOutput extends AbstractSpecificRIFFChunk
 
     /**
      * Get the panning modulation 3.
-     * 
+     *
      * @return The panning modulation
      */
     public int getPanMod3 ()
@@ -97,7 +97,7 @@ public class AkpOutput extends AbstractSpecificRIFFChunk
 
     /**
      * Get the velocity sensitivity.
-     * 
+     *
      * @return The velocity sensitivity
      */
     public int getVelocitySensitivity ()

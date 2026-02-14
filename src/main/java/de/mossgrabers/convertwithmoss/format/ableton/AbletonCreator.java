@@ -149,7 +149,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     text = text.replace ("%AMP_EG_RELEASE_SLOPE%", formatDouble (-ampEnvelope.getReleaseSlope ()));
 
                     // Pitch Envelope
-                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     final double pitchModDepth = pitchModulator.getDepth ();
                     text = text.replace ("%PITCH_EG_ENABLED%", pitchModDepth != 0 ? "true" : "false");
 
