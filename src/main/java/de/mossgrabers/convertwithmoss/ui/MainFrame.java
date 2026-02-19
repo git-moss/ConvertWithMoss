@@ -127,6 +127,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private final ConverterBackend       backend;
 
     private SettingsDialog               settingsDialog;
+    private ProcessingDialog             processingDialog;
 
     private boolean                      createFolderStructure;
     private boolean                      addNewFiles;
@@ -134,6 +135,8 @@ public class MainFrame extends AbstractFrame implements INotifier
     private boolean                      renameSourceEnable;
 
     private String                       renamingFilePath;
+
+    private Button                       processingButton;
 
 
     /**
@@ -156,6 +159,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         super.initialise (stage, baseTitleOptional, true, true, true);
 
         this.settingsDialog = new SettingsDialog (this.getStage ());
+        this.processingDialog = new ProcessingDialog (this.getStage ());
 
         // The main button panel
         final ButtonPanel upperButtonPanel = new ButtonPanel (Orientation.VERTICAL);
@@ -166,6 +170,10 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.analyseButton.setOnAction (_ -> this.execute (true));
 
         final ButtonPanel lowerButtonPanel = new ButtonPanel (Orientation.VERTICAL);
+        // TODO
+        // this.processingButton = setupButton (lowerButtonPanel, "Proc", "@IDS_MAIN_PROCESSING",
+        // "@IDS_MAIN_PROCESSING_TOOLTIP");
+        // this.processingButton.setOnAction (_ -> this.openProcessing ());
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
 
@@ -382,6 +390,7 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         this.traversalManager.add (this.convertButton);
         this.traversalManager.add (this.analyseButton);
+        this.traversalManager.add (this.processingButton);
         this.traversalManager.add (this.settingsButton);
         this.traversalManager.add (this.cancelButton);
         this.traversalManager.add (this.closeButton);
@@ -490,7 +499,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
             this.config.setProperty (DESTINATION_PATH + i, this.destinationPathHistory.size () > i ? this.destinationPathHistory.get (i) : "");
 
-        this.config.setProperty (RENAMING_CSV_FILE, this.renamingFilePath);
+        if (this.renamingFilePath != null)
+            this.config.setProperty (RENAMING_CSV_FILE, this.renamingFilePath);
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure);
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles);
         this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode);
@@ -518,12 +528,19 @@ public class MainFrame extends AbstractFrame implements INotifier
     @Override
     public void exit ()
     {
-        for (final IDetector<?> detector: this.backend.getDetectors ())
-            detector.shutdown ();
+        try
+        {
+            for (final IDetector<?> detector: this.backend.getDetectors ())
+                detector.shutdown ();
 
-        this.saveConfiguration ();
-        // Store configuration
-        super.exit ();
+            this.saveConfiguration ();
+            // Store configuration
+            super.exit ();
+        }
+        catch (final RuntimeException ex)
+        {
+            Functions.error ("@IDS_ERR_COULD_NOT_STORE_CONFIG", ex);
+        }
 
         Platform.exit ();
     }
@@ -538,7 +555,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
         this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);
         this.settingsDialog.renameCheckbox.setSelected (this.renameSourceEnable);
-        this.settingsDialog.renameFilePathField.setText (this.renamingFilePath);
+        this.settingsDialog.renameFilePathField.setText (this.renamingFilePath == null ? "" : this.renamingFilePath);
 
         if (this.settingsDialog.display ())
         {
@@ -560,6 +577,19 @@ public class MainFrame extends AbstractFrame implements INotifier
             }
 
             this.setDarkMode (this.enableDarkMode);
+        }
+    }
+
+
+    /**
+     * Open the processing dialog.
+     */
+    private void openProcessing ()
+    {
+        // TODO implement
+        if (this.processingDialog.display ())
+        {
+            // TODO implement
         }
     }
 

@@ -1,5 +1,11 @@
 # Changes
 
+## 16.1.1
+
+* Fixed: Application could not be closed if it was installed for the first time.
+* Kontakt
+  * Fixed: Prevent a crash when InternalModulator cannot be read.
+
 ## 16.1.0
 
 * Added support for reading Akai MPC XPJ and XTY files.
