@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.tools.Pair;
 

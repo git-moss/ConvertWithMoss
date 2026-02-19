@@ -113,8 +113,15 @@ public class Group
             if (id == KontaktPresetChunkID.PAR_INTERNAL_MOD || id == KontaktPresetChunkID.PAR_MOD_BASE)
             {
                 final InternalModulator internalModulator = new InternalModulator ();
-                internalModulator.read (childChunk);
-                this.internalModulators.add (internalModulator);
+                try
+                {
+                    internalModulator.read (childChunk);
+                    this.internalModulators.add (internalModulator);
+                }
+                catch (final RuntimeException ex)
+                {
+                    // Ignore unknown formats (a user reported for v8.1) but don't crash
+                }
             }
         }
     }

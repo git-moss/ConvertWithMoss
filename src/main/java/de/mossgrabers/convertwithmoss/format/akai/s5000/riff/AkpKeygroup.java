@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
