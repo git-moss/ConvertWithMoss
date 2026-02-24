@@ -52,9 +52,9 @@ public class ProcessingDialog extends AbstractDialog
     /** Text field for the maximum number of samples. */
     public TextField               maxSamplesField;
     /** Combo-box for the target bit-depth. */
-    public ComboBox<Object>        reduceBitDepthCombobox;
+    public ComboBox<String>        reduceBitDepthCombobox;
     /** Combo-box for the target sample frequency. */
-    public ComboBox<Object>        reduceFrequencyCombobox;
+    public ComboBox<String>        reduceFrequencyCombobox;
 
 
     /**

@@ -462,7 +462,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 if (pitchbend >= 0)
                 {
                     zone.setBendUp (pitchbend);
-                    zone.setBendDown (pitchbend);
+                    zone.setBendDown (-pitchbend);
                 }
 
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocity);

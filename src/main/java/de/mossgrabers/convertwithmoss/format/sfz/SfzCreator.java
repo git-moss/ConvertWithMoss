@@ -344,7 +344,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final double envelopeDepth = pitchModulator.getDepth ();
         if (envelopeDepth != 0)
         {
-            buffer.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
+            buffer.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) Math.round (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
 
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
 
@@ -512,7 +512,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final double envelopeDepth = cutoffModulator.getDepth ();
         if (envelopeDepth > 0)
         {
-            buffer.append (SfzOpcode.FILEG_DEPTH).append ('=').append ((int) (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
+            buffer.append (SfzOpcode.FILEG_DEPTH).append ('=').append ((int) Math.round (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
 
             final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 

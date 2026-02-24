@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.core.settings;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,10 +26,16 @@ import javafx.scene.control.ScrollPane;
  */
 public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
 {
-    private static final String DIRECTORY_SEARCH = "DirectorySearch";
+    private static final String        DIRECTORY_SEARCH = "DirectorySearch";
 
-    private ComboBox<Integer>   directorySearchComboBox;
-    private int                 directorySearch;
+    private static final List<Integer> DIR_DEPTH        = new ArrayList<> ();
+    static
+    {
+        Collections.addAll (DIR_DEPTH, Integer.valueOf (0), Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (3), Integer.valueOf (4), Integer.valueOf (5), Integer.valueOf (6));
+    }
+
+    private ComboBox<Integer> directorySearchComboBox;
+    private int               directorySearch;
 
 
     /**
@@ -49,7 +56,7 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
         panel.createSeparator ("@IDS_SAMPLE_FILE_SEARCH");
-        this.directorySearchComboBox = panel.createComboBox ("@IDS_DIRECTORY_SEARCH", Integer.valueOf (0), Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (3), Integer.valueOf (4), Integer.valueOf (5), Integer.valueOf (6));
+        this.directorySearchComboBox = panel.createComboBox ("@IDS_DIRECTORY_SEARCH", DIR_DEPTH);
         this.directorySearchComboBox.getSelectionModel ().select (Integer.valueOf (1));
 
         this.addTo (panel);

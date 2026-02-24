@@ -6,6 +6,8 @@ package de.mossgrabers.convertwithmoss.core.model.implementation;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -35,6 +37,26 @@ public class InMemorySampleData implements ISampleData
     {
         this.audioMetadata = audioMetadata;
         this.sampleData = sampleData;
+    }
+
+
+    /**
+     * Constructor for 16-bit mono samples.
+     *
+     * @param audioMetadata The metadata description of the sample data
+     * @param sampleData The raw sample data, channels are interleaved
+     */
+    public InMemorySampleData (final IAudioMetadata audioMetadata, final short [] sampleData)
+    {
+        if (!audioMetadata.isMono ())
+            throw new IllegalArgumentException ("short [] constructor can only be provided for mono samples");
+
+        final ByteBuffer buffer = ByteBuffer.allocate (sampleData.length * 2);
+        buffer.order (ByteOrder.LITTLE_ENDIAN);
+        for (short s: sampleData)
+            buffer.putShort (s);
+
+        this (audioMetadata, buffer.array ());
     }
 
 

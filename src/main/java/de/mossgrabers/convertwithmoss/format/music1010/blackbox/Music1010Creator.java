@@ -538,7 +538,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         // Negative values for frequency represent a low-pass filter, positive values a high-pass.
         // Note: no poles supported
         final double normalizedFrequency = MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY);
-        int frequency = (int) (normalizedFrequency * 1000.0);
+        int frequency = (int) Math.round (normalizedFrequency * 1000.0);
         if (type == FilterType.LOW_PASS)
             frequency -= 1000;
         paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_CUTOFF, Integer.toString (frequency));
@@ -546,7 +546,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         // Note: Resonance is in the range [0..1] but it is not documented what value 1
         // represents. Therefore, we assume 40dB maximum and a linear range (could also
         // be logarithmic).
-        final int resonance = (int) (filter.getResonance () * 1000.0);
+        final int resonance = (int) Math.round (filter.getResonance () * 1000.0);
         paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_RESONANCE, Integer.toString (resonance));
     }
 

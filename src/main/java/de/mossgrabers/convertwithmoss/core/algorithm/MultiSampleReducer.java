@@ -1,3 +1,7 @@
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019-2026
+// Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
+
 package de.mossgrabers.convertwithmoss.core.algorithm;
 
 import java.util.List;
@@ -42,9 +46,13 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  * </ul>
  * </li>
  * </ol>
+ *
+ * @author J&uuml;rgen Mo&szlig;graber
  */
 public class MultiSampleReducer
 {
+    // TODO test
+
     /**
      * Reduces the number of samples in the groups to a maximum number.
      * 

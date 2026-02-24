@@ -321,8 +321,8 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                         if (limitKeyrangeAndVelocity (sampleZone, element))
                         {
                             fillParameterValues (sampleZone, element);
-                            sampleZone.setBendDown ((part.getPitchBendRangeLower () - 64) * 100);
                             sampleZone.setBendUp ((part.getPitchBendRangeUpper () - 64) * 100);
+                            sampleZone.setBendDown ((part.getPitchBendRangeLower () - 64) * 100);
                             group.addSampleZone (sampleZone);
                         }
                     }

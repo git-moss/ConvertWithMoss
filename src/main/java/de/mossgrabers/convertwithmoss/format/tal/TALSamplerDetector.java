@@ -348,7 +348,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setBendUp (bend);
-                zone.setBendDown (bend);
+                zone.setBendDown (-bend);
 
                 final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
                 amplitudeEnvelope.setAttackTime (ampAttack);

@@ -117,12 +117,12 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 exs24Zone.sampleStart = zone.getStart ();
                 exs24Zone.sampleEnd = zone.getStop ();
                 exs24Zone.reverse = zone.isReversed ();
-                exs24Zone.volumeAdjust = (int) zone.getGain ();
+                exs24Zone.volumeAdjust = (int) Math.round (zone.getGain ());
                 exs24Zone.pitch = true;
                 final double tune = zone.getTuning ();
-                exs24Zone.coarseTuning = (int) (tune / 100);
-                exs24Zone.fineTuning = (int) (tune % 100);
-                exs24Zone.pan = (int) (zone.getPanning () * 50);
+                exs24Zone.coarseTuning = (int) Math.round (tune);
+                exs24Zone.fineTuning = (int) Math.round ((tune - exs24Zone.coarseTuning) * 100);
+                exs24Zone.pan = (int) Math.round (zone.getPanning () * 50);
 
                 final List<ISampleLoop> loops = zone.getLoops ();
                 exs24Zone.loopOn = !loops.isEmpty ();
@@ -273,7 +273,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         createEnvelope (parameters, 2, filter.getCutoffEnvelopeModulator ());
 
         parameters.put (EXS24Parameters.FILTER1_CUTOFF, (int) Math.round (MathUtils.normalize (filter.getCutoff (), 0, IFilter.MAX_FREQUENCY) * 1000.0));
-        parameters.put (EXS24Parameters.FILTER1_RESO, (int) (filter.getResonance () * 1000));
+        parameters.put (EXS24Parameters.FILTER1_RESO, (int) Math.round (filter.getResonance () * 1000));
     }
 
 

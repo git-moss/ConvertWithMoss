@@ -551,6 +551,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openSettings ()
     {
+        // TODO move all settings into a Settings class
         this.settingsDialog.createFolderStructureCheckbox.setSelected (this.createFolderStructure);
         this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
         this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);

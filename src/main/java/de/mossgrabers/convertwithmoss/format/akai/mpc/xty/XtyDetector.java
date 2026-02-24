@@ -183,7 +183,6 @@ public class XtyDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             final JsonNode keygroupNode = programNode.get ("keygroup");
             final double keygroupTranspose = programTranspose + keygroupNode.get ("transpose").asDouble ();
 
-            // Double ?
             final int pitchBendUp = keygroupNode.get ("pitchBendPositiveRange").asInt ();
             final int pitchBendDown = keygroupNode.get ("pitchBendNegativeRange").asInt ();
 
@@ -277,7 +276,7 @@ public class XtyDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         final ISampleData sampleData = new WavFileSampleData (file);
         final ISampleZone sampleZone = new DefaultSampleZone (sampleName, sampleData);
         sampleZone.setBendUp (pitchBendUp);
-        sampleZone.setBendDown (pitchBendDown);
+        sampleZone.setBendDown (-pitchBendDown);
 
         final SampleInfo sampleInfo = sampleInfos.get (sampleName);
         final int rootNote = layerNode.get ("rootNote").asInt ();

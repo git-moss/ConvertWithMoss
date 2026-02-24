@@ -339,16 +339,16 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
             pan = -1;
         else if (sampleType == Sf2SampleDescriptor.RIGHT)
             pan = 1;
-        instrumentZone.addSignedGenerator (Generator.PANNING, (int) (pan * 500.0));
+        instrumentZone.addSignedGenerator (Generator.PANNING, (int) Math.round (pan * 500.0));
 
         // Set the pitch
         instrumentZone.addGenerator (Generator.OVERRIDING_ROOT_KEY, sampleZone.getKeyRoot ());
 
         final double tune = sampleZone.getTuning ();
-        final int coarse = (int) tune;
+        final int coarse = (int) Math.round (tune);
         instrumentZone.addSignedGenerator (Generator.COARSE_TUNE, coarse);
-        instrumentZone.addSignedGenerator (Generator.FINE_TUNE, (int) ((tune - coarse) * 100.0));
-        instrumentZone.addGenerator (Generator.SCALE_TUNE, (int) (sampleZone.getKeyTracking () * 100.0));
+        instrumentZone.addSignedGenerator (Generator.FINE_TUNE, (int) Math.round ((tune - coarse) * 100.0));
+        instrumentZone.addGenerator (Generator.SCALE_TUNE, (int) Math.round (sampleZone.getKeyTracking () * 100.0));
 
         // Set the key & velocity range
         instrumentZone.addGenerator (Generator.KEY_RANGE, limitToDefault (sampleZone.getKeyLow (), 0), limitToDefault (sampleZone.getKeyHigh (), 127));
@@ -358,7 +358,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         instrumentZone.addGenerator (Generator.SAMPLE_MODES, sampleZone.getLoops ().isEmpty () ? 0 : 1);
 
         // Gain
-        instrumentZone.addGenerator (Generator.INITIAL_ATTENUATION, (int) (-sampleZone.getGain () * 10.0));
+        instrumentZone.addGenerator (Generator.INITIAL_ATTENUATION, (int) Math.round (-sampleZone.getGain () * 10.0));
 
         final double ampDepth = sampleZone.getAmplitudeVelocityModulator ().getDepth ();
         if (ampDepth != 0)
@@ -380,7 +380,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         final double pitchModDepth = pitchModulator.getDepth ();
         if (pitchModDepth > 0)
         {
-            instrumentZone.addSignedGenerator (Generator.MOD_ENV_TO_PITCH, (int) (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
+            instrumentZone.addSignedGenerator (Generator.MOD_ENV_TO_PITCH, (int) Math.round (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
             setEnvelopeTime (instrumentZone, Generator.MOD_ENV_DELAY, pitchEnvelope.getDelayTime ());
             setEnvelopeTime (instrumentZone, Generator.MOD_ENV_ATTACK, pitchEnvelope.getAttackTime ());
@@ -560,7 +560,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         sampleDescriptor.setSampleType (sampleType);
         sampleDescriptor.setSampleRate (formatChunk.getSampleRate ());
         sampleDescriptor.setOriginalPitch (Math.clamp (sampleZone.getKeyRoot (), 0, 127));
-        sampleDescriptor.setPitchCorrection ((int) (sampleZone.getTuning () * 100));
+        sampleDescriptor.setPitchCorrection ((int) Math.round (sampleZone.getTuning () * 100));
 
         String name = sampleZone.getName ();
         if (name.endsWith ("-") || name.endsWith ("_"))
@@ -591,7 +591,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
     private static int convertEnvelopeTime (final double time)
     {
-        return (int) (Math.log (time) * 1200.0 / Math.log (2));
+        return (int) Math.round (Math.log (time) * 1200.0 / Math.log (2));
     }
 
 
@@ -602,7 +602,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         // Attenuation is in centi-bel (dB / 10), so 0 is maximum volume, about 1000 is off
         // This is likely not correct but since there is also no documentation what the percentage
         // volume values mean in dB it is the best we can do...
-        return (int) Math.clamp ((1.0 - value) * 1000.0, 0, 1000);
+        return (int) Math.round (Math.clamp ((1.0 - value) * 1000.0, 0, 1000));
     }
 
 

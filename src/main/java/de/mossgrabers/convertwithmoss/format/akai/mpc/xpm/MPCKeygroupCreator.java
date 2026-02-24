@@ -200,10 +200,9 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         final double tuneCent = zone.getTuning ();
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH, Double.toString (tuneCent));
         // Values need to be identical to the pitch element!
-        final int tuneCentInteger = (int) tuneCent;
+        final int tuneCentInteger = (int) Math.round (tuneCent);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_COARSE_TUNE, Integer.toString (tuneCentInteger));
-        // First multiply with 100 to prevent rounding error!
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_FINE_TUNE, Integer.toString ((int) (tuneCent * 100.0 - tuneCentInteger * 100.0)));
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_FINE_TUNE, Integer.toString ((int) Math.round ((tuneCent - tuneCentInteger) * 100.0)));
 
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_START, Integer.toString (limitToDefault (zone.getVelocityLow (), 1)));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VEL_END, Integer.toString (limitToDefault (zone.getVelocityHigh (), 127)));
