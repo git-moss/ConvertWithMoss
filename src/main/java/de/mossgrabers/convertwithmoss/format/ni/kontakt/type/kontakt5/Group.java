@@ -105,7 +105,7 @@ public class Group
     }
 
 
-    private void parseEnvelopes (final List<KontaktPresetChunk> children) throws IOException
+    private void parseEnvelopes (final List<KontaktPresetChunk> children)
     {
         for (final KontaktPresetChunk childChunk: children)
         {
@@ -118,8 +118,9 @@ public class Group
                     internalModulator.read (childChunk);
                     this.internalModulators.add (internalModulator);
                 }
-                catch (final RuntimeException ex)
+                catch (final RuntimeException | IOException ex)
                 {
+                    // TODO Improve reading InternalModulator
                     // Ignore unknown formats (a user reported for v8.1) but don't crash
                 }
             }

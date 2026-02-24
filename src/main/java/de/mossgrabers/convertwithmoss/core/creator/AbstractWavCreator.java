@@ -335,7 +335,7 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
     {
         final List<ISampleLoop> loops = zone.getLoops ();
         final SampleChunk sampleChunk = new SampleChunk (loops.size ());
-        sampleChunk.setSamplePeriod ((int) (1000000000.0 / wavFile.getFormatChunk ().getSampleRate ()));
+        sampleChunk.setSamplePeriod ((int) Math.round (1000000000.0 / wavFile.getFormatChunk ().getSampleRate ()));
         sampleChunk.setPitch (unityNote, (int) Math.round (zone.getTuning () * 100.0));
 
         final List<SampleChunkLoop> chunkLoops = sampleChunk.getLoops ();

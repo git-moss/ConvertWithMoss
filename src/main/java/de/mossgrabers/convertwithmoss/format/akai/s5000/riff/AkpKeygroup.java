@@ -249,8 +249,8 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
                     pitchModulator.setDepth ((pitchMod1UsesAuxEnv ? pitchMod1 : pitchMod2) / 100.0);
                     pitchModulator.setSource (auxEnvelope);
                 }
-                sampleZone.setBendDown (pitchbendDown);
                 sampleZone.setBendUp (pitchbendUp);
+                sampleZone.setBendDown (-pitchbendDown);
             }
 
             zonePosition += sizeOfZone + 8;

@@ -186,7 +186,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             // transpose and de-tune are both +-24 semi-tones, fine tuning is set on the program
             // with +-100 cent
 
-            final int transpose = (int) tune;
+            final int transpose = (int) Math.round (tune);
             final double fine = tune - transpose;
             int detune = 0;
             if (transpose > 24 || transpose < -24)

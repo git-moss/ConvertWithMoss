@@ -1,5 +1,18 @@
 # Changes
 
+## 16.2.0 (unreleased)
+
+* Ableton ADV, Sf2, TX16W, Yamaha YSFC
+  * Fixed: Negative fine tuning values could be off by 1 when written.
+* Akai AKP, MPC XPJ/XTY, TAL Sampler, TX16W
+  * Fixed: Reading: Pitch-bend down was inverted (pitching up instead of down)
+* DecentSampler
+  * Fixed: Creating presets did miss adding seqMode attribute for round_robin groups.
+* EXS24
+  * Fixed: Writing: Coarse and fine tuning was always set to 0.
+* Sf2
+  * Fixed: 24-bit samples were not extracted correctly when read.
+
 ## 16.1.1
 
 * Fixed: Application could not be closed if it was installed for the first time.

@@ -300,9 +300,13 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
             final Set<Double> ampVelDepths = new HashSet<> ();
             final List<ISampleZone> zones = group.getSampleZones ();
+            boolean isRoundRobin = false;
             for (int zoneIndex = 0; zoneIndex < zones.size (); zoneIndex++)
             {
                 final ISampleZone zone = zones.get (zoneIndex);
+
+                isRoundRobin = isRoundRobin || zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
+
                 ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
                 final Element sampleElement = createSample (document, folderName, groupElement, zone);
 
@@ -315,8 +319,12 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
                 else if (ampEnvParameterLevel == ParameterLevel.INSTRUMENT && groupIndex == 0 && zoneIndex == 0)
                     setEnvelope (groupsElement, modulatorSource);
             }
+
             if (ampVelDepths.size () == 1)
                 XMLUtils.setDoubleAttribute (groupElement, DecentSamplerTag.AMP_VELOCITY_TRACK, ampVelDepths.iterator ().next ().doubleValue (), 4);
+
+            if (isRoundRobin)
+                groupElement.setAttribute (DecentSamplerTag.SEQ_MODE, "round_robin");
 
             this.createFilter (document, modulatorsElement, multisampleSource, groupElement, groupIndex);
             if (!zones.isEmpty ())
@@ -363,7 +371,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         final double gain = zone.getGain ();
         if (gain != 0)
             sampleElement.setAttribute (DecentSamplerTag.VOLUME, gain + "dB");
-        sampleElement.setAttribute (DecentSamplerTag.PANNING, Integer.toString ((int) (zone.getPanning () * 100.0)));
+        sampleElement.setAttribute (DecentSamplerTag.PANNING, Integer.toString ((int) Math.round (zone.getPanning () * 100.0)));
         XMLUtils.setDoubleAttribute (sampleElement, DecentSamplerTag.START, Math.max (0, zone.getStart ()), 3);
         final int stop = zone.getStop ();
         if (stop >= 0)

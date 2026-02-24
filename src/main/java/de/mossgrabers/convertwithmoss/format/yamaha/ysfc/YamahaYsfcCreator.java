@@ -449,9 +449,9 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         // Tuning
 
         final double tune = zone.getTuning ();
-        final int semitones = (int) tune;
+        final int semitones = (int) Math.round (tune);
         element.setCoarseTune (semitones + 64);
-        element.setFineTune ((int) ((tune - semitones) * 100) + 64);
+        element.setFineTune ((int) Math.round (((tune - semitones) * 100)) + 64);
         element.setPitchKeyFollowSensitivity ((int) Math.round (zone.getKeyTracking () * 100));
 
         element.setPan (MathUtils.denormalizeIntegerRange (zone.getPanning (), -63, 63, 64));
@@ -750,7 +750,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
         // Each of the 16 bits represents a category: Bit 0 = Off, Bit 1 = Piano, ...
         final int mainCategory = categoryID / 16;
-        final int categoryBit = categoryID == 256 ? 0 : (int) Math.pow (2, mainCategory);
+        final int categoryBit = categoryID == 256 ? 0 : (int) Math.round (Math.pow (2, mainCategory));
         StreamUtils.writeUnsigned16 (flagsOutput, categoryBit, true);
         performanceEntry.setFlags (flagsOutput.toByteArray ());
 
@@ -797,9 +797,9 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         keybank.setVelocityRangeUpper (zone.getVelocityHigh ());
 
         final double tune = zone.getTuning ();
-        final int semitones = (int) Math.floor (tune);
+        final int semitones = (int) Math.round (tune);
         keybank.setCoarseTune (semitones);
-        keybank.setFineTune ((int) Math.floor ((tune - semitones) * 100.0));
+        keybank.setFineTune ((int) Math.round ((tune - semitones) * 100.0));
 
         final double gain = zone.getGain ();
         keybank.setLevel (gain < -95.25 ? 0 : (int) Math.round ((Math.clamp (gain, -95.25, 0) + 95.25) / 0.375) + 1);
