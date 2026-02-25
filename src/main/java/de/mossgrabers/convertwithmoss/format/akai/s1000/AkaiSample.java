@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s3000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 
@@ -191,9 +191,24 @@ public class AkaiSample extends AkaiDiskElement
 
 
     /**
-     * Get the loop mode.
+     * Get the loop mode. 0=LOOP_IN_REL 1=LOOP_UNTIL_REL, 2=NO LOOPING, 3=PLAY_TO_END
+     * <p>
+     * LOOP_IN_REL: when a key is pressed, the sample will play through all the loops until the
+     * first HOLD loop is reached. When the key is released, the HOLD loop will continue to play as
+     * the release falls away.
+     * <p>
+     * LOOP_UNTIL_REL: Again, the sample will play, with all loops, until the first HOLD loop is
+     * reached. However, when the key is released, the loop will end, and the remaining portion of
+     * the sample (if any) will be played.
+     * <p>
+     * NO LOOPING: it plays the sample through without loops for as long as the key is held down. As
+     * soon as the key is released, the sound will start to decay.
+     * <p>
+     * PLAY_TO_END (= one-shot): no loops are played, but an instantaneous trigger signal or key
+     * press will play the whole of the sample (the key does not have to be pressed for the whole
+     * length of the sample).
      * 
-     * @return 0=in release 1=until release, 2=none, 3=play to end
+     * @return The loop mode
      */
     public byte getLoopMode ()
     {

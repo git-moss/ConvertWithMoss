@@ -383,7 +383,7 @@ public class DefaultSampleZone implements ISampleZone
     @Override
     public void setGain (final double gain)
     {
-        this.gain = Math.clamp (gain, 0.125, 24.0);
+        this.gain = Math.min (gain, 24.0);
     }
 
 

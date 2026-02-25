@@ -2,6 +2,8 @@
 
 ## 16.2.0 (unreleased)
 
+* Added support for Akai S1000/1100 images (*.iso)
+* Fixed: Gain could not be set below +0.125dB
 * Ableton ADV, Sf2, TX16W, Yamaha YSFC
   * Fixed: Negative fine tuning values could be off by 1 when written.
 * Akai AKP, MPC XPJ/XTY, TAL Sampler, TX16W

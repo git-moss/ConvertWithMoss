@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s3000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ public class AkaiVolume extends AkaiDiskElement
     private final AkaiPartition     partition;
     private final AkaiDirEntry      dirEntry;
 
-    private String                  name;
     private final List<AkaiProgram> programs                    = new ArrayList<> ();
     private final List<AkaiSample>  samples                     = new ArrayList<> ();
 
@@ -55,7 +54,7 @@ public class AkaiVolume extends AkaiDiskElement
      */
     public String getName ()
     {
-        return this.name;
+        return this.dirEntry.getName ();
     }
 
 
