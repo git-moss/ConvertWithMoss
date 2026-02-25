@@ -2,7 +2,7 @@
 
 ## 16.2.0 (unreleased)
 
-* Added support for Akai S1000/1100 images (*.iso)
+* Added support for reading Akai S1000/S3000 series images (*.iso)
 * Fixed: Gain could not be set below +0.125dB
 * Ableton ADV, Sf2, TX16W, Yamaha YSFC
   * Fixed: Negative fine tuning values could be off by 1 when written.

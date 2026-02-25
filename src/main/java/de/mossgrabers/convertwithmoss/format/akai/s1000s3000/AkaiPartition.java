@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,7 +34,31 @@ public class AkaiPartition extends AkaiDiskElement
     {
         this.name = String.valueOf ((char) ('A' + partitionIndex));
 
-        this.listVolumes (disk);
+        for (int i = 0; i < AKAI_MAX_DIR_ENTRIES; i++)
+        {
+            final AkaiDirEntry dirEntry = new AkaiDirEntry ();
+            this.readDirEntry (disk, this, dirEntry, AKAI_ROOT_ENTRY_OFFSET, i);
+            dirEntry.setIndex (i);
+
+            final int type = dirEntry.getType ();
+            switch (type)
+            {
+                case AKAI_VOLUME_TYPE_S1000:
+                case AKAI_VOLUME_TYPE_S3000:
+                    final AkaiVolume volume = new AkaiVolume (disk, this, dirEntry);
+                    if (!volume.isEmpty ())
+                        this.volumes.add (volume);
+                    break;
+
+                case AKAI_VOLUME_NOT_USED:
+                    // Ignore empty volumes
+                    break;
+
+                default:
+                    // Ignore
+                    break;
+            }
+        }
     }
 
 
@@ -57,37 +81,5 @@ public class AkaiPartition extends AkaiDiskElement
     public List<AkaiVolume> getVolumes ()
     {
         return this.volumes;
-    }
-
-
-    private void listVolumes (final AkaiDiskImage disk) throws IOException
-    {
-        for (int i = 0; i < AKAI_MAX_DIR_ENTRIES; i++)
-        {
-            final AkaiDirEntry dirEntry = new AkaiDirEntry ();
-            this.readDirEntry (disk, this, dirEntry, AKAI_ROOT_ENTRY_OFFSET, i);
-            dirEntry.setIndex (i);
-
-            final int type = dirEntry.getType ();
-            switch (type)
-            {
-                case AKAI_VOLUME_TYPE_S1000:
-                case AKAI_VOLUME_TYPE_S3000:
-                    // TODO Test S3000
-                    final AkaiVolume volume = new AkaiVolume (disk, this, dirEntry);
-                    if (!volume.isEmpty ())
-                        this.volumes.add (volume);
-                    break;
-
-                case AKAI_VOLUME_NOT_USED:
-                    // Ignore empty volumes
-                    break;
-
-                default:
-                    // TODO remove
-                    System.out.println ("Unsupported directory entry type: " + type + " - " + dirEntry.getName ());
-                    break;
-            }
-        }
     }
 }

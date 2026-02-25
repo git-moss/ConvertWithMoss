@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
 
 import java.io.IOException;
 
@@ -92,6 +92,7 @@ public class AkaiSample extends AkaiDiskElement
         // 0, 0, 255, 255 - skip
         disk.readInt32 ();
         this.samplingFrequency = disk.readInt16 () & 0xFFFF;
+        // Only valid on S3000 series
         this.loopTuneOffset = disk.readInt8 ();
 
         this.imageOffset = volume.getPartition ().getOffset () + dirEntry.getStart () * AKAI_BLOCK_SIZE + 150;

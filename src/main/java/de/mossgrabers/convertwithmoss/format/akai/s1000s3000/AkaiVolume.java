@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,9 +21,8 @@ public class AkaiVolume extends AkaiDiskElement
     /** Maximum number of directory file entries on Akai S3000 series. */
     public static final int         AKAI_MAX_FILE_ENTRIES_S3000 = 509;
 
-    private final AkaiDiskImage     disk;
-    private final AkaiPartition     partition;
     private final AkaiDirEntry      dirEntry;
+    private final AkaiPartition     partition;
 
     private final List<AkaiProgram> programs                    = new ArrayList<> ();
     private final List<AkaiSample>  samples                     = new ArrayList<> ();
@@ -33,17 +32,44 @@ public class AkaiVolume extends AkaiDiskElement
      * Constructor.
      * 
      * @param disk The disk from which to read the volume
-     * @param parent The parent partition
+     * @param partition The partition which contains the volume
      * @param dirEntry The directory entry of the volume
      * @throws IOException Could not read the volume
      */
-    AkaiVolume (final AkaiDiskImage disk, final AkaiPartition parent, final AkaiDirEntry dirEntry) throws IOException
+    AkaiVolume (final AkaiDiskImage disk, final AkaiPartition partition, final AkaiDirEntry dirEntry) throws IOException
     {
-        this.disk = disk;
-        this.partition = parent;
+        this.partition = partition;
         this.dirEntry = dirEntry;
 
-        this.readDir ();
+        final boolean isS3000 = disk.isS3000 ();
+
+        this.readFAT (disk, partition, this.dirEntry.getStart ());
+        final int maxFiles = isS3000 ? AKAI_MAX_FILE_ENTRIES_S3000 : AKAI_MAX_FILE_ENTRIES_S1000;
+        for (int i = 0; i < maxFiles; i++)
+        {
+            final AkaiDirEntry entry = new AkaiDirEntry ();
+            this.readDirEntry (disk, partition, entry, this.dirEntry.getStart (), i);
+            entry.setIndex (i);
+
+            int type = entry.getType ();
+            if (type >= 128 && isS3000)
+                type -= 128;
+            switch (type)
+            {
+                case 'p':
+                    this.programs.add (new AkaiProgram (disk, this, entry));
+                    break;
+                case 's':
+                    this.samples.add (new AkaiSample (disk, this, entry));
+                    break;
+                case 0:
+                    // Empty
+                    break;
+                default:
+                    // Unused S3000 content types: q, x, d
+                    break;
+            }
+        }
     }
 
 
@@ -99,23 +125,5 @@ public class AkaiVolume extends AkaiDiskElement
     public List<AkaiSample> getSamples ()
     {
         return this.samples;
-    }
-
-
-    private void readDir () throws IOException
-    {
-        final boolean result = this.readFAT (this.disk, this.partition, this.dirEntry.getStart ()) != 0;
-        final int maxFiles = result ? AKAI_MAX_FILE_ENTRIES_S1000 : AKAI_MAX_FILE_ENTRIES_S3000;
-        for (int i = 0; i < maxFiles; i++)
-        {
-            final AkaiDirEntry entry = new AkaiDirEntry ();
-            this.readDirEntry (this.disk, this.partition, entry, this.dirEntry.getStart (), i);
-            entry.setIndex (i);
-
-            if (entry.getType () == 'p')
-                this.programs.add (new AkaiProgram (this.disk, this, entry));
-            else if (entry.getType () == 's')
-                this.samples.add (new AkaiSample (this.disk, this, entry));
-        }
     }
 }
