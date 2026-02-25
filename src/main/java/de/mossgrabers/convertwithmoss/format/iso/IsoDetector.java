@@ -13,25 +13,35 @@ import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.akai.s3000.AkaiDiskImage;
-import de.mossgrabers.convertwithmoss.format.akai.s3000.AkaiKeygroup;
-import de.mossgrabers.convertwithmoss.format.akai.s3000.AkaiKeygroupSample;
-import de.mossgrabers.convertwithmoss.format.akai.s3000.AkaiPartition;
-import de.mossgrabers.convertwithmoss.format.akai.s3000.AkaiProgram;
-import de.mossgrabers.convertwithmoss.format.akai.s3000.AkaiSample;
-import de.mossgrabers.convertwithmoss.format.akai.s3000.AkaiVolume;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiDiskImage;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiEnvelope;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroup;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroupSample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiPartition;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgram;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiSample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiSampleLoop;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiVolume;
 
 
 /**
@@ -99,7 +109,7 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
                     final List<AkaiSample> samples = volume.getSamples ();
                     for (final AkaiProgram program: volume.getPrograms ())
                     {
-                        final DefaultMultisampleSource multisampleSource = createMultiSample (sourceFile, parts, samples, program);
+                        final DefaultMultisampleSource multisampleSource = createMultiSample (sourceFile, parts, samples, program, volume.getName ());
                         multiSampleSources.add (multisampleSource);
                     }
                 }
@@ -116,9 +126,11 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private DefaultMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final List<AkaiSample> samples, final AkaiProgram program)
+    private DefaultMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final List<AkaiSample> samples, final AkaiProgram program, final String volumeName)
     {
-        final String programName = program.getName ();
+        String programName = program.getName ();
+        if (volumeName != null && !volumeName.isBlank ())
+            programName = volumeName.trim () + " " + programName;
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName, programName);
 
         final IGroup group = new DefaultGroup ();
@@ -128,7 +140,7 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
         // Set global values
         final int pitchBendRange = program.getBendToPitch () & 0xFF;
         final double gain = (program.getVolume () & 0xFF) / 99.0;
-        final double velocityToVolume = Math.clamp (program.getVelocityToVolume () / 50.0, -1.0, -1.0);
+        final double velocityToVolume = Math.clamp (program.getVelocityToVolume () / 50.0, -1.0, 1.0);
         for (final ISampleZone zone: group.getSampleZones ())
         {
             zone.setBendUp (pitchBendRange);
@@ -157,19 +169,32 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
             final int highKey = keygroup.getHighKey ();
 
             final boolean [] sampleKeyTracking = keygroup.getSampleKeyTracking ();
-
             final double keygroupTuning = calculateTuning (keygroup.getTuneSemitones (), keygroup.getTuneCents ());
+            final IEnvelope amplitudeEnvelope = convertEnvelope (keygroup.getAmplitudeEnvelope ());
+            final IEnvelope auxEnvelope = convertEnvelope (keygroup.getAuxEnvelope ());
 
-            // TODO implement Filter with envelope
-            // keygroup.getEnvelope2ToFilter ()
-            // keygroup.getFilter ()
-            // keygroup.getVelocityToFilter ()
-
-            // TODO implement pitch envelope
-            // keygroup.getEnvelope2ToPitch ()
-
-            for (final AkaiKeygroupSample keygroupSample: keygroup.getSamples ())
+            // Filter
+            final int filterCutoff = keygroup.getFilter ();
+            final double cutoffModulation = keygroup.getEnvelope2ToFilter () / 50.0;
+            final double velocityToFilter = keygroup.getVelocityToFilter () / 50.0;
+            IFilter filter = null;
+            if (filterCutoff < 99 || cutoffModulation != 0)
             {
+                final double cutoff = MathUtils.denormalizeFrequency (filterCutoff / 99.0, IFilter.MAX_FREQUENCY);
+                filter = new DefaultFilter (FilterType.LOW_PASS, 3, cutoff, 0);
+                filter.getCutoffEnvelopeModulator ().setSource (auxEnvelope);
+                filter.getCutoffEnvelopeModulator ().setDepth (cutoffModulation);
+                filter.getCutoffVelocityModulator ().setDepth (velocityToFilter);
+            }
+
+            // Pitch modulation
+            final double pitchModulation = keygroup.getEnvelope2ToPitch () / 50.0;
+
+            final AkaiKeygroupSample [] keygroupSamples = keygroup.getSamples ();
+            for (int i = 0; i < keygroupSamples.length; i++)
+            {
+                final AkaiKeygroupSample keygroupSample = keygroupSamples[i];
+
                 // Is the layer used?
                 final String sampleName = keygroupSample.getName ();
                 if (sampleName == null || sampleName.isBlank ())
@@ -190,22 +215,54 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
                     this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
                     continue;
                 }
-                final ISampleData sampleData = new InMemorySampleData (audioMetadata, samples16bit);
-                sampleZone.setSampleData (sampleData);
 
+                sampleZone.setSampleData (new InMemorySampleData (audioMetadata, samples16bit));
+                sampleZone.setKeyRoot (sample.getMidiRootNote ());
                 sampleZone.setVelocityLow (keygroupSample.getLowVelocity ());
                 sampleZone.setVelocityHigh (keygroupSample.getHighVelocity ());
 
-                // TODO use filter offset
-                // keygroupSample.getFilter ()
+                // Mixing
+                sampleZone.setPanning (Math.clamp (keygroupSample.getPan (), -50, 50) / 50.0);
+                // Unclear of the +/- range of the loudness parameter, assume +/-6dB
+                sampleZone.setGain (Math.clamp (keygroupSample.getLoudness (), -50, 50) / 50.0 * 6.0);
+                sampleZone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
 
-                // TODO implement
-                keygroupSample.getLoopMode ();
-                keygroupSample.getLoudness ();
-                keygroupSample.getPan ();
+                // Play-back
+                sampleZone.setStart (sample.getStartMarker ());
+                sampleZone.setStop (sample.getEndMarker ());
 
-                final double sampleTuning = calculateTuning (keygroupSample.getTuneSemitones (), keygroupSample.getTuneCents ());
-                sampleZone.setTuning (keygroupTuning + sampleTuning);
+                // Loop
+                if (sample.getActiveLoops () > 0)
+                {
+                    int loopMode = keygroupSample.getLoopMode ();
+                    loopMode = loopMode == 0 ? sample.getLoopMode () : loopMode - 1;
+                    if (loopMode < 2)
+                    {
+                        final byte firstActiveLoop = sample.getFirstActiveLoop ();
+                        final AkaiSampleLoop loop = sample.getLoops ()[firstActiveLoop];
+                        final int marker = loop.getMarker ();
+                        final ISampleLoop sampleLoop = new DefaultSampleLoop ();
+                        sampleLoop.setStart (marker - loop.getCoarseLength ());
+                        sampleLoop.setEnd (marker);
+                        sampleZone.getLoops ().add (sampleLoop);
+                    }
+                }
+
+                // Filter
+                if (filter != null)
+                    sampleZone.setFilter (filter);
+
+                // Pitch
+                sampleZone.setKeyTracking (sampleKeyTracking[i] ? 1 : 0);
+                final double keygroupSampleTuning = calculateTuning (keygroupSample.getTuneSemitones (), keygroupSample.getTuneCents ());
+                final double sampleTuning = calculateTuning (sample.getTuneSemitones (), sample.getTuneCents ());
+                sampleZone.setTuning (keygroupTuning + keygroupSampleTuning + sampleTuning);
+                if (pitchModulation != 0)
+                {
+                    final IEnvelopeModulator pitchEnvelopeModulator = sampleZone.getPitchEnvelopeModulator ();
+                    pitchEnvelopeModulator.setDepth (pitchModulation);
+                    pitchEnvelopeModulator.setSource (auxEnvelope);
+                }
 
                 group.addSampleZone (sampleZone);
             }
@@ -254,5 +311,23 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
         else if (tuneCents > 0)
             cents = tuneCents / 127.0 * 0.5;
         return tuneSemitones + cents;
+    }
+
+
+    private static IEnvelope convertEnvelope (final AkaiEnvelope akaiEnvelope)
+    {
+        final IEnvelope envelope = new DefaultEnvelope ();
+        envelope.setAttackTime (toSeconds (akaiEnvelope.getAttack ()));
+        envelope.setDecayTime (toSeconds (akaiEnvelope.getDecay ()));
+        envelope.setSustainLevel (akaiEnvelope.getSustain () / 99.0);
+        envelope.setReleaseTime (toSeconds (akaiEnvelope.getRelease ()));
+        return envelope;
+    }
+
+
+    private static double toSeconds (final int value)
+    {
+        // No real idea, assume 6 seconds max
+        return value / 99.0 * 6.0;
     }
 }

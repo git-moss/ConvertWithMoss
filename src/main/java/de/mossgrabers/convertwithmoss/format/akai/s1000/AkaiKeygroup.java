@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s3000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 
@@ -35,7 +35,8 @@ public class AkaiKeygroup
     // -50..50
     private byte                        envelope2ToFilter;
 
-    private final AkaiEnvelope []       envelopes              = new AkaiEnvelope [2];
+    private final AkaiEnvelope          amplitudeEnvelope;
+    private final AkaiEnvelope          auxEnvelope;
 
     // -50..50
     @SuppressWarnings("unused")
@@ -87,8 +88,8 @@ public class AkaiKeygroup
         this.pressureToFilter = disk.readInt8 ();
         this.envelope2ToFilter = disk.readInt8 ();
 
-        for (int i = 0; i < 2; i++)
-            this.envelopes[i] = new AkaiEnvelope (disk);
+        this.amplitudeEnvelope = new AkaiEnvelope (disk);
+        this.auxEnvelope = new AkaiEnvelope (disk);
 
         this.velocityToEnvelope2ToFilter = disk.readInt8 ();
         this.envelope2ToPitch = disk.readInt8 ();
@@ -105,9 +106,8 @@ public class AkaiKeygroup
         this.beatDetune = disk.readInt8 ();
         this.holdAttackUntilLoop = disk.readInt8 () != 0;
 
-        // TODO check if this should be == 0!
         for (int i = 0; i < 4; i++)
-            this.sampleKeyTracking[i] = disk.readInt8 () != 0;
+            this.sampleKeyTracking[i] = disk.readInt8 () == 0;
 
         for (int i = 0; i < 4; i++)
             this.sampleAuxOutOffset[i] = disk.readInt8 ();
@@ -195,6 +195,28 @@ public class AkaiKeygroup
     public byte getVelocityToFilter ()
     {
         return this.velocityToFilter;
+    }
+
+
+    /**
+     * Get the amplitude envelope (envelope 1).
+     * 
+     * @return The envelope
+     */
+    public AkaiEnvelope getAmplitudeEnvelope ()
+    {
+        return this.amplitudeEnvelope;
+    }
+
+
+    /**
+     * Get the auxiliary envelope (envelope 2) which might be used for filter cutoff or pitch.
+     * 
+     * @return The envelope
+     */
+    public AkaiEnvelope getAuxEnvelope ()
+    {
+        return this.auxEnvelope;
     }
 
 
