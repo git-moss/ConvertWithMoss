@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,20 +30,34 @@ public class AkaiDiskImage implements AutoCloseable
     private final int                 size;
     private byte []                   cache                   = new byte [DISK_CLUSTER_SIZE];
     private final List<AkaiPartition> partitions              = new ArrayList<> ();
+    private final boolean             isS3000;
 
 
     /**
      * Open an image from a file path.
      *
      * @param file The AKAI image file to access
+     * @param isS3000 True if it is a S3000 series image otherwise S1000 series
      * @throws IOException If file cannot be opened or partitions could not be loaded
      */
-    public AkaiDiskImage (final File file) throws IOException
+    public AkaiDiskImage (final File file, final boolean isS3000) throws IOException
     {
+        this.isS3000 = isS3000;
         this.randomAccessFile = new RandomAccessFile (file, "r");
         this.size = (int) file.length ();
 
         this.loadPartitions ();
+    }
+
+
+    /**
+     * Check if it is a S3000 series image otherwise S1000 series.
+     * 
+     * @return True if it is a S3000 series image otherwise S1000 series
+     */
+    public boolean isS3000 ()
+    {
+        return this.isS3000;
     }
 
 

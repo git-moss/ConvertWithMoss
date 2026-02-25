@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
 
 import java.io.IOException;
 
@@ -220,12 +220,15 @@ public class AkaiProgram extends AkaiDiskElement
         this.voiceOutputScale = disk.readInt8 ();
         this.stereoOutputScale = disk.readInt8 ();
 
+        // Bytes 73-150 are not used, key-groups start at 150
+
         // Read key-groups
+        int headerSize = disk.isS3000 () ? 192 : 150;
         final int numKeygroups = this.numberOfKeygroups & 0xFF;
         this.keygroups = new AkaiKeygroup [numKeygroups];
         for (int i = 0; i < numKeygroups; i++)
         {
-            disk.setPos (parent.getPartition ().getOffset () + dirEntry.getStart () * AKAI_BLOCK_SIZE + 150 * (i + 1), AkaiStreamWhence.START);
+            disk.setPos (parent.getPartition ().getOffset () + dirEntry.getStart () * AKAI_BLOCK_SIZE + headerSize * (i + 1), AkaiStreamWhence.START);
             this.keygroups[i] = new AkaiKeygroup (disk);
         }
 

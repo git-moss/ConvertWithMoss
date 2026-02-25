@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
 
 import java.io.IOException;
 
@@ -33,7 +33,7 @@ public abstract class AkaiDiskElement
     /** Type ID for S1000 format. */
     protected static final int AKAI_VOLUME_TYPE_S1000 = 1;
     /** Type ID for S3000 format. */
-    protected static final int AKAI_VOLUME_TYPE_S3000 = 3;
+    protected static final int AKAI_VOLUME_TYPE_S3000 = 7;
 
     /** ID for a program structure. */
     protected static final int AKAI_PROGRAM_ID        = 1;

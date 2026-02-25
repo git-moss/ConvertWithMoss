@@ -13,7 +13,6 @@ import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
@@ -33,15 +32,15 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiDiskImage;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiEnvelope;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroup;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroupSample;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiPartition;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgram;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiSample;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiSampleLoop;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiVolume;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiDiskImage;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiEnvelope;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiKeygroup;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiKeygroupSample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiPartition;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiProgram;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiSample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiSampleLoop;
+import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiVolume;
 
 
 /**
@@ -70,10 +69,10 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
         switch (isoFormat)
         {
             case AKAI_S1000_S1100:
-                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
-                return this.processAkaiS1000 (sourceFile);
-
             case AKAI_S3000:
+                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                return this.processAkaiS1000OrS3000 (sourceFile, isoFormat == IsoFormat.AKAI_S3000);
+
             case ROLAND_S550_W30_DJ70:
             case ROLAND_S7XX:
             case UNKNOWN:
@@ -88,13 +87,14 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
      * Process an ISO file which was detected as Akai S1000 format.
      * 
      * @param sourceFile The ISO file to process
+     * @param isS3000 True if it is a S3000 series image otherwise S1000 series
      * @return The converted multi-samples
      */
-    private List<IMultisampleSource> processAkaiS1000 (final File sourceFile)
+    private List<IMultisampleSource> processAkaiS1000OrS3000 (final File sourceFile, final boolean isS3000)
     {
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
 
-        try (final AkaiDiskImage disk = new AkaiDiskImage (sourceFile))
+        try (final AkaiDiskImage disk = new AkaiDiskImage (sourceFile, isS3000))
         {
             final int partitionCount = disk.getPartitionCount ();
 
@@ -180,7 +180,7 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
             IFilter filter = null;
             if (filterCutoff < 99 || cutoffModulation != 0)
             {
-                final double cutoff = MathUtils.denormalizeFrequency (filterCutoff / 99.0, IFilter.MAX_FREQUENCY);
+                final double cutoff = filterCutoff / 99.0 * IFilter.MAX_FREQUENCY;
                 filter = new DefaultFilter (FilterType.LOW_PASS, 3, cutoff, 0);
                 filter.getCutoffEnvelopeModulator ().setSource (auxEnvelope);
                 filter.getCutoffEnvelopeModulator ().setDepth (cutoffModulation);
@@ -317,17 +317,17 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
     private static IEnvelope convertEnvelope (final AkaiEnvelope akaiEnvelope)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
-        envelope.setAttackTime (toSeconds (akaiEnvelope.getAttack ()));
-        envelope.setDecayTime (toSeconds (akaiEnvelope.getDecay ()));
+        envelope.setAttackTime (toSeconds (akaiEnvelope.getAttack (), false));
+        envelope.setDecayTime (toSeconds (akaiEnvelope.getDecay (), true));
         envelope.setSustainLevel (akaiEnvelope.getSustain () / 99.0);
-        envelope.setReleaseTime (toSeconds (akaiEnvelope.getRelease ()));
+        envelope.setReleaseTime (toSeconds (akaiEnvelope.getRelease (), false));
         return envelope;
     }
 
 
-    private static double toSeconds (final int value)
+    private static double toSeconds (final int value, final boolean isLong)
     {
-        // No real idea, assume 6 seconds max
-        return value / 99.0 * 6.0;
+        // No real idea, assume 2 seconds max
+        return value / 99.0 * (isLong ? 6.0 : 2.0);
     }
 }
