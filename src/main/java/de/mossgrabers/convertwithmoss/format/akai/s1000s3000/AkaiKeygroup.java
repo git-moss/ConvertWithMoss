@@ -70,7 +70,7 @@ public class AkaiKeygroup
      * @param disk The disk to read from
      * @throws IOException Could not read the key-group
      */
-    public AkaiKeygroup (final AkaiDiskImage disk) throws IOException
+    public AkaiKeygroup (final IAkaiImage disk) throws IOException
     {
         if (disk.readInt8 () != AkaiDiskElement.AKAI_KEYGROUP_ID)
             throw new IOException ("Not a key-group.");

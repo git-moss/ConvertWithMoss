@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s5000;
+package de.mossgrabers.convertwithmoss.format.akai.akp;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,12 +29,12 @@ import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.riff.AkpKeygroup;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.riff.AkpModulations;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.riff.AkpOutput;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.riff.AkpProgram;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.riff.AkpRiffChunkId;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.riff.AkpTuning;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpKeygroup;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpModulations;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpOutput;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpProgram;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpRiffChunkId;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpTuning;
 import de.mossgrabers.tools.FileUtils;
 
 

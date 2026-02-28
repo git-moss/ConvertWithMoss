@@ -22,10 +22,11 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
+import de.mossgrabers.convertwithmoss.format.akai.akp.AkpDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xty.XtyDetector;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.AkpDetector;
+import de.mossgrabers.convertwithmoss.format.akai.s3p.AkaiS3pDetector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
@@ -110,6 +111,7 @@ public class ConverterBackend
             new AkpDetector (notifier),
             new MPCKeygroupDetector (notifier),
             new XtyDetector (notifier),
+            new AkaiS3pDetector (notifier),
             new BitwigMultisampleDetector (notifier),
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),

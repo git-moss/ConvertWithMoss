@@ -219,6 +219,8 @@ public class RIFFParser
             {
                 final long idscan = this.getPosition ();
                 final int id = this.in.readFourCC ();
+                if (id == 0)
+                    throw new IOException ("Broken RIFF structure.");
 
                 if (id == CommonRiffChunkId.RIFF_ID.getFourCC ())
                     this.parseFORM (props);

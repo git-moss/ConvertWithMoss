@@ -31,28 +31,30 @@ If the format uses WAV files to store the samples, the following options to addi
 
 The following multi-sample formats are supported:
 
-- [1010music bento](#1010music-bento)
-- [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
-- [Ableton Sampler](#ableton-sampler)
-- [Akai MPC Keygroups/Drum](#akai-mpc-keygroups--drum)
-- [Akai MPC Project/Track](#akai-mpc-projecttrack)
-- [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000)
-- [Bitwig Multisample](#bitwig-multisample)
-- [CWITEC TX16Wx](#cwitec-tx16wx)
-- [DecentSampler](#decentsampler)
-- [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
-- [Kontakt NKI/NKM](#kontakt-nkinkm)
-- [Korg KSC/KMP/KSF](#korg-ksckmpksf)
-- [Korg wavestate/modwave](#korg-wavestatemodwave)
-- [Logic EXS24](#logic-exs24)
-- [Native Instruments Maschine](#native-instruments-maschine)
-- [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
-- [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
-- [SFZ](#sfz)
-- [SoundFont 2](#soundfont-2)
-- [TAL Sampler](#tal-sampler)
-- [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
-- [Yamaha YSFC](#yamaha-ysfc)
+* [1010music bento](#1010music-bento)
+* [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
+* [Ableton Sampler](#ableton-sampler)
+* [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000) - read only
+* [Akai MPC Keygroups/Drum](#akai-mpc-keygroups--drum)
+* [Akai MPC Project/Track](#akai-mpc-projecttrack)
+* [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
+* [Akai MESA](#akai-mesa) - read only
+* [Bitwig Multisample](#bitwig-multisample)
+* [CWITEC TX16Wx](#cwitec-tx16wx)
+* [DecentSampler](#decentsampler)
+* [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
+* [Kontakt NKI/NKM](#kontakt-nkinkm)
+* [Korg KSC/KMP/KSF](#korg-ksckmpksf)
+* [Korg wavestate/modwave](#korg-wavestatemodwave)
+* [Logic EXS24](#logic-exs24)
+* [Native Instruments Maschine](#native-instruments-maschine)
+* [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+* [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
+* [SFZ](#sfz)
+* [SoundFont 2](#soundfont-2)
+* [TAL Sampler](#tal-sampler)
+* [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
+* [Yamaha YSFC](#yamaha-ysfc)
 
 ## 1010music bento
 
@@ -103,6 +105,22 @@ ConvertWithMoss can extract Sampler and Simpler presets from ADV files as well a
 
 ADV files and their samples need to be placed in the Ableton user library in the correct folders to allow Ableton to open it. Therefore, ConvertWithMoss creates the necessary folder structure which can be simply copied to the user library. If the source has sub-folders the global option *Create folder structure* should be deactivated otherwise it can be quite tedious to collect all the results files with their additional Ableton sub-folder structure.
 
+## Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
+
+This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume and key-range.
+AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library. 
+Only reading of the AKP/AKM formats is supported.
+
+## Akai S1000/S3000 series disk image
+
+The Akai S1000 and S3000 series are landmark professional digital samplers first introduced by Akai in the late 1980s and early 1990s. The S1000 became widely adopted in studios and electronic music production for its 16-bit PCM sampling, extensive on-board editing, and reliable MIDI integration. The S3000 series built on that legacy with expanded memory, improved filtering, and more advanced modulation and layering capabilities, offering deeper sound design flexibility.
+
+The CD format used with the S1000/S3000 series was a proprietary Akai CD-ROM structure built on standard ISO-9660 physical media but organized according to Akai’s own disk architecture. Data was stored as 16-bit linear PCM sample files along with separate program and keygroup parameter data, arranged in volumes that the sampler’s operating system could index via SCSI. Unlike generic audio CDs (Red Book), these discs were data CDs containing structured directories and allocation tables specific to Akai’s file system, enabling direct loading of samples, programs, and partitions into memory. While ConvertWithMoss cannot directly read the CDs, it can read images created from them with other tools (normally named *.iso). There is no write support.
+
+## Akai MESA
+
+The Akai MESA S3P format is a computer-side representation of Akai S-series program data used by the original MESA (Mac/PC Multi-Editor and Sample Accelerator) librarian/editor software for the [S-3000](#akai-s1000s3000-series-disk-image) family. In practice the .S3P extension contains a classic S3000-style Program (instrument) encoded in a format akin to MIDI SysEx dumps, with the sample waveforms stored externally as accompanying WAV files on a computer. Internally the Program’s structure—keygroups, sample references, mapping, filters and loop parameters—is essentially the same as an Akai S-series Program on disk; MESA simply encapsulates the Akai program data in its own file container for editing and transfer.
+
 ## Akai MPC Keygroups / Drum
 
 A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV). Both keygroup and drum types are supported.
@@ -128,12 +146,6 @@ A project file (*.xpj) contains all track and project settings. All tracks which
 ### Source Options
 
 * Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
-
-## Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
-
-This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume and key-range.
-AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library. 
-Only reading of the AKP/AKM formats is supported.
 
 ## Bitwig Multisample
 

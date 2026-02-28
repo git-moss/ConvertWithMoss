@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
 
 import java.io.IOException;
+import java.util.List;
 
 
 /**
@@ -15,134 +16,148 @@ import java.io.IOException;
 public class AkaiProgram extends AkaiDiskElement
 {
     // AKAI character set
-    private final String          name;
+    private String          name;
     // 0..127
     @SuppressWarnings("unused")
-    private final byte            midiProgramNumber;
+    private byte            midiProgramNumber;
     // 0..15, 255=OMNI
-    private final byte            midiChannel;
+    private byte            midiChannel;
     // 1..16
     @SuppressWarnings("unused")
-    private final byte            polyphony;
+    private byte            polyphony;
     // 0=LOW 1=NORM 2=HIGH 3=HOLD
     @SuppressWarnings("unused")
-    private final byte            priority;
+    private byte            priority;
     // 24..127
-    private final byte            lowKey;
+    private byte            lowKey;
     // 24..127
-    private final byte            highKey;
+    private byte            highKey;
     // -2..2
-    private final byte            octaveShift;
+    private byte            octaveShift;
     // 0..7, 255=OFF
     @SuppressWarnings("unused")
-    private final byte            auxOutputSelect;
+    private byte            auxOutputSelect;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            mixOutputSelect;
+    private byte            mixOutputSelect;
     // -50..50
-    private final byte            mixPan;
+    private byte            mixPan;
     // 0..99
-    private final byte            volume;
+    private byte            volume;
     // -50..50
-    private final byte            velocityToVolume;
-    // -50..50
-    @SuppressWarnings("unused")
-    private final byte            keyToVolume;
+    private byte            velocityToVolume;
     // -50..50
     @SuppressWarnings("unused")
-    private final byte            pressureToVolume;
-    // 0..99
-    @SuppressWarnings("unused")
-    private final byte            panLFORate;
-    // 0..99
-    @SuppressWarnings("unused")
-    private final byte            panLFODepth;
-    // 0..99
-    @SuppressWarnings("unused")
-    private final byte            panLFODelay;
+    private byte            keyToVolume;
     // -50..50
     @SuppressWarnings("unused")
-    private final byte            keyToPan;
+    private byte            pressureToVolume;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            lfoRate;
+    private byte            panLFORate;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            lfoDepth;
+    private byte            panLFODepth;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            lfoDelay;
+    private byte            panLFODelay;
+    // -50..50
+    @SuppressWarnings("unused")
+    private byte            keyToPan;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            modulationToLFODepth;
+    private byte            lfoRate;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            pressureToLFODepth;
+    private byte            lfoDepth;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            velocityToLFODepth;
+    private byte            lfoDelay;
+    // 0..99
+    @SuppressWarnings("unused")
+    private byte            modulationToLFODepth;
+    // 0..99
+    @SuppressWarnings("unused")
+    private byte            pressureToLFODepth;
+    // 0..99
+    @SuppressWarnings("unused")
+    private byte            velocityToLFODepth;
     // 0..12 semi-tones
-    private final byte            bendToPitch;
+    private byte            bendToPitch;
     // -12..12 semi-tones
     @SuppressWarnings("unused")
-    private final byte            pressureToPitch;
+    private byte            pressureToPitch;
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private final boolean         keygroupCrossfade;
+    private boolean         keygroupCrossfade;
     // 1..99
-    private final byte            numberOfKeygroups;
+    private byte            numberOfKeygroups;
     // -25..25 cents
-    private final byte []         keyTemperament = new byte [11];
+    private final byte []   keyTemperament = new byte [11];
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private final boolean         fxOutput;
+    private boolean         fxOutput;
     // -50..50
     @SuppressWarnings("unused")
-    private final byte            modulationToPan;
+    private byte            modulationToPan;
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private final boolean         stereoCoherence;
+    private boolean         stereoCoherence;
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private final boolean         lfoDesync;
+    private boolean         lfoDesync;
     // 0=LINEAR
     @SuppressWarnings("unused")
-    private final byte            pitchLaw;
+    private byte            pitchLaw;
     // 0=OLDEST 1=QUIETEST
     @SuppressWarnings("unused")
-    private final byte            voiceReassign;
+    private byte            voiceReassign;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            softpedToVolume;
+    private byte            softpedToVolume;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            softpedToAttack;
+    private byte            softpedToAttack;
     // 0..99
     @SuppressWarnings("unused")
-    private final byte            softpedToFilter;
+    private byte            softpedToFilter;
     // -128..127 (-50..50 cents)
     @SuppressWarnings("unused")
-    private final byte            softpedToTuneCents;
+    private byte            softpedToTuneCents;
     // -50..50
     @SuppressWarnings("unused")
-    private final byte            softpedToTuneSemitones;
+    private byte            softpedToTuneSemitones;
     // -50..50
     @SuppressWarnings("unused")
-    private final byte            keyToLFORate;
+    private byte            keyToLFORate;
     // -50..50
     @SuppressWarnings("unused")
-    private final byte            keyToLFODepth;
+    private byte            keyToLFODepth;
     // -50..50
     @SuppressWarnings("unused")
-    private final byte            keyToLFODelay;
+    private byte            keyToLFODelay;
     // 0=-6dB 1=0dB 2=+12dB
     @SuppressWarnings("unused")
-    private final byte            voiceOutputScale;
+    private byte            voiceOutputScale;
     // 0=0dB 1=+6dB
     @SuppressWarnings("unused")
-    private final byte            stereoOutputScale;
+    private byte            stereoOutputScale;
 
-    private final AkaiKeygroup [] keygroups;
+    private AkaiKeygroup [] keygroups;
+
+
+    /**
+     * Default constructor.
+     * 
+     * @param image The image to read from
+     * @throws IOException Could not read the program
+     */
+    public AkaiProgram (final IAkaiImage image) throws IOException
+    {
+        super (0);
+
+        this.readProgram (image);
+    }
 
 
     /**
@@ -160,67 +175,7 @@ public class AkaiProgram extends AkaiDiskElement
         final int tempPos = disk.getPos ();
         disk.setPos (parent.getPartition ().getOffset () + dirEntry.getStart () * AKAI_BLOCK_SIZE, AkaiStreamWhence.START);
 
-        final byte progID = disk.readInt8 ();
-        if (progID != AkaiDiskElement.AKAI_PROGRAM_ID)
-            throw new IOException ("Not a Akai Program.");
-
-        // key-group address
-        disk.readInt16 ();
-
-        this.name = disk.readText ();
-
-        this.midiProgramNumber = disk.readInt8 ();
-        this.midiChannel = disk.readInt8 ();
-        this.polyphony = disk.readInt8 ();
-        this.priority = disk.readInt8 ();
-        this.lowKey = disk.readInt8 ();
-        this.highKey = disk.readInt8 ();
-        this.octaveShift = disk.readInt8 ();
-        this.auxOutputSelect = disk.readInt8 ();
-        this.mixOutputSelect = disk.readInt8 ();
-        this.mixPan = disk.readInt8 ();
-        this.volume = disk.readInt8 ();
-        this.velocityToVolume = disk.readInt8 ();
-        this.keyToVolume = disk.readInt8 ();
-        this.pressureToVolume = disk.readInt8 ();
-        this.panLFORate = disk.readInt8 ();
-        this.panLFODepth = disk.readInt8 ();
-        this.panLFODelay = disk.readInt8 ();
-        this.keyToPan = disk.readInt8 ();
-        this.lfoRate = disk.readInt8 ();
-        this.lfoDepth = disk.readInt8 ();
-        this.lfoDelay = disk.readInt8 ();
-        this.modulationToLFODepth = disk.readInt8 ();
-        this.pressureToLFODepth = disk.readInt8 ();
-        this.velocityToLFODepth = disk.readInt8 ();
-        this.bendToPitch = disk.readInt8 ();
-        this.pressureToPitch = disk.readInt8 ();
-        this.keygroupCrossfade = disk.readInt8 () != 0;
-        this.numberOfKeygroups = disk.readInt8 ();
-        // program number
-        disk.readInt8 ();
-
-        for (int i = 0; i < 11; i++)
-            this.keyTemperament[i] = disk.readInt8 ();
-
-        this.fxOutput = disk.readInt8 () != 0;
-        this.modulationToPan = disk.readInt8 ();
-        this.stereoCoherence = disk.readInt8 () != 0;
-        this.lfoDesync = disk.readInt8 () != 0;
-        this.pitchLaw = disk.readInt8 ();
-        this.voiceReassign = disk.readInt8 ();
-        this.softpedToVolume = disk.readInt8 ();
-        this.softpedToAttack = disk.readInt8 ();
-        this.softpedToFilter = disk.readInt8 ();
-        this.softpedToTuneCents = disk.readInt8 ();
-        this.softpedToTuneSemitones = disk.readInt8 ();
-        this.keyToLFORate = disk.readInt8 ();
-        this.keyToLFODepth = disk.readInt8 ();
-        this.keyToLFODelay = disk.readInt8 ();
-        this.voiceOutputScale = disk.readInt8 ();
-        this.stereoOutputScale = disk.readInt8 ();
-
-        // Bytes 73-150 are not used, key-groups start at 150
+        this.readProgram (disk);
 
         // Read key-groups
         int headerSize = disk.isS3000 () ? 192 : 150;
@@ -233,6 +188,83 @@ public class AkaiProgram extends AkaiDiskElement
         }
 
         disk.setPos (tempPos, AkaiStreamWhence.START);
+    }
+
+
+    /**
+     * Set all key-groups.
+     * 
+     * @param keygroups The key-groups to set
+     */
+    public void setKeygroups (final List<AkaiKeygroup> keygroups)
+    {
+        this.keygroups = keygroups.toArray (new AkaiKeygroup [keygroups.size ()]);
+    }
+
+
+    private void readProgram (final IAkaiImage image) throws IOException
+    {
+        final byte progID = image.readInt8 ();
+        if (progID != AkaiDiskElement.AKAI_PROGRAM_ID)
+            throw new IOException ("Not a Akai Program.");
+
+        // key-group address
+        image.readInt16 ();
+
+        this.name = image.readText ();
+
+        this.midiProgramNumber = image.readInt8 ();
+        this.midiChannel = image.readInt8 ();
+        this.polyphony = image.readInt8 ();
+        this.priority = image.readInt8 ();
+        this.lowKey = image.readInt8 ();
+        this.highKey = image.readInt8 ();
+        this.octaveShift = image.readInt8 ();
+        this.auxOutputSelect = image.readInt8 ();
+        this.mixOutputSelect = image.readInt8 ();
+        this.mixPan = image.readInt8 ();
+        this.volume = image.readInt8 ();
+        this.velocityToVolume = image.readInt8 ();
+        this.keyToVolume = image.readInt8 ();
+        this.pressureToVolume = image.readInt8 ();
+        this.panLFORate = image.readInt8 ();
+        this.panLFODepth = image.readInt8 ();
+        this.panLFODelay = image.readInt8 ();
+        this.keyToPan = image.readInt8 ();
+        this.lfoRate = image.readInt8 ();
+        this.lfoDepth = image.readInt8 ();
+        this.lfoDelay = image.readInt8 ();
+        this.modulationToLFODepth = image.readInt8 ();
+        this.pressureToLFODepth = image.readInt8 ();
+        this.velocityToLFODepth = image.readInt8 ();
+        this.bendToPitch = image.readInt8 ();
+        this.pressureToPitch = image.readInt8 ();
+        this.keygroupCrossfade = image.readInt8 () != 0;
+        this.numberOfKeygroups = image.readInt8 ();
+        // program number
+        image.readInt8 ();
+
+        for (int i = 0; i < 11; i++)
+            this.keyTemperament[i] = image.readInt8 ();
+
+        this.fxOutput = image.readInt8 () != 0;
+        this.modulationToPan = image.readInt8 ();
+        this.stereoCoherence = image.readInt8 () != 0;
+        this.lfoDesync = image.readInt8 () != 0;
+        this.pitchLaw = image.readInt8 ();
+        this.voiceReassign = image.readInt8 ();
+        this.softpedToVolume = image.readInt8 ();
+        this.softpedToAttack = image.readInt8 ();
+        this.softpedToFilter = image.readInt8 ();
+        this.softpedToTuneCents = image.readInt8 ();
+        this.softpedToTuneSemitones = image.readInt8 ();
+        this.keyToLFORate = image.readInt8 ();
+        this.keyToLFODepth = image.readInt8 ();
+        this.keyToLFODelay = image.readInt8 ();
+        this.voiceOutputScale = image.readInt8 ();
+        this.stereoOutputScale = image.readInt8 ();
+
+        // Bytes 73-150/192 are not used, key-groups start at 150/192
     }
 
 
