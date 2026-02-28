@@ -5,6 +5,13 @@
 package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
 
 import java.io.IOException;
+import java.util.List;
+
+import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
+import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
+import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 
 
 /**
@@ -43,6 +50,7 @@ public class AkaiSample extends AkaiDiskElement
     private int                     samplingFrequency;
     private int                     numberOfSamples;
     private short []                samples;
+    private WavFileSampleData       wavFileSampleData;
 
 
     /**
@@ -100,6 +108,47 @@ public class AkaiSample extends AkaiDiskElement
         disk.setPos (this.imageOffset, AkaiStreamWhence.START);
         this.samples = new short [this.numberOfSamples];
         disk.readInt16 (this.samples, this.numberOfSamples);
+    }
+
+
+    /**
+     * Constructor.
+     * 
+     * @param sampleName The name of the sample
+     * @param wavFileSampleData The wave file / sample data
+     * @throws CompressionNotSupportedException Could not get the length of the sample
+     * @throws IOException Could not retrieve the WAV file
+     */
+    public AkaiSample (final String sampleName, final WavFileSampleData wavFileSampleData) throws CompressionNotSupportedException, IOException
+    {
+        this.wavFileSampleData = wavFileSampleData;
+        final WaveFile waveFile = wavFileSampleData.getWaveFile ();
+
+        final SampleChunk sampleChunk = waveFile.getSampleChunk ();
+        // Existence has been checked already
+
+        this.name = sampleName;
+        this.midiRootNote = (byte) sampleChunk.getMIDIUnityNoteRaw ();
+
+        this.tuneCents = (byte) Math.clamp (sampleChunk.getMIDIPitchFractionAsCents (), -50, 50);
+        this.tuneSemitones = 0;
+
+        this.startMarker = 0;
+        this.endMarker = waveFile.getDataChunk ().calculateLength (waveFile.getFormatChunk ()) - 1;
+
+        final List<SampleChunkLoop> sampleLoops = sampleChunk.getLoops ();
+        if (sampleLoops.isEmpty ())
+            return;
+
+        this.activeLoops = 1;
+        this.firstActiveLoop = 1;
+        this.loopMode = 1;
+
+        final SampleChunkLoop sampleChunkLoop = sampleLoops.get (0);
+        final int end = sampleChunkLoop.getEnd ();
+        this.loops[0] = new AkaiSampleLoop ();
+        this.loops[0].setEndMarker (end);
+        this.loops[0].setCoarseLength (end - sampleChunkLoop.getStart ());
     }
 
 
@@ -251,12 +300,23 @@ public class AkaiSample extends AkaiDiskElement
 
 
     /**
-     * Get all samples.
+     * Get all 16-bit samples.
      * 
      * @return All samples, the length matches the result of getNumberOfSamples()
      */
     public short [] getSamples ()
     {
         return this.samples;
+    }
+
+
+    /**
+     * Get the MESA WAV file.
+     * 
+     * @return The WAV file used by MESA
+     */
+    public WavFileSampleData getWavFileSampleData ()
+    {
+        return this.wavFileSampleData;
     }
 }

@@ -1,9 +1,11 @@
 # Changes
 
-## 16.2.0 (unreleased)
+## 16.2.0
 
+* Added support for reading Akai MESA (*.s3p)
 * Added support for reading Akai S1000/S3000 series images (*.iso)
 * Fixed: Gain could not be set below +0.125dB
+* Fixed: Reading broken WAV files could make ConvertWithMoss hang.
 * Ableton ADV, Sf2, TX16W, Yamaha YSFC
   * Fixed: Negative fine tuning values could be off by 1 when written.
 * Akai AKP, MPC XPJ/XTY, TAL Sampler, TX16W

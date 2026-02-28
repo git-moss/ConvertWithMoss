@@ -21,6 +21,15 @@ public class AkaiSampleLoop
 
 
     /**
+     * Default constructor.
+     */
+    public AkaiSampleLoop ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Constructor.
      * 
      * @param disk The disk to read from
@@ -40,9 +49,20 @@ public class AkaiSampleLoop
      * 
      * @return The position which marks the end of the loop region
      */
-    public int getMarker ()
+    public int getEndMarker ()
     {
         return this.marker;
+    }
+
+
+    /**
+     * Set the end of the looped region (not the start!).
+     * 
+     * @param endMarker The position which marks the end of the loop region
+     */
+    public void setEndMarker (final int endMarker)
+    {
+        this.marker = endMarker;
     }
 
 
@@ -65,6 +85,17 @@ public class AkaiSampleLoop
     public int getCoarseLength ()
     {
         return this.coarseLength;
+    }
+
+
+    /**
+     * Set the length of the loop.
+     * 
+     * @param length The length of the loop
+     */
+    public void setCoarseLength (final int length)
+    {
+        this.coarseLength = length;
     }
 
 

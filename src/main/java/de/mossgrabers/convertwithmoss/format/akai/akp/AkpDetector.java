@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s5000;
+package de.mossgrabers.convertwithmoss.format.akai.akp;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +22,7 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.convertwithmoss.format.akai.s5000.riff.AkmPart;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkmPart;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 

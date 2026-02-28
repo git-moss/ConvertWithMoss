@@ -18,7 +18,7 @@ import java.util.List;
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiDiskImage implements AutoCloseable
+public class AkaiDiskImage implements AutoCloseable, IAkaiImage
 {
     private static final int          MAX_TEXT_LENGTH         = 12;
     private static final int          DISK_CLUSTER_SIZE       = 61440;
@@ -105,38 +105,35 @@ public class AkaiDiskImage implements AutoCloseable
     }
 
 
-    /**
-     * Get the number of available bytes from the current read position.
-     *
-     * @return The number of available bytes
-     */
+    /** {@inheritDoc} */
+    @Override
     public int available ()
     {
         return this.size - this.pos;
     }
 
 
-    /**
-     * Reads a text in 12-byte Akai format.
-     *
-     * @return The read text, trimmed ASCII
-     * @throws IOException Could not read the text
-     */
+    /** {@inheritDoc} */
+    @Override
     public String readText () throws IOException
     {
-        final byte [] buffer = new byte [MAX_TEXT_LENGTH + 1];
-        this.read (buffer, MAX_TEXT_LENGTH, 1);
-        akaiToAscii (buffer, MAX_TEXT_LENGTH);
-        return new String (buffer, 0, MAX_TEXT_LENGTH).trim ();
+        return this.readText (MAX_TEXT_LENGTH);
     }
 
 
-    /**
-     * Read single 8-bit value.
-     *
-     * @return The value
-     * @throws IOException Could not read the value
-     */
+    /** {@inheritDoc} */
+    @Override
+    public String readText (final int length) throws IOException
+    {
+        final byte [] buffer = new byte [length];
+        this.read (buffer, length, 1);
+        akaiToAscii (buffer, length);
+        return new String (buffer, 0, length).trim ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public byte readInt8 () throws IOException
     {
         final byte [] word = new byte [1];
@@ -145,12 +142,16 @@ public class AkaiDiskImage implements AutoCloseable
     }
 
 
-    /**
-     * Read single 16-bit value (little-endian).
-     *
-     * @return The value
-     * @throws IOException Could not read the value
-     */
+    /** {@inheritDoc} */
+    @Override
+    public void readInt8 (final byte [] data, final int wordCount) throws IOException
+    {
+        this.read (data, wordCount, 1);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public short readInt16 () throws IOException
     {
         final byte [] word = new byte [2];
@@ -159,44 +160,22 @@ public class AkaiDiskImage implements AutoCloseable
     }
 
 
-    /**
-     * Read single 32-bit value (little-endian).
-     *
-     * @return The value
-     * @throws IOException Could not read the value
-     */
+    /** {@inheritDoc} */
+    @Override
+    public void readInt16 (final short [] data, final int wordCount) throws IOException
+    {
+        for (int i = 0; i < wordCount; i++)
+            data[i] = this.readInt16 ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int readInt32 () throws IOException
     {
         final byte [] word = new byte [4];
         this.read (word, 1, 4);
         return ByteBuffer.wrap (word).order (ByteOrder.LITTLE_ENDIAN).getInt ();
-    }
-
-
-    /**
-     * Reads an array of 8-bit values.
-     *
-     * @param data The array in which to store the read data
-     * @param wordCount Number of words to read
-     * @throws IOException Could not read the value
-     */
-    public void readInt8 (final byte [] data, final int wordCount) throws IOException
-    {
-        this.read (data, wordCount, 1);
-    }
-
-
-    /**
-     * Read array of 16-bit values (little-endian).
-     *
-     * @param data The array in which to store the read data
-     * @param wordCount Number of words to read
-     * @throws IOException Could not read the value
-     */
-    public void readInt16 (final short [] data, final int wordCount) throws IOException
-    {
-        for (int i = 0; i < wordCount; i++)
-            data[i] = this.readInt16 ();
     }
 
 
@@ -242,23 +221,6 @@ public class AkaiDiskImage implements AutoCloseable
     public List<AkaiPartition> getPartitions ()
     {
         return this.partitions;
-    }
-
-
-    private static void akaiToAscii (final byte [] buffer, final int length)
-    {
-        for (int i = 0; i < length; i++)
-        {
-            final int b = buffer[i] & 0xFF;
-            if (b >= 0 && b <= 9)
-                buffer[i] = (byte) (b + 48);
-            else if (b == 10)
-                buffer[i] = 32;
-            else if (b >= 11 && b <= 36)
-                buffer[i] = (byte) (64 + b - 10);
-            else
-                buffer[i] = 32;
-        }
     }
 
 

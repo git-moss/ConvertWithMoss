@@ -40,7 +40,7 @@ public class AkaiKeygroupSample extends AkaiDiskElement
      * @param disk The disk to read from
      * @throws IOException Could not read the key-group
      */
-    public AkaiKeygroupSample (final AkaiDiskImage disk) throws IOException
+    public AkaiKeygroupSample (final IAkaiImage disk) throws IOException
     {
         this.name = disk.readText ();
 

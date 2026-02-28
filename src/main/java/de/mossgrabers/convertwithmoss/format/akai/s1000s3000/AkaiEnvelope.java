@@ -42,7 +42,7 @@ public class AkaiEnvelope
      * @param disk The Akai disk from which to read
      * @throws IOException Could not read the envelope
      */
-    public AkaiEnvelope (final AkaiDiskImage disk) throws IOException
+    public AkaiEnvelope (final IAkaiImage disk) throws IOException
     {
         this.attack = disk.readInt8 ();
         this.decay = disk.readInt8 ();
