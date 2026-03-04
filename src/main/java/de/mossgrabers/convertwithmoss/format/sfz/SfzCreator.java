@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -47,7 +46,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
  */
 public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 {
-    private static final AudioFileFormat.Type      TARGET_FORMAT   = new AudioFileFormat.Type ("FLAC", "flac");
     private static final char                      LINE_FEED       = '\n';
     private static final String                    SFZ_HEADER      = """
             /////////////////////////////////////////////////////////////////////////////
@@ -121,7 +119,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (this.settingsConfiguration.convertToFlac ())
             try
             {
-                this.writeSamples (sampleFolder, multisampleSource, TARGET_FORMAT);
+                this.writeFlacSamples (sampleFolder, multisampleSource);
             }
             catch (final UnsupportedAudioFileException ex)
             {

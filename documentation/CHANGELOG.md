@@ -1,5 +1,11 @@
 # Changes
 
+## 16.5.0 (unreleased)
+
+* Added support for discoDSP Bliss
+* Kontakt 5+
+  * Fixed: Hold and decay times were reversed.
+
 ## 16.2.0
 
 * Added support for reading Akai MESA (*.s3p)

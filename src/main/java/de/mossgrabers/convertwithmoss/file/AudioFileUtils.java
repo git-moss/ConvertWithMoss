@@ -8,6 +8,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -341,8 +342,24 @@ public final class AudioFileUtils
      */
     public static void decompressToWav (final File inputFile, final OutputStream outputStream) throws IOException
     {
+        try (final FileInputStream fileInputStream = new FileInputStream (inputFile))
+        {
+            decompressToWav (fileInputStream, outputStream);
+        }
+    }
+
+
+    /**
+     * De-compresses the input file and writes audio data in WAV format to the given output stream.
+     *
+     * @param inputStream The input stream to convert
+     * @param outputStream The output stream to write to
+     * @throws IOException Could not convert or write the file
+     */
+    public static void decompressToWav (final InputStream inputStream, final OutputStream outputStream) throws IOException
+    {
         // The conversion needs to be a 2 step process to get the length of the data
-        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputFile))
+        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputStream))
         {
             final AudioFormat sourceFormat = audioInputStream.getFormat ();
             final int channels = sourceFormat.getChannels ();

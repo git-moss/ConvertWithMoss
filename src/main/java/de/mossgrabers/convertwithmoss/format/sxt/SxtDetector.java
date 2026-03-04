@@ -82,21 +82,22 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
      * Load and parse the SXT file.
      *
      * @param in The input stream to read from
-     * @param file The source file
+     * @param sourceFile The source file
      * @return The parsed multi-sample source
      * @throws FormatException Error in the format of the file
      * @throws IOException Could not read from the file
      */
-    private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws FormatException, IOException
+    private List<IMultisampleSource> parseFile (final InputStream in, final File sourceFile) throws FormatException, IOException
     {
         final IffChunk iffChunk = IffFile.readChunk (in);
         StreamUtils.checkTag (SxtChunkConstants.PATCH, iffChunk.getId ());
 
-        final File parentFile = file.getParentFile ();
-        final String name = FileUtils.getNameWithoutType (file);
-        final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+        final File parentFile = sourceFile.getParentFile ();
+        final String name = FileUtils.getNameWithoutType (sourceFile);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
 
+        final IMetadata metadata = multisampleSource.getMetadata ();
         try (final InputStream chunkStream = iffChunk.streamData ())
         {
             File previousFolder = null;
@@ -129,7 +130,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
                             break;
 
                         case SxtChunkConstants.AUTHOR:
-                            parseAuthor (multisampleSource.getMetadata (), childChunkStream);
+                            parseAuthor (metadata, childChunkStream);
                             break;
 
                         case SxtChunkConstants.PARAMETERS:
@@ -148,7 +149,8 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
             }
         }
 
-        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
+        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
+        this.updateCreationDateTime (metadata, sourceFile);
         return Collections.singletonList (multisampleSource);
     }
 

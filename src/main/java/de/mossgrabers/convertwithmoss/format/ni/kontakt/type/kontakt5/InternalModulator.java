@@ -433,8 +433,8 @@ public class InternalModulator
 
             this.curve = StreamUtils.readFloatLE (in);
             this.attack = StreamUtils.readFloatLE (in);
-            this.hold = StreamUtils.readFloatLE (in);
             this.decay = StreamUtils.readFloatLE (in);
+            this.hold = StreamUtils.readFloatLE (in);
             this.release = StreamUtils.readFloatLE (in);
             this.sustain = StreamUtils.readFloatLE (in);
             this.ahdOnly = in.read () > 0;

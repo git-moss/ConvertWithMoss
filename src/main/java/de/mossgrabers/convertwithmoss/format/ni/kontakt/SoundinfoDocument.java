@@ -70,13 +70,14 @@ public class SoundinfoDocument
 
         // Read the attribute tags
         final Element attributesElement = XMLUtils.getChildElementByName (top, "attributes");
-        if (attributesElement != null)
-            for (final Element attributeElement: XMLUtils.getChildElementsByName (attributesElement, "attribute", false))
-            {
-                final String value = XMLUtils.read (attributeElement, "value");
-                if (value != null && !value.isBlank () && !IGNORE_TAGS.contains (value))
-                    this.categories.add (value);
-            }
+        if (attributesElement == null)
+            return;
+        for (final Element attributeElement: XMLUtils.getChildElementsByName (attributesElement, "attribute", false))
+        {
+            final String value = XMLUtils.read (attributeElement, "value");
+            if (value != null && !value.isBlank () && !IGNORE_TAGS.contains (value))
+                this.categories.add (value);
+        }
     }
 
 

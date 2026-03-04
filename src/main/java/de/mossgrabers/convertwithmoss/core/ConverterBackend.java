@@ -29,6 +29,8 @@ import de.mossgrabers.convertwithmoss.format.akai.mpc.xty.XtyDetector;
 import de.mossgrabers.convertwithmoss.format.akai.s3p.AkaiS3pDetector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.bliss.BlissCreator;
+import de.mossgrabers.convertwithmoss.format.bliss.BlissDetector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
@@ -113,6 +115,7 @@ public class ConverterBackend
             new XtyDetector (notifier),
             new AkaiS3pDetector (notifier),
             new BitwigMultisampleDetector (notifier),
+            new BlissDetector (notifier),
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),
             new DistingExDetector (notifier),
@@ -138,6 +141,7 @@ public class ConverterBackend
             new AbletonCreator (notifier),
             new MPCKeygroupCreator (notifier),
             new BitwigMultisampleCreator (notifier),
+            new BlissCreator (notifier),
             new TX16WxCreator (notifier),
             new DecentSamplerCreator (notifier),
             new DistingExCreator (notifier),

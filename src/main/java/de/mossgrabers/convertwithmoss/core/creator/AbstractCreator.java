@@ -4,25 +4,34 @@
 
 package de.mossgrabers.convertwithmoss.core.creator;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.CRC32;
+import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 
 import org.w3c.dom.Document;
 
@@ -39,6 +48,9 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -52,6 +64,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public abstract class AbstractCreator<T extends ICoreTaskSettings> extends AbstractCoreTask<T> implements ICreator<T>
 {
+    protected static final AudioFileFormat.Type   FLAC_TARGET_FORMAT                 = new AudioFileFormat.Type ("FLAC", "flac");
     /** The post-fix to use for the samples folder. */
     protected static final String                 FOLDER_POSTFIX                     = " Samples";
 
@@ -381,15 +394,14 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample
-     * @param targetFormat The destination audio format
      * @return The written files
      * @throws IOException Could not store the samples
      * @throws UnsupportedAudioFileException The audio format is not supported
      */
-    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final AudioFileFormat.Type targetFormat) throws IOException, UnsupportedAudioFileException
+    protected List<File> writeFlacSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException, UnsupportedAudioFileException
     {
         final List<File> writtenFiles = new ArrayList<> ();
-        final String extension = "." + targetFormat.getExtension ();
+        final String extension = "." + FLAC_TARGET_FORMAT.getExtension ();
 
         int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
@@ -411,7 +423,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                     this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
                 else
                 {
-                    AudioFileUtils.compressToFLAC (sampleData, targetFormat, file);
+                    AudioFileUtils.compressToFLAC (sampleData, FLAC_TARGET_FORMAT, file);
                     writtenFiles.add (file);
                 }
             }
@@ -643,5 +655,397 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         zipOutputStream.putNextEntry (entry);
         zipOutputStream.write (data);
         zipOutputStream.closeEntry ();
+    }
+
+
+    /**
+     * Adds a sample file to the uncompressed ZIP output stream.
+     *
+     * @param alreadyStored Set with the already files to prevent trying to add duplicated files
+     * @param zipOutputStream The ZIP output stream
+     * @param multiSampleSource The multi-sample source
+     * @param zoneIndex The index of the zone
+     * @param zone The zone to add
+     * @param path Optional path (may be null), must not end with a slash
+     * @throws IOException Could not read the file
+     */
+    protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final IMultisampleSource multiSampleSource, final int zoneIndex, final ISampleZone zone, final String path) throws IOException
+    {
+        final String name = checkSampleName (alreadyStored, zoneIndex, zone, path);
+        if (name == null)
+            return;
+
+        final ISampleData sampleData = zone.getSampleData ();
+        if (sampleData == null)
+        {
+            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
+            this.notifier.logText ("\n");
+            return;
+        }
+
+        final CRC32 crc = new CRC32 ();
+        try (final ByteArrayOutputStream bout = new ByteArrayOutputStream (); final OutputStream checkedOut = new CheckedOutputStream (bout, crc))
+        {
+            if (this.requiresRewrite (DESTINATION_FORMAT))
+                this.rewriteFile (multiSampleSource, zone, checkedOut, DESTINATION_FORMAT, false);
+            else
+                sampleData.writeSample (checkedOut);
+            putUncompressedEntry (zipOutputStream, name, bout.toByteArray (), crc, multiSampleSource.getMetadata ().getCreationDateTime ());
+        }
+    }
+
+
+    /**
+     * Add all samples from all groups in the given uncompressed ZIP output stream.
+     *
+     * @param zipOutputStream The ZIP output stream to which to add the samples
+     * @param relativeFolderName The relative folder under which to store the file in the ZIP
+     * @param multisampleSource The multi-sample
+     * @throws IOException Could not store the samples
+     */
+    protected void storeSampleFiles (final ZipOutputStream zipOutputStream, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
+    {
+        int outputCount = 0;
+        final Set<String> alreadyStored = new HashSet<> ();
+        int zoneIndex = 0;
+        for (final IGroup group: multisampleSource.getGroups ())
+        {
+
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                this.notifyProgress ();
+                outputCount++;
+                this.notifyNewline (outputCount);
+                this.storeSamplefile (alreadyStored, zipOutputStream, multisampleSource, zoneIndex, zone, relativeFolderName);
+                zoneIndex++;
+            }
+        }
+    }
+
+
+    /**
+     * Writes all samples in WAV format from all groups into the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multi-sample
+     * @return The written files
+     * @throws IOException Could not store the samples
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException
+    {
+        return this.writeSamples (sampleFolder, multisampleSource, DESTINATION_FORMAT);
+    }
+
+
+    /**
+     * Writes all samples in WAV format from all groups into the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multi-sample
+     * @param destinationFormat The destination audio format
+     * @return The written files
+     * @throws IOException Could not store the samples
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final DestinationAudioFormat destinationFormat) throws IOException
+    {
+        return this.writeSamples (sampleFolder, multisampleSource, ".wav", destinationFormat, false);
+    }
+
+
+    /**
+     * Writes all samples in WAV format from all groups into the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multi-sample
+     * @param destinationFormat The destination audio format
+     * @param trim Trim the sample from zone start to end if enabled
+     * @return The written files
+     * @throws IOException Could not store the samples
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
+    {
+        return this.writeSamples (sampleFolder, multisampleSource, ".wav", destinationFormat, trim);
+    }
+
+
+    /**
+     * Writes all samples in WAV format from all groups into the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multi-sample
+     * @param fileEnding The suffix to use for the file
+     * @return The written files
+     * @throws IOException Could not store the samples
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final String fileEnding) throws IOException
+    {
+        return this.writeSamples (sampleFolder, multisampleSource, fileEnding, DESTINATION_FORMAT, false);
+    }
+
+
+    /**
+     * Writes all samples in WAV format from all groups into the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multi-sample
+     * @param fileEnding The suffix to use for the file
+     * @param destinationFormat The destination audio format
+     * @param trim Trim the sample from zone start to end if enabled
+     * @return The written files
+     * @throws IOException Could not store the samples
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final String fileEnding, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
+    {
+        final List<File> writtenFiles = new ArrayList<> ();
+
+        int outputCount = 0;
+        for (final IGroup group: multisampleSource.getGroups ())
+        {
+            final List<ISampleZone> sampleZones = group.getSampleZones ();
+            for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
+            {
+                if (this.isCancelled ())
+                    return writtenFiles;
+
+                final ISampleZone zone = sampleZones.get (zoneIndex);
+
+                final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
+                try (final FileOutputStream fos = new FileOutputStream (file))
+                {
+                    this.notifyProgress ();
+                    outputCount++;
+                    this.notifyNewline (outputCount);
+
+                    if (this.requiresRewrite (destinationFormat) || trim)
+                        this.rewriteFile (multisampleSource, zone, fos, destinationFormat, trim);
+                    else
+                    {
+                        final ISampleData sampleData = zone.getSampleData ();
+                        if (sampleData == null)
+                        {
+                            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
+                            this.notifier.logText ("\n");
+                        }
+                        else
+                            sampleData.writeSample (fos);
+                    }
+
+                    writtenFiles.add (file);
+                }
+                catch (final NoSuchFileException | FileNotFoundException ex)
+                {
+                    this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+                }
+            }
+        }
+        this.notifyNewline ();
+
+        return writtenFiles;
+    }
+
+
+    /**
+     * Check if the sample file needs to be rewritten.
+     * 
+     * @param destinationFormat The expected destination format for the sample
+     * @return True if the file needs to be written again
+     */
+    protected boolean requiresRewrite (final DestinationAudioFormat destinationFormat)
+    {
+        // Overwrite to support
+        return false;
+    }
+
+
+    /**
+     * Writes the sample of the given zone and updates/adds their instrument and sample chunks.
+     *
+     * @param multisampleSource The multi-sample source
+     * @param zone The zone from which to take the data to store into the chunks
+     * @param outputStream Where to write the result
+     * @param destinationFormat The destination audio format
+     * @param trim Trim the sample from zone start to end if enabled
+     * @throws IOException Could not store the samples
+     */
+    protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
+    {
+        // Overwrite to implement rewriting
+    }
+
+
+    /**
+     * Add all samples from all groups in the given compressed ZIP output stream.
+     *
+     * @param zipOutputStream The ZIP output stream to which to add the samples
+     * @param relativeFolderName The relative folder under which to store the file in the ZIP
+     * @param multisampleSource The multi-sample
+     * @throws IOException Could not store the samples
+     */
+    protected void zipSampleFiles (final ZipOutputStream zipOutputStream, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
+    {
+        int outputCount = 0;
+        final Set<String> alreadyStored = new HashSet<> ();
+        int zoneIndex = 0;
+        for (final IGroup group: multisampleSource.getGroups ())
+        {
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                this.notifyProgress ();
+                outputCount++;
+                this.notifyNewline (outputCount);
+                this.zipSamplefile (alreadyStored, zipOutputStream, zoneIndex, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
+                zoneIndex++;
+            }
+        }
+        this.notifyNewline ();
+    }
+
+
+    /**
+     * Adds a sample file to the compressed ZIP output stream.
+     *
+     * @param alreadyStored Set with the already files to prevent trying to add duplicated files
+     * @param zipOutputStream The ZIP output stream
+     * @param zoneIndex The index of the zone
+     * @param zone The zone to add
+     * @param dateTime The date and time to set as the creation date of the file entry
+     * @throws IOException Could not read the file
+     */
+    protected void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final int zoneIndex, final ISampleZone zone, final Date dateTime) throws IOException
+    {
+        this.zipSamplefile (alreadyStored, zipOutputStream, zoneIndex, zone, dateTime, null);
+    }
+
+
+    /**
+     * Adds a sample file to the compressed ZIP output stream.
+     *
+     * @param alreadyStored Set with the already files to prevent trying to add duplicated files
+     * @param zipOutputStream The ZIP output stream
+     * @param zoneIndex The index of the zone
+     * @param zone The zone to add
+     * @param dateTime The date and time to set as the creation date of the file entry
+     * @param path Optional path (may be null), must not end with a slash
+     * @throws IOException Could not read the file
+     */
+    protected void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final int zoneIndex, final ISampleZone zone, final Date dateTime, final String path) throws IOException
+    {
+        final String name = checkSampleName (alreadyStored, zoneIndex, zone, path);
+        if (name == null)
+            return;
+
+        final ZipEntry entry = new ZipEntry (name);
+        if (dateTime != null)
+        {
+            final long millis = dateTime.getTime ();
+            entry.setCreationTime (FileTime.fromMillis (millis));
+            entry.setTime (millis);
+        }
+
+        zipOutputStream.putNextEntry (entry);
+        final ISampleData sampleData = zone.getSampleData ();
+        if (sampleData == null)
+        {
+            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
+            this.notifier.logText ("\n");
+        }
+        else
+            sampleData.writeSample (zipOutputStream);
+        zipOutputStream.closeEntry ();
+    }
+
+
+    /**
+     * Trims the data of the wave file to the part from the zone start and zone end. The zone is
+     * updated accordingly.
+     *
+     * @param wavFile The WAV file to trim
+     * @param zone The zone
+     */
+    protected static void trimStartToEnd (final WaveFile wavFile, final ISampleZone zone)
+    {
+        final FormatChunk formatChunk = wavFile.getFormatChunk ();
+
+        // Create the truncated data array
+        final DataChunk dataChunk = wavFile.getDataChunk ();
+        final byte [] data = dataChunk.getData ();
+        final int start = zone.getStart ();
+        final int stop = zone.getStop ();
+        final int lengthInSamples = stop - start;
+        final int numBytesPerSample = formatChunk.calculateBytesPerSample ();
+        final int startByte = start * numBytesPerSample;
+        final int newLength = lengthInSamples * numBytesPerSample;
+        final byte [] truncatedData = new byte [newLength];
+        System.arraycopy (data, startByte, truncatedData, 0, Math.min (newLength, data.length - startByte));
+
+        // Replace the previous data chunk
+        final DataChunk truncatedDataChunk = new DataChunk (formatChunk, lengthInSamples);
+        truncatedDataChunk.setData (truncatedData);
+        wavFile.setDataChunk (truncatedDataChunk);
+
+        // Update the zone values - necessary for follow-up instrument/sample chunks!
+        zone.setStart (0);
+        zone.setStop (lengthInSamples);
+        final List<ISampleLoop> loops = zone.getLoops ();
+        if (!loops.isEmpty ())
+        {
+            final ISampleLoop loop = loops.get (0);
+            loop.setStart (Math.max (loop.getStart () - start, 0));
+            loop.setEnd (Math.min (loop.getEnd () - start, lengthInSamples));
+        }
+    }
+
+
+    /**
+     * Creates an optional string from the XML document.
+     *
+     * @param document The XML document
+     * @return The optional string; empty if an error occurs
+     */
+    protected Optional<String> createXMLString (final Document document)
+    {
+        try
+        {
+            return Optional.of (XMLUtils.toString (document));
+        }
+        catch (final TransformerException ex)
+        {
+            this.notifier.logError (ex);
+            return Optional.empty ();
+        }
+    }
+
+
+    /**
+     * Creates full path from the sample name and relative path and adding the prefix path.
+     *
+     * @param alreadyStored All paths already added to the ZIP file
+     * @param zoneIndex The index of the zone
+     * @param zone The sample zone to check
+     * @param path The prefix path
+     * @return The full path or null if already added to the ZIP
+     */
+    protected String checkSampleName (final Set<String> alreadyStored, final int zoneIndex, final ISampleZone zone, final String path)
+    {
+        String filename = createFileName (zoneIndex, zone);
+        if (path != null)
+            filename = path + FORWARD_SLASH + filename;
+        if (alreadyStored.contains (filename))
+            return null;
+        alreadyStored.add (filename);
+        return filename;
+    }
+
+
+    /**
+     * Create the name of the sample (with the ending).
+     * 
+     * @param zoneIndex The index of the zone
+     * @param zone The zone for which to create the full name
+     * @return The full sample name
+     */
+    protected String createFileName (final int zoneIndex, final ISampleZone zone)
+    {
+        return zone.getName ();
     }
 }

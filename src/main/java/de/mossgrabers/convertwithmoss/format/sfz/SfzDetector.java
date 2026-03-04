@@ -192,11 +192,11 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
     /**
      * Load and parse the metadata description file.
      *
-     * @param multiSampleFile The file
+     * @param sourceFile The file
      * @param content The content to parse
      * @return The parsed multi-sample source
      */
-    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String content)
+    private List<IMultisampleSource> parseMetadataFile (final File sourceFile, final String content)
     {
         final List<Pair<String, Map<String, String>>> result = parseSfz (content);
         if (result.isEmpty ())
@@ -208,11 +208,11 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (this.settingsConfiguration.logUnsupportedOpcodes ())
             this.printUnsupportedOpcodes (this.diffOpcodes ());
 
-        String name = FileUtils.getNameWithoutType (multiSampleFile);
+        String name = FileUtils.getNameWithoutType (sourceFile);
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
 
-        final List<IGroup> groups = this.parseGroups (multiSampleFile.getParentFile (), result);
+        final List<IGroup> groups = this.parseGroups (sourceFile.getParentFile (), result);
         if (groups.isEmpty ())
         {
             this.notifier.logError ("IDS_ERR_COULD_NOT_DETECT_MULTI_SAMPLE");
@@ -223,10 +223,11 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (globalName.isPresent ())
             name = globalName.get ();
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.createMetadata (metadata, this.getFirstSample (groups), parts);
+        this.updateCreationDateTime (metadata, sourceFile);
 
         multisampleSource.setGroups (groups);
         return Collections.singletonList (multisampleSource);

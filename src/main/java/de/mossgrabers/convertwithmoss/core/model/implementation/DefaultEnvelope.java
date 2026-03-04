@@ -121,7 +121,7 @@ public class DefaultEnvelope implements IEnvelope
      */
     public static IEnvelope getDefaultEnvelope (final String category)
     {
-        if (category == null)
+        if (category == null || category.isBlank ())
             return ENVELOPE_PLUCKED;
 
         final IEnvelope envelope = DEFAULT_ENVELOPES.get (category);
