@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -111,12 +112,12 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Process the TAL Sampler metadata file and the related wave files.
      *
-     * @param multiSampleFile The multi-sample file
+     * @param sourceFile The multi-sample file
      * @param document The metadata XML document
      * @return The parsed multi-sample source
      * @throws IOException Could not parse the description
      */
-    private List<IMultisampleSource> parseDescription (final File multiSampleFile, final Document document) throws IOException
+    private List<IMultisampleSource> parseDescription (final File sourceFile, final Document document) throws IOException
     {
         final Element top = document.getDocumentElement ();
 
@@ -142,10 +143,10 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_NO_NAME");
                 continue;
             }
-            final File parentFolder = multiSampleFile.getParentFile ();
+            final File parentFolder = sourceFile.getParentFile ();
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, name);
 
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
 
             // Parse all groups
             final List<IGroup> groups = new ArrayList<> (4);
@@ -169,7 +170,9 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                     }
                 }
 
-            this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts);
+            final IMetadata metadata = multisampleSource.getMetadata ();
+            this.createMetadata (metadata, this.getFirstSample (groups), parts);
+            this.updateCreationDateTime (metadata, sourceFile);
             multisampleSource.setGroups (groups);
 
             final Optional<IFilter> optFilter = parseModulationAttributes (programElement, multisampleSource);

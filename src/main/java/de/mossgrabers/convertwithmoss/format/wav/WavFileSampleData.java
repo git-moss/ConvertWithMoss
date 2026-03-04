@@ -70,6 +70,29 @@ public class WavFileSampleData extends AbstractFileSampleData
     /**
      * Constructor.
      *
+     * @param waveFile The wave file to encapsulate
+     * @throws IOException Could not read the file
+     */
+    public WavFileSampleData (final WaveFile waveFile) throws IOException
+    {
+        this.waveFile = waveFile;
+        try
+        {
+            final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
+            this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), this.waveFile.getDataChunk ().calculateLength (formatChunk));
+        }
+        catch (final CompressionNotSupportedException ex)
+        {
+            throw new IOException (ex);
+        }
+
+        this.hasWavSourceFile = false;
+    }
+
+
+    /**
+     * Constructor.
+     *
      * @param file The file where the sample is stored
      * @throws IOException Could not read the file
      */

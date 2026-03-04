@@ -7,12 +7,8 @@ package de.mossgrabers.convertwithmoss.format.bitwig;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -21,7 +17,6 @@ import java.util.zip.ZipFile;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -147,62 +142,37 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.parseMetadata (top, metadata);
-
-        try
-        {
-            final BasicFileAttributes attrs = Files.readAttributes (multiSampleFile.toPath (), BasicFileAttributes.class);
-            final FileTime creationTime = attrs.creationTime ();
-            final FileTime modifiedTime = attrs.lastModifiedTime ();
-            final long creationTimeMillis = creationTime.toMillis ();
-            final long modifiedTimeMillis = modifiedTime.toMillis ();
-            metadata.setCreationDateTime (new Date (creationTimeMillis < modifiedTimeMillis ? creationTimeMillis : modifiedTimeMillis));
-        }
-        catch (final IOException ex)
-        {
-            metadata.setCreationDateTime (new Date ());
-        }
+        this.updateCreationDateTime (metadata, multiSampleFile);
 
         // Parse all groups
         final Map<Integer, IGroup> indexedGroups = new TreeMap<> ();
         int groupCounter = 0;
-        for (final Node groupNode: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.GROUP))
-            if (groupNode instanceof final Element groupElement)
-            {
-                this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.GROUP));
+        for (final Element groupElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.GROUP))
+        {
+            this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.GROUP));
 
-                final String k = groupElement.getAttribute ("name");
-                final String groupName = k.isBlank () ? "Group " + (groupCounter + 1) : k;
-                indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
-                groupCounter++;
-            }
-            else
-            {
-                this.notifier.logError (ERR_BAD_METADATA_FILE);
-                return Collections.emptyList ();
-            }
+            final String k = groupElement.getAttribute ("name");
+            final String groupName = k.isBlank () ? "Group " + (groupCounter + 1) : k;
+            indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
+            groupCounter++;
+        }
         // Additional group for potentially un-grouped samples
         indexedGroups.put (Integer.valueOf (-1), new DefaultGroup ());
 
         // Parse (deprecated) layer tag
-        for (final Node layerNode: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.LAYER))
-            if (layerNode instanceof final Element layerElement)
-            {
-                this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LAYER));
+        for (final Element layerElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.LAYER))
+        {
+            this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LAYER));
 
-                final String k = layerElement.getAttribute ("name");
-                final String groupName = k == null || k.isBlank () ? "Group " + (groupCounter + 1) : k;
-                indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
-                groupCounter++;
+            final String k = layerElement.getAttribute ("name");
+            final String groupName = k == null || k.isBlank () ? "Group " + (groupCounter + 1) : k;
+            indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
+            groupCounter++;
 
-                // Parse all samples of the layer
-                for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, BitwigMultisampleTag.SAMPLE, false))
-                    this.parseSample (multiSampleFile, indexedGroups, sampleElement);
-            }
-            else
-            {
-                this.notifier.logError (ERR_BAD_METADATA_FILE);
-                return Collections.emptyList ();
-            }
+            // Parse all samples of the layer
+            for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, BitwigMultisampleTag.SAMPLE, false))
+                this.parseSample (multiSampleFile, indexedGroups, sampleElement);
+        }
 
         // Parse all top level samples
         for (final Element sampleElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.SAMPLE, false))
@@ -268,7 +238,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
     /**
      * Parse the sample information.
      *
-     * @param zipFile The multisample ZIP file
+     * @param zipFile The multi-sample ZIP file
      * @param indexedGroups The indexed groups
      * @param sampleElement The XML sample element
      */

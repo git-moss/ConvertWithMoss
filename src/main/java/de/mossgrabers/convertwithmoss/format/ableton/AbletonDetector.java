@@ -172,24 +172,25 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Parse an Ableton preset XML document with a Simpler or Sampler device.
      *
-     * @param multiSampleFile The multi-sample source file
+     * @param sourceFile The multi-sample source file
      * @param deviceElement The device element
      * @param rootPath The root path where the samples are located
      * @param creator The creator value
      * @return The parse multi-sample source
      * @throws IOException Could not parse the document
      */
-    private IMultisampleSource parseSampler (final File multiSampleFile, final Element deviceElement, final File rootPath, final String creator) throws IOException
+    private IMultisampleSource parseSampler (final File sourceFile, final Element deviceElement, final File rootPath, final String creator) throws IOException
     {
-        final String name = FileUtils.getNameWithoutType (multiSampleFile);
+        final String name = FileUtils.getNameWithoutType (sourceFile);
 
-        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
         final IMetadata metadata = multisampleSource.getMetadata ();
         parseMetadata (deviceElement, metadata, creator);
 
         this.parseMultiSample (rootPath, multisampleSource, deviceElement);
         this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
+        this.updateCreationDateTime (metadata, sourceFile);
         return multisampleSource;
     }
 

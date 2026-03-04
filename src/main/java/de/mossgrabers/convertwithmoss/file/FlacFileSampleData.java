@@ -6,7 +6,9 @@ package de.mossgrabers.convertwithmoss.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.zip.ZipFile;
 
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -32,11 +34,37 @@ public class FlacFileSampleData extends AbstractFileSampleData
     }
 
 
+    /**
+     * Constructor for a sample stored in a ZIP file.
+     *
+     * @param zipFile The ZIP file which contains the WAV files
+     * @param zipEntry The relative path in the ZIP where the file is stored
+     * @throws IOException Could not read the file
+     */
+    public FlacFileSampleData (final File zipFile, final File zipEntry) throws IOException
+    {
+        super (zipFile, zipEntry);
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public void writeSample (final OutputStream outputStream) throws IOException
     {
-        AudioFileUtils.decompressToWav (this.sampleFile, outputStream);
+        if (this.zipFile == null)
+        {
+            AudioFileUtils.decompressToWav (this.sampleFile, outputStream);
+            return;
+        }
+
+        try (final ZipFile zf = new ZipFile (this.zipFile); final InputStream in = zf.getInputStream (this.getHarmonizedZipEntry (zf)))
+        {
+            AudioFileUtils.decompressToWav (in, outputStream);
+        }
+        catch (final RuntimeException ex)
+        {
+            throw new IOException (ex);
+        }
     }
 
 

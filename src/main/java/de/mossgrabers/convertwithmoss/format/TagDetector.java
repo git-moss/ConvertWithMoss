@@ -163,6 +163,7 @@ public class TagDetector
             CATEGORY_BELL,
             "Musical Box",
             "Music Box",
+            "Fantasia",
             "Tubular",
             "Carillon"
         });
@@ -265,9 +266,11 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_GUITAR, new String []
         {
             "Electric Guitar",
+            "Mandolin",
             CATEGORY_GUITAR,
             "Rajao",
-            "Banjo"
+            "Banjo",
+            "GTR"
         });
         CATEGORIES.put (CATEGORY_HI_HAT, new String []
         {
@@ -281,7 +284,8 @@ public class TagDetector
             CATEGORY_KEYBOARD,
             "Clavinet",
             "Harpsi",
-            "Keys"
+            "Keys",
+            "KEY"
         });
         CATEGORIES.put (CATEGORY_KICK, new String []
         {
@@ -324,6 +328,7 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_PAD, new String []
         {
             CATEGORY_PAD,
+            "Mellotron",
             "Ambient",
             "Atmo"
         });
@@ -368,12 +373,14 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_PIPE, new String []
         {
-            CATEGORY_PIPE,
-            "Flute",
             "Didgeridoo",
+            "Shakuhachi",
+            "Shakuhashi",
+            "Recorder",
             "Whistle",
             "Piccolo",
-            "Recorder"
+            CATEGORY_PIPE,
+            "Flute"
         });
         CATEGORIES.put (CATEGORY_PLUCK, new String []
         {
@@ -430,15 +437,16 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_WINDS, new String []
         {
-            "Sax",
-            "Oboe",
-            "Clarinet",
-            "Bassoon",
-            "Harmonica",
-            "Bag Pipe",
             "Klarinette",
+            "Harmonica",
+            "Clarinet",
+            "Bag Pipe",
+            "Melodica",
+            "Woodwind",
+            "Bassoon",
             "Musette",
-            "Woodwind"
+            "Oboe",
+            "Sax"
         });
         CATEGORIES.put (CATEGORY_LOOPS, new String []
         {

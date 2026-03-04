@@ -30,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -291,7 +292,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private Optional<IInstrumentSource> parseMultisample (final File multiSampleFile, final Element sampleElement, final List<Element> assetElements, final String basePath)
+    private Optional<IInstrumentSource> parseMultisample (final File sourceFile, final Element sampleElement, final List<Element> assetElements, final String basePath)
     {
         final String pathPrefix = sampleElement.getAttribute (Music1010Tag.ATTR_FILENAME);
         if (pathPrefix == null || pathPrefix.isBlank ())
@@ -299,9 +300,9 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
 
         final File pathPrefixFile = new File (pathPrefix);
         final String name = pathPrefixFile.getName ();
-        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
         final IGroup group = new DefaultGroup ("Group");
         multisampleSource.setGroups (Collections.singletonList (group));
 
@@ -335,7 +336,9 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         readVelocityModulators (sampleElement, group);
-        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
+        this.updateCreationDateTime (metadata, sourceFile);
         return Optional.of (new DefaultInstrumentSource (multisampleSource, midiChannel));
     }
 
