@@ -67,7 +67,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

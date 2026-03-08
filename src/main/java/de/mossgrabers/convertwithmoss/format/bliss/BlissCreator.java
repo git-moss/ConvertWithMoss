@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -51,6 +51,9 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 {
+    // The version number to use: 3.8.0
+    private static final int                      BLISS_VERSION            = 0x30800;
+
     private final static DestinationAudioFormat   DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16,
@@ -107,8 +110,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
             this.programIndex = 0;
             this.storeSampleFiles (zos, null, multisampleSource);
         }
-
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -159,6 +161,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
             final Optional<String> xml = this.createXMLString (document);
             AbstractCreator.storeTextFile (zos, "bank.xml", xml.get (), null);
         }
+        this.progress.notifyDone ();
     }
 
 
@@ -172,26 +175,42 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
      */
     private static void createPresetXML (final Document document, final Element topElement, final IMultisampleSource multisampleSource) throws IOException
     {
-        // 3.7.4
-        topElement.setAttribute ("version", "198404");
+        XMLUtils.setIntegerAttribute (topElement, "version", BLISS_VERSION);
         topElement.setAttribute ("name", multisampleSource == null ? "..." : multisampleSource.getName ());
+        final Element zonesElement = XMLUtils.addElement (document, topElement, BlissTag.ZONES);
 
-        List<ISampleZone> zones = new ArrayList<> ();
+        int zoneIndex = 0;
+        int roundRobinGroup = 0;
         if (multisampleSource != null)
         {
-            final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
-            for (final IGroup group: groups)
-                for (final ISampleZone zone: group.getSampleZones ())
-                    zones.add (zone);
-            // A program may contain up to 128 zones
-            if (zones.size () > 128)
-                zones = zones.subList (0, 128);
-        }
-        XMLUtils.setIntegerAttribute (topElement, "num_zones", zones.size ());
+            final Map<IGroup, Integer> roundRobinGroups = multisampleSource.getRoundRobinGroups ();
+            for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
+            {
+                final List<ISampleZone> zones = group.getSampleZones ();
 
-        final Element zonesElement = XMLUtils.addElement (document, topElement, BlissTag.ZONES);
-        for (int zoneIndex = 0; zoneIndex < zones.size (); zoneIndex++)
-            createSampleZone (document, zonesElement, zoneIndex, zones.get (zoneIndex));
+                // Round robin is only supported on a group level, not on program level with
+                // multiple groups
+                int sequenceLength = -1;
+                if (!roundRobinGroups.containsKey (group))
+                {
+                    for (final ISampleZone zone: zones)
+                        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                            sequenceLength = Math.max (sequenceLength, zone.getSequencePosition ());
+                    if (sequenceLength > 1)
+                        roundRobinGroup++;
+                }
+
+                for (final ISampleZone zone: zones)
+                {
+                    // A program may contain up to 128 zones
+                    if (zoneIndex == 128)
+                        break;
+                    createSampleZone (document, roundRobinGroup, sequenceLength, zonesElement, zoneIndex, zone);
+                    zoneIndex++;
+                }
+            }
+        }
+        XMLUtils.setIntegerAttribute (topElement, "num_zones", zoneIndex);
     }
 
 
@@ -199,12 +218,14 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
      * Creates the metadata for one sample zone.
      *
      * @param document The XML document
+     * @param roundRobinGroup The index of the group () if it is used for round-robin
+     * @param sequenceLength The sequence length for round-robin
      * @param multisampleElement The element where to add the sample zone information
      * @param zoneIndex The index of the zone
      * @param zone Where to get the sample zone info from
      * @throws IOException Could not access the sample
      */
-    private static void createSampleZone (final Document document, final Element multisampleElement, final int zoneIndex, final ISampleZone zone) throws IOException
+    private static void createSampleZone (final Document document, final int roundRobinGroup, final int sequenceLength, final Element multisampleElement, final int zoneIndex, final ISampleZone zone) throws IOException
     {
         final Element zoneElement = XMLUtils.addElement (document, multisampleElement, BlissTag.ZONE);
         zoneElement.setAttribute ("name", zone.getName () + ".wav");
@@ -216,6 +237,13 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.setIntegerAttribute (zoneElement, "mp_pan", (int) Math.round (zone.getPanning () * 100.0));
         XMLUtils.setIntegerAttribute (zoneElement, "midi_trigger", zone.getTrigger () == TriggerType.RELEASE ? 1 : 0);
         XMLUtils.setIntegerAttribute (zoneElement, "midi_root_key", zone.getKeyRoot ());
+
+        if (sequenceLength > 1)
+        {
+            XMLUtils.setIntegerAttribute (zoneElement, "seq_length", sequenceLength);
+            XMLUtils.setIntegerAttribute (zoneElement, "seq_position", zone.getSequencePosition ());
+            XMLUtils.setIntegerAttribute (zoneElement, "res_group", roundRobinGroup);
+        }
 
         final Element lowElement = XMLUtils.addElement (document, zoneElement, BlissTag.LOW_INPUT_RANGE);
         XMLUtils.setIntegerAttribute (lowElement, "midi_key", zone.getKeyLow ());

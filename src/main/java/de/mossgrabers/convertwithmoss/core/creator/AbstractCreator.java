@@ -51,6 +51,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.ui.ProgressLogger;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -72,6 +73,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected static final String                 IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA = "IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA";
     protected static final String                 FORWARD_SLASH                      = "/";
 
+    protected final ProgressLogger                progress;
     private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
 
 
@@ -86,6 +88,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected AbstractCreator (final String name, final String prefix, final INotifier notifier, final T settingsConfiguration)
     {
         super (name, prefix, notifier, settingsConfiguration);
+
+        this.progress = new ProgressLogger (this.notifier);
     }
 
 
@@ -403,7 +407,6 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         final List<File> writtenFiles = new ArrayList<> ();
         final String extension = "." + FLAC_TARGET_FORMAT.getExtension ();
 
-        int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
         {
             final List<ISampleZone> sampleZones = group.getSampleZones ();
@@ -415,9 +418,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 final ISampleZone zone = sampleZones.get (zoneIndex);
 
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, extension));
-                this.notifyProgress ();
-                outputCount++;
-                this.notifyNewline (outputCount);
+                this.progress.notifyProgress ();
                 final ISampleData sampleData = zone.getSampleData ();
                 if (sampleData == null)
                     this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
@@ -705,17 +706,13 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void storeSampleFiles (final ZipOutputStream zipOutputStream, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
     {
-        int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
         {
-
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                this.notifyProgress ();
-                outputCount++;
-                this.notifyNewline (outputCount);
+                this.progress.notifyProgress ();
                 this.storeSamplefile (alreadyStored, zipOutputStream, multisampleSource, zoneIndex, zone, relativeFolderName);
                 zoneIndex++;
             }
@@ -798,7 +795,6 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     {
         final List<File> writtenFiles = new ArrayList<> ();
 
-        int outputCount = 0;
         for (final IGroup group: multisampleSource.getGroups ())
         {
             final List<ISampleZone> sampleZones = group.getSampleZones ();
@@ -812,9 +808,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
                 try (final FileOutputStream fos = new FileOutputStream (file))
                 {
-                    this.notifyProgress ();
-                    outputCount++;
-                    this.notifyNewline (outputCount);
+                    this.progress.notifyProgress ();
 
                     if (this.requiresRewrite (destinationFormat) || trim)
                         this.rewriteFile (multisampleSource, zone, fos, destinationFormat, trim);
@@ -838,7 +832,6 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 }
             }
         }
-        this.notifyNewline ();
 
         return writtenFiles;
     }
@@ -883,21 +876,17 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void zipSampleFiles (final ZipOutputStream zipOutputStream, final String relativeFolderName, final IMultisampleSource multisampleSource) throws IOException
     {
-        int outputCount = 0;
         final Set<String> alreadyStored = new HashSet<> ();
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
         {
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                this.notifyProgress ();
-                outputCount++;
-                this.notifyNewline (outputCount);
+                this.progress.notifyProgress ();
                 this.zipSamplefile (alreadyStored, zipOutputStream, zoneIndex, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
                 zoneIndex++;
             }
         }
-        this.notifyNewline ();
     }
 
 

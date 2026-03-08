@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import de.mossgrabers.convertwithmoss.core.ConverterBackend;
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
@@ -84,6 +85,13 @@ public class MainFrame extends AbstractFrame implements INotifier
     private static final String          RENAMING_SOURCE_ENABLED             = "EnableRenaming";
     private static final String          PRESET_LIBRARY_FILENAME             = "PresetLibraryFilename";
     private static final String          PERFORMANCE_LIBRARY_FILENAME        = "PerformanceLibraryFilename";
+    private static final String          PROCESSING_ENABLE                   = "ProcessingEnable";
+    private static final String          PROCESSING_ENABLE_NORMALIZE         = "ProcessingEnableNormalize";
+    private static final String          PROCESSING_MAKE_MONO                = "ProcessingMakeMono";
+    private static final String          PROCESSING_ENABLE_TRIM_SAMPLE       = "ProcessingEnableTrimSample";
+    private static final String          PROCESSING_MAX_NUMBER_OF_SAMPLES    = "ProcessingMaxNumberOfSamples";
+    private static final String          PROCESSING_REDUCE_BIT_DEPTH         = "ProcessingReduceBitDepth";
+    private static final String          PROCESSING_REDUCE_FREQUENCY         = "ProcessingReduceFrequency";
 
     private static final int             DEST_TYPE_PRESET                    = 0;
     private static final int             DEST_TYPE_PRESET_LIBRARY            = 1;
@@ -99,10 +107,10 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private Button                       convertButton;
     private Button                       analyseButton;
-    private Button                       settingsButton;
     private Button                       closeButton;
     private Button                       cancelButton;
-
+    private Button                       processingButton;
+    private Button                       settingsButton;
     private Button                       sourceFolderSelectButton;
     private Button                       destinationFolderSelectButton;
 
@@ -129,14 +137,21 @@ public class MainFrame extends AbstractFrame implements INotifier
     private SettingsDialog               settingsDialog;
     private ProcessingDialog             processingDialog;
 
+    // Parameters of Settings dialog
     private boolean                      createFolderStructure;
     private boolean                      addNewFiles;
     private boolean                      enableDarkMode;
     private boolean                      renameSourceEnable;
-
     private String                       renamingFilePath;
 
-    private Button                       processingButton;
+    // Parameters of Processing dialog
+    private boolean                      enableProcessing;
+    private boolean                      enableNormalize;
+    private boolean                      enableMakeMono;
+    private boolean                      enableTrimSample;
+    private int                          maxNumberOfSamples;
+    private int                          reduceBitDepth;
+    private int                          reduceFrequency;
 
 
     /**
@@ -170,10 +185,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.analyseButton.setOnAction (_ -> this.execute (true));
 
         final ButtonPanel lowerButtonPanel = new ButtonPanel (Orientation.VERTICAL);
-        // TODO
-        // this.processingButton = setupButton (lowerButtonPanel, "Proc", "@IDS_MAIN_PROCESSING",
-        // "@IDS_MAIN_PROCESSING_TOOLTIP");
-        // this.processingButton.setOnAction (_ -> this.openProcessing ());
+        this.processingButton = setupButton (lowerButtonPanel, "Process", "@IDS_MAIN_PROCESSING", "@IDS_MAIN_PROCESSING_TOOLTIP");
+        this.processingButton.setOnAction (_ -> this.openProcessing ());
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
 
@@ -474,6 +487,17 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
 
         /////////////////////////////////////////////////////////
+        // Processing
+
+        this.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
+        this.enableNormalize = this.config.getBoolean (PROCESSING_ENABLE_NORMALIZE, false);
+        this.enableMakeMono = this.config.getBoolean (PROCESSING_MAKE_MONO, false);
+        this.enableTrimSample = this.config.getBoolean (PROCESSING_ENABLE_TRIM_SAMPLE, false);
+        this.maxNumberOfSamples = this.config.getInteger (PROCESSING_MAX_NUMBER_OF_SAMPLES, -1);
+        this.reduceBitDepth = this.config.getInteger (PROCESSING_REDUCE_BIT_DEPTH, 0);
+        this.reduceFrequency = this.config.getInteger (PROCESSING_REDUCE_FREQUENCY, 0);
+
+        /////////////////////////////////////////////////////////
         // Options
 
         this.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
@@ -499,13 +523,6 @@ public class MainFrame extends AbstractFrame implements INotifier
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
             this.config.setProperty (DESTINATION_PATH + i, this.destinationPathHistory.size () > i ? this.destinationPathHistory.get (i) : "");
 
-        if (this.renamingFilePath != null)
-            this.config.setProperty (RENAMING_CSV_FILE, this.renamingFilePath);
-        this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure);
-        this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles);
-        this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode);
-        this.config.setBoolean (RENAMING_SOURCE_ENABLED, this.renameSourceEnable);
-
         for (final IDetector<?> detector: this.backend.getDetectors ())
             detector.getSettings ().saveSettings (this.config);
         for (final ICreator<?> creator: this.backend.getCreators ())
@@ -521,6 +538,27 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         this.config.setProperty (PRESET_LIBRARY_FILENAME, this.presetLibraryFilename.getText ());
         this.config.setProperty (PERFORMANCE_LIBRARY_FILENAME, this.performanceLibraryFilename.getText ());
+
+        /////////////////////////////////////////////////////////
+        // Processing
+
+        this.config.setBoolean (PROCESSING_ENABLE, this.enableProcessing);
+        this.config.setBoolean (PROCESSING_ENABLE_NORMALIZE, this.enableNormalize);
+        this.config.setBoolean (PROCESSING_MAKE_MONO, this.enableMakeMono);
+        this.config.setBoolean (PROCESSING_ENABLE_TRIM_SAMPLE, this.enableTrimSample);
+        this.config.setInteger (PROCESSING_MAX_NUMBER_OF_SAMPLES, this.maxNumberOfSamples);
+        this.config.setInteger (PROCESSING_REDUCE_BIT_DEPTH, this.reduceBitDepth);
+        this.config.setInteger (PROCESSING_REDUCE_FREQUENCY, this.reduceFrequency);
+
+        /////////////////////////////////////////////////////////
+        // Options
+
+        this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure);
+        this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles);
+        this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode);
+        this.config.setBoolean (RENAMING_SOURCE_ENABLED, this.renameSourceEnable);
+        if (this.renamingFilePath != null)
+            this.config.setProperty (RENAMING_CSV_FILE, this.renamingFilePath);
     }
 
 
@@ -551,7 +589,6 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openSettings ()
     {
-        // TODO move all settings into a Settings class
         this.settingsDialog.createFolderStructureCheckbox.setSelected (this.createFolderStructure);
         this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
         this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);
@@ -587,10 +624,24 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openProcessing ()
     {
-        // TODO implement
+        this.processingDialog.enableProcessingCheckbox.setSelected (this.enableProcessing);
+        this.processingDialog.normalizeCheckbox.setSelected (this.enableNormalize);
+        this.processingDialog.makeMonoCheckbox.setSelected (this.enableMakeMono);
+        this.processingDialog.trimSample.setSelected (this.enableTrimSample);
+        this.processingDialog.maxSamplesField.setText (this.maxNumberOfSamples < 0 ? "" : Integer.toString (this.maxNumberOfSamples));
+        this.processingDialog.reduceBitDepthCombobox.getSelectionModel ().select (this.reduceBitDepth);
+        this.processingDialog.reduceFrequencyCombobox.getSelectionModel ().select (this.reduceFrequency);
+
         if (this.processingDialog.display ())
         {
-            // TODO implement
+            this.enableProcessing = this.processingDialog.enableProcessingCheckbox.isSelected ();
+            this.enableNormalize = this.processingDialog.normalizeCheckbox.isSelected ();
+            this.enableMakeMono = this.processingDialog.makeMonoCheckbox.isSelected ();
+            this.enableTrimSample = this.processingDialog.trimSample.isSelected ();
+            final String maxNumberText = this.processingDialog.maxSamplesField.getText ();
+            this.maxNumberOfSamples = maxNumberText.length () == 0 || maxNumberText.isBlank () ? -1 : Integer.parseInt (maxNumberText);
+            this.reduceBitDepth = this.processingDialog.reduceBitDepthCombobox.getSelectionModel ().getSelectedIndex ();
+            this.reduceFrequency = this.processingDialog.reduceFrequencyCombobox.getSelectionModel ().getSelectedIndex ();
         }
     }
 
@@ -621,10 +672,16 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
         final boolean detectPerformances = selectedType == DEST_TYPE_PERFORMANCE || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY;
-        final boolean wantsMultipleFiles = detectPerformances ? this.wantsMultiplePerformanceFiles () : this.wantsMultiplePresetFiles ();
-        final String libraryName = (detectPerformances ? this.performanceLibraryFilename : this.presetLibraryFilename).getText ().trim ();
 
-        Platform.runLater ( () -> this.backend.detect (detector, creator, this.sourceFolder, this.outputFolder, this.csvRenameFile, libraryName, detectPerformances, wantsMultipleFiles, this.createFolderStructure, onlyAnalyse));
+        final DetectSettings detectSettings = new DetectSettings ();
+        // TODO set all processing parameters
+        detectSettings.sourceFolder = this.sourceFolder;
+        detectSettings.outputFolder = this.outputFolder;
+        detectSettings.csvRenameFile = this.csvRenameFile;
+        detectSettings.libraryName = (detectPerformances ? this.performanceLibraryFilename : this.presetLibraryFilename).getText ().trim ();
+        detectSettings.wantsMultipleFiles = detectPerformances ? this.wantsMultiplePerformanceFiles () : this.wantsMultiplePresetFiles ();
+        detectSettings.createFolderStructure = this.createFolderStructure;
+        Platform.runLater ( () -> this.backend.detect (detector, creator, detectSettings, detectPerformances, onlyAnalyse));
     }
 
 

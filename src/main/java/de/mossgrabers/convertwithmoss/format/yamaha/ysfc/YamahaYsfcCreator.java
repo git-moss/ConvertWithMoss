@@ -195,7 +195,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
         this.storeMultisamples (multisampleSources, multiFile, format);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -226,7 +226,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             ysfcFile.write (out);
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -259,7 +259,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             ysfcFile.write (out);
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -285,6 +285,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             this.createPerformancesForMultiSources (multisampleSources, format, ysfcFile);
         else
             this.createKeyBanksForMultiSources (multisampleSources, format, ysfcFile);
+        this.progress.notifyDone ();
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
@@ -714,8 +715,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             waveData.setData (waveDataContent);
         }
 
-        this.notifyProgress ();
-        this.notifyNewline (counters.sampleNumber);
+        this.progress.notifyProgress ();
         counters.sampleNumber++;
     }
 

@@ -100,7 +100,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             recalculateSamplePositions (multisampleSource, 44100);
         this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

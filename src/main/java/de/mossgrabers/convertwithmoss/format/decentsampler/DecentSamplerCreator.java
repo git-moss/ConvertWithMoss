@@ -126,7 +126,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
         this.copyResources (resourceDestination);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -145,7 +145,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         else
             this.storeLibrary (multiFile, results);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -301,11 +301,14 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
             final Set<Double> ampVelDepths = new HashSet<> ();
             final List<ISampleZone> zones = group.getSampleZones ();
             boolean isRoundRobin = false;
+            int seqLength = 0;
             for (int zoneIndex = 0; zoneIndex < zones.size (); zoneIndex++)
             {
                 final ISampleZone zone = zones.get (zoneIndex);
 
                 isRoundRobin = isRoundRobin || zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
+                if (isRoundRobin && zone.getSequencePosition () >= 1)
+                    seqLength++;
 
                 ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
                 final Element sampleElement = createSample (document, folderName, groupElement, zone);
@@ -324,7 +327,10 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
                 XMLUtils.setDoubleAttribute (groupElement, DecentSamplerTag.AMP_VELOCITY_TRACK, ampVelDepths.iterator ().next ().doubleValue (), 4);
 
             if (isRoundRobin)
+            {
                 groupElement.setAttribute (DecentSamplerTag.SEQ_MODE, "round_robin");
+                XMLUtils.setIntegerAttribute (groupElement, DecentSamplerTag.SEQ_LENGTH, seqLength);
+            }
 
             this.createFilter (document, modulatorsElement, multisampleSource, groupElement, groupIndex);
             if (!zones.isEmpty ())

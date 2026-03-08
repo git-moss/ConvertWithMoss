@@ -75,7 +75,7 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
 
         this.writeSamples (subFolder, multisampleSource);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

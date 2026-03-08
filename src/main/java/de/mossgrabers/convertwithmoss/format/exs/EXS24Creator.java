@@ -71,7 +71,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
             writtenSamples.put (sampleFile.getName (), sampleFile);
         this.storeMultisample (multisampleSource, multiFile, writtenSamples);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

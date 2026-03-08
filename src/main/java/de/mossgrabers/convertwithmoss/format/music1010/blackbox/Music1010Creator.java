@@ -231,7 +231,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
             this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -264,7 +264,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
             recalculateSamplePositions (multisampleSource, 48000);
         this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

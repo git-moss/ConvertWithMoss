@@ -89,7 +89,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         // Store all samples - WAV ending needs to be upper case!
         this.writeSamples (sampleFolder, multisampleSource, ".WAV");
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

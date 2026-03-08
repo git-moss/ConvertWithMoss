@@ -59,6 +59,6 @@ public class WavCreator extends AbstractWavCreator<WavChunkSettingsUI>
         safeCreateDirectory (sampleFolder);
         this.writeSamples (sampleFolder, multisampleSource);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 }

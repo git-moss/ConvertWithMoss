@@ -128,7 +128,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         else
             this.writeSamples (sampleFolder, multisampleSource);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

@@ -3,6 +3,9 @@
 ## 16.5.0 (unreleased)
 
 * Added support for discoDSP Bliss
+* Improved sample writing progress logging output.
+* DecentSampler
+  * New: Write seqLength attribute for group as well.
 * Kontakt 5+
   * Fixed: Hold and decay times were reversed.
 

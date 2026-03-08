@@ -60,6 +60,6 @@ public class MaschineCreator extends AbstractWavCreator<MaschineCreatorUI>
             maschineType.writeSound (out, safeSampleFolderName, multisampleSource, maschineVersion);
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 }

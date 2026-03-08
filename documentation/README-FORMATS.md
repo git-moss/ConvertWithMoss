@@ -42,6 +42,7 @@ The following multi-sample formats are supported:
 * [Bitwig Multisample](#bitwig-multisample)
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
+* [discoDSP Bliss](#discodsp-bliss)
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [Kontakt NKI/NKM](#kontakt-nkinkm)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
@@ -198,6 +199,12 @@ There are two issues with amplitude envelopes:
 * %ENV_SUSTAIN_VALUE%
 * %ENV_RELEASE_VALUE%
 * %ENV_VELOCITY_SENSITIVITY%
+
+## discoDSP Bliss
+
+Bliss is a multi-platform (Windows, MacOS & Linux) sampler by discoDSP (https://www.discodsp.com/bliss/).
+It provides support for multi-samples and a bank system (containing up to 128 patches).
+Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipped) with a XML description file and all samples. The samples are stored in FLAC format (16/24 bit). The full format specification is available here: https://github.com/reales/bliss-format.
 
 ## Expert Sleepers disting EX
 

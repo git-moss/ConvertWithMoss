@@ -127,15 +127,18 @@ public class CLIBackend implements INotifier
             return 0;
         }
 
+        final DetectSettings detectSettings = new DetectSettings ();
+        // TODO set all processing parameters
+
         // Renaming option & folder check
         final File renamingCSVFile = parseResult.matchedOptionValue ('r', null);
-        final File sourceFolder = parseResult.matchedPositionalValue (0, null);
-        final File destinationFolder = parseResult.matchedPositionalValue (1, null);
-        CSVRenameFile renamer = null;
+        detectSettings.sourceFolder = parseResult.matchedPositionalValue (0, null);
+        detectSettings.outputFolder = parseResult.matchedPositionalValue (1, null);
+        detectSettings.csvRenameFile = null;
         try
         {
-            verifyFolders (sourceFolder, destinationFolder);
-            renamer = verifyRenameFile (renamingCSVFile);
+            verifyFolders (detectSettings.sourceFolder, detectSettings.outputFolder);
+            detectSettings.csvRenameFile = verifyRenameFile (renamingCSVFile);
         }
         catch (final IllegalArgumentException ex)
         {
@@ -145,12 +148,12 @@ public class CLIBackend implements INotifier
 
         final String type = parseResult.matchedOptionValue ('t', null);
         final boolean detectPerformances = "performance".equalsIgnoreCase (type);
-        final String libraryName = parseResult.matchedOptionValue ('l', null);
-        final boolean wantsMultipleFiles = libraryName != null;
-        final boolean createFolderStructure = parseResult.matchedOptionValue ('f', null) == null;
+        detectSettings.libraryName = parseResult.matchedOptionValue ('l', null);
+        detectSettings.wantsMultipleFiles = detectSettings.libraryName != null;
+        detectSettings.createFolderStructure = parseResult.matchedOptionValue ('f', null) == null;
         final boolean onlyAnalyse = parseResult.matchedOptionValue ('a', null) != null;
 
-        this.backend.detect (detector, creator, sourceFolder, destinationFolder, renamer, libraryName, detectPerformances, wantsMultipleFiles, createFolderStructure, onlyAnalyse);
+        this.backend.detect (detector, creator, detectSettings, detectPerformances, onlyAnalyse);
 
         while (!this.hasFinished)
             try
