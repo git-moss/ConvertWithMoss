@@ -277,7 +277,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             writer.write (xmlCode.get ());
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -296,7 +296,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
 
         return multiFile;
     }

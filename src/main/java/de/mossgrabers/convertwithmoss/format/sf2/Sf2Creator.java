@@ -159,7 +159,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
             sf2File.write (out);
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

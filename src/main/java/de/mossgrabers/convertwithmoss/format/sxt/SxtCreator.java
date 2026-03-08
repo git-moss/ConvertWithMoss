@@ -60,7 +60,7 @@ public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
         // Store all samples
         this.writeSamples (outputFolder, multisampleSource);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

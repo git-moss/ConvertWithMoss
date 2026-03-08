@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -34,6 +35,7 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -201,15 +203,20 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
         this.updateCreationDateTime (metadata, sourceFile);
 
-        // No groups in Bliss format
-        final IGroup defaultGroup = new DefaultGroup ();
-        multisampleSource.setGroups (Collections.singletonList (defaultGroup));
+        // 'Only' fake groups in Bliss format to support round-robin inside of groups
+        final Map<Integer, IGroup> groupsMap = new TreeMap<> ();
 
         // Parse all zones
         final List<Element> zoneElements = XMLUtils.getChildElementsByName (zonesElement, BlissTag.ZONE);
         for (int i = 0; i < zoneElements.size (); i++)
-            this.parseZone (sourceFile, defaultGroup, zoneElements.get (i), programIndex, i);
+        {
+            final Element zoneElement = zoneElements.get (i);
+            final int resourceGroupIndex = XMLUtils.getIntegerAttribute (zoneElement, "res_group", 0);
+            final IGroup group = groupsMap.computeIfAbsent (Integer.valueOf (resourceGroupIndex), index -> new DefaultGroup ("Group " + index));
+            this.parseZone (sourceFile, group, zoneElement, programIndex, i);
+        }
 
+        multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
         return Optional.of (multisampleSource);
     }
 
@@ -247,6 +254,13 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityHigh (XMLUtils.getIntegerAttribute (highElement, "midi_vel", 127));
         zone.setTuning (XMLUtils.getIntegerAttribute (zoneElement, "midi_coarse_tune", 0) + XMLUtils.getIntegerAttribute (zoneElement, "midi_fine_tune", 0) / 100.0);
         zone.setKeyTracking (XMLUtils.getIntegerAttribute (zoneElement, "midi_keycents", 100) / 100.0);
+
+        final int sequenceLength = XMLUtils.getIntegerAttribute (zoneElement, "seq_length", 0);
+        if (sequenceLength > 1)
+        {
+            zone.setSequencePosition (XMLUtils.getIntegerAttribute (zoneElement, "seq_position", 1));
+            zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+        }
 
         // Read loop
         final int loopMode = XMLUtils.getIntegerAttribute (zoneElement, "loop_mode", 1);

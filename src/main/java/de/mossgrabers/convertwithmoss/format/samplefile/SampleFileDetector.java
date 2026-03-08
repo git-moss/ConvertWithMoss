@@ -25,6 +25,7 @@ import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.KeyMapping;
+import de.mossgrabers.convertwithmoss.ui.ProgressLogger;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -71,7 +72,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
     protected List<IMultisampleSource> readPresetFile (final File folder)
     {
         final List<IMultisampleSource> sources = new ArrayList<> ();
-
+        final ProgressLogger progress = new ProgressLogger (this.notifier);
         for (final SampleFileType sampleFileType: this.settingsConfiguration.getSampleFileTypes ())
         {
             this.fileEndings = sampleFileType.getFileEndings ();
@@ -83,7 +84,6 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
             this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (files.length), sampleFileType.getName ());
 
             // Analyze all files
-            int outputCount = 0;
             final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.length);
             for (final File file: files)
             {
@@ -94,10 +94,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 try
                 {
                     sampleData.add (createSampleData (file, this.notifier));
-                    this.notifyProgress ();
-                    outputCount++;
-                    if (outputCount % 80 == 0)
-                        this.notifyNewline ();
+                    progress.notifyProgress ();
                 }
                 catch (final IOException ex)
                 {
@@ -106,7 +103,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 }
             }
 
-            this.notifyNewline ();
+            progress.notifyNewline ();
 
             sources.addAll (this.createMultisample (sampleFileType, folder, sampleData));
         }

@@ -66,7 +66,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
             this.storeSampleFiles (zos, null, multisampleSource);
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

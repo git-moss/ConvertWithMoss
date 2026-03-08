@@ -197,7 +197,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             this.writeSamples (fullPresetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -236,7 +236,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             Files.copy (source.toPath (), new File (source.getParentFile (), "preview.wav").toPath ());
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

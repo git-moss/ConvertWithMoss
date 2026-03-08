@@ -100,7 +100,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
             gos.write (metadata.get ().getBytes (StandardCharsets.UTF_8));
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

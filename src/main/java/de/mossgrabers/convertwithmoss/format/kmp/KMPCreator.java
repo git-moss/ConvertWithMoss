@@ -104,7 +104,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
         final File outputFile = new File (destinationFolder, dosLibraryName + ".KSC");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
         new KSCFile (createdKMPNames).write (outputFile);
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

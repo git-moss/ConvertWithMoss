@@ -88,7 +88,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
             recalculateSamplePositions (multisampleSource, 44100);
         this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

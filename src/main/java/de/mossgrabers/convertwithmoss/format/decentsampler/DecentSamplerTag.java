@@ -55,6 +55,8 @@ public class DecentSamplerTag
     public static final String                    SAMPLE             = "sample";
     /** The sequence mode tag. */
     public static final String                    SEQ_MODE           = "seqMode";
+    /** The sequence length tag. */
+    public static final String                    SEQ_LENGTH         = "seqLength";
 
     /** The global tuning attribute. */
     public static final String                    GROUP_TUNING       = "groupTuning";
@@ -63,6 +65,8 @@ public class DecentSamplerTag
     /** The group enabled tag. */
     public static final String                    GROUP_ENABLED      = "enabled";
 
+    /** The group name tag. */
+    public static final String                    SAMPLE_NAME        = "name";
     /** The sample path attribute. */
     public static final String                    PATH               = "path";
     /** The volume tag on different levels. */
@@ -136,8 +140,8 @@ public class DecentSamplerTag
     {
         ATTRIBUTES.put (DECENTSAMPLER, Set.of (MIN_VERSION));
         ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE, SEQ_MODE));
-        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANNING, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER, SEQ_MODE, SEQ_POSITION));
-        ATTRIBUTES.put (SAMPLE, Set.of (PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANNING, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, SEQ_MODE, SEQ_POSITION));
+        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANNING, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER, SEQ_MODE, SEQ_POSITION, SEQ_LENGTH));
+        ATTRIBUTES.put (SAMPLE, Set.of (SAMPLE_NAME, PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANNING, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, SEQ_MODE, SEQ_POSITION));
     }
 
 

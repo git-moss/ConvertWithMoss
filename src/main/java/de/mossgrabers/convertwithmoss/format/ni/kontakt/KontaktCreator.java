@@ -87,7 +87,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             kontaktType.writeNKI (out, safeSampleFolderName, multisampleSource, calculateSampleSize (sampleFiles));
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -171,7 +171,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             kontaktType.writeNKM (out, sampleFilePaths, safeInstrumentSources, calculateSampleSize (sampleFiles));
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
