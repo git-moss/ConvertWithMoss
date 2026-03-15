@@ -311,6 +311,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
             this.notifier.log ("IDS_1010_MUSIC_ADDING_INSTRUMENT", multisampleSource.getName ());
             final List<IGroup> groups = this.combineSplitStereo (multisampleSource);
             multisampleSource.setGroups (groups);
+            this.checkDuplicateRanges (groups);
 
             final Element slotElement = activeSlots.get (i);
             final String presetPath = "\\Presets\\" + subFolder + multisampleSource.getName ();

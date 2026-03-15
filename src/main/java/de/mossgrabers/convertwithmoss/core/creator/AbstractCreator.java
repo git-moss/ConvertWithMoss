@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -75,6 +76,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     protected final ProgressLogger                progress;
     private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
+    private boolean [] []                         layerCheckMatrix                   = new boolean [128] [128];
 
 
     /**
@@ -1036,5 +1038,35 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected String createFileName (final int zoneIndex, final ISampleZone zone)
     {
         return zone.getName ();
+    }
+
+
+    /**
+     * Check if there are layered samples and display a warning.
+     * 
+     * @param groups The groups of the multi-sample
+     */
+    protected void checkDuplicateRanges (final List<IGroup> groups)
+    {
+        // Clear the matrix
+        for (int i = 0; i < 128; i++)
+            Arrays.fill (this.layerCheckMatrix[i], false);
+        // Mark the covered ranges
+        for (final IGroup group: groups)
+        {
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                for (int k = zone.getKeyLow (); k <= zone.getKeyHigh (); k++)
+                    for (int v = zone.getVelocityLow (); v <= zone.getVelocityHigh (); v++)
+                    {
+                        if (this.layerCheckMatrix[k][v])
+                        {
+                            this.notifier.logError ("IDS_ERR_SOURCE_CONTAINS_LAYERS");
+                            return;
+                        }
+                        this.layerCheckMatrix[k][v] = true;
+                    }
+            }
+        }
     }
 }

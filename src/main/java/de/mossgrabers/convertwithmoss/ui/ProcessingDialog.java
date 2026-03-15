@@ -71,6 +71,105 @@ public class ProcessingDialog extends AbstractDialog
     }
 
 
+    /**
+     * Select the bit depth.
+     * 
+     * @param bitDepth The bit depth (12, 16, 24, all other values are off)
+     */
+    public void selectBitDepth (final int bitDepth)
+    {
+        final int itemIndex;
+        switch (bitDepth)
+        {
+            case 24 -> itemIndex = 1;
+            case 16 -> itemIndex = 2;
+            case 12 -> itemIndex = 3;
+            default -> itemIndex = 0;
+        }
+
+        this.reduceBitDepthCombobox.getSelectionModel ().select (itemIndex);
+    }
+
+
+    /**
+     * Select the bit depth.
+     * 
+     * @return The bit depth (12, 16, 24, -1 for off)
+     */
+    public int getBitDepth ()
+    {
+        final int itemIndex = this.reduceBitDepthCombobox.getSelectionModel ().getSelectedIndex ();
+        final int bitDepth;
+        switch (itemIndex)
+        {
+            case 1 -> bitDepth = 24;
+            case 2 -> bitDepth = 16;
+            case 3 -> bitDepth = 12;
+            default -> bitDepth = -1;
+        }
+        return bitDepth;
+    }
+
+
+    /**
+     * Select the maximum frequency.
+     * 
+     * @param frequency The frequency (12, 16, 24, all other values are off)
+     */
+    public void selectFrequency (final int frequency)
+    {
+        final int itemIndex;
+        switch (frequency)
+        {
+            case 44100 -> itemIndex = 1;
+            case 32000 -> itemIndex = 2;
+            case 31250 -> itemIndex = 3;
+            case 30000 -> itemIndex = 4;
+            case 28000 -> itemIndex = 5;
+            case 27000 -> itemIndex = 6;
+            case 24000 -> itemIndex = 7;
+            case 22050 -> itemIndex = 8;
+            case 16000 -> itemIndex = 9;
+            case 12000 -> itemIndex = 10;
+            case 11025 -> itemIndex = 11;
+            case 8000 -> itemIndex = 12;
+            default -> itemIndex = 0;
+        }
+
+        this.reduceFrequencyCombobox.getSelectionModel ().select (itemIndex);
+    }
+
+
+    /**
+     * Get the the maximum frequency.
+     * 
+     * @return The frequency (12, 16, 24, -1 to ignore)
+     */
+    public int getFrequency ()
+    {
+        final int itemIndex = this.reduceFrequencyCombobox.getSelectionModel ().getSelectedIndex ();
+        final int frequency;
+        switch (itemIndex)
+        {
+            case 1 -> frequency = 44100;
+            case 2 -> frequency = 32000;
+            case 3 -> frequency = 31250;
+            case 4 -> frequency = 30000;
+            case 5 -> frequency = 28000;
+            case 6 -> frequency = 27000;
+            case 7 -> frequency = 24000;
+            case 8 -> frequency = 22050;
+            case 9 -> frequency = 16000;
+            case 10 -> frequency = 12000;
+            case 11 -> frequency = 11025;
+            case 12 -> frequency = 8000;
+            default -> frequency = -1;
+        }
+
+        return frequency;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     protected Pane init ()

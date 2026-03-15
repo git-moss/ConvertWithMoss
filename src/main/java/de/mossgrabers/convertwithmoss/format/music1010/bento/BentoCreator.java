@@ -281,6 +281,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             this.notifier.log ("IDS_1010_MUSIC_ADDING_INSTRUMENT", multisampleSource.getName ());
             final List<IGroup> groups = this.combineSplitStereo (multisampleSource);
             multisampleSource.setGroups (groups);
+            this.checkDuplicateRanges (groups);
 
             final Element trackElement = XMLUtils.addElement (document, sessionElement, Music1010Tag.TRACK);
             trackElement.setAttribute (Music1010Tag.ATTR_TYPE, "multisamtrack");

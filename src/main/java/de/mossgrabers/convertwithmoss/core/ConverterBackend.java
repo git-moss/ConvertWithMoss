@@ -10,8 +10,13 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
+import de.mossgrabers.convertwithmoss.core.algorithm.MultiSampleReducer;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
@@ -336,11 +341,80 @@ public class ConverterBackend
 
     private void processSamples (final IMultisampleSource multisampleSource)
     {
-        if (this.onlyAnalyse)
+        if (this.onlyAnalyse || !this.detectionSettings.needsProcessing ())
             return;
 
-        // TODO Auto-generated method stub
+        this.notifier.log ("IDS_PROCESSING_PROCESS");
+        try
+        {
+            final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // Combine split-mono samples to stereo samples if necessary for further processing
+
+            final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
+            if ((hasMaximumNumberOfSamples || this.detectionSettings.enableMakeMono) && ZoneChannels.detectChannelConfiguration (groups) == ZoneChannels.SPLIT_STEREO)
+            {
+                this.notifier.log ("IDS_PROCESSING_COMBINE_TO_STEREO");
+                final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
+                if (stereoGroup.isPresent ())
+                {
+                    this.notifier.log ("IDS_NOTIFY_COMBINED_TO_STEREO");
+                    groups.clear ();
+                    groups.add (stereoGroup.get ());
+                }
+                this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
+            }
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // Reduce the number of samples if necessary
+
+            if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)
+            {
+                this.notifier.log ("IDS_PROCESSING_REDUCE_SAMPLES", Integer.toString (this.detectionSettings.maxNumberOfSamples));
+                final List<IGroup> finalGroups = new ArrayList<> ();
+                for (final IGroup group: groups)
+                    if (!group.getSampleZones ().isEmpty ())
+                        finalGroups.add (group);
+                this.notifier.logError ("IDS_NOTIFY_REDUCED_TO_NUM_SAMPLES", Integer.toString (this.detectionSettings.maxNumberOfSamples));
+            }
+
+            final List<ISampleZone> sampleZones = new ArrayList<> ();
+            for (final IGroup group: groups)
+                sampleZones.addAll (group.getSampleZones ());
+
+            if (this.detectionSettings.enableNormalize)
+            {
+                this.notifier.logText (" ");
+                this.notifier.log ("IDS_PROCESSING_NORMALIZING");
+            }
+            if (this.detectionSettings.enableMakeMono)
+            {
+                this.notifier.logText (" ");
+                this.notifier.log ("IDS_PROCESSING_MAKE_MONO");
+            }
+            if (this.detectionSettings.enableTrimSample)
+            {
+                this.notifier.logText (" ");
+                this.notifier.log ("IDS_PROCESSING_TRIM");
+            }
+            if (this.detectionSettings.reduceBitDepth > 0)
+            {
+                this.notifier.logText (" ");
+                this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH", Integer.toString (this.detectionSettings.reduceBitDepth));
+            }
+            if (this.detectionSettings.reduceFrequency > 0)
+            {
+                this.notifier.logText (" ");
+                this.notifier.log ("IDS_PROCESSING_REDUCE_FREQUENCY", Integer.toString (this.detectionSettings.reduceFrequency));
+            }
+            this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+            AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.enableNormalize);
+        }
+        catch (final IOException | UnsupportedAudioFileException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_COULD_NOT_RESAMPLE", ex);
+        }
     }
 
 
