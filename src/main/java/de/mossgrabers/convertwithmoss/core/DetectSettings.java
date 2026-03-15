@@ -29,6 +29,31 @@ public class DetectSettings
     /** True, if the source folder structure should be replicated in the output folder. */
     public boolean       createFolderStructure;
 
-    // TODO add all processing parameters
+    // Parameters for Processing
 
+    /** Enable overall processing. */
+    public boolean       enableProcessing;
+    /** Enable normalizing samples. */
+    public boolean       enableNormalize;
+    /** Enable making all samples mono. */
+    public boolean       enableMakeMono;
+    /** Enable to trim sample start and end. */
+    public boolean       enableTrimSample;
+    /** The maximum number of samples to limit to. */
+    public int           maxNumberOfSamples;
+    /** The bit depth to reduce to. */
+    public int           reduceBitDepth  = -1;
+    /** The frequency to reduce to. */
+    public int           reduceFrequency = -1;
+
+
+    /**
+     * Check if processing is enabled and at least one processing option is enabled as well.
+     * 
+     * @return True if processing is necessary
+     */
+    public boolean needsProcessing ()
+    {
+        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize);
+    }
 }

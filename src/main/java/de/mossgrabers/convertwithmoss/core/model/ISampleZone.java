@@ -91,25 +91,25 @@ public interface ISampleZone
 
 
     /**
-     * Get the start of the playback.
+     * Get the start of the play-back.
      *
-     * @param start The start of the playback
+     * @param start The start of the play-back
      */
     void setStart (int start);
 
 
     /**
-     * Get the end of the playback.
+     * Get the end of the play-back.
      *
-     * @return The end of the playback
+     * @return The end of the play-back, inclusive
      */
     int getStop ();
 
 
     /**
-     * Get the stop of the playback.
+     * Get the stop of the play-back.
      *
-     * @param stop The stop of the playback
+     * @param stop The stop of the play-back, inclusive
      */
     void setStop (int stop);
 

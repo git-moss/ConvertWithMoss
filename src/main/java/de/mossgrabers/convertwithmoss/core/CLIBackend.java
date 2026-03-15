@@ -10,10 +10,12 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
@@ -34,6 +36,28 @@ import picocli.CommandLine.ParseResult;
  */
 public class CLIBackend implements INotifier
 {
+    private static final Set<Integer> ALLOWED_FREQUENCIES = new HashSet<> ();
+    private static final Set<Integer> ALLOWED_BIT_DEPTHS  = new HashSet<> ();
+    static
+    {
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (44100));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (32000));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (31250));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (30000));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (28000));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (27000));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (24000));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (22050));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (16000));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (12000));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (11025));
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (8000));
+
+        ALLOWED_BIT_DEPTHS.add (Integer.valueOf (24));
+        ALLOWED_BIT_DEPTHS.add (Integer.valueOf (16));
+        ALLOWED_BIT_DEPTHS.add (Integer.valueOf (12));
+    }
+
     private final Map<String, IDetector<?>> detectorsByName = new HashMap<> ();
     private final Map<String, ICreator<?>>  creatorsByName  = new HashMap<> ();
     private boolean                         hasFinished     = false;
@@ -128,7 +152,33 @@ public class CLIBackend implements INotifier
         }
 
         final DetectSettings detectSettings = new DetectSettings ();
-        // TODO set all processing parameters
+
+        // Processing parameters
+        detectSettings.enableProcessing = parseResult.matchedOptionValue ("Penable", Boolean.FALSE).booleanValue ();
+        detectSettings.enableNormalize = parseResult.matchedOptionValue ("Pnormalize", Boolean.FALSE).booleanValue ();
+        detectSettings.enableMakeMono = parseResult.matchedOptionValue ("Pmono", Boolean.FALSE).booleanValue ();
+        detectSettings.enableTrimSample = parseResult.matchedOptionValue ("Ptrim", Boolean.FALSE).booleanValue ();
+        detectSettings.maxNumberOfSamples = parseResult.matchedOptionValue ("PmaxSamples", Integer.valueOf (-1)).intValue ();
+        final Integer bitDepth = parseResult.matchedOptionValue ("PbitDepth", Integer.valueOf (0));
+        if (bitDepth != null)
+        {
+            if (!ALLOWED_BIT_DEPTHS.contains (bitDepth))
+            {
+                System.err.println (Functions.getMessage ("IDS_CLI_WRONG_BIT_DEPTH", bitDepth.toString ()));
+                return 0;
+            }
+            detectSettings.reduceBitDepth = bitDepth.intValue ();
+        }
+        final Integer frequency = parseResult.matchedOptionValue ("Pfrequency", Integer.valueOf (0));
+        if (frequency != null)
+        {
+            if (!ALLOWED_FREQUENCIES.contains (frequency))
+            {
+                System.err.println (Functions.getMessage ("IDS_CLI_WRONG_FREQUENCY", frequency.toString ()));
+                return 0;
+            }
+            detectSettings.reduceFrequency = frequency.intValue ();
+        }
 
         // Renaming option & folder check
         final File renamingCSVFile = parseResult.matchedOptionValue ('r', null);

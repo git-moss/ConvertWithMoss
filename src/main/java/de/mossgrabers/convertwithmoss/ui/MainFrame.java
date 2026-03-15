@@ -25,7 +25,6 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
-import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
@@ -102,8 +101,6 @@ public class MainFrame extends AbstractFrame implements INotifier
     private BorderPane                   executePane;
     private final ComboBox<String>       sourcePathField                     = new ComboBox<> ();
     private final ComboBox<String>       destinationPathField                = new ComboBox<> ();
-    private File                         sourceFolder;
-    private File                         outputFolder;
 
     private Button                       convertButton;
     private Button                       analyseButton;
@@ -121,7 +118,6 @@ public class MainFrame extends AbstractFrame implements INotifier
     private final List<String>           sourcePathHistory                   = new ArrayList<> ();
     private final List<String>           destinationPathHistory              = new ArrayList<> ();
 
-    private final CSVRenameFile          csvRenameFile                       = new CSVRenameFile ();
     private final LoggerBoxLogger        logger                              = new LoggerBoxLogger (MAXIMUM_NUMBER_OF_LOG_ENTRIES);
     private final LoggerBox              loggingArea                         = new LoggerBox (this.logger);
     private final TraversalManager       traversalManager                    = new TraversalManager ();
@@ -136,22 +132,13 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private SettingsDialog               settingsDialog;
     private ProcessingDialog             processingDialog;
+    private final DetectSettings         detectSettings                      = new DetectSettings ();
 
     // Parameters of Settings dialog
-    private boolean                      createFolderStructure;
     private boolean                      addNewFiles;
     private boolean                      enableDarkMode;
     private boolean                      renameSourceEnable;
     private String                       renamingFilePath;
-
-    // Parameters of Processing dialog
-    private boolean                      enableProcessing;
-    private boolean                      enableNormalize;
-    private boolean                      enableMakeMono;
-    private boolean                      enableTrimSample;
-    private int                          maxNumberOfSamples;
-    private int                          reduceBitDepth;
-    private int                          reduceFrequency;
 
 
     /**
@@ -489,18 +476,18 @@ public class MainFrame extends AbstractFrame implements INotifier
         /////////////////////////////////////////////////////////
         // Processing
 
-        this.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
-        this.enableNormalize = this.config.getBoolean (PROCESSING_ENABLE_NORMALIZE, false);
-        this.enableMakeMono = this.config.getBoolean (PROCESSING_MAKE_MONO, false);
-        this.enableTrimSample = this.config.getBoolean (PROCESSING_ENABLE_TRIM_SAMPLE, false);
-        this.maxNumberOfSamples = this.config.getInteger (PROCESSING_MAX_NUMBER_OF_SAMPLES, -1);
-        this.reduceBitDepth = this.config.getInteger (PROCESSING_REDUCE_BIT_DEPTH, 0);
-        this.reduceFrequency = this.config.getInteger (PROCESSING_REDUCE_FREQUENCY, 0);
+        this.detectSettings.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
+        this.detectSettings.enableNormalize = this.config.getBoolean (PROCESSING_ENABLE_NORMALIZE, false);
+        this.detectSettings.enableMakeMono = this.config.getBoolean (PROCESSING_MAKE_MONO, false);
+        this.detectSettings.enableTrimSample = this.config.getBoolean (PROCESSING_ENABLE_TRIM_SAMPLE, false);
+        this.detectSettings.maxNumberOfSamples = this.config.getInteger (PROCESSING_MAX_NUMBER_OF_SAMPLES, -1);
+        this.detectSettings.reduceBitDepth = this.config.getInteger (PROCESSING_REDUCE_BIT_DEPTH, 0);
+        this.detectSettings.reduceFrequency = this.config.getInteger (PROCESSING_REDUCE_FREQUENCY, 0);
 
         /////////////////////////////////////////////////////////
         // Options
 
-        this.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
+        this.detectSettings.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
         this.addNewFiles = this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false);
         this.enableDarkMode = this.config.getBoolean (ENABLE_DARK_MODE, false);
         this.renameSourceEnable = this.config.getBoolean (RENAMING_SOURCE_ENABLED, false);
@@ -542,18 +529,18 @@ public class MainFrame extends AbstractFrame implements INotifier
         /////////////////////////////////////////////////////////
         // Processing
 
-        this.config.setBoolean (PROCESSING_ENABLE, this.enableProcessing);
-        this.config.setBoolean (PROCESSING_ENABLE_NORMALIZE, this.enableNormalize);
-        this.config.setBoolean (PROCESSING_MAKE_MONO, this.enableMakeMono);
-        this.config.setBoolean (PROCESSING_ENABLE_TRIM_SAMPLE, this.enableTrimSample);
-        this.config.setInteger (PROCESSING_MAX_NUMBER_OF_SAMPLES, this.maxNumberOfSamples);
-        this.config.setInteger (PROCESSING_REDUCE_BIT_DEPTH, this.reduceBitDepth);
-        this.config.setInteger (PROCESSING_REDUCE_FREQUENCY, this.reduceFrequency);
+        this.config.setBoolean (PROCESSING_ENABLE, this.detectSettings.enableProcessing);
+        this.config.setBoolean (PROCESSING_ENABLE_NORMALIZE, this.detectSettings.enableNormalize);
+        this.config.setBoolean (PROCESSING_MAKE_MONO, this.detectSettings.enableMakeMono);
+        this.config.setBoolean (PROCESSING_ENABLE_TRIM_SAMPLE, this.detectSettings.enableTrimSample);
+        this.config.setInteger (PROCESSING_MAX_NUMBER_OF_SAMPLES, this.detectSettings.maxNumberOfSamples);
+        this.config.setInteger (PROCESSING_REDUCE_BIT_DEPTH, this.detectSettings.reduceBitDepth);
+        this.config.setInteger (PROCESSING_REDUCE_FREQUENCY, this.detectSettings.reduceFrequency);
 
         /////////////////////////////////////////////////////////
         // Options
 
-        this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.createFolderStructure);
+        this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.detectSettings.createFolderStructure);
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles);
         this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode);
         this.config.setBoolean (RENAMING_SOURCE_ENABLED, this.renameSourceEnable);
@@ -589,7 +576,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openSettings ()
     {
-        this.settingsDialog.createFolderStructureCheckbox.setSelected (this.createFolderStructure);
+        this.settingsDialog.createFolderStructureCheckbox.setSelected (this.detectSettings.createFolderStructure);
         this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
         this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);
         this.settingsDialog.renameCheckbox.setSelected (this.renameSourceEnable);
@@ -597,17 +584,17 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         if (this.settingsDialog.display ())
         {
-            this.createFolderStructure = this.settingsDialog.createFolderStructureCheckbox.isSelected ();
+            this.detectSettings.createFolderStructure = this.settingsDialog.createFolderStructureCheckbox.isSelected ();
             this.addNewFiles = this.settingsDialog.addNewFilesCheckbox.isSelected ();
             this.enableDarkMode = this.settingsDialog.enableDarkModeCheckbox.isSelected ();
             this.renameSourceEnable = this.settingsDialog.renameCheckbox.isSelected ();
             this.renamingFilePath = this.settingsDialog.renameFilePathField.getText ();
 
-            this.csvRenameFile.clear ();
+            this.detectSettings.csvRenameFile.clear ();
             try
             {
                 if (this.renameSourceEnable)
-                    this.csvRenameFile.setRenameFile (new File (this.renamingFilePath));
+                    this.detectSettings.csvRenameFile.setRenameFile (new File (this.renamingFilePath));
             }
             catch (final IllegalArgumentException ex)
             {
@@ -624,24 +611,24 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openProcessing ()
     {
-        this.processingDialog.enableProcessingCheckbox.setSelected (this.enableProcessing);
-        this.processingDialog.normalizeCheckbox.setSelected (this.enableNormalize);
-        this.processingDialog.makeMonoCheckbox.setSelected (this.enableMakeMono);
-        this.processingDialog.trimSample.setSelected (this.enableTrimSample);
-        this.processingDialog.maxSamplesField.setText (this.maxNumberOfSamples < 0 ? "" : Integer.toString (this.maxNumberOfSamples));
-        this.processingDialog.reduceBitDepthCombobox.getSelectionModel ().select (this.reduceBitDepth);
-        this.processingDialog.reduceFrequencyCombobox.getSelectionModel ().select (this.reduceFrequency);
+        this.processingDialog.enableProcessingCheckbox.setSelected (this.detectSettings.enableProcessing);
+        this.processingDialog.normalizeCheckbox.setSelected (this.detectSettings.enableNormalize);
+        this.processingDialog.makeMonoCheckbox.setSelected (this.detectSettings.enableMakeMono);
+        this.processingDialog.trimSample.setSelected (this.detectSettings.enableTrimSample);
+        this.processingDialog.maxSamplesField.setText (this.detectSettings.maxNumberOfSamples < 0 ? "" : Integer.toString (this.detectSettings.maxNumberOfSamples));
+        this.processingDialog.selectBitDepth (this.detectSettings.reduceBitDepth);
+        this.processingDialog.selectFrequency (this.detectSettings.reduceFrequency);
 
         if (this.processingDialog.display ())
         {
-            this.enableProcessing = this.processingDialog.enableProcessingCheckbox.isSelected ();
-            this.enableNormalize = this.processingDialog.normalizeCheckbox.isSelected ();
-            this.enableMakeMono = this.processingDialog.makeMonoCheckbox.isSelected ();
-            this.enableTrimSample = this.processingDialog.trimSample.isSelected ();
+            this.detectSettings.enableProcessing = this.processingDialog.enableProcessingCheckbox.isSelected ();
+            this.detectSettings.enableNormalize = this.processingDialog.normalizeCheckbox.isSelected ();
+            this.detectSettings.enableMakeMono = this.processingDialog.makeMonoCheckbox.isSelected ();
+            this.detectSettings.enableTrimSample = this.processingDialog.trimSample.isSelected ();
             final String maxNumberText = this.processingDialog.maxSamplesField.getText ();
-            this.maxNumberOfSamples = maxNumberText.length () == 0 || maxNumberText.isBlank () ? -1 : Integer.parseInt (maxNumberText);
-            this.reduceBitDepth = this.processingDialog.reduceBitDepthCombobox.getSelectionModel ().getSelectedIndex ();
-            this.reduceFrequency = this.processingDialog.reduceFrequencyCombobox.getSelectionModel ().getSelectedIndex ();
+            this.detectSettings.maxNumberOfSamples = maxNumberText.length () == 0 || maxNumberText.isBlank () ? -1 : Integer.parseInt (maxNumberText);
+            this.detectSettings.reduceBitDepth = this.processingDialog.getBitDepth ();
+            this.detectSettings.reduceFrequency = this.processingDialog.getFrequency ();
         }
     }
 
@@ -673,15 +660,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
         final boolean detectPerformances = selectedType == DEST_TYPE_PERFORMANCE || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY;
 
-        final DetectSettings detectSettings = new DetectSettings ();
-        // TODO set all processing parameters
-        detectSettings.sourceFolder = this.sourceFolder;
-        detectSettings.outputFolder = this.outputFolder;
-        detectSettings.csvRenameFile = this.csvRenameFile;
-        detectSettings.libraryName = (detectPerformances ? this.performanceLibraryFilename : this.presetLibraryFilename).getText ().trim ();
-        detectSettings.wantsMultipleFiles = detectPerformances ? this.wantsMultiplePerformanceFiles () : this.wantsMultiplePresetFiles ();
-        detectSettings.createFolderStructure = this.createFolderStructure;
-        Platform.runLater ( () -> this.backend.detect (detector, creator, detectSettings, detectPerformances, onlyAnalyse));
+        this.detectSettings.libraryName = (detectPerformances ? this.performanceLibraryFilename : this.presetLibraryFilename).getText ().trim ();
+        this.detectSettings.wantsMultipleFiles = detectPerformances ? this.wantsMultiplePerformanceFiles () : this.wantsMultiplePresetFiles ();
+        Platform.runLater ( () -> this.backend.detect (detector, creator, this.detectSettings, detectPerformances, onlyAnalyse));
     }
 
 
@@ -712,33 +693,33 @@ public class MainFrame extends AbstractFrame implements INotifier
     private boolean verifyFolders ()
     {
         // Check source folder
-        this.sourceFolder = new File (this.sourcePathField.getEditor ().getText ());
-        if (!this.sourceFolder.exists () || !this.sourceFolder.isDirectory ())
+        this.detectSettings.sourceFolder = new File (this.sourcePathField.getEditor ().getText ());
+        if (!this.detectSettings.sourceFolder.exists () || !this.detectSettings.sourceFolder.isDirectory ())
         {
-            Functions.message ("@IDS_NOTIFY_FOLDER_DOES_NOT_EXIST", this.sourceFolder.getAbsolutePath ());
+            Functions.message ("@IDS_NOTIFY_FOLDER_DOES_NOT_EXIST", this.detectSettings.sourceFolder.getAbsolutePath ());
             this.sourcePathField.requestFocus ();
             return false;
         }
-        this.sourcePathHistory.add (0, this.sourceFolder.getAbsolutePath ());
+        this.sourcePathHistory.add (0, this.detectSettings.sourceFolder.getAbsolutePath ());
 
         // Check output folder
-        this.outputFolder = new File (this.destinationPathField.getEditor ().getText ());
-        if (!this.outputFolder.exists () && !this.outputFolder.mkdirs ())
+        this.detectSettings.outputFolder = new File (this.destinationPathField.getEditor ().getText ());
+        if (!this.detectSettings.outputFolder.exists () && !this.detectSettings.outputFolder.mkdirs ())
         {
-            Functions.message ("@IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", this.outputFolder.getAbsolutePath ());
+            Functions.message ("@IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", this.detectSettings.outputFolder.getAbsolutePath ());
             this.destinationPathField.requestFocus ();
             return false;
         }
-        if (!this.outputFolder.isDirectory ())
+        if (!this.detectSettings.outputFolder.isDirectory ())
         {
-            Functions.message ("@IDS_NOTIFY_FOLDER_DESTINATION_NOT_A_FOLDER", this.outputFolder.getAbsolutePath ());
+            Functions.message ("@IDS_NOTIFY_FOLDER_DESTINATION_NOT_A_FOLDER", this.detectSettings.outputFolder.getAbsolutePath ());
             this.destinationPathField.requestFocus ();
             return false;
         }
-        this.destinationPathHistory.add (0, this.outputFolder.getAbsolutePath ());
+        this.destinationPathHistory.add (0, this.detectSettings.outputFolder.getAbsolutePath ());
 
         // Output folder must be empty or add new must be active
-        return this.addNewFiles || this.isEmptyFolder (this.outputFolder.getPath ());
+        return this.addNewFiles || this.isEmptyFolder (this.detectSettings.outputFolder.getPath ());
     }
 
 
@@ -761,7 +742,7 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         try
         {
-            this.logWriter = new FileWriter (new File (this.outputFolder, "ConvertWithMoss.log"));
+            this.logWriter = new FileWriter (new File (this.detectSettings.outputFolder, "ConvertWithMoss.log"));
         }
         catch (final IOException ex)
         {

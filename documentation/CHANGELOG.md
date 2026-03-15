@@ -4,6 +4,8 @@
 
 * Added support for discoDSP Bliss
 * Improved sample writing progress logging output.
+* 1010music Samplers
+  * New: If the source material contains layered samples, a warning will be displayed.
 * DecentSampler
   * New: Write seqLength attribute for group as well.
 * Kontakt 5+

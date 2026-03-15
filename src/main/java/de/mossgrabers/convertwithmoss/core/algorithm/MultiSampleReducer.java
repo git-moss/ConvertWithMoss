@@ -51,8 +51,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  */
 public class MultiSampleReducer
 {
-    // TODO test
-
     /**
      * Reduces the number of samples in the groups to a maximum number.
      * 
