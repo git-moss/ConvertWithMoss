@@ -2,25 +2,28 @@
 
 ## 16.5.0 (unreleased)
 
-* Added support for discoDSP Bliss
-* Improved sample writing progress logging output.
+* Added support for discoDSP Bliss.
+* Added option to maximize samples.
+* Added several options to minimize the size of a multi-sample.
+* New: Improved sample writing progress logging output.
+* Fixed: Don't report WAV files with padded zeros at the end as broken.
 * 1010music Samplers
   * New: If the source material contains layered samples, a warning will be displayed.
 * DecentSampler
   * New: Write seqLength attribute for group as well.
 * Kontakt 5+
-  * Fixed: Hold and decay times were reversed.
+  * Fixed: Envelope hold and decay times were reversed.
 
 ## 16.2.0
 
-* Added support for reading Akai MESA (*.s3p)
-* Added support for reading Akai S1000/S3000 series images (*.iso)
-* Fixed: Gain could not be set below +0.125dB
+* Added support for reading Akai MESA (*.s3p).
+* Added support for reading Akai S1000/S3000 series images (*.iso).
+* Fixed: Gain could not be set below +0.125dB.
 * Fixed: Reading broken WAV files could make ConvertWithMoss hang.
 * Ableton ADV, Sf2, TX16W, Yamaha YSFC
   * Fixed: Negative fine tuning values could be off by 1 when written.
 * Akai AKP, MPC XPJ/XTY, TAL Sampler, TX16W
-  * Fixed: Reading: Pitch-bend down was inverted (pitching up instead of down)
+  * Fixed: Reading: Pitch-bend down was inverted (pitching up instead of down).
 * DecentSampler
   * Fixed: Creating presets did miss adding seqMode attribute for round_robin groups.
 * EXS24
@@ -38,7 +41,7 @@
 
 * Added support for reading Akai MPC XPJ and XTY files.
 * Akai AKP/AKM
-  * New: Renamed "Akai S5000/S6000" to "Akai AKP/AKM"
+  * New: Renamed "Akai S5000/S6000" to "Akai AKP/AKM".
   * New: Added reading support for Akai Z4/Z8/MPC4000 AKP/AKM format.
   * New: Added version information to the log file.
   * New: Improved conversion of filter resonance.

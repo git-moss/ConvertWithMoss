@@ -40,6 +40,7 @@ public class CLIBackend implements INotifier
     private static final Set<Integer> ALLOWED_BIT_DEPTHS  = new HashSet<> ();
     static
     {
+        ALLOWED_FREQUENCIES.add (Integer.valueOf (48000));
         ALLOWED_FREQUENCIES.add (Integer.valueOf (44100));
         ALLOWED_FREQUENCIES.add (Integer.valueOf (32000));
         ALLOWED_FREQUENCIES.add (Integer.valueOf (31250));
@@ -55,7 +56,7 @@ public class CLIBackend implements INotifier
 
         ALLOWED_BIT_DEPTHS.add (Integer.valueOf (24));
         ALLOWED_BIT_DEPTHS.add (Integer.valueOf (16));
-        ALLOWED_BIT_DEPTHS.add (Integer.valueOf (12));
+        ALLOWED_BIT_DEPTHS.add (Integer.valueOf (8));
     }
 
     private final Map<String, IDetector<?>> detectorsByName = new HashMap<> ();
@@ -100,6 +101,16 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-l", "--library").paramLabel ("LIBRARY").type (String.class).description ("Name for the library. Set to create a library.").build ());
             spec.addOption (OptionSpec.builder ("-p").paramLabel ("KEY=VALUE").description ("Key-value pairs in the form -pkey1=value1,key2=value2,...").required (false).arity ("0..*").type (Map.class).auxiliaryTypes (String.class, String.class).defaultValue (null).build ());
             spec.addOption (OptionSpec.builder ("-r", "--rename").paramLabel ("RENAME").type (File.class).description ("Configuration file for automatic file renaming.").build ());
+
+            // Processing parameters
+            spec.addOption (OptionSpec.builder ("-Ze", "--ProcessEnable").paramLabel ("PROCESS_ENABLE").type (Boolean.class).description ("Enables processing if set to true.").build ());
+            spec.addOption (OptionSpec.builder ("-Zn", "--ProcessNormalize").paramLabel ("PROCESS_NORMALIZE").type (Boolean.class).description ("Enables normalization if set to true and processing is enabled.").build ());
+            spec.addOption (OptionSpec.builder ("-Zm", "--ProcessMakeMono").paramLabel ("PROCESS_MAKE_MONO").type (Boolean.class).description ("Converts all samples to mono, if processing is enabled.").build ());
+            spec.addOption (OptionSpec.builder ("-Zt", "--ProcessTrim").paramLabel ("PROCESS_TRIM").type (Boolean.class).description ("Trims the start and end of all samples, if processing is enabled.").build ());
+            spec.addOption (OptionSpec.builder ("-Zx", "--ProcessMaxSamples").paramLabel ("PROCESS_MAX_SAMPLES").type (Integer.class).description ("Reduces the number of all samples to this maximum number, if processing is enabled.").build ());
+            spec.addOption (OptionSpec.builder ("-Zb", "--ProcessBitDepth").paramLabel ("PROCESS_BIT_DEPTH").type (Integer.class).description ("Reduces the bit-depth of all samples to this maximum value, if processing is enabled. Valid numbers are: 8, 16 and 24").build ());
+            spec.addOption (OptionSpec.builder ("-Zf", "--ProcessFrequency").paramLabel ("PROCESS_FREQUENCY").type (Integer.class).description ("Reduces the sample-rate of all samples to this maximum value, if processing is enabled. Valid numbers are: 48000, 44100, 32000, 31250, 30000, 28000, 27000, 24000, 22050, 16000, 12000, 11025 and 8000").build ());
+
             spec.addPositional (PositionalParamSpec.builder ().paramLabel ("SOURCE_FOLDER").type (File.class).description ("The source folder to process.").required (true).build ());
             spec.addPositional (PositionalParamSpec.builder ().paramLabel ("DESTINATION_FOLDER").type (File.class).description ("The destination folder to write to.").required (true).build ());
 
@@ -154,13 +165,13 @@ public class CLIBackend implements INotifier
         final DetectSettings detectSettings = new DetectSettings ();
 
         // Processing parameters
-        detectSettings.enableProcessing = parseResult.matchedOptionValue ("Penable", Boolean.FALSE).booleanValue ();
-        detectSettings.enableNormalize = parseResult.matchedOptionValue ("Pnormalize", Boolean.FALSE).booleanValue ();
-        detectSettings.enableMakeMono = parseResult.matchedOptionValue ("Pmono", Boolean.FALSE).booleanValue ();
-        detectSettings.enableTrimSample = parseResult.matchedOptionValue ("Ptrim", Boolean.FALSE).booleanValue ();
-        detectSettings.maxNumberOfSamples = parseResult.matchedOptionValue ("PmaxSamples", Integer.valueOf (-1)).intValue ();
-        final Integer bitDepth = parseResult.matchedOptionValue ("PbitDepth", Integer.valueOf (0));
-        if (bitDepth != null)
+        detectSettings.enableProcessing = parseResult.matchedOptionValue ("Ze", Boolean.FALSE).booleanValue ();
+        detectSettings.enableNormalize = parseResult.matchedOptionValue ("Zn", Boolean.FALSE).booleanValue ();
+        detectSettings.enableMakeMono = parseResult.matchedOptionValue ("Zm", Boolean.FALSE).booleanValue ();
+        detectSettings.enableTrimSample = parseResult.matchedOptionValue ("Zt", Boolean.FALSE).booleanValue ();
+        detectSettings.maxNumberOfSamples = parseResult.matchedOptionValue ("Zx", Integer.valueOf (-1)).intValue ();
+        final Integer bitDepth = parseResult.matchedOptionValue ("Zb", Integer.valueOf (0));
+        if (bitDepth != null && bitDepth.intValue () > 0)
         {
             if (!ALLOWED_BIT_DEPTHS.contains (bitDepth))
             {
@@ -169,8 +180,8 @@ public class CLIBackend implements INotifier
             }
             detectSettings.reduceBitDepth = bitDepth.intValue ();
         }
-        final Integer frequency = parseResult.matchedOptionValue ("Pfrequency", Integer.valueOf (0));
-        if (frequency != null)
+        final Integer frequency = parseResult.matchedOptionValue ("Zf", Integer.valueOf (0));
+        if (frequency != null && frequency.intValue () > 0)
         {
             if (!ALLOWED_FREQUENCIES.contains (frequency))
             {

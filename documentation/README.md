@@ -176,3 +176,5 @@ Multiple settings are concatenated by using a comma:
 Finally, an example for creating a library of performances:
 
 ```./ConvertWithMoss -s nki -d ysfc -l Pads -t performance D:\MySampler\Kontakt C:\ConversionOutput```
+
+Additionally, there are several parameters for processing the samples as well. They use 2 letters and always start with a 'Z'. Note that processing needs to be enabled by adding '-Ze'.

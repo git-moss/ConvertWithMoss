@@ -54,6 +54,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -248,8 +249,12 @@ public class MainFrame extends AbstractFrame implements INotifier
         HBox.setHgrow (destinationPane, Priority.ALWAYS);
 
         final BorderPane buttonColumn = new BorderPane ();
-        buttonColumn.setCenter (upperButtonPanel.getPane ());
-        buttonColumn.setBottom (lowerButtonPanel.getPane ());
+        final Pane upperButtonPane = upperButtonPanel.getPane ();
+        final Pane lowerButtonPane = lowerButtonPanel.getPane ();
+        upperButtonPane.setMinHeight (300);
+        lowerButtonPane.setMinHeight (110);
+        buttonColumn.setTop (upperButtonPane);
+        buttonColumn.setBottom (lowerButtonPane);
 
         this.mainPane = new BorderPane ();
         this.mainPane.setCenter (grid);
@@ -652,6 +657,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!detector.getSettings ().checkSettingsUI (this) || !creator.getSettings ().checkSettingsUI (this))
             return;
 
+        if (this.detectSettings.enableProcessing && !creator.checkProcessingCompatibility (this.detectSettings))
+            return;
+
         this.clearLog ();
 
         this.mainPane.setVisible (false);
@@ -766,7 +774,10 @@ public class MainFrame extends AbstractFrame implements INotifier
     {
         final boolean combine = this.combineWithPreviousMessage;
         this.combineWithPreviousMessage = !text.endsWith ("\n");
-        this.logger.info (text, combine);
+        if (this.executePane.isVisible ())
+            this.logger.info (text, combine);
+        else
+            Functions.message (text);
         this.logToFile (text);
     }
 
@@ -818,7 +829,10 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private void logErrorText (final String message)
     {
-        this.logger.error (message);
+        if (this.executePane.isVisible ())
+            this.logger.error (message);
+        else
+            Functions.error (message, null);
         this.logToFile (message);
     }
 
@@ -919,14 +933,12 @@ public class MainFrame extends AbstractFrame implements INotifier
         try
         {
             final Image icon = Functions.iconFor ("de/mossgrabers/convertwithmoss/images/" + iconName + ".png");
-
             final Button button = panel.createButton (icon, labelName, mnemonic);
             button.alignmentProperty ().set (Pos.CENTER_LEFT);
             button.graphicTextGapProperty ().set (12);
 
             final ImageView image = (ImageView) button.getGraphic ();
             image.setFitWidth (24);
-            // image.setFitHeight (24);
             image.setPreserveRatio (true);
 
             return button;

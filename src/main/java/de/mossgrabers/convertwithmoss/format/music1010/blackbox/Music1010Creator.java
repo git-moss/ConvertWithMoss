@@ -10,13 +10,16 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -56,6 +59,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
 
     private static final Map<String, String>    EMPTY_PARAM_ATTRIBUTES       = new HashMap<> ();
     private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
+    private static final Set<Integer>           SUPPORTED_BIT_DEPTHS         = new HashSet<> ();
     static
     {
         EMPTY_PARAM_ATTRIBUTES.put ("gaindb", "0");
@@ -148,6 +152,10 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("recusethres", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("recthresh", "-20000");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("recmonoutbus", "0");
+
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (16));
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (24));
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (32));
     }
 
 
@@ -265,6 +273,17 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
 
         this.progress.notifyDone ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        if (detectSettings.reduceBitDepth <= 0 || SUPPORTED_BIT_DEPTHS.contains (Integer.valueOf (detectSettings.reduceBitDepth)))
+            return true;
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16, 24");
+        return false;
     }
 
 

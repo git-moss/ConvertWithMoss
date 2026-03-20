@@ -18,6 +18,7 @@ import java.util.Set;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -59,6 +60,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
 
     private static final Map<String, String>    TRACK_PARAM_ATTRIBUTES       = new HashMap<> ();
     private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
+    private static final Set<Integer>           SUPPORTED_BIT_DEPTHS         = new HashSet<> ();
     static
     {
         TRACK_PARAM_ATTRIBUTES.put ("selcellpos", "0");
@@ -107,6 +109,10 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("lforatebeatsync", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("legatomode", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("celldisppos", "0");
+
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (16));
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (24));
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (32));
     }
 
 
@@ -237,6 +243,17 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
         }
 
         this.progress.notifyDone ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        if (detectSettings.reduceBitDepth <= 0 || SUPPORTED_BIT_DEPTHS.contains (Integer.valueOf (detectSettings.reduceBitDepth)))
+            return true;
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16, 24");
+        return false;
     }
 
 

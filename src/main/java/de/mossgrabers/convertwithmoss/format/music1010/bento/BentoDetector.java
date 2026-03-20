@@ -130,7 +130,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         {
             final String content = StreamUtils.readUTF8 (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseMetadataFile (file, basePath, document);
+            return this.parseXMLFile (file, basePath, document);
         }
         catch (final IOException | SAXException ex)
         {
@@ -141,7 +141,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Load and parse the metadata description file.
+     * Load and parse the XML description file.
      *
      * @param sourceFile The preset or library file
      * @param basePath The parent folder, in case of a library the relative folder in the ZIP
@@ -149,7 +149,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private IPerformanceSource parseMetadataFile (final File sourceFile, final String basePath, final Document document)
+    private IPerformanceSource parseXMLFile (final File sourceFile, final String basePath, final Document document)
     {
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
@@ -371,7 +371,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Play-range & Loops
 
         sampleZone.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0));
@@ -396,7 +396,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
         sampleZone.setReversed (isReversed);
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();

@@ -383,11 +383,6 @@ public class ConverterBackend
             for (final IGroup group: groups)
                 sampleZones.addAll (group.getSampleZones ());
 
-            if (this.detectionSettings.enableNormalize)
-            {
-                this.notifier.logText (" ");
-                this.notifier.log ("IDS_PROCESSING_NORMALIZING");
-            }
             if (this.detectionSettings.enableMakeMono)
             {
                 this.notifier.logText (" ");
@@ -401,12 +396,17 @@ public class ConverterBackend
             if (this.detectionSettings.reduceBitDepth > 0)
             {
                 this.notifier.logText (" ");
-                this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH", Integer.toString (this.detectionSettings.reduceBitDepth));
+                this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH_TO", Integer.toString (this.detectionSettings.reduceBitDepth));
             }
             if (this.detectionSettings.reduceFrequency > 0)
             {
                 this.notifier.logText (" ");
-                this.notifier.log ("IDS_PROCESSING_REDUCE_FREQUENCY", Integer.toString (this.detectionSettings.reduceFrequency));
+                this.notifier.log ("IDS_PROCESSING_REDUCE_FREQUENCY_TO", Integer.toString (this.detectionSettings.reduceFrequency));
+            }
+            if (this.detectionSettings.enableNormalize)
+            {
+                this.notifier.logText (" ");
+                this.notifier.log ("IDS_PROCESSING_NORMALIZING");
             }
             this.notifier.log ("IDS_NOTIFY_LINE_FEED");
             AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.enableNormalize);

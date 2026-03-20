@@ -34,8 +34,8 @@ public class ProcessingDialog extends AbstractDialog
 
     static
     {
-        Collections.addAll (BIT_DEPTH, "Ignore", "24 bit", "16 bit", "12 bit");
-        Collections.addAll (FREQ_RESOLUTiON, "Ignore", "44.1 kHz", "32 kHz", "31.25 kHz", "30 kHz", "28 kHz", "27 kHz", "24 kHz", "22.05 kHz", "16 kHz", "12 kHz", "11.025 kHz", "8 kHz");
+        Collections.addAll (BIT_DEPTH, "Ignore", "24 bit", "16 bit", "8 bit");
+        Collections.addAll (FREQ_RESOLUTiON, "Ignore", "48 kHz", "44.1 kHz", "32 kHz", "31.25 kHz", "30 kHz", "28 kHz", "27 kHz", "24 kHz", "22.05 kHz", "16 kHz", "12 kHz", "11.025 kHz", "8 kHz");
     }
 
     private final TraversalManager traversalManager = new TraversalManager ();
@@ -74,7 +74,7 @@ public class ProcessingDialog extends AbstractDialog
     /**
      * Select the bit depth.
      * 
-     * @param bitDepth The bit depth (12, 16, 24, all other values are off)
+     * @param bitDepth The bit depth (8, 16, 24, all other values are off)
      */
     public void selectBitDepth (final int bitDepth)
     {
@@ -83,7 +83,7 @@ public class ProcessingDialog extends AbstractDialog
         {
             case 24 -> itemIndex = 1;
             case 16 -> itemIndex = 2;
-            case 12 -> itemIndex = 3;
+            case 8 -> itemIndex = 3;
             default -> itemIndex = 0;
         }
 
@@ -94,7 +94,7 @@ public class ProcessingDialog extends AbstractDialog
     /**
      * Select the bit depth.
      * 
-     * @return The bit depth (12, 16, 24, -1 for off)
+     * @return The bit depth (8, 16, 24, -1 for off)
      */
     public int getBitDepth ()
     {
@@ -104,7 +104,7 @@ public class ProcessingDialog extends AbstractDialog
         {
             case 1 -> bitDepth = 24;
             case 2 -> bitDepth = 16;
-            case 3 -> bitDepth = 12;
+            case 3 -> bitDepth = 8;
             default -> bitDepth = -1;
         }
         return bitDepth;
@@ -114,25 +114,26 @@ public class ProcessingDialog extends AbstractDialog
     /**
      * Select the maximum frequency.
      * 
-     * @param frequency The frequency (12, 16, 24, all other values are off)
+     * @param frequency The frequency, e.g. 44100
      */
     public void selectFrequency (final int frequency)
     {
         final int itemIndex;
         switch (frequency)
         {
-            case 44100 -> itemIndex = 1;
-            case 32000 -> itemIndex = 2;
-            case 31250 -> itemIndex = 3;
-            case 30000 -> itemIndex = 4;
-            case 28000 -> itemIndex = 5;
-            case 27000 -> itemIndex = 6;
-            case 24000 -> itemIndex = 7;
-            case 22050 -> itemIndex = 8;
-            case 16000 -> itemIndex = 9;
-            case 12000 -> itemIndex = 10;
-            case 11025 -> itemIndex = 11;
-            case 8000 -> itemIndex = 12;
+            case 48000 -> itemIndex = 1;
+            case 44100 -> itemIndex = 2;
+            case 32000 -> itemIndex = 3;
+            case 31250 -> itemIndex = 4;
+            case 30000 -> itemIndex = 5;
+            case 28000 -> itemIndex = 6;
+            case 27000 -> itemIndex = 7;
+            case 24000 -> itemIndex = 8;
+            case 22050 -> itemIndex = 9;
+            case 16000 -> itemIndex = 10;
+            case 12000 -> itemIndex = 11;
+            case 11025 -> itemIndex = 12;
+            case 8000 -> itemIndex = 13;
             default -> itemIndex = 0;
         }
 
@@ -143,7 +144,7 @@ public class ProcessingDialog extends AbstractDialog
     /**
      * Get the the maximum frequency.
      * 
-     * @return The frequency (12, 16, 24, -1 to ignore)
+     * @return The frequency, e.g. 44100, -1 to ignore
      */
     public int getFrequency ()
     {
@@ -151,18 +152,19 @@ public class ProcessingDialog extends AbstractDialog
         final int frequency;
         switch (itemIndex)
         {
-            case 1 -> frequency = 44100;
-            case 2 -> frequency = 32000;
-            case 3 -> frequency = 31250;
-            case 4 -> frequency = 30000;
-            case 5 -> frequency = 28000;
-            case 6 -> frequency = 27000;
-            case 7 -> frequency = 24000;
-            case 8 -> frequency = 22050;
-            case 9 -> frequency = 16000;
-            case 10 -> frequency = 12000;
-            case 11 -> frequency = 11025;
-            case 12 -> frequency = 8000;
+            case 1 -> frequency = 48000;
+            case 2 -> frequency = 44100;
+            case 3 -> frequency = 32000;
+            case 4 -> frequency = 31250;
+            case 5 -> frequency = 30000;
+            case 6 -> frequency = 28000;
+            case 7 -> frequency = 27000;
+            case 8 -> frequency = 24000;
+            case 9 -> frequency = 22050;
+            case 10 -> frequency = 16000;
+            case 11 -> frequency = 12000;
+            case 12 -> frequency = 11025;
+            case 13 -> frequency = 8000;
             default -> frequency = -1;
         }
 

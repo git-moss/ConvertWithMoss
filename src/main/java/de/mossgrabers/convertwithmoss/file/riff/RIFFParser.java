@@ -16,6 +16,7 @@ import java.util.Map;
 import javax.imageio.stream.ImageInputStream;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
@@ -220,7 +221,12 @@ public class RIFFParser
                 final long idscan = this.getPosition ();
                 final int id = this.in.readFourCC ();
                 if (id == 0)
+                {
+                    // Only some final padding?
+                    if (StreamUtils.onlyZeros (this.in.readAllBytes ()))
+                        return;
                     throw new IOException ("Broken RIFF structure.");
+                }
 
                 if (id == CommonRiffChunkId.RIFF_ID.getFourCC ())
                     this.parseFORM (props);

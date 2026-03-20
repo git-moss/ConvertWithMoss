@@ -13,7 +13,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.ZoneChannels;
@@ -32,6 +34,14 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class KMPCreator extends AbstractCreator<KMPCreatorUI>
 {
+    private static final Set<Integer> SUPPORTED_BIT_DEPTHS = new HashSet<> ();
+    static
+    {
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (8));
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (16));
+    }
+
+
     /**
      * Constructor.
      *
@@ -105,6 +115,17 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
         new KSCFile (createdKMPNames).write (outputFile);
         this.progress.notifyDone ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        if (detectSettings.reduceBitDepth <= 0 || SUPPORTED_BIT_DEPTHS.contains (Integer.valueOf (detectSettings.reduceBitDepth)))
+            return true;
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "8, 16");
+        return false;
     }
 
 

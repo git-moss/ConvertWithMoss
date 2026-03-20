@@ -37,6 +37,7 @@ import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 
 import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
@@ -164,6 +165,14 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     public void clearCancelled ()
     {
         this.isCancelled.set (false);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        return true;
     }
 
 

@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -260,6 +261,17 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         }
 
         this.progress.notifyDone ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        if (detectSettings.reduceBitDepth <= 0 || detectSettings.reduceBitDepth == 16)
+            return true;
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16");
+        return false;
     }
 
 

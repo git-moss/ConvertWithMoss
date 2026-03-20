@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
@@ -63,6 +64,13 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
     private static final int                    PADDING                  = 46;
 
+    private static final Set<Integer>           SUPPORTED_BIT_DEPTHS     = new HashSet<> ();
+    static
+    {
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (16));
+        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (24));
+    }
+
 
     /**
      * Constructor.
@@ -97,6 +105,17 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
     public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
         this.storeMultisample (multisampleSources, destinationFolder, libraryName);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        if (detectSettings.reduceBitDepth <= 0 || SUPPORTED_BIT_DEPTHS.contains (Integer.valueOf (detectSettings.reduceBitDepth)))
+            return true;
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16, 24");
+        return false;
     }
 
 

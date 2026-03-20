@@ -1206,4 +1206,19 @@ public class StreamUtils
         for (int i = 0; i < count; i++)
             out.write (0);
     }
+
+
+    /**
+     * Checks if the given data array only contains zeros.
+     * 
+     * @param data The data to check
+     * @return True if empty
+     */
+    public static boolean onlyZeros (final byte [] data)
+    {
+        for (int i = 0; i < data.length; i++)
+            if (data[i] != 0)
+                return false;
+        return true;
+    }
 }
