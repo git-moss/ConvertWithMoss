@@ -1,6 +1,6 @@
 # Changes
 
-## 16.5.0 (unreleased)
+## 16.5.0
 
 * Added support for discoDSP Bliss.
 * Added option to maximize samples.
