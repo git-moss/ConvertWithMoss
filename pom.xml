@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.mossgrabers</groupId>
 	<artifactId>convertwithmoss</artifactId>
-	<version>16.5.0</version>
+	<version>16.5.1</version>
 	<packaging>jar</packaging>
 	<name>ConvertWithMoss</name>
 	<organization>

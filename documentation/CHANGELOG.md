@@ -1,5 +1,9 @@
 # Changes
 
+## 16.5.1
+
+* Fixed: Processing: Sample reduction did not always work and improved logging.
+
 ## 16.5.0
 
 * Added support for discoDSP Bliss.
