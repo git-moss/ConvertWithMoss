@@ -5,12 +5,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.mossgrabers</groupId>
 	<artifactId>convertwithmoss</artifactId>
-	<version>14.5.0</version>
+	<version>16.5.1</version>
 	<packaging>jar</packaging>
 	<name>ConvertWithMoss</name>
 	<organization>
 		<name>Jürgen Moßgraber</name>
-		<url>http://www.mossgrabers.de</url>
+		<url>https://www.mossgrabers.de</url>
 	</organization>
 
 	<properties>
@@ -31,30 +31,39 @@
 	</repositories>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.openjfx</groupId>
-			<artifactId>javafx-controls</artifactId>
-			<version>24.0.2</version>
-		</dependency>
+		<!-- Audio file support -->
 		<dependency>
 			<groupId>com.github.trilarion</groupId>
 			<artifactId>java-vorbis-support</artifactId>
 			<version>1.2.1</version>
 		</dependency>
 		<dependency>
-			<groupId>com.tianscar.javasound</groupId>
-			<artifactId>javasound-flac</artifactId>
-			<version>1.4.1</version>
+			<groupId>com.io7m.flannel</groupId>
+			<artifactId>com.io7m.flannel.core</artifactId>
+			<version>1.0.0</version>
 		</dependency>
+		<!-- Command line support -->		
 		<dependency>
 			<groupId>info.picocli</groupId>
 			<artifactId>picocli</artifactId>
 			<version>4.7.7</version>
 		</dependency>
+		<!-- User interface support -->		
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-controls</artifactId>
+			<version>25.0.2</version>
+		</dependency>
 		<dependency>
 			<artifactId>uitools</artifactId>
 			<groupId>de.mossgrabers</groupId>
-			<version>1.6.3</version>
+			<version>2.0.3</version>
+		</dependency>
+		<!-- JSON support -->		
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.21.2</version>
 		</dependency>
 	</dependencies>
 
@@ -65,7 +74,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.6.1</version>
+				<version>3.6.2</version>
 				<executions>
 					<execution>
 						<id>enforce-maven</id>
@@ -86,11 +95,11 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.14.0</version>
+				<version>3.15.0</version>
 				<configuration>
 					<fork>true</fork>
-					<source>23</source>
-					<target>23</target>
+					<source>25</source>
+					<target>25</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
@@ -98,7 +107,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.4.2</version>
+				<version>3.5.0</version>
 				<configuration>
 					<outputDirectory>target/lib</outputDirectory>
 					<archive>
@@ -131,7 +140,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.8.1</version>
+				<version>3.10.0</version>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>
@@ -154,7 +163,7 @@
 			<plugin>
 				<groupId>org.panteleyev</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
-				<version>1.6.6</version>
+				<version>1.7.4</version>
 				<configuration>
 					<input>target/lib</input>
 					<destination>target/release</destination>
@@ -164,7 +173,7 @@
 					<mainJar>convertwithmoss-${project.version}.jar</mainJar>
 					<mainClass>${main.class}</mainClass>
 					<appVersion>${project.version}</appVersion>
-					<copyright>(c) 2021-2025 by ${project.organization.name}</copyright>
+					<copyright>(c) 2021-2026 by ${project.organization.name}</copyright>
 					<description>A tool for converting multi-sample from one format to another.</description>
 					<vendor>${project.organization.name}</vendor>
 					<licenseFile>LICENSE</licenseFile>
@@ -180,7 +189,7 @@
 					<execution>
 						<id>win</id>
 						<configuration>
-							<type>MSI</type>
+							<type>EXE</type>
 							<icon>icons/convertwithmoss.ico</icon>
 							<winMenu>true</winMenu>
 							<winPerUserInstall>false</winPerUserInstall>
@@ -208,7 +217,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>versions-maven-plugin</artifactId>
-				<version>2.18.0</version>
+				<version>2.21.0</version>
 				<configuration>
 					<ignoredVersions>.*-M.*,.*-alpha.*,.*-beta.*,.*-ea.*</ignoredVersions>
 					<generateBackupPoms>false</generateBackupPoms>
@@ -224,7 +233,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
-				<version>3.3.1</version>
+				<version>3.5.0</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -244,7 +253,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.3</version>
+				<version>3.5.5</version>
 			</plugin>
 
 		</plugins>

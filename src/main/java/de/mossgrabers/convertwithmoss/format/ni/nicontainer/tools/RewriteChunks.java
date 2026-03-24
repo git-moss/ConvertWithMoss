@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.nicontainer.tools;
@@ -26,7 +26,7 @@ public class RewriteChunks
 {
     /**
      * The main method.
-     * 
+     *
      * @param args Not used
      */
     public static void mainX (final String [] args)
@@ -57,7 +57,7 @@ public class RewriteChunks
 
     /**
      * The main method.
-     * 
+     *
      * @param args The source file and then the output file
      */
     // TODO Rewrite test - remove

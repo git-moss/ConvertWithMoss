@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core;
@@ -11,7 +11,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
  * Base interface for creators and detectors.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public interface ICoreTask<T extends ICoreTaskSettings>

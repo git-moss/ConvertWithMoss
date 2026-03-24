@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core;
@@ -11,7 +11,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
  * Base class for creator and detector classes.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public abstract class AbstractCoreTask<T extends ICoreTaskSettings> implements ICoreTask<T>
@@ -68,24 +68,5 @@ public abstract class AbstractCoreTask<T extends ICoreTaskSettings> implements I
     public void shutdown ()
     {
         // Intentionally empty
-    }
-
-
-    protected void notifyProgress ()
-    {
-        this.notifier.log ("IDS_NOTIFY_PROGRESS");
-    }
-
-
-    protected void notifyNewline ()
-    {
-        this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-    }
-
-
-    protected void notifyNewline (final int count)
-    {
-        if (count > 0 && count % 80 == 0)
-            this.notifyNewline ();
     }
 }

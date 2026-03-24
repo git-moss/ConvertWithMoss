@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.aiff;
@@ -53,7 +53,7 @@ public class AiffFile
     // AIFC additions
     private static final String      AIFC_CHUNK_FORMAT_VERSION  = "FVER";
 
-    private static final Set<String> AIFF_TYPES                 = new HashSet<> (2);
+    private static final Set<String> AIFF_TYPES                 = HashSet.newHashSet (2);
     static
     {
         AIFF_TYPES.add (FORM_TYPE_AIFF);
@@ -286,7 +286,7 @@ public class AiffFile
         for (final AiffChunk chunk: this.chunkStack)
         {
             sb.append ("* ").append (chunk.getName ()).append (" ('").append (chunk.getId ()).append ("')\n");
-            sb.append ("    " + chunk.infoText ().replace ("\n", "\n    ")).append ('\n');
+            sb.append ("    ").append (chunk.infoText ().replace ("\n", "\n    ")).append ('\n');
         }
 
         if (!this.metadata.isEmpty ())

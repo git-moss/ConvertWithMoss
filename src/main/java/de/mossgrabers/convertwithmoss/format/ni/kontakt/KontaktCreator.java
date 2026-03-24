@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt;
@@ -87,7 +87,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             kontaktType.writeNKI (out, safeSampleFolderName, multisampleSource, calculateSampleSize (sampleFiles));
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -124,7 +124,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
         final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
         final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Format (this.notifier, false) : new Kontakt5Format (this.notifier);
-        this.createNKM (destinationFolder, performanceSource.getInstruments (), libraryName, kontaktType);
+        this.createNKM (destinationFolder, instruments, libraryName, kontaktType);
     }
 
 
@@ -146,7 +146,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             final int numInstruments = safeInstrumentSources.size ();
             if (numInstruments == 64)
             {
-                this.notifier.logError ("IDS_NKI_LIMITED_TO_64", Integer.toString (numInstruments));
+                this.notifier.logError ("IDS_ERR_LIMITED_INSTRUMENTS", Integer.toString (64), Integer.toString (numInstruments));
                 break;
             }
         }
@@ -171,7 +171,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             kontaktType.writeNKM (out, sampleFilePaths, safeInstrumentSources, calculateSampleSize (sampleFiles));
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 

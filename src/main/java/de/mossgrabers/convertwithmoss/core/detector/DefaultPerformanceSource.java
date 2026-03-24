@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.detector;
@@ -40,7 +40,7 @@ public class DefaultPerformanceSource extends DefaultSource implements IPerforma
 
     /**
      * Create and add an instrument source to the performance source.
-     * 
+     *
      * @param instrumentSource The instrument source to add
      */
     public void addInstrument (final IInstrumentSource instrumentSource)

@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.sfz;
@@ -88,12 +88,12 @@ public class SfzCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (SFZ_CONVERT_TO_FLAC);
+        final String value = parameters.remove (SFZ_CONVERT_TO_FLAC);
         this.convertToFlac = "1".equals (value);
 
         return true;
@@ -112,7 +112,7 @@ public class SfzCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the output samples be converted to FLAC?
-     * 
+     *
      * @return True to convert
      */
     public boolean convertToFlac ()

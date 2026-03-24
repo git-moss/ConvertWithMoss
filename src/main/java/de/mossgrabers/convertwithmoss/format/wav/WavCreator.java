@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.wav;
@@ -59,6 +59,6 @@ public class WavCreator extends AbstractWavCreator<WavChunkSettingsUI>
         safeCreateDirectory (sampleFolder);
         this.writeSamples (sampleFolder, multisampleSource);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 }

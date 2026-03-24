@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file;
@@ -8,6 +8,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -341,8 +342,24 @@ public final class AudioFileUtils
      */
     public static void decompressToWav (final File inputFile, final OutputStream outputStream) throws IOException
     {
+        try (final FileInputStream fileInputStream = new FileInputStream (inputFile))
+        {
+            decompressToWav (fileInputStream, outputStream);
+        }
+    }
+
+
+    /**
+     * De-compresses the input file and writes audio data in WAV format to the given output stream.
+     *
+     * @param inputStream The input stream to convert
+     * @param outputStream The output stream to write to
+     * @throws IOException Could not convert or write the file
+     */
+    public static void decompressToWav (final InputStream inputStream, final OutputStream outputStream) throws IOException
+    {
         // The conversion needs to be a 2 step process to get the length of the data
-        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputFile))
+        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputStream))
         {
             final AudioFormat sourceFormat = audioInputStream.getFormat ();
             final int channels = sourceFormat.getChannels ();
@@ -379,11 +396,11 @@ public final class AudioFileUtils
      *
      * @param sampleData The sample data
      * @param targetFormat The target format
-     * @return The byte contents of the file
+     * @param file The file to write to
      * @throws IOException Could not read/write
      * @throws UnsupportedAudioFileException The target audio format is not supported
      */
-    public static byte [] compressToFLAC (final ISampleData sampleData, final AudioFileFormat.Type targetFormat) throws IOException, UnsupportedAudioFileException
+    public static void compressToFLAC (final ISampleData sampleData, final AudioFileFormat.Type targetFormat, final File file) throws IOException, UnsupportedAudioFileException
     {
         final byte [] wavData = convertToWavData (sampleData, new DestinationAudioFormat ());
 
@@ -392,11 +409,12 @@ public final class AudioFileUtils
         {
             final AudioFormat sourceFormat = ais.getFormat ();
             final AudioFormat targetAudioFormat = new AudioFormat (sourceFormat.getSampleRate (), sourceFormat.getSampleSizeInBits (), sourceFormat.getChannels (), true, sourceFormat.isBigEndian ());
-            final AudioInputStream convertedAIS = AudioSystem.getAudioInputStream (targetAudioFormat, ais);
-
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ();
-            AudioSystem.write (convertedAIS, targetFormat, outputStream);
-            return outputStream.toByteArray ();
+            try (final AudioInputStream convertedAIS = AudioSystem.getAudioInputStream (targetAudioFormat, ais))
+            {
+                // IMPORTANT: we must write to a file not a stream since with a stream the FLAC
+                // header is not updated!
+                AudioSystem.write (convertedAIS, targetFormat, file);
+            }
         }
     }
 

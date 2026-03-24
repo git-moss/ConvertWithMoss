@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata;
@@ -31,7 +31,7 @@ public class PresetChunkData extends AbstractChunkData
 
     /**
      * Get the preset data.
-     * 
+     *
      * @return The preset data
      */
     public byte [] getPresetData ()
@@ -42,7 +42,7 @@ public class PresetChunkData extends AbstractChunkData
 
     /**
      * Set the preset data.
-     * 
+     *
      * @param presetData The preset data
      */
     public void setPresetData (final byte [] presetData)

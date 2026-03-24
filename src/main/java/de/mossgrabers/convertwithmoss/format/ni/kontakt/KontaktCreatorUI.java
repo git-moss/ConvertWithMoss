@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt;
@@ -112,14 +112,14 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
         // TODO Currently only Kontakt 1 supported...
         @SuppressWarnings("unused")
-        String value = parameters.remove (NKI_OUTPUT_FORMAT);
+        final String value = parameters.remove (NKI_OUTPUT_FORMAT);
         this.outputFormat = true;
 
         return true;
@@ -138,7 +138,7 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should Kontakt 1 format be created?
-     * 
+     *
      * @return True to create Kontakt 1
      */
     public boolean isKontakt1 ()

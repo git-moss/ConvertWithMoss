@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.yamaha.ysfc;
@@ -18,8 +18,8 @@ import java.util.Set;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
@@ -46,6 +46,15 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcCategories;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcFileFormat;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcKeybank;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPartElement;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformance;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformancePart;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
@@ -109,27 +118,28 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         FILTER_POLE_MAP.put (Integer.valueOf (19), Integer.valueOf (2)); // LPF12+BPF6
     }
 
-    // A = All, U = User, L = Library
+    // A = All, U = User, L = Library, W = Waveforms
     private static final String []                 ENDINGS                        =
     {
-        ".x0a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           // Motif
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // XS
+        // Motif XS
+        ".x0a",
         ".x0w",
-        ".x3a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           // Motif
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // XF
+        // Motif XF
+        ".x3a",
         ".x3w",
-        ".x6a",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           // MOXF
+        // MOXF
+        ".x6a",
         ".x6w",
-        ".x7u",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           // Montage
+        // Montage
+        ".x7u",
         ".x7l",
         ".x7a",
-        ".x8u",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           // MODX
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // /
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // MODX+
+        // MODX / MODX+
+        ".x8u",
         ".x8l",
         ".x8a",
-        ".y2l",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           // Montage
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // M
+        // Montage M
+        ".y2l",
         ".y2u"
     };
     private static final int                       SAMPLE_RESOLUTION              = 16;
@@ -198,7 +208,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -311,8 +321,8 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                         if (limitKeyrangeAndVelocity (sampleZone, element))
                         {
                             fillParameterValues (sampleZone, element);
-                            sampleZone.setBendDown ((part.getPitchBendRangeLower () - 64) * 100);
                             sampleZone.setBendUp ((part.getPitchBendRangeUpper () - 64) * 100);
+                            sampleZone.setBendDown ((part.getPitchBendRangeLower () - 64) * 100);
                             group.addSampleZone (sampleZone);
                         }
                     }
@@ -451,6 +461,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         final List<YamahaYsfcEntry> ewfmListChunks = ewfmChunk.getEntryListChunks ();
         final List<YamahaYsfcEntry> ewimListChunks = ewimChunk.getEntryListChunks ();
         final List<byte []> dwfmChunks = dwfmChunk.getDataArrays ();
+
         final List<byte []> dwimChunks = dwimChunk.getDataArrays ();
         if (ewfmListChunks.size () != ewimListChunks.size () || dwfmChunks.size () != dwimChunks.size () || ewfmListChunks.size () != dwfmChunks.size ())
         {
@@ -575,7 +586,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         zone.setVelocityHigh (keybank.getVelocityRangeUpper ());
         if (keybank.getFixedPitch () == 1)
             zone.setKeyTracking (0);
-        zone.setTune (keybank.getCoarseTune () + keybank.getFineTune () / 100.0);
+        zone.setTuning (keybank.getCoarseTune () + keybank.getFineTune () / 100.0);
 
         final int level = keybank.getLevel ();
         zone.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + (level - 1) * 0.375);
@@ -588,7 +599,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             final ISampleLoop loop = new DefaultSampleLoop ();
             zone.getLoops ().add (loop);
             loop.setStart (keybank.getLoopStart ());
-            loop.setEnd (keybank.getSampleLength ());
+            loop.setEnd (keybank.getLoopEnd ());
             if (loopMode == 2)
                 loop.setType (LoopType.BACKWARDS);
         }
@@ -707,7 +718,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
 
         final double pitchOffset = element.getCoarseTune () - 64 + (element.getFineTune () - 64) / 100.0;
-        zone.setTune (zone.getTune () + pitchOffset);
+        zone.setTuning (zone.getTuning () + pitchOffset);
         zone.setKeyTracking (element.getPitchKeyFollowSensitivity () / 100.0);
 
         zone.setPanning ((zone.getPanning () + MathUtils.normalizeIntegerRange (element.getPan (), -63, 63, 64)) / 2.0);
@@ -743,7 +754,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         final boolean hasNoEnvelope = pegHoldLevel == 128 && pegAttackLevel == 128 && pegDecay1Level == 128 && pegDecay2Level == 128 || pegHoldTime == 0 && pegAttackTime == 0 && pegDecay1Time == 0 && pegDecay2Time == 0 && pegReleaseTime == 0;
         if (!hasNoEnvelope)
         {
-            final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
             pitchEnvelopeModulator.setDepth (MathUtils.normalizeIntegerRange (element.getPegDepth (), -64, 63, 64));
             final IEnvelope pitchEnvelope = pitchEnvelopeModulator.getSource ();
             pitchEnvelope.setDelayTime (YamahaYsfcPartElement.convertEnvelopeTimeToSeconds (pegHoldTime));

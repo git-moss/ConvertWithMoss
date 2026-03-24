@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ableton;
@@ -172,24 +172,25 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Parse an Ableton preset XML document with a Simpler or Sampler device.
      *
-     * @param multiSampleFile The multi-sample source file
+     * @param sourceFile The multi-sample source file
      * @param deviceElement The device element
      * @param rootPath The root path where the samples are located
      * @param creator The creator value
      * @return The parse multi-sample source
      * @throws IOException Could not parse the document
      */
-    private IMultisampleSource parseSampler (final File multiSampleFile, final Element deviceElement, final File rootPath, final String creator) throws IOException
+    private IMultisampleSource parseSampler (final File sourceFile, final Element deviceElement, final File rootPath, final String creator) throws IOException
     {
-        final String name = FileUtils.getNameWithoutType (multiSampleFile);
+        final String name = FileUtils.getNameWithoutType (sourceFile);
 
-        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
         final IMetadata metadata = multisampleSource.getMetadata ();
         parseMetadata (deviceElement, metadata, creator);
 
         this.parseMultiSample (rootPath, multisampleSource, deviceElement);
         this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
+        this.updateCreationDateTime (metadata, sourceFile);
         return multisampleSource;
     }
 
@@ -324,7 +325,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityCrossfadeHigh (Math.abs (velFadehigh - velHigh));
 
         zone.setKeyRoot (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_ROOT_KEY, 60));
-        zone.setTune (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
+        zone.setTuning (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
         zone.setKeyTracking (Math.clamp (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_TUNE_SCALE, 0) / 100.0, 0, 1));
         zone.setPanning (getDoubleValueAttribute (multiSamplePartElement, AbletonTag.TAG_PANORAMA, 0));
 
@@ -564,7 +565,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
                     if (auxEnvelope != null)
                     {
-                        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                         pitchModulator.setDepth (auxDepth);
                         pitchModulator.setSource (auxEnvelope);
                     }

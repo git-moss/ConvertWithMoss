@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.wav;
@@ -8,16 +8,22 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
+import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
+import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFVisitor;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 
 
 /**
@@ -27,6 +33,12 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffID;
  */
 public class WaveFile extends AbstractRIFFFile
 {
+    private static final Collection<Class<? extends RiffChunkId>> WAVE_RIFF_CHUNK_IDS = new ArrayList<> ();
+    static
+    {
+        Collections.addAll (WAVE_RIFF_CHUNK_IDS, CommonRiffChunkId.class, InfoRiffChunkId.class, WaveRiffChunkId.class);
+    }
+
     FormatChunk                  formatChunk;
     DataChunk                    dataChunk;
     BroadcastAudioExtensionChunk broadcastAudioExtensionChunk = null;
@@ -88,7 +100,7 @@ public class WaveFile extends AbstractRIFFFile
      */
     public WaveFile ()
     {
-        super (RiffID.WAVE_ID);
+        super (WaveRiffChunkId.WAVE_ID);
     }
 
 
@@ -101,14 +113,14 @@ public class WaveFile extends AbstractRIFFFile
      */
     public static long getPositionOfDataChunkData (final File wavFile) throws IOException
     {
-        final RIFFParser riffParser = new RIFFParser ();
-        riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
+        final RIFFParser riffParser = new RIFFParser (WAVE_RIFF_CHUNK_IDS);
+        riffParser.declareGroupChunk (InfoRiffChunkId.INFO_ID.getFourCC (), CommonRiffChunkId.LIST_ID);
         try (final InputStream inputStream = new FileInputStream (wavFile))
         {
             final DataChunkPositionRIFFVisitor callback = new DataChunkPositionRIFFVisitor (riffParser);
             try
             {
-                riffParser.parse (inputStream, callback, true, true);
+                riffParser.parse (inputStream, callback);
             }
             catch (final ParseException ex)
             {
@@ -130,9 +142,11 @@ public class WaveFile extends AbstractRIFFFile
      */
     public void read (final InputStream inputStream, final boolean ignoreChunkErrors) throws IOException, ParseException
     {
-        final RIFFParser riffParser = new RIFFParser ();
-        riffParser.declareGroupChunk (RiffID.INFO_ID.getId (), RiffID.LIST_ID.getId ());
-        riffParser.parse (inputStream, this, ignoreChunkErrors, ignoreChunkErrors);
+        final RIFFParser riffParser = new RIFFParser (WAVE_RIFF_CHUNK_IDS);
+        riffParser.setIgnoreChunkErrors (ignoreChunkErrors);
+        riffParser.setIgnoreUnknownChunks (ignoreChunkErrors);
+        riffParser.declareGroupChunk (InfoRiffChunkId.INFO_ID.getFourCC (), CommonRiffChunkId.LIST_ID);
+        riffParser.parse (inputStream, this);
 
         // Workaround for broken(?) WAV files which have the wave data after(!) the data chunk
         if (this.formatChunk != null && this.dataChunk != null && this.dataChunk.getDataSize () == 0 && inputStream.available () > 0)
@@ -317,6 +331,29 @@ public class WaveFile extends AbstractRIFFFile
     }
 
 
+    /**
+     * Calculates the size of all WAV files.
+     *
+     * @param sampleFiles The sample files (must be all WAV files).
+     * @return The summed size
+     * @throws IOException Could not read a file
+     */
+    public static int calculateSampleSize (final List<File> sampleFiles) throws IOException
+    {
+        int size = 0;
+        try
+        {
+            for (final File file: sampleFiles)
+                size += new WaveFile (file, true).getDataChunk ().getData ().length;
+        }
+        catch (final ParseException ex)
+        {
+            throw new IOException (ex);
+        }
+        return size;
+    }
+
+
     private boolean compareSampleChunk (final SampleChunk otherSample)
     {
         if (this.sampleChunk == null && otherSample == null)
@@ -331,9 +368,9 @@ public class WaveFile extends AbstractRIFFFile
     @Override
     public void visitChunk (final RawRIFFChunk group, final RawRIFFChunk chunk) throws ParseException
     {
-        if (group.getType () == RiffID.INFO_ID.getId () && group.getId () == RiffID.LIST_ID.getId ())
+        if (group.getType () == InfoRiffChunkId.INFO_ID.getFourCC () && group.getId ().getFourCC () == CommonRiffChunkId.LIST_ID.getFourCC ())
         {
-            if (chunk.getType () == RiffID.INFO_ID.getId ())
+            if (chunk.getType () == InfoRiffChunkId.INFO_ID.getFourCC ())
             {
                 if (this.infoChunk == null)
                 {
@@ -345,40 +382,46 @@ public class WaveFile extends AbstractRIFFFile
             return;
         }
 
-        final RiffID riffID = RiffID.fromId (chunk.getId ());
-        switch (riffID)
+        final RiffChunkId riffId = chunk.getId ();
+        final int id = riffId.getFourCC ();
+
+        if (id == WaveRiffChunkId.BEXT_ID.getFourCC ())
         {
-            case BEXT_ID:
-                this.broadcastAudioExtensionChunk = new BroadcastAudioExtensionChunk (chunk);
-                this.chunkStack.add (this.broadcastAudioExtensionChunk);
-                break;
-
-            case INST_ID:
-                this.instrumentChunk = new InstrumentChunk (chunk);
-                this.chunkStack.add (this.instrumentChunk);
-                break;
-
-            case FMT_ID:
-                this.formatChunk = new FormatChunk (chunk);
-                this.chunkStack.add (this.formatChunk);
-                break;
-
-            case DATA_ID:
-                this.dataChunk = new DataChunk (chunk);
-                this.chunkStack.add (this.dataChunk);
-                break;
-
-            case SMPL_ID:
-                this.sampleChunk = new SampleChunk (chunk);
-                this.chunkStack.add (this.sampleChunk);
-                break;
-
-            // Can safely be ignored
-            case FILLER_ID:
-            default:
-                this.chunkStack.add (new UnknownChunk (riffID, chunk));
-                break;
+            this.broadcastAudioExtensionChunk = new BroadcastAudioExtensionChunk (chunk);
+            this.chunkStack.add (this.broadcastAudioExtensionChunk);
+            return;
         }
+
+        if (id == WaveRiffChunkId.INST_ID.getFourCC ())
+        {
+            this.instrumentChunk = new InstrumentChunk (chunk);
+            this.chunkStack.add (this.instrumentChunk);
+            return;
+        }
+
+        if (id == WaveRiffChunkId.FMT_ID.getFourCC ())
+        {
+            this.formatChunk = new FormatChunk (chunk);
+            this.chunkStack.add (this.formatChunk);
+            return;
+        }
+
+        if (id == WaveRiffChunkId.DATA_ID.getFourCC ())
+        {
+            this.dataChunk = new DataChunk (chunk);
+            this.chunkStack.add (this.dataChunk);
+            return;
+        }
+
+        if (id == WaveRiffChunkId.SMPL_ID.getFourCC ())
+        {
+            this.sampleChunk = new SampleChunk (chunk);
+            this.chunkStack.add (this.sampleChunk);
+            return;
+        }
+
+        // FILLER_ID, all others can safely be ignored
+        this.chunkStack.add (new UnknownChunk (riffId, chunk));
     }
 
 
@@ -442,8 +485,7 @@ public class WaveFile extends AbstractRIFFFile
         @Override
         public void visitChunk (final RawRIFFChunk group, final RawRIFFChunk chunk) throws ParseException
         {
-            final RiffID riffID = RiffID.fromId (chunk.getId ());
-            if (riffID == RiffID.DATA_ID)
+            if (chunk.getId ().getFourCC () == WaveRiffChunkId.DATA_ID.getFourCC ())
                 this.dataChunkPosition = this.parser.getPosition () - chunk.getSize ();
         }
     }

@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt1;
@@ -76,7 +76,7 @@ public class Kontakt1Format extends AbstractKontaktFormat
 
     /** {@inheritDoc} */
     @Override
-    public void writeNKM (OutputStream out, List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, int sizeOfSamples) throws IOException
+    public void writeNKM (final OutputStream out, final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, final int sizeOfSamples) throws IOException
     {
         if (instrumentSources.isEmpty ())
             return;
@@ -127,7 +127,7 @@ public class Kontakt1Format extends AbstractKontaktFormat
 
     /**
      * Writes a NKI or NKM file to the given output stream.
-     * 
+     *
      * @param out Where to write to
      * @param type The type of document to write
      * @param xmlCode The XML description text

@@ -1,15 +1,17 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +29,7 @@ public class TagDetector
     private static final Map<String, String []> CATEGORIES                    = new HashMap<> ();
     private static final Map<String, String>    CATEGORY_LOOKUP               = new TreeMap<> (new StringLengthComparator ());
     private static final Map<String, String>    KEYWORD_LOOKUP                = new TreeMap<> (new StringLengthComparator ());
+    private static final List<String>           WORD_DICT                     = new ArrayList<> ();
 
     public static final String                  CATEGORY_UNKNOWN              = "Unknown";
     public static final String                  CATEGORY_ACOUSTIC_DRUM        = "Acoustic Drum";
@@ -160,6 +163,7 @@ public class TagDetector
             CATEGORY_BELL,
             "Musical Box",
             "Music Box",
+            "Fantasia",
             "Tubular",
             "Carillon"
         });
@@ -262,9 +266,11 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_GUITAR, new String []
         {
             "Electric Guitar",
+            "Mandolin",
             CATEGORY_GUITAR,
             "Rajao",
-            "Banjo"
+            "Banjo",
+            "GTR"
         });
         CATEGORIES.put (CATEGORY_HI_HAT, new String []
         {
@@ -278,7 +284,8 @@ public class TagDetector
             CATEGORY_KEYBOARD,
             "Clavinet",
             "Harpsi",
-            "Keys"
+            "Keys",
+            "KEY"
         });
         CATEGORIES.put (CATEGORY_KICK, new String []
         {
@@ -303,7 +310,8 @@ public class TagDetector
         {
             CATEGORY_ORCHESTRAL,
             "Orchestra",
-            "Score"
+            "Score",
+            "Cinema"
         });
         CATEGORIES.put (CATEGORY_ORGAN, new String []
         {
@@ -320,6 +328,7 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_PAD, new String []
         {
             CATEGORY_PAD,
+            "Mellotron",
             "Ambient",
             "Atmo"
         });
@@ -364,12 +373,14 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_PIPE, new String []
         {
-            CATEGORY_PIPE,
-            "Flute",
             "Didgeridoo",
+            "Shakuhachi",
+            "Shakuhashi",
+            "Recorder",
             "Whistle",
             "Piccolo",
-            "Recorder"
+            CATEGORY_PIPE,
+            "Flute"
         });
         CATEGORIES.put (CATEGORY_PLUCK, new String []
         {
@@ -415,8 +426,10 @@ public class TagDetector
             "Sweep",
             "Swell",
             "Virus",
+            "Juno",
             "Mini",
             "Moog",
+            "2600",
             "Syn",
             "SAW",
             "OB6",
@@ -424,15 +437,16 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_WINDS, new String []
         {
-            "Sax",
-            "Oboe",
-            "Clarinet",
-            "Bassoon",
-            "Harmonica",
-            "Bag Pipe",
             "Klarinette",
+            "Harmonica",
+            "Clarinet",
+            "Bag Pipe",
+            "Melodica",
+            "Woodwind",
+            "Bassoon",
             "Musette",
-            "Woodwind"
+            "Oboe",
+            "Sax"
         });
         CATEGORIES.put (CATEGORY_LOOPS, new String []
         {
@@ -456,6 +470,14 @@ public class TagDetector
         }
 
         Arrays.asList (KEYWORDS).forEach (value -> KEYWORD_LOOKUP.put (value.toUpperCase (Locale.US), value));
+
+        // Normalize and sort words by descending length for camel case method
+        final List<String> words = new ArrayList<> ();
+        words.addAll (CATEGORY_LOOKUP.values ());
+        Collections.addAll (words, KEYWORDS);
+        for (final String w: words)
+            WORD_DICT.add (w.toUpperCase (Locale.ROOT));
+        WORD_DICT.sort ( (a, b) -> Integer.compare (b.length (), a.length ()));
     }
 
 
@@ -573,6 +595,8 @@ public class TagDetector
      */
     public static String detect (final String [] texts, final Map<String, String> lookupMap, final String defaultTag)
     {
+        if (texts == null)
+            return defaultTag;
         return detect (Arrays.asList (texts), lookupMap, defaultTag);
     }
 
@@ -616,5 +640,54 @@ public class TagDetector
             final int diff = s2.length () - s1.length ();
             return diff == 0 ? s1.compareTo (s2) : diff;
         }
+    }
+
+
+    /**
+     * Creates camel case from the given input string. All categories and keywords are considered
+     * for upper-case.
+     *
+     * @param input The input string
+     * @return The output string in camel case notation
+     */
+    public static String toCamelCase (final String input)
+    {
+        if (input == null || input.isEmpty ())
+            return input;
+
+        final StringBuilder out = new StringBuilder ();
+        final String s = input.toUpperCase (Locale.ROOT);
+
+        int i = 0;
+        while (i < s.length ())
+        {
+            boolean matched = false;
+
+            for (final String w: WORD_DICT)
+                if (s.startsWith (w, i))
+                {
+                    out.append (capitalize (w));
+                    i += w.length ();
+                    matched = true;
+                    break;
+                }
+
+            if (!matched)
+            {
+                // Fallback: single character
+                out.append (Character.toLowerCase (s.charAt (i)));
+                i++;
+            }
+        }
+
+        // Ensure first character is upper case
+        out.setCharAt (0, Character.toUpperCase (out.charAt (0)));
+        return out.toString ();
+    }
+
+
+    private static String capitalize (final String w)
+    {
+        return w.substring (0, 1) + w.substring (1).toLowerCase (Locale.ROOT);
     }
 }

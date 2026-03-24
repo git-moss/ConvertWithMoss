@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.decentsampler;
@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -225,14 +226,14 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      * Load and parse the metadata description file.
      *
      * @param presetName The name to use for the preset
-     * @param multiSampleFile The preset or library file
+     * @param sourceFile The preset or library file
      * @param basePath The parent folder, in case of a library the relative folder in the ZIP
      *            directory structure
      * @param isLibrary If it is a library otherwise a preset
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private List<IMultisampleSource> parseMetadataFile (final String presetName, final File multiSampleFile, final String basePath, final boolean isLibrary, final Document document)
+    private List<IMultisampleSource> parseMetadataFile (final String presetName, final File sourceFile, final String basePath, final boolean isLibrary, final Document document)
     {
         final Element topElement = document.getDocumentElement ();
         if (!DecentSamplerTag.DECENTSAMPLER.equals (topElement.getNodeName ()))
@@ -254,13 +255,15 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         final double globalTuningOffset = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.GLOBAL_TUNING, 0);
 
-        final List<IGroup> groups = this.parseGroups (topElement, groupsElement, basePath, isLibrary ? multiSampleFile : null, globalTuningOffset);
+        final List<IGroup> groups = this.parseGroups (topElement, groupsElement, basePath, isLibrary ? sourceFile : null, globalTuningOffset);
 
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : presetName;
-        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, presetName, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
-        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts);
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, presetName, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        this.createMetadata (metadata, this.getFirstSample (groups), parts);
+        this.updateCreationDateTime (metadata, sourceFile);
 
         multisampleSource.setGroups (groups);
 
@@ -304,7 +307,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                 // Parse the filter envelope
                 final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
                 if (modulatorsElement != null)
-                {
                     for (final Element envelopeElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.ENVELOPE))
                     {
                         final Element bindingElement = XMLUtils.getChildElementByName (envelopeElement, DecentSamplerTag.BINDING);
@@ -318,7 +320,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                             break;
                         }
                     }
-                }
 
                 return Optional.of (filter);
             }
@@ -330,7 +331,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
     /**
      * Parses all groups.
-     * 
+     *
      * @param topElement The top element
      * @param groupElements The XML element containing all groups
      * @param basePath The base path of the samples
@@ -377,7 +378,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
     /**
      * Parse a group.
-     * 
+     *
      * @param topElement The top element
      * @param group The object to fill in the data
      * @param groupElement The XML group element
@@ -428,7 +429,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             if (pitchModulation.isPresent ())
             {
                 final IEnvelopeModulator envelopeModulator = pitchModulation.get ();
-                final IEnvelopeModulator pitchModulator = sampleZone.getPitchModulator ();
+                final IEnvelopeModulator pitchModulator = sampleZone.getPitchEnvelopeModulator ();
                 pitchModulator.setDepth (envelopeModulator.getDepth ());
                 pitchModulator.setSource (envelopeModulator.getSource ());
             }
@@ -457,7 +458,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         sampleZone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
         sampleZone.setGain (groupVolumeOffset + parseVolume (sampleElement, DecentSamplerTag.VOLUME));
         sampleZone.setPanning (groupPanningOffset + XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.PANNING, 0) / 100.0);
-        sampleZone.setTune (tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0));
+        sampleZone.setTuning (tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0));
 
         final String zoneLogic = this.currentGroupsElement.getAttribute (DecentSamplerTag.SEQ_MODE);
         sampleZone.setPlayLogic (zoneLogic != null && "round_robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
@@ -561,7 +562,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         // Parse the pitch envelope
         final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
         if (modulatorsElement != null)
-        {
             for (final Element envelopeElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.ENVELOPE))
             {
                 final Element bindingElement = XMLUtils.getChildElementByName (envelopeElement, DecentSamplerTag.BINDING);
@@ -573,7 +573,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                     return Optional.of (pitchEnvelopeModulator);
                 }
             }
-        }
         return Optional.empty ();
     }
 

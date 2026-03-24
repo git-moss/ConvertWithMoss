@@ -1,11 +1,10 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.sf2;
 
 import de.mossgrabers.convertwithmoss.file.riff.AbstractListChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -20,6 +19,6 @@ public class Sf2PresetDataChunk extends AbstractListChunk
      */
     public Sf2PresetDataChunk ()
     {
-        super (RiffID.SF_PDTA_ID.getId ());
+        super (Sf2RiffChunkId.PDTA_ID.getFourCC ());
     }
 }

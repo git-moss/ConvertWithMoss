@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.kmp;
@@ -103,7 +103,7 @@ public class KMPDetectorUI extends MetadataSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
@@ -126,7 +126,7 @@ public class KMPDetectorUI extends MetadataSettingsUI
 
     /**
      * Should KSC instead of KMP files be used as the input?
-     * 
+     *
      * @return True if they should be used
      */
     public boolean useKscFiles ()

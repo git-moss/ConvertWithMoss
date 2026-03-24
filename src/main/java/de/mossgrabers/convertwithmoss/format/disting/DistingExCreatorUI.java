@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.disting;
@@ -101,7 +101,7 @@ public class DistingExCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
@@ -129,7 +129,7 @@ public class DistingExCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the samples be trimmed?
-     * 
+     *
      * @return True to trim the samples
      */
     public boolean trimStartToEnd ()
@@ -140,7 +140,7 @@ public class DistingExCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the samples be limited to a maximum of 16bit / 44.1kHz?
-     * 
+     *
      * @return True to limit
      */
     public boolean limitTo16441 ()

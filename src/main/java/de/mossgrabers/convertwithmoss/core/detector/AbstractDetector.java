@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.detector;
@@ -232,11 +232,11 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     {
         try
         {
-            final List<IPerformanceSource> performances = this.readPerformanceFiles (file);
+            final List<IPerformanceSource> performances = this.readPerformanceFile (file);
             if (performances.isEmpty () || this.waitForDelivery ())
                 return;
 
-            for (IPerformanceSource performance: performances)
+            for (final IPerformanceSource performance: performances)
             {
                 if (this.waitForDelivery ())
                     break;
@@ -268,7 +268,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param sourceFile The file to process
      * @return The parsed performance(s)
      */
-    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         throw new RuntimeException (this.getClass ().getName () + " does not support Performance files.");
     }
@@ -629,7 +629,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected void createMetadata (final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts, final String category)
     {
-        if (this.settingsConfiguration instanceof MetadataSettingsUI metadataSettings)
+        if (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings)
         {
             metadata.detectMetadata (metadataSettings, parts, category);
             if (sampleData != null)
@@ -898,6 +898,10 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                         loops.clear ();
                 }
             }
+        }
+        catch (final FileNotFoundException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
         }
         catch (final IOException ex)
         {

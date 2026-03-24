@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ableton;
@@ -100,7 +100,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
             gos.write (metadata.get ().getBytes (StandardCharsets.UTF_8));
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -149,12 +149,12 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     text = text.replace ("%AMP_EG_RELEASE_SLOPE%", formatDouble (-ampEnvelope.getReleaseSlope ()));
 
                     // Pitch Envelope
-                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     final double pitchModDepth = pitchModulator.getDepth ();
                     text = text.replace ("%PITCH_EG_ENABLED%", pitchModDepth != 0 ? "true" : "false");
 
                     final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-                    text = text.replace ("%PITCH_EG_AMOUNT%", Integer.toString ((int) (pitchModDepth * 100)));
+                    text = text.replace ("%PITCH_EG_AMOUNT%", Integer.toString ((int) Math.round (pitchModDepth * 100)));
 
                     text = text.replace ("%PITCH_EG_ATTACK_TIME%", formatEnvTime (pitchEnvelope.getAttackTime ()));
                     text = text.replace ("%PITCH_EG_DECAY_TIME%", formatEnvTime (Math.max (0, pitchEnvelope.getHoldTime ()) + Math.max (0, pitchEnvelope.getDecayTime ())));
@@ -210,7 +210,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final double filterModDepth = cutoffModulator.getDepth ();
         text = text.replace ("%FILTER_EG_ENABLED%", filterModDepth != 0 ? "true" : "false");
-        text = text.replace ("%FILTER_EG_AMOUNT%", Integer.toString ((int) (filterModDepth * 72)));
+        text = text.replace ("%FILTER_EG_AMOUNT%", Integer.toString ((int) Math.round (filterModDepth * 72)));
 
         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 
@@ -285,9 +285,9 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
         zoneContent = zoneContent.replace ("%VEL_RANGE_LOW_CROSSFADE%", Integer.toString (Math.max (0, velLow - zone.getVelocityCrossfadeLow ())));
         zoneContent = zoneContent.replace ("%VEL_RANGE_HIGH_CROSSFADE%", Integer.toString (Math.min (127, velHigh + zone.getVelocityCrossfadeLow ())));
 
-        final double tune = zone.getTune ();
-        int semitones = (int) tune;
-        int cents = (int) ((tune - semitones) * 100);
+        final double tune = zone.getTuning ();
+        int semitones = (int) Math.round (tune);
+        int cents = (int) Math.round ((tune - semitones) * 100);
         if (cents > 50)
         {
             semitones += 1;
@@ -301,7 +301,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (Math.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - semitones, 0, 127)));
         zoneContent = zoneContent.replace ("%DETUNE%", Integer.toString (cents));
-        zoneContent = zoneContent.replace ("%TUNE_SCALE%", Integer.toString ((int) (zone.getKeyTracking () * 100)));
+        zoneContent = zoneContent.replace ("%TUNE_SCALE%", Integer.toString ((int) Math.round (zone.getKeyTracking () * 100)));
         zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getPanning ()));
         zoneContent = zoneContent.replace ("%VOLUME%", formatDouble (Math.pow (2, zone.getGain () / 6.0)));
 

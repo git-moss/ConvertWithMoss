@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.aiff;
@@ -174,8 +174,8 @@ public class AiffFileSampleData extends AbstractFileSampleData
         if (addRootKey && zone.getKeyRoot () == -1)
             zone.setKeyRoot (instrumentChunk.baseNote);
 
-        if (zone.getTune () == 0)
-            zone.setTune (Math.clamp (instrumentChunk.detune / 100.0, -0.5, 0.5));
+        if (zone.getTuning () == 0)
+            zone.setTuning (Math.clamp (instrumentChunk.detune / 100.0, -0.5, 0.5));
 
         if (addLoops)
             addLoops (instrumentChunk, aifFile.getMarkerChunk (), zone.getLoops ());

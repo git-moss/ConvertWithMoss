@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.bitwig;
@@ -69,7 +69,8 @@ public class BitwigMultisampleTag
         ATTRIBUTES.put (KEYWORD, Collections.emptySet ());
         ATTRIBUTES.put (GROUP, Set.of ("name", "color"));
         ATTRIBUTES.put (LAYER, Set.of ("name"));
-        ATTRIBUTES.put (SAMPLE, Set.of ("file", ATTR_GROUP, "sample-start", "sample-stop", "gain", "tune", "reverse", "zone-logic"));
+        // parameter-1 to 3 are not used but should not trigger an error log entry
+        ATTRIBUTES.put (SAMPLE, Set.of ("file", ATTR_GROUP, "sample-start", "sample-stop", "gain", "tune", "reverse", "zone-logic", "parameter-1", "parameter-2", "parameter-3"));
         ATTRIBUTES.put (KEY, Set.of ("root", "low", "high", "low-fade", "high-fade", "tune", "track"));
         ATTRIBUTES.put (VELOCITY, Set.of ("low", "high", "low-fade", "high-fade"));
         ATTRIBUTES.put (SELECT, Collections.emptySet ());

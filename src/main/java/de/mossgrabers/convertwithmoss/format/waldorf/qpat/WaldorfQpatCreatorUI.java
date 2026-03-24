@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.waldorf.qpat;
@@ -93,12 +93,12 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (QPAT_LIMIT_TO_16_441);
+        final String value = parameters.remove (QPAT_LIMIT_TO_16_441);
         this.limitTo16441 = "1".equals (value);
 
         return true;
@@ -117,7 +117,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
 
     /**
      * Should the output samples be limited to a maximum of 16bit / 44.1kHz?
-     * 
+     *
      * @return True to limit
      */
     public boolean limitTo16441 ()

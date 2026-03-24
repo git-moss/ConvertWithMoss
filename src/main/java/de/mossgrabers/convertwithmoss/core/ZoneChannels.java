@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core;
@@ -117,7 +117,7 @@ public enum ZoneChannels
      * Creates stereo sample zones (with stereo sample files) from split stereo sample zones.
      * Important: the input must have been checked to be split stereo with the
      * detectChannelConfiguration method.
-     * 
+     *
      * @param leftSampleZones All sample zones of the left channel
      * @param rightSampleZones All sample zones of the right channel
      * @return The group containing all resulting stereo sample zones if combination is possible
@@ -260,7 +260,7 @@ public enum ZoneChannels
             if (result != 0)
                 return result;
 
-            result = Double.compare (o1.getTune (), o2.getTune ());
+            result = Double.compare (o1.getTuning (), o2.getTuning ());
             if (result != 0)
                 return result;
 

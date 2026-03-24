@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.korgmultisample;
@@ -75,7 +75,7 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
 
         this.writeSamples (subFolder, multisampleSource);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -175,16 +175,16 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
     }
 
 
-    private static void writeSampleParameters (final ByteArrayOutputStream sampleOutput, final ISampleZone sample) throws IOException
+    private static void writeSampleParameters (final ByteArrayOutputStream sampleOutput, final ISampleZone zone) throws IOException
     {
-        final int start = sample.getStart ();
+        final int start = zone.getStart ();
         if (start > 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_START);
             StreamUtils.write7bitNumberLSB (sampleOutput, start);
         }
 
-        final List<ISampleLoop> loops = sample.getLoops ();
+        final List<ISampleLoop> loops = zone.getLoops ();
         if (!loops.isEmpty ())
         {
             final int loopStart = loops.get (0).getStart ();
@@ -195,7 +195,7 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
             }
         }
 
-        final int end = sample.getStop ();
+        final int end = zone.getStop ();
         if (end > 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_END);
@@ -214,48 +214,48 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
     }
 
 
-    private static void writeKeyZoneParameters (final ByteArrayOutputStream sampleOutput, final ISampleZone sample) throws IOException
+    private static void writeKeyZoneParameters (final ByteArrayOutputStream sampleOutput, final ISampleZone zone) throws IOException
     {
-        final int keyLow = sample.getKeyLow ();
+        final int keyLow = zone.getKeyLow ();
         if (keyLow > 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_KEY_BOTTOM);
             sampleOutput.write (keyLow);
         }
 
-        final int keyHigh = sample.getKeyHigh ();
+        final int keyHigh = zone.getKeyHigh ();
         if (keyHigh > 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_KEY_TOP);
             sampleOutput.write (keyHigh);
         }
 
-        final int keyRoot = sample.getKeyRoot ();
+        final int keyRoot = zone.getKeyRoot ();
         if (keyRoot > 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_KEY_ORIGINAL);
             sampleOutput.write (keyRoot);
         }
 
-        final double keyTracking = sample.getKeyTracking ();
+        final double keyTracking = zone.getKeyTracking ();
         if (keyTracking == 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_FIXED_PITCH);
             sampleOutput.write (1);
         }
 
-        final double tune = sample.getTune ();
+        final double tune = zone.getTuning ();
         if (tune != 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_TUNE);
-            final float val = (float) Math.min (999, Math.max (-999, tune * 1000));
+            final float val = (float) Math.clamp (tune * 1000, -999, 999);
             writeFloatLittleEndian (sampleOutput, val);
         }
 
-        final double gain = sample.getGain ();
+        final double gain = zone.getGain ();
         if (gain != 0)
         {
-            final float v = (float) Math.min (1000, Math.max (-1000, gain * 1000));
+            final float v = (float) Math.clamp (gain * 1000, -1000, 1000);
             sampleOutput.write (KorgmultisampleConstants.ID_LEVEL_LEFT);
             writeFloatLittleEndian (sampleOutput, v);
             sampleOutput.write (KorgmultisampleConstants.ID_LEVEL_RIGHT);

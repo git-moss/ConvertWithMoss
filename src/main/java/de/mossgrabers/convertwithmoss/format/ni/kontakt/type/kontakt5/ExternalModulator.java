@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5;
@@ -55,7 +55,7 @@ public class ExternalModulator
 
     /**
      * Get the destination type.
-     * 
+     *
      * @return The destination type
      */
     public long getDestType ()
@@ -66,7 +66,7 @@ public class ExternalModulator
 
     /**
      * Get the source type.
-     * 
+     *
      * @return The source type
      */
     public long getSourceType ()
@@ -77,7 +77,7 @@ public class ExternalModulator
 
     /**
      * Get the modulation intensity.
-     * 
+     *
      * @return The intensity [0..1], needs to be rounded after the 2nd fraction!
      */
     public float getIntensity ()
@@ -112,7 +112,7 @@ public class ExternalModulator
         // System.out.println ("Dest Type: " + this.destType);
 
         @SuppressWarnings("unused")
-        long unknown2 = StreamUtils.readUnsigned32 (in, false); // 01 00 00 00
+        final long unknown2 = StreamUtils.readUnsigned32 (in, false); // 01 00 00 00
         // System.out.println ("Unknown 2: " + unknown2);
 
         try
@@ -121,7 +121,7 @@ public class ExternalModulator
             final String destinationDesc = StreamUtils.readWith4ByteLengthAscii (in);
             // System.out.println ("Destination Desc:" + destinationDesc);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // System.out.println ("Destination Desc: Could not read text");
             return;
@@ -139,7 +139,7 @@ public class ExternalModulator
         // System.out.println ("A-C: " + a + ":" + b + ":" + c);
 
         @SuppressWarnings("unused")
-        int unknown3 = StreamUtils.readUnsigned16 (in, false);
+        final int unknown3 = StreamUtils.readUnsigned16 (in, false);
         // System.out.println ("Unknown 3: " + unknown3);
 
         // TODO There can be multiple descriptions, maybe similar to internal modulator
@@ -150,22 +150,22 @@ public class ExternalModulator
             modDescription = StreamUtils.readWith4ByteLengthAscii (in);
             // System.out.println ("Mod. Description: " + modDescription);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // System.out.println ("Mod. Description: Could not read text");
             return;
         }
 
         // TODO not correct
-        if (modDescription.length () > 0)
+        if (!modDescription.isEmpty ())
         {
             @SuppressWarnings("unused")
-            int unknown4 = in.read ();
+            final int unknown4 = in.read ();
             // System.out.println ("Unknown 4: " + unknown4);
         }
 
         @SuppressWarnings("unused")
-        long unknown5 = StreamUtils.readUnsigned16 (in, false);
+        final long unknown5 = StreamUtils.readUnsigned16 (in, false);
         // System.out.println ("Unknown 5: " + unknown5);
 
         try
@@ -174,29 +174,29 @@ public class ExternalModulator
             final String description = StreamUtils.readWith4ByteLengthAscii (in);
             // System.out.println ("Description: " + description);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // System.out.println ("Description: Could not read text");
             return;
         }
 
         @SuppressWarnings("unused")
-        long unknown6 = StreamUtils.readUnsigned32 (in, false);
+        final long unknown6 = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Unknown 6: " + unknown6);
 
         this.sourceType = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Source Type: " + this.sourceType);
 
         @SuppressWarnings("unused")
-        long unknown8 = StreamUtils.readUnsigned32 (in, false);
+        final long unknown8 = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Unknown 8: " + unknown8);
 
         @SuppressWarnings("unused")
-        long arraySlot = StreamUtils.readUnsigned32 (in, false);
+        final long arraySlot = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Array Slot: " + arraySlot);
 
         @SuppressWarnings("unused")
-        byte [] padding = in.readNBytes (7);
+        final byte [] padding = in.readNBytes (7);
 
         // System.out.println ("-----------------------");
     }

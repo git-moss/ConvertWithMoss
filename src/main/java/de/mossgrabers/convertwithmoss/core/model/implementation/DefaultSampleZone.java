@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
@@ -89,6 +89,21 @@ public class DefaultSampleZone implements ISampleZone
     public DefaultSampleZone ()
     {
         // Intentionally empty
+    }
+
+
+    /**
+     * Constructor for setting the sample data later.
+     *
+     * @param sampleName The name of the sample
+     * @param keyLow The lowest key covered by the range
+     * @param keyHigh The highest key covered by the range
+     */
+    public DefaultSampleZone (final String sampleName, final int keyLow, final int keyHigh)
+    {
+        this.name = sampleName;
+        this.keyLow = keyLow;
+        this.keyHigh = keyHigh;
     }
 
 
@@ -368,7 +383,7 @@ public class DefaultSampleZone implements ISampleZone
     @Override
     public void setGain (final double gain)
     {
-        this.gain = Math.clamp (gain, 0.125, 24.0);
+        this.gain = Math.min (gain, 24.0);
     }
 
 
@@ -398,7 +413,7 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public void setTune (final double tune)
+    public void setTuning (final double tune)
     {
         this.tune = tune;
     }
@@ -406,7 +421,7 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public double getTune ()
+    public double getTuning ()
     {
         return this.tune;
     }
@@ -494,7 +509,7 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public IEnvelopeModulator getPitchModulator ()
+    public IEnvelopeModulator getPitchEnvelopeModulator ()
     {
         return this.pitchModulator;
     }
@@ -535,13 +550,13 @@ public class DefaultSampleZone implements ISampleZone
         this.velocityCrossfadeHigh = other.getVelocityCrossfadeHigh ();
         this.gain = other.getGain ();
         this.panning = other.getPanning ();
-        this.tune = other.getTune ();
+        this.tune = other.getTuning ();
         this.keyTracking = other.getKeyTracking ();
         this.bendUp = other.getBendUp ();
         this.bendDown = other.getBendDown ();
         this.isReversed = other.isReversed ();
         this.amplitudeEnvelopeModulator = other.getAmplitudeEnvelopeModulator ();
-        this.pitchModulator = other.getPitchModulator ();
+        this.pitchModulator = other.getPitchEnvelopeModulator ();
         final Optional<IFilter> filterOpt = other.getFilter ();
         this.filter = filterOpt.isPresent () ? filterOpt.get () : null;
 

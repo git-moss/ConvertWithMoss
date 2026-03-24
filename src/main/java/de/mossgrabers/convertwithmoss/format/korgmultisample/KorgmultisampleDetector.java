@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.korgmultisample;
@@ -378,7 +378,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
                 case KorgmultisampleConstants.ID_TUNE:
                     r -= 4;
                     // Read value is in the range of [-999..999]
-                    zone.setTune (StreamUtils.readFloatLE (in.readNBytes (4)) / 1000.0);
+                    zone.setTuning (StreamUtils.readFloatLE (in.readNBytes (4)) / 1000.0);
                     break;
                 case KorgmultisampleConstants.ID_LEVEL_LEFT:
                     r -= 4;

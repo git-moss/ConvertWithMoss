@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core;
@@ -40,7 +40,7 @@ public interface IInstrumentSource extends ISource
 
     /**
      * The lower note which should limit the key-range (this note should still sound).
-     * 
+     *
      * @return The note [0..127]
      */
     int getClipKeyLow ();
@@ -48,7 +48,7 @@ public interface IInstrumentSource extends ISource
 
     /**
      * The upper note which should limit the key-range (this note should still sound).
-     * 
+     *
      * @return The note [0..127]
      */
     int getClipKeyHigh ();
@@ -56,7 +56,7 @@ public interface IInstrumentSource extends ISource
 
     /**
      * Set the lower note which should limit the key-range (this note should still sound).
-     * 
+     *
      * @param clipKeyLow The note [0..127]
      */
     void setClipKeyLow (int clipKeyLow);
@@ -64,7 +64,7 @@ public interface IInstrumentSource extends ISource
 
     /**
      * Set the upper note which should limit the key-range (this note should still sound).
-     * 
+     *
      * @param clipKeyHigh The note [0..127]
      */
     void setClipKeyHigh (int clipKeyHigh);

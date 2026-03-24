@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.decentsampler;
@@ -108,7 +108,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.remove (DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES);
+        final String value = parameters.remove (DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES);
         this.logUnsupportedAttributes = "1".equals (value);
         return true;
     }
@@ -126,7 +126,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
 
     /**
      * Should unsupported attributes be logged?
-     * 
+     *
      * @return True if they should be logged
      */
     public boolean logUnsupportedAttributes ()

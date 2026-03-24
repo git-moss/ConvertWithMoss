@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.samplefile;
@@ -288,7 +288,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        final String [] types = StringUtils.splitByComma (parameters.get (SAMPLEFILE_TYPE));
+        final String [] types = StringUtils.splitByComma (parameters.remove (SAMPLEFILE_TYPE));
         this.sampleFileTypes.clear ();
         for (final String type: types)
         {
@@ -312,7 +312,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
         this.crossfadeNotes = Math.clamp (this.crossfadeNotes, 0, 127);
         this.crossfadeVelocities = Math.clamp (this.crossfadeVelocities, 0, 127);
 
-        this.groupPatterns = StringUtils.splitByComma (parameters.get (SAMPLEFILE_GROUP_DETECTION_PATTERN));
+        this.groupPatterns = StringUtils.splitByComma (parameters.remove (SAMPLEFILE_GROUP_DETECTION_PATTERN));
         for (final String groupPattern: this.groupPatterns)
             if (!groupPattern.contains ("*"))
             {
@@ -320,13 +320,13 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
                 return false;
             }
 
-        String value = parameters.get (SAMPLEFILE_IS_ASCENDING);
+        String value = parameters.remove (SAMPLEFILE_IS_ASCENDING);
         this.isAscending = value == null || "1".equals (value);
 
-        this.monoSplitPatterns = StringUtils.splitByComma (parameters.get (SAMPLEFILE_MONO_SPLITS_PATTERN));
-        this.postfixTexts = StringUtils.splitByComma (parameters.get (SAMPLEFILE_POSTFIX));
+        this.monoSplitPatterns = StringUtils.splitByComma (parameters.remove (SAMPLEFILE_MONO_SPLITS_PATTERN));
+        this.postfixTexts = StringUtils.splitByComma (parameters.remove (SAMPLEFILE_POSTFIX));
 
-        value = parameters.get (SAMPLEFILE_IGNORE_LOOPS);
+        value = parameters.remove (SAMPLEFILE_IGNORE_LOOPS);
         this.shouldIgnoreLoops = "1".equals (value);
 
         return true;
@@ -363,7 +363,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the cross-fade velocity value.
-     * 
+     *
      * @return The cross-fade velocity value
      */
     public int getCrossfadeVelocities ()
@@ -374,7 +374,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the cross-fade notes value.
-     * 
+     *
      * @return The cross-fade notes value
      */
     public int getCrossfadeNotes ()
@@ -385,7 +385,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the patterns to detect groups.
-     * 
+     *
      * @return The group detection patterns
      */
     public String [] getGroupPatterns ()
@@ -396,7 +396,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get how to sort groups.
-     * 
+     *
      * @return True if they should be sorted ascending
      */
     public boolean isAscending ()
@@ -407,7 +407,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the patterns to detect mono files.
-     * 
+     *
      * @return The mono split patterns
      */
     public String [] getMonoSplitPatterns ()
@@ -418,7 +418,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Get the post-fix texts to remove.
-     * 
+     *
      * @return The texts
      */
     public String [] getPostfixTexts ()
@@ -429,7 +429,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /**
      * Should loop values be ignored?
-     * 
+     *
      * @return True to ignore loops
      */
     public boolean isShouldIgnoreLoops ()

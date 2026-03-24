@@ -438,6 +438,21 @@ public class StreamUtils
 
 
     /**
+     * Reads and converts a 4 byte float value.
+     *
+     * @param in The input stream to read from
+     * @param isBigEndian True if bytes of the size number are stored big-endian otherwise
+     *            little-endian (least significant bytes first)
+     * @return The float value
+     * @throws IOException Data could not be read
+     */
+    public static float readFloat (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        return readFloat (in.readNBytes (4), isBigEndian);
+    }
+
+
+    /**
      * Converts and writes a 4 byte float value.
      *
      * @param out The output stream to write to
@@ -459,6 +474,20 @@ public class StreamUtils
     public static float readFloatLE (final byte [] data)
     {
         return ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN).getFloat ();
+    }
+
+
+    /**
+     * Converts a N byte float value.
+     *
+     * @param data The N byte array
+     * @param isBigEndian True if bytes of the size number are stored big-endian otherwise
+     *            little-endian (least significant bytes first)
+     * @return The float value
+     */
+    public static float readFloat (final byte [] data, final boolean isBigEndian)
+    {
+        return ByteBuffer.wrap (data).order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN).getFloat ();
     }
 
 
@@ -536,21 +565,40 @@ public class StreamUtils
      */
     public static int readVariableLengthNumberLE (final InputStream in) throws IOException
     {
-        int length = in.read ();
+        final int length = in.read ();
         if (length < 0 || length > 4)
             throw new IOException ("Invalid byte length: " + length);
 
         int result = 0;
         for (int i = 0; i < length; i++)
         {
-            int b = in.read ();
+            final int b = in.read ();
             if (b == -1)
                 throw new IOException ("Unexpected end of stream");
             // Little-endian
-            result |= (b & 0xFF) << (8 * i);
+            result |= (b & 0xFF) << 8 * i;
         }
 
         return result;
+    }
+
+
+    /**
+     * Writes a variable-length little-endian integer to an OutputStream. The first byte indicates
+     * the number of following bytes (0..4).
+     *
+     * @param out The output stream to write to
+     * @param value The integer to write
+     * @throws IOException If an I/O error occurs
+     */
+    public static void writeVariableLengthNumberLE (final OutputStream out, final int value) throws IOException
+    {
+        int length = 0;
+        for (int v = value; v != 0; v >>>= 8)
+            length++;
+        out.write (length);
+        for (int i = 0; i < length; i++)
+            out.write (value >>> 8 * i & 0xFF);
     }
 
 
@@ -572,6 +620,25 @@ public class StreamUtils
 
 
     /**
+     * Reads all bytes from a buffer and interprets it as UTF-8 text.
+     *
+     * @param buffer The buffer to read from
+     * @return The read text
+     * @throws IOException Could not read
+     */
+    public static String readUTF8 (final ByteBuffer buffer) throws IOException
+    {
+        final byte [] bytes = new byte [buffer.remaining ()];
+        buffer.get (bytes);
+        String content = new String (bytes, StandardCharsets.UTF_8);
+        // Remove UTF-8 BOM
+        if (content.startsWith ("\uFEFF"))
+            content = content.substring (1);
+        return content;
+    }
+
+
+    /**
      * Reads a number of bytes from an input stream and interprets it as ASCII text.
      *
      * @param in The stream to read from
@@ -581,11 +648,43 @@ public class StreamUtils
      */
     public static String readASCII (final InputStream in, final int length) throws IOException
     {
-        final byte [] buffer = new byte [length];
-        final int resultLength = in.read (buffer);
-        if (resultLength != length)
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ASCII_LENGTH_TOO_SHORT", Integer.toBinaryString (length), Integer.toBinaryString (resultLength)));
-        return new String (buffer, StandardCharsets.US_ASCII);
+        return readASCII (in, length, StandardCharsets.US_ASCII, false);
+    }
+
+
+    /**
+     * Reads a fixed number of bytes from an input stream and interprets it as ASCII text.
+     *
+     * @param in The stream to read from
+     * @param length The length of the text
+     * @param reverse Reverses the text if true
+     * @return The read text
+     * @throws IOException Could not read
+     */
+    public static String readASCII (final InputStream in, final int length, final boolean reverse) throws IOException
+    {
+        return readASCII (in, length, StandardCharsets.US_ASCII, reverse);
+    }
+
+
+    /**
+     * Reads a fixed number of bytes from an input stream and interprets it as ASCII text.
+     *
+     * @param in The stream to read from
+     * @param length The length of the text
+     * @param charset The character set to use
+     * @param reverse Reverses the text if true
+     * @return The read text
+     * @throws IOException Could not read
+     */
+    public static String readASCII (final InputStream in, final int length, final Charset charset, final boolean reverse) throws IOException
+    {
+        final byte [] buffer = in.readNBytes (length);
+        if (buffer.length != length)
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ASCII_LENGTH_TOO_SHORT", Integer.toBinaryString (length), Integer.toBinaryString (buffer.length)));
+        if (reverse)
+            reverseArray (buffer);
+        return new String (buffer, charset);
     }
 
 
@@ -797,8 +896,32 @@ public class StreamUtils
      */
     public static String readWithLengthUTF16 (final InputStream in) throws IOException
     {
-        final int size = (int) readUnsigned32 (in, false);
-        return new String (in.readNBytes (size * 2), StandardCharsets.UTF_16LE);
+        return readWithLengthUTF16 (in, false);
+    }
+
+
+    /**
+     * Reads an UTF-16 string. The length of the string is stored in the first 4 bytes. There are no
+     * null termination bytes.
+     *
+     * @param in The input stream to read from
+     * @param isBigEndian True if bytes are stored big-endian
+     * @return The read string
+     * @throws IOException Could not read the string
+     */
+    public static String readWithLengthUTF16 (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        final int size = (int) readUnsigned32 (in, isBigEndian);
+        final byte [] content = in.readNBytes (size * 2);
+        if (isBigEndian)
+            for (int i = 0; i < size; i++)
+            {
+                final int pos = i * 2;
+                final byte store = content[pos];
+                content[pos] = content[pos + 1];
+                content[pos + 1] = store;
+            }
+        return new String (content, StandardCharsets.UTF_16LE);
     }
 
 
@@ -827,8 +950,24 @@ public class StreamUtils
     public static String readWith1ByteLengthAscii (final InputStream in) throws IOException
     {
         final int blocklength = in.read ();
+        if (blocklength < 0)
+            throw new IOException ("Negative string length.");
         final byte [] blockData = in.readNBytes (blocklength);
         return new String (blockData);
+    }
+
+
+    /**
+     * Writes an ASCII string. The first byte indicates the length of the string.
+     *
+     * @param out The output stream to write to
+     * @param text The ASCII string to write
+     * @throws IOException Could not write
+     */
+    public static void writeWith1ByteLengthAscii (final OutputStream out, final String text) throws IOException
+    {
+        out.write (text.length ());
+        out.write (text.getBytes ());
     }
 
 
@@ -1066,5 +1205,20 @@ public class StreamUtils
     {
         for (int i = 0; i < count; i++)
             out.write (0);
+    }
+
+
+    /**
+     * Checks if the given data array only contains zeros.
+     * 
+     * @param data The data to check
+     * @return True if empty
+     */
+    public static boolean onlyZeros (final byte [] data)
+    {
+        for (int i = 0; i < data.length; i++)
+            if (data[i] != 0)
+                return false;
+        return true;
     }
 }

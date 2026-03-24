@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.sf2;
@@ -29,7 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
+import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2File;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Instrument;
@@ -38,6 +38,7 @@ import de.mossgrabers.convertwithmoss.file.sf2.Sf2Modulator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Preset;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2PresetZone;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2SampleDescriptor;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 
@@ -108,10 +109,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + presetName;
             final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName, mappingName);
             final IMetadata metadata = source.getMetadata ();
-            metadata.detectMetadata (this.settingsConfiguration, parts);
-            metadata.setCreator (sf2File.getSoundDesigner ());
-            metadata.setCreationDateTime (sf2File.getParsedCreationDate ());
-            metadata.setDescription (sf2File.formatInfoFields (RiffID.INFO_CMNT, RiffID.INFO_ICMT, RiffID.INFO_COMM, RiffID.INFO_ICOP, RiffID.INFO_IMIT, RiffID.INFO_IMIU, RiffID.INFO_TORG, RiffID.INFO_TORG));
+            this.fillMetadata (sf2File, parts, metadata);
 
             final GeneratorHierarchy generators = new GeneratorHierarchy ();
 
@@ -156,6 +154,23 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         }
 
         return multisamples;
+    }
+
+
+    private void fillMetadata (final Sf2File sf2File, final String [] parts, final IMetadata metadata)
+    {
+        String description = sf2File.formatInfoFields (InfoRiffChunkId.INFO_CMNT, InfoRiffChunkId.INFO_ICMT, InfoRiffChunkId.INFO_COMM, InfoRiffChunkId.INFO_ICOP, InfoRiffChunkId.INFO_IMIT, InfoRiffChunkId.INFO_IMIU, InfoRiffChunkId.INFO_TORG, InfoRiffChunkId.INFO_TORG);
+        // Remove unnecessary 'Comment' labels. Order is important!
+        description = description.replace (InfoRiffChunkId.INFO_COMM.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_ICMT.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_CMNT.getDescription () + ": ", "");
+
+        metadata.detectMetadata (this.settingsConfiguration, parts);
+
+        if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
+            metadata.setCategory (TagDetector.detectCategory (description.split ("\n")));
+
+        metadata.setCreator (sf2File.getSoundDesigner ());
+        metadata.setCreationDateTime (sf2File.getParsedCreationDate ());
+        metadata.setDescription (description);
     }
 
 
@@ -436,7 +451,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
             final int pitchCorrection = sample.getPitchCorrection ();
             final double tune = Math.clamp ((pitchCorrection + (double) fineTune) / 100, -1, 1);
-            zone.setTune (tune);
+            zone.setTuning (tune);
             final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
             zone.setKeyTracking (Math.clamp (scaleTuning / 100.0, 0, 100));
 
@@ -526,7 +541,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 }
             }
 
-            final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
             final int pitchModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_PITCH).intValue ();
             pitchModulator.setDepth (pitchModDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
             if (pitchModDepth != 0)

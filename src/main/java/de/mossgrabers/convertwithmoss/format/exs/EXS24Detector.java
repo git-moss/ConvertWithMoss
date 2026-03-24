@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.exs;
@@ -19,13 +19,14 @@ import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -119,17 +120,17 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     /**
      * Create a multi-sample from the read EXS information.
      *
-     * @param file The source file
+     * @param sourceFile The source file
      * @param exs24File The read EXS24 file
      * @return The multi-sample source
      * @throws IOException Could not create a multi-sample
      */
-    private Optional<IMultisampleSource> createMultisample (final File file, final EXS24File exs24File) throws IOException
+    private Optional<IMultisampleSource> createMultisample (final File sourceFile, final EXS24File exs24File) throws IOException
     {
-        final String name = FileUtils.getNameWithoutType (file);
-        final File parentFile = file.getParentFile ();
+        final String name = FileUtils.getNameWithoutType (sourceFile);
+        final File parentFile = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
 
         final Map<Integer, IGroup> groupsMap = new TreeMap<> ();
         final Map<IGroup, EXS24Group> groupMapping = new HashMap<> ();
@@ -159,7 +160,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             zone.setGain (exs24Zone.volumeAdjust);
 
             if (exs24Zone.pitch && (exs24Zone.coarseTuning != 0 || exs24Zone.fineTuning != 0))
-                zone.setTune (exs24Zone.coarseTuning + exs24Zone.fineTuning / 100.0);
+                zone.setTuning (exs24Zone.coarseTuning + exs24Zone.fineTuning / 100.0);
 
             zone.setPanning (Math.clamp (exs24Zone.pan, -50, 50) / 50.0);
 
@@ -192,7 +193,9 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
 
         multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
         applyGlobalParameters (multisampleSource, exs24File.getParameters ());
-        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
+        this.updateCreationDateTime (metadata, sourceFile);
         return Optional.of (multisampleSource);
     }
 
@@ -277,7 +280,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             {
                 zone.setBendUp (bendUp);
                 zone.setBendDown (bendDown);
-                zone.setTune (zone.getTune () + tuneOffset);
+                zone.setTuning (zone.getTuning () + tuneOffset);
 
                 final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
                 amplitudeModulator.setDepth (1.0);

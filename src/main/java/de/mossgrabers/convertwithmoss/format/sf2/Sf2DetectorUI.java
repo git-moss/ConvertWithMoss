@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.sf2;
@@ -131,13 +131,13 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        String value = parameters.get (SF2_LOG_UNSUPPORTED_ATTRIBUTES);
+        String value = parameters.remove (SF2_LOG_UNSUPPORTED_ATTRIBUTES);
         this.logUnsupportedAttributes = "1".equals (value);
 
-        value = parameters.get (SF2_ADD_FILE_NAME_TAG);
+        value = parameters.remove (SF2_ADD_FILE_NAME_TAG);
         this.addFileName = "1".equals (value);
 
-        value = parameters.get (SF2_ADD_PROGRAM_NUMBER_TAG);
+        value = parameters.remove (SF2_ADD_PROGRAM_NUMBER_TAG);
         this.addProgramNumber = "1".equals (value);
 
         return true;
@@ -158,7 +158,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
 
     /**
      * Should the preset name be added to the filename?
-     * 
+     *
      * @return True to add it
      */
     public boolean addFileName ()
@@ -169,7 +169,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
 
     /**
      * Should a program number be added?
-     * 
+     *
      * @return True if a program number should be added
      */
     public boolean addProgramNumber ()
@@ -180,7 +180,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
 
     /**
      * Should unsupported attributes in the source be logged?
-     * 
+     *
      * @return True if they should be logged
      */
     public boolean logUnsupportedAttributes ()

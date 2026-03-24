@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.settings;
@@ -67,12 +67,13 @@ public class EmptySettingsUI implements ICoreTaskSettings
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (final INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         return true;
     }
 
 
+    /** {@inheritDoc} */
     @Override
     public String [] getCLIParameterNames ()
     {

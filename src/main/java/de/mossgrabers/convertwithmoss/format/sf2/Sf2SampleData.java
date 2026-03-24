@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.sf2;
@@ -88,15 +88,15 @@ public class Sf2SampleData extends AbstractSampleData
                 // Support for different lengths of left/right mono file
                 if (i < this.leftLengthInSamples && leftOffset < leftSampleData.length)
                 {
-                    data[dataOffset] = leftSampleData[leftOffset];
-                    data[dataOffset + 1] = leftSampleData[leftOffset + 1];
-                    data[dataOffset + 2] = leftSample24Data[leftStart + i];
+                    data[dataOffset] = leftSample24Data[leftStart + i];
+                    data[dataOffset + 1] = leftSampleData[leftOffset];
+                    data[dataOffset + 2] = leftSampleData[leftOffset + 1];
                 }
                 if (i < this.rightLengthInSamples && rightOffset < rightSampleData.length)
                 {
-                    data[dataOffset + 3] = rightSampleData[rightOffset];
-                    data[dataOffset + 4] = rightSampleData[rightOffset + 1];
-                    data[dataOffset + 5] = rightSample24Data[rightStart + i];
+                    data[dataOffset + 3] = rightSample24Data[rightStart + i];
+                    data[dataOffset + 4] = rightSampleData[rightOffset];
+                    data[dataOffset + 5] = rightSampleData[rightOffset + 1];
                 }
             }
         else

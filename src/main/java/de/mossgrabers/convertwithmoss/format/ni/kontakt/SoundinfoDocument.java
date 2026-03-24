@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt;
@@ -70,13 +70,14 @@ public class SoundinfoDocument
 
         // Read the attribute tags
         final Element attributesElement = XMLUtils.getChildElementByName (top, "attributes");
-        if (attributesElement != null)
-            for (final Element attributeElement: XMLUtils.getChildElementsByName (attributesElement, "attribute", false))
-            {
-                final String value = XMLUtils.read (attributeElement, "value");
-                if (value != null && !value.isBlank () && !IGNORE_TAGS.contains (value))
-                    this.categories.add (value);
-            }
+        if (attributesElement == null)
+            return;
+        for (final Element attributeElement: XMLUtils.getChildElementsByName (attributesElement, "attribute", false))
+        {
+            final String value = XMLUtils.read (attributeElement, "value");
+            if (value != null && !value.isBlank () && !IGNORE_TAGS.contains (value))
+                this.categories.add (value);
+        }
     }
 
 

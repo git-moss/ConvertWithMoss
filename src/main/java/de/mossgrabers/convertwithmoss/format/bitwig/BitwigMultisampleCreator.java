@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.bitwig;
@@ -66,7 +66,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
             this.storeSampleFiles (zos, null, multisampleSource);
         }
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -167,7 +167,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
         XMLUtils.setIntegerAttribute (keyElement, "high", limitToDefault (zone.getKeyHigh (), 127));
         XMLUtils.setIntegerAttribute (keyElement, "high-fade", limitToDefault (zone.getNoteCrossfadeHigh (), 0));
         XMLUtils.setDoubleAttribute (keyElement, "track", zone.getKeyTracking (), 4);
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         if (tune != 0)
             XMLUtils.setDoubleAttribute (keyElement, "tune", tune, 2);
 

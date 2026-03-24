@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5;
@@ -105,7 +105,7 @@ public class Group
     }
 
 
-    private void parseEnvelopes (final List<KontaktPresetChunk> children) throws IOException
+    private void parseEnvelopes (final List<KontaktPresetChunk> children)
     {
         for (final KontaktPresetChunk childChunk: children)
         {
@@ -113,8 +113,16 @@ public class Group
             if (id == KontaktPresetChunkID.PAR_INTERNAL_MOD || id == KontaktPresetChunkID.PAR_MOD_BASE)
             {
                 final InternalModulator internalModulator = new InternalModulator ();
-                internalModulator.read (childChunk);
-                this.internalModulators.add (internalModulator);
+                try
+                {
+                    internalModulator.read (childChunk);
+                    this.internalModulators.add (internalModulator);
+                }
+                catch (final RuntimeException | IOException ex)
+                {
+                    // TODO Improve reading InternalModulator
+                    // Ignore unknown formats (a user reported for v8.1) but don't crash
+                }
             }
         }
     }

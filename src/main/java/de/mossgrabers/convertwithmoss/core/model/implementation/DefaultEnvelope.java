@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
@@ -121,7 +121,7 @@ public class DefaultEnvelope implements IEnvelope
      */
     public static IEnvelope getDefaultEnvelope (final String category)
     {
-        if (category == null)
+        if (category == null || category.isBlank ())
             return ENVELOPE_PLUCKED;
 
         final IEnvelope envelope = DEFAULT_ENVELOPES.get (category);

@@ -39,9 +39,7 @@ public class CompressionUtils
      */
     public static String readZLIB (final RandomAccessFile fileAccess) throws IOException
     {
-        final Inflater inflater = new Inflater ();
-
-        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ())
+        try (final Inflater inflater = new Inflater (); final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ())
         {
             final byte [] inputBuffer = new byte [BUFFER_SIZE_INPUT];
             final byte [] outputBuffer = new byte [BUFFER_SIZE_OUTPUT];
@@ -90,12 +88,14 @@ public class CompressionUtils
     public static void writeZLIB (final OutputStream out, final String text, final int level) throws IOException
     {
         final byte [] input = text.getBytes (StandardCharsets.UTF_8);
-        final Deflater deflater = new Deflater (level);
-        deflater.setInput (input);
-        deflater.finish ();
-        final byte [] compressedData = new byte [input.length];
-        final int compressedDataLength = deflater.deflate (compressedData);
-        out.write (compressedData, 0, compressedDataLength);
-        deflater.end ();
+        try (final Deflater deflater = new Deflater (level))
+        {
+            deflater.setInput (input);
+            deflater.finish ();
+            final byte [] compressedData = new byte [input.length];
+            final int compressedDataLength = deflater.deflate (compressedData);
+            out.write (compressedData, 0, compressedDataLength);
+            deflater.end ();
+        }
     }
 }

@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.waldorf.qpat;
@@ -100,7 +100,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             recalculateSamplePositions (multisampleSource, 44100);
         this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -178,7 +178,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                if (sb.length () > 0)
+                if (!sb.isEmpty ())
                     sb.append ('\n');
 
                 final ISampleData sampleData = zone.getSampleData ();
@@ -190,7 +190,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!
-                sb.append (formatMapDouble (zone.getKeyRoot () - zone.getTune ())).append ('\t');
+                sb.append (formatMapDouble (zone.getKeyRoot () - zone.getTuning ())).append ('\t');
 
                 // FromNote / ToNote
                 sb.append (zone.getKeyLow ()).append ('\t').append (zone.getKeyHigh ()).append ('\t');
@@ -289,7 +289,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
             // Osc1PitchBendRange: [0..48] ~ [-24..24]
             final int pitchbend = Math.clamp (Math.round (firstZone.getBendUp () / 100.0), -24, 24);
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24));
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24.0f));
 
             // Osc1Keytrack: [0..1] ~ [-200..200] - already set in the sample maps
             final double keyTracking = 100.0;
@@ -303,7 +303,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // Osc1Pan: [0..1] ~ [L..R] - already set in the sample maps
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Pan", "Center", 0.5f));
 
-            createPitchEnvelopeModulator (parameters, firstZone.getPitchModulator (), i + 1);
+            createPitchEnvelopeModulator (parameters, firstZone.getPitchEnvelopeModulator (), i + 1);
 
             if (i == 0)
             {

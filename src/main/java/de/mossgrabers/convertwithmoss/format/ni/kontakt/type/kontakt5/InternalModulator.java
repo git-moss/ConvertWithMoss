@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5;
@@ -30,16 +30,17 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class InternalModulator
 {
-    private static final String                   PARAMETER_NAME_NONE                = "<none>";
-    private static final String                   PARAMETER_NAME_VOLUME              = "volume";
-    private static final String                   PARAMETER_NAME_PAN                 = "pan";
-    private static final String                   PARAMETER_NAME_CUTOFF              = "filterCutoff";
-    private static final String                   PARAMETER_NAME_PITCH               = "pitch";
-    private static final String                   MODULATOR_DESCRIPTION_AHDSR_VOLUME = "ENV_AHDSR_VOLUME";
-    private static final String                   MODULATOR_SOURCE_NAME_AHDSR        = "ENV_AHDSR";
+    private static final String                   PARAMETER_NAME_NONE                    = "<none>";
+    private static final String                   PARAMETER_NAME_VOLUME                  = "volume";
+    private static final String                   PARAMETER_NAME_PAN                     = "pan";
+    private static final String                   PARAMETER_NAME_CUTOFF                  = "filterCutoff";
+    private static final String                   PARAMETER_NAME_PITCH                   = "pitch";
+    private static final String                   MODULATOR_DESCRIPTION_AHDSR_VOLUME     = "ENV_AHDSR_VOLUME";
+    private static final String                   MODULATOR_SOURCE_NAME_AHDSR            = "ENV_AHDSR";
+    private static final String                   MODULATOR_SOURCE_NAME_LFO_MULTI_CUTOFF = "LFO_MULTI_CUTOFF";
 
-    private static final Map<String, Set<String>> NEEDS_PADDING                      = new HashMap<> ();
-    private static final Map<String, Set<String>> NO_PADDING                         = new HashMap<> ();
+    private static final Map<String, Set<String>> NEEDS_PADDING                          = new HashMap<> ();
+    private static final Map<String, Set<String>> NO_PADDING                             = new HashMap<> ();
     static
     {
         // Needs padding
@@ -55,7 +56,7 @@ public class InternalModulator
         filterCutoff.add ("ENV_AHDSR_CUTOFF");
         filterCutoff.add ("LFO_SAW_CUTOFF");
         filterCutoff.add ("LFO_RECT_CUTOFF");
-        filterCutoff.add ("LFO_MULTI_CUTOFF");
+        filterCutoff.add (MODULATOR_SOURCE_NAME_LFO_MULTI_CUTOFF);
         filterCutoff.add ("ENV_DBD_CUTOFF");
         filterCutoff.add ("ENV FLW_CUTOFF");
 
@@ -117,7 +118,7 @@ public class InternalModulator
         noFormantShift.add ("ENV_AHDSR_FORMANT");
 
         final Set<String> noGrainSpeed = new HashSet<> ();
-        noGrainSpeed.add ("LFO_MULTI_CUTOFF");
+        noGrainSpeed.add (MODULATOR_SOURCE_NAME_LFO_MULTI_CUTOFF);
         noGrainSpeed.add ("LFO_MULTI_SPEED");
         noGrainSpeed.add ("LFO_SAW_SPEED");
         noGrainSpeed.add ("ENV_AHDSR_SPEED");
@@ -270,8 +271,11 @@ public class InternalModulator
         if (id == KontaktPresetChunkID.PAR_MOD_BASE)
             StreamUtils.readUnsigned32 (in, false);
 
+        int mainVersion = in.read ();
+        if (mainVersion == 0)
+            mainVersion = in.read ();
         // Always 01
-        if (in.read () != 1)
+        if (mainVersion != 1)
             throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_INTERNAL_MOD_HEADER"));
 
         // Version: 0x80, 0x81
@@ -376,7 +380,7 @@ public class InternalModulator
             this.modulatorSourceName = StreamUtils.readWith4ByteLengthAscii (in);
             this.modulationSourceIndex = (int) StreamUtils.readUnsigned32 (in, false);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // This is a follow up exception if the padding in the first loop is detected falsely...
         }
@@ -392,7 +396,7 @@ public class InternalModulator
             if (PARAMETER_NAME_VOLUME.equals (modulatedParameter.parameterName) && ("LFO_SINE_VOLUME".equals (modulatedParameter.modulatorDescription) || "STEP_VOLUME".equals (modulatedParameter.modulatorDescription)))
                 return 1;
 
-            if (PARAMETER_NAME_PAN.equals (modulatedParameter.parameterName) && "ENV_DBD_PAN".equals (modulatedParameter.modulatorDescription) || PARAMETER_NAME_CUTOFF.equals (modulatedParameter.parameterName) && "LFO_MULTI_CUTOFF".equals (modulatedParameter.modulatorDescription))
+            if (PARAMETER_NAME_PAN.equals (modulatedParameter.parameterName) && "ENV_DBD_PAN".equals (modulatedParameter.modulatorDescription) || PARAMETER_NAME_CUTOFF.equals (modulatedParameter.parameterName) && MODULATOR_SOURCE_NAME_LFO_MULTI_CUTOFF.equals (modulatedParameter.modulatorDescription))
                 return 2;
             if ("vfType".equals (modulatedParameter.parameterName) && "LFO_MULTI_3X2_TYPE".equals (modulatedParameter.modulatorDescription))
                 return 2;
@@ -422,15 +426,15 @@ public class InternalModulator
         if (available < 59)
             return;
 
-        if (MODULATOR_SOURCE_NAME_AHDSR.equals (this.modulatorSourceName) || "<none>".equals (this.modulatorSourceName) || "".equals (this.modulatorSourceName))
+        if (MODULATOR_SOURCE_NAME_AHDSR.equals (this.modulatorSourceName) || PARAMETER_NAME_NONE.equals (this.modulatorSourceName) || "".equals (this.modulatorSourceName))
         {
             // Not used
             in.readNBytes (34);
 
             this.curve = StreamUtils.readFloatLE (in);
             this.attack = StreamUtils.readFloatLE (in);
-            this.hold = StreamUtils.readFloatLE (in);
             this.decay = StreamUtils.readFloatLE (in);
+            this.hold = StreamUtils.readFloatLE (in);
             this.release = StreamUtils.readFloatLE (in);
             this.sustain = StreamUtils.readFloatLE (in);
             this.ahdOnly = in.read () > 0;

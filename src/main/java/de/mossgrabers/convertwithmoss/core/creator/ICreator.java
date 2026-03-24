@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.creator;
@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
@@ -18,7 +19,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
  * Creates and stores a multi-sample file.
  *
  * @param <T> The type of the settings
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public interface ICreator<T extends ICoreTaskSettings> extends ICoreTask<T>
@@ -93,4 +94,13 @@ public interface ICreator<T extends ICoreTaskSettings> extends ICoreTask<T>
      * Clears the cancelled state. Call before each run.
      */
     void clearCancelled ();
+
+
+    /**
+     * Check if the target format is compatible with the given processing settings.
+     * 
+     * @param detectSettings The processing settings
+     * @return True if compatible
+     */
+    boolean checkProcessingCompatibility (DetectSettings detectSettings);
 }

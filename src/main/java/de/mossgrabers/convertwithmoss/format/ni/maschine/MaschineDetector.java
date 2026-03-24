@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.maschine;
@@ -13,8 +13,8 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine1.Maschine1Format;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine2.Maschine2Format;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -24,12 +24,16 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
+public class MaschineDetector extends AbstractDetector<MaschineDetectorUI>
 {
-    private static final String [] ENDINGS_ALL =
+    private static final String [] ENDINGS_ALL        =
     {
         ".mxsnd",
-        ".mxgrp"
+        ".msnd"
+    };
+    private static final String [] ENDINGS_ONLY_MXSND =
+    {
+        ".mxsnd"
     };
 
 
@@ -40,7 +44,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public MaschineDetector (final INotifier notifier)
     {
-        super ("Maschine (mxgrp, mxsnd)", "Maschine", notifier, new MetadataSettingsUI ("Maschine"));
+        super ("Maschine Sound", "Maschine", notifier, new MaschineDetectorUI ());
     }
 
 
@@ -48,7 +52,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
     @Override
     protected void configureFileEndings (final boolean detectPerformances)
     {
-        this.fileEndings = ENDINGS_ALL;
+        this.fileEndings = this.settingsConfiguration.scanForMsnd () ? ENDINGS_ALL : ENDINGS_ONLY_MXSND;
     }
 
 
@@ -69,7 +73,7 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError (ex, false);
+            this.notifier.logError ("IDS_NI_MASCHINE_READ_ERROR", ex);
         }
         return Collections.emptyList ();
     }
@@ -84,6 +88,11 @@ public class MaschineDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private IMaschineFormat detectFormat (final RandomAccessFile fileAccess) throws IOException
     {
+        final String startTag = StreamUtils.readASCII (fileAccess, 4);
+        fileAccess.seek (0);
+        if (Maschine1Format.START_TAG_LITTLE_ENDIAN.equals (startTag) || Maschine1Format.START_TAG_BIG_ENDIAN.equals (startTag))
+            return new Maschine1Format (this.notifier);
+
         final int typeID = fileAccess.readInt ();
 
         // Is this Maschine 2+ container format?

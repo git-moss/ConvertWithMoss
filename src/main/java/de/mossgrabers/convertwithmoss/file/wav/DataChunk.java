@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.wav;
@@ -8,7 +8,6 @@ import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 
 
 /**
@@ -27,7 +26,7 @@ public class DataChunk extends AbstractSpecificRIFFChunk
      */
     public DataChunk (final FormatChunk formatChunk, final int lengthInSamples)
     {
-        super (RiffID.DATA_ID, formatChunk.calculateDataSize (lengthInSamples));
+        super (WaveRiffChunkId.DATA_ID, formatChunk.calculateDataSize (lengthInSamples));
     }
 
 
@@ -40,7 +39,7 @@ public class DataChunk extends AbstractSpecificRIFFChunk
      */
     public DataChunk (final FormatChunk formatChunk, final byte [] data)
     {
-        super (RiffID.DATA_ID, data);
+        super (WaveRiffChunkId.DATA_ID, data);
     }
 
 
@@ -53,7 +52,7 @@ public class DataChunk extends AbstractSpecificRIFFChunk
      */
     public DataChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.DATA_ID, chunk);
+        super (WaveRiffChunkId.DATA_ID, chunk);
     }
 
 

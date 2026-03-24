@@ -34,18 +34,21 @@ jobs:
     strategy:
       matrix:
         include:
+        # Important: build_name is used in the pom.xml and must match!
           - os: ubuntu-latest
             artifact_name: convertwithmoss*.deb
             build_name: linux
           - os: windows-latest
-            artifact_name: ConvertWithMoss*.msi
+            artifact_name: ConvertWithMoss*.exe
             build_name: win
-          # This is ARM64
-          - os: macos-14
+          # JDK25 not yet included (which can be fixed) but also JavaFX is not available for Windows on ARM
+          #- os: windows-11-arm
+          #  artifact_name: ConvertWithMoss*.exe
+          #  build_name: win
+          - os: macos-15
             artifact_name: ConvertWithMoss*.dmg
             build_name: mac
-          # This is x64
-          - os: macos-13
+          - os: macos-15-intel
             artifact_name: ConvertWithMoss*.dmg
             build_name: mac
     
@@ -55,8 +58,15 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
-        java-version: 23
+        # Temurin crashes with: Error: /usr/lib/jvm/temurin-25-jdk-amd64/lib/ct.sym has been modified
+        # also there is no Windows ARM build
+        # distribution: 'temurin'
+        distribution: 'zulu'
+        java-version: 25
+    # Zulu does not contain WiX Toolset (Temurin does)!
+    - name: Install WiX Toolset
+      if: startsWith(matrix.os, 'windows')
+      run: choco install wixtoolset --no-progress -y
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
     - name: Publish jpackage result

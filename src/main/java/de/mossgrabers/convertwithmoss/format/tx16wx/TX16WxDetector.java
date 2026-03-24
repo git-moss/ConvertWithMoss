@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.tx16wx;
@@ -27,8 +27,8 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
@@ -121,7 +121,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
     @Override
     protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
-        final IInstrumentSource instrumentSource = readPresetFileAsInstrument (sourceFile);
+        final IInstrumentSource instrumentSource = this.readPresetFileAsInstrument (sourceFile);
         return instrumentSource == null ? Collections.emptyList () : Collections.singletonList (instrumentSource.getMultisampleSource ());
     }
 
@@ -147,7 +147,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
     /** {@inheritDoc} */
     @Override
-    protected List<IPerformanceSource> readPerformanceFiles (final File sourceFile)
+    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -454,7 +454,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 if (pitchModulator.isPresent ())
                 {
                     final IEnvelopeModulator modulator = pitchModulator.get ();
-                    final IEnvelopeModulator zonePitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator zonePitchModulator = zone.getPitchEnvelopeModulator ();
                     zonePitchModulator.setDepth (modulator.getDepth ());
                     zonePitchModulator.setSource (modulator.getSource ());
                 }
@@ -462,7 +462,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 if (pitchbend >= 0)
                 {
                     zone.setBendUp (pitchbend);
-                    zone.setBendDown (pitchbend);
+                    zone.setBendDown (-pitchbend);
                 }
 
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocity);
@@ -495,7 +495,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             tuning = XMLUtils.getIntegerAttribute (soundOffsetsElement, TX16WxTag.TUNING_COARSE, 0);
             tuning += XMLUtils.getIntegerAttribute (soundOffsetsElement, TX16WxTag.TUNING_FINE, 0) / 100.0;
         }
-        zone.setTune (groupTuningOffset + tuning);
+        zone.setTuning (groupTuningOffset + tuning);
 
         // There is group switching with sequences (round-robin) but it seems no zone switching
         // Key tracking not available

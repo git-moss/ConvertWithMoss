@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.disting;
@@ -16,10 +16,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
 import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -88,7 +89,18 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
             recalculateSamplePositions (multisampleSource, 44100);
         this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        if (detectSettings.reduceBitDepth <= 0 || detectSettings.reduceBitDepth == 16)
+            return true;
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16");
+        return false;
     }
 
 
@@ -141,13 +153,13 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
                     parameters[18] = bendUp > 0 ? bendUp : 2;
 
                     // Octave + Transpose + fine tune
-                    double tune = zone.getTune ();
-                    final int octaves = (int) (tune / 12);
+                    double tune = zone.getTuning ();
+                    final int octaves = (int) Math.round (tune / 12);
                     parameters[11] = octaves;
                     tune -= octaves * 12;
-                    parameters[12] = (int) tune;
+                    parameters[12] = (int) Math.round (tune);
                     tune -= parameters[12];
-                    parameters[13] = (int) (tune * 100.0);
+                    parameters[13] = (int) Math.round (tune * 100.0);
 
                     // Gain in the range of -40..24 dB
                     parameters[14] = Math.clamp ((int) Math.round (zone.getGain ()), -40, 24);

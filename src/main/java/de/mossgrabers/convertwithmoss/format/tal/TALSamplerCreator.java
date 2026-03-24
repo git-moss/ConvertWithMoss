@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.tal;
@@ -17,7 +17,7 @@ import org.w3c.dom.Element;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -67,7 +67,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -180,13 +180,13 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.REVERSE, zone.isReversed () ? 1 : 0);
 
         // transpose // tune in semi-tones = floor((48.0f * transpose + 0.5f) - 24.0f)
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         if (tune != 0)
         {
             // transpose and de-tune are both +-24 semi-tones, fine tuning is set on the program
             // with +-100 cent
 
-            final int transpose = (int) tune;
+            final int transpose = (int) Math.round (tune);
             final double fine = tune - transpose;
             int detune = 0;
             if (transpose > 24 || transpose < -24)
@@ -311,7 +311,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         //////////////////////////////////////////////////
         // Pitch
 
-        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
         final double pitchModDepth = pitchModulator.getDepth ();
         if (pitchModDepth > 0)
         {

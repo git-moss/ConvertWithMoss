@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.wav;
@@ -13,7 +13,6 @@ import java.util.Locale;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RiffID;
 import de.mossgrabers.tools.StringUtils;
 
 
@@ -36,7 +35,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public BroadcastAudioExtensionChunk ()
     {
-        super (RiffID.BEXT_ID, CHUNK_SIZE);
+        super (WaveRiffChunkId.BEXT_ID, CHUNK_SIZE);
     }
 
 
@@ -48,7 +47,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public BroadcastAudioExtensionChunk (final RawRIFFChunk chunk) throws ParseException
     {
-        super (RiffID.BEXT_ID, chunk);
+        super (WaveRiffChunkId.BEXT_ID, chunk);
     }
 
 

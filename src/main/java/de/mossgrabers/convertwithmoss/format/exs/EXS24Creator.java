@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.exs;
@@ -15,7 +15,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -71,7 +71,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
             writtenSamples.put (sampleFile.getName (), sampleFile);
         this.storeMultisample (multisampleSource, multiFile, writtenSamples);
 
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+        this.progress.notifyDone ();
     }
 
 
@@ -117,12 +117,12 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 exs24Zone.sampleStart = zone.getStart ();
                 exs24Zone.sampleEnd = zone.getStop ();
                 exs24Zone.reverse = zone.isReversed ();
-                exs24Zone.volumeAdjust = (int) zone.getGain ();
+                exs24Zone.volumeAdjust = (int) Math.round (zone.getGain ());
                 exs24Zone.pitch = true;
-                final double tune = zone.getTune ();
-                exs24Zone.coarseTuning = (int) (tune / 100);
-                exs24Zone.fineTuning = (int) (tune % 100);
-                exs24Zone.pan = (int) (zone.getPanning () * 50);
+                final double tune = zone.getTuning ();
+                exs24Zone.coarseTuning = (int) Math.round (tune);
+                exs24Zone.fineTuning = (int) Math.round ((tune - exs24Zone.coarseTuning) * 100);
+                exs24Zone.pan = (int) Math.round (zone.getPanning () * 50);
 
                 final List<ISampleLoop> loops = zone.getLoops ();
                 exs24Zone.loopOn = !loops.isEmpty ();
@@ -131,7 +131,18 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                     final ISampleLoop loop = loops.get (0);
                     exs24Zone.loopStart = loop.getStart ();
                     exs24Zone.loopEnd = loop.getEnd () + 1;
-                    exs24Zone.loopCrossfade = loop.getCrossfadeInSamples ();
+                    final double crossfade = loop.getCrossfade ();
+                    final int loopLength = loop.getLength ();
+                    if (crossfade > 0 && loopLength > 0)
+                        try
+                        {
+                            final double loopLengthInSeconds = loopLength / (double) zone.getSampleData ().getAudioMetadata ().getSampleRate ();
+                            exs24Zone.loopCrossfade = (int) Math.round (crossfade * loopLengthInSeconds * 1000.0);
+                        }
+                        catch (final IOException ex)
+                        {
+                            this.notifier.logError (ex);
+                        }
                 }
 
                 // Fill sample
@@ -262,7 +273,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         createEnvelope (parameters, 2, filter.getCutoffEnvelopeModulator ());
 
         parameters.put (EXS24Parameters.FILTER1_CUTOFF, (int) Math.round (MathUtils.normalize (filter.getCutoff (), 0, IFilter.MAX_FREQUENCY) * 1000.0));
-        parameters.put (EXS24Parameters.FILTER1_RESO, (int) (filter.getResonance () * 1000));
+        parameters.put (EXS24Parameters.FILTER1_RESO, (int) Math.round (filter.getResonance () * 1000));
     }
 
 

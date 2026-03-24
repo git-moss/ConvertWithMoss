@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.settings;
@@ -29,7 +29,7 @@ public class WavChunkSettingsUI implements ICoreTaskSettings
     private static final String WRITE_SAMPLE_CHUNK           = "WriteSampleChunk";
     private static final String REMOVE_JUNK_CHUNK            = "RemoveJunkChunk";
 
-    private final String        prefix;
+    protected final String      prefix;
 
     // Metadata options
     private CheckBox            updateBroadcastAudioChunkBox = null;
@@ -130,7 +130,7 @@ public class WavChunkSettingsUI implements ICoreTaskSettings
 
     /** {@inheritDoc} */
     @Override
-    public boolean checkSettingsCLI (INotifier notifier, Map<String, String> parameters)
+    public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
         String value = parameters.remove (this.prefix + WRITE_BROADCAST_AUDIO_CHUNK);
         this.updateBroadcastAudioChunk = "1".equals (value);

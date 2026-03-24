@@ -31,24 +31,51 @@ If the format uses WAV files to store the samples, the following options to addi
 
 The following multi-sample formats are supported:
 
+* [1010music bento](#1010music-bento)
 * [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
 * [Ableton Sampler](#ableton-sampler)
-* [Akai MPC Keygroups / Drum](#akai-mpc-keygroups--drum)
+* [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000) - read only
+* [Akai MPC Keygroups/Drum](#akai-mpc-keygroups--drum)
+* [Akai MPC Project/Track](#akai-mpc-projecttrack)
+* [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
+* [Akai MESA](#akai-mesa) - read only
 * [Bitwig Multisample](#bitwig-multisample)
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
+* [discoDSP Bliss](#discodsp-bliss)
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [Kontakt NKI/NKM](#kontakt-nkinkm)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
 * [Logic EXS24](#logic-exs24)
+* [Native Instruments Maschine](#native-instruments-maschine)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
 * [TAL Sampler](#tal-sampler)
-* [Waldorf Quantum MkI,MkII/Iridium/Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
+* [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
+
+## 1010music bento
+
+This format can contain either a single *patch* (1 track) or all 8 tracks of a *project*. Each track contains an instrument engine. ConvertWithMoss only supports the multi-sample engine. All user patches need to be placed in the *UserPatches/SampInst* folder on the SD-card. The factory patches reside in *Patches/SampInst*. The main information of a preset is stored in a file which is always called *patch.xml* or *project.xml* for a project file. This file is located in a folder with the name of the preset/project.
+
+The related samples need to be in the same folder as the patch.xml file.
+
+If the format is selected as the source, there are two things to consider:
+
+* One or multiple tracks contain a multi-sample: for each of the multi-samples a file in the destination format is created.
+
+### Destination Options
+
+* Option to set the *Interpolation Quality*. Setting it to *High* requires a bit more processing power on the 1010music devices.
+* Option to trim sample to range of zone start to end. Since the format does not support a sample start attribute for multi-sample, this fixes the issue.
+
+If 'Performance' is selected as the destination type, some workarounds are applied:
+
+* MIDI channel: There is no OMNI setting. They are currently set to Off.
+* Key ranges: The 1010music devices do not support key-ranges which means a multi-sample is always sounding across the full note range. As a workaround a silent sample (a totally empty one-shot sample is used) is applied to the lower and upper range which should not sound.
 
 ## 1010music blackbox, tangerine, bitbox
 
@@ -79,6 +106,22 @@ ConvertWithMoss can extract Sampler and Simpler presets from ADV files as well a
 
 ADV files and their samples need to be placed in the Ableton user library in the correct folders to allow Ableton to open it. Therefore, ConvertWithMoss creates the necessary folder structure which can be simply copied to the user library. If the source has sub-folders the global option *Create folder structure* should be deactivated otherwise it can be quite tedious to collect all the results files with their additional Ableton sub-folder structure.
 
+## Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
+
+This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume and key-range.
+AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library. 
+Only reading of the AKP/AKM formats is supported.
+
+## Akai S1000/S3000 series disk image
+
+The Akai S1000 and S3000 series are landmark professional digital samplers first introduced by Akai in the late 1980s and early 1990s. The S1000 became widely adopted in studios and electronic music production for its 16-bit PCM sampling, extensive on-board editing, and reliable MIDI integration. The S3000 series built on that legacy with expanded memory, improved filtering, and more advanced modulation and layering capabilities, offering deeper sound design flexibility.
+
+The CD format used with the S1000/S3000 series was a proprietary Akai CD-ROM structure built on standard ISO-9660 physical media but organized according to Akai’s own disk architecture. Data was stored as 16-bit linear PCM sample files along with separate program and keygroup parameter data, arranged in volumes that the sampler’s operating system could index via SCSI. Unlike generic audio CDs (Red Book), these discs were data CDs containing structured directories and allocation tables specific to Akai’s file system, enabling direct loading of samples, programs, and partitions into memory. While ConvertWithMoss cannot directly read the CDs, it can read images created from them with other tools (normally named *.iso). There is no write support.
+
+## Akai MESA
+
+The Akai MESA S3P format is a computer-side representation of Akai S-series program data used by the original MESA (Mac/PC Multi-Editor and Sample Accelerator) librarian/editor software for the [S-3000](#akai-s1000s3000-series-disk-image) family. In practice the .S3P extension contains a classic S3000-style Program (instrument) encoded in a format akin to MIDI SysEx dumps, with the sample waveforms stored externally as accompanying WAV files on a computer. Internally the Program’s structure—keygroups, sample references, mapping, filters and loop parameters—is essentially the same as an Akai S-series Program on disk; MESA simply encapsulates the Akai program data in its own file container for editing and transfer.
+
 ## Akai MPC Keygroups / Drum
 
 A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV). Both keygroup and drum types are supported.
@@ -88,9 +131,22 @@ Restrictions are:
 * A round robin keygroup can only contain up to 4/8 layers (groups). An error is displayed in this case but the file is converted anyway.
 * Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
 
+### Source Options
+
+* Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
+
 ### Destination Options
 
 * Limit layers to: MPC Firmware 3.4 increased the number of possible layers in a keygroup to 8. This option allows you to choose between 4 (for older firmware revisions) or 8.
+
+## Akai MPC Project/Track
+
+A track file (*.xty) is a MPC v3 specific file that saves all settings, samples, macros, FX and MIDI data associated with a track. A track consists of two elements; the track file itself and a trackData folder containing the samples used within the track (ending with '_\[TrackData\]'). If the track contains a keygroup it is extracted as a multi-sample source.
+A project file (*.xpj) contains all track and project settings. All tracks which contain a keygroup are extracted as a multi-sample source.
+
+### Source Options
+
+* Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
 
 ## Bitwig Multisample
 
@@ -144,6 +200,12 @@ There are two issues with amplitude envelopes:
 * %ENV_RELEASE_VALUE%
 * %ENV_VELOCITY_SENSITIVITY%
 
+## discoDSP Bliss
+
+Bliss is a multi-platform (Windows, MacOS & Linux) sampler by discoDSP (https://www.discodsp.com/bliss/).
+It provides support for multi-samples and a bank system (containing up to 128 patches).
+Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipped) with a XML description file and all samples. The samples are stored in FLAC format (16/24 bit). The full format specification is available here: https://github.com/reales/bliss-format.
+
 ## Expert Sleepers disting EX
 
 The disting EX is a multi-function Eurorack module which provides many different algorithms. On of them is the SD Multisample algorithm which is an eight voice polyphonic, three part multi-timbral, sample playback instrument, playing WAV files from the MicroSD card. It can have up to 3 input CV/gate pairs, or can be played via MIDI or I2C. It supports both velocity switches and round robins per sample.
@@ -161,7 +223,7 @@ Kontakt is a sampler from Native Instruments which uses a plethora of file forma
 However, the format changed many times across the different Kontakt versions. So far, the following formats are known and supported as a source:
 
 | Kontakt Version |
-|:----------------|
+| :-------------- |
 | 1               |
 | 1.5             |
 | 2 - 4.1.x       |
@@ -225,6 +287,28 @@ Since the format supports only one group of a multi-sample, multiple destination
 The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digital audio workstation. It is primarily used for storing and playback of sampled instruments and sounds within Logic Pro. The format allows for comprehensive mapping and editing of samples, as well as providing various modulation and performance options.
 
 The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. *The number of folders can be configured*.
+
+## Native Instruments Maschine
+
+### MSND
+
+MSND is a binary format for Maschine 1. It got dropped completely in later versions and it cannot even be opened in Maschine 2/3. You can use ConvertWithMoss to convert it e.g. into Maschine 2 or 3 format (MXSND).
+
+### MXSND
+
+The MXSND format is a proprietary binary format used by Maschine 2 and 3. MXSND uses the same container wrapper format as Kontakt 5+. Maschine 1 used a different format with the ending MSND which is currently not supported.
+
+Only MXSND files which contain an instance of a Maschine Sampler can be read. The Maschine Sampler supports basic features but has e.g. no groups or release layers (see the detailed parameter documentation).
+
+Note that Maschine contains an auto-sampler with which you can sample plugins or external synths and writes MXSND as the output. This means that you can then convert it to other formats with ConvertWithMoss.
+
+### Source Options
+
+* Scan for Maschine 1 MSND files: Scans the source folder for files ending with *.msnd (Maschine 1 format) as well. If the source is a library which contains both version, deactivate this option to prevent duplicates.
+
+### Destination Options
+
+* Output Format: Select the Maschine output format. Selecting **Maschine 1** will create a MSND file, otherwise a MXSND file is created.
 
 ## Propellerhead Reason NN-XT
 
@@ -296,6 +380,10 @@ There are metadata fields for creator and some description specified in the form
 * Prefix with file name: If enabled, the name of the Soundfont file is added to all resulting destination files.
 * Prefix with program number: If enabled, the preset number of the preset is added to the resulting destination file.
 
+### Destination Options
+
+* Re-sample 24-bit to 16-bit: If enabled, 24-bit source samples are converted to 16-bit files. Use this prevent issues with certain software which can only handle 16-bit samples.
+
 ## TAL Sampler
 
 TAL-Sampler is an analog modeled synthesizer with a sampler engine as the sound source, including a modulation matrix and self-oscillating filters. Most of the presets in it's library store the sample files in an encrypted format (*.wavsmpl), this format is not supported. Only presets using plain WAV or AIFF files are supported.
@@ -324,13 +412,28 @@ The following file formats are supported as a source:
 * Motif XS: X0A, X0W
 * Motif XF: X3A, X3W
 * MOXF: X6A, X6W
-* Montage: X7A, X7L, X7U with Performance Data
-* MODX/MODX+: X8A, X8L, X8U with Performance Data
+* Montage: X7A, X7L, X7U
+* MODX/MODX+: X8A, X8L, X8U
 * Montage M: Y2U, Y2L
 
 The wave files in professional Yamaha libraries are often compressed. Such files are not supported. Furthermore, only self-contained libraries (= libraries which do not reference samples in other libraries) are supported.
 
-So far, reading of Performances is only supported for Montage (not Montage M!) and MODX/MODX+ files. This means that for all other formats only the basic multi-sample data is converted (no filter and envelopes data is converted).
+So far, reading of Performances is only supported for some formats. This means that for all other formats only the basic multi-sample data is converted (no filter and envelopes data is converted).
+
+| Format                                          | Performance Data |
+| :---------------------------------------------- | :--------------- |
+| Motif XS: X0A, X0W                              |                  |
+| Motif XF: X3A, X3W                              |                  |
+| MOXF: X6A, X6W                                  |                  |
+| Montage: X7A, X7L, X7U with Performance Data    | Yes              |
+| MODX/MODX+: X8A, X8L, X8U with Performance Data | Yes              |
+| Montage M: Y2U, Y2L                             |                  |
+
+### Source Options
+
+* Create multi-samples for: 
+  * Waveforms: this reads only the raw-multi-sample(s) without additional Performance information. Use this option if the Performances do not reference all multi-samples in the library/user-bank.
+  * Performances: Only supported for Montage and MODX/MODX+ files and when Performance data is present in the file. This sill create one multi-sample source for each Performance.
 
 ### Using it as the destination format
 
@@ -361,13 +464,7 @@ If there are more than 8 instruments sources the following strategy is applied t
 
 Other mappings are identical to creating presets/libraries.
 
-### Source Options
-
-* Create multi-samples for: 
-  * Waveforms: this reads only the raw-multi-sample(s) without additional Performance information. Use this option as well if the Performances do not reference all multi-samples in the library/user-bank.
-  * Performances: Only supported for Montage and MODX/MODX+ files and when Performance data is present in the file. Will create a multi-sample source for each Performance.
-
 ### Destination Options
 
-* Library Format: Chooses the output format which is created.
+* File Format: Chooses the output format which is created.
 * Create only Waveforms: No Performances will be written. Only Waveform data.

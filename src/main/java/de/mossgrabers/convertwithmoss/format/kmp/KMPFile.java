@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.kmp;
@@ -223,7 +223,7 @@ public class KMPFile
             zone.setKeyLow (lowerKey);
             zone.setKeyHigh (in.read ());
             lowerKey = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127) + 1;
-            zone.setTune (in.readByte () / 100.0);
+            zone.setTuning (in.readByte () / 100.0);
 
             // Range is [-99..99] but totally unclear to what that relates in dB.
             // Let's keep it between [0..6]dB
@@ -377,7 +377,7 @@ public class KMPFile
             out.write (originalKey);
 
             out.write (keyHigh);
-            out.writeByte ((byte) Math.round (zone.getTune () * 100.0));
+            out.writeByte ((byte) Math.round (zone.getTuning () * 100.0));
 
             // Range is [-99..99] but totally unclear to what that relates in dB.
             // Let's keep it between [0..6]dB

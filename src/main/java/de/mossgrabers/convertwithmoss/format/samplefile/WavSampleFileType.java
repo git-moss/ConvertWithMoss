@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.samplefile;
@@ -57,7 +57,7 @@ public class WavSampleFileType implements SampleFileType
             zone.setVelocityLow (instrumentChunk.getLowVelocity ());
             zone.setVelocityHigh (instrumentChunk.getHighVelocity ());
             zone.setGain (instrumentChunk.getGain ());
-            zone.setTune (instrumentChunk.getFineTune () / 100.0);
+            zone.setTuning (instrumentChunk.getFineTune () / 100.0);
         }
     }
 

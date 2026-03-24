@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.sxt;
@@ -459,7 +459,7 @@ class SxtZone
         zone.setKeyRoot (this.rootKey);
         zone.setStart ((int) this.sampleStart);
         zone.setStop ((int) this.sampleEnd);
-        zone.setTune (this.octave * 12 + this.semitone + this.cent / 100.0 + this.sampleTune / 100.0);
+        zone.setTuning (this.octave * 12 + this.semitone + this.cent / 100.0 + this.sampleTune / 100.0);
         zone.setBendUp (this.pitchWheelRange * 100);
         zone.setBendDown (-this.pitchWheelRange * 100);
 
@@ -509,7 +509,7 @@ class SxtZone
 
         if (this.modEnvToPitch > 0)
         {
-            final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+            final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
             pitchModulator.setDepth (this.modEnvToPitch / 1000.0);
             final IEnvelope modEnvelope = pitchModulator.getSource ();
             if (this.modEnvDelayIsOff == 0)
@@ -635,7 +635,7 @@ class SxtZone
         final IAudioMetadata audioMetadata = zone.getSampleData ().getAudioMetadata ();
         this.sampleSize = audioMetadata.getNumberOfSamples ();
 
-        final double tune = zone.getTune ();
+        final double tune = zone.getTuning ();
         final int semitones = (int) (tune / 100);
         this.octave = semitones / 12;
         this.semitone = semitones % 12;
@@ -665,7 +665,7 @@ class SxtZone
         //////////////////////////////////////////////////////////
         // Pitch
 
-        final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
         final double depth = pitchModulator.getDepth ();
         if (depth > 0)
         {

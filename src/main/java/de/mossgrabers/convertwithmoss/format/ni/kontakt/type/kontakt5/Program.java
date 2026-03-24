@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5;
@@ -81,7 +81,7 @@ public class Program
 
     /**
      * The lower note which should limit the key-range (this note should still sound).
-     * 
+     *
      * @return The note [0..127]
      */
     public int getClipKeyLow ()
@@ -92,7 +92,7 @@ public class Program
 
     /**
      * The upper note which should limit the key-range (this note should still sound).
-     * 
+     *
      * @return The note [0..127]
      */
     public int getClipKeyHigh ()
@@ -726,7 +726,7 @@ public class Program
 
     /**
      * Set the slot index.
-     * 
+     *
      * @param slotIndex The slot index [0..63]
      */
     public void setSlotIndex (final int slotIndex)
@@ -737,7 +737,7 @@ public class Program
 
     /**
      * Get the slot index. This is the slot in a performance in which this program is stored.
-     * 
+     *
      * @return The slot index [0..63]
      */
     public int getSlotIndex ()

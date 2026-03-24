@@ -1,10 +1,131 @@
 # Changes
 
-## 14.5.0 (unreleased)
+## 16.5.1
 
+* Fixed: Processing: Sample reduction did not always work and improved logging.
+
+## 16.5.0
+
+* Added support for discoDSP Bliss.
+* Added option to maximize samples.
+* Added several options to minimize the size of a multi-sample.
+* New: Improved sample writing progress logging output.
+* Fixed: Don't report WAV files with padded zeros at the end as broken.
+* 1010music Samplers
+  * New: If the source material contains layered samples, a warning will be displayed.
+* DecentSampler
+  * New: Write seqLength attribute for group as well.
+* Kontakt 5+
+  * Fixed: Envelope hold and decay times were reversed.
+
+## 16.2.0
+
+* Added support for reading Akai MESA (*.s3p).
+* Added support for reading Akai S1000/S3000 series images (*.iso).
+* Fixed: Gain could not be set below +0.125dB.
+* Fixed: Reading broken WAV files could make ConvertWithMoss hang.
+* Ableton ADV, Sf2, TX16W, Yamaha YSFC
+  * Fixed: Negative fine tuning values could be off by 1 when written.
+* Akai AKP, MPC XPJ/XTY, TAL Sampler, TX16W
+  * Fixed: Reading: Pitch-bend down was inverted (pitching up instead of down).
+* DecentSampler
+  * Fixed: Creating presets did miss adding seqMode attribute for round_robin groups.
+* EXS24
+  * Fixed: Writing: Coarse and fine tuning was always set to 0.
+* Sf2
+  * Fixed: 24-bit samples were not extracted correctly when read.
+
+## 16.1.1
+
+* Fixed: Application could not be closed if it was installed for the first time.
+* Kontakt
+  * Fixed: Prevent a crash when InternalModulator cannot be read.
+
+## 16.1.0
+
+* Added support for reading Akai MPC XPJ and XTY files.
+* Akai AKP/AKM
+  * New: Renamed "Akai S5000/S6000" to "Akai AKP/AKM".
+  * New: Added reading support for Akai Z4/Z8/MPC4000 AKP/AKM format.
+  * New: Added version information to the log file.
+  * New: Improved conversion of filter resonance.
+  * New: The root note is now modified instead re-pitching it via tuning parameter.
+* Akai XPM
+  * Fixed: Never read loops from WAV files.
+* SFZ
+  * Fixed: Prevent creation of filter type with poles not supported by SFZ (2 poles will be set in such a case).
+
+## 16.0.0
+
+* Added reading support for Akai S5000/S6000 AKP/AKM format.
+* User Interface
+  * Moved several setting to a specific Settings dialog.
+  * Updated button icons.
+* Fixed: Tuning value was set for panning.
+* Kontakt
+  * Fixed: Tuning was not written correctly.
+* MPC Keygroups
+  * New: Added an option to ignore loops
+
+## 15.5.1
+
+* Fixed: Split-stereo files were not combined into stereo files for formats which require it (e.g. Bento).
+
+## 15.5.0
+
+* Added support for 1010music Bento
+* Fixed: The header of written FLAC files did not contain the sample length, which is valid but many readers rely on that value and crash otherwise.
+* 1010music blackbox
+  * Fixed: Empty sample trick for silent ranges was applied to single presets as well but the sample was not added.
+* DecentSampler
+  * Fixed: If the *Template and resources folder* was not set, the current folder was copied completely.
+* Maschine 2/3
+  * Fixed: Added workaround for presets which have set *Sampler* in the sound info as their name.
+* MPC
+  * New: The file version and source platform is now logged.
+  * New: Improved check for valid loops. If none is present it is loaded from the WAV file if present.
+* TAL Sampler
+  * New: Conversion does not stop after first missing sample. All missing samples are logged.
+  * Fixed: Could not read file when the program element had more than 200 attributes.
+  * Fixed: Version 11 of the format has now a double to indicate of a layer is enabled or not which led to empty results.
+* Yamaha YSFC
+  * Fixed: End of loop was always set to the end of the sample.
+
+## 15.1.0
+
+* New: Added support for Maschine 1 MSND files.
+* Fixed: Application icons show up again.
+* Maschine MXSND
+  * Fixed: Older Maschine 2 files were not converted correctly or did show exceptions.
+* MPC Keygroups
+  * Fixed: Don't read loops from WAV files which can cause unwanted full loops.
+
+## 15.0.0
+
+* New: Added support for Maschine MXSND files.
+* Fixed: Restoration of main window on startup ensures that it is at least 25% visible on the screen.
+* Fixed: CLI: Some parameters could be falsely rejected.
+* 1010music
+  * Fixed: Improved lookup of samples when reading presets.
+* EXS
+  * Fixed: Read loop cross-fade was not calculated correctly (integer instead of double).
+  * Fixed: Loop cross-fade was written as samples not as milliseconds.
+* SF2
+  * New: Use all metadata fields for category detection if none could be extracted from the path.
+* SFZ
+  * Fixed: Read loop cross-fade was not calculated correctly (integer instead of double).
+  * Fixed: Writing loop cross-fade was not calculated correctly (was rounded to full seconds).
+
+## 14.2.0
+
+* Kontakt
+  * Fixed: Reading: Fixed an issue reading internal modulators.
 * Korg KSF
   * Fixed: Reading: The play-back end is now set to the length of the sample to prevent issues with output formats which require the end (e.g. Korg wavestate).
   * Fixed: The KSF loop end is exclusive and therefore was off by 1.
+* Soundfont 2 (thanks @douglas-carmichael)
+  * New: Added option to resample 24bit to 16bit.
+  * Fixed: Always writes a global chunk.
 
 ## 14.1.0
 

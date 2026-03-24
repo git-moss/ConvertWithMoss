@@ -1,10 +1,11 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.tal;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -19,13 +20,14 @@ import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.MathUtils;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -110,12 +112,12 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Process the TAL Sampler metadata file and the related wave files.
      *
-     * @param multiSampleFile The multi-sample file
+     * @param sourceFile The multi-sample file
      * @param document The metadata XML document
      * @return The parsed multi-sample source
      * @throws IOException Could not parse the description
      */
-    private List<IMultisampleSource> parseDescription (final File multiSampleFile, final Document document) throws IOException
+    private List<IMultisampleSource> parseDescription (final File sourceFile, final Document document) throws IOException
     {
         final Element top = document.getDocumentElement ();
 
@@ -141,16 +143,16 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_NO_NAME");
                 continue;
             }
-            final File parentFolder = multiSampleFile.getParentFile ();
+            final File parentFolder = sourceFile.getParentFile ();
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, name);
 
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
 
             // Parse all groups
             final List<IGroup> groups = new ArrayList<> (4);
             for (int groupCounter = 0; groupCounter < 4; groupCounter++)
                 // Group is disabled?
-                if (XMLUtils.getIntegerAttribute (programElement, TALSamplerTag.PROGRAM_LAYER_ON + TALSamplerConstants.LAYERS[groupCounter], 0) == 1)
+                if (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PROGRAM_LAYER_ON + TALSamplerConstants.LAYERS[groupCounter], 0) > 0)
                 {
                     final Element groupElement = XMLUtils.getChildElementByName (programElement, TALSamplerTag.SAMPLE_LAYER + groupCounter);
                     if (groupElement != null)
@@ -168,7 +170,9 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                     }
                 }
 
-            this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts);
+            final IMetadata metadata = multisampleSource.getMetadata ();
+            this.createMetadata (metadata, this.getFirstSample (groups), parts);
+            this.updateCreationDateTime (metadata, sourceFile);
             multisampleSource.setGroups (groups);
 
             final Optional<IFilter> optFilter = parseModulationAttributes (programElement, multisampleSource);
@@ -208,7 +212,16 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.IS_ROM_SAMPLE, 0) == 1)
             throw new IOException (Functions.getMessage ("IDS_TAL_ROM_SAMPLES_NOT_SUPPORTED", filename));
 
-        final ISampleZone zone = this.createSampleZone (new File (parentFolder, filename));
+        final ISampleZone zone;
+        try
+        {
+            zone = this.createSampleZone (new File (parentFolder, filename));
+        }
+        catch (final FileNotFoundException ex)
+        {
+            this.notifier.logError (ex, false);
+            return null;
+        }
 
         zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
         zone.setPanning (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANNING, 0.5) * 2.0 - 1.0);
@@ -222,7 +235,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         final double sampleFine = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 2.0 - 1.0;
         final double transpose = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, 0.5) * 48.0 - 24.0);
         final double detune = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, 0.5) * 48.0 - 24.0);
-        zone.setTune (layerTranspose + sampleTune + transpose + detune + sampleFine);
+        zone.setTuning (layerTranspose + sampleTune + transpose + detune + sampleFine);
         zone.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PITCH_KEY_TRACK, 1));
 
         zone.setKeyRoot (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, -1));
@@ -231,7 +244,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, -1));
         zone.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, -1));
 
-        // No note and velocity crossfades
+        // No note and velocity cross-fades
 
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ENABLED, 0) == 1)
         {
@@ -338,7 +351,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setBendUp (bend);
-                zone.setBendDown (bend);
+                zone.setBendDown (-bend);
 
                 final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
                 amplitudeEnvelope.setAttackTime (ampAttack);
@@ -351,7 +364,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
                 if (globalPitchEnvelopeDepth > 0)
                 {
-                    final IEnvelopeModulator pitchModulator = zone.getPitchModulator ();
+                    final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     pitchModulator.setDepth (globalPitchEnvelopeDepth);
 
                     final IEnvelope pitchEnvelope = pitchModulator.getSource ();

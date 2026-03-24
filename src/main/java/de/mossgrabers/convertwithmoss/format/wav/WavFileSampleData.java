@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.wav;
@@ -70,6 +70,29 @@ public class WavFileSampleData extends AbstractFileSampleData
     /**
      * Constructor.
      *
+     * @param waveFile The wave file to encapsulate
+     * @throws IOException Could not read the file
+     */
+    public WavFileSampleData (final WaveFile waveFile) throws IOException
+    {
+        this.waveFile = waveFile;
+        try
+        {
+            final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
+            this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), this.waveFile.getDataChunk ().calculateLength (formatChunk));
+        }
+        catch (final CompressionNotSupportedException ex)
+        {
+            throw new IOException (ex);
+        }
+
+        this.hasWavSourceFile = false;
+    }
+
+
+    /**
+     * Constructor.
+     *
      * @param file The file where the sample is stored
      * @throws IOException Could not read the file
      */
@@ -123,7 +146,7 @@ public class WavFileSampleData extends AbstractFileSampleData
             final IAudioMetadata am = new DefaultAudioMetadata (2, formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), frames);
             return new InMemorySampleData (am, stereoData);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             throw new CombinationNotPossibleException (this.filename);
         }
@@ -160,10 +183,10 @@ public class WavFileSampleData extends AbstractFileSampleData
         if (addRootKey && zone.getKeyRoot () == -1)
             zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
 
-        if (zone.getTune () == 0)
+        if (zone.getTuning () == 0)
         {
             final double tune = Math.clamp (sampleChunk.getMIDIPitchFractionAsCents () / 100.0, -0.5, 0.5);
-            zone.setTune (tune);
+            zone.setTuning (tune);
             // Root note needs to be updated as well!
             if (tune < 0)
                 zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
@@ -176,7 +199,7 @@ public class WavFileSampleData extends AbstractFileSampleData
 
     private static void addLoops (final SampleChunk sampleChunk, final List<ISampleLoop> loops)
     {
-        // Check if are already present
+        // Check if a loop is already present
         if (!loops.isEmpty ())
             return;
 
@@ -196,8 +219,12 @@ public class WavFileSampleData extends AbstractFileSampleData
                     loop.setType (LoopType.BACKWARDS);
                     break;
             }
-            loop.setStart (sampleLoop.getStart ());
-            loop.setEnd (sampleLoop.getEnd ());
+            final int start = sampleLoop.getStart ();
+            final int end = sampleLoop.getEnd ();
+            if (start < 0 || end <= 0 || start > end)
+                continue;
+            loop.setStart (start);
+            loop.setEnd (end);
             loops.add (loop);
         }
     }
@@ -248,7 +275,7 @@ public class WavFileSampleData extends AbstractFileSampleData
         {
             wavFile = this.getWaveFile ();
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             return;
         }
@@ -264,14 +291,14 @@ public class WavFileSampleData extends AbstractFileSampleData
             final String description = broadcastAudioExtensionChunk.getDescription ().trim ();
             if (!description.isBlank ())
             {
-                if (sb.length () > 0)
+                if (!sb.isEmpty ())
                     sb.append ('\n');
                 sb.append (description);
             }
             metadata.setCreationDateTime (broadcastAudioExtensionChunk.getOriginationDateTime ());
         }
 
-        if (sb.length () > 0)
+        if (!sb.isEmpty ())
             metadata.setDescription (sb.toString ());
     }
 }

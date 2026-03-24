@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.aiff;
@@ -77,7 +77,7 @@ public class AiffMarkerChunk extends AiffChunk
         final StringBuilder sb = new StringBuilder ();
         for (final Map.Entry<Integer, AiffMarker> entry: this.markers.entrySet ())
         {
-            if (sb.length () > 0)
+            if (!sb.isEmpty ())
                 sb.append ('\n');
             final AiffMarker marker = entry.getValue ();
             sb.append ("Marker ").append (entry.getKey ()).append (": ").append (marker.position).append (" - ").append (marker.name);

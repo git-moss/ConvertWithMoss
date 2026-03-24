@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5;
@@ -41,9 +41,9 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Kontakt5MonolithFormat extends AbstractKontaktFormat
 {
-    private final String       noFileContainerError;
+    private final String         noFileContainerError;
     private final Kontakt5Format kontakt5Type;
-    private File               sourceFolder;
+    private File                 sourceFolder;
 
 
     /**
@@ -102,10 +102,8 @@ public class Kontakt5MonolithFormat extends AbstractKontaktFormat
     private static MonolithFile findMainFile (final Map<Long, MonolithFile> monolithFiles, final String fileEnding) throws IOException
     {
         for (final MonolithFile file: monolithFiles.values ())
-        {
             if (file.name.toLowerCase ().endsWith (fileEnding))
                 return file;
-        }
         throw new IOException (Functions.getMessage ("IDS_NKI5_NO_NKI_IN_CONTAINER", fileEnding));
     }
 

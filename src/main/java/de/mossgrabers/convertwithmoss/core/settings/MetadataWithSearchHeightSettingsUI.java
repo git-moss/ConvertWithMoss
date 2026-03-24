@@ -1,11 +1,12 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.core.settings;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,10 +26,16 @@ import javafx.scene.control.ScrollPane;
  */
 public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
 {
-    private static final String DIRECTORY_SEARCH = "DirectorySearch";
+    private static final String        DIRECTORY_SEARCH = "DirectorySearch";
 
-    private ComboBox<Integer>   directorySearchComboBox;
-    private int                 directorySearch;
+    private static final List<Integer> DIR_DEPTH        = new ArrayList<> ();
+    static
+    {
+        Collections.addAll (DIR_DEPTH, Integer.valueOf (0), Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (3), Integer.valueOf (4), Integer.valueOf (5), Integer.valueOf (6));
+    }
+
+    private ComboBox<Integer> directorySearchComboBox;
+    private int               directorySearch;
 
 
     /**
@@ -49,7 +56,7 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
         panel.createSeparator ("@IDS_SAMPLE_FILE_SEARCH");
-        this.directorySearchComboBox = panel.createComboBox ("@IDS_DIRECTORY_SEARCH", Integer.valueOf (0), Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (3), Integer.valueOf (4), Integer.valueOf (5), Integer.valueOf (6));
+        this.directorySearchComboBox = panel.createComboBox ("@IDS_DIRECTORY_SEARCH", DIR_DEPTH);
         this.directorySearchComboBox.getSelectionModel ().select (Integer.valueOf (1));
 
         this.addTo (panel);
@@ -105,7 +112,6 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
         if (value == null || value.isBlank ())
             this.directorySearch = 1;
         else
-        {
             try
             {
                 this.directorySearch = Integer.parseInt (value);
@@ -115,7 +121,6 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
                 notifier.logError ("IDS_CLI_VALUE_MUST_BE_INTEGER", this.prefix + DIRECTORY_SEARCH);
                 return false;
             }
-        }
         return true;
     }
 
@@ -132,7 +137,7 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
 
     /**
      * Get the directory search height.
-     * 
+     *
      * @return The number of directories to go upwards to start searching for files.
      */
     public int getDirectorySearchHeight ()

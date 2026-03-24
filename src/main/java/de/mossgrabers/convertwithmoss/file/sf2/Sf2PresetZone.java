@@ -1,5 +1,5 @@
 // Written by Jürgen Moßgraber - mossgrabers.de
-// (c) 2019-2025
+// (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
 package de.mossgrabers.convertwithmoss.file.sf2;
@@ -88,7 +88,7 @@ public class Sf2PresetZone extends AbstractZone
         for (final Entry<Integer, Integer> gen: this.getGenerators ().entrySet ())
         {
             final int generator = gen.getKey ().intValue ();
-            sb.append ("      - Preset. Generator: " + Generator.getGeneratorName (generator) + " : " + gen.getValue () + "\n");
+            sb.append ("      - Preset. Generator: ").append (Generator.getGeneratorName (generator)).append (" : ").append (gen.getValue ()).append ('\n');
         }
 
         if (this.instrument != null)
