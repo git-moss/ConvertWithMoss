@@ -108,7 +108,6 @@ public class ConverterBackend
 
         this.detectors = new IDetector []
         {
-            new VCDetector (notifier),
             new BentoDetector (notifier),
             new Music1010Detector (notifier),
             new AbletonDetector (notifier),
@@ -121,6 +120,7 @@ public class ConverterBackend
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),
             new DistingExDetector (notifier),
+            new VCDetector (notifier),
             new IsoDetector (notifier),
             new KontaktDetector (notifier),
             new KMPDetector (notifier),
