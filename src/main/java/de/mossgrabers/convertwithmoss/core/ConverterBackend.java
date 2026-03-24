@@ -46,6 +46,7 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.cmi3.VCDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.bento.BentoCreator;
 import de.mossgrabers.convertwithmoss.format.music1010.bento.BentoDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.blackbox.Music1010Creator;
@@ -107,6 +108,7 @@ public class ConverterBackend
 
         this.detectors = new IDetector []
         {
+            new VCDetector (notifier),
             new BentoDetector (notifier),
             new Music1010Detector (notifier),
             new AbletonDetector (notifier),

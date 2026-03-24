@@ -525,7 +525,7 @@ public class VCFile
 						{
 							newZone.setKeyTracking(1);
 							newZone.setKeyRoot((int)Math.round(pitchConvert(svTune.get(firstID), voiceTune, svSR.get(firstID))));
-							newZone.setTune((pitchConvert(svTune.get(firstID), voiceTune, svSR.get(firstID)) - newZone.getKeyRoot()) / -100.0);
+							newZone.setTune((pitchConvert(svTune.get(firstID), voiceTune, svSR.get(firstID)) - newZone.getKeyRoot()) / -1.0);
 							newZone.setKeyRoot(newZone.getKeyRoot() < 0 ? newZone.getKeyRoot() + 128 : newZone.getKeyRoot());
 						}
 						if (svLoop.get(firstID) == true)
@@ -577,7 +577,7 @@ public class VCFile
 							{
 								newZone2.setKeyTracking(1);
 								newZone2.setKeyRoot((int)Math.round(pitchConvert(svTune.get(secondID), voiceTune, svSR.get(secondID))));
-								newZone2.setTune((pitchConvert(svTune.get(secondID), voiceTune, svSR.get(secondID)) - newZone2.getKeyRoot()) / -100.0);
+								newZone2.setTune((pitchConvert(svTune.get(secondID), voiceTune, svSR.get(secondID)) - newZone2.getKeyRoot()) / -1.0);
 								newZone2.setKeyRoot(newZone2.getKeyRoot() < 0 ? newZone2.getKeyRoot() + 128 : newZone2.getKeyRoot());
 							}
 							if (svLoop.get(secondID) == true)
