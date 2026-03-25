@@ -44,6 +44,7 @@ The following multi-sample formats are supported:
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
+* [Fairlight CMI 3](#kontakt-nkinkm)
 * [Kontakt NKI/NKM](#kontakt-nkinkm)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
@@ -215,6 +216,12 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 
 * Re-sample to 16bit/44.1kHz: If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it decrease the number of voices it can play.
 * Trim sample to range of zone start to end: Since the format does not support a sample start attribute, this fixes the issue.
+
+## Fairlight CMI 3
+
+We've all heard stories about and uses of the Fairlight CMI IIx and earlier. The Series III was one of the first 16-bit samplers, second only to the Synclavier. Extensive reverse engineering effort of the self-contained voice format was applied to make it available as a source format, but unfortunately, current constraints combined with the strict third party user community makes it unfeasible to use as a destination format at this time.
+
+Note that this will not work with IIx or earlier voices despite the same VC extension used.
 
 ## Kontakt NKI/NKM
 
