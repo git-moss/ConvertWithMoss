@@ -223,6 +223,8 @@ We've all heard stories about and uses of the Fairlight CMI IIx and earlier. The
 
 Note that this will not work with IIx or earlier voices despite the same VC extension used.
 
+Filter parameters are currently not supported, but then, as a variable clock DAC sampler, the original hardware had no interpolation anyway.
+
 ## Kontakt NKI/NKM
 
 Kontakt is a sampler from Native Instruments which uses a plethora of file formats which all are sadly proprietary and therefore no documentation is publicly available. Nevertheless, several people analyzed the format and by now sufficient information is available to provide the support as the source.
