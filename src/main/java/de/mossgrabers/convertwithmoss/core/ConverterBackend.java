@@ -46,6 +46,7 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.cmi3.VCDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.bento.BentoCreator;
 import de.mossgrabers.convertwithmoss.format.music1010.bento.BentoDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.blackbox.Music1010Creator;
@@ -119,6 +120,7 @@ public class ConverterBackend
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),
             new DistingExDetector (notifier),
+            new VCDetector (notifier),
             new IsoDetector (notifier),
             new KontaktDetector (notifier),
             new KMPDetector (notifier),
