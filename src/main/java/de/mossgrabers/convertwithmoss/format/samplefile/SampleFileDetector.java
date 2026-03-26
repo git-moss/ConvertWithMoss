@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -46,6 +47,14 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
     public SampleFileDetector (final INotifier notifier)
     {
         super ("Sample Files", "samplefile", notifier, new SampleFileDetectorUI ("samplefile"));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Set<String> getFileEndings ()
+    {
+        return this.settingsConfiguration.getAllFileEndings ();
     }
 
 

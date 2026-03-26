@@ -37,6 +37,7 @@ The following multi-sample formats are supported:
 * [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000) - read only
 * [Akai MPC Keygroups/Drum](#akai-mpc-keygroups--drum)
 * [Akai MPC Project/Track](#akai-mpc-projecttrack)
+* [Akai S900/S950 image](#akai-s900s950-series-disk-image) - read only
 * [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
 * [Akai MESA](#akai-mesa) - read only
 * [Bitwig Multisample](#bitwig-multisample)
@@ -111,6 +112,10 @@ ADV files and their samples need to be placed in the Ableton user library in the
 This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume and key-range.
 AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library. 
 Only reading of the AKP/AKM formats is supported.
+
+## Akai S900/S950 series disk image
+
+The Akai S900 is a 12-bit sampler, with a variable sample rate from 7.5 kHz through to 40 kHz. Up to 32 samples can be created and stored to disk along with any edit settings. An expanded version, the Akai S950, was released in 1988 alongside the higher end S1000. The S950 soon followed the S900 and offered increased memory and sampling rates. The sample rate was now variable from 7.5 to 48kHz and it could hold up to 99 samples in memory. Memory could be expanded from 750KB to 2.25MB. Unlike the S1000 series, the S900 series allows a sample to loop alternating forwards and backwards. 
 
 ## Akai S1000/S3000 series disk image
 

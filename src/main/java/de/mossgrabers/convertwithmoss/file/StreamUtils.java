@@ -154,6 +154,24 @@ public class StreamUtils
 
 
     /**
+     * Reads and converts 3 bytes to an unsigned integer.
+     *
+     * @param fileAccess The random access file to read from
+     * @param isBigEndian True if bytes are stored big-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readUnsigned24 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    {
+        final byte [] bytes = readNBytes (fileAccess, 3);
+        if (isBigEndian)
+            return (bytes[2] & 0xFF) << 8 | (bytes[1] & 0xFF) << 16 | (bytes[0] & 0xFF) << 24;
+        return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16;
+    }
+
+
+    /**
      * Writes an integer as 3 bytes.
      *
      * @param out The output stream

@@ -1,5 +1,10 @@
 # Changes
 
+## 16.6.0 (unreleased)
+
+* Added support for reading Akai S900/S950.
+* New: Source formats show their file endings with a tooltip.
+
 ## 16.5.1
 
 * Fixed: Processing: Sample reduction did not always work and improved logging.

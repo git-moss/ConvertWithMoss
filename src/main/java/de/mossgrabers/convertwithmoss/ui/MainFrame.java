@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -178,7 +179,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
 
-        /////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
         // Source pane
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
@@ -198,6 +199,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             final ICoreTaskSettings userInterface = detector.getSettings ();
             final Tab tab = new Tab (detector.getName (), userInterface.getEditPane ());
             tab.setClosable (false);
+            tab.setTooltip (new Tooltip (formatFileEndings (detector.getFileEndings ())));
             tabs.add (tab);
             this.sourceTabs.put (tab, detector);
         }
@@ -206,7 +208,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final BorderPane sourcePane = new BorderPane (this.sourceTabPane);
         sourcePane.setTop (sourceUpperPane.getPane ());
 
-        /////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
         // Destination pane
 
         final BorderPane destinationFolderPanel = new BorderPane (this.destinationPathField);
@@ -284,6 +286,19 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.sourcePathField.requestFocus ();
 
         this.configureTraversalManager ();
+    }
+
+
+    private static String formatFileEndings (final Set<String> fileEndings)
+    {
+        final StringBuilder sb = new StringBuilder ();
+        for (final String ending: fileEndings)
+        {
+            if (!sb.isEmpty ())
+                sb.append (", ");
+            sb.append ("*").append (ending);
+        }
+        return sb.toString ();
     }
 
 
@@ -430,7 +445,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void loadConfiguration ()
     {
-        //////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////
         // Source configuration
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -446,7 +461,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.sourcePathHistory.isEmpty ())
             this.sourcePathField.getEditor ().setText (this.sourcePathHistory.get (0));
 
-        /////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Destination Configuration
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -478,7 +493,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
 
-        /////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Processing
 
         this.detectSettings.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
@@ -489,7 +504,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.detectSettings.reduceBitDepth = this.config.getInteger (PROCESSING_REDUCE_BIT_DEPTH, 0);
         this.detectSettings.reduceFrequency = this.config.getInteger (PROCESSING_REDUCE_FREQUENCY, 0);
 
-        /////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Options
 
         this.detectSettings.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
@@ -531,7 +546,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setProperty (PRESET_LIBRARY_FILENAME, this.presetLibraryFilename.getText ());
         this.config.setProperty (PERFORMANCE_LIBRARY_FILENAME, this.performanceLibraryFilename.getText ());
 
-        /////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Processing
 
         this.config.setBoolean (PROCESSING_ENABLE, this.detectSettings.enableProcessing);
@@ -542,7 +557,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setInteger (PROCESSING_REDUCE_BIT_DEPTH, this.detectSettings.reduceBitDepth);
         this.config.setInteger (PROCESSING_REDUCE_FREQUENCY, this.detectSettings.reduceFrequency);
 
-        /////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Options
 
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.detectSettings.createFolderStructure);

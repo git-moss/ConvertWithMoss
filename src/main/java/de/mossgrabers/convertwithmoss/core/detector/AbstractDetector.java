@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -98,6 +100,19 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         super (name, prefix, notifier, userInterface);
 
         this.fileEndings = fileEndings;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Set<String> getFileEndings ()
+    {
+        final Set<String> endings = new TreeSet<> ();
+        this.configureFileEndings (false);
+        endings.addAll (Arrays.asList (this.fileEndings));
+        this.configureFileEndings (true);
+        endings.addAll (Arrays.asList (this.fileEndings));
+        return endings;
     }
 
 

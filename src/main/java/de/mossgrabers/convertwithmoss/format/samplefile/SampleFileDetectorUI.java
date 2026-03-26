@@ -9,6 +9,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -93,6 +95,20 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
     }
 
 
+    /**
+     * Get all file endings.
+     * 
+     * @return All file endings
+     */
+    public Set<String> getAllFileEndings ()
+    {
+        final Set<String> endings = new TreeSet<> ();
+        for (int i = 0; i < FILE_TYPES.length; i++)
+            endings.addAll (Arrays.asList (FILE_TYPES[i].getFileEndings ()));
+        return endings;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public void saveSettings (final BasicConfig config)
@@ -139,14 +155,14 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
         final String comma = Functions.getMessage ("IDS_NOTIFY_COMMA");
 
-        ////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////
         // Sample file types
 
         panel.createSeparator ("@IDS_FILE_TYPES");
         for (int i = 0; i < FILE_TYPES.length; i++)
             this.sampleFileTypeCheckBoxes[i] = panel.createCheckBox (FILE_TYPES[i].getName ());
 
-        ////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////
         // Groups
 
         panel.createSeparator ("@IDS_FILE_GROUPS").getStyleClass ().add ("titled-separator-pane");
@@ -172,13 +188,13 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
         this.monoSplitsField = panel.createField ("@IDS_FILE_MONO_STEREO", comma, -1);
 
-        ////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);
         this.getSeparator ().getStyleClass ().add ("titled-separator-pane");
 
-        ////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////
         // Options
 
         panel.createSeparator ("@IDS_FILE_OPTIONS").getStyleClass ().add ("titled-separator-pane");
