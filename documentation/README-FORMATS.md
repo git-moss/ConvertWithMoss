@@ -35,16 +35,18 @@ The following multi-sample formats are supported:
 * [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
 * [Ableton Sampler](#ableton-sampler)
 * [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000) - read only
+* [Akai MESA](#akai-mesa) - read only
 * [Akai MPC Keygroups/Drum](#akai-mpc-keygroups--drum)
 * [Akai MPC Project/Track](#akai-mpc-projecttrack)
+* [Akai MPC500/MPC1000/MPC2500](#akai-mpc500mpc1000mpc2500) - read only
 * [Akai S900/S950 image](#akai-s900s950-series-disk-image) - read only
 * [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
-* [Akai MESA](#akai-mesa) - read only
 * [Bitwig Multisample](#bitwig-multisample)
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
+* [ISO Files](#iso-files)
 * [Kontakt NKI/NKM](#kontakt-nkinkm)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
@@ -115,7 +117,9 @@ Only reading of the AKP/AKM formats is supported.
 
 ## Akai S900/S950 series disk image
 
-The Akai S900 is a 12-bit sampler, with a variable sample rate from 7.5 kHz through to 40 kHz. Up to 32 samples can be created and stored to disk along with any edit settings. An expanded version, the Akai S950, was released in 1988 alongside the higher end S1000. The S950 soon followed the S900 and offered increased memory and sampling rates. The sample rate was now variable from 7.5 to 48kHz and it could hold up to 99 samples in memory. Memory could be expanded from 750KB to 2.25MB. Unlike the S1000 series, the S900 series allows a sample to loop alternating forwards and backwards. 
+The Akai S900 is a 12-bit sampler, with a variable sample rate from 7.5 kHz through to 40 kHz. Up to 32 samples can be created and stored to disk along with any edit settings. An expanded version, the Akai S950, was released in 1988 alongside the higher end S1000. The S950 soon followed the S900 and offered increased memory and sampling rates. The sample rate was now variable from 7.5 to 48kHz and it could hold up to 99 samples in memory. Memory could be expanded from 750KB to 2.25MB. Unlike the S1000 series, the S900 series allows a sample to loop alternating forwards and backwards.
+
+**I am missing the info about the different velocity modulation settings. If you own one of these machines it would be great if you could provide me some examples with different velocity settings (keeping all other parameters identical).**
 
 ## Akai S1000/S3000 series disk image
 
@@ -152,6 +156,12 @@ A project file (*.xpj) contains all track and project settings. All tracks which
 ### Source Options
 
 * Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
+
+## Akai MPC500/MPC1000/MPC2500
+
+Reads Akai MPC500/MPC1000/MPC2500 programs (*.PGM). This format stores 64 'pads'. Each pad is assigned to 1 MIDI note and can contain up to four samples with different velocity settings.
+
+**I am missing the info about the filter envelope. If you own one of these machines it would be great if you could provide me some examples with different filter envelope settings (keeping all other parameters identical).**
 
 ## Bitwig Multisample
 
@@ -220,6 +230,10 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 
 * Re-sample to 16bit/44.1kHz: If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it decrease the number of voices it can play.
 * Trim sample to range of zone start to end: Since the format does not support a sample start attribute, this fixes the issue.
+
+## ISO Files
+
+Searches for files ending with *.ISO. Currently, only [Akai S1000/3000](#akai-s1000s3000-series-disk-image) content can be handled.
 
 ## Kontakt NKI/NKM
 

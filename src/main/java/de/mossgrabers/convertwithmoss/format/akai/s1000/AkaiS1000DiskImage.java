@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.List;
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiDiskImage implements AutoCloseable, IAkaiImage
+public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
 {
     private static final int          MAX_TEXT_LENGTH         = 12;
     private static final int          DISK_CLUSTER_SIZE       = 61440;
@@ -40,7 +40,7 @@ public class AkaiDiskImage implements AutoCloseable, IAkaiImage
      * @param isS3000 True if it is a S3000 series image otherwise S1000 series
      * @throws IOException If file cannot be opened or partitions could not be loaded
      */
-    public AkaiDiskImage (final File file, final boolean isS3000) throws IOException
+    public AkaiS1000DiskImage (final File file, final boolean isS3000) throws IOException
     {
         this.isS3000 = isS3000;
         this.randomAccessFile = new RandomAccessFile (file, "r");
@@ -244,24 +244,24 @@ public class AkaiDiskImage implements AutoCloseable, IAkaiImage
                 return readBytes / wordSize;
 
             // Read the requested cluster into the cache
-            final int requestedCluster = this.pos / AkaiDiskImage.DISK_CLUSTER_SIZE;
+            final int requestedCluster = this.pos / AkaiS1000DiskImage.DISK_CLUSTER_SIZE;
             if (this.cluster != requestedCluster)
             {
                 this.cluster = requestedCluster;
 
-                final long seekPos = (long) this.cluster * AkaiDiskImage.DISK_CLUSTER_SIZE;
+                final long seekPos = (long) this.cluster * AkaiS1000DiskImage.DISK_CLUSTER_SIZE;
                 this.randomAccessFile.seek (seekPos);
-                final int bytesRead = this.randomAccessFile.read (this.cache, 0, AkaiDiskImage.DISK_CLUSTER_SIZE);
-                if (bytesRead < AkaiDiskImage.DISK_CLUSTER_SIZE)
+                final int bytesRead = this.randomAccessFile.read (this.cache, 0, AkaiS1000DiskImage.DISK_CLUSTER_SIZE);
+                if (bytesRead < AkaiS1000DiskImage.DISK_CLUSTER_SIZE)
                     // Fill with zeros if cluster is shorter
-                    for (int i = bytesRead; i < AkaiDiskImage.DISK_CLUSTER_SIZE; i++)
+                    for (int i = bytesRead; i < AkaiS1000DiskImage.DISK_CLUSTER_SIZE; i++)
                         this.cache[i] = 0;
             }
 
             int currentReadSize = sizeToRead;
-            final int posInCluster = this.pos % AkaiDiskImage.DISK_CLUSTER_SIZE;
-            if (currentReadSize > AkaiDiskImage.DISK_CLUSTER_SIZE - posInCluster)
-                currentReadSize = AkaiDiskImage.DISK_CLUSTER_SIZE - posInCluster;
+            final int posInCluster = this.pos % AkaiS1000DiskImage.DISK_CLUSTER_SIZE;
+            if (currentReadSize > AkaiS1000DiskImage.DISK_CLUSTER_SIZE - posInCluster)
+                currentReadSize = AkaiS1000DiskImage.DISK_CLUSTER_SIZE - posInCluster;
 
             System.arraycopy (this.cache, posInCluster, data, readBytes, currentReadSize);
 

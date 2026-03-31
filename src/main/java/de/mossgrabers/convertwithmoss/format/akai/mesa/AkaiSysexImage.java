@@ -2,14 +2,14 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s3p;
+package de.mossgrabers.convertwithmoss.format.akai.mesa;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.IAkaiImage;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.IAkaiImage;
 
 
 /**

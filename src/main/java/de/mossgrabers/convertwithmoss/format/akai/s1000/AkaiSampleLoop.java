@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 
@@ -35,7 +35,7 @@ public class AkaiSampleLoop
      * @param disk The disk to read from
      * @throws IOException Could not read the loop
      */
-    public AkaiSampleLoop (final AkaiDiskImage disk) throws IOException
+    public AkaiSampleLoop (final AkaiS1000DiskImage disk) throws IOException
     {
         this.marker = disk.readInt32 ();
         this.fineLength = disk.readInt16 () & 0xFFFF;

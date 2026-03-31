@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.iso;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.File;
 import java.util.Collections;
@@ -11,23 +11,26 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.format.iso.AbstractIsoDetector;
+import de.mossgrabers.convertwithmoss.format.iso.IsoFormat;
 
 
 /**
- * Detects recursively ISO files in folders. Files must end with <i>.ISO</i>.
+ * Detects recursively ISO/IMG files in folders for Akai S1000, S1100 and S3000. Files must end with
+ * <i>.ISO</i> or <i>.IMG</i>.
  *
  * @author Jürgen Moßgraber
  */
-public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
+public class AkaiS1000Detector extends AbstractIsoDetector<MetadataSettingsUI>
 {
     /**
      * Constructor.
      *
      * @param notifier The notifier
      */
-    public IsoDetector (final INotifier notifier)
+    public AkaiS1000Detector (final INotifier notifier)
     {
-        super ("ISO file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso");
+        super ("Akai S1000/S3000", "S1000", notifier, new MetadataSettingsUI ("S1000"), ".iso", ".img");
     }
 
 
@@ -43,11 +46,8 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
                 this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
                 return this.processAkaiS1000OrS3000 (sourceFile, isoFormat == IsoFormat.AKAI_S3000);
 
-            case ROLAND_S550_W30_DJ70:
-            case ROLAND_S7XX:
-            case UNKNOWN:
             default:
-                this.notifier.logError ("IDS_ISO_UNSUPPORTED_FORMAT", IsoFormat.getName (isoFormat));
+                this.notifier.logError ("IDS_ISO_WRONG_FORMAT", IsoFormat.getName (IsoFormat.AKAI_S1000_S1100));
                 return Collections.emptyList ();
         }
     }

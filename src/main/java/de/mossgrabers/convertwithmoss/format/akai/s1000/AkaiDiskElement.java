@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 
@@ -87,14 +87,14 @@ public abstract class AkaiDiskElement
     }
 
 
-    protected int readFAT (final AkaiDiskImage disk, final AkaiPartition partition, final int block) throws IOException
+    protected int readFAT (final AkaiS1000DiskImage disk, final AkaiPartition partition, final int block) throws IOException
     {
         disk.setPos (partition.getOffset () + AKAI_FAT_OFFSET + block * 2, AkaiStreamWhence.START);
         return disk.readInt16 ();
     }
 
 
-    protected boolean readDirEntry (final AkaiDiskImage disk, final AkaiPartition partition, final AkaiDirEntry entry, final int block, final int pos) throws IOException
+    protected boolean readDirEntry (final AkaiS1000DiskImage disk, final AkaiPartition partition, final AkaiDirEntry entry, final int block, final int pos) throws IOException
     {
         if (block == AKAI_ROOT_ENTRY_OFFSET)
         {

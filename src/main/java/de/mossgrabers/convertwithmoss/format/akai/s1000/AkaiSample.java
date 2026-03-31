@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 import java.util.List;
@@ -61,7 +61,7 @@ public class AkaiSample extends AkaiDiskElement
      * @param dirEntry The directory entry of the sample
      * @throws IOException Could not read the sample
      */
-    public AkaiSample (final AkaiDiskImage disk, final AkaiVolume volume, final AkaiDirEntry dirEntry) throws IOException
+    public AkaiSample (final AkaiS1000DiskImage disk, final AkaiVolume volume, final AkaiDirEntry dirEntry) throws IOException
     {
         super (disk.getPos ());
 

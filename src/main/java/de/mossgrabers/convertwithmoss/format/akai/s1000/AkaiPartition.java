@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000s3000;
+package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class AkaiPartition extends AkaiDiskElement
      * @param partitionIndex The index of the partition
      * @throws IOException Could not read the volumes
      */
-    public AkaiPartition (final AkaiDiskImage disk, final int partitionIndex) throws IOException
+    public AkaiPartition (final AkaiS1000DiskImage disk, final int partitionIndex) throws IOException
     {
         this.name = String.valueOf ((char) ('A' + partitionIndex));
 

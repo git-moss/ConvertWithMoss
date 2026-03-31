@@ -2,8 +2,13 @@
 
 ## 16.6.0 (unreleased)
 
-* Added support for reading Akai S900/S950.
+* Added support for reading Akai MPC500/MPC1000/MPC2500 programs.
+* Added support for reading Akai S900/S950 programs.
+* Added specific entry for Akai S1000/S3000 (and not only generic ISO) which searches for IMG files as well.
 * New: Source formats show their file endings with a tooltip.
+* Yamaha YSFC
+  * Fixed: Libraries are now limited to a max. of 128 performances.
+  * Fixed: The performance names are now limited to 20 characters.
 
 ## 16.5.1
 

@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s3p;
+package de.mossgrabers.convertwithmoss.format.akai.mesa;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,11 +18,11 @@ import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiKeygroup;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiKeygroupSample;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiProgram;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiProgramConverter;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiSample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroup;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroupSample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgram;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgramConverter;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiSample;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 
 
@@ -31,14 +31,14 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiS3pDetector extends AbstractDetector<MetadataSettingsUI>
+public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
 {
     /**
      * Constructor.
      *
      * @param notifier The notifier
      */
-    public AkaiS3pDetector (final INotifier notifier)
+    public AkaiMesaDetector (final INotifier notifier)
     {
         super ("Akai MESA", "MESA", notifier, new MetadataSettingsUI ("MESA"), ".s3p");
     }

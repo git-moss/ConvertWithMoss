@@ -375,6 +375,19 @@ public class YsfcFile
             orderedChunks.add (dpfm);
         orderedChunks.add (dwfm);
         orderedChunks.add (dwim);
+
+        // Add unused dummy chunks
+        orderedChunks.add (new YamahaYsfcChunk ("EARP"));
+        orderedChunks.add (new YamahaYsfcChunk ("DARP"));
+        orderedChunks.add (new YamahaYsfcChunk ("ESOM"));
+        orderedChunks.add (new YamahaYsfcChunk ("ESPG"));
+        orderedChunks.add (new YamahaYsfcChunk ("DSOM"));
+        orderedChunks.add (new YamahaYsfcChunk ("DSPG"));
+        orderedChunks.add (new YamahaYsfcChunk ("ECRV"));
+        orderedChunks.add (new YamahaYsfcChunk ("DCRV"));
+        orderedChunks.add (new YamahaYsfcChunk ("ELST"));
+        orderedChunks.add (new YamahaYsfcChunk ("DLST"));
+
         return orderedChunks;
     }
 

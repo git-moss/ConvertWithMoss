@@ -34,7 +34,7 @@ public interface IGroup
 
 
     /**
-     * Get the event that triggers the playback of the sample.
+     * Get the event that triggers the play-back of the sample.
      *
      * @return The trigger type
      */
@@ -42,7 +42,7 @@ public interface IGroup
 
 
     /**
-     * Set the event that triggers the playback of the sample.
+     * Set the event that triggers the play-back of the sample.
      *
      * @param trigger The trigger type
      */
@@ -60,17 +60,17 @@ public interface IGroup
     /**
      * Set the description of the sample zones which belong to the group.
      *
-     * @param zones The sample zones
+     * @param sampleZones The sample zones
      */
-    void setSampleZones (List<ISampleZone> zones);
+    void setSampleZones (List<ISampleZone> sampleZones);
 
 
     /**
      * Add a sample zone.
      *
-     * @param sample The sample description
+     * @param sampleZone The sample zone description
      */
-    void addSampleZone (ISampleZone sample);
+    void addSampleZone (ISampleZone sampleZone);
 
 
     /**

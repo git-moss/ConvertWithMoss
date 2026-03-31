@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s3p;
+package de.mossgrabers.convertwithmoss.format.akai.mesa;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiKeygroup;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiProgram;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroup;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgram;
 import de.mossgrabers.tools.ui.Functions;
 
 

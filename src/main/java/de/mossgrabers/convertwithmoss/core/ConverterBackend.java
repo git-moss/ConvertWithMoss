@@ -27,10 +27,12 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.akai.akp.AkpDetector;
+import de.mossgrabers.convertwithmoss.format.akai.mesa.AkaiMesaDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xty.XtyDetector;
-import de.mossgrabers.convertwithmoss.format.akai.s3p.AkaiS3pDetector;
+import de.mossgrabers.convertwithmoss.format.akai.mpc1000.AkaiMPC1000Detector;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Detector;
 import de.mossgrabers.convertwithmoss.format.akai.s900.AkaiS900Detector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
@@ -112,10 +114,12 @@ public class ConverterBackend
             new Music1010Detector (notifier),
             new AbletonDetector (notifier),
             new AkpDetector (notifier),
+            new AkaiMesaDetector (notifier),
             new MPCKeygroupDetector (notifier),
             new XtyDetector (notifier),
-            new AkaiS3pDetector (notifier),
+            new AkaiMPC1000Detector (notifier),
             new AkaiS900Detector (notifier),
+            new AkaiS1000Detector (notifier),
             new BitwigMultisampleDetector (notifier),
             new BlissDetector (notifier),
             new TX16WxDetector (notifier),
@@ -351,7 +355,7 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            //////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -368,7 +372,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            //////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)
