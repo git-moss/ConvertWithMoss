@@ -32,6 +32,8 @@ import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupCreator;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.xty.XtyDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mpc1000.AkaiMPC1000Detector;
+import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
+import de.mossgrabers.convertwithmoss.format.akai.mpc60.AkaiMPC60Detector;
 import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Detector;
 import de.mossgrabers.convertwithmoss.format.akai.s900.AkaiS900Detector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
@@ -117,7 +119,9 @@ public class ConverterBackend
             new AkaiMesaDetector (notifier),
             new MPCKeygroupDetector (notifier),
             new XtyDetector (notifier),
+            new AkaiMPC60Detector (notifier),
             new AkaiMPC1000Detector (notifier),
+            new AkaiMPC2000Detector (notifier),
             new AkaiS900Detector (notifier),
             new AkaiS1000Detector (notifier),
             new BitwigMultisampleDetector (notifier),
@@ -355,7 +359,7 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            //////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -372,7 +376,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            //////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)

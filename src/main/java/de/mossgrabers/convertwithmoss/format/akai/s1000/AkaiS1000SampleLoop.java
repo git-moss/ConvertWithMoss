@@ -6,13 +6,15 @@ package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDiskImage;
+
 
 /**
  * An Akai sample loop.
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiSampleLoop
+public class AkaiS1000SampleLoop
 {
     private int marker;
     private int fineLength;
@@ -23,7 +25,7 @@ public class AkaiSampleLoop
     /**
      * Default constructor.
      */
-    public AkaiSampleLoop ()
+    public AkaiS1000SampleLoop ()
     {
         // Intentionally empty
     }
@@ -31,11 +33,11 @@ public class AkaiSampleLoop
 
     /**
      * Constructor.
-     * 
+     *
      * @param disk The disk to read from
      * @throws IOException Could not read the loop
      */
-    public AkaiSampleLoop (final AkaiS1000DiskImage disk) throws IOException
+    public AkaiS1000SampleLoop (final AkaiDiskImage disk) throws IOException
     {
         this.marker = disk.readInt32 ();
         this.fineLength = disk.readInt16 () & 0xFFFF;
@@ -46,7 +48,7 @@ public class AkaiSampleLoop
 
     /**
      * Get the end of the looped region (not the start!).
-     * 
+     *
      * @return The position which marks the end of the loop region
      */
     public int getEndMarker ()
@@ -57,7 +59,7 @@ public class AkaiSampleLoop
 
     /**
      * Set the end of the looped region (not the start!).
-     * 
+     *
      * @param endMarker The position which marks the end of the loop region
      */
     public void setEndMarker (final int endMarker)
@@ -68,7 +70,7 @@ public class AkaiSampleLoop
 
     /**
      * Get the fine value of the loop length (65536ths).
-     * 
+     *
      * @return The fine value
      */
     public int getFineLength ()
@@ -79,7 +81,7 @@ public class AkaiSampleLoop
 
     /**
      * Get the length of the loop.
-     * 
+     *
      * @return The length of the loop
      */
     public int getCoarseLength ()
@@ -90,7 +92,7 @@ public class AkaiSampleLoop
 
     /**
      * Set the length of the loop.
-     * 
+     *
      * @param length The length of the loop
      */
     public void setCoarseLength (final int length)
@@ -101,7 +103,7 @@ public class AkaiSampleLoop
 
     /**
      * Get the time in milli-seconds for which the loop plays.
-     * 
+     *
      * @return The value as milli-seconds or 9999=infinite
      */
     public int getTime ()

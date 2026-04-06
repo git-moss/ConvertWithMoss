@@ -49,14 +49,14 @@ public class MPCKeygroupDetectorUI extends MetadataSettingsUI
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Options
 
         panel.createSeparator ("@IDS_MPC_OPTIONS");
 
         this.ignoreLoopsCheckBox = panel.createCheckBox ("@IDS_MPC_IGNORE_LOOPS", "@IDS_MPC_IGNORE_LOOPS_TOOLTIP");
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);

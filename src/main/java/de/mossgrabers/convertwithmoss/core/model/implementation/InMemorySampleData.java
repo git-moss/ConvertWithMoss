@@ -53,7 +53,7 @@ public class InMemorySampleData implements ISampleData
 
         final ByteBuffer buffer = ByteBuffer.allocate (sampleData.length * 2);
         buffer.order (ByteOrder.LITTLE_ENDIAN);
-        for (short s: sampleData)
+        for (final short s: sampleData)
             buffer.putShort (s);
 
         this (audioMetadata, buffer.array ());

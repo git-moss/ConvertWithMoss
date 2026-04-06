@@ -164,7 +164,36 @@ public class StreamUtils
      */
     public static int readUnsigned24 (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
     {
-        final byte [] bytes = readNBytes (fileAccess, 3);
+        return readUnsigned24 (readNBytes (fileAccess, 3), isBigEndian);
+    }
+
+
+    /**
+     * Reads and converts 3 bytes to an unsigned integer.
+     *
+     * @param in The input stream
+     * @param isBigEndian True if bytes are stored big-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readUnsigned24 (final InputStream in, final boolean isBigEndian) throws IOException
+    {
+        return readUnsigned24 (in.readNBytes (3), isBigEndian);
+    }
+
+
+    /**
+     * Converts 3 bytes to an unsigned integer.
+     *
+     * @param bytes The 3 bytes to convert
+     * @param isBigEndian True if bytes are stored big-endian
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readUnsigned24 (final byte [] bytes, final boolean isBigEndian) throws IOException
+    {
         if (isBigEndian)
             return (bytes[2] & 0xFF) << 8 | (bytes[1] & 0xFF) << 16 | (bytes[0] & 0xFF) << 24;
         return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16;
@@ -1228,14 +1257,14 @@ public class StreamUtils
 
     /**
      * Checks if the given data array only contains zeros.
-     * 
+     *
      * @param data The data to check
      * @return True if empty
      */
     public static boolean onlyZeros (final byte [] data)
     {
-        for (int i = 0; i < data.length; i++)
-            if (data[i] != 0)
+        for (final byte element: data)
+            if (element != 0)
                 return false;
         return true;
     }

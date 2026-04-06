@@ -7,155 +7,160 @@ package de.mossgrabers.convertwithmoss.format.akai.s1000;
 import java.io.IOException;
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDiskImage;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiStreamWhence;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiImage;
+
 
 /**
  * An Akai program.
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiProgram extends AkaiDiskElement
+public class AkaiS1000Program
 {
+    /** ID for a program structure. */
+    private static final int     AKAI_PROGRAM_ID = 1;
+
     // AKAI character set
-    private String          name;
+    private String               name;
     // 0..127
     @SuppressWarnings("unused")
-    private byte            midiProgramNumber;
+    private byte                 midiProgramNumber;
     // 0..15, 255=OMNI
-    private byte            midiChannel;
+    private byte                 midiChannel;
     // 1..16
     @SuppressWarnings("unused")
-    private byte            polyphony;
+    private byte                 polyphony;
     // 0=LOW 1=NORM 2=HIGH 3=HOLD
     @SuppressWarnings("unused")
-    private byte            priority;
+    private byte                 priority;
     // 24..127
-    private byte            lowKey;
+    private byte                 lowKey;
     // 24..127
-    private byte            highKey;
+    private byte                 highKey;
     // -2..2
-    private byte            octaveShift;
+    private byte                 octaveShift;
     // 0..7, 255=OFF
     @SuppressWarnings("unused")
-    private byte            auxOutputSelect;
+    private byte                 auxOutputSelect;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            mixOutputSelect;
+    private byte                 mixOutputSelect;
     // -50..50
-    private byte            mixPan;
+    private byte                 mixPan;
     // 0..99
-    private byte            volume;
+    private byte                 volume;
     // -50..50
-    private byte            velocityToVolume;
-    // -50..50
-    @SuppressWarnings("unused")
-    private byte            keyToVolume;
+    private byte                 velocityToVolume;
     // -50..50
     @SuppressWarnings("unused")
-    private byte            pressureToVolume;
-    // 0..99
-    @SuppressWarnings("unused")
-    private byte            panLFORate;
-    // 0..99
-    @SuppressWarnings("unused")
-    private byte            panLFODepth;
-    // 0..99
-    @SuppressWarnings("unused")
-    private byte            panLFODelay;
+    private byte                 keyToVolume;
     // -50..50
     @SuppressWarnings("unused")
-    private byte            keyToPan;
+    private byte                 pressureToVolume;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            lfoRate;
+    private byte                 panLFORate;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            lfoDepth;
+    private byte                 panLFODepth;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            lfoDelay;
+    private byte                 panLFODelay;
+    // -50..50
+    @SuppressWarnings("unused")
+    private byte                 keyToPan;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            modulationToLFODepth;
+    private byte                 lfoRate;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            pressureToLFODepth;
+    private byte                 lfoDepth;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            velocityToLFODepth;
+    private byte                 lfoDelay;
+    // 0..99
+    @SuppressWarnings("unused")
+    private byte                 modulationToLFODepth;
+    // 0..99
+    @SuppressWarnings("unused")
+    private byte                 pressureToLFODepth;
+    // 0..99
+    @SuppressWarnings("unused")
+    private byte                 velocityToLFODepth;
     // 0..12 semi-tones
-    private byte            bendToPitch;
+    private byte                 bendToPitch;
     // -12..12 semi-tones
     @SuppressWarnings("unused")
-    private byte            pressureToPitch;
+    private byte                 pressureToPitch;
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private boolean         keygroupCrossfade;
+    private boolean              keygroupCrossfade;
     // 1..99
-    private byte            numberOfKeygroups;
+    private byte                 numberOfKeygroups;
     // -25..25 cents
-    private final byte []   keyTemperament = new byte [11];
+    private final byte []        keyTemperament  = new byte [11];
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private boolean         fxOutput;
+    private boolean              fxOutput;
     // -50..50
     @SuppressWarnings("unused")
-    private byte            modulationToPan;
+    private byte                 modulationToPan;
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private boolean         stereoCoherence;
+    private boolean              stereoCoherence;
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private boolean         lfoDesync;
+    private boolean              lfoDesync;
     // 0=LINEAR
     @SuppressWarnings("unused")
-    private byte            pitchLaw;
+    private byte                 pitchLaw;
     // 0=OLDEST 1=QUIETEST
     @SuppressWarnings("unused")
-    private byte            voiceReassign;
+    private byte                 voiceReassign;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            softpedToVolume;
+    private byte                 softpedToVolume;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            softpedToAttack;
+    private byte                 softpedToAttack;
     // 0..99
     @SuppressWarnings("unused")
-    private byte            softpedToFilter;
+    private byte                 softpedToFilter;
     // -128..127 (-50..50 cents)
     @SuppressWarnings("unused")
-    private byte            softpedToTuneCents;
+    private byte                 softpedToTuneCents;
     // -50..50
     @SuppressWarnings("unused")
-    private byte            softpedToTuneSemitones;
+    private byte                 softpedToTuneSemitones;
     // -50..50
     @SuppressWarnings("unused")
-    private byte            keyToLFORate;
+    private byte                 keyToLFORate;
     // -50..50
     @SuppressWarnings("unused")
-    private byte            keyToLFODepth;
+    private byte                 keyToLFODepth;
     // -50..50
     @SuppressWarnings("unused")
-    private byte            keyToLFODelay;
+    private byte                 keyToLFODelay;
     // 0=-6dB 1=0dB 2=+12dB
     @SuppressWarnings("unused")
-    private byte            voiceOutputScale;
+    private byte                 voiceOutputScale;
     // 0=0dB 1=+6dB
     @SuppressWarnings("unused")
-    private byte            stereoOutputScale;
+    private byte                 stereoOutputScale;
 
-    private AkaiKeygroup [] keygroups;
+    private AkaiS1000Keygroup [] keygroups;
 
 
     /**
      * Default constructor.
-     * 
+     *
      * @param image The image to read from
      * @throws IOException Could not read the program
      */
-    public AkaiProgram (final IAkaiImage image) throws IOException
+    public AkaiS1000Program (final IAkaiImage image) throws IOException
     {
-        super (0);
-
         this.readProgram (image);
     }
 
@@ -164,49 +169,44 @@ public class AkaiProgram extends AkaiDiskElement
      * Constructor.
      *
      * @param disk The disk to read from
-     * @param parent The parent volume
-     * @param dirEntry The directory entry of the program
+     * @param dataPosition The position where the data starts
+     * @param isS3000 If it is an extended S3000 program (otherwise shorter S1000)
      * @throws IOException Could not read the program
      */
-    public AkaiProgram (final AkaiS1000DiskImage disk, final AkaiVolume parent, final AkaiDirEntry dirEntry) throws IOException
+    public AkaiS1000Program (final AkaiDiskImage disk, final int dataPosition, final boolean isS3000) throws IOException
     {
-        super (disk.getPos ());
-
-        final int tempPos = disk.getPos ();
-        disk.setPos (parent.getPartition ().getOffset () + dirEntry.getStart () * AKAI_BLOCK_SIZE, AkaiStreamWhence.START);
+        disk.setPosition (dataPosition, AkaiStreamWhence.START);
 
         this.readProgram (disk);
 
         // Read key-groups
-        int headerSize = disk.isS3000 () ? 192 : 150;
+        final int headerSize = isS3000 ? 192 : 150;
         final int numKeygroups = this.numberOfKeygroups & 0xFF;
-        this.keygroups = new AkaiKeygroup [numKeygroups];
+        this.keygroups = new AkaiS1000Keygroup [numKeygroups];
         for (int i = 0; i < numKeygroups; i++)
         {
-            disk.setPos (parent.getPartition ().getOffset () + dirEntry.getStart () * AKAI_BLOCK_SIZE + headerSize * (i + 1), AkaiStreamWhence.START);
-            this.keygroups[i] = new AkaiKeygroup (disk);
+            disk.setPosition (dataPosition + headerSize * (i + 1), AkaiStreamWhence.START);
+            this.keygroups[i] = new AkaiS1000Keygroup (disk);
         }
-
-        disk.setPos (tempPos, AkaiStreamWhence.START);
     }
 
 
     /**
      * Set all key-groups.
-     * 
+     *
      * @param keygroups The key-groups to set
      */
-    public void setKeygroups (final List<AkaiKeygroup> keygroups)
+    public void setKeygroups (final List<AkaiS1000Keygroup> keygroups)
     {
-        this.keygroups = keygroups.toArray (new AkaiKeygroup [keygroups.size ()]);
+        this.keygroups = keygroups.toArray (new AkaiS1000Keygroup [keygroups.size ()]);
     }
 
 
     private void readProgram (final IAkaiImage image) throws IOException
     {
         final byte progID = image.readInt8 ();
-        if (progID != AkaiDiskElement.AKAI_PROGRAM_ID)
-            throw new IOException ("Not a Akai Program.");
+        if (progID != AKAI_PROGRAM_ID)
+            throw new IOException ("Not an Akai Program.");
 
         // key-group address
         image.readInt16 ();
@@ -292,7 +292,7 @@ public class AkaiProgram extends AkaiDiskElement
 
     /**
      * Get the low key range for the whole program.
-     * 
+     *
      * @return The low key range
      */
     public byte getLowKey ()
@@ -303,7 +303,7 @@ public class AkaiProgram extends AkaiDiskElement
 
     /**
      * Get the high key range for the whole program.
-     * 
+     *
      * @return The high key range
      */
     public byte getHighKey ()
@@ -314,7 +314,7 @@ public class AkaiProgram extends AkaiDiskElement
 
     /**
      * Get the octave shift for the whole program.
-     * 
+     *
      * @return The octave shift
      */
     public byte getOctaveShift ()
@@ -325,7 +325,7 @@ public class AkaiProgram extends AkaiDiskElement
 
     /**
      * Get the mix panning for the whole program.
-     * 
+     *
      * @return The mix panning
      */
     public byte getMixPan ()
@@ -336,7 +336,7 @@ public class AkaiProgram extends AkaiDiskElement
 
     /**
      * Get the basic volume for the whole program.
-     * 
+     *
      * @return The volume in the range of [0..99]
      */
     public byte getVolume ()
@@ -347,7 +347,7 @@ public class AkaiProgram extends AkaiDiskElement
 
     /**
      * Get the keyboard velocity intensity to modulate the volume.
-     * 
+     *
      * @return The intensity in the range of [-50..50]
      */
     public byte getVelocityToVolume ()
@@ -358,7 +358,7 @@ public class AkaiProgram extends AkaiDiskElement
 
     /**
      * Get the pitch-bend intensity.
-     * 
+     *
      * @return 0..12 semi-tones
      */
     public byte getBendToPitch ()
@@ -372,7 +372,7 @@ public class AkaiProgram extends AkaiDiskElement
      *
      * @return The key-groups
      */
-    public AkaiKeygroup [] getKeygroups ()
+    public AkaiS1000Keygroup [] getKeygroups ()
     {
         return this.keygroups;
     }

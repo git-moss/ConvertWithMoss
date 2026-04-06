@@ -52,7 +52,7 @@ public class AkaiMPC1000Sample
     /**
      * Get the name without the file extension of assigned sample file. ASCII, right-padded to 16
      * bytes with 0x00. Only space, alphanumeric characters, and !#$%&'()-@_{} are valid.
-     * 
+     *
      * @return The name, trimmed
      */
     public String getName ()
@@ -63,7 +63,7 @@ public class AkaiMPC1000Sample
 
     /**
      * Get the level.
-     * 
+     *
      * @return The level in the range of [0..100]
      */
     public int getLevel ()
@@ -74,7 +74,7 @@ public class AkaiMPC1000Sample
 
     /**
      * Get the lower velocity value.
-     * 
+     *
      * @return The lower velocity value, in the range of [0..velocityRangeUpper]
      */
     public int getVelocityRangeLower ()
@@ -85,7 +85,7 @@ public class AkaiMPC1000Sample
 
     /**
      * Get the upper velocity value.
-     * 
+     *
      * @return The upper velocity value, in the range of [velocityRangeLower..127]
      */
     public int getVelocityRangeUpper ()
@@ -96,7 +96,7 @@ public class AkaiMPC1000Sample
 
     /**
      * Get the tuning.
-     * 
+     *
      * @return Tuning in cents (1 semitone = 100 cents) in the range of [-3600..3600]
      */
     public int getTuning ()
@@ -107,7 +107,7 @@ public class AkaiMPC1000Sample
 
     /**
      * Get the play mode.
-     * 
+     *
      * @return 0=One Shot, 1=Note On (samples are played as long as the pad is pressed)
      */
     public int getPlayMode ()

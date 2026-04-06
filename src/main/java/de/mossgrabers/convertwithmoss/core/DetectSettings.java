@@ -49,7 +49,7 @@ public class DetectSettings
 
     /**
      * Check if processing is enabled and at least one processing option is enabled as well.
-     * 
+     *
      * @return True if processing is necessary
      */
     public boolean needsProcessing ()

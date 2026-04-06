@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.format.iso;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,12 +14,13 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiPartition;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgram;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgramConverter;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000DiskImage;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiSample;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiVolume;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDiskImage;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiPartition;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiVolume;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Program;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000ProgramConverter;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Sample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Volume;
 
 
 /**
@@ -54,17 +54,16 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
 
     /**
      * Process an ISO file which was detected as Akai S1000 format.
-     * 
+     *
      * @param sourceFile The ISO file to process
-     * @param isS3000 True if it is a S3000 series image otherwise S1000 series
      * @return The converted multi-samples
      */
-    protected List<IMultisampleSource> processAkaiS1000OrS3000 (final File sourceFile, final boolean isS3000)
+    protected List<IMultisampleSource> processAkaiS1000Disk (final File sourceFile)
     {
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
-        final AkaiProgramConverter converter = new AkaiProgramConverter (this.notifier, this.settingsConfiguration);
+        final AkaiS1000ProgramConverter converter = new AkaiS1000ProgramConverter (this.notifier, this.settingsConfiguration);
 
-        try (final AkaiS1000DiskImage disk = new AkaiS1000DiskImage (sourceFile, isS3000))
+        try (final AkaiDiskImage disk = new AkaiDiskImage (sourceFile))
         {
             final int partitionCount = disk.getPartitionCount ();
 
@@ -74,11 +73,14 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
                 final AkaiPartition partition = disk.getPartition (partitionIndex);
                 this.notifier.log ("IDS_ISO_PROCESSING_PARTITION", partition.getName ());
 
-                for (final AkaiVolume volume: partition.getVolumes ())
+                for (final IAkaiVolume volume: partition.getVolumes ())
                 {
-                    final List<AkaiSample> samples = volume.getSamples ();
-                    for (final AkaiProgram program: volume.getPrograms ())
-                        multiSampleSources.add (converter.createMultiSample (sourceFile, parts, samples, program, volume.getName ()));
+                    if (volume instanceof AkaiS1000Volume s1000Volume)
+                    {
+                        final List<AkaiS1000Sample> samples = s1000Volume.getSamples ();
+                        for (final AkaiS1000Program program: s1000Volume.getPrograms ())
+                            multiSampleSources.add (converter.createMultiSample (sourceFile, parts, samples, program, s1000Volume.getName ()));
+                    }
                 }
             }
 
@@ -90,18 +92,5 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
         }
 
         return multiSampleSources;
-    }
-
-
-    protected static IsoFormat identifyIso (final File sourceFile)
-    {
-        try (final FileInputStream in = new FileInputStream (sourceFile))
-        {
-            return IsoFormatIdentifier.identifyIso (in.readNBytes (IsoFormatIdentifier.MINIMUM_NUMBER_OF_REQUIRED_BYTES));
-        }
-        catch (final IOException ex)
-        {
-            return IsoFormat.UNKNOWN;
-        }
     }
 }

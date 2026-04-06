@@ -152,7 +152,7 @@ public class AkaiS900DiskImage
 
     /**
      * Creates a WaveFile from the given sample.
-     * 
+     *
      * @param sample The Akai S900 sample to convert
      * @return The created WaveFile
      * @throws IOException Could not convert the data
@@ -161,7 +161,7 @@ public class AkaiS900DiskImage
     {
         final byte [] sampleData = sample.getSampleData ();
 
-        long sampleCount = sample.getSampleLength ();
+        final long sampleCount = sample.getSampleLength ();
         if (sampleCount == 0)
             return null;
 

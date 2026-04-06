@@ -11,7 +11,7 @@ package de.mossgrabers.convertwithmoss.format.akai.mpc.xpm;
  */
 public class MPCKeygroupTag
 {
-    ///////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////
     // Elements
 
     /** The root element. */
@@ -203,7 +203,7 @@ public class MPCKeygroupTag
     /** The pad note element of the pad note map element. */
     public static final String PAD_NOTE_NOTE                        = "Note";
 
-    ///////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////
     // Attributes
 
     /** The type attribute of the program element. */

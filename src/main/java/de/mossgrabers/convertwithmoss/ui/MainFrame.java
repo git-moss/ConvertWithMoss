@@ -179,7 +179,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
 
-        ///////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
         // Source pane
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
@@ -208,7 +208,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final BorderPane sourcePane = new BorderPane (this.sourceTabPane);
         sourcePane.setTop (sourceUpperPane.getPane ());
 
-        ///////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
         // Destination pane
 
         final BorderPane destinationFolderPanel = new BorderPane (this.destinationPathField);
@@ -445,7 +445,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void loadConfiguration ()
     {
-        //////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Source configuration
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -461,7 +461,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.sourcePathHistory.isEmpty ())
             this.sourcePathField.getEditor ().setText (this.sourcePathHistory.get (0));
 
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////
         // Destination Configuration
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -493,7 +493,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
 
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////
         // Processing
 
         this.detectSettings.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
@@ -504,7 +504,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.detectSettings.reduceBitDepth = this.config.getInteger (PROCESSING_REDUCE_BIT_DEPTH, 0);
         this.detectSettings.reduceFrequency = this.config.getInteger (PROCESSING_REDUCE_FREQUENCY, 0);
 
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////
         // Options
 
         this.detectSettings.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
@@ -546,7 +546,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setProperty (PRESET_LIBRARY_FILENAME, this.presetLibraryFilename.getText ());
         this.config.setProperty (PERFORMANCE_LIBRARY_FILENAME, this.performanceLibraryFilename.getText ());
 
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////
         // Processing
 
         this.config.setBoolean (PROCESSING_ENABLE, this.detectSettings.enableProcessing);
@@ -557,7 +557,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setInteger (PROCESSING_REDUCE_BIT_DEPTH, this.detectSettings.reduceBitDepth);
         this.config.setInteger (PROCESSING_REDUCE_FREQUENCY, this.detectSettings.reduceFrequency);
 
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////
         // Options
 
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.detectSettings.createFolderStructure);
@@ -669,10 +669,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             return;
         final IDetector<?> detector = this.backend.getDetectors ()[selectedDetector];
         final ICreator<?> creator = this.backend.getCreators ()[selectedCreator];
-        if (!detector.getSettings ().checkSettingsUI (this) || !creator.getSettings ().checkSettingsUI (this))
-            return;
-
-        if (this.detectSettings.enableProcessing && !creator.checkProcessingCompatibility (this.detectSettings))
+        if (!detector.getSettings ().checkSettingsUI (this) || !creator.getSettings ().checkSettingsUI (this) || (this.detectSettings.enableProcessing && !creator.checkProcessingCompatibility (this.detectSettings)))
             return;
 
         this.clearLog ();

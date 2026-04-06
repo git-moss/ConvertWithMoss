@@ -98,7 +98,7 @@ public interface ICreator<T extends ICoreTaskSettings> extends ICoreTask<T>
 
     /**
      * Check if the target format is compatible with the given processing settings.
-     * 
+     *
      * @param detectSettings The processing settings
      * @return True if compatible
      */

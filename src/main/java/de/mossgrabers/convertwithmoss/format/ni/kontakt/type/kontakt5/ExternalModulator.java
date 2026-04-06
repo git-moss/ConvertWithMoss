@@ -161,8 +161,8 @@ public class ExternalModulator
         {
             @SuppressWarnings("unused")
             final int unknown4 = in.read ();
-            // System.out.println ("Unknown 4: " + unknown4);
         }
+        // System.out.println ("Unknown 4: " + unknown4);
 
         @SuppressWarnings("unused")
         final long unknown5 = StreamUtils.readUnsigned16 (in, false);

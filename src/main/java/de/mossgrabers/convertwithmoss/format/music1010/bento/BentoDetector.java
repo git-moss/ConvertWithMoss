@@ -371,7 +371,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        ////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Play-range & Loops
 
         sampleZone.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0));
@@ -396,7 +396,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
         sampleZone.setReversed (isReversed);
 
-        ////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();

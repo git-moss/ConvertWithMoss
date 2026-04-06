@@ -96,8 +96,10 @@ public class AkaiMPC1000Pad
         this.filter1Type = input.read ();
         this.filter1Freq = input.read ();
         this.filter1Res = input.read ();
-        // Padding
+        // These bytes might contain the filter cutoff envelope: attack, decay, amount but all test
+        // files contain only 00
         input.skipNBytes (4);
+
         this.filter1VelocityToFrequency = input.read ();
 
         this.filter2Type = input.read ();
@@ -124,7 +126,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the samples.
-     * 
+     *
      * @return The samples
      */
     public List<AkaiMPC1000Sample> getSamples ()
@@ -135,7 +137,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the attack.
-     * 
+     *
      * @return The attack in the range of [0..100]
      */
     public int getAttack ()
@@ -146,7 +148,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the decay.
-     * 
+     *
      * @return The decay in the range of [0..100]
      */
     public int getDecay ()
@@ -157,7 +159,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the decay mode.
-     * 
+     *
      * @return 0=End, 1=Start
      */
     public int getDecayMode ()
@@ -168,7 +170,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the level modulation by velocity.
-     * 
+     *
      * @return The intensity in the range of [0..100]
      */
     public int getVelocityToLevel ()
@@ -179,7 +181,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the type of filter 1.
-     * 
+     *
      * @return 0=Off, 1=Lowpass, 2=Bandpass, 3=Highpass
      */
     public int getFilter1Type ()
@@ -190,7 +192,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the frequency of filter 1.
-     * 
+     *
      * @return The frequency in the range of [0..100]
      */
     public int getFilter1Freq ()
@@ -201,7 +203,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the resonance of filter 1.
-     * 
+     *
      * @return The resonance in the range of [0..100]
      */
     public int getFilter1Res ()
@@ -212,7 +214,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the frequency of filter 1 modulation by velocity.
-     * 
+     *
      * @return The intensity in the range of [0..100]
      */
     public int getFilter1VelocityToFrequency ()
@@ -223,7 +225,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the mixer level.
-     * 
+     *
      * @return The level in the range of [0..100]
      */
     public int getMixerLevel ()
@@ -234,7 +236,7 @@ public class AkaiMPC1000Pad
 
     /**
      * Get the mixer panning.
-     * 
+     *
      * @return The panning: 0 to 49=Left, 50=Center, 51 to 100=Right
      */
     public int getMixerPan ()

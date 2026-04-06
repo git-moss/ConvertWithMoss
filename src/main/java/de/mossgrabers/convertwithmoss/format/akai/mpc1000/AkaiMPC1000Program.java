@@ -25,15 +25,15 @@ public class AkaiMPC1000Program
     private static final String        MAGIC = "MPC1000 PGM 1.00";
 
     private final List<AkaiMPC1000Pad> pads  = new ArrayList<> ();
-    private byte []                    midiNotes;
-    private byte []                    assignedPads;
+    private final byte []                    midiNotes;
+    private final byte []                    assignedPads;
     @SuppressWarnings("unused")
-    private int                        midiProgramChange;
+    private final int                        midiProgramChange;
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read
      */
@@ -66,15 +66,12 @@ public class AkaiMPC1000Program
 
         // Padding
         input.skipNBytes (17);
-
-        int available = input.available ();
-        System.out.println (available);
     }
 
 
     /**
      * Get all pads.
-     * 
+     *
      * @return The 64 pads
      */
     public List<AkaiMPC1000Pad> getPads ()
@@ -85,7 +82,7 @@ public class AkaiMPC1000Program
 
     /**
      * Get the MIDI notes which can be assigned to pads.
-     * 
+     *
      * @return The array of 64 MIDI notes
      */
     public byte [] getMidiNotes ()
@@ -96,7 +93,7 @@ public class AkaiMPC1000Program
 
     /**
      * Get the pads which have an assigned MIDI notes.
-     * 
+     *
      * @return An array with 64 entries, the index refers to the MIDI note array, the value
      *         represents the index of the pad to which the note is assigned. A value of 64
      *         indicates no assignment

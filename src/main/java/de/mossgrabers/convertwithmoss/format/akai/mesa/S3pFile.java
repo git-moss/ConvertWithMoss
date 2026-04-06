@@ -11,8 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroup;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgram;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiSysexImage;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Keygroup;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Program;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -32,7 +33,7 @@ public class S3pFile
 {
     private final static String MAGIC   = "PSYSSS30";
 
-    private AkaiProgram         program = null;
+    private AkaiS1000Program         program = null;
 
 
     /**
@@ -53,7 +54,7 @@ public class S3pFile
      *
      * @return The program
      */
-    public AkaiProgram getProgram ()
+    public AkaiS1000Program getProgram ()
     {
         return this.program;
     }
@@ -61,7 +62,7 @@ public class S3pFile
 
     private void parseSysexMessages (final List<byte []> sysexMessages) throws IOException
     {
-        final List<AkaiKeygroup> keygroups = new ArrayList<> ();
+        final List<AkaiS1000Keygroup> keygroups = new ArrayList<> ();
 
         for (final byte [] sysexMessage: sysexMessages)
         {
@@ -75,7 +76,7 @@ public class S3pFile
                     this.program = parseProgram (extractContent (sysexMessage, 7));
                     break;
                 case 9:
-                    final AkaiKeygroup keygroup = parseKeygroup (extractContent (sysexMessage, 8));
+                    final AkaiS1000Keygroup keygroup = parseKeygroup (extractContent (sysexMessage, 8));
                     if (keygroup != null)
                         keygroups.add (keygroup);
                     break;
@@ -89,20 +90,20 @@ public class S3pFile
     }
 
 
-    private static AkaiProgram parseProgram (final byte [] content) throws IOException
+    private static AkaiS1000Program parseProgram (final byte [] content) throws IOException
     {
         try (final AkaiSysexImage akaiSysexImage = new AkaiSysexImage (content))
         {
-            return new AkaiProgram (akaiSysexImage);
+            return new AkaiS1000Program (akaiSysexImage);
         }
     }
 
 
-    private static AkaiKeygroup parseKeygroup (final byte [] content) throws IOException
+    private static AkaiS1000Keygroup parseKeygroup (final byte [] content) throws IOException
     {
         try (final AkaiSysexImage akaiSysexImage = new AkaiSysexImage (content))
         {
-            return new AkaiKeygroup (akaiSysexImage);
+            return new AkaiS1000Keygroup (akaiSysexImage);
         }
     }
 

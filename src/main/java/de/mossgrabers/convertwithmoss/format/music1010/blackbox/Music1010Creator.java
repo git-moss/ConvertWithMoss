@@ -482,7 +482,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
      */
     private static void createSample (final Document document, final String presetPath, final Element groupElement, final ISampleZone zone, final int sampleIndex, final int slot, final boolean trim)
     {
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element cellElement = XMLUtils.addElement (document, groupElement, Music1010Tag.CELL);
@@ -511,7 +511,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
 
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_REVERSE, zone.isReversed () ? 1 : 0);
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Key & Velocity attributes
 
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
@@ -526,7 +526,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         // No fades info.getVelocityCrossfadeLow ()
         // No fades info.getVelocityCrossfadeHigh ()
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Loops
 
         // ... are stored in the WAV files

@@ -475,7 +475,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Loops
 
         final int loopStart = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, -1));

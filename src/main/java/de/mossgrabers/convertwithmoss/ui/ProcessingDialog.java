@@ -73,7 +73,7 @@ public class ProcessingDialog extends AbstractDialog
 
     /**
      * Select the bit depth.
-     * 
+     *
      * @param bitDepth The bit depth (8, 16, 24, all other values are off)
      */
     public void selectBitDepth (final int bitDepth)
@@ -93,7 +93,7 @@ public class ProcessingDialog extends AbstractDialog
 
     /**
      * Select the bit depth.
-     * 
+     *
      * @return The bit depth (8, 16, 24, -1 for off)
      */
     public int getBitDepth ()
@@ -113,7 +113,7 @@ public class ProcessingDialog extends AbstractDialog
 
     /**
      * Select the maximum frequency.
-     * 
+     *
      * @param frequency The frequency, e.g. 44100
      */
     public void selectFrequency (final int frequency)
@@ -143,7 +143,7 @@ public class ProcessingDialog extends AbstractDialog
 
     /**
      * Get the the maximum frequency.
-     * 
+     *
      * @return The frequency, e.g. 44100, -1 to ignore
      */
     public int getFrequency ()

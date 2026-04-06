@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
@@ -34,7 +35,7 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiProgramConverter
+public class AkaiS1000ProgramConverter
 {
     private final INotifier       notifier;
     private final IMetadataConfig configuration;
@@ -42,11 +43,11 @@ public class AkaiProgramConverter
 
     /**
      * Constructor.
-     * 
+     *
      * @param notifier Where to report errors
      * @param configuration Configuration for metadata lookup
      */
-    public AkaiProgramConverter (final INotifier notifier, final IMetadataConfig configuration)
+    public AkaiS1000ProgramConverter (final INotifier notifier, final IMetadataConfig configuration)
     {
         this.notifier = notifier;
         this.configuration = configuration;
@@ -55,7 +56,7 @@ public class AkaiProgramConverter
 
     /**
      * Convert a program to a multi-sample source.
-     * 
+     *
      * @param sourceFile The source file
      * @param parts The folder parts for metadata lookup
      * @param samples THe referenced samples
@@ -63,7 +64,7 @@ public class AkaiProgramConverter
      * @param volumeName The name to prefix, might be null or empty
      * @return The converted multi-sample source
      */
-    public DefaultMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final List<AkaiSample> samples, final AkaiProgram program, final String volumeName)
+    public IMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final List<AkaiS1000Sample> samples, final AkaiS1000Program program, final String volumeName)
     {
         String programName = program.getName ();
         if (volumeName != null && !volumeName.isBlank ())
@@ -95,9 +96,9 @@ public class AkaiProgramConverter
     }
 
 
-    private void createSampleZones (final IGroup group, final AkaiKeygroup [] keygroups, final List<AkaiSample> samples)
+    private void createSampleZones (final IGroup group, final AkaiS1000Keygroup [] keygroups, final List<AkaiS1000Sample> samples)
     {
-        for (final AkaiKeygroup keygroup: keygroups)
+        for (final AkaiS1000Keygroup keygroup: keygroups)
         {
             // Each key-group can have up to 4 velocity layers, therefore an individual ISampleZone
             // needs to be created for each layer
@@ -127,17 +128,17 @@ public class AkaiProgramConverter
             // Pitch modulation
             final double pitchModulation = keygroup.getEnvelope2ToPitch () / 50.0;
 
-            final AkaiKeygroupSample [] keygroupSamples = keygroup.getSamples ();
+            final AkaiS1000KeygroupSample [] keygroupSamples = keygroup.getSamples ();
             for (int i = 0; i < keygroupSamples.length; i++)
             {
-                final AkaiKeygroupSample keygroupSample = keygroupSamples[i];
+                final AkaiS1000KeygroupSample keygroupSample = keygroupSamples[i];
 
                 // Is the layer used?
                 final String sampleName = keygroupSample.getName ();
                 if (sampleName == null || sampleName.isBlank ())
                     continue;
 
-                final AkaiSample sample = lookupSample (samples, sampleName);
+                final AkaiS1000Sample sample = lookupSample (samples, sampleName);
                 if (sample == null)
                 {
                     this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
@@ -187,7 +188,7 @@ public class AkaiProgramConverter
                         final byte firstActiveLoop = sample.getFirstActiveLoop ();
                         if (firstActiveLoop > 0)
                         {
-                            final AkaiSampleLoop loop = sample.getLoops ()[firstActiveLoop - 1];
+                            final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop - 1];
                             final int marker = loop.getEndMarker ();
                             final ISampleLoop sampleLoop = new DefaultSampleLoop ();
                             sampleLoop.setStart (marker - loop.getCoarseLength ());
@@ -219,22 +220,20 @@ public class AkaiProgramConverter
     }
 
 
-    private static AkaiSample lookupSample (final List<AkaiSample> samples, final String sampleName)
+    private static AkaiS1000Sample lookupSample (final List<AkaiS1000Sample> samples, final String sampleName)
     {
         if (sampleName == null)
             return null;
-        for (final AkaiSample sample: samples)
-        {
+        for (final AkaiS1000Sample sample: samples)
             if (sampleName.equals (sample.getName ()))
                 return sample;
-        }
         return null;
     }
 
 
     /**
      * Combine the semi-tone and fine tuning.
-     * 
+     *
      * @param tuneSemitones The semi-tones in the range of [-50..50]
      * @param tuneCents The tuning by in the range of [-128..127], needs to be scaled to [-50..+50]
      * @return The semi-tones with cents as fractions
@@ -250,7 +249,7 @@ public class AkaiProgramConverter
     }
 
 
-    private static IEnvelope convertEnvelope (final AkaiEnvelope akaiEnvelope)
+    private static IEnvelope convertEnvelope (final AkaiS1000Envelope akaiEnvelope)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
         envelope.setAttackTime (toSeconds (akaiEnvelope.getAttack (), false));

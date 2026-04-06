@@ -157,9 +157,7 @@ public class YamahaYsfcEntry
         StreamUtils.writeUnsigned32 (contentStream, this.contentNumber, true);
 
         if (version <= 102)
-        {
             StreamUtils.padBytes (contentStream, version <= 101 ? 1 : 2);
-        }
         else if (version >= 400)
         {
             // Flags - type specific

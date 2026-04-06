@@ -6,41 +6,43 @@ package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiImage;
+
 
 /**
  * Parameters for the Akai key-group sample description.
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiKeygroupSample extends AkaiDiskElement
+public class AkaiS1000KeygroupSample
 {
     // AKAI character set
-    private String name;
+    private final String name;
     // 0..127
-    private byte   lowVelocity;
+    private final byte   lowVelocity;
     // 0..127
-    private byte   highVelocity;
+    private final byte   highVelocity;
     // -128..127 (-50..50 cents)
-    private byte   tuneCents;
+    private final byte   tuneCents;
     // -50..+50
-    private byte   tuneSemitones;
+    private final byte   tuneSemitones;
     // -50..+50
-    private byte   loudness;
+    private final byte   loudness;
     // -50..+50
-    private byte   filter;
+    private final byte   filter;
     // -50..+50
-    private byte   pan;
+    private final byte   pan;
     // 0=AS_SAMPLE 1=LOOP_IN_REL, 2=LOOP_UNTIL_REL 3=NO_LOOP, 4=PLAY_TO_END
-    private byte   loopMode;
+    private final byte   loopMode;
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param disk The disk to read from
      * @throws IOException Could not read the key-group
      */
-    public AkaiKeygroupSample (final IAkaiImage disk) throws IOException
+    public AkaiS1000KeygroupSample (final IAkaiImage disk) throws IOException
     {
         this.name = disk.readText ();
 
@@ -73,7 +75,7 @@ public class AkaiKeygroupSample extends AkaiDiskElement
 
     /**
      * Get the low velocity of the sample range.
-     * 
+     *
      * @return The low velocity
      */
     public byte getLowVelocity ()
@@ -84,7 +86,7 @@ public class AkaiKeygroupSample extends AkaiDiskElement
 
     /**
      * Get the upper velocity of the sample range.
-     * 
+     *
      * @return The low velocity
      */
     public byte getHighVelocity ()
@@ -128,7 +130,7 @@ public class AkaiKeygroupSample extends AkaiDiskElement
 
     /**
      * The cutoff of the fixed 18dB/octave low-pass filter.
-     * 
+     *
      * @return The cutoff value in the range of [0..99], 0 is fully closed, 99 is fully open
      */
     public byte getFilter ()
@@ -139,7 +141,7 @@ public class AkaiKeygroupSample extends AkaiDiskElement
 
     /**
      * Get the panning.
-     * 
+     *
      * @return The panning in the range of [-50..50], -50 is full left, +50 full right
      */
     public byte getPan ()
@@ -167,7 +169,7 @@ public class AkaiKeygroupSample extends AkaiDiskElement
      * PLAY_TO_END (= one-shot): no loops are played, but an instantaneous trigger signal or key
      * press will play the whole of the sample (the key does not have to be pressed for the whole
      * length of the sample).
-     * 
+     *
      * @return The loop mode
      */
     public byte getLoopMode ()

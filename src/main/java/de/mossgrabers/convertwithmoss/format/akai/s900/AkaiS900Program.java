@@ -20,21 +20,21 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class AkaiS900Program
 {
     /** The name of the program. */
-    private String                       name;
+    private final String                       name;
 
     /**
      * Key-group (positional) cross-fade enable: Samples may be assigned so that the high range of
      * one sample overlaps the low range of another sample. With positional cross-fade on, the lower
      * sample will fade out as the higher sample fades in over the range of the overlap.
      */
-    private int                          keygroupCrossfadeEnable;
+    private final int                          keygroupCrossfadeEnable;
 
     private final List<AkaiS900Keygroup> keygroups = new ArrayList<> ();
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read
      */
@@ -71,7 +71,7 @@ public class AkaiS900Program
 
     /**
      * Get the name of the entry.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -82,7 +82,7 @@ public class AkaiS900Program
 
     /**
      * Check if key-groups should be cross-faded in the overlapping key-range.
-     * 
+     *
      * @return True if cross-fade should be applied
      */
     public boolean isKeygroupCrossfadeEnable ()
@@ -93,7 +93,7 @@ public class AkaiS900Program
 
     /**
      * Get all key-groups.
-     * 
+     *
      * @return The key-groups
      */
     public List<AkaiS900Keygroup> getKeygroups ()

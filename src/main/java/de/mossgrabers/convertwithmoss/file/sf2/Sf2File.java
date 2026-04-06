@@ -230,7 +230,7 @@ public class Sf2File extends AbstractRIFFFile
     {
         final int id = chunk.getId ().getFourCC ();
 
-        ////////////////////////////////////////////
+        ///////////////////////////////////////////
         // Data chunk sub-chunks
 
         if (id == Sf2RiffChunkId.SMPL_ID.getFourCC () || id == Sf2RiffChunkId.SM24_ID.getFourCC ())
@@ -239,7 +239,7 @@ public class Sf2File extends AbstractRIFFFile
             return;
         }
 
-        ////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Preset, Instrument, and Sample Header chunks
 
         if (id == Sf2RiffChunkId.PHDR_ID.getFourCC ())
@@ -787,7 +787,7 @@ public class Sf2File extends AbstractRIFFFile
 
                 for (int zoneIndex = 0; zoneIndex < sf2Preset.getZoneCount (); zoneIndex++)
                 {
-                    //////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////
                     // Preset data
 
                     final Sf2PresetZone presetZone = sf2Preset.getZone (zoneIndex);
@@ -813,7 +813,7 @@ public class Sf2File extends AbstractRIFFFile
                     presetGeneratorIndex += presetZone.getNumberOfGenerators ();
                     presetModulatorIndex += presetZone.getNumberOfModulators ();
 
-                    //////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////
                     // Instrument data
 
                     final Sf2Instrument instrument = presetZone.getInstrument ();

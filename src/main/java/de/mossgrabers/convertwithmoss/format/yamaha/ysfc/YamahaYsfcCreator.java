@@ -484,7 +484,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final double tune = zone.getTuning ();
         final int semitones = (int) Math.round (tune);
         element.setCoarseTune (semitones + 64);
-        element.setFineTune ((int) Math.round (((tune - semitones) * 100)) + 64);
+        element.setFineTune ((int) Math.round ((tune - semitones) * 100) + 64);
         element.setPitchKeyFollowSensitivity ((int) Math.round (zone.getKeyTracking () * 100));
 
         element.setPan (MathUtils.denormalizeIntegerRange (zone.getPanning (), -63, 63, 64));

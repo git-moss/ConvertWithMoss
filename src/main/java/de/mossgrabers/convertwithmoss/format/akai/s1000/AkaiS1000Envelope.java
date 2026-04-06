@@ -6,43 +6,45 @@ package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiImage;
+
 
 /**
  * An Akai ADSR envelope.
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiEnvelope
+public class AkaiS1000Envelope
 {
     // 0..99
-    private byte attack;
+    private final byte attack;
     // 0..99
-    private byte decay;
+    private final byte decay;
     // 0..99
-    private byte sustain;
+    private final byte sustain;
     // 0..99
-    private byte release;
+    private final byte release;
     // -50..50
     @SuppressWarnings("unused")
-    private byte velocityToAttack;
+    private final byte velocityToAttack;
     // -50..50
     @SuppressWarnings("unused")
-    private byte velocityToRelease;
+    private final byte velocityToRelease;
     // -50..50
     @SuppressWarnings("unused")
-    private byte offVelocityToRelease;
+    private final byte offVelocityToRelease;
     // -50..50
     @SuppressWarnings("unused")
-    private byte keyToDecayAndRelease;
+    private final byte keyToDecayAndRelease;
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param disk The Akai disk from which to read
      * @throws IOException Could not read the envelope
      */
-    public AkaiEnvelope (final IAkaiImage disk) throws IOException
+    public AkaiS1000Envelope (final IAkaiImage disk) throws IOException
     {
         this.attack = disk.readInt8 ();
         this.decay = disk.readInt8 ();
@@ -57,7 +59,7 @@ public class AkaiEnvelope
 
     /**
      * Get the attack value.
-     * 
+     *
      * @return The attack value in the range of [0..99]
      */
     public int getAttack ()
@@ -68,7 +70,7 @@ public class AkaiEnvelope
 
     /**
      * Get the decay value.
-     * 
+     *
      * @return The decay value in the range of [0..99]
      */
     public byte getDecay ()
@@ -79,7 +81,7 @@ public class AkaiEnvelope
 
     /**
      * Get the sustain value.
-     * 
+     *
      * @return The sustain value in the range of [0..99]
      */
     public byte getSustain ()
@@ -90,7 +92,7 @@ public class AkaiEnvelope
 
     /**
      * Get the release value.
-     * 
+     *
      * @return The release value in the range of [0..99]
      */
     public byte getRelease ()

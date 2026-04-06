@@ -412,7 +412,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (end >= 0)
             sampleMetadata.setStop (end);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Key range
 
         final int key = this.getKeyValue (SfzOpcode.KEY);
@@ -454,7 +454,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (pitchKeyCenter >= 0)
             sampleMetadata.setKeyRoot (pitchKeyCenter);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Velocity
 
         // Lower bounds including cross-fade
@@ -483,12 +483,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (highVel >= 0)
             sampleMetadata.setVelocityHigh (highVel);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Sample Loop
 
         this.parseLoop (sampleMetadata);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Tune
 
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
@@ -524,12 +524,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         pitchEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY_SHAPE, 0) / 10.0);
         pitchEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE_SHAPE, 0) / 10.0);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Volume
 
         this.parseVolume (sampleMetadata);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Filter
 
         this.parseFilter (sampleMetadata);

@@ -57,13 +57,13 @@ public class Sf2DetectorUI extends MetadataSettingsUI
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Options
 
         panel.createSeparator ("@IDS_SF2_OPTIONS");
         this.logUnsupportedAttributesCheckBox = panel.createCheckBox ("@IDS_SF2_LOG_UNSUPPORTED_ATTRIBUTES");
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Naming
 
         final TitledSeparator separator = panel.createSeparator ("@IDS_SF2_NAMING");
@@ -72,7 +72,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         this.addFileNameCheckBox = panel.createCheckBox ("@IDS_SF2_NAMING_ADD_FILE_NAME");
         this.addProgramNumberCheckBox = panel.createCheckBox ("@IDS_SF2_NAMING_ADD_PROGRAM_NUMBER");
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);

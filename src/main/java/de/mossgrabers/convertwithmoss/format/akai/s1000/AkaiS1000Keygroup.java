@@ -6,54 +6,59 @@ package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.io.IOException;
 
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiImage;
+
 
 /**
  * Parameters for the Akai key-group.
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiKeygroup
+public class AkaiS1000Keygroup
 {
+    /** ID for a key-group structure. */
+    private static final int            AKAI_KEYGROUP_ID       = 2;
+
     // 24..127
-    private byte                        lowKey;
+    private final byte                  lowKey;
     // 24..127
-    private byte                        highKey;
+    private final byte                  highKey;
     // -128..127 (-50..+50 cents)
-    private byte                        tuneCents;
+    private final byte                  tuneCents;
     // -50..50
-    private byte                        tuneSemitones;
+    private final byte                  tuneSemitones;
     // 0..99
-    private byte                        filter;
+    private final byte                  filter;
     // 0..24 semi-tone/octave
     @SuppressWarnings("unused")
-    private byte                        keyToFilter;
+    private final byte                  keyToFilter;
     // -50..50
-    private byte                        velocityToFilter;
+    private final byte                  velocityToFilter;
     // -50..50
     @SuppressWarnings("unused")
-    private byte                        pressureToFilter;
+    private final byte                  pressureToFilter;
     // -50..50
-    private byte                        envelope2ToFilter;
+    private final byte                  envelope2ToFilter;
 
-    private final AkaiEnvelope          amplitudeEnvelope;
-    private final AkaiEnvelope          auxEnvelope;
-
-    // -50..50
-    @SuppressWarnings("unused")
-    private byte                        velocityToEnvelope2ToFilter;
-    // -50..50
-    private byte                        envelope2ToPitch;
-    @SuppressWarnings("unused")
-    private boolean                     velocityZoneCrossfade;
-    @SuppressWarnings("unused")
-    private int                         velocityZoneUsed;
-    private final AkaiKeygroupSample [] samples;
+    private final AkaiS1000Envelope     amplitudeEnvelope;
+    private final AkaiS1000Envelope     auxEnvelope;
 
     // -50..50
-    private byte                        beatDetune;
+    @SuppressWarnings("unused")
+    private final byte                  velocityToEnvelope2ToFilter;
+    // -50..50
+    private final byte                  envelope2ToPitch;
+    @SuppressWarnings("unused")
+    private final boolean               velocityZoneCrossfade;
+    @SuppressWarnings("unused")
+    private final int                   velocityZoneUsed;
+    private final AkaiS1000KeygroupSample [] samples;
+
+    // -50..50
+    private final byte                  beatDetune;
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private boolean                     holdAttackUntilLoop;
+    private final boolean               holdAttackUntilLoop;
     // Sample 1-4 key tracking : 0=TRACK 1=FIXED
     private final boolean []            sampleKeyTracking      = new boolean [4];
     // Sample 1-4 AUX out offset 0..7
@@ -66,13 +71,13 @@ public class AkaiKeygroup
 
     /**
      * Constructor.
-     * 
+     *
      * @param disk The disk to read from
      * @throws IOException Could not read the key-group
      */
-    public AkaiKeygroup (final IAkaiImage disk) throws IOException
+    public AkaiS1000Keygroup (final IAkaiImage disk) throws IOException
     {
-        if (disk.readInt8 () != AkaiDiskElement.AKAI_KEYGROUP_ID)
+        if (disk.readInt8 () != AKAI_KEYGROUP_ID)
             throw new IOException ("Not a key-group.");
 
         // Next key-group address
@@ -88,8 +93,8 @@ public class AkaiKeygroup
         this.pressureToFilter = disk.readInt8 ();
         this.envelope2ToFilter = disk.readInt8 ();
 
-        this.amplitudeEnvelope = new AkaiEnvelope (disk);
-        this.auxEnvelope = new AkaiEnvelope (disk);
+        this.amplitudeEnvelope = new AkaiS1000Envelope (disk);
+        this.auxEnvelope = new AkaiS1000Envelope (disk);
 
         this.velocityToEnvelope2ToFilter = disk.readInt8 ();
         this.envelope2ToPitch = disk.readInt8 ();
@@ -99,9 +104,9 @@ public class AkaiKeygroup
         disk.readInt8 ();
         disk.readInt8 ();
 
-        this.samples = new AkaiKeygroupSample [4];
+        this.samples = new AkaiS1000KeygroupSample [4];
         for (int i = 0; i < 4; i++)
-            this.samples[i] = new AkaiKeygroupSample (disk);
+            this.samples[i] = new AkaiS1000KeygroupSample (disk);
 
         this.beatDetune = disk.readInt8 ();
         this.holdAttackUntilLoop = disk.readInt8 () != 0;
@@ -167,7 +172,7 @@ public class AkaiKeygroup
     /**
      * Used to create a fixed offset to the original pitch. Unlike the TUNE parameter, this tuning
      * offset is constant, no matter what the played pitch of the sample.
-     * 
+     *
      * @return The beat de-tune value in the range of [-50..+50]
      */
     public byte getBeatDetune ()
@@ -178,7 +183,7 @@ public class AkaiKeygroup
 
     /**
      * The cutoff of the fixed 18dB/octave low-pass filter.
-     * 
+     *
      * @return The cutoff value in the range of [0..99], 0 is fully closed, 99 is fully open
      */
     public byte getFilter ()
@@ -189,7 +194,7 @@ public class AkaiKeygroup
 
     /**
      * The intensity of the keyboard velocity on the filter cutoff.
-     * 
+     *
      * @return The intensity in the range of [-50..+50]
      */
     public byte getVelocityToFilter ()
@@ -200,10 +205,10 @@ public class AkaiKeygroup
 
     /**
      * Get the amplitude envelope (envelope 1).
-     * 
+     *
      * @return The envelope
      */
-    public AkaiEnvelope getAmplitudeEnvelope ()
+    public AkaiS1000Envelope getAmplitudeEnvelope ()
     {
         return this.amplitudeEnvelope;
     }
@@ -211,10 +216,10 @@ public class AkaiKeygroup
 
     /**
      * Get the auxiliary envelope (envelope 2) which might be used for filter cutoff or pitch.
-     * 
+     *
      * @return The envelope
      */
-    public AkaiEnvelope getAuxEnvelope ()
+    public AkaiS1000Envelope getAuxEnvelope ()
     {
         return this.auxEnvelope;
     }
@@ -222,7 +227,7 @@ public class AkaiKeygroup
 
     /**
      * The intensity of the 2nd envelope on the filter cutoff.
-     * 
+     *
      * @return The intensity in the range of [-50..+50]
      */
     public byte getEnvelope2ToFilter ()
@@ -233,7 +238,7 @@ public class AkaiKeygroup
 
     /**
      * The intensity of the 2nd envelope on the pitch.
-     * 
+     *
      * @return The intensity in the range of [-50..+50]
      */
     public byte getEnvelope2ToPitch ()
@@ -247,7 +252,7 @@ public class AkaiKeygroup
      *
      * @return The sample descriptions
      */
-    public AkaiKeygroupSample [] getSamples ()
+    public AkaiS1000KeygroupSample [] getSamples ()
     {
         return this.samples;
     }
@@ -255,7 +260,7 @@ public class AkaiKeygroup
 
     /**
      * Get the sample key tracking for all 4 samples.
-     * 
+     *
      * @return True if tracking is enabled
      */
     public boolean [] getSampleKeyTracking ()

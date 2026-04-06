@@ -49,14 +49,14 @@ public class KMPDetectorUI extends MetadataSettingsUI
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Options
 
         panel.createSeparator ("@IDS_KMP_OPTIONS");
 
         this.useKscFilesCheckBox = panel.createCheckBox ("@IDS_KMP_USE_KSC");
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);

@@ -77,7 +77,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     protected final ProgressLogger                progress;
     private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
-    private boolean [] []                         layerCheckMatrix                   = new boolean [128] [128];
+    private final boolean [] []                         layerCheckMatrix                   = new boolean [128] [128];
 
 
     /**
@@ -683,7 +683,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final IMultisampleSource multiSampleSource, final int zoneIndex, final ISampleZone zone, final String path) throws IOException
     {
-        final String name = checkSampleName (alreadyStored, zoneIndex, zone, path);
+        final String name = this.checkSampleName (alreadyStored, zoneIndex, zone, path);
         if (name == null)
             return;
 
@@ -720,14 +720,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         final Set<String> alreadyStored = new HashSet<> ();
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.progress.notifyProgress ();
                 this.storeSamplefile (alreadyStored, zipOutputStream, multisampleSource, zoneIndex, zone, relativeFolderName);
                 zoneIndex++;
             }
-        }
     }
 
 
@@ -850,7 +848,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Check if the sample file needs to be rewritten.
-     * 
+     *
      * @param destinationFormat The expected destination format for the sample
      * @return True if the file needs to be written again
      */
@@ -890,14 +888,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         final Set<String> alreadyStored = new HashSet<> ();
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.progress.notifyProgress ();
                 this.zipSamplefile (alreadyStored, zipOutputStream, zoneIndex, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
                 zoneIndex++;
             }
-        }
     }
 
 
@@ -930,7 +926,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final int zoneIndex, final ISampleZone zone, final Date dateTime, final String path) throws IOException
     {
-        final String name = checkSampleName (alreadyStored, zoneIndex, zone, path);
+        final String name = this.checkSampleName (alreadyStored, zoneIndex, zone, path);
         if (name == null)
             return;
 
@@ -1027,7 +1023,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected String checkSampleName (final Set<String> alreadyStored, final int zoneIndex, final ISampleZone zone, final String path)
     {
-        String filename = createFileName (zoneIndex, zone);
+        String filename = this.createFileName (zoneIndex, zone);
         if (path != null)
             filename = path + FORWARD_SLASH + filename;
         if (alreadyStored.contains (filename))
@@ -1039,7 +1035,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Create the name of the sample (with the ending).
-     * 
+     *
      * @param zoneIndex The index of the zone
      * @param zone The zone for which to create the full name
      * @return The full sample name
@@ -1052,7 +1048,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Check if there are layered samples and display a warning.
-     * 
+     *
      * @param groups The groups of the multi-sample
      */
     protected void checkDuplicateRanges (final List<IGroup> groups)
@@ -1062,9 +1058,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
             Arrays.fill (this.layerCheckMatrix[i], false);
         // Mark the covered ranges
         for (final IGroup group: groups)
-        {
             for (final ISampleZone zone: group.getSampleZones ())
-            {
                 for (int k = zone.getKeyLow (); k <= zone.getKeyHigh (); k++)
                     for (int v = zone.getVelocityLow (); v <= zone.getVelocityHigh (); v++)
                     {
@@ -1075,7 +1069,5 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                         }
                         this.layerCheckMatrix[k][v] = true;
                     }
-            }
-        }
     }
 }

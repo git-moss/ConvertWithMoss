@@ -366,7 +366,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
      */
     private static Element createSample (final Document document, final String folderName, final Element groupElement, final ISampleZone zone)
     {
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.SAMPLE);
@@ -399,7 +399,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
                 sampleElement.setAttribute (DecentSamplerTag.SEQ_POSITION, Integer.toString (seqPos));
         }
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Key & Velocity attributes
 
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
@@ -414,7 +414,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.HI_VEL, limitToDefault (zone.getVelocityHigh (), 127));
         // No fades info.getVelocityCrossfadeHigh ()
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Loops
 
         final List<ISampleLoop> loops = zone.getLoops ();

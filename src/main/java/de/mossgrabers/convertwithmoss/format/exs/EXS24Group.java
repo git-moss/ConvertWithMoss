@@ -210,7 +210,7 @@ class EXS24Group extends EXS24Object
         out.write (this.output);
         out.write (this.enableByNoteValue);
 
-        //////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////
         // Additional data
 
         StreamUtils.padBytes (out, 4);

@@ -2,13 +2,13 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.diskformat;
 
 import java.io.IOException;
 
 
 /**
- * Interface for reading Akai S1000/S3000 data structures from an image.
+ * Interface for reading generic Akai data structures from an image.
  *
  * @author Jürgen Moßgraber
  */
@@ -25,7 +25,7 @@ public interface IAkaiImage
 
     /**
      * Reads a text in 12-byte Akai format.
-     * 
+     *
      * @param length THe length of the text to read
      * @return The read text, trimmed ASCII
      * @throws IOException Could not read the text
@@ -90,11 +90,11 @@ public interface IAkaiImage
 
     /**
      * Convert AKAI text encoding to plain ASCII.
-     * 
+     *
      * @param buffer The buffer in AKAI format
      * @param length The length of the text to convert
      */
-    default void akaiToAscii (final byte [] buffer, final int length)
+    public static void akaiToAscii (final byte [] buffer, final int length)
     {
         for (int i = 0; i < length; i++)
         {

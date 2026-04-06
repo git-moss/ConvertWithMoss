@@ -26,7 +26,7 @@ public interface IDetector<T extends ICoreTaskSettings> extends ICoreTask<T>, Ru
 {
     /**
      * Get all file endings which are detected by this detector.
-     * 
+     *
      * @return The file endings
      */
     Set<String> getFileEndings ();

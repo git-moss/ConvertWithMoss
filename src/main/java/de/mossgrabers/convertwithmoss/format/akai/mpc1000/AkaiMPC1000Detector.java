@@ -139,7 +139,7 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         sampleData.addZoneData (sampleZone, true, true);
 
         sampleZone.setVelocityLow (sample.getVelocityRangeLower ());
-        sampleZone.setVelocityCrossfadeHigh (sample.getVelocityRangeUpper ());
+        sampleZone.setVelocityHigh (sample.getVelocityRangeUpper ());
 
         // Pitch
         sampleZone.setTuning (sample.getTuning () / 100.0);
@@ -161,9 +161,6 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setStop (sampleLength);
 
         // Filter
-
-        pad.getFilter1Res ();
-
         final int filterCutoff = pad.getFilter1Freq ();
         final FilterType filterType = FILTER_MAP.get (Integer.valueOf (pad.getFilter1Type ()));
         IFilter filter = null;
@@ -171,7 +168,7 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final double cutoff = filterCutoff / 99.0 * IFilter.MAX_FREQUENCY;
             // Poles are unknown, let's go with 4
-            filter = new DefaultFilter (filterType, 4, cutoff, 0);
+            filter = new DefaultFilter (filterType, 4, cutoff, pad.getFilter1Res () / 100.0);
 
             // There is a filter envelope with +/- intensity in the unknown data
 

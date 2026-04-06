@@ -229,7 +229,7 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Calculate the overlap between key-groups and set them as cross-fades.
-     * 
+     *
      * @param zones The zones to update to cross-fades
      */
     private static void calculateCrossfades (final List<ISampleZone> zones)

@@ -49,14 +49,14 @@ public class SfzDetectorUI extends MetadataSettingsUI
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Naming
 
         panel.createSeparator ("@IDS_SFZ_OPTIONS");
 
         this.logUnsupportedOpcodesCheckBox = panel.createCheckBox ("@IDS_SFZ_LOG_UNSUPPORTED_OPCODES");
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);

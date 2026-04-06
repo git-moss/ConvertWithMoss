@@ -31,7 +31,7 @@ public class AkaiS900Sample
 
     private final byte [] sampleData;
 
-    private int           compression;
+    private final int           compression;
 
 
     /**
@@ -79,7 +79,7 @@ public class AkaiS900Sample
 
     /**
      * Get the number of samples.
-     * 
+     *
      * @return The number of samples
      */
     public long getSampleLength ()
@@ -90,7 +90,7 @@ public class AkaiS900Sample
 
     /**
      * Get the sample rate in Hz.
-     * 
+     *
      * @return The sample rate
      */
     public int getSampleRate ()
@@ -101,7 +101,7 @@ public class AkaiS900Sample
 
     /**
      * The tuning is stored as nominal pitch in 1/16 semi-tones. Default: (60*16) = 960 = C3.
-     * 
+     *
      * @return The nominal pitch
      */
     public int getNominalPitch ()
@@ -112,7 +112,7 @@ public class AkaiS900Sample
 
     /**
      * Get the loudness offset (signed).
-     * 
+     *
      * @return The loudness value
      */
     public int getLoudness ()
@@ -123,7 +123,7 @@ public class AkaiS900Sample
 
     /**
      * Get the play-back mode / loop-type.
-     * 
+     *
      * @return 'O' = One-shot, 'L' = Loop, 'A' = AltLoop
      */
     public char getPlaybackMode ()
@@ -134,7 +134,7 @@ public class AkaiS900Sample
 
     /**
      * Get the end marker.
-     * 
+     *
      * @return The end marker
      */
     public long getEnd ()
@@ -145,7 +145,7 @@ public class AkaiS900Sample
 
     /**
      * Get the start marker.
-     * 
+     *
      * @return The start marker
      */
     public long getStart ()
@@ -156,7 +156,7 @@ public class AkaiS900Sample
 
     /**
      * Get the loop length.
-     * 
+     *
      * @return The loop length
      */
     public long getLoopLength ()
@@ -167,7 +167,7 @@ public class AkaiS900Sample
 
     /**
      * Get the cross-fade behavior.
-     * 
+     *
      * @return 0x00 = normal, 0xff = velocity cross-fade
      */
     public int getType ()
@@ -178,7 +178,7 @@ public class AkaiS900Sample
 
     /**
      * Get the play-back direction.
-     * 
+     *
      * @return 'N' = normal, 'R' = reversed
      */
     public int getDirection ()
@@ -189,7 +189,7 @@ public class AkaiS900Sample
 
     /**
      * Get the sample data.
-     * 
+     *
      * @return The sample data
      */
     public byte [] getSampleData ()
@@ -200,7 +200,7 @@ public class AkaiS900Sample
 
     /**
      * Get the compression info
-     * 
+     *
      * @return The compression info
      */
     public int getCompression ()

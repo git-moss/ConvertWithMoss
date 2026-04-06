@@ -137,7 +137,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
      */
     private static void createSample (final Document document, final Element multisampleElement, final int groupIndex, final ISampleZone zone)
     {
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, multisampleElement, "sample");
@@ -156,7 +156,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
         if (playLogic != PlayLogic.ALWAYS)
             sampleElement.setAttribute ("zone-logic", "round-robin");
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Key element and attributes
 
         final Element keyElement = XMLUtils.addElement (document, sampleElement, "key");
@@ -171,7 +171,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
         if (tune != 0)
             XMLUtils.setDoubleAttribute (keyElement, "tune", tune, 2);
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Key element and attributes
 
         final Element velocityElement = XMLUtils.addElement (document, sampleElement, "velocity");
@@ -180,7 +180,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
         XMLUtils.setIntegerAttribute (velocityElement, "high", limitToDefault (zone.getVelocityHigh (), 127));
         XMLUtils.setIntegerAttribute (velocityElement, "high-fade", limitToDefault (zone.getVelocityCrossfadeHigh (), 0));
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Loops
 
         final List<ISampleLoop> loops = zone.getLoops ();

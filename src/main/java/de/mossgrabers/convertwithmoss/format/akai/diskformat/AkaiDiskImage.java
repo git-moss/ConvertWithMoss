@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.diskformat;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +11,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Volume;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -18,46 +22,42 @@ import java.util.List;
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
+public class AkaiDiskImage extends AbstractAkaiImage
 {
-    private static final int          MAX_TEXT_LENGTH         = 12;
-    private static final int          DISK_CLUSTER_SIZE       = 61440;
+    /** Size of a block. */
+    public static final int           AKAI_BLOCK_SIZE         = 0x2000;
+
+    /**
+     * The cache window size defined here is NOT the file-system allocation block size used by the
+     * Akai sampler volume. It is only a performance optimization for RandomAccessFile I/O. Akai
+     * sampler file-systems (S900/S1000/S2000/S3000/MPC raw volumes) typically use allocation block
+     * sizes of 512 bytes 1024 bytes 2048 bytes depending on sampler generation and volume type.
+     * These values must be handled separately when resolving object offsets.
+     */
+    private static final int          CACHE_WINDOW_SIZE       = 61440;
+
     private static final int          AKAI_PARTITION_END_MARK = 0x8000;
 
     private RandomAccessFile          randomAccessFile        = null;
-    private int                       pos                     = 0;
-    private int                       cluster                 = -1;
+    private int                       position                = 0;
+    private int                       cacheWindowIndex        = -1;
     private final int                 size;
-    private byte []                   cache                   = new byte [DISK_CLUSTER_SIZE];
+    private byte []                   cache                   = new byte [CACHE_WINDOW_SIZE];
     private final List<AkaiPartition> partitions              = new ArrayList<> ();
-    private final boolean             isS3000;
 
 
     /**
      * Open an image from a file path.
      *
      * @param file The AKAI image file to access
-     * @param isS3000 True if it is a S3000 series image otherwise S1000 series
      * @throws IOException If file cannot be opened or partitions could not be loaded
      */
-    public AkaiS1000DiskImage (final File file, final boolean isS3000) throws IOException
+    public AkaiDiskImage (final File file) throws IOException
     {
-        this.isS3000 = isS3000;
         this.randomAccessFile = new RandomAccessFile (file, "r");
         this.size = (int) file.length ();
 
         this.loadPartitions ();
-    }
-
-
-    /**
-     * Check if it is a S3000 series image otherwise S1000 series.
-     * 
-     * @return True if it is a S3000 series image otherwise S1000 series
-     */
-    public boolean isS3000 ()
-    {
-        return this.isS3000;
     }
 
 
@@ -75,13 +75,39 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
 
 
     /**
+     * Read the content of a volume in a specific format (S1000, S3000, MPC2000, ...).
+     * 
+     * @param partition The partition which contains the volume to read
+     * @param entry The directory entry of the volume
+     * @return The content if supported and the volume is not empty
+     * @throws IOException Could not read the volume
+     */
+    public Optional<IAkaiVolume> readVolume (final AkaiPartition partition, final AkaiDirEntry entry) throws IOException
+    {
+        final AkaiVolumeType type = AkaiVolumeType.fromTypeId (entry.getType ());
+        switch (type)
+        {
+            case S1000:
+                return Optional.of (new AkaiS1000Volume (this, partition, entry, false));
+            case S3000_PRE:
+            case S3000:
+                return Optional.of (new AkaiS1000Volume (this, partition, entry, true));
+            case NOT_USED:
+                return Optional.empty ();
+            default:
+                throw new IOException (Functions.getMessage ("IDS_ISO_UNSUPPORTED_FORMAT", type.getName ()));
+        }
+    }
+
+
+    /**
      * Get the current position in the stream.
      *
      * @return The position
      */
-    public int getPos ()
+    public int getPosition ()
     {
-        return this.pos;
+        return this.position;
     }
 
 
@@ -92,16 +118,16 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
      * @param whence Reference point for position
      * @return The new position
      */
-    public int setPos (final int offset, final AkaiStreamWhence whence)
+    public int setPosition (final int offset, final AkaiStreamWhence whence)
     {
-        this.pos = switch (whence)
+        this.position = switch (whence)
         {
             case START -> offset;
-            case CURRENT_POSITION -> this.pos + offset;
+            case CURRENT_POSITION -> this.position + offset;
             case END -> Math.max (0, this.size - offset);
             default -> offset;
         };
-        return this.pos;
+        return this.position;
     }
 
 
@@ -109,7 +135,7 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
     @Override
     public int available ()
     {
-        return this.size - this.pos;
+        return this.size - this.position;
     }
 
 
@@ -127,7 +153,7 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
     {
         final byte [] buffer = new byte [length];
         this.read (buffer, length, 1);
-        akaiToAscii (buffer, length);
+        IAkaiImage.akaiToAscii (buffer, length);
         return new String (buffer, 0, length).trim ();
     }
 
@@ -192,7 +218,7 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
 
     /**
      * Get the number of partitions.
-     * 
+     *
      * @return The number of partitions in the range of [0..9]
      */
     public int getPartitionCount ()
@@ -203,7 +229,7 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
 
     /**
      * Get a single partition.
-     * 
+     *
      * @param index The index of partition
      * @return The partition or null if the index is out of range
      */
@@ -215,7 +241,7 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
 
     /**
      * Get the partitions.
-     * 
+     *
      * @return The partitions
      */
     public List<AkaiPartition> getPartitions ()
@@ -235,42 +261,54 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
      */
     private int read (final byte [] data, final int wordCount, final int wordSize) throws IOException
     {
-        int readBytes = 0;
-        int sizeToRead = wordCount * wordSize;
+        int bytesReadTotal = 0;
+        int bytesRemaining = wordCount * wordSize;
 
-        while (sizeToRead > 0)
+        while (bytesRemaining > 0)
         {
-            if (this.size <= this.pos)
-                return readBytes / wordSize;
+            // Stop if logical read position exceeds disk image size
+            if (this.size <= this.position)
+                return bytesReadTotal / wordSize;
 
-            // Read the requested cluster into the cache
-            final int requestedCluster = this.pos / AkaiS1000DiskImage.DISK_CLUSTER_SIZE;
-            if (this.cluster != requestedCluster)
+            // Determine which cache window contains the requested position. The cache window is a
+            // fixed-size sliding region of the disk image. It has NO relationship to Akai
+            // file system allocation units.
+            final int requestedWindow = this.position / CACHE_WINDOW_SIZE;
+
+            // Load cache window if necessary
+            if (this.cacheWindowIndex != requestedWindow)
             {
-                this.cluster = requestedCluster;
+                this.cacheWindowIndex = requestedWindow;
 
-                final long seekPos = (long) this.cluster * AkaiS1000DiskImage.DISK_CLUSTER_SIZE;
-                this.randomAccessFile.seek (seekPos);
-                final int bytesRead = this.randomAccessFile.read (this.cache, 0, AkaiS1000DiskImage.DISK_CLUSTER_SIZE);
-                if (bytesRead < AkaiS1000DiskImage.DISK_CLUSTER_SIZE)
-                    // Fill with zeros if cluster is shorter
-                    for (int i = bytesRead; i < AkaiS1000DiskImage.DISK_CLUSTER_SIZE; i++)
+                final long seekPosition = (long) this.cacheWindowIndex * CACHE_WINDOW_SIZE;
+                this.randomAccessFile.seek (seekPosition);
+                final int windowBytesRead = this.randomAccessFile.read (this.cache, 0, CACHE_WINDOW_SIZE);
+
+                // If the final window is shorter than expected, pad with zeros. This simplifies
+                // boundary handling during partial reads.
+                if (windowBytesRead < CACHE_WINDOW_SIZE)
+                    for (int i = windowBytesRead; i < CACHE_WINDOW_SIZE; i++)
                         this.cache[i] = 0;
             }
 
-            int currentReadSize = sizeToRead;
-            final int posInCluster = this.pos % AkaiS1000DiskImage.DISK_CLUSTER_SIZE;
-            if (currentReadSize > AkaiS1000DiskImage.DISK_CLUSTER_SIZE - posInCluster)
-                currentReadSize = AkaiS1000DiskImage.DISK_CLUSTER_SIZE - posInCluster;
+            int bytesThisIteration = bytesRemaining;
 
-            System.arraycopy (this.cache, posInCluster, data, readBytes, currentReadSize);
+            final int offsetInsideWindow = this.position % CACHE_WINDOW_SIZE;
 
-            this.pos += currentReadSize;
-            readBytes += currentReadSize;
-            sizeToRead -= currentReadSize;
+            final int windowBytesAvailable = CACHE_WINDOW_SIZE - offsetInsideWindow;
+            if (bytesThisIteration > windowBytesAvailable)
+                bytesThisIteration = windowBytesAvailable;
+
+            // Copy data from cache window into destination buffer
+            System.arraycopy (this.cache, offsetInsideWindow, data, bytesReadTotal, bytesThisIteration);
+
+            // Advance logical read position
+            this.position += bytesThisIteration;
+            bytesReadTotal += bytesThisIteration;
+            bytesRemaining -= bytesThisIteration;
         }
 
-        return readBytes / wordSize;
+        return bytesReadTotal / wordSize;
     }
 
 
@@ -282,18 +320,17 @@ public class AkaiS1000DiskImage implements AutoCloseable, IAkaiImage
         int partitionIndex = 0;
         while (size != (short) AKAI_PARTITION_END_MARK && size != (short) 0x0fff && size != (short) 0xffff && size < 30720 && this.partitions.size () < 9)
         {
-            final AkaiPartition partition = new AkaiPartition (this, partitionIndex);
-            partition.setOffset (offset);
+            final AkaiPartition partition = new AkaiPartition (this, offset, partitionIndex);
 
             if (!partition.getVolumes ().isEmpty ())
                 this.partitions.add (partition);
 
-            this.setPos (offset, AkaiStreamWhence.START);
+            this.setPosition (offset, AkaiStreamWhence.START);
             size = this.readInt16 ();
             if (size <= 0)
                 break;
 
-            offset += AkaiDiskElement.AKAI_BLOCK_SIZE * (size & 0xFFFF);
+            offset += AKAI_BLOCK_SIZE * (size & 0xFFFF);
             partitionIndex++;
         }
     }

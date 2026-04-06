@@ -136,7 +136,7 @@ public class XtyDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @return The result
      * @throws IOException Error reading the file
      */
-    private List<IMultisampleSource> parseJsonData (final File multiSampleFile, final JsonNode root, boolean isProject) throws IOException
+    private List<IMultisampleSource> parseJsonData (final File multiSampleFile, final JsonNode root, final boolean isProject) throws IOException
     {
         final JsonNode dataNode = root.get ("data");
         if (dataNode == null)
@@ -159,7 +159,7 @@ public class XtyDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             multisampleSource.setName (programName);
             final double programTranspose = programNode.get ("transpose").asDouble ();
 
-            //////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////
             // Read all sample info
             final Iterator<JsonNode> sampleNodes = dataNode.get ("samples").elements ();
             final Map<String, SampleInfo> sampleInfos = new HashMap<> ();
@@ -178,7 +178,7 @@ public class XtyDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 }
             }
 
-            //////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////
             // Read key-group parameters
             final JsonNode keygroupNode = programNode.get ("keygroup");
             final double keygroupTranspose = programTranspose + keygroupNode.get ("transpose").asDouble ();
@@ -189,7 +189,7 @@ public class XtyDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             final JsonNode synthSectionNode = keygroupNode.get ("synthSection");
             final EnvelopesAndFilter globalEnvelopesAndFilter = new EnvelopesAndFilter (synthSectionNode, true);
 
-            //////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////
             // Read all layers - strangely all key-group settings seem to be under drum
             final JsonNode drumNode = programNode.get ("drum");
             final Iterator<JsonNode> instrumentsNodes = drumNode.get ("instruments").elements ();

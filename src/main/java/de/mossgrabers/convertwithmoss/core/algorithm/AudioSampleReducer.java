@@ -86,14 +86,12 @@ public class AudioSampleReducer
             maxAmplitude = Math.max (maxAmplitude, findMaxAmplitude (data));
         // Normalize if needed
         if (maxAmplitude > 0)
-        {
             for (int i = 0; i < newSampleCache.size (); i++)
             {
                 final byte [] data = normalize (newSampleCache.get (i), maxAmplitude);
                 final ISampleData sampleData = new WavFileSampleData (new ByteArrayInputStream (data));
                 sampleZones.get (i).setSampleData (sampleData);
             }
-        }
     }
 
 

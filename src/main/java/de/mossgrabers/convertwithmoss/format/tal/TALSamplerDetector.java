@@ -267,7 +267,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (multisampleSource.getGroups ());
 
-        //////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Amplitude
 
         final double ampAttack = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, 0, maxEnvelopeTime, 0);
@@ -284,7 +284,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 break;
             }
 
-        //////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Filter
 
         // We only have a global filter, therefore take only values from the 1st layer
@@ -324,7 +324,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        //////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Pitch
 
         // Pitch-bend

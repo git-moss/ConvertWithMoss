@@ -305,7 +305,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         instrumentElement.setAttribute ("number", Integer.toString (calcInstrumentNumber (keygroupsMap)));
         instrumentsElement.appendChild (instrumentElement);
 
-        /////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
         // Filter
 
         final Optional<IFilter> optFilter = zone.getFilter ();
@@ -363,7 +363,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY_CURVE, amplitudeEnvelope.getDecaySlope ());
         setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE_CURVE, amplitudeEnvelope.getReleaseSlope ());
 
-        /////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
         // Pitch
 
         final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();

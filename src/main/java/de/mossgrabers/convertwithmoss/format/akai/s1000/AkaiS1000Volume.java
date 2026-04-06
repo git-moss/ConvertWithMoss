@@ -8,48 +8,51 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDirEntry;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDiskImage;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiPartition;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiVolume;
+import de.mossgrabers.tools.StringUtils;
+
 
 /**
  * An AKAI volume is a further subdivision of an AKAI disk partition. An AKAI volume actually
  * provides access to the list of instruments (programs) and samples. Samples referenced by an
  * instrument (program) are always part of the same volume.
  */
-public class AkaiVolume extends AkaiDiskElement
+public class AkaiS1000Volume implements IAkaiVolume
 {
     /** Maximum number of directory file entries on Akai S1000 series. */
-    public static final int         AKAI_MAX_FILE_ENTRIES_S1000 = 125;
+    public static final int              AKAI_MAX_FILE_ENTRIES_S1000 = 125;
     /** Maximum number of directory file entries on Akai S3000 series. */
-    public static final int         AKAI_MAX_FILE_ENTRIES_S3000 = 509;
+    public static final int              AKAI_MAX_FILE_ENTRIES_S3000 = 509;
 
-    private final AkaiDirEntry      dirEntry;
-    private final AkaiPartition     partition;
-
-    private final List<AkaiProgram> programs                    = new ArrayList<> ();
-    private final List<AkaiSample>  samples                     = new ArrayList<> ();
+    private String                       name;
+    private final List<AkaiS1000Program> programs                    = new ArrayList<> ();
+    private final List<AkaiS1000Sample>  samples                     = new ArrayList<> ();
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param disk The disk from which to read the volume
      * @param partition The partition which contains the volume
      * @param dirEntry The directory entry of the volume
+     * @param isS3000 If it is an extended S3000 program (otherwise shorter S1000)
      * @throws IOException Could not read the volume
      */
-    AkaiVolume (final AkaiS1000DiskImage disk, final AkaiPartition partition, final AkaiDirEntry dirEntry) throws IOException
+    public AkaiS1000Volume (final AkaiDiskImage disk, final AkaiPartition partition, final AkaiDirEntry dirEntry, final boolean isS3000) throws IOException
     {
-        this.partition = partition;
-        this.dirEntry = dirEntry;
+        this.name = dirEntry.getName ();
 
-        final boolean isS3000 = disk.isS3000 ();
+        final int hmm = partition.readFAT (dirEntry.getStart ());
+        System.out.println (StringUtils.formatHexStr (hmm));
 
-        this.readFAT (disk, partition, this.dirEntry.getStart ());
         final int maxFiles = isS3000 ? AKAI_MAX_FILE_ENTRIES_S3000 : AKAI_MAX_FILE_ENTRIES_S1000;
         for (int i = 0; i < maxFiles; i++)
         {
-            final AkaiDirEntry entry = new AkaiDirEntry ();
-            this.readDirEntry (disk, partition, entry, this.dirEntry.getStart (), i);
-            entry.setIndex (i);
+            final AkaiDirEntry entry = partition.readDirEntry (dirEntry.getStart (), i);
+            final int dataPosition = partition.getOffset () + entry.getStart () * AkaiDiskImage.AKAI_BLOCK_SIZE;
 
             int type = entry.getType ();
             if (type >= 128 && isS3000)
@@ -57,10 +60,10 @@ public class AkaiVolume extends AkaiDiskElement
             switch (type)
             {
                 case 'p':
-                    this.programs.add (new AkaiProgram (disk, this, entry));
+                    this.programs.add (new AkaiS1000Program (disk, dataPosition, isS3000));
                     break;
                 case 's':
-                    this.samples.add (new AkaiSample (disk, this, entry));
+                    this.samples.add (new AkaiS1000Sample (disk, dataPosition));
                     break;
                 case 0:
                     // Empty
@@ -75,43 +78,29 @@ public class AkaiVolume extends AkaiDiskElement
 
     /**
      * Get the name of the volume.
-     * 
+     *
      * @return The name
      */
     public String getName ()
     {
-        return this.dirEntry.getName ();
+        return this.name;
     }
 
 
-    /**
-     * Get the partition.
-     * 
-     * @return The partition
-     */
-    public AkaiPartition getPartition ()
+    /** {@inheritDoc} */
+    @Override
+    public boolean hasContent ()
     {
-        return this.partition;
-    }
-
-
-    /**
-     * Check if the volume contains at least a program or a sample.
-     * 
-     * @return True if there is content
-     */
-    public boolean isEmpty ()
-    {
-        return this.programs.size () + this.samples.size () == 0;
+        return this.programs.size () + this.samples.size () > 0;
     }
 
 
     /**
      * Get all programs of the volume.
-     * 
+     *
      * @return The programs
      */
-    public List<AkaiProgram> getPrograms ()
+    public List<AkaiS1000Program> getPrograms ()
     {
         return this.programs;
     }
@@ -119,10 +108,10 @@ public class AkaiVolume extends AkaiDiskElement
 
     /**
      * Get all samples of the volume.
-     * 
+     *
      * @return The samples
      */
-    public List<AkaiSample> getSamples ()
+    public List<AkaiS1000Sample> getSamples ()
     {
         return this.samples;
     }

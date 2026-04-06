@@ -20,7 +20,7 @@ public class ProgressLogger
 
     /**
      * Constructor.
-     * 
+     *
      * @param notifier Where to write the notifications to
      */
     public ProgressLogger (final INotifier notifier)

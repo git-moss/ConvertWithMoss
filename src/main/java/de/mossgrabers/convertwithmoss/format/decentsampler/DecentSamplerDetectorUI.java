@@ -49,14 +49,14 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Options
 
         panel.createSeparator ("@IDS_DS_OPTIONS");
 
         this.logUnsupportedAttributesCheckBox = panel.createCheckBox ("@IDS_DS_LOG_UNSUPPORTED_ATTRIBUTES");
 
-        ////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);

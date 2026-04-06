@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.s1000;
+package de.mossgrabers.convertwithmoss.format.akai.diskformat;
 
 /**
  * An entry in the Akai directory.
@@ -20,7 +20,7 @@ public class AkaiDirEntry
 
     /**
      * Get the name of the entry.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -31,7 +31,7 @@ public class AkaiDirEntry
 
     /**
      * Set the name of the entry.
-     * 
+     *
      * @param name The name
      */
     public void setName (final String name)
@@ -42,7 +42,7 @@ public class AkaiDirEntry
 
     /**
      * Get the type of the entry.
-     * 
+     *
      * @return The type, see AKAI_VOLUME_* in AkaiDiskElement.
      */
     public int getType ()
@@ -53,7 +53,7 @@ public class AkaiDirEntry
 
     /**
      * Set the type of the entry.
-     * 
+     *
      * @param type The type, see AKAI_VOLUME_* in AkaiDiskElement.
      */
     public void setType (final int type)
@@ -64,7 +64,7 @@ public class AkaiDirEntry
 
     /**
      * Get the size of the content.
-     * 
+     *
      * @return The size
      */
     public int getSize ()
@@ -75,7 +75,7 @@ public class AkaiDirEntry
 
     /**
      * Set the size of the content.
-     * 
+     *
      * @param size The size
      */
     public void setSize (final int size)
@@ -86,7 +86,7 @@ public class AkaiDirEntry
 
     /**
      * Get the value of the start block in the structure.
-     * 
+     *
      * @return The start value
      */
     public int getStart ()
@@ -97,7 +97,7 @@ public class AkaiDirEntry
 
     /**
      * Set the value of the start block in the structure.
-     * 
+     *
      * @param start The start value
      */
     public void setStart (final int start)
@@ -108,7 +108,7 @@ public class AkaiDirEntry
 
     /**
      * Get the index of the entry.
-     * 
+     *
      * @return The index
      */
     public int getIndex ()
@@ -119,7 +119,7 @@ public class AkaiDirEntry
 
     /**
      * Set the index.
-     * 
+     *
      * @param index The index
      */
     public void setIndex (final int index)

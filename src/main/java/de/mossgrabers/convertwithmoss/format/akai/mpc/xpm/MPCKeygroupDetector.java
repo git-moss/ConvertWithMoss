@@ -287,7 +287,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 continue;
             zones.add (zone);
 
-            /////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////
             // Amplitude
 
             final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
@@ -298,7 +298,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             if (ampVelocityAmount > 0)
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityAmount);
 
-            /////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////
             // Pitch
 
             final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);

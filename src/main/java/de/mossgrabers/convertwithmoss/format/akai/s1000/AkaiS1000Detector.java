@@ -13,6 +13,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.iso.AbstractIsoDetector;
 import de.mossgrabers.convertwithmoss.format.iso.IsoFormat;
+import de.mossgrabers.convertwithmoss.format.iso.IsoFormatIdentifier;
 
 
 /**
@@ -38,13 +39,13 @@ public class AkaiS1000Detector extends AbstractIsoDetector<MetadataSettingsUI>
     @Override
     protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
-        final IsoFormat isoFormat = identifyIso (sourceFile);
+        final IsoFormat isoFormat = IsoFormatIdentifier.identifyIso (sourceFile);
         switch (isoFormat)
         {
             case AKAI_S1000_S1100:
             case AKAI_S3000:
                 this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
-                return this.processAkaiS1000OrS3000 (sourceFile, isoFormat == IsoFormat.AKAI_S3000);
+                return this.processAkaiS1000Disk (sourceFile);
 
             default:
                 this.notifier.logError ("IDS_ISO_WRONG_FORMAT", IsoFormat.getName (IsoFormat.AKAI_S1000_S1100));

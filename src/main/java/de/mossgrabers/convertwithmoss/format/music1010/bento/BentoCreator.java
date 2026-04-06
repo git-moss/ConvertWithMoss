@@ -439,7 +439,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
     {
         // Stored in WAV file: zone.getGain (), zone.getTune ()
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element cellElement = XMLUtils.addElement (document, groupElement, Music1010Tag.CELL);
@@ -461,7 +461,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
         // pitch="-19350"
         // panpos="-352"
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Key & Velocity attributes
 
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
@@ -490,7 +490,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, stop);
         }
 
-        /////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Loops
 
         // Set to one-shot if there are no loops

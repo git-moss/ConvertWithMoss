@@ -18,11 +18,11 @@ import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroup;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiKeygroupSample;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgram;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiProgramConverter;
-import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiSample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Keygroup;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000KeygroupSample;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Program;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000ProgramConverter;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Sample;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 
 
@@ -51,13 +51,13 @@ public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
         try
         {
             final S3pFile s3pFile = new S3pFile (sourceFile);
-            final AkaiProgram program = s3pFile.getProgram ();
+            final AkaiS1000Program program = s3pFile.getProgram ();
             if (program == null)
                 return Collections.emptyList ();
 
-            final AkaiProgramConverter converter = new AkaiProgramConverter (this.notifier, this.settingsConfiguration);
+            final AkaiS1000ProgramConverter converter = new AkaiS1000ProgramConverter (this.notifier, this.settingsConfiguration);
             final File parentFolder = sourceFile.getParentFile ();
-            final List<AkaiSample> samples = detectSamples (parentFolder, program);
+            final List<AkaiS1000Sample> samples = this.detectSamples (parentFolder, program);
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, sourceFile.getName ());
             return Collections.singletonList (converter.createMultiSample (sourceFile, parts, samples, program, ""));
         }
@@ -69,12 +69,11 @@ public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private List<AkaiSample> detectSamples (final File parentFolder, final AkaiProgram program)
+    private List<AkaiS1000Sample> detectSamples (final File parentFolder, final AkaiS1000Program program)
     {
-        final List<AkaiSample> samples = new ArrayList<> ();
-        for (final AkaiKeygroup keygroup: program.getKeygroups ())
-        {
-            for (final AkaiKeygroupSample keygroupSample: keygroup.getSamples ())
+        final List<AkaiS1000Sample> samples = new ArrayList<> ();
+        for (final AkaiS1000Keygroup keygroup: program.getKeygroups ())
+            for (final AkaiS1000KeygroupSample keygroupSample: keygroup.getSamples ())
             {
                 final String sampleName = keygroupSample.getName ();
                 if (sampleName == null || sampleName.isBlank ())
@@ -96,14 +95,13 @@ public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
                         this.notifier.logError ("IDS_S3P_SAMPLE_INFO_MISSING", sampleFile.getName ());
                         continue;
                     }
-                    samples.add (new AkaiSample (sampleName, wavFileSampleData));
+                    samples.add (new AkaiS1000Sample (sampleName, wavFileSampleData));
                 }
                 catch (final IOException | CompressionNotSupportedException ex)
                 {
                     this.notifier.logError ("IDS_S3P_BROKEN_WAV", sampleFile.getName ());
                 }
             }
-        }
         return samples;
     }
 }

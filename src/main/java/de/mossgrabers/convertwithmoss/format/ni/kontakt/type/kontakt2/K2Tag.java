@@ -63,7 +63,7 @@ public class K2Tag extends AbstractTagsAndAttributes
     /** The target element. */
     public static final String K2_TARGET_ELEMENT           = "Target";
 
-    ////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////
     // Only Kontakt 2 (not in 1)
 
     /** Criteria to start a group. */

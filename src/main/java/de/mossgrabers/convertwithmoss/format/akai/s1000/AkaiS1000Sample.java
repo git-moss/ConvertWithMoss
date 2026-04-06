@@ -11,6 +11,8 @@ import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDiskImage;
+import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiStreamWhence;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 
 
@@ -21,53 +23,53 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
  *
  * @author Jürgen Moßgraber
  */
-public class AkaiSample extends AkaiDiskElement
+public class AkaiS1000Sample
 {
+    /** ID for a sample structure. */
+    private static final int             AKAI_SAMPLE_ID = 3;
+
     /** Position in the image where the sample starts. */
-    private int                     imageOffset;
+    private int                          imageOffset;
 
-    private String                  name;
-    private byte                    midiRootNote;
+    private String                       name;
+    private byte                         midiRootNote;
 
     /** -50...+50 */
-    private byte                    tuneCents;
+    private byte                         tuneCents;
     /** -50...+50 */
-    private byte                    tuneSemitones;
+    private byte                         tuneSemitones;
 
-    private int                     startMarker;
-    private int                     endMarker;
+    private int                          startMarker;
+    private int                          endMarker;
 
-    private byte                    activeLoops;
+    private byte                         activeLoops;
     /** 0 = No Loop. */
-    private byte                    firstActiveLoop;
+    private byte                         firstActiveLoop;
     /** Loop mode: 0=in release 1=until release, 2=none, 3=play to end. */
-    private byte                    loopMode;
+    private byte                         loopMode;
     @SuppressWarnings("unused")
-    private byte                    loopTuneOffset;
+    private byte                         loopTuneOffset;
 
-    private final AkaiSampleLoop [] loops = new AkaiSampleLoop [8];
+    private final AkaiS1000SampleLoop [] loops          = new AkaiS1000SampleLoop [8];
 
-    private int                     samplingFrequency;
-    private int                     numberOfSamples;
-    private short []                samples;
-    private WavFileSampleData       wavFileSampleData;
+    private int                          samplingFrequency;
+    private int                          numberOfSamples;
+    private short []                     samples;
+    private WavFileSampleData            wavFileSampleData;
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param disk The disk to read from
-     * @param volume The volume which contains the sample
-     * @param dirEntry The directory entry of the sample
+     * @param dataPosition The position where the data starts
      * @throws IOException Could not read the sample
      */
-    public AkaiSample (final AkaiS1000DiskImage disk, final AkaiVolume volume, final AkaiDirEntry dirEntry) throws IOException
+    public AkaiS1000Sample (final AkaiDiskImage disk, final int dataPosition) throws IOException
     {
-        super (disk.getPos ());
+        disk.setPosition (dataPosition, AkaiStreamWhence.START);
 
-        disk.setPos (volume.getPartition ().getOffset () + dirEntry.getStart () * AKAI_BLOCK_SIZE, AkaiStreamWhence.START);
-
-        if (disk.readInt8 () != AkaiDiskElement.AKAI_SAMPLE_ID)
+        if (disk.readInt8 () != AKAI_SAMPLE_ID)
             throw new IOException ("This is not an Akai Sample.");
 
         // 0 for 22050Hz, 1 for 44100Hz - skip
@@ -95,7 +97,7 @@ public class AkaiSample extends AkaiDiskElement
         this.endMarker = disk.readInt32 ();
 
         for (int i = 0; i < 8; i++)
-            this.loops[i] = new AkaiSampleLoop (disk);
+            this.loops[i] = new AkaiS1000SampleLoop (disk);
 
         // 0, 0, 255, 255 - skip
         disk.readInt32 ();
@@ -103,9 +105,9 @@ public class AkaiSample extends AkaiDiskElement
         // Only valid on S3000 series
         this.loopTuneOffset = disk.readInt8 ();
 
-        this.imageOffset = volume.getPartition ().getOffset () + dirEntry.getStart () * AKAI_BLOCK_SIZE + 150;
+        this.imageOffset = dataPosition + 150;
 
-        disk.setPos (this.imageOffset, AkaiStreamWhence.START);
+        disk.setPosition (this.imageOffset, AkaiStreamWhence.START);
         this.samples = new short [this.numberOfSamples];
         disk.readInt16 (this.samples, this.numberOfSamples);
     }
@@ -113,13 +115,13 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Constructor.
-     * 
+     *
      * @param sampleName The name of the sample
      * @param wavFileSampleData The wave file / sample data
      * @throws CompressionNotSupportedException Could not get the length of the sample
      * @throws IOException Could not retrieve the WAV file
      */
-    public AkaiSample (final String sampleName, final WavFileSampleData wavFileSampleData) throws CompressionNotSupportedException, IOException
+    public AkaiS1000Sample (final String sampleName, final WavFileSampleData wavFileSampleData) throws CompressionNotSupportedException, IOException
     {
         this.wavFileSampleData = wavFileSampleData;
         final WaveFile waveFile = wavFileSampleData.getWaveFile ();
@@ -146,7 +148,7 @@ public class AkaiSample extends AkaiDiskElement
 
         final SampleChunkLoop sampleChunkLoop = sampleLoops.get (0);
         final int end = sampleChunkLoop.getEnd ();
-        this.loops[0] = new AkaiSampleLoop ();
+        this.loops[0] = new AkaiS1000SampleLoop ();
         this.loops[0].setEndMarker (end);
         this.loops[0].setCoarseLength (end - sampleChunkLoop.getStart ());
     }
@@ -154,7 +156,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the name of the sample.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -165,7 +167,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the root note of the sample.
-     * 
+     *
      * @return The root note in the range of [0..127]
      */
     public byte getMidiRootNote ()
@@ -198,7 +200,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the play-back start of the sample.
-     * 
+     *
      * @return The start sample
      */
     public int getStartMarker ()
@@ -209,7 +211,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the play-back end of the sample.
-     * 
+     *
      * @return The end sample
      */
     public int getEndMarker ()
@@ -220,7 +222,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the number of active loops.
-     * 
+     *
      * @return The number of active loops
      */
     public byte getActiveLoops ()
@@ -231,7 +233,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the first active loop.
-     * 
+     *
      * @return The first active loop, 0 means none
      */
     public byte getFirstActiveLoop ()
@@ -257,7 +259,7 @@ public class AkaiSample extends AkaiDiskElement
      * PLAY_TO_END (= one-shot): no loops are played, but an instantaneous trigger signal or key
      * press will play the whole of the sample (the key does not have to be pressed for the whole
      * length of the sample).
-     * 
+     *
      * @return The loop mode
      */
     public byte getLoopMode ()
@@ -268,10 +270,10 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get all loops.
-     * 
+     *
      * @return The loops
      */
-    public AkaiSampleLoop [] getLoops ()
+    public AkaiS1000SampleLoop [] getLoops ()
     {
         return this.loops;
     }
@@ -279,7 +281,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the sampling frequency.
-     * 
+     *
      * @return The frequency in Hertz, e.g. 44100
      */
     public int getSamplingFrequency ()
@@ -290,7 +292,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the number of samples (= individual measurements).
-     * 
+     *
      * @return The number of samples
      */
     public int getNumberOfSamples ()
@@ -301,7 +303,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get all 16-bit samples.
-     * 
+     *
      * @return All samples, the length matches the result of getNumberOfSamples()
      */
     public short [] getSamples ()
@@ -312,7 +314,7 @@ public class AkaiSample extends AkaiDiskElement
 
     /**
      * Get the MESA WAV file.
-     * 
+     *
      * @return The WAV file used by MESA
      */
     public WavFileSampleData getWavFileSampleData ()

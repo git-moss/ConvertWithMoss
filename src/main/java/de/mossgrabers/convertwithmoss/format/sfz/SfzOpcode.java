@@ -12,19 +12,19 @@ package de.mossgrabers.convertwithmoss.format.sfz;
  */
 public class SfzOpcode
 {
-    ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
     // Control opcodes
 
     /** SFZ v2. Default path under which the samples should be found. */
     public static final String DEFAULT_PATH          = "default_path";
 
-    ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
     // Global opcodes
 
     /** ARIA. Sets what is displayed in the default info tab of Sforzando. */
     public static final String GLOBAL_LABEL          = "global_label";
 
-    ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
     // Group opcodes
 
     /** ARIA. Sets what is displayed in the default info tab of Sforzando. */
@@ -32,7 +32,7 @@ public class SfzOpcode
     /** SFZ v1. Sequence length, used together with seq_position to use samples as round robins. */
     public static final String SEQ_LENGTH            = "seq_length";
 
-    ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
     // Region opcodes
 
     /** ARIA. Sets what is displayed in the default info tab of Sforzando. */
@@ -152,7 +152,7 @@ public class SfzOpcode
     /** Amplifier velocity tracking. */
     public static final String AMP_VELOCITY_TRACK    = "amp_veltrack";
 
-    ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
     // Filter opcodes
 
     /** SFZ v1. The cutoff frequency (Hz) of the 1st filter specified in Hertz. */
@@ -204,7 +204,7 @@ public class SfzOpcode
     /** Filter cutoff velocity tracking. */
     public static final String FIL_VELOCITY_TRACK    = "fil_veltrack";
 
-    ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
     // Pitch opcodes
 
     /** SFZ v1. The filter pitch EG depth. */

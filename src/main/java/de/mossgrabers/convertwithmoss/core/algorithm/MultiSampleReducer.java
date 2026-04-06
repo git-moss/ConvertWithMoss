@@ -53,14 +53,14 @@ public class MultiSampleReducer
 {
     /**
      * Reduces the number of samples in the groups to a maximum number.
-     * 
+     *
      * @param groups The groups from which to reduce
      * @param maxSamples The maximum number of samples
      * @return The number of reduced samples
      */
     public static int reduce (final List<IGroup> groups, final int maxSamples)
     {
-        int initialTotalZones = totalZones (groups);
+        final int initialTotalZones = totalZones (groups);
         if (initialTotalZones <= maxSamples)
             return initialTotalZones;
 

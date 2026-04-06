@@ -125,7 +125,7 @@ public class AkaiS900Keygroup
 
     /**
      * Get the release value.
-     * 
+     *
      * @return Release in the range of [0..99]
      */
     public int getRelease ()
@@ -136,7 +136,7 @@ public class AkaiS900Keygroup
 
     /**
      * Get the sustain value.
-     * 
+     *
      * @return Sustain in the range of [0..99]
      */
     public int getSustain ()
@@ -147,7 +147,7 @@ public class AkaiS900Keygroup
 
     /**
      * Get the decay value.
-     * 
+     *
      * @return Decay in the range of [0..99]
      */
     public int getDecay ()
@@ -158,7 +158,7 @@ public class AkaiS900Keygroup
 
     /**
      * Get the attack value.
-     * 
+     *
      * @return Attack in the range of [0..99]
      */
     public int getAttack ()

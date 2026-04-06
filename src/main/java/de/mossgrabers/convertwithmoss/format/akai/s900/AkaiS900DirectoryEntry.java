@@ -19,20 +19,20 @@ import de.mossgrabers.tools.ui.Functions;
 public class AkaiS900DirectoryEntry
 {
     /** The name of the entry. */
-    private String name;
+    private final String name;
     /** The type of the entry, 'P', 'S', .... */
-    private char   type;
+    private final char   type;
     /** The length of the item to it refers. */
-    private int    length;
+    private final int    length;
     /** The start of the block on the 'disk'. */
-    private int    startBlock;
+    private final int    startBlock;
     /** if S900 compressed file: number of un-compressed floppy blocks else: zero. */
-    private int    compression;
+    private final int    compression;
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param randomAccessFile The file to read from
      * @throws IOException Could not read
      */
@@ -55,7 +55,7 @@ public class AkaiS900DirectoryEntry
 
     /**
      * Get the name of the entry.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -66,7 +66,7 @@ public class AkaiS900DirectoryEntry
 
     /**
      * Get the directory entry type.
-     * 
+     *
      * @return The type, 'P' = Program, 'S' = Sample
      */
     public char getType ()
@@ -77,7 +77,7 @@ public class AkaiS900DirectoryEntry
 
     /**
      * The length of the item to it refers.
-     * 
+     *
      * @return The length
      */
     public int getLength ()
@@ -88,7 +88,7 @@ public class AkaiS900DirectoryEntry
 
     /**
      * The start of the block on the 'disk'.
-     * 
+     *
      * @return The start
      */
     public int getStartBlock ()
@@ -99,7 +99,7 @@ public class AkaiS900DirectoryEntry
 
     /**
      * Get the compression state of the samples.
-     * 
+     *
      * @return If S900 compressed file: number of un-compressed floppy blocks else: zero.
      */
     public int getCompression ()
