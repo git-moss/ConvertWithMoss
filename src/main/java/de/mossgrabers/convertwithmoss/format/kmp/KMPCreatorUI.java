@@ -22,15 +22,12 @@ import javafx.scene.control.CheckBox;
  */
 public class KMPCreatorUI implements ICoreTaskSettings
 {
-    private static final String KMP_WRITE_GROUP_KMPS = "KMPWriteGroupKmps";
-    private static final String KMP_GAIN_PLUS_12     = "KMPGainPlus12";
-    private static final String KMP_MAXIMIZE_VOLUME  = "KMPMaximizeVolume";
+    private static final String KMP_GAIN_PLUS_12    = "KMPGainPlus12";
+    private static final String KMP_MAXIMIZE_VOLUME = "KMPMaximizeVolume";
 
-    private CheckBox            writeGroupKmpsCheckBox;
     private CheckBox            gainPlus12CheckBox;
     private CheckBox            maximizeVolumeCheckBox;
 
-    private boolean             writeGroupKmps;
     private boolean             gainPlus12;
     private boolean             maximizeVolume;
 
@@ -41,7 +38,6 @@ public class KMPCreatorUI implements ICoreTaskSettings
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
         panel.createSeparator ("@IDS_KMP_OPTIONS");
-        this.writeGroupKmpsCheckBox = panel.createCheckBox ("@IDS_KMP_WRITE_KMP_FOR_EACH_GROUP", "@IDS_KMP_WRITE_KMP_FOR_EACH_GROUP_TOOLTIP");
         this.gainPlus12CheckBox = panel.createCheckBox ("@IDS_KMP_GAIN_12DB");
         this.maximizeVolumeCheckBox = panel.createCheckBox ("@IDS_KMP_MAXIMIZE_VOLUME", "@IDS_KMP_MAXIMIZE_VOLUME_TOOLTIP");
         return panel.getPane ();
@@ -52,7 +48,6 @@ public class KMPCreatorUI implements ICoreTaskSettings
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.writeGroupKmpsCheckBox.setSelected (config.getBoolean (KMP_WRITE_GROUP_KMPS, false));
         this.gainPlus12CheckBox.setSelected (config.getBoolean (KMP_GAIN_PLUS_12, false));
         this.maximizeVolumeCheckBox.setSelected (config.getBoolean (KMP_MAXIMIZE_VOLUME, false));
     }
@@ -62,7 +57,6 @@ public class KMPCreatorUI implements ICoreTaskSettings
     @Override
     public void saveSettings (final BasicConfig config)
     {
-        config.setBoolean (KMP_WRITE_GROUP_KMPS, this.writeGroupKmpsCheckBox.isSelected ());
         config.setBoolean (KMP_GAIN_PLUS_12, this.gainPlus12CheckBox.isSelected ());
         config.setBoolean (KMP_MAXIMIZE_VOLUME, this.maximizeVolumeCheckBox.isSelected ());
     }
@@ -72,7 +66,6 @@ public class KMPCreatorUI implements ICoreTaskSettings
     @Override
     public boolean checkSettingsUI (final INotifier notifier)
     {
-        this.writeGroupKmps = this.writeGroupKmpsCheckBox.isSelected ();
         this.maximizeVolume = this.maximizeVolumeCheckBox.isSelected ();
         this.gainPlus12 = this.gainPlus12CheckBox.isSelected ();
         return true;
@@ -83,10 +76,7 @@ public class KMPCreatorUI implements ICoreTaskSettings
     @Override
     public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
-        String value = parameters.remove (KMP_WRITE_GROUP_KMPS);
-        this.writeGroupKmps = "1".equals (value);
-
-        value = parameters.remove (KMP_GAIN_PLUS_12);
+        String value = parameters.remove (KMP_GAIN_PLUS_12);
         this.gainPlus12 = "1".equals (value);
 
         value = parameters.remove (KMP_MAXIMIZE_VOLUME);
@@ -102,21 +92,9 @@ public class KMPCreatorUI implements ICoreTaskSettings
     {
         return new String []
         {
-            KMP_WRITE_GROUP_KMPS,
             KMP_MAXIMIZE_VOLUME,
             KMP_GAIN_PLUS_12
         };
-    }
-
-
-    /**
-     * Should groups be written as separate KMPs?
-     *
-     * @return True if they should be written as separate files
-     */
-    public boolean writeGroupKmps ()
-    {
-        return this.writeGroupKmps;
     }
 
 

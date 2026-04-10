@@ -197,9 +197,7 @@ public class Maschine1Format implements IMaschineFormat
         this.updateMetadata (multisampleSource);
 
         // There are no groups, therefore, collect all sample zones
-        final List<ISampleZone> sampleZones = new ArrayList<> ();
-        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
-            sampleZones.addAll (group.getSampleZones ());
+        final List<ISampleZone> sampleZones = multisampleSource.getAllSampleZones (true);
         this.updateZones (sampleZones, safeSampleFolderName);
 
         this.updateGlobalParameters (multisampleSource, sampleZones.get (0));

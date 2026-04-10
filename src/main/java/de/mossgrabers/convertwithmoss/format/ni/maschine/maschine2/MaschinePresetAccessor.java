@@ -276,9 +276,7 @@ public class MaschinePresetAccessor
             data.remove (X0D_FIRST_ZONE);
 
         // There are no groups, therefore, collect all sample zones
-        final List<ISampleZone> sampleZones = new ArrayList<> ();
-        for (final IGroup group: source.getNonEmptyGroups (true))
-            sampleZones.addAll (group.getSampleZones ());
+        final List<ISampleZone> sampleZones = source.getAllSampleZones (true);
 
         // Update the number of samples
         final int maxZones = sampleZones.size ();
@@ -287,10 +285,7 @@ public class MaschinePresetAccessor
         // Generate new zones using the template
         final List<byte []> newZones = new ArrayList<> ();
         for (int i = 0; i < maxZones; i++)
-        {
-            final ISampleZone sampleZone = sampleZones.get (i);
-            newZones.addAll (fillZone (i, maxZones, templateZone, sampleZone, safeSampleFolderName));
-        }
+            newZones.addAll (fillZone (i, maxZones, templateZone, sampleZones.get (i), safeSampleFolderName));
 
         // Insert all regenerated zones back in the correct position
         data.addAll (X0D_FIRST_ZONE, newZones);

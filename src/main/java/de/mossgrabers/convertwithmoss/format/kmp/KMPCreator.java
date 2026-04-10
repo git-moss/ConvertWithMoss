@@ -19,10 +19,10 @@ import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.ZoneChannels;
+import de.mossgrabers.convertwithmoss.core.algorithm.VelocityLayerSplitter;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -90,23 +90,15 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
                 return;
             }
 
-            // KMP format supports only 1 group. Therefore, either create 1 KMP file for each group
-            // or combine them into 1
+            // KMP format supports only 1 velocity layer (actually more but the Workstations cannot
+            // load it)
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
             final ZoneChannels zoneChannels = ZoneChannels.detectChannelConfiguration (groups);
             this.notifier.log ("IDS_KMP_SOURCE_SAMPLES_FORMAT", zoneChannels.toString ());
 
-            if (!this.settingsConfiguration.writeGroupKmps () || zoneChannels == ZoneChannels.SPLIT_STEREO)
-            {
-                final IGroup combinedGroup = new DefaultGroup ();
-                final List<ISampleZone> sampleZones = combinedGroup.getSampleZones ();
-                for (final IGroup group: groups)
-                    sampleZones.addAll (group.getSampleZones ());
-                kmpIndex = this.storeKMP (subFolder, multiSampleName, combinedGroup, zoneChannels, kmpIndex, createdKMPNames);
-            }
-            else
-                for (final IGroup group: groups)
-                    kmpIndex = this.storeKMP (subFolder, multiSampleName, group, zoneChannels, kmpIndex, createdKMPNames);
+            final List<ISampleZone> sampleZones = multisampleSource.getAllSampleZones (false);
+            for (final List<ISampleZone> velocityLayer: VelocityLayerSplitter.splitVelocityLayers (sampleZones).values ())
+                kmpIndex = this.storeKMP (subFolder, multiSampleName, velocityLayer, zoneChannels, kmpIndex, createdKMPNames);
         }
 
         // Write a KSC file with all created KMP files
@@ -134,14 +126,14 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
      *
      * @param subFolder The sub-folder to store to
      * @param sampleName The KMP file to create
-     * @param group The group
+     * @param sampleZones The sample zones to add to the KMP
      * @param zoneChannels The channel configuration of the zone
      * @param kmpIndex The index to use for the KMP
      * @param createdKMPNames The index of the KMP file
      * @return The increased KMP index to use for the next one
      * @throws IOException Could not store the file
      */
-    private int storeKMP (final File subFolder, final String sampleName, final IGroup group, final ZoneChannels zoneChannels, final int kmpIndex, final Collection<String> createdKMPNames) throws IOException
+    private int storeKMP (final File subFolder, final String sampleName, final List<ISampleZone> sampleZones, final ZoneChannels zoneChannels, final int kmpIndex, final Collection<String> createdKMPNames) throws IOException
     {
         final boolean gain12dB = this.settingsConfiguration.gainPlus12 ();
         final boolean maxVolume = this.settingsConfiguration.maximizeVolume ();
@@ -151,36 +143,36 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
         {
             default:
             case MONO:
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.MONO, group, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.MONO, sampleZones, gain12dB, maxVolume, createdKMPNames);
                 return kmpIndex + 1;
 
             case STEREO, MIXED:
                 // Write 2 KMP files for left/right
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.LEFT, group, gain12dB, maxVolume, createdKMPNames);
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex + 1, KMPChannel.RIGHT, group, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.LEFT, sampleZones, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex + 1, KMPChannel.RIGHT, sampleZones, gain12dB, maxVolume, createdKMPNames);
                 return kmpIndex + 2;
 
             case SPLIT_STEREO:
-                // First split into 2 groups for left and right
-                final IGroup leftGroup = new DefaultGroup ();
-                final IGroup rightGroup = new DefaultGroup ();
-                for (final ISampleZone zone: group.getSampleZones ())
+                // First split into 2 arrays for left and right
+                final List<ISampleZone> leftSampleZones = new ArrayList<> ();
+                final List<ISampleZone> rightSampleZones = new ArrayList<> ();
+                for (final ISampleZone zone: sampleZones)
                     if (zone.getTuning () <= -1)
-                        leftGroup.addSampleZone (zone);
+                        leftSampleZones.add (zone);
                     else
-                        rightGroup.addSampleZone (zone);
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.LEFT, leftGroup, gain12dB, maxVolume, createdKMPNames);
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex + 1, KMPChannel.RIGHT, rightGroup, gain12dB, maxVolume, createdKMPNames);
+                        rightSampleZones.add (zone);
+                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.LEFT, leftSampleZones, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex + 1, KMPChannel.RIGHT, rightSampleZones, gain12dB, maxVolume, createdKMPNames);
                 return kmpIndex + 2;
         }
     }
 
 
-    private void storeKMPChannel (final File subFolder, final String filename, final String sampleWithGroupName, final int kmpIndex, final KMPChannel kmpChannel, final IGroup group, final boolean gain12dB, final boolean maxVolume, final Collection<String> createdKMPNames) throws IOException
+    private void storeKMPChannel (final File subFolder, final String filename, final String sampleWithGroupName, final int kmpIndex, final KMPChannel kmpChannel, final List<ISampleZone> sampleZones, final boolean gain12dB, final boolean maxVolume, final Collection<String> createdKMPNames) throws IOException
     {
         final String kmpFileName = createUniqueFilename (subFolder, filename, kmpIndex, createdKMPNames);
         final File kmpFilePath = this.createFile (subFolder, kmpFileName);
-        final KMPFile kmpFile = new KMPFile (this.notifier, kmpFileName, sampleWithGroupName, group.getSampleZones (), gain12dB, maxVolume);
+        final KMPFile kmpFile = new KMPFile (this.notifier, kmpFileName, sampleWithGroupName, sampleZones, gain12dB, maxVolume);
 
         try (final OutputStream out = new FileOutputStream (kmpFilePath))
         {

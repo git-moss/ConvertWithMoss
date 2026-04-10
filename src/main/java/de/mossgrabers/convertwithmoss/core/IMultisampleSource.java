@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.core;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,22 @@ public interface IMultisampleSource extends ISource
             if (group.isGroupRoundRobin ())
                 roundRobinGroups.put (group, Integer.valueOf (group.getSampleZones ().get (0).getSequencePosition ()));
         return roundRobinGroups;
+    }
+
+
+    /**
+     * Collect all sample zones from all groups into one list.
+     * 
+     * @param filterReleaseTriggers Removes all groups which do only contain release triggers
+     * @return All sample zones of the multi-sample
+     */
+    default List<ISampleZone> getAllSampleZones (final boolean filterReleaseTriggers)
+    {
+        final List<IGroup> groups = this.getNonEmptyGroups (filterReleaseTriggers);
+        final List<ISampleZone> sampleZones = new ArrayList<> ();
+        for (final IGroup group: groups)
+            sampleZones.addAll (group.getSampleZones ());
+        return sampleZones;
     }
 
 
