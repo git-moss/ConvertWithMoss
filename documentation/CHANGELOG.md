@@ -1,6 +1,6 @@
 # Changes
 
-## 17.0.0 (unreleased)
+## 17.0.0
 
 * Added support for reading Akai MPC60 programs.
 * Added support for reading Akai MPC500/MPC1000/MPC2500 programs.
