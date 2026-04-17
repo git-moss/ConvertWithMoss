@@ -1,5 +1,10 @@
 # Changes
 
+## 17.1.0 (unreleased)
+
+* Added support for reading Ensoniq Mirage disks (*.hfe, *.img, *.edm).
+* Fixed: Yamaha YSFC output needs to be fixed to 44.1kHz (includes up-sampling).
+
 ## 17.0.0
 
 * Added support for reading Akai MPC60 programs.

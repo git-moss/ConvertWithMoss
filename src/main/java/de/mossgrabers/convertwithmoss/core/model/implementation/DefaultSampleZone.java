@@ -72,7 +72,8 @@ public class DefaultSampleZone implements ISampleZone
 
 
     /**
-     * Constructor. Copies all metadata from the given source zone.
+     * Constructor. Copies all metadata except the sample data from the given source zone. Warning:
+     * the filter and loops are only assigned not cloned!
      *
      * @param zone The zone from which to copy the metadata
      */

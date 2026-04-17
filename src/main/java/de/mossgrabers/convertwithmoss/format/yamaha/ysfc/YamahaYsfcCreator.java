@@ -69,7 +69,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
     private static final DestinationAudioFormat                 DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16
-    }, -1, false);
+    }, 44100, true);
 
     private static final Map<YamahaYsfcFileFormat, byte []>     PERFORMANCE_TEMPLATES_1  = new EnumMap<> (YamahaYsfcFileFormat.class);
     private static final Map<YamahaYsfcFileFormat, byte []>     PERFORMANCE_TEMPLATES_8  = new EnumMap<> (YamahaYsfcFileFormat.class);

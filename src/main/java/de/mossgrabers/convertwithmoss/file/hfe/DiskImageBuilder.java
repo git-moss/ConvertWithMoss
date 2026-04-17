@@ -30,23 +30,33 @@ public class DiskImageBuilder
         // Sort sectors by cylinder, head, sector number
         Collections.sort (sectors);
 
-        final int imageSize = numCylinders * numHeads * sectorsPerTrack * bytesPerSector;
-        final byte [] image = new byte [imageSize];
-
-        // Fill with empty sector pattern (optional)
-        for (int i = 0; i < image.length; i++)
-            image[i] = (byte) 0xF6; // Standard empty sector fill
+        final byte [] image = createEmptyImage (numCylinders * numHeads * sectorsPerTrack * bytesPerSector);
 
         // Place sectors in image
         for (final Sector sector: sectors)
         {
             final int lba = calculateLBA (sector.getCylinder (), sector.getHead (), sector.getSectorNumber (), numHeads, sectorsPerTrack);
             final int offset = lba * bytesPerSector;
-
             if (offset + bytesPerSector <= image.length && sector.getData ().length == bytesPerSector)
                 System.arraycopy (sector.getData (), 0, image, offset, bytesPerSector);
         }
 
+        return image;
+    }
+
+
+    /**
+     * Creates and empty image of the given byte size and fills it with standard empty sector
+     * pattern.
+     * 
+     * @param imageSize The size of the image in bytes
+     * @return The created image
+     */
+    public static byte [] createEmptyImage (final int imageSize)
+    {
+        final byte [] image = new byte [imageSize];
+        for (int i = 0; i < image.length; i++)
+            image[i] = (byte) 0xF6;
         return image;
     }
 

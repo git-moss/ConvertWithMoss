@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
@@ -132,6 +134,22 @@ public class HfeFile
 
 
     /**
+     * Decodes all sectors from all tracks which are MFM encoded.
+     * 
+     * @return The decoded sectors
+     */
+    public List<Sector> decodeMfmSectors ()
+    {
+        final MfmDecoder decoder = new MfmDecoder ();
+        final List<Sector> allSectors = new ArrayList<> ();
+        for (int track = 0; track < this.getNumTracks (); track++)
+            for (int side = 0; side < this.getNumSides (); side++)
+                allSectors.addAll (decoder.decodeSectors (this.getTrack (side, track), track, side));
+        return allSectors;
+    }
+
+
+    /**
      * Read the 512 byte header.
      *
      * @param randomAccessFile The file to read from
@@ -242,46 +260,65 @@ public class HfeFile
     }
 
 
-    /**
-     * The track is divided in 512 Bytes blocks and each block contains a part of the Side 0 track
-     * (first 256 Bytes) and a part of the Side 1 track (second 256 Bytes).
-     *
-     * @param trackIndex The index of the track
-     * @param data The data to de-interleave
-     */
     private void deinterleave (final int trackIndex, final byte [] data)
     {
-        if (this.numSides == 1)
-        {
-            this.tracks[0][trackIndex] = new TrackData (data);
-            return;
-        }
+        final int numFullBlocks = data.length / BLOCK_SIZE;
+        final int remainingBytes = data.length % BLOCK_SIZE;
 
-        final int numBlocks = data.length / BLOCK_SIZE;
-        final int restBlocks = data.length % BLOCK_SIZE / 2;
-        final int trackSize = data.length / 2;
-        final byte [] side1 = new byte [trackSize];
-        final byte [] side2 = new byte [trackSize];
+        // For side 0: take first 256 bytes from each 512-byte block
+        // Plus any remaining bytes from partial block (up to 256)
+        final int side0RemainderBytes = Math.min (remainingBytes, TRACK_BLOCK_SIZE);
+        final int side0Size = numFullBlocks * TRACK_BLOCK_SIZE + side0RemainderBytes;
+
+        final byte [] side0 = new byte [side0Size];
 
         int destPos = 0;
         int srcPos = 0;
-        for (int block = 0; block < numBlocks; block++)
+
+        // Process full blocks
+        for (int block = 0; block < numFullBlocks; block++)
         {
-            System.arraycopy (data, srcPos, side1, destPos, TRACK_BLOCK_SIZE);
-            System.arraycopy (data, srcPos + TRACK_BLOCK_SIZE, side2, destPos, TRACK_BLOCK_SIZE);
+            System.arraycopy (data, srcPos, side0, destPos, TRACK_BLOCK_SIZE);
             srcPos += BLOCK_SIZE;
             destPos += TRACK_BLOCK_SIZE;
         }
 
-        // Trim last block
-        if (restBlocks > 0)
-        {
-            System.arraycopy (data, srcPos, side1, destPos, restBlocks);
-            System.arraycopy (data, srcPos + restBlocks, side2, destPos, restBlocks);
-        }
+        // Process partial block for side 0
+        if (side0RemainderBytes > 0)
+            System.arraycopy (data, srcPos, side0, destPos, side0RemainderBytes);
 
-        this.tracks[0][trackIndex] = new TrackData (side1);
-        this.tracks[1][trackIndex] = new TrackData (side2);
+        this.tracks[0][trackIndex] = new TrackData (side0);
+
+        if (this.numSides == 2)
+        {
+            // For side 1: take second 256 bytes from each 512-byte block
+            // Plus any remaining bytes from partial block beyond first 256
+            final int side1RemainderBytes = Math.max (0, remainingBytes - TRACK_BLOCK_SIZE);
+            final int side1Size = numFullBlocks * TRACK_BLOCK_SIZE + side1RemainderBytes;
+
+            final byte [] side1 = new byte [side1Size];
+
+            destPos = 0;
+            srcPos = TRACK_BLOCK_SIZE; // Start at side 1 portion of first block
+
+            // Process full blocks
+            for (int block = 0; block < numFullBlocks; block++)
+            {
+                System.arraycopy (data, srcPos, side1, destPos, TRACK_BLOCK_SIZE);
+                srcPos += BLOCK_SIZE;
+                destPos += TRACK_BLOCK_SIZE;
+            }
+
+            // Process partial block for side 1
+            if (side1RemainderBytes > 0)
+            {
+                // Skip to side 1 portion of partial block
+                srcPos = numFullBlocks * BLOCK_SIZE + TRACK_BLOCK_SIZE;
+                System.arraycopy (data, srcPos, side1, destPos, side1RemainderBytes);
+            }
+
+            this.tracks[1][trackIndex] = new TrackData (side1);
+        }
     }
 
 

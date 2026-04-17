@@ -25,9 +25,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.hfe.DiskImageBuilder;
 import de.mossgrabers.convertwithmoss.file.hfe.HfeFile;
 import de.mossgrabers.convertwithmoss.file.hfe.HfeFile.HfeVersion;
-import de.mossgrabers.convertwithmoss.file.hfe.MfmDecoder;
 import de.mossgrabers.convertwithmoss.file.hfe.Sector;
-import de.mossgrabers.convertwithmoss.file.hfe.TrackData;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.diskformat.AkaiMPC2000DirectoryEntry;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.diskformat.AkaiMPC2000DiskImage;
 import de.mossgrabers.convertwithmoss.format.iso.IsoFormat;
@@ -90,33 +88,20 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
     {
         try
         {
-            // Decode all sectors
             final HfeFile hfeFile = new HfeFile (sourceFile);
             final HfeVersion hfeVersion = hfeFile.getHfeVersion ();
             if (hfeVersion != HfeVersion.VERSION_1)
             {
-                this.notifier.logError ("IDS_MPC2000_HFE_VERSION", hfeVersion == HfeVersion.VERSION_2 ? "v2" : "v3");
+                this.notifier.logError ("IDS_HFE_VERSION_NOT_SUPPORTED", hfeVersion == HfeVersion.VERSION_2 ? "v2" : "v3");
                 return Collections.emptyList ();
             }
             if (hfeFile.getFloppyInterfaceMode () != HfeFile.FLOPPYMODE_IBM_PC_HD)
             {
-                this.notifier.logError ("IDS_MPC2000_HFE_ONLY_IBM");
+                this.notifier.logError ("IDS_HFE_CAN_ONLY_DECODE_FLOPPY_MODE", "IBM PC HD");
                 return Collections.emptyList ();
             }
 
-            final MfmDecoder decoder = new MfmDecoder ();
-            final List<Sector> allSectors = new ArrayList<> ();
-            for (int track = 0; track < hfeFile.getNumTracks (); track++)
-            {
-                for (int side = 0; side < hfeFile.getNumSides (); side++)
-                {
-                    final TrackData trackData = hfeFile.getTrack (side, track);
-                    final List<Sector> sectors = decoder.decodeSectors (trackData, track, side);
-                    allSectors.addAll (sectors);
-                }
-            }
-
-            // Build IMG (standard IBM PC HD: 80 tracks, 2 sides, 18 sectors, 512 bytes)
+            final List<Sector> allSectors = hfeFile.decodeMfmSectors ();
             final byte [] imgData = DiskImageBuilder.buildImage (allSectors, 80, 2, 18, 512);
 
             final IsoFormat isoFormat = IsoFormatIdentifier.identifyIso (imgData);

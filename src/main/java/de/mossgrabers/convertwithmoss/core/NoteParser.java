@@ -136,4 +136,17 @@ public class NoteParser
             return -1;
         return KEY_MAP.getOrDefault (noteValue.toUpperCase (Locale.US), DEFAULT_VALUE).intValue ();
     }
+
+
+    /**
+     * Formats a note with an octave.
+     *
+     * @param note The note
+     * @param octaveOffset The octave
+     * @return The text
+     */
+    public static String formatNoteAndOctave (final int note, final int octaveOffset)
+    {
+        return NOTE_NAMES_SHARP[Math.abs (note % 12)] + Integer.toString (note / 12 + octaveOffset + 1);
+    }
 }

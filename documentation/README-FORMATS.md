@@ -310,7 +310,6 @@ The format is documented in detail (more or less) in the appendix of the respect
 
 ### Destination Options
 
-* Write group KMPs: Writes a KMP for each group in the source multi-sample. This option will be ignored for split stereo source files.
 * Enable the +12dB option: Increases the volume of each sample by +12dB. Use for low volume samples.
 * Set sample volume to +99: If enabled, sets all sample volumes to +99. Use for very low volume samples.
 

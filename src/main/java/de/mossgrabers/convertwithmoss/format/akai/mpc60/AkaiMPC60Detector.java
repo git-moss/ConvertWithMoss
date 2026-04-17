@@ -29,9 +29,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.hfe.DiskImageBuilder;
 import de.mossgrabers.convertwithmoss.file.hfe.HfeFile;
 import de.mossgrabers.convertwithmoss.file.hfe.HfeFile.HfeVersion;
-import de.mossgrabers.convertwithmoss.file.hfe.MfmDecoder;
 import de.mossgrabers.convertwithmoss.file.hfe.Sector;
-import de.mossgrabers.convertwithmoss.file.hfe.TrackData;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.diskformat.AkaiMPC2000DirectoryEntry;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.diskformat.AkaiMPC2000DiskImage;
 import de.mossgrabers.tools.FileUtils;
@@ -84,27 +82,16 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
             final HfeVersion hfeVersion = hfeFile.getHfeVersion ();
             if (hfeVersion != HfeVersion.VERSION_1)
             {
-                this.notifier.logError ("IDS_MPC60_HFE_VERSION", hfeVersion == HfeVersion.VERSION_2 ? "v2" : "v3");
+                this.notifier.logError ("IDS_HFE_VERSION_NOT_SUPPORTED", hfeVersion == HfeVersion.VERSION_2 ? "v2" : "v3");
                 return Collections.emptyList ();
             }
             if (hfeFile.getFloppyInterfaceMode () != HfeFile.FLOPPYMODE_GENERIC_SHUGGART_DD)
             {
-                this.notifier.logError ("IDS_MPC60_HFE_ONLY_IBM");
+                this.notifier.logError ("IDS_HFE_CAN_ONLY_DECODE_FLOPPY_MODE", "Generic Shuggart");
                 return Collections.emptyList ();
             }
 
-            final MfmDecoder decoder = new MfmDecoder ();
-            final List<Sector> allSectors = new ArrayList<> ();
-            for (int track = 0; track < hfeFile.getNumTracks (); track++)
-            {
-                for (int side = 0; side < hfeFile.getNumSides (); side++)
-                {
-                    final TrackData trackData = hfeFile.getTrack (side, track);
-                    final List<Sector> sectors = decoder.decodeSectors (trackData, track, side);
-                    allSectors.addAll (sectors);
-                }
-            }
-
+            final List<Sector> allSectors = hfeFile.decodeMfmSectors ();
             return this.readImgFile (sourceFile, DiskImageBuilder.buildImage (allSectors, 80, 2, 10, 512));
         }
         catch (final IOException ex)
