@@ -47,7 +47,10 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final int LOWEST_NOTE = 48;
+    private static final double FILTER_MINIMUM_FREQUENCY    = 50.0;
+    private static final double FILTER_MAXIMUM_CUTOFF_VALUE = 99.0;
+    private static final double FILTER_FREQUENCY_RATIO      = Math.pow (15000.0 / FILTER_MINIMUM_FREQUENCY, 1.0 / FILTER_MAXIMUM_CUTOFF_VALUE);
+    private static final int    LOWEST_NOTE                 = 36;
 
 
     /**
@@ -116,6 +119,8 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     private List<IMultisampleSource> readEdmFile (final File sourceFile, final byte [] diskImageData)
     {
         final String programName = FileUtils.getNameWithoutType (sourceFile.getName ()).trim ();
+        final String [] programNames = createMultiSampleNames (programName);
+
         final File parentFolder = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, programName);
 
@@ -142,7 +147,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
                 {
                     final MirageProgram mirageProgramLower = mirageLayerLower.programs.get (programIndex);
                     final MirageProgram mirageProgramUpper = mirageLayerUpper.programs.get (programIndex);
-                    final String multiSampleName = programName + " Sound " + (layerIndex / 2 + 1) + " Program " + (programIndex + 1);
+                    final String multiSampleName = programNames[layerIndex / 2] + " Program " + (programIndex + 1);
                     multiSampleSources.add (this.createMultiSample (sourceFile, parts, multiSampleName, mirageProgramLower, mirageLayerLower.waveSamples, sampleDataLower, mirageProgramUpper, mirageLayerUpper.waveSamples, sampleDataUpper));
                 }
             }
@@ -164,6 +169,26 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Collections.emptyList ();
         }
+    }
+
+
+    /**
+     * Check if the filename contains a pattern lime Name1-Name2-Name3. If yes, these individual
+     * names are returned. If not, 3 names are generated.
+     * 
+     * @param programName The basic program name
+     * @return The 3 sound names
+     */
+    private static String [] createMultiSampleNames (final String programName)
+    {
+        final String [] nameParts = programName.split ("-");
+        if (nameParts.length == 3)
+            return nameParts;
+
+        final String [] programNames = new String [3];
+        for (int i = 0; i < programNames.length; i++)
+            programNames[i] = programName + " Sound " + (i + 1);
+        return programNames;
     }
 
 
@@ -217,7 +242,8 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
                 if (i >= 8)
                     break;
                 // Skip to the upper sound samples!
-                i = mirageProgramUpper.initialWavesample;
+                if (i < 8 + mirageProgramUpper.initialWavesample)
+                    i = 8 + mirageProgramUpper.initialWavesample;
                 mirageWaveSample = waveSamples.get (i);
                 if (mirageWaveSample.topKey < lowerKey)
                     break;
@@ -237,7 +263,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             final double fine = tuning - semitones;
             if (i >= 8)
                 semitones -= 24;
-            osc1SampleZone.setKeyRoot (57 - semitones);
+            osc1SampleZone.setKeyRoot (45 - semitones);
             osc1SampleZone.setTuning (fine);
 
             final MirageProgram program = i < 8 ? mirageProgramLower : mirageProgramUpper;
@@ -248,16 +274,20 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             amplitudeEnvelopeModulator.setSource (ampEnvelopeModulation.getSource ());
 
             final double resonance = Math.clamp (program.resonance, 0, 160) / 160.0;
-            final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 4, valueToFrequency (program.filterCutoffFreq), resonance);
+            final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 4, valueToFrequency (program.filterCutoffFreq + mirageWaveSample.relativeFilterFreq), resonance);
             final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
-            final IEnvelopeModulator filterEnvelopeModulation = createEnvelopeModulation (program.ampEnvelopeAttack, program.ampEnvelopeDecay, program.ampEnvelopeSustain, program.ampEnvelopeRelease, program.ampEnvelopeSustainVelocity);
+            final IEnvelopeModulator filterEnvelopeModulation = createEnvelopeModulation (program.filterEnvelopeAttack, program.filterEnvelopeDecay, program.filterEnvelopeSustain, program.filterEnvelopeRelease, program.filterEnvelopeSustainVelocity);
             cutoffEnvelopeModulator.setDepth (filterEnvelopeModulation.getDepth ());
             cutoffEnvelopeModulator.setSource (filterEnvelopeModulation.getSource ());
-            osc1SampleZone.setFilter (filter);
 
-            // Apply to OSC1 and apply inverse to OSC2
-            final double mixVelocity = program.mixVelocitySensitivity / 124.0;
-            osc1SampleZone.getAmplitudeVelocityModulator ().setDepth (mixVelocity);
+            // Not sure about the filter values, therefore, prevent totally closed filter
+            if (cutoffEnvelopeModulator.getDepth () != 0 || filter.getCutoff () > 8000)
+                osc1SampleZone.setFilter (filter);
+
+            // Ignore since results do not work...
+            // final double mixVelocity = program.mixVelocitySensitivity / 124.0;
+            // osc1SampleZone.getAmplitudeVelocityModulator ().setDepth (mixVelocity);
+            // osc2SampleZone.getAmplitudeVelocityModulator ().setDepth (-mixVelocity);
 
             if (mirageWaveSample.loopMode > 0)
             {
@@ -273,7 +303,6 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             // Tune the 2nd oscillator upwards, interpret as 1 cent
             osc2SampleZone.setTuning (osc2SampleZone.getTuning () + program.oscDetune / 100.0);
             osc2Group.addSampleZone (osc2SampleZone);
-            osc2SampleZone.getAmplitudeVelocityModulator ().setDepth (-mixVelocity);
 
             // Adjust the volume between OSC1 and OSC2 with an equal-power cross-fade
             final double mix = program.oscMix / 252.0;
@@ -382,10 +411,6 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static double valueToFrequency (final int value)
     {
-        final double minFreq = 50.0;
-        final double maxFreq = 15000.0;
-        final double maxValue = 198.0;
-        final double normalized = value / maxValue;
-        return minFreq * Math.pow (maxFreq / minFreq, normalized);
+        return FILTER_MINIMUM_FREQUENCY * Math.pow (FILTER_FREQUENCY_RATIO, Math.clamp (value, 0, FILTER_MAXIMUM_CUTOFF_VALUE));
     }
 }

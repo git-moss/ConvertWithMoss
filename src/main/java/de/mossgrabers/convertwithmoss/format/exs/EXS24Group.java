@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
@@ -18,6 +19,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 class EXS24Group extends EXS24Object
 {
+    // -96dB to +24dB
     int     volume                    = 0;
     int     pan                       = 0;
     int     polyphony                 = 0;    // = Max
@@ -100,7 +102,7 @@ class EXS24Group extends EXS24Object
     @Override
     protected void read (final InputStream in, final boolean isBigEndian) throws IOException
     {
-        this.volume = in.read ();
+        this.volume = MathUtils.decodeTwosComplement (in.read ());
         this.pan = in.read ();
         this.polyphony = in.read ();
         final int options = in.read ();
@@ -178,7 +180,7 @@ class EXS24Group extends EXS24Object
     @Override
     protected void write (final OutputStream out, final boolean isBigEndian) throws IOException
     {
-        out.write (this.volume);
+        out.write (MathUtils.encodeTwosComplement (this.volume));
         out.write (this.pan);
         out.write (this.polyphony);
         out.write ((this.mute ? 16 : 0) | (this.releaseTriggerDecay ? 64 : 0) | (this.fixedSampleSelect ? 128 : 0));
@@ -210,7 +212,7 @@ class EXS24Group extends EXS24Object
         out.write (this.output);
         out.write (this.enableByNoteValue);
 
-        /////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
         // Additional data
 
         StreamUtils.padBytes (out, 4);

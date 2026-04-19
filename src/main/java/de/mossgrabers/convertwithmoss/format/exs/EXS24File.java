@@ -4,9 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.format.exs;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +135,11 @@ public class EXS24File
                     // No idea what that is but it is 4 bytes long and they are always 0
                     break;
 
-                case EXS24Block.TYPE_BPLIST:
+                case EXS24Block.TYPE_BPLIST_SAMPLER_LAYOUT:
+                    Files.write (new File ("C:\\Users\\mos\\Desktop\\Output\\BPList.bin").toPath (), block.content);
+                    break;
+
+                case EXS24Block.TYPE_BPLIST_MACOS_PLIST:
                     // This contains a MacOS PLIST structure in byte format with file information
                     // about the sample files (could be read with dd.plist library)
                     break;

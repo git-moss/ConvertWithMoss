@@ -47,6 +47,7 @@ The following multi-sample formats are supported:
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
+* [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [ISO/IMG Files](#isoimg-files)
 * [Kontakt NKI/NKM](#kontakt-nkinkm)
@@ -110,6 +111,10 @@ Ableton uses a generic preset format (*.adv) for all of their devices. For combi
 ConvertWithMoss can extract Sampler and Simpler presets from ADV files as well as all instances of Sampler or Simpler in ADG files when selected as a source. The presets from the Ableton libraries cannot be extracted since their AIFF files use a proprietary encryption algorithm. It writes ADV files as the destination.
 
 ADV files and their samples need to be placed in the Ableton user library in the correct folders to allow Ableton to open it. Therefore, ConvertWithMoss creates the necessary folder structure which can be simply copied to the user library. If the source has sub-folders the global option *Create folder structure* should be deactivated otherwise it can be quite tedious to collect all the results files with their additional Ableton sub-folder structure.
+
+### Destination Options
+
+* Option to set the *Ableton Version*. Setting it to *12* will add additional Round-Robin information (but cannot be loaded in Ableton 11).
 
 ## Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
 
@@ -241,6 +246,23 @@ There are two issues with amplitude envelopes:
 Bliss is a multi-platform (Windows, MacOS & Linux) sampler by discoDSP (https://www.discodsp.com/bliss/).
 It provides support for multi-samples and a bank system (containing up to 128 patches).
 Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipped) with a XML description file and all samples. The samples are stored in FLAC format (16/24 bit). The full format specification is available here: https://github.com/reales/bliss-format.
+
+## Ensoniq Mirage
+
+The Ensoniq Mirage, introduced in 1984, was a groundbreaking 8-bit digital sampler that democratized sampling technology for musicians. Priced at around $1,695, it was one of the first affordable samplers on the market—a fraction of the cost of competitors like the Fairlight CMI or E-mu Emulator. The Mirage featured 8-voice polyphony, a small 2-digit LED display, and used 3.5" floppy disks for storing samples and sounds. Despite its limited memory (just 128KB) and lo-fi character, it became hugely popular in the mid-1980s and found its way onto countless recordings across pop, hip-hop, and electronic music.The Mirage was available in both keyboard (DSK-1, DSK-8) and rack-mount (DSM-1) versions.
+
+Its open architecture was fairly unusual for hardware of that era and gave the Mirage an active user community of developers and enthusiasts who continued to push the instrument's boundaries well beyond what Ensoniq originally intended which led to several alternative operating systems. One of them is Triton Soundprocess, it uses its own filesystem which is not supported (if someone has any knowledge about it, please get in touch).
+
+This disk format is proprietary with a complex layout. Each disk contains 3 sounds. Each sound consists of a lower and upper layer. Each layer can have up to 8 samples. Each layer has 4 programs with different parameter settings. The programs of the lower and upper layer can be selected differently which gives 4x4=16 different configurations! To make things confusing these sounds are interleaved with OS and sequence data on the disk. ConvertWithMoss can read such disk files (*.hfe, *.img or *.edm).
+
+### Issues and Workarounds
+
+1. Since the format does not provide any naming, the name of the files are used. If a file contains exactly 2 dashes the name is split into 3 parts and they are used for the 3 sounds. E.g. label a file like 'Name1-Name2-Name3.img' to get a proper names for the multi-samples.
+2. To keep things manageable only the matching programs are exported (e.g. Program 1 from the lower layer with Program 1 from the upper layer). This means each disk will result to 3x4=12 multi-samples.
+3. Another issue is that the format does not store the root note of the samples. The pitch is only determined by the sample-rate and the tuning. The current sample-rate is extracted from the disk as well but in theory it could be totally wrong.
+4. The filter cutoff value is not fully understood. Therefore, settings which produce no sound are ignored and noi filter is set in such a case.
+5. There can be some very short loop lengths (like 256 samples) which might cause a playback issue with some multi-sample players.
+6. It uses quite uncommon sample rate which might cause a playback issue with some multi-sample players.
 
 ## Expert Sleepers disting EX
 

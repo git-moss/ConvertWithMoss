@@ -26,6 +26,7 @@ import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.algorithm.ZoneSplitter;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -38,6 +39,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -268,7 +270,6 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         final Element samplePartsElement = getRequiredElement (mapElement, AbletonTag.TAG_SAMPLE_PARTS);
 
         final IGroup group = new DefaultGroup ("Group #1");
-        multisampleSource.setGroups (Collections.singletonList (group));
 
         for (final Element multiSamplePartElement: XMLUtils.getChildElementsByName (samplePartsElement, AbletonTag.TAG_MULTI_SAMPLE_PART, false))
         {
@@ -286,6 +287,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 group.addSampleZone (zone);
             }
         }
+
+        // Round-robin support
+        multisampleSource.setGroups (getBooleanValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_ENABLE) ? applyRoundRobin (mapElement, group) : Collections.singletonList (group));
 
         final IFilter filter = readFilter (deviceElement);
         if (filter != null)
@@ -574,6 +578,39 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         catch (final IOException ex)
         {
             // Ignore missing elements
+        }
+    }
+
+
+    private static List<IGroup> applyRoundRobin (final Element mapElement, final IGroup group)
+    {
+        // "0" = forward, "1" = backwards, "2" = other, "3" = random
+        final int roundRobinDirection = getIntegerValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_MODE, 0);
+        final List<List<ISampleZone>> splitZones = ZoneSplitter.splitZonesStableOrder (group.getSampleZones ());
+        final List<IGroup> groups = new ArrayList<> ();
+        for (int i = 0; i < splitZones.size (); i++)
+        {
+            final List<ISampleZone> sampleZones = splitZones.get (i);
+            for (final ISampleZone sampleZone: sampleZones)
+                sampleZone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+
+            if (roundRobinDirection < 2)
+                setRoundRobinSequence (sampleZones, roundRobinDirection == 0);
+            final IGroup layerGroup = new DefaultGroup ("Group #" + (i + 1));
+            layerGroup.setSampleZones (sampleZones);
+            groups.add (layerGroup);
+        }
+        return groups;
+    }
+
+
+    private static void setRoundRobinSequence (final List<ISampleZone> sampleZones, final boolean forwards)
+    {
+        int pos = forwards ? 1 : sampleZones.size ();
+        for (final ISampleZone sampleZone: sampleZones)
+        {
+            sampleZone.setSequencePosition (pos);
+            pos += forwards ? 1 : -1;
         }
     }
 

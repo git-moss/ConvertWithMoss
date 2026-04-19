@@ -34,7 +34,25 @@ public class StreamUtils
 
 
     /**
-     * Reads and converts 2 bytes to an signed integer.
+     * Reads and converts 1 byte to a signed integer. Throws an IOException on EOF.
+     *
+     * @param in The input stream
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readSigned8 (final InputStream in) throws IOException
+    {
+        final int value = in.read ();
+        if (value == -1)
+            throw new IOException ("Unexpected end of stream");
+        // Converts to signed byte, then widens to int
+        return (byte) value;
+    }
+
+
+    /**
+     * Reads and converts 2 bytes to a signed integer.
      *
      * @param in The input stream
      * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
@@ -51,7 +69,7 @@ public class StreamUtils
 
 
     /**
-     * Reads and converts 2 bytes to an signed integer from the given array.
+     * Reads and converts 2 bytes to a signed integer from the given array.
      *
      * @param array The input array
      * @param offset The offset into the array
@@ -87,7 +105,7 @@ public class StreamUtils
 
 
     /**
-     * Reads and converts 2 bytes to an signed integer.
+     * Reads and converts 2 bytes to a signed integer.
      *
      * @param fileAccess The random access file to read from
      * @param isBigEndian True if bytes are stored big-endian otherwise little-endian

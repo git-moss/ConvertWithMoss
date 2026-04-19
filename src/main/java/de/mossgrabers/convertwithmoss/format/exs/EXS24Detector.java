@@ -382,8 +382,9 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
 
     private static boolean limitByGroupAttributes (final EXS24Group exs24Group, final ISampleZone zone)
     {
+        // Note: volume values can be added since the zone volume is relative!
         if (exs24Group.volume != 0)
-            zone.setGain (zone.getGain () + exs24Group.volume);
+            zone.setGain (exs24Group.volume + zone.getGain ());
         if (exs24Group.pan != 0)
             zone.setPanning (zone.getPanning () + exs24Group.pan);
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Ableton MajorVersion="5" MinorVersion="11.0_11300" SchemaChangeCount="3" Creator="Ableton Live 11.3.22" Revision="86c4913d7978d564614e61d7105424edb3d2ee4b">
+<Ableton MajorVersion="5" MinorVersion="12.0_12203" SchemaChangeCount="3" Creator="Ableton Live 12.2.7" Revision="828a8aa814bf84bb81588593befeb896dfbd29df">
 	<MultiSampler>
 		<LomId Value="0" />
 		<LomIdView Value="0" />
@@ -53,6 +53,10 @@
 				<LoadInRam Value="false" />
 				<LayerCrossfade Value="0" />
 				<SourceContext />
+				<RoundRobin Value="%ROUND_ROBIN%" />
+				<RoundRobinMode Value="0" />
+				<RoundRobinResetPeriod Value="0" />
+				<RoundRobinRandomSeed Value="1175476661" />
 			</MultiSampleMap>
 			<LoopModulators>
 				<IsModulated Value="false" />
@@ -177,12 +181,12 @@
 				</Slot>
 			</SubOsc>
 			<InterpolationMode Value="1" />
-			<UseConstPowCrossfade Value="false" />
+			<UseConstPowCrossfade Value="true" />
 		</Player>
 		<Pitch>
 			<TransposeKey>
 				<LomId Value="0" />
-				<Manual Value="12" />
+				<Manual Value="0" />
 				<MidiControllerRange>
 					<Min Value="-48" />
 					<Max Value="48" />

@@ -98,4 +98,44 @@ public interface IGroup
         }
         return true;
     }
+
+
+    /**
+     * If all zones in this group are set to play round-robin.
+     *
+     * @return True if all sample zones have round-robin enabled
+     */
+    default boolean isFullRoundRobin ()
+    {
+        final List<ISampleZone> sampleZones = this.getSampleZones ();
+        if (sampleZones.isEmpty ())
+            return false;
+
+        for (final ISampleZone zone: sampleZones)
+        {
+            if (zone.getPlayLogic () != PlayLogic.ROUND_ROBIN)
+                return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * If at least one zones in this group is set to play round-robin.
+     *
+     * @return True if at least one sample zone has round-robin enabled
+     */
+    default boolean hasRoundRobin ()
+    {
+        final List<ISampleZone> sampleZones = this.getSampleZones ();
+        if (sampleZones.isEmpty ())
+            return false;
+
+        for (final ISampleZone zone: sampleZones)
+        {
+            if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                return true;
+        }
+        return false;
+    }
 }

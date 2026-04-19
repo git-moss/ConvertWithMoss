@@ -86,6 +86,34 @@ public class MathUtils
 
 
     /**
+     * Adds two decibel (dB) values representing amplitudes (e.g., digital audio levels) using
+     * logarithmic summation. This method converts the values implicitly to linear amplitude, sums
+     * them, and converts the result back to dB. It uses a numerically stable formulation that
+     * avoids precision loss when the difference between the two inputs is large (e.g., near the
+     * noise floor such as −96 dB).
+     *
+     * Mathematical form: result = max + 20 * log10(1 + 10^((min − max)/20))
+     *
+     * Advantages over naive implementation: - avoids overflow/underflow - improves precision for
+     * large level differences - faster than converting both values to linear scale separately
+     *
+     * NOTE: This method assumes amplitude-domain dB values (20·log10 scaling), not power-domain
+     * values (10·log10 scaling).
+     *
+     * @param db1 first amplitude level in dB
+     * @param db2 second amplitude level in dB
+     * @return summed amplitude level in dB
+     */
+    public static double addDbValues (final double db1, final double db2)
+    {
+        final double max = Math.max (db1, db2);
+        final double min = Math.min (db1, db2);
+        final double diff = min - max;
+        return max + 20.0 * Math.log10 (1.0 + Math.pow (10.0, diff / 20.0));
+    }
+
+
+    /**
      * Normalizes a frequency to the range of [0..1].
      *
      * @param frequency The frequency in Hertz
@@ -334,5 +362,29 @@ public class MathUtils
         if (value < 0)
             return Math.clamp (-Math.round (value * negativeMinimum), negativeMinimum, 0);
         return Math.clamp (Math.round (value * positiveMaximum), 0, positiveMaximum);
+    }
+
+
+    /**
+     * Decode two complement.
+     * 
+     * @param value The value to decode
+     * @return The decoded value
+     */
+    public static int decodeTwosComplement (final int value)
+    {
+        return (value & 0x80) != 0 ? value - 256 : value;
+    }
+
+
+    /**
+     * Encode two complement.
+     * 
+     * @param value The value to encode
+     * @return The encoded value
+     */
+    public static int encodeTwosComplement (final int value)
+    {
+        return value < 0 ? value + 256 : value;
     }
 }

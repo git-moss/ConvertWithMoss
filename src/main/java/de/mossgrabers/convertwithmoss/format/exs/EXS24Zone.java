@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
@@ -24,6 +25,7 @@ class EXS24Zone extends EXS24Object
     int     key;
     int     fineTuning;
     int     pan;
+    // -96dB to +12dB
     int     volumeAdjust;
     int     volumeScale;
     int     coarseTuning;
@@ -85,9 +87,9 @@ class EXS24Zone extends EXS24Object
         this.velocityRangeOn = (zoneOpts & 1 << 3) != 0;
 
         this.key = in.read ();
-        this.fineTuning = decodeTwosComplement (in.read ());
-        this.pan = decodeTwosComplement (in.read ());
-        this.volumeAdjust = decodeTwosComplement (in.read ());
+        this.fineTuning = MathUtils.decodeTwosComplement (in.read ());
+        this.pan = MathUtils.decodeTwosComplement (in.read ());
+        this.volumeAdjust = MathUtils.decodeTwosComplement (in.read ());
         this.volumeScale = in.read ();
         this.keyLow = in.read ();
         this.keyHigh = in.read ();
@@ -112,7 +114,7 @@ class EXS24Zone extends EXS24Object
         this.flexOptions = in.read ();
         this.flexSpeed = in.read ();
         this.tailTune = in.read ();
-        this.coarseTuning = decodeTwosComplement (in.read ());
+        this.coarseTuning = MathUtils.decodeTwosComplement (in.read ());
 
         in.skipNBytes (1);
 
@@ -135,9 +137,9 @@ class EXS24Zone extends EXS24Object
     {
         out.write ((this.oneshot ? 1 : 0) | (this.pitch ? 0 : 2) | (this.reverse ? 4 : 0) | (this.velocityRangeOn ? 8 : 0));
         out.write (this.key);
-        out.write (encodeTwosComplement (this.fineTuning));
-        out.write (encodeTwosComplement (this.pan));
-        out.write (encodeTwosComplement (this.volumeAdjust));
+        out.write (MathUtils.encodeTwosComplement (this.fineTuning));
+        out.write (MathUtils.encodeTwosComplement (this.pan));
+        out.write (MathUtils.encodeTwosComplement (this.volumeAdjust));
         out.write (this.volumeScale);
         out.write (this.keyLow);
         out.write (this.keyHigh);
@@ -157,23 +159,11 @@ class EXS24Zone extends EXS24Object
         out.write (this.flexOptions);
         out.write (this.flexSpeed);
         out.write (this.tailTune);
-        out.write (encodeTwosComplement (this.coarseTuning));
+        out.write (MathUtils.encodeTwosComplement (this.coarseTuning));
         StreamUtils.padBytes (out, 1);
         out.write (this.output);
         StreamUtils.padBytes (out, 5);
         StreamUtils.writeUnsigned32 (out, this.groupIndex, isBigEndian);
         StreamUtils.writeUnsigned32 (out, this.sampleIndex, isBigEndian);
-    }
-
-
-    private static int decodeTwosComplement (final int value)
-    {
-        return (value & 0x80) != 0 ? value - 256 : value;
-    }
-
-
-    private static int encodeTwosComplement (final int value)
-    {
-        return value < 0 ? value + 256 : value;
     }
 }

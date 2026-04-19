@@ -3,7 +3,15 @@
 ## 17.1.0 (unreleased)
 
 * Added support for reading Ensoniq Mirage disks (*.hfe, *.img, *.edm).
-* Fixed: Yamaha YSFC output needs to be fixed to 44.1kHz (includes up-sampling).
+* Ableton Sampler
+  * New: Read/write of round-robin setting (requires Ableton 12).
+  * New: Add a creator option to either write files for Ableton 11 or Ableton 12.
+  * New: Constant Power XF is set now to true (instead of linear crossfade).
+  * Fixed: Transposition was off by 1 octave when writing.
+* EXS24
+  * Fixed: Group volume was not decoded correctly.
+* Yamaha YSFC
+  * Fixed: Samples need to be fixed to 44.1kHz (includes up-sampling).
 
 ## 17.0.0
 

@@ -46,6 +46,10 @@ public class AbletonTag
     public static final String TAG_SAMPLE_PARTS            = "SampleParts";
     /** The Multi-Sample Parts tag. */
     public static final String TAG_MULTI_SAMPLE_PART       = "MultiSamplePart";
+    /** The Round-Robin tag. */
+    public static final String TAG_ROUND_ROBIN_ENABLE      = "RoundRobin";
+    /** The Round-Robin mode tag. */
+    public static final String TAG_ROUND_ROBIN_MODE        = "RoundRobinMode";
 
     /** The name of the sample zone. */
     public static final String TAG_NAME                    = "Name";
