@@ -872,6 +872,27 @@ public class StreamUtils
 
 
     /**
+     * Reads all ASCII characters up to the given stop byte.
+     * 
+     * @param buffer The buffer to read from
+     * @param stopByte The byte to stop at
+     * @return The read ASCII text
+     */
+    public static String readASCII (final ByteBuffer buffer, final byte stopByte)
+    {
+        final StringBuilder sb = new StringBuilder ();
+        while (buffer.hasRemaining ())
+        {
+            final byte b = buffer.get ();
+            if (b == stopByte)
+                break;
+            sb.append ((char) b);
+        }
+        return sb.toString ();
+    }
+
+
+    /**
      * Writes an ASCII text to an output stream. If it is shorter than the given length it is
      * appended with zeroes.
      *
@@ -1222,6 +1243,24 @@ public class StreamUtils
         if (fileAccess.read (buffer) != numBytes)
             throw new IOException (Functions.getMessage ("IDS_ERR_FILE_CORRUPTED"));
         return buffer;
+    }
+
+
+    /**
+     * Read exactly N bytes.
+     *
+     * @param buffer The buffer to read from
+     * @param offset The offset from which to start reading
+     * @param numBytes The number of bytes to read
+     * @return The read bytes
+     * @throws IOException Could not read the bytes
+     */
+    public static byte [] readNBytes (final ByteBuffer buffer, final int offset, final int numBytes) throws IOException
+    {
+        buffer.position (offset);
+        final byte [] data = new byte [numBytes];
+        buffer.get (data);
+        return data;
     }
 
 
