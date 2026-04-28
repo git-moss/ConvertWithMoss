@@ -144,7 +144,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
         if (presetVersion != 0x14)
             this.notifier.logError ("IDS_DEX_UNKNOWN_PRESET_VERSION", Integer.toString (presetVersion));
 
-        final String name = StreamUtils.readASCII (in, 16).trim ();
+        final String name = StreamUtils.readAscii (in, 16).trim ();
 
         // Unknown
         StreamUtils.readSigned32 (in, false);
@@ -313,7 +313,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static File [] getWavFiles (final File parentPath, final InputStream in) throws IOException
     {
-        final String subPath = StreamUtils.readNullTerminatedASCIIMax (in, 21).trim ();
+        final String subPath = StreamUtils.readAsciiNullTerminatedMax (in, 21).trim ();
         final File sampleFolder = new File (parentPath, subPath);
         if (!sampleFolder.exists ())
             throw new IOException (Functions.getMessage ("IDS_DEX_NO_SAMPLE_FOLDER", sampleFolder.getCanonicalPath ()));

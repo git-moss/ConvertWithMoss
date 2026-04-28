@@ -177,7 +177,7 @@ public class FileList
         {
             // Drive letter ASCII
             case 0:
-                final String driveOld = StreamUtils.readASCII (in, 2).trim ();
+                final String driveOld = StreamUtils.readAscii (in, 2).trim ();
                 if (driveOld.isEmpty ())
                     buffer.append ("/");
                 else
@@ -186,7 +186,7 @@ public class FileList
 
             // Drive letter UTF-16
             case 1:
-                final String drive = StreamUtils.readWithLengthUTF16 (in);
+                final String drive = StreamUtils.readUtf16WithLength (in);
                 if (drive.isEmpty ())
                     buffer.append ("/");
                 else
@@ -195,7 +195,7 @@ public class FileList
 
             // Path segment
             case 2:
-                buffer.append (StreamUtils.readWithLengthUTF16 (in)).append ('/');
+                buffer.append (StreamUtils.readUtf16WithLength (in)).append ('/');
                 break;
 
             // Parent directory
@@ -205,7 +205,7 @@ public class FileList
 
             // File name
             case 4:
-                buffer.append (StreamUtils.readWithLengthUTF16 (in));
+                buffer.append (StreamUtils.readUtf16WithLength (in));
                 break;
 
             case 6:
@@ -214,12 +214,12 @@ public class FileList
 
             // NKX Filename
             case 8:
-                buffer.append (StreamUtils.readWithLengthUTF16 (in));
+                buffer.append (StreamUtils.readUtf16WithLength (in));
                 break;
 
             // NKM Filename
             case 9:
-                buffer.append (StreamUtils.readWithLengthUTF16 (in));
+                buffer.append (StreamUtils.readUtf16WithLength (in));
                 break;
 
             default:

@@ -44,6 +44,7 @@ import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExDetector;
+import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.mirage.MirageDetector;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Creator;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Detector;
@@ -130,6 +131,7 @@ public class ConverterBackend
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),
             new DistingExDetector (notifier),
+            new EnsoniqEpsAsrDetector (notifier),
             new MirageDetector (notifier),
             new IsoDetector (notifier),
             new KontaktDetector (notifier),
@@ -361,7 +363,7 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            //////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -378,7 +380,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            //////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)

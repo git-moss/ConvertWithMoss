@@ -45,7 +45,7 @@ public class AkaiS900Sample
     {
         this.compression = compression;
 
-        this.name = StreamUtils.readASCII (input, 10).trim ();
+        this.name = StreamUtils.readAscii (input, 10).trim ();
         // Padding
         input.skip (6);
         this.sampleLength = StreamUtils.readUnsigned32 (input, false);

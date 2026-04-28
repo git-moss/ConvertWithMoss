@@ -1,8 +1,9 @@
 # Changes
 
-## 17.1.0 (unreleased)
+## 17.1.0
 
 * Added support for reading Ensoniq Mirage disks (*.hfe, *.img, *.edm).
+* Added support for reading Ensoniq EPS/EPS16+/ASR-10 disks (*.hfe, *.img, *.gkh, *.ede, *.eda, *.efe).
 * Ableton Sampler
   * New: Read/write of round-robin setting (requires Ableton 12).
   * New: Add a creator option to either write files for Ableton 11 or Ableton 12.

@@ -205,9 +205,9 @@ public class Maschine1Format implements IMaschineFormat
         this.updateParameterSections ();
 
         // Write the header
-        StreamUtils.writeASCII (out, START_TAG_LITTLE_ENDIAN, START_TAG_LITTLE_ENDIAN.length ());
+        StreamUtils.writeAscii (out, START_TAG_LITTLE_ENDIAN, START_TAG_LITTLE_ENDIAN.length ());
         StreamUtils.writeUnsigned32 (out, 2, false);
-        StreamUtils.writeASCII (out, V1_SOUND_TAG, V1_SOUND_TAG.length ());
+        StreamUtils.writeAscii (out, V1_SOUND_TAG, V1_SOUND_TAG.length ());
         StreamUtils.padBytes (out, 11, 0);
 
         // So far we can only reflect it
@@ -226,7 +226,7 @@ public class Maschine1Format implements IMaschineFormat
      */
     private boolean readSoundData (final InputStream inputStream) throws IOException
     {
-        final String startTag = StreamUtils.readASCII (inputStream, 4);
+        final String startTag = StreamUtils.readAscii (inputStream, 4);
         this.isBigEndian = !Maschine1Format.START_TAG_LITTLE_ENDIAN.equals (startTag);
         if (this.isBigEndian && !Maschine1Format.START_TAG_BIG_ENDIAN.equals (startTag))
         {
@@ -241,7 +241,7 @@ public class Maschine1Format implements IMaschineFormat
             return false;
         }
 
-        if (!V1_SOUND_TAG.equals (StreamUtils.readASCII (inputStream, 48).trim ()))
+        if (!V1_SOUND_TAG.equals (StreamUtils.readAscii (inputStream, 48).trim ()))
         {
             this.notifier.logError ("IDS_NI_MASCHINE_NOT_A_V1_FILE");
             return false;
@@ -464,7 +464,7 @@ public class Maschine1Format implements IMaschineFormat
         try
         {
             // Note: There is a prefix of 03 00 00 00 00 which is removed by the trim!
-            final String xml = StreamUtils.readUTF8 (new ByteArrayInputStream (metaData)).trim ();
+            final String xml = StreamUtils.readUtf8 (new ByteArrayInputStream (metaData)).trim ();
             return new SoundinfoDocument (xml);
         }
         catch (final SAXException | IOException ex)
@@ -539,7 +539,7 @@ public class Maschine1Format implements IMaschineFormat
         DataSection currentSection = this.topSection;
         while (in.available () >= 16)
         {
-            final String id = StreamUtils.readASCII (in, 4, !isBigEndian);
+            final String id = StreamUtils.readAscii (in, 4, !isBigEndian);
             if (!V1_DATA_TAG.equals (id))
                 throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
 
@@ -571,9 +571,9 @@ public class Maschine1Format implements IMaschineFormat
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
 
         final DataSection section = new DataSection ();
-        section.name = StreamUtils.readASCII (in, 4, !isBigEndian);
+        section.name = StreamUtils.readAscii (in, 4, !isBigEndian);
         // Always 'none'
-        StreamUtils.readASCII (in, 4, !isBigEndian);
+        StreamUtils.readAscii (in, 4, !isBigEndian);
         final int size1 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         final int size2 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         if (size1 != size2 || size1 < 0 || size1 > in.available ())
@@ -710,10 +710,10 @@ public class Maschine1Format implements IMaschineFormat
 
         while (in.available () >= 4)
         {
-            final String tag1 = StreamUtils.readASCII (in, 4, !isBigEndian);
+            final String tag1 = StreamUtils.readAscii (in, 4, !isBigEndian);
             if (StringUtils.isLowerCase (tag1))
             {
-                final String tag2 = StreamUtils.readASCII (in, 4, !isBigEndian);
+                final String tag2 = StreamUtils.readAscii (in, 4, !isBigEndian);
                 if (tag1.equals (tag2))
                 {
                     // Version 0-3 for GZN
@@ -735,7 +735,7 @@ public class Maschine1Format implements IMaschineFormat
                         throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
 
                     // This is a parameter
-                    final String tag3 = StreamUtils.readASCII (in, 4, !isBigEndian);
+                    final String tag3 = StreamUtils.readAscii (in, 4, !isBigEndian);
                     if (!"vt  ".equals (tag3))
                         throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
 
@@ -787,7 +787,7 @@ public class Maschine1Format implements IMaschineFormat
         {
             // UTF-16LE string
             case 0:
-                parameter.textValue = StreamUtils.readWithLengthUTF16 (in, isBigEndian);
+                parameter.textValue = StreamUtils.readUtf16WithLength (in, isBigEndian);
                 break;
 
             // float32
@@ -1025,7 +1025,7 @@ public class Maschine1Format implements IMaschineFormat
             writeDataHeader (out, child.name, size);
             out.write (child.data);
             if (!isXML)
-                StreamUtils.writeASCII (out, child.name.toUpperCase (), 4, true);
+                StreamUtils.writeAscii (out, child.name.toUpperCase (), 4, true);
             this.writeDataSections (out, child.children);
             writeClosingDataSection (out, child);
         }
@@ -1034,10 +1034,10 @@ public class Maschine1Format implements IMaschineFormat
 
     private static void writeDataHeader (final OutputStream out, final String sectionName, final int size) throws IOException
     {
-        StreamUtils.writeASCII (out, V1_DATA_TAG, 4, true);
+        StreamUtils.writeAscii (out, V1_DATA_TAG, 4, true);
         StreamUtils.writeUnsigned32 (out, 2, false);
-        StreamUtils.writeASCII (out, sectionName, 4, true);
-        StreamUtils.writeASCII (out, "none", 4, true);
+        StreamUtils.writeAscii (out, sectionName, 4, true);
+        StreamUtils.writeAscii (out, "none", 4, true);
         StreamUtils.writeUnsigned32 (out, size, false);
         StreamUtils.writeUnsigned32 (out, size, false);
     }
@@ -1068,8 +1068,8 @@ public class Maschine1Format implements IMaschineFormat
         {
             final DataTag child = childTags.get (i);
 
-            StreamUtils.writeASCII (out, child.name, 4, true);
-            StreamUtils.writeASCII (out, child.name, 4, true);
+            StreamUtils.writeAscii (out, child.name, 4, true);
+            StreamUtils.writeAscii (out, child.name, 4, true);
 
             // Version depends on the main version
             int subVersion = 0;
@@ -1089,7 +1089,7 @@ public class Maschine1Format implements IMaschineFormat
                 this.writeChildTags (out, child.children);
 
             if (!NO_CLOSING_TAG.contains (child.name))
-                StreamUtils.writeASCII (out, child.name.toUpperCase (), 4, true);
+                StreamUtils.writeAscii (out, child.name.toUpperCase (), 4, true);
         }
     }
 
@@ -1103,9 +1103,9 @@ public class Maschine1Format implements IMaschineFormat
      */
     private static void writeParameter (final OutputStream out, final DataParameter parameter) throws IOException
     {
-        StreamUtils.writeASCII (out, parameter.name, 4, true);
-        StreamUtils.writeASCII (out, "vt  ", 4, true);
-        StreamUtils.writeASCII (out, "vt  ", 4, true);
+        StreamUtils.writeAscii (out, parameter.name, 4, true);
+        StreamUtils.writeAscii (out, "vt  ", 4, true);
+        StreamUtils.writeAscii (out, "vt  ", 4, true);
         StreamUtils.writeUnsigned32 (out, 0, false);
         out.write (1);
 
@@ -1115,7 +1115,7 @@ public class Maschine1Format implements IMaschineFormat
         {
             // UTF-16LE string
             case 0:
-                StreamUtils.writeWithLengthUTF16 (out, parameter.textValue);
+                StreamUtils.writeUtf16WithLength (out, parameter.textValue);
                 break;
 
             // float32

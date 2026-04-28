@@ -133,7 +133,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
         try (final FileInputStream in = new FileInputStream (sourceFile))
         {
-            final String content = StreamUtils.readUTF8 (in);
+            final String content = StreamUtils.readUtf8 (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parsePresetFile (sourceFile, sourceFile.getParent (), document);
         }
@@ -154,7 +154,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
         try (final FileInputStream in = new FileInputStream (sourceFile))
         {
-            final String content = StreamUtils.readUTF8 (in);
+            final String content = StreamUtils.readUtf8 (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parsePerformanceFile (sourceFile, sourceFile.getParent (), document);
         }

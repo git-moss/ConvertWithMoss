@@ -881,13 +881,13 @@ public class MaschinePresetAccessor
         // Unknown
         soundInfoIn.skipNBytes (11);
 
-        final String soundName = StreamUtils.readWithLengthUTF16 (soundInfoIn);
+        final String soundName = StreamUtils.readUtf16WithLength (soundInfoIn);
         if (!soundName.isBlank () && !"Sampler".equals (soundName))
             multisampleSource.setName (soundName);
-        final String soundAuthor = StreamUtils.readWithLengthUTF16 (soundInfoIn);
+        final String soundAuthor = StreamUtils.readUtf16WithLength (soundInfoIn);
         if (!soundAuthor.isBlank ())
             metadata.setCreator (soundAuthor);
-        final String soundCompany = StreamUtils.readWithLengthUTF16 (soundInfoIn);
+        final String soundCompany = StreamUtils.readUtf16WithLength (soundInfoIn);
         if (!soundCompany.isBlank ())
             metadata.setDescription (soundCompany);
 
@@ -908,7 +908,7 @@ public class MaschinePresetAccessor
         final int numLibraryInfo = (int) StreamUtils.readUnsigned32 (soundInfoIn, false);
         final List<String> libraryInfo = new ArrayList<> ();
         for (int i = 0; i < numLibraryInfo; i++)
-            libraryInfo.add (StreamUtils.readWithLengthUTF16 (soundInfoIn));
+            libraryInfo.add (StreamUtils.readUtf16WithLength (soundInfoIn));
 
         // Categories
         final int numCategoryPath = (int) StreamUtils.readUnsigned32 (soundInfoIn, false);
@@ -916,7 +916,7 @@ public class MaschinePresetAccessor
         String categoryPart = "";
         // We only use the last one which contains the full sub-categories path
         for (int i = 0; i < numCategoryPath; i++)
-            categoryPart = StreamUtils.readWithLengthUTF16 (soundInfoIn);
+            categoryPart = StreamUtils.readUtf16WithLength (soundInfoIn);
         final String [] categoryParts = categoryPart.split ("\\\\:");
         for (int i = categoryParts.length - 1; i >= 0; i--)
             if (!categoryParts[i].isBlank ())
@@ -934,8 +934,8 @@ public class MaschinePresetAccessor
         final Map<String, String> attributes = new HashMap<> ();
         for (int i = 0; i < numAttributes; i++)
         {
-            final String name = StreamUtils.readWithLengthUTF16 (soundInfoIn);
-            final String value = StreamUtils.readWithLengthUTF16 (soundInfoIn);
+            final String name = StreamUtils.readUtf16WithLength (soundInfoIn);
+            final String value = StreamUtils.readUtf16WithLength (soundInfoIn);
             attributes.put (name, value);
         }
     }

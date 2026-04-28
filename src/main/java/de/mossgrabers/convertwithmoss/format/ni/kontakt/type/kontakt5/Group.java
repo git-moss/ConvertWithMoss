@@ -54,7 +54,7 @@ public class Group
 
         final ByteArrayInputStream in = new ByteArrayInputStream (groupChunk.getPublicData ());
 
-        this.name = StreamUtils.readWithLengthUTF16 (in);
+        this.name = StreamUtils.readUtf16WithLength (in);
         this.volume = StreamUtils.readFloatLE (in);
         this.pan = StreamUtils.readFloatLE (in);
         this.tune = StreamUtils.readFloatLE (in);
@@ -139,7 +139,7 @@ public class Group
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
-        StreamUtils.writeWithLengthUTF16 (out, this.name);
+        StreamUtils.writeUtf16WithLength (out, this.name);
         StreamUtils.writeFloatLE (out, this.volume);
         StreamUtils.writeFloatLE (out, this.pan);
         StreamUtils.writeFloatLE (out, this.tune);

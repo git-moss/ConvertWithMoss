@@ -108,11 +108,11 @@ class EXS24Block
         // Flags -> Found: 03 (on a group), 64 (instrument), 2, 3, 2147483650 (zone), 2 (sample)
         StreamUtils.readUnsigned32 (in, this.isBigEndian);
 
-        final String magic = StreamUtils.readASCII (in, 4);
+        final String magic = StreamUtils.readAscii (in, 4);
         if (!(this.isBigEndian ? BIG_ENDIAN_MAGIC_BYTES : LITTLE_ENDIAN_MAGIC_BYTES).contains (magic))
             throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_MAGIC", magic));
 
-        this.name = StringUtils.removeCharactersAfterZero (StreamUtils.readASCII (in, 64));
+        this.name = StringUtils.removeCharactersAfterZero (StreamUtils.readAscii (in, 64));
 
         this.content = in.readNBytes (size);
     }
@@ -134,8 +134,8 @@ class EXS24Block
         StreamUtils.writeUnsigned32 (out, this.content.length, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, this.index, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, 0, this.isBigEndian);
-        StreamUtils.writeASCII (out, this.isBigEndian ? BIG_ENDIAN_MAGIC : LITTLE_ENDIAN_MAGIC, 4);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 64);
+        StreamUtils.writeAscii (out, this.isBigEndian ? BIG_ENDIAN_MAGIC : LITTLE_ENDIAN_MAGIC, 4);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (this.name), 64);
         out.write (this.content);
     }
 }

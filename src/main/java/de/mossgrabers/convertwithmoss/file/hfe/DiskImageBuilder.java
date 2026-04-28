@@ -16,7 +16,7 @@ import java.util.List;
 public class DiskImageBuilder
 {
     /**
-     * Build IMG file data from sectors with specified geometry.
+     * Build IMG file data from sectors (1-based) with specified geometry.
      *
      * @param sectors List of sectors (will be sorted)
      * @param numCylinders Number of cylinders
@@ -27,6 +27,23 @@ public class DiskImageBuilder
      */
     public static byte [] buildImage (final List<Sector> sectors, final int numCylinders, final int numHeads, final int sectorsPerTrack, final int bytesPerSector)
     {
+        return buildImage (sectors, numCylinders, numHeads, sectorsPerTrack, bytesPerSector, false);
+    }
+
+
+    /**
+     * Build IMG file data from sectors with specified geometry.
+     *
+     * @param sectors List of sectors (will be sorted)
+     * @param numCylinders Number of cylinders
+     * @param numHeads Number of heads
+     * @param sectorsPerTrack Sectors per track
+     * @param bytesPerSector Bytes per sector
+     * @param sectorIsZeroBased True if the first sector starts at 0 otherwise at 1
+     * @return The IMG file data
+     */
+    public static byte [] buildImage (final List<Sector> sectors, final int numCylinders, final int numHeads, final int sectorsPerTrack, final int bytesPerSector, final boolean sectorIsZeroBased)
+    {
         // Sort sectors by cylinder, head, sector number
         Collections.sort (sectors);
 
@@ -35,10 +52,19 @@ public class DiskImageBuilder
         // Place sectors in image
         for (final Sector sector: sectors)
         {
-            final int lba = calculateLBA (sector.getCylinder (), sector.getHead (), sector.getSectorNumber (), numHeads, sectorsPerTrack);
+            final int lba = calculateLBA (sector.getCylinder (), sector.getHead (), sector.getSectorNumber (), numHeads, sectorsPerTrack, sectorIsZeroBased);
             final int offset = lba * bytesPerSector;
             if (offset + bytesPerSector <= image.length && sector.getData ().length == bytesPerSector)
-                System.arraycopy (sector.getData (), 0, image, offset, bytesPerSector);
+            {
+                try
+                {
+                    System.arraycopy (sector.getData (), 0, image, offset, bytesPerSector);
+                }
+                catch (ArrayIndexOutOfBoundsException ex)
+                {
+                    ex.printStackTrace ();
+                }
+            }
         }
 
         return image;
@@ -70,10 +96,12 @@ public class DiskImageBuilder
      * @param sector The sector
      * @param numHeads The number of heads
      * @param sectorsPerTrack The sectors per track
+     * @param sectorIsZeroBased True if the first sector starts at 0 otherwise at 1
      * @return The calculated LBA
      */
-    private static int calculateLBA (final int cylinder, final int head, final int sector, final int numHeads, final int sectorsPerTrack)
+    private static int calculateLBA (final int cylinder, final int head, final int sector, final int numHeads, final int sectorsPerTrack, final boolean sectorIsZeroBased)
     {
-        return (cylinder * numHeads + head) * sectorsPerTrack + sector - 1;
+        final int lba = (cylinder * numHeads + head) * sectorsPerTrack + sector;
+        return sectorIsZeroBased ? lba : lba - 1;
     }
 }

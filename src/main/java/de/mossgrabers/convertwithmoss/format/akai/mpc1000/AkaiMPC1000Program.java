@@ -42,7 +42,7 @@ public class AkaiMPC1000Program
         // 2 bytes file size and 2 bytes padding
         input.skipNBytes (4);
 
-        final String magic = StreamUtils.readASCII (input, 16);
+        final String magic = StreamUtils.readAscii (input, 16);
         if (!MAGIC.equals (magic))
             throw new IOException (Functions.getMessage ("IDS_MPC1000_UNKNOWN_FILE"));
 

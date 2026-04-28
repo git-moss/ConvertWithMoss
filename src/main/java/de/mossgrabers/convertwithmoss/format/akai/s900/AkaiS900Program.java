@@ -40,7 +40,7 @@ public class AkaiS900Program
      */
     public AkaiS900Program (final InputStream input) throws IOException
     {
-        this.name = StreamUtils.readASCII (input, 10).trim ();
+        this.name = StreamUtils.readAscii (input, 10).trim ();
 
         // Padding
         input.skip (6);

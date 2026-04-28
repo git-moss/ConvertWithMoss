@@ -41,7 +41,7 @@ public class AkaiS900DirectoryEntry
         if (randomAccessFile.length () - randomAccessFile.getFilePointer () < 24)
             throw new IOException (Functions.getMessage ("IDS_S900_UNSOUND_FILE", "File too short."));
 
-        this.name = StreamUtils.readASCII (randomAccessFile, 10).trim ();
+        this.name = StreamUtils.readAscii (randomAccessFile, 10).trim ();
 
         // Padding
         randomAccessFile.skipBytes (6);

@@ -538,9 +538,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     {
         StreamUtils.writeUnsigned32 (out, WaldorfQpatConstants.MAGIC, false);
         StreamUtils.writeUnsigned32 (out, PRESET_VERSION, false);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (name), WaldorfQpatConstants.MAX_STRING_LENGTH);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (metadata.getCreator ()), WaldorfQpatConstants.MAX_STRING_LENGTH);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (metadata.getDescription ()).replace ('\r', ' ').replace ('\n', ' '), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (name), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (metadata.getCreator ()), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (metadata.getDescription ()).replace ('\r', ' ').replace ('\n', ' '), WaldorfQpatConstants.MAX_STRING_LENGTH);
 
         final List<String> categories = new ArrayList<> ();
         categories.add (metadata.getCategory ());
@@ -548,7 +548,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         while (categories.size () < 4)
             categories.add ("");
         for (int i = 0; i < 4; i++)
-            StreamUtils.writeASCII (out, StringUtils.fixASCII (categories.get (i)), WaldorfQpatConstants.MAX_STRING_LENGTH);
+            StreamUtils.writeAscii (out, StringUtils.fixASCII (categories.get (i)), WaldorfQpatConstants.MAX_STRING_LENGTH);
     }
 
 

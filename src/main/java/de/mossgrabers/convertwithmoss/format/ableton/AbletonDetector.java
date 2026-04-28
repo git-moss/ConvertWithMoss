@@ -90,7 +90,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     {
         try (final InputStream in = new GZIPInputStream (new FileInputStream (file)))
         {
-            final String multiSampleFileContent = StreamUtils.readUTF8 (in);
+            final String multiSampleFileContent = StreamUtils.readUtf8 (in);
             return this.readMetadataFile (file, multiSampleFileContent);
         }
         catch (final IOException ex)

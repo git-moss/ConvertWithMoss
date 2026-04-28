@@ -47,6 +47,7 @@ The following multi-sample formats are supported:
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
+* [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [ISO/IMG Files](#isoimg-files)
@@ -246,6 +247,19 @@ There are two issues with amplitude envelopes:
 Bliss is a multi-platform (Windows, MacOS & Linux) sampler by discoDSP (https://www.discodsp.com/bliss/).
 It provides support for multi-samples and a bank system (containing up to 128 patches).
 Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipped) with a XML description file and all samples. The samples are stored in FLAC format (16/24 bit). The full format specification is available here: https://github.com/reales/bliss-format.
+
+## Ensoniq EPS/EPS16+/ASR-10
+
+The Ensoniq EPS, Ensoniq EPS16+, and Ensoniq ASR-10 were influential hardware samplers from the late 1980s and 1990s, known for their distinctive sound, practical workflow, and integrated sequencing features. The EPS made professional sampling more accessible, while the EPS16+ added effects processing and stereo audio routing. The ASR-10 extended the series with greater processing power, improved editing, and expanded performance capabilities.
+
+The file format is more or less identical on the 3 models with the additions of the added parameters of the later models (all files can be exchanged between the models). However, there are plenty of different storage formats which contain the actual instrument files:
+
+* HFE, GKH, EDE, EDA: These formats contain the data of a full diskette with some additional metadata.
+* IMG: The raw data of a diskette without any addition information.
+* ISO: FAT file system which can contain many EPS/ASR files.
+* EFE: This format contains exactly 1 EPS/ASR file with additional metadata.
+
+ConvertWithMoss can read them all but writing is not supported.
 
 ## Ensoniq Mirage
 

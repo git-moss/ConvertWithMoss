@@ -118,7 +118,7 @@ public class ExternalModulator
         try
         {
             @SuppressWarnings("unused")
-            final String destinationDesc = StreamUtils.readWith4ByteLengthAscii (in);
+            final String destinationDesc = StreamUtils.readAsciiWith4ByteLength (in);
             // System.out.println ("Destination Desc:" + destinationDesc);
         }
         catch (final IOException _)
@@ -147,7 +147,7 @@ public class ExternalModulator
         final String modDescription;
         try
         {
-            modDescription = StreamUtils.readWith4ByteLengthAscii (in);
+            modDescription = StreamUtils.readAsciiWith4ByteLength (in);
             // System.out.println ("Mod. Description: " + modDescription);
         }
         catch (final IOException _)
@@ -171,7 +171,7 @@ public class ExternalModulator
         try
         {
             @SuppressWarnings("unused")
-            final String description = StreamUtils.readWith4ByteLengthAscii (in);
+            final String description = StreamUtils.readAsciiWith4ByteLength (in);
             // System.out.println ("Description: " + description);
         }
         catch (final IOException _)

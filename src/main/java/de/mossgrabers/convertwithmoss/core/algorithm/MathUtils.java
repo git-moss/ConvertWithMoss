@@ -24,6 +24,38 @@ public class MathUtils
 
 
     /**
+     * Test a bit in an integer.
+     * 
+     * @param value The value to test
+     * @param bitIndex The index of the bit to test
+     * @return True if the bit is set
+     */
+    public static boolean isBitSet (final int value, final int bitIndex)
+    {
+        return (value & (1 << bitIndex)) != 0;
+    }
+
+
+    /**
+     * Clears all bits from bitIndex (inclusive) up to bit 7 (MSB).
+     *
+     * @param value The input byte as an integer
+     * @param bitIndex The bit position to start clearing from (0–7), 8 simply returns the value
+     * @return The clipped byte
+     */
+    public static int clearBitsFrom (final int value, final int bitIndex)
+    {
+        if (bitIndex == 8)
+            return value;
+        if (bitIndex < 0 || bitIndex > 7)
+            throw new IllegalArgumentException ("bitIndex must be in range 0–7");
+
+        final int mask = (1 << bitIndex) - 1;
+        return value & mask;
+    }
+
+
+    /**
      * Converts a signed integer into a two complement short value.
      *
      * @param value The signed integer

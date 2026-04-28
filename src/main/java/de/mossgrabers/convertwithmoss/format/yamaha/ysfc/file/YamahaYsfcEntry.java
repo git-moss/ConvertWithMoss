@@ -111,11 +111,11 @@ public class YamahaYsfcEntry
             }
         }
 
-        this.itemName = StreamUtils.readNullTerminatedASCII (contentStream);
+        this.itemName = StreamUtils.readAsciiNullTerminated (contentStream);
 
         if (contentStream.available () > 0)
         {
-            this.itemTitle = StreamUtils.readNullTerminatedASCII (contentStream);
+            this.itemTitle = StreamUtils.readAsciiNullTerminated (contentStream);
 
             // 32-bit program numbers of non-preset waveforms - only used by the performance
             this.additionalData = contentStream.readAllBytes ();
@@ -179,8 +179,8 @@ public class YamahaYsfcEntry
             }
         }
 
-        StreamUtils.writeNullTerminatedASCII (contentStream, this.itemName);
-        StreamUtils.writeNullTerminatedASCII (contentStream, this.itemTitle);
+        StreamUtils.writeAsciiNullTerminated (contentStream, this.itemName);
+        StreamUtils.writeAsciiNullTerminated (contentStream, this.itemTitle);
 
         // Optional additional data - type specific, only used by EPFM
         contentStream.write (this.additionalData);

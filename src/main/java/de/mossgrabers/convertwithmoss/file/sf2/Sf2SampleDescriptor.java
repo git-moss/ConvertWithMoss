@@ -112,7 +112,7 @@ public class Sf2SampleDescriptor
      */
     public void writeHeader (final ByteArrayOutputStream out) throws IOException
     {
-        StreamUtils.writeASCII (out, StringUtils.optimizeName (StringUtils.fixASCII (this.name), 20), 20);
+        StreamUtils.writeAscii (out, StringUtils.optimizeName (StringUtils.fixASCII (this.name), 20), 20);
         StreamUtils.writeUnsigned32 (out, this.start, false);
         StreamUtils.writeUnsigned32 (out, this.end, false);
         StreamUtils.writeUnsigned32 (out, this.startLoop, false);
@@ -133,7 +133,7 @@ public class Sf2SampleDescriptor
      */
     public static void writeLastHeader (final ByteArrayOutputStream out) throws IOException
     {
-        StreamUtils.writeASCII (out, "EOS", 20);
+        StreamUtils.writeAscii (out, "EOS", 20);
         StreamUtils.writeUnsigned32 (out, 0, false);
         StreamUtils.writeUnsigned32 (out, 0, false);
         StreamUtils.writeUnsigned32 (out, 0, false);

@@ -61,7 +61,7 @@ public class AiffMarkerChunk extends AiffChunk
                 final AiffMarker marker = new AiffMarker ();
                 final int markerID = StreamUtils.readUnsigned16 (in, true);
                 marker.position = StreamUtils.readUnsigned32 (in, true);
-                marker.name = StreamUtils.readWith1ByteLengthAscii (in);
+                marker.name = StreamUtils.readAsciiWith1ByteLength (in);
                 if ((marker.name.length () + 1) % 2 == 1)
                     in.skipNBytes (1);
                 this.markers.put (Integer.valueOf (markerID), marker);

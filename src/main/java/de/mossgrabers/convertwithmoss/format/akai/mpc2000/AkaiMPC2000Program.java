@@ -49,7 +49,7 @@ public class AkaiMPC2000Program
         final int numSamples = isMPC3000 ? 64 : StreamUtils.readUnsigned16 (input, false);
         for (int i = 0; i < numSamples; i++)
         {
-            final String ascii = StreamUtils.readASCII (input, 16);
+            final String ascii = StreamUtils.readAscii (input, 16);
             this.sampleNames.add (ascii.charAt (0) == 0 ? "" : ascii.trim ());
             input.skipNBytes (1);
         }
@@ -66,7 +66,7 @@ public class AkaiMPC2000Program
             expectPadding (input);
         }
 
-        this.programName = StreamUtils.readASCII (input, 16).trim ();
+        this.programName = StreamUtils.readAscii (input, 16).trim ();
 
         expectPadding (input);
 

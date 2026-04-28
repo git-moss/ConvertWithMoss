@@ -209,7 +209,7 @@ public class AkaiS900Keygroup
          */
         public KeygroupLayer (final InputStream input) throws IOException
         {
-            this.sample = StreamUtils.readASCII (input, 10).trim ();
+            this.sample = StreamUtils.readAscii (input, 10).trim ();
             // Padding
             input.skip (6);
             this.sampleHeaderAddress = StreamUtils.readUnsigned16 (input, false);

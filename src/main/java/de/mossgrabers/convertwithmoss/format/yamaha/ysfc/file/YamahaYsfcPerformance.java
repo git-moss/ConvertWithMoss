@@ -136,7 +136,7 @@ public class YamahaYsfcPerformance implements IStreamable
 
     private void readCommon (final InputStream in) throws IOException
     {
-        this.name = StreamUtils.readASCII (in, 21).trim ();
+        this.name = StreamUtils.readAscii (in, 21).trim ();
         final int pos = this.name.indexOf (0);
         if (pos >= 0)
             this.name = this.name.substring (0, pos);
@@ -152,7 +152,7 @@ public class YamahaYsfcPerformance implements IStreamable
 
         // Assignable Knob 1-8
         for (int i = 0; i < 8; i++)
-            this.assignableKnobs[i] = StreamUtils.readASCII (in, 17).trim ();
+            this.assignableKnobs[i] = StreamUtils.readAscii (in, 17).trim ();
 
         // Control Box 1-16
         this.controlBoxes = in.readNBytes (16 * 9);
@@ -232,14 +232,14 @@ public class YamahaYsfcPerformance implements IStreamable
     {
         final ByteArrayOutputStream arrayOut = new ByteArrayOutputStream ();
 
-        StreamUtils.writeASCII (arrayOut, StringUtils.optimizeName (this.name, 20), 21);
+        StreamUtils.writeAscii (arrayOut, StringUtils.optimizeName (this.name, 20), 21);
 
         arrayOut.write (this.commonParameters);
         arrayOut.write (this.sceneData);
 
         // Assignable Knob 1-8
         for (int i = 0; i < 8; i++)
-            StreamUtils.writeASCII (arrayOut, StringUtils.rightPadSpaces (StringUtils.optimizeName (this.assignableKnobs[i], 16), 16), 17);
+            StreamUtils.writeAscii (arrayOut, StringUtils.rightPadSpaces (StringUtils.optimizeName (this.assignableKnobs[i], 16), 16), 17);
 
         // Control Box 1-16
         arrayOut.write (this.controlBoxes);
