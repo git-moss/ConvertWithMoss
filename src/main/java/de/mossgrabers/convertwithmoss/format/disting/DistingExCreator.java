@@ -116,7 +116,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
     {
         try (final OutputStream out = new FileOutputStream (multiFile))
         {
-            StreamUtils.writeASCII (out, "DEXBPRST", 8);
+            StreamUtils.writeAscii (out, "DEXBPRST", 8);
 
             // Version
             StreamUtils.writeSigned32 (out, 1, false);
@@ -128,7 +128,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
             StreamUtils.writeSigned32 (out, 0x14, false);
 
             final String name = StringUtils.rightPadSpaces (StringUtils.optimizeName (StringUtils.fixASCII (multisampleSource.getName ()), 16), 16);
-            StreamUtils.writeASCII (out, name, 16);
+            StreamUtils.writeAscii (out, name, 16);
 
             // Unknown
             StreamUtils.writeSigned32 (out, 0, false);
@@ -184,7 +184,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
 
             // Weird workaround for the issue that the string contains 0xFF after the null byte
             final ByteArrayOutputStream byteOut = new ByteArrayOutputStream ();
-            StreamUtils.writeASCII (byteOut, safeSampleFolderName, 21);
+            StreamUtils.writeAscii (byteOut, safeSampleFolderName, 21);
             final byte [] byteArray = byteOut.toByteArray ();
             boolean makeFF = false;
             for (int i = 0; i < byteArray.length; i++)

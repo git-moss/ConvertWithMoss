@@ -304,7 +304,7 @@ public class InternalModulator
         for (int i = 0; i < count; i++)
         {
             final ModulatedParameter modulatedParameter = new ModulatedParameter ();
-            modulatedParameter.parameterName = StreamUtils.readWith4ByteLengthAscii (in);
+            modulatedParameter.parameterName = StreamUtils.readAsciiWith4ByteLength (in);
             modulatedParameter.intensity = StreamUtils.readFloatLE (in);
 
             if (StreamUtils.readUnsigned16 (in, false) != 0xFFFF)
@@ -318,7 +318,7 @@ public class InternalModulator
                 in.readNBytes (5);
             else
             {
-                modulatedParameter.modulatorDescription = StreamUtils.readWith4ByteLengthAscii (in);
+                modulatedParameter.modulatorDescription = StreamUtils.readAsciiWith4ByteLength (in);
 
                 // This is a brute force solution but does work in 99.9%
                 // It is not a padding but unclear when these 0-2 bytes appear and when not
@@ -377,7 +377,7 @@ public class InternalModulator
             in.read ();
             StreamUtils.readUnsigned32 (in, false);
 
-            this.modulatorSourceName = StreamUtils.readWith4ByteLengthAscii (in);
+            this.modulatorSourceName = StreamUtils.readAsciiWith4ByteLength (in);
             this.modulationSourceIndex = (int) StreamUtils.readUnsigned32 (in, false);
         }
         catch (final IOException _)

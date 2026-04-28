@@ -171,7 +171,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         try (final InputStream in = zipFile.getInputStream (entry))
         {
-            final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
+            final String content = fixInvalidXML (StreamUtils.readUtf8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (presetFile), file, parent, true, document);
         }
@@ -206,7 +206,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
-            final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
+            final String content = fixInvalidXML (StreamUtils.readUtf8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (file), file, file.getParent (), false, document);
         }

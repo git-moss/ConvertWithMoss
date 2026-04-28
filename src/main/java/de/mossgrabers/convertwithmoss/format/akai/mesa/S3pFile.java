@@ -135,7 +135,7 @@ public class S3pFile
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
-            if (!MAGIC.equals (StreamUtils.readASCII (in, 8)))
+            if (!MAGIC.equals (StreamUtils.readAscii (in, 8)))
                 throw new IOException (Functions.getMessage ("IDS_S3P_NOT_A_S3P_FILE"));
 
             // Most likely the number of key-groups

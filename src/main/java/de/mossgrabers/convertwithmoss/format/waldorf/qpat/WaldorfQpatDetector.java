@@ -459,14 +459,14 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
         final long version = StreamUtils.readUnsigned32 (in, false);
 
-        final String name = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
-        final String author = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
-        final String bank = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+        final String name = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+        final String author = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+        final String bank = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
 
         final List<String> categories = new ArrayList<> ();
         for (int i = 0; i < 4; i++)
         {
-            final String category = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+            final String category = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
             if (!category.isBlank ())
                 categories.add (category);
         }

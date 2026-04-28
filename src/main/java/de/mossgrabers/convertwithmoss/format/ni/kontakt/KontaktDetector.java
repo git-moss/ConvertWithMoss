@@ -133,7 +133,7 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
 
         // Is this Kontakt 5+ container format?
         fileAccess.seek (12);
-        final String id = StreamUtils.readASCII (fileAccess, 4);
+        final String id = StreamUtils.readAscii (fileAccess, 4);
         if ("hsin".equals (id))
         {
             fileAccess.seek (0);

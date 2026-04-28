@@ -33,7 +33,7 @@ public class AkaiMPC1000Sample
      */
     public AkaiMPC1000Sample (final InputStream input) throws IOException
     {
-        this.name = StreamUtils.readASCII (input, 16).trim ();
+        this.name = StreamUtils.readAscii (input, 16).trim ();
 
         // Padding
         input.skipNBytes (1);

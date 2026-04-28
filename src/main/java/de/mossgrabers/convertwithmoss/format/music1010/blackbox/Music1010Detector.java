@@ -120,7 +120,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         try (final FileInputStream in = new FileInputStream (file))
         {
             // There is a null byte at the end of the file which gets dropped by trim
-            final String content = StreamUtils.readUTF8 (in).trim ();
+            final String content = StreamUtils.readUtf8 (in).trim ();
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (file, file.getParent (), document);
         }

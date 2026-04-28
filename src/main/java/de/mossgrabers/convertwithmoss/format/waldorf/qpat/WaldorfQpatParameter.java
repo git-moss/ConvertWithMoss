@@ -59,8 +59,8 @@ public class WaldorfQpatParameter
     public void read (final InputStream in) throws IOException
     {
         this.value = StreamUtils.readFloatLE (in);
-        this.name = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
-        this.hint = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+        this.name = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+        this.hint = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
     }
 
 
@@ -73,7 +73,7 @@ public class WaldorfQpatParameter
     public void write (final OutputStream out) throws IOException
     {
         StreamUtils.writeFloatLE (out, this.value);
-        StreamUtils.writeASCII (out, this.name, WaldorfQpatConstants.MAX_STRING_LENGTH);
-        StreamUtils.writeASCII (out, this.hint, WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeAscii (out, this.name, WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeAscii (out, this.hint, WaldorfQpatConstants.MAX_STRING_LENGTH);
     }
 }

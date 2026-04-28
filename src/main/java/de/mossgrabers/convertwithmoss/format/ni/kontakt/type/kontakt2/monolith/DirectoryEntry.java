@@ -55,7 +55,7 @@ public class DirectoryEntry
      */
     public String asWideString ()
     {
-        return StreamUtils.readUTF16 (this.content, this.isBigEndian);
+        return StreamUtils.readUtf16 (this.content, this.isBigEndian);
     }
 
 

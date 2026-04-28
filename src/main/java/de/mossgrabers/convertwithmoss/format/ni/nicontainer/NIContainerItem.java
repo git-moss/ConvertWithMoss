@@ -71,7 +71,7 @@ public class NIContainerItem
             throw new IOException (Functions.getMessage ("IDS_NKI5_ITEM_HEADER_VERSION", Integer.toString (headerVersion)));
 
         // Check for Native Instruments sound header
-        final String domainID = StreamUtils.readASCII (bin, 4);
+        final String domainID = StreamUtils.readAscii (bin, 4);
         if (!"hsin".equals (domainID))
             throw new IOException (Functions.getMessage ("IDS_NKI5_CORRUPTED_FILE_NO_HSIN"));
 
@@ -109,7 +109,7 @@ public class NIContainerItem
         final ByteArrayOutputStream bout = new ByteArrayOutputStream ();
 
         StreamUtils.writeUnsigned32 (bout, 1, false);
-        StreamUtils.writeASCII (bout, "hsin", 4);
+        StreamUtils.writeAscii (bout, "hsin", 4);
         StreamUtils.writeUnsigned32 (bout, 1, false);
         StreamUtils.writeUnsigned32 (bout, 0, false);
         bout.write (this.uuid);

@@ -177,7 +177,7 @@ public class Kontakt2Header
         this.patchType = StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
         this.kontaktVersion = this.readVersion (fileAccess, this.kontaktVersionBuffer);
 
-        this.libraryID = StreamUtils.readASCII (fileAccess, 4, !this.isBigEndian);
+        this.libraryID = StreamUtils.readAscii (fileAccess, 4, !this.isBigEndian);
         if (!KNOWN_LIBRARY_IDS.contains (this.libraryID))
             this.notifier.log ("IDS_NKI_UNKNOWN_BLOCK_ID", this.libraryID);
 
@@ -225,7 +225,7 @@ public class Kontakt2Header
 
         out.write (this.kontaktVersionBuffer);
 
-        StreamUtils.writeASCII (out, this.libraryID, 4, !this.isBigEndian);
+        StreamUtils.writeAscii (out, this.libraryID, 4, !this.isBigEndian);
         StreamUtils.writeTimestamp (out, this.creation, this.isBigEndian);
 
         // No idea yet about these 4 bytes...
@@ -287,13 +287,13 @@ public class Kontakt2Header
     private void readMetadata (final RandomAccessFile fileAccess) throws IOException
     {
         this.iconID = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-        this.author = StreamUtils.readASCII (fileAccess, 8, StandardCharsets.ISO_8859_1).trim ();
+        this.author = StreamUtils.readAscii (fileAccess, 8, StandardCharsets.ISO_8859_1).trim ();
 
         this.category1 = fileAccess.read ();
         this.category2 = fileAccess.read ();
         this.category3 = fileAccess.read ();
 
-        this.website = StreamUtils.readASCII (fileAccess, 86).trim ();
+        this.website = StreamUtils.readAscii (fileAccess, 86).trim ();
 
         // Padding
         StreamUtils.skipNBytes (fileAccess, 3);
@@ -303,12 +303,12 @@ public class Kontakt2Header
     private void writeMetadata (final OutputStream out) throws IOException
     {
         StreamUtils.writeUnsigned32 (out, this.iconID, this.isBigEndian);
-        StreamUtils.writeASCII (out, this.author, 8);
+        StreamUtils.writeAscii (out, this.author, 8);
 
         out.write (this.category1);
         out.write (this.category2);
         out.write (this.category3);
-        StreamUtils.writeASCII (out, this.website, 86);
+        StreamUtils.writeAscii (out, this.website, 86);
 
         // Padding?
         out.write (0);

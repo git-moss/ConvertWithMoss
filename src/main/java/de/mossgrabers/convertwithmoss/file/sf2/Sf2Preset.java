@@ -124,7 +124,7 @@ public class Sf2Preset extends AbstractGroupedZones<Sf2PresetZone>
      */
     public void writeHeader (final ByteArrayOutputStream out) throws IOException
     {
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 20);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (this.name), 20);
 
         StreamUtils.writeUnsigned16 (out, this.programNumber, false);
         StreamUtils.writeUnsigned16 (out, this.bankNumber, false);

@@ -222,7 +222,7 @@ public class AiffFile
                             // Ignore: MarkerID marker
                             in.skipNBytes (2);
                             final int length = StreamUtils.readUnsigned16 (in, true);
-                            final String comment = StreamUtils.readASCII (in, length).trim ();
+                            final String comment = StreamUtils.readAscii (in, length).trim ();
                             if (comment.length () % 2 == 1)
                                 in.skipNBytes (1);
                             if (!comment.isBlank ())

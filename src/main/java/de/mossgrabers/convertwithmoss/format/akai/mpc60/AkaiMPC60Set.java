@@ -101,7 +101,7 @@ public class AkaiMPC60Set
     {
         final AkaiMPC60Pad pad = new AkaiMPC60Pad ();
 
-        pad.name = StreamUtils.readASCII (input, 16);
+        pad.name = StreamUtils.readAscii (input, 16);
         input.skipNBytes (1); // 00
 
         // Found values in the range of [0..33]

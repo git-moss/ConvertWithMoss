@@ -128,7 +128,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
-            final String content = StreamUtils.readUTF8 (in);
+            final String content = StreamUtils.readUtf8 (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseXMLFile (file, basePath, document);
         }

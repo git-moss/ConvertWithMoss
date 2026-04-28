@@ -36,7 +36,7 @@ public class NIContainerChildItem
         // The index of the child
         this.childIndex = StreamUtils.readUnsigned32 (in, false);
 
-        this.domainID = StreamUtils.readASCII (in, 4);
+        this.domainID = StreamUtils.readAscii (in, 4);
         this.chunkTypeID = (int) StreamUtils.readUnsigned32 (in, false);
 
         this.item.read (in);
@@ -53,7 +53,7 @@ public class NIContainerChildItem
     {
         StreamUtils.writeUnsigned32 (out, this.childIndex, false);
 
-        StreamUtils.writeASCII (out, this.domainID, 4);
+        StreamUtils.writeAscii (out, this.domainID, 4);
         StreamUtils.writeUnsigned32 (out, this.chunkTypeID, false);
 
         this.item.write (out);

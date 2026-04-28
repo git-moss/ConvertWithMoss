@@ -85,7 +85,7 @@ public class Bank
         // The master tempo
         StreamUtils.readUnsigned32 (in, false);
 
-        this.name = StreamUtils.readWithLengthUTF16 (in);
+        this.name = StreamUtils.readUtf16WithLength (in);
     }
 
 

@@ -41,7 +41,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
         // Always 1
         this.unknown = (int) StreamUtils.readUnsigned32 (in, false);
 
-        this.applicationVersion = StreamUtils.readWithLengthUTF16 (in);
+        this.applicationVersion = StreamUtils.readUtf16WithLength (in);
 
         if (in.available () > 0)
             throw new IOException (Functions.getMessage ("IDS_NKI5_UNKNOWN_DATA", "Authoring Application"));
@@ -57,7 +57,7 @@ public class AuthoringApplicationChunkData extends AbstractChunkData
         out.write (this.isCompressed ? 1 : 0);
         StreamUtils.writeUnsigned32 (out, this.application.getID (), false);
         StreamUtils.writeUnsigned32 (out, this.unknown, false);
-        StreamUtils.writeWithLengthUTF16 (out, this.applicationVersion);
+        StreamUtils.writeUtf16WithLength (out, this.applicationVersion);
     }
 
 

@@ -98,11 +98,11 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
 
         final InputStream secondIn = new ByteArrayInputStream (chunks.get (1));
         checkAscii (secondIn);
-        final String singleItemTag = StreamUtils.readWith1ByteLengthAscii (secondIn);
+        final String singleItemTag = StreamUtils.readAsciiWith1ByteLength (secondIn);
         StreamUtils.checkTag (KorgmultisampleConstants.TAG_SINGLE_ITEM, singleItemTag);
         // Ignore single item header
         secondIn.skipNBytes (1);
-        final String sampleBuilderTag = StreamUtils.readWith1ByteLengthAscii (secondIn);
+        final String sampleBuilderTag = StreamUtils.readAsciiWith1ByteLength (secondIn);
         StreamUtils.checkTag (KorgmultisampleConstants.TAG_SAMPLE_BUILDER, sampleBuilderTag);
 
         // The version number, not always present and not needed
@@ -115,17 +115,17 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
             switch (chunk2ID)
             {
                 case KorgmultisampleConstants.ID_VERSION:
-                    StreamUtils.readWith1ByteLengthAscii (secondIn);
+                    StreamUtils.readAsciiWith1ByteLength (secondIn);
                     break;
                 case KorgmultisampleConstants.ID_TIME:
                     // Time of storage - the seconds from 1.1.1970
                     creationDateTime = new Date (StreamUtils.fromBytesLE (secondIn.readNBytes (8)) * 1000L);
                     break;
                 case KorgmultisampleConstants.ID_APPLICATION:
-                    application = StreamUtils.readWith1ByteLengthAscii (secondIn);
+                    application = StreamUtils.readAsciiWith1ByteLength (secondIn);
                     break;
                 case KorgmultisampleConstants.ID_APPLICATION_VERSION:
-                    applicationVersion = StreamUtils.readWith1ByteLengthAscii (secondIn);
+                    applicationVersion = StreamUtils.readAsciiWith1ByteLength (secondIn);
                     break;
                 default:
                     throw new IOException (Functions.getMessage ("IDS_WS_UNKNOWN_CHUNK2_ID", Integer.toString (chunk2ID)));
@@ -164,7 +164,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
     {
         checkAscii (in);
 
-        final String name = StreamUtils.readWith1ByteLengthAscii (in);
+        final String name = StreamUtils.readAsciiWith1ByteLength (in);
 
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
@@ -181,15 +181,15 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
             switch (id)
             {
                 case KorgmultisampleConstants.ID_AUTHOR:
-                    metadata.setCreator (StreamUtils.readWith1ByteLengthAscii (in));
+                    metadata.setCreator (StreamUtils.readAsciiWith1ByteLength (in));
                     break;
 
                 case KorgmultisampleConstants.ID_CATEGORY:
-                    metadata.setCategory (StreamUtils.readWith1ByteLengthAscii (in));
+                    metadata.setCategory (StreamUtils.readAsciiWith1ByteLength (in));
                     break;
 
                 case KorgmultisampleConstants.ID_COMMENT:
-                    metadata.setDescription (StreamUtils.readWith1ByteLengthAscii (in));
+                    metadata.setDescription (StreamUtils.readAsciiWith1ByteLength (in));
                     break;
 
                 case KorgmultisampleConstants.ID_SAMPLE:
@@ -233,7 +233,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         in.readNBytes (2);
 
         checkAscii (in);
-        final String sampleFileName = StreamUtils.readWith1ByteLengthAscii (in);
+        final String sampleFileName = StreamUtils.readAsciiWith1ByteLength (in);
         final File sampleFile = this.createCanonicalFile (parentPath, sampleFileName);
         final ISampleData sampleData = new WavFileSampleData (sampleFile);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);

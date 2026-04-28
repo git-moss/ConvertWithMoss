@@ -48,14 +48,14 @@ public class IffFile
     {
         try
         {
-            String chunkID = StreamUtils.readASCII (in, 4);
+            String chunkID = StreamUtils.readAscii (in, 4);
 
             long size = StreamUtils.readUnsigned32 (in, true);
 
             // If it is a FORM, LIST or CAT chunk return the actual FORM type
             if (GROUP_CHUNKS.contains (chunkID))
             {
-                chunkID = StreamUtils.readASCII (in, 4);
+                chunkID = StreamUtils.readAscii (in, 4);
                 size -= 4;
             }
 
@@ -83,9 +83,9 @@ public class IffFile
      */
     public static void writeGroupChunk (final OutputStream out, final String groupID, final String groupTypeID, final byte [] chunkData) throws IOException
     {
-        StreamUtils.writeASCII (out, groupID, 4);
+        StreamUtils.writeAscii (out, groupID, 4);
         StreamUtils.writeUnsigned32 (out, chunkData.length + 4L, true);
-        StreamUtils.writeASCII (out, groupTypeID, 4);
+        StreamUtils.writeAscii (out, groupTypeID, 4);
         writeChunkData (out, chunkData);
     }
 
@@ -100,7 +100,7 @@ public class IffFile
      */
     public static void writeLocalChunk (final OutputStream out, final String localChunkID, final byte [] chunkData) throws IOException
     {
-        StreamUtils.writeASCII (out, localChunkID, 4);
+        StreamUtils.writeAscii (out, localChunkID, 4);
         StreamUtils.writeUnsigned32 (out, chunkData.length, true);
         writeChunkData (out, chunkData);
     }
