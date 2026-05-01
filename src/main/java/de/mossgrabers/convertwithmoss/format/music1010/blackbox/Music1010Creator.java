@@ -55,7 +55,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
     {
         24
     }, 48000, true);
-    private static final DestinationAudioFormat DEFEAULT_AUDIO_FORMAT        = new DestinationAudioFormat ();
+    private static final DestinationAudioFormat DEFAULT_AUDIO_FORMAT         = new DestinationAudioFormat ();
 
     private static final Map<String, String>    EMPTY_PARAM_ATTRIBUTES       = new HashMap<> ();
     private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
@@ -236,7 +236,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
             // Store all samples
             if (resample)
                 recalculateSamplePositions (multisampleSource, 48000);
-            this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
+            this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT, trim);
         }
 
         this.progress.notifyDone ();
@@ -270,7 +270,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         // Store all samples
         if (resample)
             recalculateSamplePositions (multisampleSource, 48000);
-        this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
+        this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT, trim);
 
         this.progress.notifyDone ();
     }
@@ -282,7 +282,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
     {
         if (detectSettings.reduceBitDepth <= 0 || SUPPORTED_BIT_DEPTHS.contains (Integer.valueOf (detectSettings.reduceBitDepth)))
             return true;
-        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16, 24");
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16, 24");
         return false;
     }
 
@@ -482,7 +482,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
      */
     private static void createSample (final Document document, final String presetPath, final Element groupElement, final ISampleZone zone, final int sampleIndex, final int slot, final boolean trim)
     {
-        ////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Sample element and attributes
 
         final Element cellElement = XMLUtils.addElement (document, groupElement, Music1010Tag.CELL);
@@ -511,7 +511,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
 
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_REVERSE, zone.isReversed () ? 1 : 0);
 
-        ////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Key & Velocity attributes
 
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
@@ -526,7 +526,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         // No fades info.getVelocityCrossfadeLow ()
         // No fades info.getVelocityCrossfadeHigh ()
 
-        ////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Loops
 
         // ... are stored in the WAV files

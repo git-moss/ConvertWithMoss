@@ -1,5 +1,11 @@
 # Changes
 
+## 17.2.0 (unreleased)
+
+* Added support for Elektron Tonverk emulti.
+* ISO File
+  * New: Added detection of Ensoniq EPS/ASR ISOs.
+
 ## 17.1.0
 
 * Added support for reading Ensoniq Mirage disks (*.hfe, *.img, *.edm).

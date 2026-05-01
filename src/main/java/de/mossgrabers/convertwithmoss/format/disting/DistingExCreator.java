@@ -99,7 +99,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
     {
         if (detectSettings.reduceBitDepth <= 0 || detectSettings.reduceBitDepth == 16)
             return true;
-        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16");
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16");
         return false;
     }
 

@@ -55,7 +55,7 @@ public class IsoFormatIdentifier
 
     /**
      * Identify the format of an ISO file.
-     * 
+     *
      * @param sourceFile The file to identify
      * @return The detected format
      */
@@ -102,6 +102,9 @@ public class IsoFormatIdentifier
             if ("770".equals (rolandVersion))
                 return IsoFormat.ROLAND_S7XX;
 
+            if (doesOnlyContain (data, 0x00, 200))
+                return IsoFormat.ENSONIQ;
+
             // AKAI S1000/S1100
             return IsoFormat.AKAI_S1000_S1100;
         }
@@ -119,7 +122,19 @@ public class IsoFormatIdentifier
         if ("ROLAND".equals (offset2))
             return IsoFormat.ROLAND_S550_W30_DJ70;
 
+        if (doesOnlyContain (data, 0x5B, 200))
+            return IsoFormat.ENSONIQ;
+
         return IsoFormat.UNKNOWN;
+    }
+
+
+    private static boolean doesOnlyContain (final byte [] data, final int value, final int length)
+    {
+        for (int i = 0; i < length; i++)
+            if (data[i] != value)
+                return false;
+        return true;
     }
 
 

@@ -12,6 +12,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
+import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
 
 
 /**
@@ -21,6 +22,9 @@ import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
  */
 public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
 {
+    private final EnsoniqEpsAsrDetector ensoniqDetector;
+
+
     /**
      * Constructor.
      *
@@ -29,6 +33,8 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
     public IsoDetector (final INotifier notifier)
     {
         super ("ISO/IMG file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso", ".img");
+
+        this.ensoniqDetector = new EnsoniqEpsAsrDetector (notifier);
     }
 
 
@@ -48,6 +54,11 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
             case AKAI_S3000:
                 this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
                 return this.processAkaiS1000Disk (sourceFile);
+
+            case ENSONIQ:
+                this.ensoniqDetector.setSourceFolder (this.sourceFolder);
+                this.ensoniqDetector.setSettings (this.settingsConfiguration);
+                return this.ensoniqDetector.readPresetFile (sourceFile);
 
             case ISO_9660:
                 this.notifier.logError ("IDS_ISO_UNSUPPORTED_9660");

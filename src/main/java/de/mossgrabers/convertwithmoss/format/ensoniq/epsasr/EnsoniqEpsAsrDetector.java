@@ -186,7 +186,7 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
+    public List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -282,7 +282,7 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
             lastPatch = patch;
 
             final String name = TagDetector.toCamelCase (multiSampleName) + " " + (i + 1);
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, name);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, name);
             final List<IGroup> patchGroups = new ArrayList<> ();
             for (int p = 0; p < numLayers; p++)
             {
