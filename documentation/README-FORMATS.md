@@ -290,7 +290,11 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 
 ## ISO/IMG Files
 
-Searches for files ending with *.ISO or *.IMG. Currently, [Akai S1000/3000](#akai-s1000s3000-series-disk-image) and [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000) content can be handled.
+Searches for files ending with *.ISO or *.IMG. Currently, the following formats can be handled:
+
+* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
+* [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
 
 ## Kontakt NKI/NKM
 

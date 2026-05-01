@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -122,6 +123,26 @@ public interface IMultisampleSource extends ISource
         for (final IGroup group: groups)
             sampleZones.addAll (group.getSampleZones ());
         return sampleZones;
+    }
+
+
+    /**
+     * Get all sample zones of the multi-sample ordered by their root note and then by their
+     * low-velocity (for each root note).
+     * 
+     * @param filterReleaseTriggers Removes all groups which do only contain release triggers
+     * @return All sample zones of the multi-sample ordered by root note and low-velocity
+     */
+    default TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> getOrderedSampleZones (final boolean filterReleaseTriggers)
+    {
+        final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> result = new TreeMap<> ();
+        for (final ISampleZone sampleZone: getAllSampleZones (filterReleaseTriggers))
+        {
+            final TreeMap<Integer, List<ISampleZone>> velocityLayers = result.computeIfAbsent (Integer.valueOf (sampleZone.getKeyRoot ()), _ -> new TreeMap<> ());
+            final List<ISampleZone> sameZone = velocityLayers.computeIfAbsent (Integer.valueOf (sampleZone.getVelocityLow ()), _ -> new ArrayList<> ());
+            sameZone.add (sampleZone);
+        }
+        return result;
     }
 
 

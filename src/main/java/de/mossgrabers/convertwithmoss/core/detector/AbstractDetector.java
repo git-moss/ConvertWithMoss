@@ -135,6 +135,17 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
 
     /**
+     * Set the source folder.
+     * 
+     * @param sourceFolder The sourceFolder to set
+     */
+    public void setSourceFolder (final File sourceFolder)
+    {
+        this.sourceFolder = sourceFolder;
+    }
+
+
+    /**
      * Overwrite in case that file endings need to be set dynamically.
      *
      * @param detectPerformances If true, performances are detected otherwise presets

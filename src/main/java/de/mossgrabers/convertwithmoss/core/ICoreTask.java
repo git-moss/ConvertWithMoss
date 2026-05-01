@@ -41,6 +41,14 @@ public interface ICoreTask<T extends ICoreTaskSettings>
 
 
     /**
+     * Set the settings.
+     *
+     * @param settings The settings
+     */
+    void setSettings (T settings);
+
+
+    /**
      * Shutdown the task. Execute necessary cleanup.
      */
     void shutdown ();

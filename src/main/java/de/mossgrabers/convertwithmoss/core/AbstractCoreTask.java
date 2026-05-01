@@ -19,7 +19,7 @@ public abstract class AbstractCoreTask<T extends ICoreTaskSettings> implements I
     protected final String    name;
     protected final String    prefix;
     protected final INotifier notifier;
-    protected final T         settingsConfiguration;
+    protected T               settingsConfiguration;
 
 
     /**
@@ -60,6 +60,14 @@ public abstract class AbstractCoreTask<T extends ICoreTaskSettings> implements I
     public T getSettings ()
     {
         return this.settingsConfiguration;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSettings (final T settings)
+    {
+        this.settingsConfiguration = settings;
     }
 
 
