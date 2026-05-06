@@ -47,6 +47,7 @@ The following multi-sample formats are supported:
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
+* [Elektron Tonverk](#elektron-tonverk)
 * [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
@@ -247,6 +248,21 @@ There are two issues with amplitude envelopes:
 Bliss is a multi-platform (Windows, MacOS & Linux) sampler by discoDSP (https://www.discodsp.com/bliss/).
 It provides support for multi-samples and a bank system (containing up to 128 patches).
 Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipped) with a XML description file and all samples. The samples are stored in FLAC format (16/24 bit). The full format specification is available here: https://github.com/reales/bliss-format.
+
+## Elektron Tonverk
+
+The Elektron Tonverk is a dedicated hardware sampler that marks an important milestone for Elektron as its first instrument to support multi-samples. This allows users to map multiple sampled sounds across keys or velocity ranges, creating more expressive and realistic instruments than single-sample playback alone.
+Sadly, the emulti format is very basic and limited. It only supports the basic multi-sample layout does not contain any synthesizer parameters like envelopes or filter settings.
+Furthermore, even this basic setup has some limitations:
+
+* There are no key ranges, the Tonverk always plays the sample with the closest root note. This can lead to different key-ranges than in the source multi-sample.
+* Velocity layers are fixed to the key-ranges (like on the modern Akai MPCs).
+* Duplicated velocity layers always result in round-robin of these samples (they do not sound at the same time).
+* Only 1 Pitch per key zone can be set which means you cannot tune individual samples.
+
+### Destination Options
+
+* Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
 
 ## Ensoniq EPS/EPS16+/ASR-10
 

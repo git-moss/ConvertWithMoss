@@ -514,8 +514,7 @@ public class RawRIFFChunk implements IRiffChunk
 
         final long length = this.getDataSize ();
         final boolean needsPadByte = length % 2 == 1;
-        final long dataSize = needsPadByte ? length + 1 : length;
-        StreamUtils.writeUnsigned32 (out, dataSize, false);
+        StreamUtils.writeUnsigned32 (out, length, false);
 
         this.writeData (out);
 

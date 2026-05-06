@@ -12,7 +12,6 @@ import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDirEntry;
 import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDiskImage;
 import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiPartition;
 import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiVolume;
-import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -45,8 +44,7 @@ public class AkaiS1000Volume implements IAkaiVolume
     {
         this.name = dirEntry.getName ();
 
-        final int hmm = partition.readFAT (dirEntry.getStart ());
-        System.out.println (StringUtils.formatHexStr (hmm));
+        partition.readFAT (dirEntry.getStart ());
 
         final int maxFiles = isS3000 ? AKAI_MAX_FILE_ENTRIES_S3000 : AKAI_MAX_FILE_ENTRIES_S1000;
         for (int i = 0; i < maxFiles; i++)

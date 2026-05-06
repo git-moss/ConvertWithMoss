@@ -143,7 +143,7 @@ public class AkaiS1000Sample
             return;
 
         this.activeLoops = 1;
-        this.firstActiveLoop = 1;
+        this.firstActiveLoop = 0;
         this.loopMode = 1;
 
         final SampleChunkLoop sampleChunkLoop = sampleLoops.get (0);

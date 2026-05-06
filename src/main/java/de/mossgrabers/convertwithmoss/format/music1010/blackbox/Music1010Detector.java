@@ -146,14 +146,14 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return null;
         }
 
         final Element sessionElement = XMLUtils.getChildElementByName (top, Music1010Tag.SESSION);
         if (sessionElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Session tag");
             return null;
         }
 
@@ -260,7 +260,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setVelocityLow (1);
         sampleZone.setVelocityHigh (127);
 
-        ////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Loops
 
         if (!isOneShot)
@@ -277,7 +277,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        ////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
@@ -427,7 +427,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final Element paramsElement = XMLUtils.getChildElementByName (assetElement, Music1010Tag.PARAMS);
         if (paramsElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Params tag");
             return prevFolder;
         }
 
@@ -453,7 +453,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        ////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Loops
 
         try
@@ -465,7 +465,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
         }
 
-        ////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();

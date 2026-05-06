@@ -3,6 +3,10 @@
 ## 17.2.0 (unreleased)
 
 * Added support for Elektron Tonverk emulti.
+* Fixed: When writing WAV files the padding byte was counted as content.
+* Fixed: When writing WAV files preserve the chunks 'meta', 'atem' and 'ID3 '.
+* Akai S1000/S3000
+  * Fixed: Loops were not imported.
 * ISO File
   * New: Added detection of Ensoniq EPS/ASR ISOs.
 

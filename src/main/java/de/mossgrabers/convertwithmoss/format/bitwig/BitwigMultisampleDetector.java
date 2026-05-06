@@ -123,7 +123,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
 
         if (!BitwigMultisampleTag.MULTISAMPLE.equals (top.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return Collections.emptyList ();
         }
 
@@ -253,7 +253,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
         final String filename = sampleElement.getAttribute ("file");
         if (filename == null || filename.isBlank ())
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing file attribute");
             return;
         }
 

@@ -63,6 +63,8 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktCreator;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktDetector;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineCreator;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineDetector;
+import de.mossgrabers.convertwithmoss.format.omnisphere.OmnisphereCreator;
+import de.mossgrabers.convertwithmoss.format.omnisphere.OmnisphereDetector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -142,6 +144,7 @@ public class ConverterBackend
             new KorgmultisampleDetector (notifier),
             new EXS24Detector (notifier),
             new MaschineDetector (notifier),
+            new OmnisphereDetector (notifier),
             new SxtDetector (notifier),
             new SampleFileDetector (notifier),
             new SfzDetector (notifier),
@@ -168,6 +171,7 @@ public class ConverterBackend
             new KorgmultisampleCreator (notifier),
             new EXS24Creator (notifier),
             new MaschineCreator (notifier),
+            new OmnisphereCreator (notifier),
             new SxtCreator (notifier),
             new WavCreator (notifier),
             new SfzCreator (notifier),
@@ -367,7 +371,7 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            ///////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -384,7 +388,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            ///////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)

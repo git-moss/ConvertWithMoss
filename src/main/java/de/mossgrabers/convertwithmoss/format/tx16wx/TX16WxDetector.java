@@ -180,7 +180,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final Element topElement = document.getDocumentElement ();
         if (!TX16WxTag.PERFORMANCE.equals (topElement.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Uknown Root");
             return Collections.emptyList ();
         }
 
@@ -194,7 +194,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             final String programPath = slotElement.getAttribute (TX16WxTag.PROGRAM);
             if (programPath == null || programPath.isBlank ())
             {
-                this.notifier.logError (ERR_BAD_METADATA_FILE);
+                this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Program tag");
                 continue;
             }
 
@@ -241,7 +241,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final Element topElement = document.getDocumentElement ();
         if (!TX16WxTag.PROGRAM.equals (topElement.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Program tag");
             return null;
         }
 
@@ -296,7 +296,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             String sampleName = waveElement.getAttribute (TX16WxTag.PATH);
             if (sampleName == null || sampleName.isBlank ())
             {
-                this.notifier.logError (ERR_BAD_METADATA_FILE);
+                this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Path attribute");
                 continue;
             }
 

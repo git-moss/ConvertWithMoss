@@ -154,14 +154,14 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return null;
         }
 
         final Element sessionElement = XMLUtils.getChildElementByName (top, Music1010Tag.SESSION);
         if (sessionElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Session tag");
             return null;
         }
         final String versionAttribute = sessionElement.getAttribute (Music1010Tag.ATTR_VERSION);
@@ -253,7 +253,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             final Element paramsElement = XMLUtils.getChildElementByName (assetElement, Music1010Tag.PARAMS);
             if (paramsElement == null)
             {
-                this.notifier.logError (ERR_BAD_METADATA_FILE);
+                this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Params tag");
                 return Optional.empty ();
             }
 
@@ -371,7 +371,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        ///////////////////////////////////////////////////
+        ////////////////////////////////////////////////
         // Play-range & Loops
 
         sampleZone.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0));
@@ -396,7 +396,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
         sampleZone.setReversed (isReversed);
 
-        ///////////////////////////////////////////////////
+        ////////////////////////////////////////////////
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();

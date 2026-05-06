@@ -185,10 +185,10 @@ public class AkaiS1000ProgramConverter
                     loopMode = loopMode == 0 ? sample.getLoopMode () : loopMode - 1;
                     if (loopMode < 2)
                     {
-                        final byte firstActiveLoop = sample.getFirstActiveLoop ();
-                        if (firstActiveLoop > 0)
+                        if (sample.getActiveLoops () > 0)
                         {
-                            final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop - 1];
+                            final byte firstActiveLoop = sample.getFirstActiveLoop ();
+                            final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop];
                             final int marker = loop.getEndMarker ();
                             final ISampleLoop sampleLoop = new DefaultSampleLoop ();
                             sampleLoop.setStart (marker - loop.getCoarseLength ());

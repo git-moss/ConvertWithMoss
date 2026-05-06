@@ -238,7 +238,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final Element topElement = document.getDocumentElement ();
         if (!DecentSamplerTag.DECENTSAMPLER.equals (topElement.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return Collections.emptyList ();
         }
 
@@ -248,7 +248,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final Element groupsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.GROUPS);
         if (groupsElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Groups tag");
             return Collections.emptyList ();
         }
         this.currentGroupsElement = groupsElement;
@@ -475,7 +475,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        ////////////////////////////////////////////////////
+        /////////////////////////////////////////////////
         // Loops
 
         final int loopStart = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, -1));
@@ -534,7 +534,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final String sampleName = sampleElement.getAttribute (DecentSamplerTag.PATH);
         if (sampleName == null || sampleName.isBlank ())
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Path attribute");
             Optional.empty ();
         }
 
