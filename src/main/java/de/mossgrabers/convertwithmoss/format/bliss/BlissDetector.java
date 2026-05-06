@@ -166,7 +166,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     {
         if (!BlissTag.PROGRAM.equals (programElement.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return Optional.empty ();
         }
 
@@ -184,7 +184,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         final int version = XMLUtils.getIntegerAttribute (programElement, "version", -1);
         if (version < 0)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Negative version attribute");
             return Optional.empty ();
         }
         this.notifier.log ("IDS_BLISS_DETECTED_PROGRAM", name, formatVersion (version));
@@ -192,7 +192,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         final Element zonesElement = XMLUtils.getChildElementByName (programElement, BlissTag.ZONES);
         if (zonesElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Zones tag");
             return Optional.empty ();
         }
 
@@ -364,7 +364,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         final String originalFilename = zoneElement.getAttribute ("name");
         if (originalFilename == null || originalFilename.isBlank ())
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing name attribute");
             return null;
         }
 

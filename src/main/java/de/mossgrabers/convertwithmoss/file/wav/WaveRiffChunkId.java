@@ -54,9 +54,17 @@ public enum WaveRiffChunkId implements RiffChunkId
     MD5_ID("MD5 Checksum", "MD5 "),
 
     /** Broadcast Audio Extension Chunk. **/
-    BEXT_ID("Broadcast Audio Extension", "bext");
+    BEXT_ID("Broadcast Audio Extension", "bext"),
 
-    // Additional unknown tags are: srob, r64m, acid, LGBM, atem, meta
+    /** ID for "meta" chunk. */
+    META_ID("Meta Data", "meta"),
+    /** ID for "meta" chunk. */
+    ATEM_ID("Meta Data (atem)", "atem"),
+
+    /** ID for "acid" chunk. */
+    ACID_ID("ACID", "acid");
+
+    // Additional unknown tags are: srob, r64m, LGBM
 
 
     private final int    fourCC;
