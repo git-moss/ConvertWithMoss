@@ -34,14 +34,12 @@ public class KMPDetector extends AbstractDetector<KMPDetectorUI>
 {
     private static final String [] KSC_ENDINGS =
     {
-        ".ksc",
-        ".KSC"
+        ".ksc"
     };
 
     private static final String [] KMP_ENDINGS =
     {
-        ".kmp",
-        ".KMP"
+        ".kmp"
     };
 
 

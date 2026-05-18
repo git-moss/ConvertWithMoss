@@ -501,21 +501,6 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
 
     /**
-     * Translates a value in the range of [0..1] to the range [minimum..maximum]. Ensures that the
-     * given value is in the range [0..1].
-     *
-     * @param value The value to translate
-     * @param minimum The minimum of the range
-     * @param maximum The maximum of the range
-     * @return The translated value
-     */
-    protected static double denormalizeValue (final double value, final double minimum, final double maximum)
-    {
-        return minimum + Math.clamp (value, 0, 1) * (maximum - minimum);
-    }
-
-
-    /**
      * Check the type of the source sample for compatibility and handle them accordingly. This
      * method supports WAV, AIF, AIFF, OGG and FLAC files.
      *
@@ -861,7 +846,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     }
 
 
-    private static File findFileRecursively (final File folder, final String fileName)
+    protected static File findFileRecursively (final File folder, final String fileName)
     {
         File sampleFile = new File (folder, fileName);
         if (sampleFile.exists ())

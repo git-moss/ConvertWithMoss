@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.mpc.xpm;
+package de.mossgrabers.convertwithmoss.format.akai.mpc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,7 @@ import org.w3c.dom.Element;
  *
  * @author Jürgen Moßgraber
  */
-public class Keygroup
+public class MPCKeygroup
 {
     private final boolean       isSequence;
     private final Element       layersElement;
@@ -29,7 +29,7 @@ public class Keygroup
      *
      * @param layersElement The layers element
      */
-    public Keygroup (final Element layersElement)
+    public MPCKeygroup (final Element layersElement)
     {
         this (layersElement, -1, -1, false);
     }
@@ -42,13 +42,13 @@ public class Keygroup
      * @param velocityLow The bottom velocity
      * @param velocityHigh The upper velocity
      */
-    public Keygroup (final Element layersElement, final int velocityLow, final int velocityHigh)
+    public MPCKeygroup (final Element layersElement, final int velocityLow, final int velocityHigh)
     {
         this (layersElement, velocityLow, velocityHigh, true);
     }
 
 
-    private Keygroup (final Element layersElement, final int velocityLow, final int velocityHigh, final boolean isSequence)
+    private MPCKeygroup (final Element layersElement, final int velocityLow, final int velocityHigh, final boolean isSequence)
     {
         this.layersElement = layersElement;
         this.velocityLow = velocityLow;

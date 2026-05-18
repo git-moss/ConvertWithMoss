@@ -40,5 +40,6 @@ module de.mossgrabers.convertwithmoss
     opens de.mossgrabers.convertwithmoss.templates.adv;
     opens de.mossgrabers.convertwithmoss.templates.dspreset;
     opens de.mossgrabers.convertwithmoss.templates.maschine;
+    opens de.mossgrabers.convertwithmoss.templates.prt_omn;
     opens de.mossgrabers.convertwithmoss.templates.ysfc;
 }

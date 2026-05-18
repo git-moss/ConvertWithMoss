@@ -10,9 +10,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -21,14 +24,20 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.core.utils.NameValueParser;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -40,9 +49,19 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class OmnisphereDetector extends AbstractDetector<MetadataSettingsUI>
+public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 {
-    private static final String IDS_NOTIFY_ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String    IDS_NOTIFY_ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+
+    private static final String [] PRESET_ENDINGS                   =
+    {
+        ".prt_omn"
+    };
+
+    private static final String [] MULTISAMPLE_ENDINGS              =
+    {
+        ".zmap"
+    };
 
 
     /**
@@ -52,7 +71,15 @@ public class OmnisphereDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public OmnisphereDetector (final INotifier notifier)
     {
-        super ("Omnisphere 3", "Omnisphere", notifier, new MetadataSettingsUI ("Omnisphere"), ".zmap");
+        super ("Omnisphere 3", "Omnisphere", notifier, new OmnisphereDetectorUI ("Omnisphere"));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void configureFileEndings (final boolean detectPerformances)
+    {
+        this.fileEndings = this.settingsConfiguration.usePresetFiles () ? PRESET_ENDINGS : MULTISAMPLE_ENDINGS;
     }
 
 
@@ -66,7 +93,10 @@ public class OmnisphereDetector extends AbstractDetector<MetadataSettingsUI>
         try
         {
             final String content = this.loadTextFile (file).trim ();
-            return this.parseMetadataFile (file, content);
+            if (this.settingsConfiguration.usePresetFiles ())
+                return this.readOmniPresetFile (file, content);
+            final Optional<IMultisampleSource> multisampleSource = this.parseZmapFile (file, content, file.getParentFile ());
+            return multisampleSource.isEmpty () ? Collections.emptyList () : Collections.singletonList (multisampleSource.get ());
         }
         catch (final IOException ex)
         {
@@ -76,22 +106,22 @@ public class OmnisphereDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    /**
-     * Load and parse the metadata description file.
-     *
-     * @param multiSampleFile The file
-     * @param content The content of the file
-     * @return The result
-     */
-    private List<IMultisampleSource> parseMetadataFile (final File multiSampleFile, final String content)
+    private List<IMultisampleSource> readOmniPresetFile (final File presetFile, final String content)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
 
+        final File userSampleFolder = findUserSampleFolder (presetFile);
+        if (userSampleFolder == null)
+        {
+            this.notifier.logError ("IDS_OMNISPHERE_NO_USER_SAMPLE_FOLDER");
+            return Collections.emptyList ();
+        }
+
         try
         {
             final Document document = OmnisphereAggregatedFile.parseXml (content);
-            return this.parseDescription (multiSampleFile, document);
+            return this.parsePresetDescription (presetFile, document, userSampleFolder);
         }
         catch (final IOException ex)
         {
@@ -101,51 +131,252 @@ public class OmnisphereDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
+    private List<IMultisampleSource> parsePresetDescription (final File presetFile, final Document document, final File userSampleFolder) throws IOException
+    {
+        // Navigate down to the voice and multi-sample elements...
+
+        final Element rootElement = document.getDocumentElement ();
+        if (!"AmberPart".equals (rootElement.getNodeName ()))
+        {
+            this.notifier.logError (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Unknown Root");
+            return Collections.emptyList ();
+        }
+        final Element synthEngineElement = XMLUtils.getChildElementByName (rootElement, "SynthEngine");
+        if (synthEngineElement == null)
+            throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Missing element 'SynthEngine'."));
+
+        final Element synthEngElement = XMLUtils.getChildElementByName (synthEngineElement, "SYNTHENG");
+        if (synthEngElement == null)
+            throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Missing element 'SYNTHENG'."));
+
+        final Element modEnvParamsElement = XMLUtils.getChildElementByName (synthEngElement, "MODENVPARAMS");
+        if (modEnvParamsElement == null)
+            throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Missing element 'MODENVPARAMS'."));
+        final List<Element> modEnvElements = XMLUtils.getChildElementsByName (synthEngElement, "MODENV");
+        if (modEnvElements.isEmpty ())
+            throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Missing element 'MODENV'."));
+        final Element modEnvElement = modEnvElements.get (0);
+
+        // Get the voice and multi-sample elements and combine them...
+        final List<Boolean> hasTracking = new ArrayList<> ();
+        final List<Object> voiceElements = new ArrayList<> ();
+        for (final Element voiceElement: XMLUtils.getChildElementsByName (synthEngElement, "VOICE"))
+        {
+            final Element oscElement = XMLUtils.getChildElementByName (voiceElement, "OSC");
+
+            if (oscElement != null && XMLUtils.getIntegerAttribute (oscElement, "kind", 0) == 4)
+            {
+                voiceElements.add (voiceElement);
+                hasTracking.add (Boolean.valueOf (!"0".equals (oscElement.getAttribute ("reptch"))));
+            }
+            else
+            {
+                voiceElements.add (new Object ());
+                hasTracking.add (Boolean.FALSE);
+            }
+        }
+        if (voiceElements.size () != 4)
+            throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Unsound document."));
+
+        final List<Object> multisampleElements = new ArrayList<> ();
+        for (final Element multisampleElement: XMLUtils.getChildElementsByName (synthEngElement, "MULTISAMPLE"))
+        {
+            final Element msImElement = XMLUtils.getChildElementByName (multisampleElement, "MS_IM_0");
+            if (msImElement != null && "User".equals (msImElement.getAttribute ("library")))
+                multisampleElements.add (msImElement.getAttribute ("name"));
+            else
+                multisampleElements.add (new Object ());
+        }
+        if (multisampleElements.size () != 4)
+            throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Unsound document."));
+
+        // Create the multi-sample
+
+        final String multiSampleName = FileUtils.getNameWithoutType (presetFile.getName ());
+        final File parentFolder = presetFile.getParentFile ();
+        final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, multiSampleName);
+        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (presetFile, parts, multiSampleName, AudioFileUtils.subtractPaths (this.sourceFolder, presetFile));
+
+        final int pitchBendUp = (int) Math.round (parseFloatAttribute (synthEngElement, "pbup", 0.04f) * 96.0);
+        final int pitchBendDown = (int) -Math.round (parseFloatAttribute (synthEngElement, "pbdn", 0.04f) * 96.0);
+
+        final Element entryDescriptionElement = XMLUtils.getChildElementByName (synthEngElement, "ENTRYDESCR");
+        if (entryDescriptionElement != null)
+            createMetadata (multisampleSource.getMetadata (), entryDescriptionElement.getAttribute ("ATTRIB_VALUE_DATA"));
+
+        final Element modMatrixElement = XMLUtils.getChildElementByName (synthEngElement, "MOD_MATRIX");
+        float pitchEnvelopeAmount = 0;
+        if (modMatrixElement != null)
+            if ("ModEnv1".equals (modMatrixElement.getAttribute ("source0")) && "A tune".equals (modMatrixElement.getAttribute ("target0")))
+                if (parseFloatAttribute (modMatrixElement, "hi0", 0) > 0)
+                    pitchEnvelopeAmount = (float) (parseFloatAttribute (modMatrixElement, "defV0", 0.5f) * 2.0 - 1.0);
+
+        for (int i = 0; i < 4; i++)
+            if (voiceElements.get (i) instanceof final Element voiceElement && multisampleElements.get (i) instanceof final String soundSourceName)
+            {
+                final String soundSourceFilename = soundSourceName + ".zmap";
+                this.notifier.log ("IDS_OMNISPHERE_NO_LOOKING_UP_SOUND_SOURCE", soundSourceFilename);
+                final File soundsourceFile = findFileRecursively (userSampleFolder, soundSourceFilename);
+                if (soundsourceFile == null)
+                {
+                    this.notifier.logError ("IDS_OMNISPHERE_SOUND_SOURCE_NOT_FOUND", soundSourceFilename);
+                    return Collections.emptyList ();
+                }
+
+                final String content = this.loadTextFile (soundsourceFile).trim ();
+                final Optional<IMultisampleSource> msSource = this.parseZmapFile (soundsourceFile, content, userSampleFolder);
+                if (msSource.isPresent ())
+                {
+                    final List<IGroup> groups = new ArrayList<> (msSource.get ().getNonEmptyGroups (false));
+                    multisampleSource.setGroups (groups);
+                    applyParameters (groups, voiceElement, pitchBendUp, pitchBendDown, hasTracking.get (i).booleanValue (), pitchEnvelopeAmount, modEnvElement, modEnvParamsElement);
+                }
+            }
+
+        return Collections.singletonList (multisampleSource);
+    }
+
+
+    private static void applyParameters (final List<IGroup> groups, final Element voiceElement, final int pitchBendUp, final int pitchBendDown, final boolean hasKeyTracking, final float pitchEnvelopeAmount, @SuppressWarnings("unused") final Element modEnvElement, final Element modEnvParamsElement)
+    {
+        IFilter filter = null;
+        final Element filterElement = XMLUtils.getChildElementByName (voiceElement, "FILTER");
+        if (filterElement != null)
+        {
+            filter = OmnisphereFilterUtils.getFilter (parseFloatAttribute (filterElement, "type1", OmnisphereFilterUtils.DEFAULT_FILTER_INDEX));
+            final double frequency = OmnisphereFilterUtils.normalizedToHertz (parseFloatAttribute (filterElement, "freq", 1.0f));
+            final float normalizedResonance = parseFloatAttribute (filterElement, "res", 0.0f);
+            filter = new DefaultFilter (filter.getType (), filter.getPoles (), frequency, normalizedResonance);
+
+            final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+            cutoffEnvelopeModulator.setDepth (parseFloatAttribute (filterElement, "envdpth", 1.0f));
+
+            final Element filterParamsElement = XMLUtils.getChildElementByName (voiceElement, "FENVPARAMS");
+            final IEnvelope filterEnvelope = cutoffEnvelopeModulator.getSource ();
+            filterEnvelope.setAttackTime (parseTimeAttribute (filterParamsElement, "attk", 0.0f));
+            filterEnvelope.setHoldTime (parseTimeAttribute (filterParamsElement, "hold", 0.0f));
+            filterEnvelope.setDecayTime (parseTimeAttribute (filterParamsElement, "decy", 0.0f));
+            filterEnvelope.setReleaseTime (parseTimeAttribute (filterParamsElement, "rels", 0.0f));
+            filterEnvelope.setSustainLevel (parseFloatAttribute (filterParamsElement, "sust", 1.0f));
+
+            filter.getCutoffVelocityModulator ().setDepth (parseFloatAttribute (filterParamsElement, "velsens", 1.0f));
+        }
+
+        final Element ampParamsElement = XMLUtils.getChildElementByName (voiceElement, "AENVPARAMS");
+        final double ampAttackTime = parseTimeAttribute (ampParamsElement, "attk", 0.0f);
+        final double ampHoldTime = parseTimeAttribute (ampParamsElement, "hold", 0.0f);
+        final double ampDecayTime = parseTimeAttribute (ampParamsElement, "decy", 0.0f);
+        final double ampReleaseTime = parseTimeAttribute (ampParamsElement, "rels", 0.0f);
+        final double ampSustainLevel = parseFloatAttribute (ampParamsElement, "sust", 1.0f);
+        final double ampVelocitySensitivity = parseFloatAttribute (ampParamsElement, "velsens", 1.0f);
+
+        final double modAttackTime = parseTimeAttribute (modEnvParamsElement, "attk", 0.0f);
+        final double modHoldTime = parseTimeAttribute (modEnvParamsElement, "hold", 0.0f);
+        final double modDecayTime = parseTimeAttribute (modEnvParamsElement, "decy", 0.0f);
+        final double modReleaseTime = parseTimeAttribute (modEnvParamsElement, "rels", 0.0f);
+        final double modSustainLevel = parseFloatAttribute (modEnvParamsElement, "sust", 1.0f);
+
+        for (final IGroup group: groups)
+        {
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                zone.setBendUp (pitchBendUp);
+                zone.setBendDown (pitchBendDown);
+                zone.setKeyTracking (hasKeyTracking ? 1 : 0);
+
+                final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+                amplitudeEnvelope.setAttackTime (ampAttackTime);
+                amplitudeEnvelope.setHoldTime (ampHoldTime);
+                amplitudeEnvelope.setDecayTime (ampDecayTime);
+                amplitudeEnvelope.setReleaseTime (ampReleaseTime);
+                amplitudeEnvelope.setSustainLevel (ampSustainLevel);
+                zone.getAmplitudeVelocityModulator ().setDepth (ampVelocitySensitivity);
+
+                final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
+                final IEnvelope pitchEnvelope = pitchEnvelopeModulator.getSource ();
+                pitchEnvelopeModulator.setDepth (pitchEnvelopeAmount);
+                pitchEnvelope.setAttackTime (modAttackTime);
+                pitchEnvelope.setHoldTime (modHoldTime);
+                pitchEnvelope.setDecayTime (modDecayTime);
+                pitchEnvelope.setReleaseTime (modReleaseTime);
+                pitchEnvelope.setSustainLevel (modSustainLevel);
+
+                if (filter != null)
+                    zone.setFilter (filter);
+            }
+        }
+    }
+
+
+    /**
+     * Load and parse the metadata description file.
+     *
+     * @param multiSampleFile The file
+     * @param content The content of the file
+     * @param userSampleFolder The user sample folder
+     * @return The result
+     */
+    private Optional<IMultisampleSource> parseZmapFile (final File multiSampleFile, final String content, final File userSampleFolder)
+    {
+        if (this.waitForDelivery ())
+            return Optional.empty ();
+
+        try
+        {
+            final Document document = OmnisphereAggregatedFile.parseXml (content);
+            return this.parseZmapDescription (multiSampleFile, document, userSampleFolder);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ex, false);
+        }
+        return Optional.empty ();
+    }
+
+
     /**
      * Process the ZMAP file and the related wave (*.db) files.
      *
      * @param sourceFile The multi-sample file
      * @param document The metadata XML document
+     * @param userSampleFolder The user sample folder
      * @return The parsed multi-sample source
      * @throws IOException Could not parse the description
      */
-    private List<IMultisampleSource> parseDescription (final File sourceFile, final Document document) throws IOException
+    private Optional<IMultisampleSource> parseZmapDescription (final File sourceFile, final Document document, final File userSampleFolder) throws IOException
     {
         final Element instrumentElement = document.getDocumentElement ();
         if (!"InstrumentMultisample".equals (instrumentElement.getNodeName ()))
         {
             this.notifier.logError (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Unknown Root");
-            return Collections.emptyList ();
+            return Optional.empty ();
         }
 
         final String multiSampleName = FileUtils.getNameWithoutType (sourceFile.getName ());
         final File parentFolder = sourceFile.getParentFile ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, multiSampleName);
+        final String [] parts = AudioFileUtils.createPathParts (parentFolder, userSampleFolder, multiSampleName);
         final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+
+        createMetadata (multisampleSource.getMetadata (), instrumentElement.getAttribute ("ATTRIB_VALUE_DATA"));
 
         final List<ISampleZone> sampleZones = new ArrayList<> ();
         for (final Element zoneElement: XMLUtils.getChildElementsByName (instrumentElement, "MultisampleZone", false))
         {
             final int minPitch = XMLUtils.getIntegerAttribute (zoneElement, "MinPitch", 0);
             final int maxPitch = XMLUtils.getIntegerAttribute (zoneElement, "MaxPitch", 127);
-            final int minVelocity = XMLUtils.getIntegerAttribute (zoneElement, "MinVelocity", 0);
-            final int maxVelocity = XMLUtils.getIntegerAttribute (zoneElement, "MaxVelocity", 127);
-            final int hitKind = XMLUtils.getIntegerAttribute (zoneElement, "HitKind", 60);
-            final float volume = parseHexFloat (zoneElement.getAttribute ("Volume"), 1f);
-            final float pitch = parseHexFloat (zoneElement.getAttribute ("Pitch"), 0f);
-            final int fixVel = XMLUtils.getIntegerAttribute (zoneElement, "fixVel", -1);
-
             final ISampleZone sampleZone = new DefaultSampleZone (multiSampleName, minPitch, maxPitch);
-            sampleZone.setVelocityLow (minVelocity);
-            sampleZone.setVelocityHigh (maxVelocity);
-            sampleZone.setKeyRoot (hitKind);
-            // TODO set volume, pitch and fixVel
+            sampleZone.setVelocityLow (XMLUtils.getIntegerAttribute (zoneElement, "MinVelocity", 0));
+            sampleZone.setVelocityHigh (XMLUtils.getIntegerAttribute (zoneElement, "MaxVelocity", 127));
+            sampleZone.setKeyRoot (XMLUtils.getIntegerAttribute (zoneElement, "HitKind", 60));
+
+            sampleZone.setGain (linearToDb (parseHexFloat (zoneElement.getAttribute ("Volume"), 1f)));
+            sampleZone.setTuning (toCents (parseHexFloat (zoneElement.getAttribute ("Pitch"), 1f)));
 
             final Element soundGroupElement = XMLUtils.getChildElementByName (zoneElement, "SoundGroupWithNames");
             if (soundGroupElement == null)
             {
                 this.notifier.logError (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Missing SoundGroupWithNames tag");
-                return Collections.emptyList ();
+                return Optional.empty ();
             }
 
             @SuppressWarnings("unused")
@@ -158,22 +389,87 @@ public class OmnisphereDetector extends AbstractDetector<MetadataSettingsUI>
             sampleZones.add (sampleZone);
         }
         if (sampleZones.isEmpty ())
-            return Collections.emptyList ();
+            return Optional.empty ();
 
         final List<IGroup> groups = detectAndLoadSamples (parentFolder, sampleZones);
         if (groups.isEmpty ())
-            return Collections.emptyList ();
+            return Optional.empty ();
         multisampleSource.setGroups (groups);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.createMetadata (metadata, this.getFirstSample (groups), parts);
         this.updateCreationDateTime (metadata, sourceFile);
 
-        return Collections.singletonList (multisampleSource);
+        return Optional.of (multisampleSource);
     }
 
 
-    private static List<IGroup> detectAndLoadSamples (final File parentFolder, final List<ISampleZone> sampleZones) throws IOException
+    private static void createMetadata (final IMetadata metadata, final String metadataString)
+    {
+        if (metadataString == null)
+            return;
+        final Map<String, ArrayList<String>> properties = NameValueParser.parse (metadataString);
+
+        final List<String> keywords = new ArrayList<> ();
+        final List<String> techniqueKeywords = properties.get ("Technique");
+        if (techniqueKeywords != null)
+            keywords.addAll (techniqueKeywords);
+        final List<String> timbreKeywords = properties.get ("Timbre");
+        if (timbreKeywords != null)
+            keywords.addAll (timbreKeywords);
+        if (!keywords.isEmpty ())
+            metadata.setKeywords (keywords.toArray (new String [keywords.size ()]));
+
+        final List<String> authors = properties.get ("Author");
+        if (authors != null && !authors.isEmpty ())
+            metadata.setCreator (authors.get (0));
+
+        final List<String> types = properties.get ("Type");
+        if (types != null)
+            metadata.setCategory (TagDetector.detectCategory (types));
+
+        // Build description
+        final StringBuilder sb = new StringBuilder ();
+        final List<String> descriptions = properties.get ("Description");
+        if (descriptions != null && !descriptions.isEmpty ())
+        {
+            final String description = descriptions.get (0).trim ();
+            sb.append (description);
+            if (!description.endsWith ("."))
+                sb.append ('.');
+        }
+        final List<String> specs = properties.get ("Specs");
+        if (specs != null && !specs.isEmpty ())
+        {
+            final String specification = specs.get (0).trim ();
+            if (!specification.isBlank ())
+            {
+                if (!sb.isEmpty ())
+                    sb.append (' ');
+                sb.append (specification);
+                if (!specification.endsWith ("."))
+                    sb.append ('.');
+            }
+        }
+
+        final List<String> url = properties.get ("URL");
+        if (url != null && !url.isEmpty ())
+        {
+            final String locator = url.get (0).trim ();
+            if (!locator.isBlank ())
+            {
+                if (!sb.isEmpty ())
+                    sb.append (' ');
+                sb.append ("URL: ").append (locator);
+            }
+        }
+
+        if (!sb.isEmpty ())
+            metadata.setDescription (sb.toString ());
+    }
+
+
+    private List<IGroup> detectAndLoadSamples (final File parentFolder, final List<ISampleZone> sampleZones) throws IOException
     {
         final List<IGroup> groups = new ArrayList<> ();
         final IGroup defaultGroup = new DefaultGroup ();
@@ -226,17 +522,27 @@ public class OmnisphereDetector extends AbstractDetector<MetadataSettingsUI>
 
                     final ISampleZone rrSampleZone = new DefaultSampleZone (sampleZone);
                     rrSampleZone.setName (FileUtils.getNameWithoutType (wavFileName));
-                    final ISampleData sampleData = new WavFileSampleData (new ByteArrayInputStream (wavFileData));
-                    sampleData.addZoneData (rrSampleZone, false, true);
-                    rrSampleZone.setSampleData (sampleData);
-                    roundRobinZones.add (rrSampleZone);
+                    try
+                    {
+                        final ISampleData sampleData = new WavFileSampleData (new ByteArrayInputStream (wavFileData));
+                        sampleData.addZoneData (rrSampleZone, false, true);
+                        rrSampleZone.setSampleData (sampleData);
+                        roundRobinZones.add (rrSampleZone);
+                    }
+                    catch (final IOException ex)
+                    {
+                        this.notifier.logError ("IDS_OMNISPHERE_ERR_READING_WAV", wavFileName, ex.getLocalizedMessage ());
+                    }
 
                     rrSampleZone.setKeyRoot (XMLUtils.getIntegerAttribute (sampleWaveformElement, "BaseNote", 60));
 
                     // Level & A440 attributes not used
 
                     if (waveformTags.size () > 1)
+                    {
                         rrSampleZone.setSequencePosition (XMLUtils.getIntegerAttribute (sampleWaveformElement, "RoundRobinSequenceNum", 0) + 1);
+                        rrSampleZone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                    }
                 }
 
                 if (roundRobinZones.isEmpty ())
@@ -259,11 +565,69 @@ public class OmnisphereDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
+    private static double parseTimeAttribute (final Element element, final String attributeName, final float defaultValue)
+    {
+        if (element == null)
+            return defaultValue;
+        final float normalizedTime = parseFloatAttribute (element, attributeName, defaultValue);
+        return normalizedTime * normalizedTime * 20.0;
+    }
+
+
+    private static float parseFloatAttribute (final Element element, final String attributeName, final float defaultValue)
+    {
+        if (element == null)
+            return defaultValue;
+        return parseHexFloat (element.getAttribute (attributeName), defaultValue);
+    }
+
+
     private static float parseHexFloat (final String hex, final float defaultValue)
     {
         if (hex == null)
             return defaultValue;
         // Parse hex string as unsigned 32-bit integer and reinterpret bits as float
-        return Float.intBitsToFloat ((int) Long.parseLong (hex, 16));
+        float value = Float.intBitsToFloat ((int) Long.parseLong (hex, 16));
+        return Float.isNaN (value) ? defaultValue : value;
+    }
+
+
+    private static File findUserSampleFolder (final File parentFolder)
+    {
+        File folder = parentFolder;
+        while ((folder = folder.getParentFile ()) != null)
+        {
+            final Set<String> children = new HashSet<> ();
+            Collections.addAll (children, folder.list ());
+            if (children.contains ("Soundsources"))
+            {
+                final File userSampleFolder = new File (new File (folder, "Soundsources"), "User");
+                return userSampleFolder.exists () ? userSampleFolder : null;
+            }
+        }
+        return null;
+    }
+
+
+    private static final double LOG2 = Math.log (2.0);
+
+
+    private static double toCents (final double value)
+    {
+        return -1200.0 * (Math.log (value) / LOG2);
+    }
+
+
+    /**
+     * Converts linear amplitude to dB. Returns -Infinity for 0 input.
+     * 
+     * @param linear The linear value
+     * @return The absolute dB value
+     */
+    public static double linearToDb (final double linear)
+    {
+        if (linear <= 0.0)
+            return Double.NEGATIVE_INFINITY;
+        return 20.0 * Math.log10 (linear);
     }
 }

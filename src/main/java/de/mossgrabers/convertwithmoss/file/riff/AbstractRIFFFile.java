@@ -125,8 +125,13 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
 
         final List<IRiffChunk> newChunkStack = new ArrayList<> ();
         for (final IRiffChunk chunk: this.chunkStack)
-            if (!ignore.contains (Integer.valueOf (chunk.getId ().getFourCC ())))
+        {
+            if (chunk == null)
+                continue;
+            final RiffChunkId id = chunk.getId ();
+            if (id != null && !ignore.contains (Integer.valueOf (id.getFourCC ())))
                 newChunkStack.add (chunk);
+        }
 
         this.chunkStack.clear ();
         this.chunkStack.addAll (newChunkStack);

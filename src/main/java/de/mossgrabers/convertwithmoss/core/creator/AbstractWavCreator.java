@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.file.wav.WaveRiffChunkId;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -75,6 +76,8 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
 
         // Convert resolution
         final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
+        if (wavFile.getDataChunk () == null)
+            throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
 
         // Trim sample from zone start to end
         if (trim)
@@ -83,11 +86,10 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
         // Update information chunks
         if (this.settingsConfiguration.isUpdateBroadcastAudioChunk ())
             updateBroadcastAudioChunk (multisampleSource.getMetadata (), wavFile);
-        final int unityNote = Math.clamp (zone.getKeyRoot (), 0, 127);
         if (this.settingsConfiguration.isUpdateInstrumentChunk ())
-            updateInstrumentChunk (zone, wavFile, unityNote);
+            updateInstrumentChunk (zone, wavFile);
         if (this.settingsConfiguration.isUpdateSampleChunk ())
-            updateSampleChunk (zone, wavFile, unityNote);
+            updateSampleChunk (zone, wavFile);
         if (this.settingsConfiguration.isRemoveJunkChunks ())
             wavFile.removeChunks (CommonRiffChunkId.JUNK_ID, CommonRiffChunkId.JUNK2_ID, WaveRiffChunkId.FILLER_ID, WaveRiffChunkId.MD5_ID);
 
@@ -95,12 +97,18 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
     }
 
 
-    private static void updateSampleChunk (final ISampleZone zone, final WaveFile wavFile, final int unityNote)
+    /**
+     * Updates all parameters of a WAV sample chunk.
+     * 
+     * @param zone The zone from which to read the parameters
+     * @param wavFile The WAV file to update
+     */
+    public static void updateSampleChunk (final ISampleZone zone, final WaveFile wavFile)
     {
         final List<ISampleLoop> loops = zone.getLoops ();
         final SampleChunk sampleChunk = new SampleChunk (loops.size ());
         sampleChunk.setSamplePeriod ((int) Math.round (1000000000.0 / wavFile.getFormatChunk ().getSampleRate ()));
-        sampleChunk.setPitch (unityNote, (int) Math.round (zone.getTuning () * 100.0));
+        sampleChunk.setPitch (Math.clamp (zone.getKeyRoot (), 0, 127), (int) Math.round (zone.getTuning () * 100.0));
 
         final List<SampleChunkLoop> chunkLoops = sampleChunk.getLoops ();
         for (int i = 0; i < loops.size (); i++)
@@ -128,7 +136,7 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
     }
 
 
-    private static void updateInstrumentChunk (final ISampleZone zone, final WaveFile wavFile, final int unityNote)
+    private static void updateInstrumentChunk (final ISampleZone zone, final WaveFile wavFile)
     {
         InstrumentChunk instrumentChunk = wavFile.getInstrumentChunk ();
         if (instrumentChunk == null)
@@ -137,7 +145,7 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
             wavFile.setInstrumentChunk (instrumentChunk);
         }
 
-        instrumentChunk.setUnshiftedNote (unityNote);
+        instrumentChunk.setUnshiftedNote (Math.clamp (zone.getKeyRoot (), 0, 127));
         instrumentChunk.setFineTune (Math.clamp ((int) (zone.getTuning () * 100), -50, 50));
         instrumentChunk.setGain (Math.clamp ((int) zone.getGain (), -127, 127));
         instrumentChunk.setLowNote (Math.clamp (zone.getKeyLow (), 0, 127));

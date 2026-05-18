@@ -234,7 +234,7 @@ public final class AudioFileUtils
      *
      * @param sampleData The input sample data
      * @param destinationFormat The destination WAV format configuration
-     * @return The data of the output file
+     * @return The WAV data of the output file
      * @throws IOException Could not read or write
      */
     public static byte [] convertToWavData (final ISampleData sampleData, final DestinationAudioFormat destinationFormat) throws IOException
@@ -252,7 +252,7 @@ public final class AudioFileUtils
      *
      * @param inputData The data of the input file
      * @param destinationFormat The destination WAV format configuration
-     * @return The data of the output file
+     * @return The WAV data of the output file
      * @throws IOException Could not read or write
      */
     private static byte [] convertToWav (final byte [] inputData, final DestinationAudioFormat destinationFormat) throws IOException
@@ -310,7 +310,9 @@ public final class AudioFileUtils
             outputBuffer.putShort ((short) (floatValue * Short.MAX_VALUE));
         }
 
-        return new AudioInputStream (new ByteArrayInputStream (outputBuffer.array ()), destinationAudioFormat, inputStream.getFrameLength ());
+        final byte [] outputData = outputBuffer.array ();
+        final long frameLength = outputData.length / destinationAudioFormat.getFrameSize ();
+        return new AudioInputStream (new ByteArrayInputStream (outputBuffer.array ()), destinationAudioFormat, frameLength);
     }
 
 
@@ -432,7 +434,7 @@ public final class AudioFileUtils
     {
         File f = msSourceFolder;
         final List<String> pathNames = new ArrayList<> ();
-        while (!f.equals (sourceFolder))
+        while (f != null && !f.equals (sourceFolder))
         {
             pathNames.add (f.getName ());
             f = f.getParentFile ();

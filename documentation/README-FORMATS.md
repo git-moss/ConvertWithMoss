@@ -36,8 +36,7 @@ The following multi-sample formats are supported:
 * [Ableton Sampler](#ableton-sampler)
 * [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000) - read only
 * [Akai MESA](#akai-mesa) - read only
-* [Akai MPC Keygroups/Drum](#akai-mpc-keygroups--drum)
-* [Akai MPC Project/Track](#akai-mpc-projecttrack)
+* [Akai MPC Modern](#akai-mpc-modern)
 * [Akai MPC60](#akai-mpc60) - read only
 * [Akai MPC500/MPC1000/MPC2500](#akai-mpc500mpc1000mpc2500) - read only
 * [Akai MPC2000/MPC2000XL/MPC3000](#akai-mpc2000mpc2000xlmpc3000) - read only
@@ -61,6 +60,7 @@ The following multi-sample formats are supported:
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
+* [Spectrasonics Omnisphere 3](#spectrasonics-omnisphere-3)
 * [TAL Sampler](#tal-sampler)
 * [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
@@ -142,14 +142,16 @@ The CD format used with the S1000/S3000 series was a proprietary Akai CD-ROM str
 
 The Akai MESA S3P format is a computer-side representation of Akai S-series program data used by the original MESA (Mac/PC Multi-Editor and Sample Accelerator) librarian/editor software for the [S-3000](#akai-s1000s3000-series-disk-image) family. In practice the .S3P extension contains a classic S3000-style Program (instrument) encoded in a format akin to MIDI SysEx dumps, with the sample waveforms stored externally as accompanying WAV files on a computer. Internally the Program’s structure—keygroups, sample references, mapping, filters and loop parameters—is essentially the same as an Akai S-series Program on disk; MESA simply encapsulates the Akai program data in its own file container for editing and transfer.
 
-## Akai MPC Keygroups / Drum
+## Akai MPC Modern
+
+### Keygroups / Drum
 
 A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV). Both keygroup and drum types are supported.
 
-Restrictions are:
+### Akai MPC Project/Track - read only
 
-* A round robin keygroup can only contain up to 4/8 layers (groups). An error is displayed in this case but the file is converted anyway.
-* Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
+A track file (*.xty) is a MPC v3 specific file that saves all settings, samples, macros, FX and MIDI data associated with a track. A track consists of two elements; the track file itself and a trackData folder containing the samples used within the track (ending with '_\[TrackData\]'). If the track contains a keygroup it is extracted as a multi-sample source.
+A project file (*.xpj) contains all track and project settings. All tracks which contain a keygroup are extracted as a multi-sample source.
 
 ### Source Options
 
@@ -159,14 +161,10 @@ Restrictions are:
 
 * Limit layers to: MPC Firmware 3.4 increased the number of possible layers in a keygroup to 8. This option allows you to choose between 4 (for older firmware revisions) or 8.
 
-## Akai MPC Project/Track
+### Destination Restrictions
 
-A track file (*.xty) is a MPC v3 specific file that saves all settings, samples, macros, FX and MIDI data associated with a track. A track consists of two elements; the track file itself and a trackData folder containing the samples used within the track (ending with '_\[TrackData\]'). If the track contains a keygroup it is extracted as a multi-sample source.
-A project file (*.xpj) contains all track and project settings. All tracks which contain a keygroup are extracted as a multi-sample source.
-
-### Source Options
-
-* Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
+* A round robin keygroup can only contain up to 4/8 layers (groups). An error is displayed in this case but the file is converted anyway.
+* Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
 
 ## Akai MPC60
 
@@ -478,6 +476,50 @@ There are metadata fields for creator and some description specified in the form
 ### Destination Options
 
 * Re-sample 24-bit to 16-bit: If enabled, 24-bit source samples are converted to 16-bit files. Use this prevent issues with certain software which can only handle 16-bit samples.
+
+## Spectrasonics Omnisphere 3
+
+Spectrasonics Omnisphere 3 is a software synthesizer designed for music production, sound design, and film scoring. It combines sample-based sounds with multiple synthesis methods and includes a large library of presets, effects, and modulation tools.
+Its user interface supports the import of single samples but not multi-samples. But ConvertWithMoss can create multi-samples as well. Factory files have a slightly different format and are not supported.
+
+Several file types are relevant:
+
+* .db: these files contain one or more samples.
+* .zmap: these files contain the basic multi-sample layout and reference one or more db files.
+* .prt_omn: these files represent one preset which reference one to four zmap files.
+
+The db files need to be in the same folder as the zmap file. The presets need to be in the Omnisphere patches folder under User.
+
+First locate the Omnisphere STEAM folder on your computer. On Windows it is normally:
+
+> C:\ProgramData\Spectrasonics\STEAM
+
+The db and zmap files are stored in:
+
+> <STEAM_FOLDER>\Omnisphere\Settings Library\Patches\User
+
+The preset files are stored in:
+
+> <STEAM_FOLDER>\Omnisphere\Soundsources\User
+
+You can create sub-folders in these folders as well.
+
+### Reading preset files
+
+When reading preset files the related db and zmap files must be in the sub-folder Soundsources\User which is either in the same directory as the zmap file or in an up-wards directory.
+
+### Writing preset files
+
+ConvertWithMoss creates a sub-folder for each source multi-sample. This folder contains all db files as well as the zmap and prt_omn files. Copy the whole folder to
+
+> <STEAM_FOLDER>\Omnisphere\Soundsources\User
+
+then move the prt_omn file to 
+
+> <STEAM_FOLDER>\Omnisphere\Settings Library\Patches\User
+
+**Note 1**: You can create a sub-folder with the name of a category, e.g. "Vox Humana" and put it there.
+**Note 2**: When opening Omnisphere both the presets and soundsources need to be rescanned! If only the presets are scanned an error shows up that the soundsource cannot be located!
 
 ## TAL Sampler
 

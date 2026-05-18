@@ -51,6 +51,11 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             /////////////////////////////////////////////////////////////////////////////
             ////
             """;
+    private static final String                    SFZ_FOOTER      = """
+            ////
+            /////////////////////////////////////////////////////////////////////////////
+
+            """;
     private static final String                    COMMENT_PREFIX  = "//// ";
 
     private static final Map<FilterType, String>   FILTER_TYPE_MAP = new EnumMap<> (FilterType.class);
@@ -155,8 +160,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             sb.append (COMMENT_PREFIX).append ("Category: ").append (category).append (LINE_FEED);
         final String description = metadata.getDescription ();
         if (description != null && !description.isBlank ())
-            sb.append (COMMENT_PREFIX).append (description.replace ("\n", "\n" + COMMENT_PREFIX)).append (LINE_FEED);
-        sb.append (LINE_FEED);
+            sb.append (formatWithCommentPrefix (description));
+        sb.append (SFZ_FOOTER);
 
         // Set the name
         final String name = multisampleSource.getName ();
@@ -249,7 +254,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN && isNotRoundRobinGroup)
             addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
-        ///////////////////////////////////////////////////////////
+        //////////////////////////////////////////////
         // Key range
 
         final int keyRoot = zone.getKeyRoot ();
@@ -282,7 +287,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
         }
 
-        ///////////////////////////////////////////////////////////
+        //////////////////////////////////////////////
         // Velocity
 
         final int velocityLow = zone.getVelocityLow ();
@@ -306,7 +311,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
         }
 
-        ///////////////////////////////////////////////////////////
+        //////////////////////////////////////////////
         // Start, end, tune, volume
 
         final int start = zone.getStart ();
@@ -326,7 +331,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         createVolume (buffer, zone, ampEnvParameterLevel);
 
-        ///////////////////////////////////////////////////////////
+        //////////////////////////////////////////////
         // Pitch Bend / Envelope
 
         final int bendUp = zone.getBendUp ();
@@ -572,5 +577,30 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (!sb.isEmpty ())
             sb.append (' ');
         sb.append (opcode).append ('=').append (Math.clamp (value * 10.0, -10.0, 10.0));
+    }
+
+
+    private static String formatWithCommentPrefix (final String input)
+    {
+        final int LINE_LIMIT = 70;
+        final String [] words = input.split ("\\s+");
+        final StringBuilder result = new StringBuilder ();
+        StringBuilder currentLine = new StringBuilder ();
+
+        for (final String word: words)
+            if (currentLine.length () == 0)
+                currentLine.append (word);
+            else if (currentLine.length () + 1 + word.length () <= LINE_LIMIT)
+                currentLine.append (" ").append (word);
+            else
+            {
+                result.append (COMMENT_PREFIX).append (currentLine).append ("\n");
+                currentLine = new StringBuilder (word);
+            }
+
+        if (currentLine.length () > 0)
+            result.append (COMMENT_PREFIX).append (currentLine).append ("\n");
+
+        return result.toString ();
     }
 }

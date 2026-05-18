@@ -209,7 +209,7 @@ public class Program
 
         this.setInstrumentIconName (KontaktIcon.getName ((int) StreamUtils.readUnsigned32 (in, false)));
         this.instrumentCredits = StreamUtils.readUtf16WithLength (in);
-        this.setInstrumentAuthor (StreamUtils.readUtf16WithLength (in));
+        this.setInstrumentAuthor (fixKontakt4Umlauts (StreamUtils.readUtf16WithLength (in)));
         this.setInstrumentURL (StreamUtils.readUtf16WithLength (in));
         if (this.getInstrumentURL ().isBlank () || NULL_ENTRY.equals (this.getInstrumentURL ()))
             this.setInstrumentURL (null);
@@ -743,5 +743,18 @@ public class Program
     public int getSlotIndex ()
     {
         return this.slotIndex;
+    }
+
+
+    private static String fixKontakt4Umlauts (final String text)
+    {
+        final int length = text.length ();
+        final StringBuilder sb = new StringBuilder (length);
+        for (int i = 0; i < length; i++)
+        {
+            final char c = text.charAt (i);
+            sb.append (c == '\ufffc' ? 'ü' : c);
+        }
+        return sb.toString ();
     }
 }

@@ -60,7 +60,7 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public AkaiMPC1000Detector (final INotifier notifier)
     {
-        super ("Akai MPC500/1000/2500", "MPC1000", notifier, new MetadataSettingsUI ("MPC1000"), ".pgm");
+        super ("Akai MPC 500/1000/2500", "MPC1000", notifier, new MetadataSettingsUI ("MPC1000"), ".pgm");
     }
 
 

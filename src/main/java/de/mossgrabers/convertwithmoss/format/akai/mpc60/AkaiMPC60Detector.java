@@ -50,7 +50,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public AkaiMPC60Detector (final INotifier notifier)
     {
-        super ("Akai MPC60", "MPC60", notifier, new MetadataSettingsUI ("MPC60"), ".set", ".img", ".hfe");
+        super ("Akai MPC 60", "MPC60", notifier, new MetadataSettingsUI ("MPC60"), ".set", ".img", ".hfe");
     }
 
 

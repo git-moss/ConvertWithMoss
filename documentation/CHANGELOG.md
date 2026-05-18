@@ -3,12 +3,24 @@
 ## 17.2.0 (unreleased)
 
 * Added support for Elektron Tonverk emulti.
-* Fixed: When writing WAV files the padding byte was counted as content.
-* Fixed: When writing WAV files preserve the chunks 'meta', 'atem' and 'ID3 '.
+* Added support for Omnisphere 3.
 * Akai S1000/S3000
   * Fixed: Loops were not imported.
 * ISO File
   * New: Added detection of Ensoniq EPS/ASR ISOs.
+* Kontakt 4
+  * Fixed: Added some workarounds for malformed umlauts in author field.
+* Akai MPC
+  * New: Combined "Akai MPC Keygroup" and "Akai MPC Project/Track" detectors to "Akai MPC Modern".
+  * New: Added support to read JSON based .xpm files.
+* SFZ
+  * New: Improved layout of metadata header with long description texts.
+* WAV
+  * Fixed: When writing WAV files the padding byte was counted as content.
+  * Fixed: When writing WAV files preserve the chunks 'meta', 'atem' and 'ID3 '.
+  * Fixed: Don't overwrite WAV samples multiple times if they already exist
+  * Fixed: Failed resolution conversions are now logged properly.
+  * Fixed: Conversion from 32-bit float to 16-bit PMC did not always work.
 
 ## 17.1.0
 

@@ -77,7 +77,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     protected final ProgressLogger                progress;
     private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
-    private final boolean [] []                         layerCheckMatrix                   = new boolean [128] [128];
+    private final boolean [] []                   layerCheckMatrix                   = new boolean [128] [128];
 
 
     /**
@@ -815,6 +815,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 final ISampleZone zone = sampleZones.get (zoneIndex);
 
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
+                if (writtenFiles.contains (file))
+                    continue;
                 try (final FileOutputStream fos = new FileOutputStream (file))
                 {
                     this.progress.notifyProgress ();
@@ -837,7 +839,13 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 }
                 catch (final NoSuchFileException | FileNotFoundException ex)
                 {
+                    this.progress.notifyFailed ();
                     this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+                }
+                catch (final IOException ex)
+                {
+                    this.progress.notifyFailed ();
+                    this.notifier.logError ("IDS_WAV_WRITE_ERROR", ex);
                 }
             }
         }
