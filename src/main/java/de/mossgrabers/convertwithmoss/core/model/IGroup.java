@@ -78,7 +78,8 @@ public interface IGroup
      * sequence position, it is considered that round-robin happens on a group-level. This means
      * e.g. 3 groups are played round-robin.
      *
-     * @return True if round-robin happens on a group-level
+     * @return True if round-robin happens on a group-level otherwise round-robin happens inside the
+     *         group
      */
     default boolean isGroupRoundRobin ()
     {
@@ -94,6 +95,32 @@ public interface IGroup
             if (sequencePosition == -1)
                 sequencePosition = zone.getSequencePosition ();
             else if (sequencePosition != zone.getSequencePosition ())
+                return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * If all zones in this group are set to play round-robin and have different sequence positions,
+     * it is considered that round-robin happens inside the group (and not on a group-level).
+     *
+     * @return True if round-robin happens on a zone-level and all zones are set to play round-robin
+     */
+    default boolean isZoneRoundRobin ()
+    {
+        final List<ISampleZone> sampleZones = this.getSampleZones ();
+        if (sampleZones.isEmpty ())
+            return false;
+
+        int sequencePosition = -1;
+        for (final ISampleZone zone: sampleZones)
+        {
+            if (zone.getPlayLogic () != PlayLogic.ROUND_ROBIN)
+                return false;
+            if (sequencePosition == -1)
+                sequencePosition = zone.getSequencePosition ();
+            else if (sequencePosition == zone.getSequencePosition ())
                 return false;
         }
         return true;

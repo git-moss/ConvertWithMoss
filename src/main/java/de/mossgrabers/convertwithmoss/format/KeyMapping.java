@@ -22,7 +22,6 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -30,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;

@@ -2,7 +2,7 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.mpc.xpm;
+package de.mossgrabers.convertwithmoss.format.akai.mpc;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -30,9 +30,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCFilter;
-import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCKeygroupConstants;
-import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCKeygroupCreatorUI;
 import de.mossgrabers.tools.XMLUtils;
 
 
@@ -118,7 +115,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         final Element instrumentsElement = document.createElement (MPCKeygroupTag.PROGRAM_INSTRUMENTS);
         programElement.appendChild (instrumentsElement);
 
-        final Map<String, List<Keygroup>> keygroupsMap = new HashMap<> ();
+        final Map<String, List<MPCKeygroup>> keygroupsMap = new HashMap<> ();
 
         // Need to stack the parts of groups in key ranges
         for (final IGroup group: multisampleSource.getGroups ())
@@ -127,14 +124,14 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
             for (final ISampleZone sampleMetadata: group.getSampleZones ())
             {
-                final Optional<Keygroup> keygroupOpt = this.getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger);
+                final Optional<MPCKeygroup> keygroupOpt = this.getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger);
                 if (keygroupOpt.isEmpty ())
                 {
                     this.notifier.logError ("IDS_MPC_MORE_THAN_N_LAYERS", Integer.toString (this.settingsConfiguration.getLayerLimit ()), Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
                     continue;
                 }
 
-                final Keygroup keygroup = keygroupOpt.get ();
+                final MPCKeygroup keygroup = keygroupOpt.get ();
                 keygroup.addLayer (createLayerElement (document, keygroup.getLayerCount (), sampleMetadata, sampleName));
             }
         }
@@ -271,18 +268,18 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
     }
 
 
-    private Optional<Keygroup> getKeygroup (final Map<String, List<Keygroup>> keygroupsMap, final ISampleZone zone, final Document document, final Element instrumentsElement, final TriggerType trigger)
+    private Optional<MPCKeygroup> getKeygroup (final Map<String, List<MPCKeygroup>> keygroupsMap, final ISampleZone zone, final Document document, final Element instrumentsElement, final TriggerType trigger)
     {
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
         final int keyHigh = limitToDefault (zone.getKeyHigh (), 127);
         final String rangeKey = keyLow + "-" + keyHigh;
         final boolean isSequence = zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
-        final List<Keygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, _ -> new ArrayList<> ());
+        final List<MPCKeygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, _ -> new ArrayList<> ());
 
         final int layerLimit = this.settingsConfiguration.getLayerLimit ();
 
         // Check if a key-group exists to which the layer can be added
-        for (final Keygroup keygroup: keygroups)
+        for (final MPCKeygroup keygroup: keygroups)
             // Look for velocity or sequence key-groups (type must match)
             if (keygroup.isSequence () == isSequence)
             {
@@ -400,20 +397,20 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         final Element layersElement = document.createElement ("Layers");
         instrumentElement.appendChild (layersElement);
 
-        final Keygroup keygroup;
+        final MPCKeygroup keygroup;
         if (isSequence)
-            keygroup = new Keygroup (layersElement, limitToDefault (zone.getVelocityLow (), 1), limitToDefault (zone.getVelocityHigh (), 127));
+            keygroup = new MPCKeygroup (layersElement, limitToDefault (zone.getVelocityLow (), 1), limitToDefault (zone.getVelocityHigh (), 127));
         else
-            keygroup = new Keygroup (layersElement);
+            keygroup = new MPCKeygroup (layersElement);
         keygroups.add (keygroup);
         return Optional.of (keygroup);
     }
 
 
-    private static int calcInstrumentNumber (final Map<String, List<Keygroup>> keygroupsMap)
+    private static int calcInstrumentNumber (final Map<String, List<MPCKeygroup>> keygroupsMap)
     {
         int count = 1;
-        for (final List<Keygroup> keygroups: keygroupsMap.values ())
+        for (final List<MPCKeygroup> keygroups: keygroupsMap.values ())
             count += keygroups.size ();
         return count;
     }

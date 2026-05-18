@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
 
-import de.mossgrabers.convertwithmoss.core.NoteParser;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;

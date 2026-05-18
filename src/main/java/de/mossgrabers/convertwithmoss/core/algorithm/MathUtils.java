@@ -237,6 +237,21 @@ public class MathUtils
 
 
     /**
+     * Translates a value in the range of [0..1] to the linear range [minimum..maximum]. Ensures
+     * that the given value is in the range [0..1].
+     *
+     * @param value The value to translate
+     * @param minimum The minimum of the range
+     * @param maximum The maximum of the range
+     * @return The translated value
+     */
+    public static double denormalizeValue (final double value, final double minimum, final double maximum)
+    {
+        return minimum + Math.clamp (value, 0, 1) * (maximum - minimum);
+    }
+
+
+    /**
      * Calculates a logarithm to the base 2.
      *
      * @param n The value for which to calculate the logarithm

@@ -48,7 +48,7 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public AkaiMPC2000Detector (final INotifier notifier)
     {
-        super ("Akai MPC2000(XL)/3000", "MPC2000", notifier, new MetadataSettingsUI ("MPC2000"), ".pgm", ".iso", ".img", ".hfe");
+        super ("Akai MPC 2000(XL)/3000", "MPC2000", notifier, new MetadataSettingsUI ("MPC2000"), ".pgm", ".iso", ".img", ".hfe");
     }
 
 

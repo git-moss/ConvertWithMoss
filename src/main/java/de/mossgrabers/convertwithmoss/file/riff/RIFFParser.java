@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.stream.ImageInputStream;
 
@@ -35,15 +36,15 @@ public class RIFFParser
     private RIFFVisitor                     visitor;
 
     /** List of data chunks the visitor is interested in. */
-    private final HashSet<RawRIFFChunk>     dataChunks          = new HashSet<> ();
+    private final Set<RawRIFFChunk>         dataChunks          = new HashSet<> ();
     /** List of property chunks the visitor is interested in. */
-    private HashSet<RawRIFFChunk>           propertyChunks;
+    private Set<RawRIFFChunk>               propertyChunks;
     /** List of collection chunks the visitor is interested in. */
-    private HashSet<RawRIFFChunk>           collectionChunks;
+    private Set<RawRIFFChunk>               collectionChunks;
     /** List of stop chunks the visitor is interested in. */
-    private final HashSet<Integer>          stopChunkTypes      = new HashSet<> ();
+    private final Set<Integer>              stopChunkTypes      = new HashSet<> ();
     /** List of group chunks the visitor is interested in. */
-    private final HashSet<RawRIFFChunk>     groupChunks         = new HashSet<> ();
+    private final Set<RawRIFFChunk>         groupChunks         = new HashSet<> ();
 
     /** Reference to the input stream. */
     private RIFFPrimitivesInputStream       in;
@@ -213,9 +214,9 @@ public class RIFFParser
                 this.visitor.enterGroup (chunk);
         }
 
+        final long finish = offset + size;
         try
         {
-            final long finish = offset + size;
             while (this.getPosition () < finish)
             {
                 final long idscan = this.getPosition ();
@@ -249,9 +250,12 @@ public class RIFFParser
                 this.in.align ();
             }
         }
-        catch (final EOFException e)
+        catch (final EOFException ex)
         {
-            chunk.setParserMessage ("Unexpected EOF after " + NumberFormat.getInstance ().format (this.getPosition () - offset) + " bytes");
+            final NumberFormat numberInstance = NumberFormat.getInstance ();
+            chunk.setParserMessage ("Unexpected EOF after " + numberInstance.format (this.getPosition () - offset) + " bytes. Expected " + numberInstance.format (finish) + " bytes");
+            if (!this.ignoreChunkErrors)
+                throw new IOException (chunk.getParserMessage ());
         }
         finally
         {

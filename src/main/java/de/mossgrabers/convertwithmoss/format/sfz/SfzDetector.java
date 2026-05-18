@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -38,6 +37,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;

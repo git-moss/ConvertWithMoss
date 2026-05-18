@@ -58,4 +58,14 @@ public class ProgressLogger
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
         this.counter = 0;
     }
+
+
+    /**
+     * Notifies about the failed end of the progress.
+     */
+    public void notifyFailed ()
+    {
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_FAILED");
+        this.counter = 0;
+    }
 }

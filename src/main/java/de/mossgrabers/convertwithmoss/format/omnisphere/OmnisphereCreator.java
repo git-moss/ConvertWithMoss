@@ -4,12 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.omnisphere;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,10 +28,21 @@ import org.w3c.dom.Element;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
+import de.mossgrabers.convertwithmoss.core.utils.HTMLUtils;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -42,6 +55,8 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 {
+    private static final String                    TEMPLATE        = "de/mossgrabers/convertwithmoss/templates/prt_omn/Template.xml";
+
     private static final Map<String, List<String>> ATTRIBUTE_ORDER = new HashMap<> ();
     static
     {
@@ -72,43 +87,146 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File destFolder = new File (destinationFolder, sampleName).getAbsoluteFile ();
+        final String multiSampleName = createSafeFilename (multisampleSource.getName ());
+        final File destFolder = new File (destinationFolder, multiSampleName).getAbsoluteFile ();
         if (!destFolder.exists () && !destFolder.mkdirs ())
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", destFolder.getAbsolutePath ()));
 
-        final Optional<String> metadata = this.createMetadata (multisampleSource);
-        if (metadata.isEmpty ())
-            return;
+        final File multiFile = this.createUniqueFilename (destFolder, multiSampleName, "zmap");
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath () + " / .prt_omn");
 
-        final File multiFile = this.createUniqueFilename (destFolder, sampleName, "zmap");
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        // Store all samples
+        safeCreateDirectory (destFolder);
+        final long size = this.writeSamples (destFolder, multisampleSource, multisampleSource.getAllSampleZones (false));
 
-        this.storePreset (destFolder, multisampleSource, multiFile, metadata.get ());
+        final Optional<String> zmapXml = this.createZmapDocument (multisampleSource, size);
+        try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
+        {
+            if (!zmapXml.isEmpty ())
+                writer.write (zmapXml.get ());
+        }
+
+        this.createPresetFile (destFolder, FileUtils.getNameWithoutType (multiFile), multisampleSource);
 
         this.progress.notifyDone ();
     }
 
 
-    /**
-     * Create a ZMAP and several DB files.
-     *
-     * @param destinationFolder Where to store the preset file
-     * @param multisampleSource The multi-sample to store in the library
-     * @param multiFile The output file
-     * @param metadata The metadata description file
-     * @throws IOException Could not store the file
-     */
-    private void storePreset (final File destinationFolder, final IMultisampleSource multisampleSource, final File multiFile, final String metadata) throws IOException
+    private void createPresetFile (final File destFolder, final String filename, final IMultisampleSource multisampleSource)
     {
-        try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
+        try
         {
-            writer.write (metadata);
-        }
+            String text = Functions.textFileFor (TEMPLATE);
 
-        // Store all samples
-        safeCreateDirectory (destinationFolder);
-        this.writeSamples (destinationFolder, multisampleSource, multisampleSource.getAllSampleZones (false));
+            final ISampleZone firstSampleZone = multisampleSource.getAllSampleZones (true).get (0);
+
+            text = text.replace ("%PRESET_NAME%", multisampleSource.getName ());
+            text = text.replace ("%PRESET_METADATA%", createMetadata (multisampleSource.getMetadata ()) + ";Osc Type=Sample Only;Soundsource=" + filename + ";");
+            text = text.replace ("%PITCHBEND_UP%", toHexFloat (Math.abs (firstSampleZone.getBendUp ()) / 96.0));
+            text = text.replace ("%PITCHBEND_DOWN%", toHexFloat (Math.abs (firstSampleZone.getBendDown ()) / 96.0));
+            text = text.replace ("%SOUND_SOURCE%", filename);
+            text = text.replace ("%KEY_TRACKING%", firstSampleZone.getKeyTracking () > 0 ? "3f800000" : "0");
+
+            final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
+            if (globalFilter.isEmpty ())
+            {
+                text = text.replace ("%FILTER_TYPE%", toHexFloat (OmnisphereFilterUtils.getFilterIndex (new DefaultFilter (FilterType.LOW_PASS, 4, 0, 0))));
+                text = text.replace ("%FILTER_IS_ACTIVE%", "0");
+                text = text.replace ("%FILTER_FREQ%", "3f800000");
+                text = text.replace ("%FILTER_RES%", "0");
+
+                text = text.replace ("%FENV_ATTACK_SEC%", "0");
+                text = text.replace ("%FENV_DECAY_SEC%", "0");
+                text = text.replace ("%FENV_RELEASE_SEC%", "0");
+
+                text = text.replace ("%FENV_ATTACK%", "0");
+                text = text.replace ("%FENV_HOLD%", "3e8fb823");
+                text = text.replace ("%FENV_DECAY%", "3e8fb823");
+                text = text.replace ("%FENV_SUSTAIN%", "3f800000");
+                text = text.replace ("%FENV_RELEASE%", "3d5794a3");
+
+                text = text.replace ("%FENV_ATTACK_SLOPE%", "3f000000");
+                text = text.replace ("%FENV_DECAY_SLOPE%", "3f000000");
+                text = text.replace ("%FENV_RELEASE_SLOPE%", "3f000000");
+
+                text = text.replace ("%FENV_VEL_SENS%", "3f000000");
+                text = text.replace ("%FENV_DEPTH%", "3f800000");
+            }
+            else
+            {
+                final IFilter filter = globalFilter.get ();
+                final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+                final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();
+                text = text.replace ("%FILTER_TYPE%", toHexFloat (OmnisphereFilterUtils.getFilterIndex (filter)));
+                text = text.replace ("%FILTER_IS_ACTIVE%", "3f800000");
+                text = text.replace ("%FILTER_FREQ%", toHexFloat (OmnisphereFilterUtils.hertzToNormalized (filter.getCutoff ())));
+                text = text.replace ("%FILTER_RES%", toHexFloat (filter.getResonance ()));
+
+                text = text.replace ("%FENV_ATTACK_SEC%", toHexFloat (cutoffEnvelope.getAttackTime () / 100.0));
+                text = text.replace ("%FENV_DECAY_SEC%", toHexFloat ((Math.max (0, cutoffEnvelope.getHoldTime ()) + Math.max (0, cutoffEnvelope.getDecayTime ())) / 100.0));
+                text = text.replace ("%FENV_RELEASE_SEC%", toHexFloat (cutoffEnvelope.getReleaseTime () / 100.0));
+
+                text = text.replace ("%FENV_ATTACK%", toTime (cutoffEnvelope.getAttackTime ()));
+                text = text.replace ("%FENV_HOLD%", toTime (cutoffEnvelope.getHoldTime ()));
+                text = text.replace ("%FENV_DECAY%", toTime (cutoffEnvelope.getDecayTime ()));
+                text = text.replace ("%FENV_SUSTAIN%", toHexFloat (cutoffEnvelope.getSustainLevel ()));
+                text = text.replace ("%FENV_RELEASE%", toTime (cutoffEnvelope.getReleaseTime ()));
+
+                double attackSlope = (cutoffEnvelope.getAttackSlope () + 1.0) / 2.0;
+                text = text.replace ("%FENV_ATTACK_SLOPE%", toHexFloat (attackSlope));
+                text = text.replace ("%FENV_DECAY_SLOPE%", toHexFloat ((cutoffEnvelope.getDecaySlope () + 1.0) / 2.0));
+                text = text.replace ("%FENV_RELEASE_SLOPE%", toHexFloat ((cutoffEnvelope.getReleaseSlope () + 1.0) / 2.0));
+
+                text = text.replace ("%FENV_VEL_SENS%", toHexFloat (filter.getCutoffVelocityModulator ().getDepth ()));
+                // The range is 0..1 but it seems like 0.5 already opens the filter completely
+                text = text.replace ("%FENV_DEPTH%", toHexFloat (cutoffEnvelopeModulator.getDepth () / 2.0));
+            }
+
+            // Amplitude envelope
+            final IEnvelope ampEnvelope = firstSampleZone.getAmplitudeEnvelopeModulator ().getSource ();
+            text = text.replace ("%AMP_ATTACK_SEC%", toHexFloat (ampEnvelope.getAttackTime () / 100.0));
+            text = text.replace ("%AMP_DECAY_SEC%", toHexFloat ((Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ())) / 100.0));
+            text = text.replace ("%AMP_RELEASE_SEC%", toHexFloat (ampEnvelope.getReleaseTime () / 100.0));
+            text = text.replace ("%AMP_ATTACK%", toTime (ampEnvelope.getAttackTime ()));
+            text = text.replace ("%AMP_HOLD%", toTime (ampEnvelope.getHoldTime ()));
+            text = text.replace ("%AMP_DECAY%", toTime (ampEnvelope.getDecayTime ()));
+            text = text.replace ("%AMP_SUSTAIN%", toHexFloat (ampEnvelope.getSustainLevel ()));
+            text = text.replace ("%AMP_RELEASE%", toTime (ampEnvelope.getReleaseTime ()));
+            text = text.replace ("%AMP_ATTACK_SLOPE%", toHexFloat ((ampEnvelope.getAttackSlope () + 1.0) / 2.0));
+            text = text.replace ("%AMP_DECAY_SLOPE%", toHexFloat ((ampEnvelope.getDecaySlope () + 1.0) / 2.0));
+            text = text.replace ("%AMP_RELEASE_SLOPE%", toHexFloat ((ampEnvelope.getReleaseSlope () + 1.0) / 2.0));
+            text = text.replace ("%AMP_VEL_SENS%", toHexFloat (firstSampleZone.getAmplitudeVelocityModulator ().getDepth ()));
+
+            // Pitch Envelope
+            final IEnvelopeModulator pitchEnvelopeModulator = firstSampleZone.getPitchEnvelopeModulator ();
+            final IEnvelope modEnvelope = pitchEnvelopeModulator.getSource ();
+            final double pitchEnvelopeDepth = pitchEnvelopeModulator.getDepth ();
+            final boolean hasModEnvelope = pitchEnvelopeDepth > 0;
+            text = text.replace ("%PITCH_MOD_SOURCE%", hasModEnvelope ? "ModEnv1" : "off");
+            text = text.replace ("%PITCH_MOD_TARGET%", hasModEnvelope ? "A tune" : "off");
+            // 0..1 ~ -4800..4800
+            text = text.replace ("%PITCH_MOD_AMOUNT%", toHexFloat ((pitchEnvelopeDepth + 1.0) / 2.0));
+            text = text.replace ("%PITCH_MOD_INTENSITY%", toHexFloat (1.0));
+
+            text = text.replace ("%MOD_ATTACK_SEC%", toHexFloat (modEnvelope.getAttackTime () / 100.0));
+            text = text.replace ("%MOD_DECAY_SEC%", toHexFloat ((Math.max (0, modEnvelope.getHoldTime ()) + Math.max (0, modEnvelope.getDecayTime ())) / 100.0));
+            text = text.replace ("%MOD_RELEASE_SEC%", toHexFloat (modEnvelope.getReleaseTime () / 100.0));
+            text = text.replace ("%MOD_ATTACK%", toTime (modEnvelope.getAttackTime ()));
+            text = text.replace ("%MOD_HOLD%", toTime (modEnvelope.getHoldTime ()));
+            text = text.replace ("%MOD_DECAY%", toTime (modEnvelope.getDecayTime ()));
+            text = text.replace ("%MOD_SUSTAIN%", toHexFloat (modEnvelope.getSustainLevel ()));
+            text = text.replace ("%MOD_RELEASE%", toTime (modEnvelope.getReleaseTime ()));
+            text = text.replace ("%MOD_ATTACK_SLOPE%", toHexFloat ((modEnvelope.getAttackSlope () + 1.0) / 2.0));
+            text = text.replace ("%MOD_DECAY_SLOPE%", toHexFloat ((modEnvelope.getDecaySlope () + 1.0) / 2.0));
+            text = text.replace ("%MOD_RELEASE_SLOPE%", toHexFloat ((modEnvelope.getReleaseSlope () + 1.0) / 2.0));
+
+            final File presetFile = new File (destFolder, filename + ".prt_omn");
+            Files.write (presetFile.toPath (), text.getBytes (StandardCharsets.UTF_8));
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ex);
+        }
     }
 
 
@@ -116,10 +234,11 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
      * Create the text of the description file.
      *
      * @param multisampleSource The multi-sample
+     * @param size The size of all DB files without their headers
      * @return The XML structure
      * @throws IOException Could not create the metadata
      */
-    private Optional<String> createMetadata (final IMultisampleSource multisampleSource) throws IOException
+    private Optional<String> createZmapDocument (final IMultisampleSource multisampleSource, final long size) throws IOException
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -129,12 +248,9 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
         final Element rootElement = document.createElement ("InstrumentMultisample");
         document.appendChild (rootElement);
-        // TODO Set the size to the size of the DB file (in bytes) without the prefixed FileSystem
-        // -> already calculated in the write method!
-        rootElement.setAttribute ("ATTRIB_VALUE_DATA", "Size=495424;");
+        rootElement.setAttribute ("ATTRIB_VALUE_DATA", createMetadata (multisampleSource.getMetadata ()) + "Size=" + size + ";");
 
         // Add all sample zones
-
         for (final ISampleZone sampleZone: multisampleSource.getAllSampleZones (false))
         {
             final Element zoneElement = XMLUtils.addElement (document, rootElement, "MultisampleZone");
@@ -143,11 +259,9 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             zoneElement.setAttribute ("MinVelocity", Integer.toString (sampleZone.getVelocityLow ()));
             zoneElement.setAttribute ("MaxVelocity", Integer.toString (sampleZone.getVelocityHigh ()));
             zoneElement.setAttribute ("HitKind", Integer.toString (sampleZone.getKeyRoot ()));
-            zoneElement.setAttribute ("Volume", "3f800000");
-            // TODO support pitch adjustment on sample level
-            zoneElement.setAttribute ("Pitch", "3f800000");
-            // TODO understand settings range
-            zoneElement.setAttribute ("fixVel", "-1");
+
+            zoneElement.setAttribute ("Volume", toHexFloat (dbToLinear (sampleZone.getGain ())));
+            zoneElement.setAttribute ("Pitch", toHexFloat (fromCents (sampleZone.getTuning ())));
 
             final Element soundGroupElement = XMLUtils.addElement (document, zoneElement, "SoundGroupWithNames");
             soundGroupElement.setAttribute ("UnderKitSession", "0");
@@ -155,22 +269,35 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             soundGroupElement.setAttribute ("SampledInstrumentName", createSafeFilename (sampleZone.getName ()));
         }
 
-        try
-        {
-            final String xmlCode = XMLUtils.toString (document, "\n", 0, StandardCharsets.ISO_8859_1.name (), "1.0");
-            return Optional.of (xmlCode);
-        }
-        catch (final TransformerException ex)
-        {
-            throw new IOException (ex);
-        }
+        return Optional.of (OmnisphereXmlUtil.documentToXmlString (document, false, null));
+    }
+
+
+    private static String createMetadata (final IMetadata metadata)
+    {
+        final StringBuilder sb = new StringBuilder ();
+
+        for (final String keyword: metadata.getKeywords ())
+            sb.append ("Timbre=").append (keyword).append (';');
+
+        final String creator = metadata.getCreator ();
+        if (!creator.isBlank ())
+            sb.append ("Author=").append (creator).append (';');
+
+        final String type = metadata.getCategory ();
+        if (!type.isBlank ())
+            sb.append ("Type=").append (type).append (';');
+
+        final String description = metadata.getDescription ();
+        if (!description.isBlank ())
+            sb.append ("Description=").append (HTMLUtils.unicodeToHTML (description).replace ("\r\n", "&#13;").replace ("\r", "&#13;").replace ("\n", "&#13;")).append (';');
+
+        return sb.toString ();
     }
 
 
     protected long writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final List<ISampleZone> sampleZones) throws IOException
     {
-        // TODO for round-robin sample-zones need to be aggregated!
-
         long overallDbFileSize = 0;
         for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
         {
@@ -190,7 +317,8 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             try
             {
                 aggregator.addXmlFile ("HitBundle.xml", this.createHitBundleDocument (sampleZone));
-                aggregator.addXmlFile ("Layer.xml", this.createLayerHitStackDocument (sampleZone), ATTRIBUTE_ORDER);
+                // Round-robin groups could be aggregated to Sub-layers but there are only 4!
+                aggregator.addXmlFile ("Layer.xml", this.createLayerHitStackDocument (Collections.singletonList (sampleZone)), ATTRIBUTE_ORDER);
                 aggregator.addXmlFile ("SampledInstrument.xml", this.createSampledInstrumentDocument (sampleZone), ATTRIBUTE_ORDER);
                 overallDbFileSize += aggregator.write (new File (sampleFolder, this.createSampleFilename (sampleZone, zoneIndex, ".db")));
             }
@@ -220,8 +348,14 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    // TODO this needs to be created for multiple sample-zones in case of round-robin!
-    private Document createLayerHitStackDocument (final ISampleZone sampleZone) throws IOException
+    /**
+     * Adds 1 sample zone or multiple in case of round-robin to a layer hit stack document.
+     * 
+     * @param sampleZones The round-robin sample zones
+     * @return The document
+     * @throws IOException Could not create the document
+     */
+    private Document createLayerHitStackDocument (final List<ISampleZone> sampleZones) throws IOException
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -237,17 +371,18 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
         hitVelocityElement.setAttribute ("Level", "3f800000");
         // No idea about this value but the sample is not found if it is set to the minimum velocity
         hitVelocityElement.setAttribute ("Minimum", "0");
-        hitVelocityElement.setAttribute ("Maximum", Integer.toString (sampleZone.getVelocityHigh ()));
+        hitVelocityElement.setAttribute ("Maximum", Integer.toString (sampleZones.get (0).getVelocityHigh ()));
 
-        // TODO this needs to be created for multiple sample-zones in case of round-robin!
-
-        final Element sampleWaveformElement = XMLUtils.addElement (document, hitVelocityElement, "SampleWaveform");
-        final String roundRobinIndex = sampleZone.getPlayLogic () == PlayLogic.ROUND_ROBIN ? Integer.toString (sampleZone.getSequencePosition () - 1) : "0";
-        sampleWaveformElement.setAttribute ("RoundRobinSequenceNum", roundRobinIndex);
-        sampleWaveformElement.setAttribute ("BaseNote", Integer.toString (sampleZone.getKeyRoot ()));
-        sampleWaveformElement.setAttribute ("AudioFilePath", this.createSampleFilename (sampleZone, -1, ".wav"));
-        sampleWaveformElement.setAttribute ("Level", "3f800000");
-        sampleWaveformElement.setAttribute ("A440", "3f800000");
+        for (final ISampleZone sampleZone: sampleZones)
+        {
+            final Element sampleWaveformElement = XMLUtils.addElement (document, hitVelocityElement, "SampleWaveform");
+            final String roundRobinIndex = sampleZone.getPlayLogic () == PlayLogic.ROUND_ROBIN ? Integer.toString (sampleZone.getSequencePosition () - 1) : "0";
+            sampleWaveformElement.setAttribute ("RoundRobinSequenceNum", roundRobinIndex);
+            sampleWaveformElement.setAttribute ("BaseNote", Integer.toString (sampleZone.getKeyRoot ()));
+            sampleWaveformElement.setAttribute ("AudioFilePath", this.createSampleFilename (sampleZone, -1, ".wav"));
+            sampleWaveformElement.setAttribute ("Level", "3f800000");
+            sampleWaveformElement.setAttribute ("A440", "3f800000");
+        }
 
         return document;
     }
@@ -285,8 +420,53 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
                 this.notifier.logText ("\n");
             }
             else
+            {
                 sampleData.writeSample (out);
+                final WaveFile wavFile = new WaveFile ();
+                try
+                {
+                    // Make sure that the loops are up to date in the WAV file
+                    wavFile.read (new ByteArrayInputStream (out.toByteArray ()), true);
+                    AbstractWavCreator.updateSampleChunk (zone, wavFile);
+                    out.reset ();
+                    wavFile.write (out);
+                }
+                catch (final ParseException ex)
+                {
+                    throw new IOException (ex);
+                }
+            }
         }
         return out.toByteArray ();
+    }
+
+
+    private static String toTime (final double seconds)
+    {
+        return toHexFloat (Math.sqrt (seconds / 20.0));
+    }
+
+
+    private static String toHexFloat (final double value)
+    {
+        return Integer.toHexString (Float.floatToIntBits ((float) value));
+    }
+
+
+    private static double fromCents (final double cents)
+    {
+        return Math.pow (2.0, -cents / 1200.0);
+    }
+
+
+    /**
+     * Converts dB gain (-INF to +24dB) to linear amplitude. 0 dB = 1.0 (unity gain).
+     * 
+     * @param db The dB value
+     * @return The relative value
+     */
+    public static double dbToLinear (final double db)
+    {
+        return Math.pow (10.0, db / 20.0);
     }
 }

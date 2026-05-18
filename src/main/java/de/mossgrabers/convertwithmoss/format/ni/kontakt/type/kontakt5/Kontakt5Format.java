@@ -269,7 +269,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
             final List<String> attributes = soundinfo.getAttributes ();
             final IMetadata metadata = source.getMetadata ();
             metadata.setKeywords (attributes.toArray (new String [attributes.size ()]));
-            if (metadata.getCreator () == null)
+            String creator = metadata.getCreator ();
+            if (creator == null || creator.isBlank ())
             {
                 final String author = soundinfo.getAuthor ();
                 if (author != null && !author.isBlank ())
@@ -310,7 +311,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
         {
             final String programName = program.getName ();
             final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + programName;
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
             this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName

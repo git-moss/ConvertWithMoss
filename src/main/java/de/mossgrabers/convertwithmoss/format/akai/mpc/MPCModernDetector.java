@@ -2,26 +2,37 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.akai.mpc.xpm;
+package de.mossgrabers.convertwithmoss.format.akai.mpc;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -38,21 +49,29 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCFilter;
-import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCKeygroupConstants;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 
 /**
- * Detects recursively MPC Keygroup files in folders. Files must end with <i>.xpm</i>.
- *
+ * Detects recursively MPC Keygroup (in XML and JSON format) files in folders. Files must end with
+ * <i>.xpm</i>. Also detects recursively MPC Key-group tracks v3. Files must end with <i>.xty</i>. A
+ * track file is an MPC3-specific file that saves all settings, samples, macros, FX and MIDI data
+ * associated with a track. A track consists of two elements; the track file itself and a trackData
+ * folder containing the samples used within the track. It's a complete snapshot of an entire
+ * sequencer track, and reloading this to a track will exactly recreate the original track.
+ * 
  * @author Jürgen Moßgraber
  */
-public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
+public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 {
     private static final String BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+
+    private final ObjectMapper  mapper            = new ObjectMapper ();
+    private String              version;
+    private String              operatingSystem;
 
 
     /**
@@ -60,29 +79,43 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      *
      * @param notifier The notifier
      */
-    public MPCKeygroupDetector (final INotifier notifier)
+    public MPCModernDetector (final INotifier notifier)
     {
-        super ("Akai MPC Keygroup", "MPC", notifier, new MPCKeygroupDetectorUI ("MPC"), ".xpm");
+        super ("Akai MPC Modern", "MPC", notifier, new MPCKeygroupDetectorUI ("MPC"), ".xpm", ".xpj", ".xty");
     }
 
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readPresetFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
 
-        try
+        // Old Key-group XML format?
+        if (sourceFile.getName ().toLowerCase ().endsWith (".xpm"))
         {
-            final String content = this.loadTextFile (file).trim ();
-            return this.parseMetadataFile (file, content);
+            try
+            {
+                boolean isXML = false;
+                try (final FileInputStream input = new FileInputStream (sourceFile))
+                {
+                    isXML = "<?xml".equals (StreamUtils.readAscii (input, 5));
+                }
+                if (isXML)
+                {
+                    final String content = this.loadTextFile (sourceFile).trim ();
+                    return this.parseMetadataFile (sourceFile, content);
+                }
+            }
+            catch (final IOException ex)
+            {
+                this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+                return Collections.emptyList ();
+            }
         }
-        catch (final IOException ex)
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
-            return Collections.emptyList ();
-        }
+
+        return this.readJSONPresetFile (sourceFile);
     }
 
 
@@ -287,7 +320,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 continue;
             zones.add (zone);
 
-            ///////////////////////////////////////////////////////////
+            //
             // Amplitude
 
             final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
@@ -298,7 +331,7 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             if (ampVelocityAmount > 0)
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityAmount);
 
-            ///////////////////////////////////////////////////////////
+            //
             // Pitch
 
             final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);
@@ -642,12 +675,371 @@ public class MPCKeygroupDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         final double value = XMLUtils.getChildElementDoubleContent (element, attribute, defaultValue);
         if (value < 0)
             return defaultValue;
-        return logarithmic ? denormalizeLogarithmicEnvTimeValue (value, minimum, maximum) : denormalizeValue (value, minimum, maximum);
+        return logarithmic ? denormalizeLogarithmicEnvTimeValue (value, minimum, maximum) : MathUtils.denormalizeValue (value, minimum, maximum);
     }
 
 
     private static double denormalizeLogarithmicEnvTimeValue (final double value, final double minimum, final double maximum)
     {
         return minimum * Math.exp (Math.clamp (value, 0, 1) * Math.log (maximum / minimum));
+    }
+
+
+    private List<IMultisampleSource> readJSONPresetFile (final File sourceFile)
+    {
+        try (final BufferedReader reader = new BufferedReader (new InputStreamReader (new GZIPInputStream (new FileInputStream (sourceFile)), StandardCharsets.UTF_8)))
+        {
+            final String [] header = new String [5];
+            for (int i = 0; i < 5; i++)
+                header[i] = reader.readLine ();
+
+            if (!"ACVS".equals (header[0]))
+            {
+                this.notifier.logError ("IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE", header[0]);
+                return Collections.emptyList ();
+            }
+
+            if (!"json".equals (header[3]))
+            {
+                this.notifier.logError ("IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE", "Encoding is '" + header[3] + "'");
+                return Collections.emptyList ();
+            }
+
+            JSONFormat jsonFormat;
+            switch (header[2])
+            {
+                case "SerialisableProjectData" -> jsonFormat = JSONFormat.PROJECT;
+                case "SerialisableTrackData" -> jsonFormat = JSONFormat.TRACK;
+                case "SerialisableProgramData" -> jsonFormat = JSONFormat.PROGRAM;
+                default -> {
+                    this.notifier.logError ("IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE", header[2]);
+                    return Collections.emptyList ();
+                }
+            }
+
+            this.version = header[1];
+            this.operatingSystem = header[4];
+            this.notifier.log ("IDS_MPC_TRACK_OR_PROJECT_VERSION", jsonFormat.getName (), this.version, this.operatingSystem);
+
+            if (this.waitForDelivery ())
+                return Collections.emptyList ();
+
+            final String jsonCode = reader.readAllAsString ();
+
+            if (this.waitForDelivery ())
+                return Collections.emptyList ();
+
+            return this.parseJsonData (sourceFile, this.getContent (jsonCode), jsonFormat);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            return Collections.emptyList ();
+        }
+    }
+
+
+    /**
+     * Parse the JSON description file.
+     *
+     * @param multiSampleFile The file
+     * @param root The root node of the JSON structure
+     * @param jsonFormat The JSON format
+     * @return The result
+     * @throws IOException Error reading the file
+     */
+    private List<IMultisampleSource> parseJsonData (final File multiSampleFile, final JsonNode root, final JSONFormat jsonFormat) throws IOException
+    {
+        final JsonNode dataNode = root.get ("data");
+        if (dataNode == null)
+        {
+            this.notifier.logError ("IDS_MPC_DATA_MISSING");
+            return Collections.emptyList ();
+        }
+
+        final List<IMultisampleSource> results = new ArrayList<> ();
+        for (final JsonNode programNode: collectProgramNodes (dataNode, jsonFormat))
+        {
+            // Further interesting track values in case multiple-instruments are loaded from a
+            // project: volume, pan, transposition
+
+            final String programName = programNode.get ("name").asText ();
+
+            final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : programName;
+            final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
+            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, programName, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+
+            final IGroup group = new DefaultGroup ();
+
+            multisampleSource.setName (programName);
+            final double programTranspose = programNode.get ("transpose").asDouble ();
+
+            /////////
+            // Read all sample info
+            final Iterator<JsonNode> sampleNodes = dataNode.get ("samples").elements ();
+            final Map<String, SampleInfo> sampleInfos = new HashMap<> ();
+            while (sampleNodes.hasNext ())
+            {
+                final JsonNode sampleNode = sampleNodes.next ();
+                final SampleInfo sampleInfo = new SampleInfo ();
+                final String sampleName = sampleNode.get ("name").asText ();
+                // "path" attribute appears again in the sample zone, so no need to store it here
+                final JsonNode metadata = sampleNode.get ("metadata");
+                if (metadata != null)
+                {
+                    sampleInfo.rootNote = metadata.get ("rootNote").asInt ();
+                    sampleInfo.tuning = metadata.get ("tune").asDouble ();
+                    sampleInfos.put (sampleName, sampleInfo);
+                }
+            }
+
+            /////////
+            // Read key-group parameters
+            final JsonNode keygroupNode = programNode.get ("keygroup");
+            double keygroupTranspose = 0;
+            int pitchBendUp = 0;
+            int pitchBendDown = 0;
+            MPCEnvelopesAndFilter globalEnvelopesAndFilter = null;
+            if (keygroupNode != null)
+            {
+                keygroupTranspose = programTranspose + keygroupNode.get ("transpose").asDouble ();
+                pitchBendUp = keygroupNode.get ("pitchBendPositiveRange").asInt ();
+                pitchBendDown = keygroupNode.get ("pitchBendNegativeRange").asInt ();
+                final JsonNode synthSectionNode = keygroupNode.get ("synthSection");
+                globalEnvelopesAndFilter = new MPCEnvelopesAndFilter (synthSectionNode, true);
+            }
+
+            /////////
+            // Read all layers - strangely all key-group settings seem to be under drum
+            final JsonNode drumNode = programNode.get ("drum");
+            final Iterator<JsonNode> instrumentsNodes = drumNode.get ("instruments").elements ();
+            while (instrumentsNodes.hasNext ())
+            {
+                final JsonNode instrumentNode = instrumentsNodes.next ();
+                final int coarseTune = instrumentNode.get ("coarseTune").asInt ();
+                final int fineTune = instrumentNode.get ("fineTune").asInt ();
+                final double tuning = keygroupTranspose + coarseTune + fineTune / 100.0;
+
+                final int lowNote = instrumentNode.get ("lowNote").asInt ();
+                final int highNote = instrumentNode.get ("highNote").asInt ();
+
+                final Iterator<JsonNode> layersNodes = instrumentNode.get ("layersv").elements ();
+                while (layersNodes.hasNext ())
+                {
+                    final ISampleZone sampleZone = this.readSampleZone (multiSampleFile, instrumentNode, layersNodes.next (), lowNote, highNote, pitchBendUp, pitchBendDown, tuning, sampleInfos, globalEnvelopesAndFilter, jsonFormat);
+                    if (sampleZone != null)
+                        group.addSampleZone (sampleZone);
+                }
+            }
+
+            final List<IGroup> groups = Collections.singletonList (group);
+            multisampleSource.setGroups (groups);
+            final boolean isDrum = false;
+            this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, isDrum ? "Drums" : null);
+            multisampleSource.setMappingName (multiSampleFile.getName () + " : " + multisampleSource.getName ());
+            results.add (multisampleSource);
+        }
+
+        return results;
+    }
+
+
+    private static List<JsonNode> collectProgramNodes (final JsonNode dataNode, final JSONFormat jsonFormat)
+    {
+        if (jsonFormat == JSONFormat.PROGRAM)
+            return Collections.singletonList (dataNode);
+
+        if (jsonFormat == JSONFormat.PROGRAM)
+        {
+            final JsonNode programNode = dataNode.get ("program");
+            // 1 == key-group program
+            return programNode != null && programNode.get ("type").asInt () == 1 ? Collections.singletonList (programNode) : Collections.emptyList ();
+        }
+
+        // jsonFormat == JSONFormat.PROJECT
+        final List<JsonNode> programNodes = new ArrayList<> ();
+        final JsonNode tracksNode = dataNode.get ("tracks");
+        if (tracksNode != null)
+        {
+            final Iterator<JsonNode> trackNodes = tracksNode.elements ();
+            while (trackNodes.hasNext ())
+            {
+                final JsonNode programNode = trackNodes.next ().get ("program");
+                // 1 == key-group program
+                if (programNode != null && programNode.get ("type").asInt () == 1)
+                    programNodes.add (programNode);
+            }
+        }
+        return programNodes;
+    }
+
+
+    private ISampleZone readSampleZone (final File multiSampleFile, final JsonNode instrumentNode, final JsonNode layerNode, final int lowNote, final int highNote, final int pitchBendUp, final int pitchBendDown, final double tuning, final Map<String, SampleInfo> sampleInfos, final MPCEnvelopesAndFilter globalEnvelopesAndFilter, final JSONFormat jsonFormat) throws IOException
+    {
+        if (!layerNode.get ("active").asBoolean ())
+            return null;
+
+        final String sampleName = layerNode.get ("sampleName").asText ();
+        final String sampleFileName = layerNode.get ("sampleFile").asText ();
+        if (sampleName.isBlank () || sampleFileName.isBlank ())
+            return null;
+
+        final String sampleFolderName = FileUtils.getNameWithoutType (multiSampleFile);
+        final File path = new File (multiSampleFile.getParentFile (), sampleFolderName + "_[" + jsonFormat.getName () + "Data]");
+        final File file = new File (path, sampleFileName);
+        if (!file.exists ())
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", file.getAbsolutePath ());
+            return null;
+        }
+
+        final ISampleData sampleData = new WavFileSampleData (file);
+        final ISampleZone sampleZone = new DefaultSampleZone (sampleName, sampleData);
+        sampleZone.setBendUp (pitchBendUp);
+        sampleZone.setBendDown (-pitchBendDown);
+
+        final SampleInfo sampleInfo = sampleInfos.get (sampleName);
+        final int rootNote = layerNode.get ("rootNote").asInt ();
+        if (rootNote > 0)
+            sampleZone.setKeyRoot (rootNote);
+        else if (sampleInfo != null)
+            sampleZone.setKeyRoot (sampleInfo.rootNote);
+
+        final int layerCoarseTune = instrumentNode.get ("coarseTune").asInt ();
+        final int layerFineTune = instrumentNode.get ("fineTune").asInt ();
+        final double layerTuning = layerCoarseTune + layerFineTune / 100.0;
+        sampleZone.setTuning (layerTuning + tuning + (sampleInfo != null ? sampleInfo.tuning : 0));
+
+        sampleZone.setPanning (layerNode.get ("pan").asDouble () * 2.0 - 1.0);
+        sampleZone.setKeyLow (lowNote);
+        sampleZone.setKeyHigh (highNote);
+        sampleZone.setVelocityLow (layerNode.get ("velocityStart").asInt ());
+        sampleZone.setVelocityHigh (layerNode.get ("velocityEnd").asInt ());
+        // -9999..+9999 -> negative values currently not supported
+        final int offset = Math.max (0, layerNode.get ("offset").asInt ());
+        final int start = offset + layerNode.get ("sampleStart").asInt ();
+        if (start > 0)
+            sampleZone.setStart (start);
+        final int playbackEnd = layerNode.get ("sampleEnd").asInt ();
+        if (playbackEnd > 0)
+            sampleZone.setStop (playbackEnd);
+
+        sampleZone.setReversed (layerNode.get ("direction").asInt () > 0);
+
+        sampleZone.setKeyTracking (layerNode.get ("keyTrackEnable").asBoolean () ? 1.0 : 0);
+
+        final JsonNode overrideSliceLoopModeNode = layerNode.get ("layerLoopModeOverridesSliceLoopMode");
+        if (overrideSliceLoopModeNode != null && overrideSliceLoopModeNode.asBoolean ())
+        {
+            final int loopMode = layerNode.get ("loopMode").asInt ();
+            final int stop = layerNode.get ("loopEnd").asInt ();
+            if (loopMode > 0 && stop > 0)
+            {
+                final ISampleLoop sampleLoop = new DefaultSampleLoop ();
+                sampleLoop.setStart (layerNode.get ("loopStart").asInt ());
+                sampleLoop.setEnd (stop);
+                final int loopCrossfade = layerNode.get ("loopCrossfadeLength").asInt ();
+                sampleLoop.setCrossfade (loopCrossfade / (double) sampleLoop.getLength ());
+                sampleZone.getLoops ().add (sampleLoop);
+            }
+        }
+        else
+        {
+            final JsonNode sliceInfoNode = layerNode.get ("sliceInfo");
+            final int loopMode = sliceInfoNode.get ("LoopMode").asInt ();
+            final int stop = sliceInfoNode.get ("End").asInt ();
+            if (loopMode > 0 && stop > 0)
+            {
+                final ISampleLoop sampleLoop = new DefaultSampleLoop ();
+                sampleLoop.setStart (sliceInfoNode.get ("LoopStart").asInt ());
+                sampleLoop.setEnd (stop);
+                final int loopCrossfade = sliceInfoNode.get ("LoopCrossfadeLength").asInt ();
+                sampleLoop.setCrossfade (loopCrossfade / (double) sampleLoop.getLength ());
+                sampleZone.getLoops ().add (sampleLoop);
+            }
+        }
+
+        final JsonNode synthSectionNode = instrumentNode.get ("synthSection");
+        final MPCEnvelopesAndFilter envelopesAndFilter = new MPCEnvelopesAndFilter (synthSectionNode, false);
+
+        // Set global filter and envelopes, if present or sample zone settings
+        if (globalEnvelopesAndFilter != null && globalEnvelopesAndFilter.getFilter () != null)
+            sampleZone.setFilter (globalEnvelopesAndFilter.getFilter ());
+        else if (envelopesAndFilter.getFilter () != null)
+            sampleZone.setFilter (envelopesAndFilter.getFilter ());
+        setModulator (sampleZone.getAmplitudeEnvelopeModulator (), globalEnvelopesAndFilter != null ? globalEnvelopesAndFilter.getAmpEnvelopeModulator () : null, envelopesAndFilter.getAmpEnvelopeModulator ());
+        setModulator (sampleZone.getPitchEnvelopeModulator (), globalEnvelopesAndFilter != null ? globalEnvelopesAndFilter.getPitchEnvelopeModulator () : null, envelopesAndFilter.getPitchEnvelopeModulator ());
+
+        return sampleZone;
+    }
+
+
+    private static void setModulator (final IEnvelopeModulator destinationEnvelopeModulator, final IEnvelopeModulator sourceGlobalEnvelopeModulator, final IEnvelopeModulator sourceEnvelopeModulator)
+    {
+        if (sourceGlobalEnvelopeModulator != null)
+        {
+            destinationEnvelopeModulator.setDepth (sourceGlobalEnvelopeModulator.getDepth ());
+            destinationEnvelopeModulator.setSource (sourceGlobalEnvelopeModulator.getSource ());
+        }
+        else if (sourceEnvelopeModulator != null)
+        {
+            destinationEnvelopeModulator.setDepth (sourceEnvelopeModulator.getDepth ());
+            destinationEnvelopeModulator.setSource (sourceEnvelopeModulator.getSource ());
+        }
+    }
+
+
+    /**
+     * Get and parse the JSON content of an information message
+     *
+     * @param content The JSON code
+     * @return The root node of the JSON structure
+     * @throws IOException Could not parse the JSON code
+     */
+    private JsonNode getContent (final String content) throws IOException
+    {
+        try
+        {
+            return this.mapper.readValue (content, JsonNode.class);
+        }
+        catch (final JsonProcessingException ex)
+        {
+            throw new IOException ("Could not parse JSON information.", ex);
+        }
+    }
+
+
+    private class SampleInfo
+    {
+        int    rootNote = -1;
+        double tuning;
+    }
+
+
+    private enum JSONFormat
+    {
+        PROJECT("Project"),
+        TRACK("Track"),
+        PROGRAM("Program");
+
+
+        private final String name;
+
+
+        private JSONFormat (final String name)
+        {
+            this.name = name;
+        }
+
+
+        /**
+         * Get the name of the format.
+         * 
+         * @return The name
+         */
+        public String getName ()
+        {
+            return this.name;
+        }
     }
 }

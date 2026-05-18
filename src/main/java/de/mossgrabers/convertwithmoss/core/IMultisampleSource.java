@@ -97,7 +97,7 @@ public interface IMultisampleSource extends ISource
 
 
     /**
-     * If at least one zones in this group is set to play round-robin.
+     * If at least one zone in this group is set to play round-robin.
      *
      * @return True if at least one sample zone has round-robin enabled
      */

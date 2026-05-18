@@ -287,7 +287,7 @@ public class Kontakt2Header
     private void readMetadata (final RandomAccessFile fileAccess) throws IOException
     {
         this.iconID = (int) StreamUtils.readUnsigned32 (fileAccess, this.isBigEndian);
-        this.author = StreamUtils.readAscii (fileAccess, 8, StandardCharsets.ISO_8859_1).trim ();
+        this.author = fixBrokenCharacters (StreamUtils.readAscii (fileAccess, 8, StandardCharsets.ISO_8859_1).trim ());
 
         this.category1 = fileAccess.read ();
         this.category2 = fileAccess.read ();
@@ -626,5 +626,34 @@ public class Kontakt2Header
     public byte [] getChecksum ()
     {
         return this.md5Checksum;
+    }
+
+
+    private static String fixBrokenCharacters (final String text)
+    {
+        final byte [] bytes = text.getBytes (StandardCharsets.ISO_8859_1);
+        final StringBuilder sb = new StringBuilder ();
+        for (int i = 0; i < text.length (); i++)
+        {
+            if (bytes[i] == (byte) 0xEF && i + 2 < bytes.length)
+            {
+                if (bytes[i + 1] == (byte) 0xBF && bytes[i + 2] == (byte) 0xBC)
+                {
+                    sb.append ('ü');
+                    i += 2;
+                }
+            }
+            else if (bytes[i] == (byte) 0xC3 && i + 1 < bytes.length)
+            {
+                if (bytes[i + 1] == (byte) 0xBC)
+                {
+                    sb.append ('ü');
+                    i++;
+                }
+            }
+            else
+                sb.append ((char) bytes[i]);
+        }
+        return sb.toString ();
     }
 }
