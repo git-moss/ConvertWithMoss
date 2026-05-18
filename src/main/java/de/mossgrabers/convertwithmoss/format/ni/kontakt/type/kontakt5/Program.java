@@ -548,6 +548,7 @@ public class Program
         // loop.setType (zoneLoop.isAlternating () > 0 ? LoopType.ALTERNATING : LoopType.FORWARDS);
         // loop.setStart (zoneLoop.getLoopStart ());
         // loop.setEnd (zoneLoop.getLoopStart () + zoneLoop.getLoopLength ());
+        // loop.setTuning (Math.pow (2.0, zoneLoop.getLoopTuning () / 12.0));
         // loop.setCrossfadeInSamples (zoneLoop.getCrossfadeLength ());
         // zone.addLoop (loop);
         // }

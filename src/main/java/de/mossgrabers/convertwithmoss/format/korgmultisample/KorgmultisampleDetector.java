@@ -83,7 +83,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         final byte [] headerTag = in.readNBytes (4);
         StreamUtils.checkTag (KorgmultisampleConstants.TAG_KORG, headerTag);
 
-        ////////////////////////////////////////////////
+        /////////////////////////////////////
         // Read all 3 chunks and check first chunk
 
         final List<byte []> chunks = parseChunks (in);
@@ -93,7 +93,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         if (Arrays.compare (KorgmultisampleConstants.HEADER_CHUNK, chunks.get (0)) != 0)
             throw new IOException (Functions.getMessage ("IDS_WS_NO_MULTISAMPLE_HEADER"));
 
-        ////////////////////////////////////////////////
+        /////////////////////////////////////
         // Read the 2nd chunk
 
         final InputStream secondIn = new ByteArrayInputStream (chunks.get (1));
@@ -234,7 +234,13 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
 
         checkAscii (in);
         final String sampleFileName = StreamUtils.readAsciiWith1ByteLength (in);
-        final File sampleFile = this.createCanonicalFile (parentPath, sampleFileName);
+        File sampleFile = this.createCanonicalFile (parentPath, sampleFileName);
+        // Try the local directory, if absolute filename could not be found
+        if (!sampleFile.exists ())
+            sampleFile = new File (parentPath, sampleFile.getName ());
+        if (!sampleFile.exists ())
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_FILE_NOT_FOUND", sampleFile.getName ()));
+
         final ISampleData sampleData = new WavFileSampleData (sampleFile);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
@@ -247,7 +253,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
 
 
     /**
-     * Parses the data related to the samples' playback configuration.
+     * Parses the data related to the samples' play-back configuration.
      *
      * @param zone The sample metadata in which to stored the data
      * @param in The input stream to read from
@@ -261,6 +267,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         int lastID = 0;
         int r = rest;
         int loopStart = 0;
+        float loopTuning = 0;
         boolean oneShot = false;
 
         while (r > 0)
@@ -296,8 +303,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
                     break;
                 case KorgmultisampleConstants.ID_LOOP_TUNE:
                     r -= 4;
-                    // Not used
-                    in.readNBytes (4);
+                    loopTuning = StreamUtils.readFloatLE (in);
                     break;
                 case KorgmultisampleConstants.ID_ONE_SHOT:
                     r -= 1;
@@ -321,6 +327,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
             final DefaultSampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
             loop.setEnd (zone.getStop ());
+            loop.setTuning (loopTuning / 100.0);
             zone.addLoop (loop);
         }
 

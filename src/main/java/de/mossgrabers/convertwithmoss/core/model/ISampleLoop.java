@@ -73,6 +73,25 @@ public interface ISampleLoop
 
 
     /**
+     * Get the loop tuning. Useful with very short loops such as single-cycle waveforms, which can
+     * be slightly out of tune compared to the complete waveform from which they were cut.
+     * 
+     * @return The tuning positive or negative semi-tones, which means that 0.01 represents 1 cent
+     *         (1 semi-tone is 100 cent), relative to the zone tuning. 0 = no offset.
+     */
+    double getTuning ();
+
+
+    /**
+     * Set the loop tuning.
+     * 
+     * @param tuning The tuning positive or negative semi-tones, which means that 0.01 represents 1
+     *            cent (1 semi-tone is 100 cent), relative to the zone tuning. 0 = no offset.
+     */
+    void setTuning (double tuning);
+
+
+    /**
      * Get the loop cross-fade.
      *
      * @return The cross-fade value in the range of [0..1] which is [0..100%]

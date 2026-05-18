@@ -353,6 +353,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 loop.setEnd (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_END, zone.getStop ()));
                 loop.setCrossfadeInSamples (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_CROSSFADE, 0));
                 loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
+                loop.setTuning (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
                 zone.getLoops ().add (loop);
             }
         }

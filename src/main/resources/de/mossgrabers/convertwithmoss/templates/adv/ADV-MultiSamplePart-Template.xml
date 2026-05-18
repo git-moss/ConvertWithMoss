@@ -35,7 +35,7 @@
 							<End Value="%LOOP_END%" />
 							<Mode Value="%LOOP_MODE%" />
 							<Crossfade Value="%LOOP_CROSSFADE%" />
-							<Detune Value="0" />
+							<Detune Value="%LOOP_DETUNE%" />
 						</SustainLoop>
 						<ReleaseLoop>
 							<Start Value="0" />

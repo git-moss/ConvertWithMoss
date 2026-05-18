@@ -39,7 +39,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
      */
     public KontaktCreator (final INotifier notifier)
     {
-        super ("Kontakt NKI", "Nki", notifier, new KontaktCreatorUI ("Nki"));
+        super ("NI Kontakt", "Nki", notifier, new KontaktCreatorUI ("Nki"));
     }
 
 

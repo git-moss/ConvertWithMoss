@@ -397,8 +397,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
         loopContent = loopContent.replace ("%LOOP_START%", Integer.toString (loop.getStart ()));
         loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getLength ()));
-
         loopContent = loopContent.replace ("%LOOP_ALTERNATING%", loop.getType () == LoopType.ALTERNATING ? "yes" : "no");
+        loopContent = loopContent.replace ("%LOOP_TUNING%", Float.toString ((float) Math.pow (2.0, loop.getTuning () / 12.0)));
         return loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
     }
 
@@ -983,12 +983,14 @@ public abstract class AbstractNKIMetadataFileHandler
             int loopLength;
             String loopMode;
             int xFadeLength;
+            double loopTuning;
             String alternatingLoop;
             try
             {
                 loopStart = AbstractNKIMetadataFileHandler.getInt (loopParams, this.tags.loopStartParam ());
                 loopLength = AbstractNKIMetadataFileHandler.getInt (loopParams, this.tags.loopLengthParam ());
                 loopMode = AbstractNKIMetadataFileHandler.getString (loopParams, this.tags.loopModeParam ());
+                loopTuning = AbstractNKIMetadataFileHandler.getDouble (loopParams, this.tags.loopTuningParam ());
                 xFadeLength = AbstractNKIMetadataFileHandler.getInt (loopParams, this.tags.xfadeLengthParam ());
                 alternatingLoop = AbstractNKIMetadataFileHandler.getString (loopParams, this.tags.alternatingLoopParam ());
             }
@@ -1008,6 +1010,7 @@ public abstract class AbstractNKIMetadataFileHandler
             final DefaultSampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
             loop.setEnd (loopLength + loopStart);
+            loop.setTuning (12.0 * (Math.log (loopTuning) / Math.log (2.0)));
             loop.setCrossfadeInSamples (xFadeLength);
             loop.setType (loopType);
             sampleMetadata.addLoop (loop);

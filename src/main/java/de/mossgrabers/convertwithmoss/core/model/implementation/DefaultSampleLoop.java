@@ -18,6 +18,7 @@ public class DefaultSampleLoop implements ISampleLoop
     private LoopType loopType  = LoopType.FORWARDS;
     private int      loopStart = -1;
     private int      loopEnd   = -1;
+    private double   tuning    = 0;
     private double   crossfade = 0;
 
 
@@ -76,6 +77,22 @@ public class DefaultSampleLoop implements ISampleLoop
         if (this.loopStart < 0 || this.loopEnd < 0)
             return 0;
         return this.loopEnd - this.loopStart;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getTuning ()
+    {
+        return this.tuning;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTuning (final double tuning)
+    {
+        this.tuning = tuning;
     }
 
 

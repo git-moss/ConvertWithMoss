@@ -18,24 +18,19 @@ import java.util.Set;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
-import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
-import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.format.music1010.Music1010CreatorUI;
+import de.mossgrabers.convertwithmoss.format.music1010.AbstractMusic1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
@@ -48,19 +43,13 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
+public class BentoCreator extends AbstractMusic1010Creator
 {
-    private static final String                 PATCHES_FOLDER               = "UserPatches\\SampInst\\";
-    private static final int                    MAX_INSTRUMENTS              = 8;
-    private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT       = new DestinationAudioFormat (new int []
-    {
-        24
-    }, 48000, true);
-    private static final DestinationAudioFormat DEFEAULT_AUDIO_FORMAT        = new DestinationAudioFormat ();
+    private static final String              PATCHES_FOLDER               = "UserPatches\\SampInst\\";
+    private static final int                 MAX_INSTRUMENTS              = 8;
 
-    private static final Map<String, String>    TRACK_PARAM_ATTRIBUTES       = new HashMap<> ();
-    private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
-    private static final Set<Integer>           SUPPORTED_BIT_DEPTHS         = new HashSet<> ();
+    private static final Map<String, String> TRACK_PARAM_ATTRIBUTES       = new HashMap<> ();
+    private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
     static
     {
         TRACK_PARAM_ATTRIBUTES.put ("selcellpos", "0");
@@ -109,10 +98,6 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("lforatebeatsync", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("legatomode", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("celldisppos", "0");
-
-        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (16));
-        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (24));
-        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (32));
     }
 
 
@@ -123,15 +108,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
      */
     public BentoCreator (final INotifier notifier)
     {
-        super ("1010music bento", "Bento", notifier, new Music1010CreatorUI ("Bento"));
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean supportsPerformances ()
-    {
-        return true;
+        super ("1010music bento", "Bento", notifier);
     }
 
 
@@ -140,8 +117,6 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
     public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
     {
         final String performanceFolderName = createSafeFilename (performanceSource.getName ());
-        final File patchesFolder = new File (destinationFolder, PATCHES_FOLDER);
-        final File presetFolder = new File (patchesFolder, performanceFolderName);
         final File performanceFolder = this.createUniqueFilename (new File (destinationFolder, "Projects"), performanceFolderName, "");
         if (!performanceFolder.exists () && !performanceFolder.mkdirs ())
         {
@@ -165,6 +140,13 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
         for (final IInstrumentSource instrumentSource: instrumentSources)
             instrumentSource.clipKeyRange ();
 
+        final File patchesFolder = new File (destinationFolder, PATCHES_FOLDER);
+        if (!patchesFolder.exists () && !patchesFolder.mkdirs ())
+        {
+            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", patchesFolder.getAbsolutePath ());
+            return;
+        }
+
         // Create the overall performance preset
         final Optional<String> xmlCode = this.createPreset (instrumentSources, trim, PATCHES_FOLDER + performanceFolderName + "\\", true);
         if (xmlCode.isPresent ())
@@ -176,15 +158,11 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             // Add the workaround silent sample...
             final byte [] silentSample = Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/Silence24bit48kHz.wav");
             final File silentSampleFile = new File (patchesFolder, "Silence24bit48kHz.wav");
-            if (!patchesFolder.exists () && !patchesFolder.mkdirs ())
-            {
-                this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", patchesFolder.getAbsolutePath ());
-                return;
-            }
             Files.write (silentSampleFile.toPath (), silentSample);
         }
 
         // Create all samples in their sub-folders
+        final File presetFolder = new File (patchesFolder, performanceFolderName);
         for (final IInstrumentSource instrumentSource: instrumentSources)
         {
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
@@ -200,7 +178,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             // Store all samples
             if (resample)
                 recalculateSamplePositions (multisampleSource, 48000);
-            this.writeSamples (fullPresetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
+            this.writeSamples (fullPresetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT, trim);
         }
 
         this.progress.notifyDone ();
@@ -234,7 +212,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
         // Store all samples
         if (resample)
             recalculateSamplePositions (multisampleSource, 48000);
-        final List<File> samplesFiles = this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFEAULT_AUDIO_FORMAT, trim);
+        final List<File> samplesFiles = this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT, trim);
         // Store one of the samples as the preview sample
         if (!samplesFiles.isEmpty ())
         {
@@ -243,30 +221,6 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
         }
 
         this.progress.notifyDone ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
-    {
-        if (detectSettings.reduceBitDepth <= 0 || SUPPORTED_BIT_DEPTHS.contains (Integer.valueOf (detectSettings.reduceBitDepth)))
-            return true;
-        this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16, 24");
-        return false;
-    }
-
-
-    /**
-     * Create a preset file.
-     *
-     * @param multiFile The file to store the preset
-     * @param metadata The preset metadata description file
-     * @throws IOException Could not store the file
-     */
-    private static void storePreset (final File multiFile, final String metadata) throws IOException
-    {
-        Files.writeString (multiFile.toPath (), metadata);
     }
 
 
@@ -296,9 +250,10 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             final IInstrumentSource instrumentSource = instrumentSources.get (i);
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
             this.notifier.log ("IDS_1010_MUSIC_ADDING_INSTRUMENT", multisampleSource.getName ());
-            final List<IGroup> groups = this.combineSplitStereo (multisampleSource);
-            multisampleSource.setGroups (groups);
-            this.checkDuplicateRanges (groups);
+
+            final List<IGroup> groups = this.cleanGroups (multisampleSource);
+            if (groups.isEmpty ())
+                continue;
 
             final Element trackElement = XMLUtils.addElement (document, sessionElement, Music1010Tag.TRACK);
             trackElement.setAttribute (Music1010Tag.ATTR_TYPE, "multisamtrack");
@@ -388,41 +343,10 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             if (loopReverses.size () == 1)
                 paramsElement.setAttribute (Music1010Tag.ATTR_REVERSE, loopReverses.iterator ().next ());
 
-            createEffects (document, paramsElement, multisampleSource);
+            createFilter (document, paramsElement, multisampleSource);
         }
 
         return this.createXMLString (document);
-    }
-
-
-    private static void createModulators (final Document document, final Element instElement, final IMultisampleSource multisampleSource)
-    {
-        createModulator (document, instElement, "lfo1", "pitch", 128);
-        createModulator (document, instElement, "modwheel", "lfoamount", 328);
-
-        final Optional<Double> globalAmplitudeVelocity = multisampleSource.getGlobalAmplitudeVelocity ();
-        if (globalAmplitudeVelocity.isPresent ())
-        {
-            final double depth = globalAmplitudeVelocity.get ().doubleValue ();
-            createModulator (document, instElement, "velocity", "gaindb", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
-        }
-
-        final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
-        if (globalFilter.isPresent ())
-        {
-            final double depth = globalFilter.get ().getCutoffVelocityModulator ().getDepth ();
-            createModulator (document, instElement, "velocity", "dualfilcutoff", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
-        }
-    }
-
-
-    private static void createModulator (final Document document, final Element firstSlot, final String source, final String destination, final int modAmount)
-    {
-        final Element modSourceElement = XMLUtils.addElement (document, firstSlot, Music1010Tag.MOD_SOURCE);
-        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_DESTINATION, destination);
-        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_SOURCE, source);
-        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_SLOT, "0");
-        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_AMOUNT, Integer.toString (modAmount));
     }
 
 
@@ -439,7 +363,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
     {
         // Stored in WAV file: zone.getGain (), zone.getTune ()
 
-        ///////////////////////////////////////////////////
+        ////////////////////////////////
         // Sample element and attributes
 
         final Element cellElement = XMLUtils.addElement (document, groupElement, Music1010Tag.CELL);
@@ -461,7 +385,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
         // pitch="-19350"
         // panpos="-352"
 
-        ///////////////////////////////////////////////////
+        ////////////////////////////////
         // Key & Velocity attributes
 
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
@@ -490,7 +414,7 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, stop);
         }
 
-        ///////////////////////////////////////////////////
+        ////////////////////////////////
         // Loops
 
         // Set to one-shot if there are no loops
@@ -507,61 +431,5 @@ public class BentoCreator extends AbstractWavCreator<Music1010CreatorUI>
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, loop.getStart ());
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, loop.getEnd ());
         }
-    }
-
-
-    /**
-     * Creates the filter effect elements.
-     *
-     * @param document The XML document
-     * @param paramsElement Where to add the effect elements
-     * @param multisampleSource The multi-sample
-     */
-    private static void createEffects (final Document document, final Element paramsElement, final IMultisampleSource multisampleSource)
-    {
-        final Optional<IFilter> optFilter = multisampleSource.getGlobalFilter ();
-        if (optFilter.isEmpty ())
-            return;
-
-        final IFilter filter = optFilter.get ();
-        final FilterType type = filter.getType ();
-        if (type != FilterType.LOW_PASS && type != FilterType.HIGH_PASS)
-            return;
-
-        // Negative values for frequency represent a low-pass filter, positive values a high-pass.
-        // Note: no poles supported
-        final double normalizedFrequency = MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY);
-        int frequency = (int) Math.round (normalizedFrequency * 1000.0);
-        if (type == FilterType.LOW_PASS)
-            frequency -= 1000;
-        paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_CUTOFF, Integer.toString (frequency));
-
-        // Note: Resonance is in the range [0..1] but it is not documented what value 1
-        // represents. Therefore, we assume 40dB maximum and a linear range (could also
-        // be logarithmic).
-        final int resonance = (int) Math.round (filter.getResonance () * 1000.0);
-        paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_RESONANCE, Integer.toString (resonance));
-    }
-
-
-    /**
-     * Create the basic structure for a 1010music session document.
-     *
-     * @return The document and the session element
-     */
-    private Pair<Document, Element> createSessionDocument ()
-    {
-        final Optional<Document> optionalDocument = this.createXMLDocument ();
-        if (optionalDocument.isEmpty ())
-            return null;
-        final Document document = optionalDocument.get ();
-        document.setXmlStandalone (true);
-
-        final Element rootElement = document.createElement (Music1010Tag.ROOT);
-        document.appendChild (rootElement);
-        final Element sessionElement = XMLUtils.addElement (document, rootElement, Music1010Tag.SESSION);
-        sessionElement.setAttribute (Music1010Tag.ATTR_VERSION, "1");
-
-        return new Pair<> (document, sessionElement);
     }
 }

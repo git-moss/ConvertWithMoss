@@ -174,6 +174,9 @@ public abstract class AbstractTagsAndAttributes
     /** The alternating loop parameter. */
     private static final String ALTERNATING_LOOP_PARAM     = "alternatingLoop";
 
+    /** The loop tuning parameter. */
+    private static final String LOOP_TUNING                = "loopTuning";
+
     /** The root key parameter. */
     private static final String ROOT_KEY_PARAM             = "rootKey";
 
@@ -831,7 +834,18 @@ public abstract class AbstractTagsAndAttributes
 
 
     /**
-     * Get the crossfade length tag.
+     * Get the loop tuning tag.
+     *
+     * @return The tag
+     */
+    public String loopTuningParam ()
+    {
+        return LOOP_TUNING;
+    }
+
+
+    /**
+     * Get the cross-fade length tag.
      *
      * @return The tag
      */

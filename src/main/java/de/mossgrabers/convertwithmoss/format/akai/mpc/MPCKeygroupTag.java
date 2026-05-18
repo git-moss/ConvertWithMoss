@@ -11,7 +11,7 @@ package de.mossgrabers.convertwithmoss.format.akai.mpc;
  */
 public class MPCKeygroupTag
 {
-    //////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////
     // Elements
 
     /** The root element. */
@@ -190,7 +190,7 @@ public class MPCKeygroupTag
     public static final String LAYER_SLICE_LOOP                     = "SliceLoop";
     /** The slice loop start element of the layer element. */
     public static final String LAYER_SLICE_LOOP_START               = "SliceLoopStart";
-    /** The slice loop crossfade element of the layer element. */
+    /** The slice loop cross-fade element of the layer element. */
     public static final String LAYER_SLICE_LOOP_CROSSFADE           = "SliceLoopCrossFadeLength";
     /** The slice tail position element of the layer element. */
     public static final String LAYER_SLICE_TAIL_POSITION            = "SliceTailPosition";
@@ -203,7 +203,7 @@ public class MPCKeygroupTag
     /** The pad note element of the pad note map element. */
     public static final String PAD_NOTE_NOTE                        = "Note";
 
-    //////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////
     // Attributes
 
     /** The type attribute of the program element. */
