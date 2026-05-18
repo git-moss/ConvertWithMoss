@@ -29,7 +29,7 @@ public class MaschineCreator extends AbstractWavCreator<MaschineCreatorUI>
      */
     public MaschineCreator (final INotifier notifier)
     {
-        super ("Maschine Sound", "Maschine", notifier, new MaschineCreatorUI ("Maschine"));
+        super ("NI Maschine", "Maschine", notifier, new MaschineCreatorUI ("Maschine"));
     }
 
 

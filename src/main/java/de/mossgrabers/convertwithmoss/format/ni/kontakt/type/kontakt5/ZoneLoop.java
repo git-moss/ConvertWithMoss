@@ -135,7 +135,8 @@ public class ZoneLoop
     /**
      * Get the loop tuning.
      *
-     * @return The loop tuning
+     * @return The logarithmic loop tuning. Convert to semi-tones with: 12.0 * (Math.log
+     *         (loopTuning) / Math.log (2.0))
      */
     public float getLoopTuning ()
     {

@@ -1,18 +1,26 @@
 # Changes
 
-## 17.2.0 (unreleased)
+## 17.5.0 (unreleased)
 
 * Added support for Elektron Tonverk emulti.
 * Added support for Omnisphere 3.
+* Added support for loop tuning: Ableton ADV/ADG, EXS24, Korgmultisample, Kontakt, SFZ, YSFC (partially)
+* 1010music samplers
+  * New: If there are overlapping sample zones which so far cannot be handled by the 1010music samplers, the overlapping ones are removed to create limited but working output files.
+* Akai MPC
+  * New: Combined "Akai MPC Keygroup" and "Akai MPC Project/Track" detectors to "Akai MPC Modern".
+  * New: Added support to read JSON based .xpm files.
 * Akai S1000/S3000
   * Fixed: Loops were not imported.
 * ISO File
   * New: Added detection of Ensoniq EPS/ASR ISOs.
 * Kontakt 4
   * Fixed: Added some workarounds for malformed umlauts in author field.
-* Akai MPC
-  * New: Combined "Akai MPC Keygroup" and "Akai MPC Project/Track" detectors to "Akai MPC Modern".
-  * New: Added support to read JSON based .xpm files.
+* Korgmultisample
+  * Fixed: Sample files are now already checked for existence during scanning the sources. If the sample file is not found, it is searched in the same folder as the korgmultisample file.
+* NI
+  * New: Renamed "Kontakt NKI" to "NI Kontakt".
+  * New: Renamed "Maschine Sound" to "NI Maschine".
 * SFZ
   * New: Improved layout of metadata header with long description texts.
 * WAV

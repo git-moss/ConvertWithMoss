@@ -143,6 +143,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                         {
                             this.notifier.logError (ex);
                         }
+                    exs24Zone.loopTune = (int) Math.round (loop.getTuning () * 100.0);
                 }
 
                 // Fill sample

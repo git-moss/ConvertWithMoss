@@ -19,7 +19,7 @@ import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.ZoneChannels;
-import de.mossgrabers.convertwithmoss.core.algorithm.VelocityLayerSplitter;
+import de.mossgrabers.convertwithmoss.core.algorithm.LayerSplitter;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -97,7 +97,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
             this.notifier.log ("IDS_KMP_SOURCE_SAMPLES_FORMAT", zoneChannels.toString ());
 
             final List<ISampleZone> sampleZones = multisampleSource.getAllSampleZones (false);
-            for (final List<ISampleZone> velocityLayer: VelocityLayerSplitter.splitVelocityLayers (sampleZones).values ())
+            for (final List<ISampleZone> velocityLayer: LayerSplitter.splitVelocityLayers (sampleZones).values ())
                 kmpIndex = this.storeKMP (subFolder, multiSampleName, velocityLayer, zoneChannels, kmpIndex, createdKMPNames);
         }
 

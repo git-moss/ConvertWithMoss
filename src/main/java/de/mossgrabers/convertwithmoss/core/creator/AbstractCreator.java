@@ -1055,15 +1055,17 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
-     * Check if there are layered samples and display a warning.
+     * Check if there are overlapping sample zones.
      *
      * @param groups The groups of the multi-sample
+     * @return True if there are overlapping sample zones
      */
-    protected void checkDuplicateRanges (final List<IGroup> groups)
+    protected boolean checkOverlappingRanges (final List<IGroup> groups)
     {
         // Clear the matrix
         for (int i = 0; i < 128; i++)
             Arrays.fill (this.layerCheckMatrix[i], false);
+
         // Mark the covered ranges
         for (final IGroup group: groups)
             for (final ISampleZone zone: group.getSampleZones ())
@@ -1071,11 +1073,10 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                     for (int v = zone.getVelocityLow (); v <= zone.getVelocityHigh (); v++)
                     {
                         if (this.layerCheckMatrix[k][v])
-                        {
-                            this.notifier.logError ("IDS_ERR_SOURCE_CONTAINS_LAYERS");
-                            return;
-                        }
+                            return true;
                         this.layerCheckMatrix[k][v] = true;
                     }
+
+        return false;
     }
 }

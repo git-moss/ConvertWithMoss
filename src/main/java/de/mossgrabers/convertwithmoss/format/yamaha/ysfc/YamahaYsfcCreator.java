@@ -851,6 +851,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             keybank.setLoopStart (loop.getStart ());
             if (loop.getEnd () < zone.getStop ())
                 keybank.setLoopEnd (loop.getEnd ());
+            keybank.setLoopTune (Math.clamp (loop.getTuning () * 100.0, -64, 63));
         }
         return keybank;
     }

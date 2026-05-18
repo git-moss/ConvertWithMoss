@@ -10,31 +10,24 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
-import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
-import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.format.music1010.Music1010CreatorUI;
+import de.mossgrabers.convertwithmoss.format.music1010.AbstractMusic1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
@@ -48,18 +41,12 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
+public class Music1010Creator extends AbstractMusic1010Creator
 {
-    private static final int                    MAX_INSTRUMENTS              = 16;
-    private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT       = new DestinationAudioFormat (new int []
-    {
-        24
-    }, 48000, true);
-    private static final DestinationAudioFormat DEFAULT_AUDIO_FORMAT         = new DestinationAudioFormat ();
+    private static final int                 MAX_INSTRUMENTS              = 16;
 
-    private static final Map<String, String>    EMPTY_PARAM_ATTRIBUTES       = new HashMap<> ();
-    private static final Map<String, String>    MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
-    private static final Set<Integer>           SUPPORTED_BIT_DEPTHS         = new HashSet<> ();
+    private static final Map<String, String> EMPTY_PARAM_ATTRIBUTES       = new HashMap<> ();
+    private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
     static
     {
         EMPTY_PARAM_ATTRIBUTES.put ("gaindb", "0");
@@ -152,10 +139,6 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("recusethres", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("recthresh", "-20000");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("recmonoutbus", "0");
-
-        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (16));
-        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (24));
-        SUPPORTED_BIT_DEPTHS.add (Integer.valueOf (32));
     }
 
 
@@ -166,15 +149,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
      */
     public Music1010Creator (final INotifier notifier)
     {
-        super ("1010music blackbox", "1010music", notifier, new Music1010CreatorUI ("1010music"));
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean supportsPerformances ()
-    {
-        return true;
+        super ("1010music blackbox", "1010music", notifier);
     }
 
 
@@ -276,30 +251,6 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
-    {
-        if (detectSettings.reduceBitDepth <= 0 || SUPPORTED_BIT_DEPTHS.contains (Integer.valueOf (detectSettings.reduceBitDepth)))
-            return true;
-        this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16, 24");
-        return false;
-    }
-
-
-    /**
-     * Create a preset file.
-     *
-     * @param multiFile The file to store the preset
-     * @param metadata The preset metadata description file
-     * @throws IOException Could not store the file
-     */
-    private static void storePreset (final File multiFile, final String metadata) throws IOException
-    {
-        Files.writeString (multiFile.toPath (), metadata);
-    }
-
-
     /**
      * Create the text of the description file with 1 preset.
      *
@@ -328,9 +279,10 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
             final IInstrumentSource instrumentSource = instrumentSources.get (i);
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
             this.notifier.log ("IDS_1010_MUSIC_ADDING_INSTRUMENT", multisampleSource.getName ());
-            final List<IGroup> groups = this.combineSplitStereo (multisampleSource);
-            multisampleSource.setGroups (groups);
-            this.checkDuplicateRanges (groups);
+
+            final List<IGroup> groups = this.cleanGroups (multisampleSource);
+            if (groups.isEmpty ())
+                continue;
 
             final Element slotElement = activeSlots.get (i);
             final String presetPath = "\\Presets\\" + subFolder + multisampleSource.getName ();
@@ -388,42 +340,11 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
                 paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_SUSTAIN, Integer.toString (sustain));
             }
 
-            createEffects (document, paramsElement, multisampleSource);
+            createFilter (document, paramsElement, multisampleSource);
         }
 
         return this.createXMLString (document);
 
-    }
-
-
-    private static void createModulators (final Document document, final Element firstSlot, final IMultisampleSource multisampleSource)
-    {
-        createModulator (document, firstSlot, "lfo1", "pitch", 128);
-        createModulator (document, firstSlot, "modwheel", "lfoamount", 328);
-
-        final Optional<Double> globalAmplitudeVelocity = multisampleSource.getGlobalAmplitudeVelocity ();
-        if (globalAmplitudeVelocity.isPresent ())
-        {
-            final double depth = globalAmplitudeVelocity.get ().doubleValue ();
-            createModulator (document, firstSlot, "velocity", "gaindb", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
-        }
-
-        final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
-        if (globalFilter.isPresent ())
-        {
-            final double depth = globalFilter.get ().getCutoffVelocityModulator ().getDepth ();
-            createModulator (document, firstSlot, "velocity", "dualfilcutoff", (int) Math.round (MathUtils.denormalize (depth, -1000, 1000)));
-        }
-    }
-
-
-    private static void createModulator (final Document document, final Element firstSlot, final String source, final String destination, final int modAmount)
-    {
-        final Element modSourceElement = XMLUtils.addElement (document, firstSlot, Music1010Tag.MOD_SOURCE);
-        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_DESTINATION, destination);
-        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_SOURCE, source);
-        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_SLOT, "0");
-        modSourceElement.setAttribute (Music1010Tag.ATTR_MOD_AMOUNT, Integer.toString (modAmount));
     }
 
 
@@ -482,7 +403,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
      */
     private static void createSample (final Document document, final String presetPath, final Element groupElement, final ISampleZone zone, final int sampleIndex, final int slot, final boolean trim)
     {
-        /////////////////////////////////////////////////
+        /////////////////////////
         // Sample element and attributes
 
         final Element cellElement = XMLUtils.addElement (document, groupElement, Music1010Tag.CELL);
@@ -511,7 +432,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
 
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_REVERSE, zone.isReversed () ? 1 : 0);
 
-        /////////////////////////////////////////////////
+        /////////////////////////
         // Key & Velocity attributes
 
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
@@ -526,7 +447,7 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         // No fades info.getVelocityCrossfadeLow ()
         // No fades info.getVelocityCrossfadeHigh ()
 
-        /////////////////////////////////////////////////
+        /////////////////////////
         // Loops
 
         // ... are stored in the WAV files
@@ -534,61 +455,5 @@ public class Music1010Creator extends AbstractWavCreator<Music1010CreatorUI>
         // Set to one-shot if there are no loops
         if (zone.getLoops ().isEmpty ())
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 0);
-    }
-
-
-    /**
-     * Creates the filter effect elements.
-     *
-     * @param document The XML document
-     * @param paramsElement Where to add the effect elements
-     * @param multisampleSource The multi-sample
-     */
-    private static void createEffects (final Document document, final Element paramsElement, final IMultisampleSource multisampleSource)
-    {
-        final Optional<IFilter> optFilter = multisampleSource.getGlobalFilter ();
-        if (optFilter.isEmpty ())
-            return;
-
-        final IFilter filter = optFilter.get ();
-        final FilterType type = filter.getType ();
-        if (type != FilterType.LOW_PASS && type != FilterType.HIGH_PASS)
-            return;
-
-        // Negative values for frequency represent a low-pass filter, positive values a high-pass.
-        // Note: no poles supported
-        final double normalizedFrequency = MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY);
-        int frequency = (int) Math.round (normalizedFrequency * 1000.0);
-        if (type == FilterType.LOW_PASS)
-            frequency -= 1000;
-        paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_CUTOFF, Integer.toString (frequency));
-
-        // Note: Resonance is in the range [0..1] but it is not documented what value 1
-        // represents. Therefore, we assume 40dB maximum and a linear range (could also
-        // be logarithmic).
-        final int resonance = (int) Math.round (filter.getResonance () * 1000.0);
-        paramsElement.setAttribute (Music1010Tag.ATTR_FILTER_RESONANCE, Integer.toString (resonance));
-    }
-
-
-    /**
-     * Create the basic structure for a 1010music session document.
-     *
-     * @return The document and the session element
-     */
-    private Pair<Document, Element> createSessionDocument ()
-    {
-        final Optional<Document> optionalDocument = this.createXMLDocument ();
-        if (optionalDocument.isEmpty ())
-            return null;
-        final Document document = optionalDocument.get ();
-        document.setXmlStandalone (true);
-
-        final Element rootElement = document.createElement (Music1010Tag.ROOT);
-        document.appendChild (rootElement);
-        final Element sessionElement = XMLUtils.addElement (document, rootElement, Music1010Tag.SESSION);
-        sessionElement.setAttribute (Music1010Tag.ATTR_VERSION, "2");
-
-        return new Pair<> (document, sessionElement);
     }
 }

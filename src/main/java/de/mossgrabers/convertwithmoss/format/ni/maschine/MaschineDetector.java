@@ -44,7 +44,7 @@ public class MaschineDetector extends AbstractDetector<MaschineDetectorUI>
      */
     public MaschineDetector (final INotifier notifier)
     {
-        super ("Maschine Sound", "Maschine", notifier, new MaschineDetectorUI ());
+        super ("NI Maschine", "Maschine", notifier, new MaschineDetectorUI ());
     }
 
 

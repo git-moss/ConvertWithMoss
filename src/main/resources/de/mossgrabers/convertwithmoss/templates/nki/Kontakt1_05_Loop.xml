@@ -4,6 +4,6 @@
           <V name="loopCount" value="0"/>
           <V name="mode" value="until_end"/>
           <V name="alternatingLoop" value="%LOOP_ALTERNATING%"/>
-          <V name="loopTuning" value="1"/>
+          <V name="loopTuning" value="%LOOP_TUNING%"/>
           <V name="xfadeLength" value="%LOOP_XFADE%"/>
         </Loop>

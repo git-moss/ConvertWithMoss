@@ -175,6 +175,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
                     final EXS24Sample exs24Sample = exs24Samples.get (exs24Zone.sampleIndex);
                     loop.setCrossfadeInSeconds (exs24Zone.loopCrossfade / 1000.0, exs24Sample.sampleRate);
                 }
+                loop.setTuning (exs24Zone.loopTune / 100.0);
                 zone.getLoops ().add (loop);
             }
             // Add group data from exs24Groups

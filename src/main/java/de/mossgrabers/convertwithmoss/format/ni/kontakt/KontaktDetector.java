@@ -50,7 +50,7 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public KontaktDetector (final INotifier notifier)
     {
-        super ("Kontakt NKI/NKM", "Nki", notifier, new MetadataSettingsUI ("Nki"));
+        super ("NI Kontakt", "Nki", notifier, new MetadataSettingsUI ("Nki"));
     }
 
 
