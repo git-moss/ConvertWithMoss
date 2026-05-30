@@ -35,6 +35,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -259,8 +260,8 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : presetName;
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, presetName);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, presetName, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.createMetadata (metadata, this.getFirstSample (groups), parts);
         this.updateCreationDateTime (metadata, sourceFile);
@@ -279,7 +280,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      * @param topElement The top element
      * @param multisampleSource The multi-sample to fill
      */
-    private static void parseEffects (final Element topElement, final DefaultMultisampleSource multisampleSource)
+    private static void parseEffects (final Element topElement, final IMultisampleSource multisampleSource)
     {
         final Optional<IFilter> optFilter = parseFilterEffect (topElement, topElement);
         if (optFilter.isPresent ())
@@ -357,7 +358,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
             final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
             final String groupName = k == null || k.isBlank () ? "Group " + groupCounter : k;
-            final DefaultGroup group = new DefaultGroup (groupName);
+            final IGroup group = new DefaultGroup (groupName);
 
             final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
             final int groupPanningOffset = XMLUtils.getIntegerAttribute (groupElement, DecentSamplerTag.PANNING, 0);
@@ -389,7 +390,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      * @param tuningOffset The tuning offset
      * @param trigger The trigger value
      */
-    private void parseGroup (final Element topElement, final DefaultGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
+    private void parseGroup (final Element topElement, final IGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
     {
         final double ampVelocityDepth = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.AMP_VELOCITY_TRACK, 1);
 
@@ -408,7 +409,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             if (optSampleZone.isEmpty ())
                 continue;
 
-            final DefaultSampleZone sampleZone = optSampleZone.get ();
+            final ISampleZone sampleZone = optSampleZone.get ();
             this.convertSampleZone (sampleElement, sampleZone, groupVolumeOffset, groupPanningOffset, tuningOffset, trigger);
             this.convertVolumeEnvelope (sampleZone.getAmplitudeEnvelopeModulator ().getSource ());
             sampleZone.getAmplitudeVelocityModulator ().setDepth (ampVelocityDepth);
@@ -439,7 +440,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     }
 
 
-    private void convertSampleZone (final Element sampleElement, final DefaultSampleZone sampleZone, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
+    private void convertSampleZone (final Element sampleElement, final ISampleZone sampleZone, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
     {
         String triggerAttribute = sampleElement.getAttribute (DecentSamplerTag.TRIGGER);
         if (triggerAttribute == null || triggerAttribute.isBlank ())
@@ -475,7 +476,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        /////////////////////////////////////////////////
+        ///////////////////////////////////////////
         // Loops
 
         final int loopStart = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, -1));

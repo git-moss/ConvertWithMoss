@@ -26,6 +26,8 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -139,7 +141,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
 
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name);
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.parseMetadata (top, metadata);
         this.updateCreationDateTime (metadata, multiSampleFile);
@@ -268,7 +270,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
             this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
             return;
         }
-        final DefaultSampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (file), sampleData);
+        final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (file), sampleData);
 
         zone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-start", -1)));
         zone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-stop", -1)));
@@ -320,7 +322,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
             final String attribute = loopElement.getAttribute ("mode");
             if (attribute != null && !"off".equalsIgnoreCase (attribute))
             {
-                final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                final ISampleLoop loop = new DefaultSampleLoop ();
                 switch (attribute)
                 {
                     default:

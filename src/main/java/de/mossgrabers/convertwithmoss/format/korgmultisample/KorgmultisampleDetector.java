@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
@@ -83,7 +84,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         final byte [] headerTag = in.readNBytes (4);
         StreamUtils.checkTag (KorgmultisampleConstants.TAG_KORG, headerTag);
 
-        /////////////////////////////////////
+        //////////////////////////////////
         // Read all 3 chunks and check first chunk
 
         final List<byte []> chunks = parseChunks (in);
@@ -93,7 +94,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         if (Arrays.compare (KorgmultisampleConstants.HEADER_CHUNK, chunks.get (0)) != 0)
             throw new IOException (Functions.getMessage ("IDS_WS_NO_MULTISAMPLE_HEADER"));
 
-        /////////////////////////////////////
+        //////////////////////////////////
         // Read the 2nd chunk
 
         final InputStream secondIn = new ByteArrayInputStream (chunks.get (1));
@@ -167,10 +168,10 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         final String name = StreamUtils.readAsciiWith1ByteLength (in);
 
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
         final List<IGroup> groups = new ArrayList<> ();
         // There is only one group (no velocity zones)
-        final DefaultGroup group = new DefaultGroup ("Layer");
+        final IGroup group = new DefaultGroup ("Layer");
         groups.add (group);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
@@ -324,7 +325,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
 
         if (!oneShot)
         {
-            final DefaultSampleLoop loop = new DefaultSampleLoop ();
+            final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
             loop.setEnd (zone.getStop ());
             loop.setTuning (loopTuning / 100.0);

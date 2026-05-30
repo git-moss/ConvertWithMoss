@@ -186,7 +186,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         final String name = FileUtils.getNameWithoutType (sourceFile);
 
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
         final IMetadata metadata = multisampleSource.getMetadata ();
         parseMetadata (deviceElement, metadata, creator);
 
@@ -420,7 +420,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final Element resElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_RESONANCE);
             final double resonance = getDoubleValueAttribute (resElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY) / 1.25;
 
-            final DefaultFilter filter = new DefaultFilter (type, poles, cutoff, resonance);
+            final IFilter filter = new DefaultFilter (type, poles, cutoff, resonance);
 
             // Read the envelope
             final Element envelopeElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_ENVELOPE);

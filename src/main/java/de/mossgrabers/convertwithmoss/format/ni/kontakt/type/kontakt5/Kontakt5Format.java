@@ -121,13 +121,13 @@ public class Kontakt5Format extends AbstractKontaktFormat
             return null;
 
         final List<Pair<IMultisampleSource, Program>> sources = this.convertPrograms (presetAccessor.get (), niContainerItem, sourceFile, metadataConfig, monolithSamples);
-        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
         return readMultiConfiguration (presetAccessor.get (), sources, performanceSource) ? performanceSource : null;
     }
 
 
-    private static boolean readMultiConfiguration (final KontaktPresetAccessor presetAccessor, final List<Pair<IMultisampleSource, Program>> sources, final DefaultPerformanceSource performanceSource)
+    private static boolean readMultiConfiguration (final KontaktPresetAccessor presetAccessor, final List<Pair<IMultisampleSource, Program>> sources, final IPerformanceSource performanceSource)
     {
         final MultiConfiguration multiConfiguration = presetAccessor.getMultiConfiguration ();
         if (multiConfiguration == null)
@@ -140,7 +140,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
             final IMultisampleSource multisampleSource = source.getKey ();
             final Program program = source.getValue ();
             final int midiChannel = i < multiInstruments.size () ? multiInstruments.get (program.getSlotIndex ()).getMidiChannel () - 1 : 0;
-            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
+            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
             instrumentSource.setClipKeyLow (program.getClipKeyLow ());
             instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
             performanceSource.addInstrument (instrumentSource);
@@ -310,8 +310,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
         for (final Program program: programs)
         {
             final String programName = program.getName ();
-            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + programName;
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null);
             this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName

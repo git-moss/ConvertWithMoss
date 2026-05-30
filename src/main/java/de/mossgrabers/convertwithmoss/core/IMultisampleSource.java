@@ -164,14 +164,6 @@ public interface IMultisampleSource extends ISource
 
 
     /**
-     * Get the name to display for the mapping process.
-     *
-     * @return The name, usually the source file
-     */
-    String getMappingName ();
-
-
-    /**
      * Checks all samples in all groups for filter settings. Only if all samples contain the same
      * filter settings a result is returned.
      *

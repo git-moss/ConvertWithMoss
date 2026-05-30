@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -208,10 +209,6 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (this.settingsConfiguration.logUnsupportedOpcodes ())
             this.printUnsupportedOpcodes (this.diffOpcodes ());
 
-        String name = FileUtils.getNameWithoutType (sourceFile);
-        final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-
         final List<IGroup> groups = this.parseGroups (sourceFile.getParentFile (), result);
         if (groups.isEmpty ())
         {
@@ -219,11 +216,14 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             return Collections.emptyList ();
         }
 
+        String name = FileUtils.getNameWithoutType (sourceFile);
         final Optional<String> globalName = this.getAttribute (SfzOpcode.GLOBAL_LABEL);
         if (globalName.isPresent ())
             name = globalName.get ();
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.createMetadata (metadata, this.getFirstSample (groups), parts);
@@ -412,7 +412,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (end >= 0)
             sampleMetadata.setStop (end);
 
-        //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Key range
 
         final int key = this.getKeyValue (SfzOpcode.KEY);
@@ -454,7 +454,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (pitchKeyCenter >= 0)
             sampleMetadata.setKeyRoot (pitchKeyCenter);
 
-        //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Velocity
 
         // Lower bounds including cross-fade
@@ -483,12 +483,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (highVel >= 0)
             sampleMetadata.setVelocityHigh (highVel);
 
-        //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Sample Loop
 
         this.parseLoop (sampleMetadata);
 
-        //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Tune
 
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
@@ -524,12 +524,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         pitchEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY_SHAPE, 0) / 10.0);
         pitchEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE_SHAPE, 0) / 10.0);
 
-        //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Volume
 
         this.parseVolume (sampleMetadata);
 
-        //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Filter
 
         this.parseFilter (sampleMetadata);
@@ -609,7 +609,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
      */
     private void parseLoop (final ISampleZone sampleMetadata)
     {
-        final DefaultSampleLoop loop = new DefaultSampleLoop ();
+        final ISampleLoop loop = new DefaultSampleLoop ();
 
         final Optional<String> loopMode = this.getAttribute (SfzOpcode.LOOP_MODE);
         if (loopMode.isPresent ())

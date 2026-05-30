@@ -132,7 +132,7 @@ public class AkpFile extends AbstractRIFFFile
         final File parentFile = this.akpFile.getParentFile ();
         final String name = FileUtils.getNameWithoutType (this.akpFile);
         final String [] parts = AudioFileUtils.createPathParts (parentFile, sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (this.akpFile, parts, name, AudioFileUtils.subtractPaths (sourceFolder, this.akpFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (this.akpFile, parts, name);
 
         final IGroup group = new DefaultGroup ();
         multisampleSource.setGroups (Collections.singletonList (group));

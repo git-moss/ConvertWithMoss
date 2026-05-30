@@ -20,4 +20,12 @@ public interface IPerformanceSource extends ISource
      * @return The instruments
      */
     List<IInstrumentSource> getInstruments ();
+
+
+    /**
+     * Create and add an instrument source to the performance source.
+     *
+     * @param instrumentSource The instrument source to add
+     */
+    void addInstrument (IInstrumentSource instrumentSource);
 }

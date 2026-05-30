@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
@@ -278,13 +279,13 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             final String performanceName = performance.getName ();
             this.notifier.log ("IDS_YSFC_ANALYZING_PERFORMANCE", performanceName);
 
-            final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+            final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
             performanceSource.setName (performanceName);
 
             final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
             for (int p = 0; p < parts.size (); p++)
             {
-                final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (globalSourceFile, globalSubPath, performanceName, filename + " : " + performanceName);
+                final IMultisampleSource multisampleSource = new DefaultMultisampleSource (globalSourceFile, globalSubPath, performanceName);
 
                 fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
 
@@ -331,7 +332,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                 if (!group.getSampleZones ().isEmpty ())
                 {
                     multisampleSource.setGroups (Collections.singletonList (group));
-                    final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, -1);
+                    final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, -1);
                     instrumentSource.setName (multisampleSource.getName ());
                     instrumentSource.setClipKeyLow (part.getNoteLimitLow ());
                     instrumentSource.setClipKeyHigh (part.getNoteLimitHigh ());
@@ -373,7 +374,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), format, version);
             final String performanceName = performance.getName ();
             this.notifier.log ("IDS_YSFC_ANALYZING_PERFORMANCE", performanceName);
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (globalMultisample.getSourceFile (), globalMultisample.getSubPath (), performanceName, filename + " : " + performanceName);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (globalMultisample.getSourceFile (), globalMultisample.getSubPath (), performanceName);
             fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
 
             final List<IGroup> groups = new ArrayList<> ();
@@ -493,7 +494,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
 
     private static IGroup createSampleZones (final List<YamahaYsfcKeybank> keyBanks, final List<YamahaYsfcWaveData> waveDataItems, final String name, final YamahaYsfcFileFormat version) throws IOException
     {
-        final DefaultGroup group = new DefaultGroup ("Layer");
+        final IGroup group = new DefaultGroup ("Layer");
 
         int keybankIndex = 0;
         int waveDataIndex = 0;
@@ -557,8 +558,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         final File sourceFile = ysfcFile.getSourceFile ();
         final File folder = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (folder, this.sourceFolder, name);
-        final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + name;
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, mappingName);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         metadata.detectMetadata (this.settingsConfiguration, parts);

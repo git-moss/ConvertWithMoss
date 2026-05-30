@@ -67,7 +67,7 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
             for (final AkaiS900Program program: image.getPrograms ())
             {
                 final String programName = program.getName ();
-                final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName, programName);
+                final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
                 final IGroup group = new DefaultGroup ();
                 multisampleSource.setGroups (Collections.singletonList (group));
                 this.createSampleZones (group, program, image.getSamples ());

@@ -205,7 +205,7 @@ public class WavFileSampleData extends AbstractFileSampleData
 
         for (final SampleChunkLoop sampleLoop: sampleChunk.getLoops ())
         {
-            final DefaultSampleLoop loop = new DefaultSampleLoop ();
+            final ISampleLoop loop = new DefaultSampleLoop ();
             switch (sampleLoop.getType ())
             {
                 default:

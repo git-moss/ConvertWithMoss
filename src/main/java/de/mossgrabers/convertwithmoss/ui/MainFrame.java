@@ -82,8 +82,6 @@ public class MainFrame extends AbstractFrame implements INotifier
     private static final String          DESTINATION_TYPE                    = "DestinationType";
     private static final String          SOURCE_PATH                         = "SourcePath";
     private static final String          SOURCE_TYPE                         = "SourceType";
-    private static final String          RENAMING_CSV_FILE                   = "RenamingCSVFile";
-    private static final String          RENAMING_SOURCE_ENABLED             = "EnableRenaming";
     private static final String          PRESET_LIBRARY_FILENAME             = "PresetLibraryFilename";
     private static final String          PERFORMANCE_LIBRARY_FILENAME        = "PerformanceLibraryFilename";
     private static final String          PROCESSING_ENABLE                   = "ProcessingEnable";
@@ -93,6 +91,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private static final String          PROCESSING_MAX_NUMBER_OF_SAMPLES    = "ProcessingMaxNumberOfSamples";
     private static final String          PROCESSING_REDUCE_BIT_DEPTH         = "ProcessingReduceBitDepth";
     private static final String          PROCESSING_REDUCE_FREQUENCY         = "ProcessingReduceFrequency";
+    private static final String          PROCESSING_ALWAYS_RESAMPLE          = "ProcessingAlwaysResample";
 
     private static final int             DEST_TYPE_PRESET                    = 0;
     private static final int             DEST_TYPE_PRESET_LIBRARY            = 1;
@@ -139,8 +138,6 @@ public class MainFrame extends AbstractFrame implements INotifier
     // Parameters of Settings dialog
     private boolean                      addNewFiles;
     private boolean                      enableDarkMode;
-    private boolean                      renameSourceEnable;
-    private String                       renamingFilePath;
 
 
     /**
@@ -179,7 +176,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
 
-        //////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
         // Source pane
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
@@ -208,7 +205,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final BorderPane sourcePane = new BorderPane (this.sourceTabPane);
         sourcePane.setTop (sourceUpperPane.getPane ());
 
-        //////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
         // Destination pane
 
         final BorderPane destinationFolderPanel = new BorderPane (this.destinationPathField);
@@ -445,7 +442,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void loadConfiguration ()
     {
-        /////////////////////////////////////////////////
+        /////////////////////////////////////
         // Source configuration
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -461,7 +458,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.sourcePathHistory.isEmpty ())
             this.sourcePathField.getEditor ().setText (this.sourcePathHistory.get (0));
 
-        ////////////////////////////////////////////////
+        ////////////////////////////////////
         // Destination Configuration
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -493,7 +490,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
 
-        ////////////////////////////////////////////////
+        ////////////////////////////////////
         // Processing
 
         this.detectSettings.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
@@ -503,15 +500,14 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.detectSettings.maxNumberOfSamples = this.config.getInteger (PROCESSING_MAX_NUMBER_OF_SAMPLES, -1);
         this.detectSettings.reduceBitDepth = this.config.getInteger (PROCESSING_REDUCE_BIT_DEPTH, 0);
         this.detectSettings.reduceFrequency = this.config.getInteger (PROCESSING_REDUCE_FREQUENCY, 0);
+        this.detectSettings.alwaysResample = this.config.getBoolean (PROCESSING_ALWAYS_RESAMPLE, false);
 
-        ////////////////////////////////////////////////
+        ////////////////////////////////////
         // Options
 
         this.detectSettings.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
         this.addNewFiles = this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false);
         this.enableDarkMode = this.config.getBoolean (ENABLE_DARK_MODE, false);
-        this.renameSourceEnable = this.config.getBoolean (RENAMING_SOURCE_ENABLED, false);
-        this.renamingFilePath = this.config.getProperty (RENAMING_CSV_FILE);
 
         this.setDarkMode (this.enableDarkMode);
     }
@@ -546,7 +542,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setProperty (PRESET_LIBRARY_FILENAME, this.presetLibraryFilename.getText ());
         this.config.setProperty (PERFORMANCE_LIBRARY_FILENAME, this.performanceLibraryFilename.getText ());
 
-        ////////////////////////////////////////////////
+        ////////////////////////////////////
         // Processing
 
         this.config.setBoolean (PROCESSING_ENABLE, this.detectSettings.enableProcessing);
@@ -556,16 +552,14 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setInteger (PROCESSING_MAX_NUMBER_OF_SAMPLES, this.detectSettings.maxNumberOfSamples);
         this.config.setInteger (PROCESSING_REDUCE_BIT_DEPTH, this.detectSettings.reduceBitDepth);
         this.config.setInteger (PROCESSING_REDUCE_FREQUENCY, this.detectSettings.reduceFrequency);
+        this.config.setBoolean (PROCESSING_ALWAYS_RESAMPLE, this.detectSettings.alwaysResample);
 
-        ////////////////////////////////////////////////
+        ////////////////////////////////////
         // Options
 
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.detectSettings.createFolderStructure);
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles);
         this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode);
-        this.config.setBoolean (RENAMING_SOURCE_ENABLED, this.renameSourceEnable);
-        if (this.renamingFilePath != null)
-            this.config.setProperty (RENAMING_CSV_FILE, this.renamingFilePath);
     }
 
 
@@ -599,27 +593,12 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.settingsDialog.createFolderStructureCheckbox.setSelected (this.detectSettings.createFolderStructure);
         this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
         this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);
-        this.settingsDialog.renameCheckbox.setSelected (this.renameSourceEnable);
-        this.settingsDialog.renameFilePathField.setText (this.renamingFilePath == null ? "" : this.renamingFilePath);
 
         if (this.settingsDialog.display ())
         {
             this.detectSettings.createFolderStructure = this.settingsDialog.createFolderStructureCheckbox.isSelected ();
             this.addNewFiles = this.settingsDialog.addNewFilesCheckbox.isSelected ();
             this.enableDarkMode = this.settingsDialog.enableDarkModeCheckbox.isSelected ();
-            this.renameSourceEnable = this.settingsDialog.renameCheckbox.isSelected ();
-            this.renamingFilePath = this.settingsDialog.renameFilePathField.getText ();
-
-            this.detectSettings.csvRenameFile.clear ();
-            try
-            {
-                if (this.renameSourceEnable)
-                    this.detectSettings.csvRenameFile.setRenameFile (new File (this.renamingFilePath));
-            }
-            catch (final IllegalArgumentException ex)
-            {
-                Functions.message (ex.getMessage ());
-            }
 
             this.setDarkMode (this.enableDarkMode);
         }
@@ -638,6 +617,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.processingDialog.maxSamplesField.setText (this.detectSettings.maxNumberOfSamples < 0 ? "" : Integer.toString (this.detectSettings.maxNumberOfSamples));
         this.processingDialog.selectBitDepth (this.detectSettings.reduceBitDepth);
         this.processingDialog.selectFrequency (this.detectSettings.reduceFrequency);
+        this.processingDialog.alwaysResampleCheckbox.setSelected (this.detectSettings.alwaysResample);
 
         if (this.processingDialog.display ())
         {
@@ -649,6 +629,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.detectSettings.maxNumberOfSamples = maxNumberText.length () == 0 || maxNumberText.isBlank () ? -1 : Integer.parseInt (maxNumberText);
             this.detectSettings.reduceBitDepth = this.processingDialog.getBitDepth ();
             this.detectSettings.reduceFrequency = this.processingDialog.getFrequency ();
+            this.detectSettings.alwaysResample = this.processingDialog.alwaysResampleCheckbox.isSelected ();
         }
     }
 

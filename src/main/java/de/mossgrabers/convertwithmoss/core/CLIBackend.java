@@ -19,7 +19,6 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
-import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
 import picocli.CommandLine;
@@ -100,7 +99,6 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-f", "--flat").paramLabel ("FLAT").description ("If present, the folder structure is not recreated in the output folder.").build ());
             spec.addOption (OptionSpec.builder ("-l", "--library").paramLabel ("LIBRARY").type (String.class).description ("Name for the library. Set to create a library.").build ());
             spec.addOption (OptionSpec.builder ("-p").paramLabel ("KEY=VALUE").description ("Key-value pairs in the form -pkey1=value1,key2=value2,...").required (false).arity ("0..*").type (Map.class).auxiliaryTypes (String.class, String.class).defaultValue (null).build ());
-            spec.addOption (OptionSpec.builder ("-r", "--rename").paramLabel ("RENAME").type (File.class).description ("Configuration file for automatic file renaming.").build ());
 
             // Processing parameters
             spec.addOption (OptionSpec.builder ("-Ze", "--ProcessEnable").paramLabel ("PROCESS_ENABLE").type (Boolean.class).description ("Enables processing if set to true.").build ());
@@ -192,14 +190,11 @@ public class CLIBackend implements INotifier
         }
 
         // Renaming option & folder check
-        final File renamingCSVFile = parseResult.matchedOptionValue ('r', null);
         detectSettings.sourceFolder = parseResult.matchedPositionalValue (0, null);
         detectSettings.outputFolder = parseResult.matchedPositionalValue (1, null);
-        detectSettings.csvRenameFile = null;
         try
         {
             verifyFolders (detectSettings.sourceFolder, detectSettings.outputFolder);
-            detectSettings.csvRenameFile = verifyRenameFile (renamingCSVFile);
         }
         catch (final IllegalArgumentException ex)
         {
@@ -345,29 +340,5 @@ public class CLIBackend implements INotifier
             throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", destinationFolder.getAbsolutePath ()));
         if (!destinationFolder.isDirectory ())
             throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_FOLDER_DESTINATION_NOT_A_FOLDER", destinationFolder.getAbsolutePath ()));
-    }
-
-
-    /**
-     * Set and check folder for existence.
-     *
-     * @param renamingCSVFile The renaming file
-     * @return The parsed rename file
-     */
-    private static CSVRenameFile verifyRenameFile (final File renamingCSVFile)
-    {
-        if (renamingCSVFile == null)
-            return null;
-
-        final CSVRenameFile csvRenameFile = new CSVRenameFile ();
-
-        if (!renamingCSVFile.exists ())
-            throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_RENAMING_CSV_DOES_NOT_EXIST", renamingCSVFile.getAbsolutePath ()));
-
-        if (!renamingCSVFile.canRead ())
-            throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_RENAMING_CSV_NOT_READABLE", renamingCSVFile.getAbsolutePath ()));
-
-        csvRenameFile.setRenameFile (renamingCSVFile);
-        return csvRenameFile;
     }
 }

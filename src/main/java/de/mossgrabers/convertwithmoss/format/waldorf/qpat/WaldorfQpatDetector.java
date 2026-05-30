@@ -122,7 +122,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         boolean isMulti = true;
         while (isMulti)
         {
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
 
             final long version = readHeader (in, multisampleSource);
 

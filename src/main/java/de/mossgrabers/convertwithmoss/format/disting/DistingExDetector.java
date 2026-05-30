@@ -103,7 +103,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
 
         final File parentFile = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final int [] parameters = readParameters (in);
 

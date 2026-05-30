@@ -69,7 +69,7 @@ public class AkaiS1000ProgramConverter
         String programName = program.getName ();
         if (volumeName != null && !volumeName.isBlank ())
             programName = volumeName.trim () + " " + programName;
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName, programName);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
 
         final IGroup group = new DefaultGroup ();
         multisampleSource.setGroups (Collections.singletonList (group));

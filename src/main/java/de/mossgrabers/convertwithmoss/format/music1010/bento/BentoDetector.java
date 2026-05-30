@@ -175,7 +175,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (trackElements.isEmpty ())
             return null;
 
-        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         // Use the parent folders name since all presets are called preset.xml
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile.getParentFile ()));
 
@@ -225,8 +225,8 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         final File pathPrefixFile = new File (pathPrefix);
         final String name = pathPrefixFile.getName ();
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
         final IGroup group = new DefaultGroup ("Group");
         multisampleSource.setGroups (Collections.singletonList (group));
 
@@ -349,7 +349,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             return;
         }
 
-        final DefaultSampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
+        final ISampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
 
         // No trigger
         // No start - set from Sample chunk in addMetadata below
@@ -371,7 +371,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        ////////////////////////////////////////////////
+        //////////////////////////////////////////
         // Play-range & Loops
 
         sampleZone.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0));
@@ -396,7 +396,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
         sampleZone.setReversed (isReversed);
 
-        ////////////////////////////////////////////////
+        //////////////////////////////////////////
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();

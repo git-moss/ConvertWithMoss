@@ -147,7 +147,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 final List<String> filenames = new ArrayList<> (sampleData.size ());
                 for (final IFileBasedSampleData fileSampleData: sampleData)
                 {
-                    final DefaultSampleZone sampleZone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (fileSampleData.getFilename ())), fileSampleData);
+                    final ISampleZone sampleZone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (fileSampleData.getFilename ())), fileSampleData);
                     group.addSampleZone (sampleZone);
                     sampleFileType.fillInstrumentData (sampleZone, fileSampleData);
                     filenames.add (new File (fileSampleData.getFilename ()).getName ());
@@ -179,7 +179,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
             name = cleanupName (name, this.settingsConfiguration.getPostfixTexts ());
 
             final String [] parts = this.createParts (folder, name);
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (folder, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, folder));
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (folder, parts, name);
             final IMetadata metadata = multisampleSource.getMetadata ();
             this.createMetadata (metadata, sampleData, parts);
             this.updateCreationDateTime (metadata, new File (sampleData.get (0).getFilename ()));

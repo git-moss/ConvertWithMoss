@@ -49,7 +49,7 @@ public class InMemorySampleData implements ISampleData
     public InMemorySampleData (final IAudioMetadata audioMetadata, final short [] sampleData)
     {
         if (!audioMetadata.isMono ())
-            throw new IllegalArgumentException ("short [] constructor can only be provided for mono samples");
+            throw new IllegalArgumentException ("short [] constructor can only be called for mono samples");
 
         final ByteBuffer buffer = ByteBuffer.allocate (sampleData.length * 2);
         buffer.order (ByteOrder.LITTLE_ENDIAN);

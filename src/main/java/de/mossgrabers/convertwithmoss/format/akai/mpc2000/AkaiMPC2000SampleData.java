@@ -112,7 +112,7 @@ public class AkaiMPC2000SampleData extends AbstractFileSampleData
             if (!loops.isEmpty ())
                 return;
 
-            final DefaultSampleLoop loop = new DefaultSampleLoop ();
+            final ISampleLoop loop = new DefaultSampleLoop ();
             final int end = (int) this.sndFile.getLoopEnd ();
             final int start = end - (int) this.sndFile.getLoopLength ();
             if (start < 0 || end <= 0 || start > end)

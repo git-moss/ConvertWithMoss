@@ -27,7 +27,6 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
 {
     private File         sourceFile;
     private String []    subPath;
-    private String       mappingName;
     private List<IGroup> groups = Collections.emptyList ();
 
 
@@ -36,7 +35,7 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
      */
     public DefaultMultisampleSource ()
     {
-        this (null, null, null, null);
+        this (null, null, null);
     }
 
 
@@ -46,15 +45,13 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
      * @param sourceFile The folder (contains the multi-sample source or the file itself)
      * @param subPath The names of the sub folders which contain the samples
      * @param name The name of the multi-sample
-     * @param mappingName The name to display for the mapping process.
      */
-    public DefaultMultisampleSource (final File sourceFile, final String [] subPath, final String name, final String mappingName)
+    public DefaultMultisampleSource (final File sourceFile, final String [] subPath, final String name)
     {
         super (name);
 
         this.sourceFile = sourceFile;
         this.subPath = subPath;
-        this.mappingName = mappingName;
     }
 
 
@@ -131,25 +128,6 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
     public void setGroups (final List<IGroup> groups)
     {
         this.groups = new ArrayList<> (groups);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String getMappingName ()
-    {
-        return this.mappingName;
-    }
-
-
-    /**
-     * Set the mapping name.
-     *
-     * @param mappingName The mapping name
-     */
-    public void setMappingName (final String mappingName)
-    {
-        this.mappingName = mappingName;
     }
 
 

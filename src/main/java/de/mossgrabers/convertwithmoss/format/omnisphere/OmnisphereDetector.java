@@ -195,7 +195,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         final String multiSampleName = FileUtils.getNameWithoutType (presetFile.getName ());
         final File parentFolder = presetFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, multiSampleName);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (presetFile, parts, multiSampleName, AudioFileUtils.subtractPaths (this.sourceFolder, presetFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (presetFile, parts, multiSampleName);
 
         final int pitchBendUp = (int) Math.round (parseFloatAttribute (synthEngElement, "pbup", 0.04f) * 96.0);
         final int pitchBendDown = (int) -Math.round (parseFloatAttribute (synthEngElement, "pbdn", 0.04f) * 96.0);
@@ -355,7 +355,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         final String multiSampleName = FileUtils.getNameWithoutType (sourceFile.getName ());
         final File parentFolder = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFolder, userSampleFolder, multiSampleName);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName);
 
         createMetadata (multisampleSource.getMetadata (), instrumentElement.getAttribute ("ATTRIB_VALUE_DATA"));
 

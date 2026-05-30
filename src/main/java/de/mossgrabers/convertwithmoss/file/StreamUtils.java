@@ -52,6 +52,24 @@ public class StreamUtils
 
 
     /**
+     * Reads and converts 1 byte to an integer. Throws an IOException on EOF.
+     *
+     * @param in The input stream
+     * @return The converted integer
+     * @throws IOException The stream has been closed and the contained input stream does not
+     *             support reading after close, or another I/O error occurs.
+     */
+    public static int readUnsigned8 (final InputStream in) throws IOException
+    {
+        final int value = in.read ();
+        if (value == -1)
+            throw new IOException ("Unexpected end of stream");
+        // Converts to signed byte, then widens to int
+        return (byte) (value & 0XFF);
+    }
+
+
+    /**
      * Reads and converts 1 byte to a signed integer. Drops the following byte. Throws an
      * IOException on EOF.
      *
@@ -62,7 +80,7 @@ public class StreamUtils
      */
     public static int readSigned8FromWord (final InputStream in) throws IOException
     {
-        int result = readSigned8 (in);
+        final int result = readSigned8 (in);
         in.skipNBytes (1);
         return result;
     }
@@ -79,7 +97,7 @@ public class StreamUtils
      */
     public static int readUnsigned8FromWord (final InputStream in) throws IOException
     {
-        int result = readSigned8 (in) & 0XFF;
+        final int result = readSigned8 (in) & 0XFF;
         in.skipNBytes (1);
         return result;
     }
@@ -247,7 +265,7 @@ public class StreamUtils
     public static int readUnsigned24 (final byte [] bytes, final boolean isBigEndian) throws IOException
     {
         if (isBigEndian)
-            return (bytes[2] & 0xFF) << 8 | (bytes[1] & 0xFF) << 16 | (bytes[0] & 0xFF) << 24;
+            return bytes[2] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[0] & 0xFF) << 16;
         return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16;
     }
 
@@ -971,7 +989,7 @@ public class StreamUtils
 
     /**
      * Reads all ASCII characters up to the given stop byte.
-     * 
+     *
      * @param buffer The buffer to read from
      * @param stopByte The byte to stop at
      * @return The read ASCII text
