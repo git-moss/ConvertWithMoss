@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class DiskImage
 {
-    private final DiskImageHeader header;
+    private final RolandDiskImageHeader header;
     private final List<Patch>     patches;
     private final List<Tone>      tones;
     private final DiskLabel       diskLabel;
@@ -31,7 +31,7 @@ public class DiskImage
      * @param diskLabel The label of the disk
      * @param waveData The wave data on the disk
      */
-    public DiskImage (final DiskImageHeader header, final List<Patch> patches, final List<Tone> tones, final DiskLabel diskLabel, final List<WaveData> waveData)
+    public DiskImage (final RolandDiskImageHeader header, final List<Patch> patches, final List<Tone> tones, final DiskLabel diskLabel, final List<WaveData> waveData)
     {
         this.header = header;
         this.patches = Collections.unmodifiableList (patches);
@@ -46,7 +46,7 @@ public class DiskImage
      * 
      * @return The header
      */
-    public DiskImageHeader getHeader ()
+    public RolandDiskImageHeader getHeader ()
     {
         return this.header;
     }

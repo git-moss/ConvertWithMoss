@@ -4,7 +4,7 @@
 
 * Added support for Elektron Tonverk emulti.
 * Added support for Omnisphere 3.
-* Added support for reading Roland S-550.
+* Added support for reading Roland S-50, S-330, S-550, W-30.
 * Added support for loop tuning: Ableton ADV/ADG, EXS24, Korgmultisample, Kontakt, SFZ, YSFC (partially).
 * New: Processing can now up-sample as well (option: 'Always re-sample').
 * New: Removed renaming feature.
@@ -20,6 +20,7 @@
   * Fixed: Loops were not imported.
 * ISO File
   * New: Added detection of Ensoniq EPS/ASR ISOs.
+  * New: Added detection of Roland images.
 * Kontakt 4
   * Fixed: Added some workarounds for malformed umlauts in author field.
 * Korgmultisample

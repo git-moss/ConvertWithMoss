@@ -4,10 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.iso;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
+
+import de.mossgrabers.convertwithmoss.format.roland.s5xx.RolandDiskImageHeader;
+import de.mossgrabers.convertwithmoss.format.roland.s5xx.SamplerType;
 
 
 /**
@@ -84,6 +88,23 @@ public class IsoFormatIdentifier
         if (data == null || data.length < MINIMUM_NUMBER_OF_REQUIRED_BYTES)
             return IsoFormat.UNKNOWN;
 
+        // Roland S-5xx / S-7xx
+        try
+        {
+            final RolandDiskImageHeader header = new RolandDiskImageHeader (new ByteArrayInputStream (data));
+            final SamplerType samplerType = header.getSamplerType ();
+            if (samplerType != SamplerType.UNKNOWN && samplerType != SamplerType.LAND)
+            {
+                if (samplerType == SamplerType.S770)
+                    return IsoFormat.ROLAND_S7XX;
+                return IsoFormat.ROLAND_S5XX;
+            }
+        }
+        catch (final IOException ex)
+        {
+            // Ignore
+        }
+
         // ISO / AKAI family (first byte == 0x00)
         if (data[0] == 0x00)
         {
@@ -116,11 +137,6 @@ public class IsoFormatIdentifier
         // Akai MPC2000XL
         if (equalsArray (data, MPC2000XL_MAGIC))
             return IsoFormat.AKAI_MPC2000XL;
-
-        // Roland S-550 / W-30 / DJ-70MKII
-        final String offset2 = readString (data, 2, 6);
-        if ("ROLAND".equals (offset2))
-            return IsoFormat.ROLAND_S550_W30_DJ70;
 
         if (doesOnlyContain (data, 0x5B, 200))
             return IsoFormat.ENSONIQ;

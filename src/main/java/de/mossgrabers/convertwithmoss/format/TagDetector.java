@@ -571,6 +571,9 @@ public class TagDetector
      */
     public static String detect (final String [] texts, final String [] lookupTags, final String defaultTag)
     {
+        if (lookupTags == null)
+            return defaultTag;
+
         final Map<String, String> lookupMap = new TreeMap<> (new StringLengthComparator ());
         Arrays.asList (lookupTags).forEach (value -> lookupMap.put (value.toUpperCase (Locale.US), value));
 

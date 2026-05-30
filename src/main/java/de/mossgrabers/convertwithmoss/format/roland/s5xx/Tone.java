@@ -310,7 +310,7 @@ public class Tone
     /**
      * Get the wave bank A or B that contains the referenced sample.
      *
-     * @return 0 = A, 1 = B
+     * @return 0 = A, 1 = B, 2 = Unused
      */
     public int getWaveBank ()
     {

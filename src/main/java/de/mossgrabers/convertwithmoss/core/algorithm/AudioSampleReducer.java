@@ -367,7 +367,7 @@ public class AudioSampleReducer
             final byte [] data = ais.readAllBytes ();
 
             final int sampleSizeInBits = format.getSampleSizeInBits ();
-            final int bytesPerSample = sampleSizeInBits / 8;
+            final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
             final int numSamples = data.length / bytesPerSample;
             final boolean bigEndian = format.isBigEndian ();
 
@@ -402,7 +402,7 @@ public class AudioSampleReducer
             final AudioFormat format = ais.getFormat ();
             final byte [] data = ais.readAllBytes ();
             final int sampleSizeInBits = format.getSampleSizeInBits ();
-            final int bytesPerSample = sampleSizeInBits / 8;
+            final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
             final int numSamples = data.length / bytesPerSample;
             final boolean bigEndian = format.isBigEndian ();
 
