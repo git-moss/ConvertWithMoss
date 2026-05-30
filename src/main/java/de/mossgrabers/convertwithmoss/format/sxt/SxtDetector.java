@@ -95,7 +95,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
         final File parentFile = sourceFile.getParentFile ();
         final String name = FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         try (final InputStream chunkStream = iffChunk.streamData ())
@@ -162,7 +162,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
      * @param multisampleSource Where to store the patch name
      * @throws IOException Could not read the data or data is invalid
      */
-    private void parseDescription (final DefaultMultisampleSource multisampleSource, final InputStream in) throws IOException
+    private void parseDescription (final IMultisampleSource multisampleSource, final InputStream in) throws IOException
     {
         final int version = readVersion (in);
         final boolean isReason3 = version == SxtChunkConstants.VERSION_1_3_0;
@@ -205,7 +205,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
      * @param samples The samples with their indices
      * @throws IOException Could not read the data or data is invalid
      */
-    private void parseGroups (final DefaultMultisampleSource multisampleSource, final InputStream in, final Map<Integer, File> samples) throws IOException
+    private void parseGroups (final IMultisampleSource multisampleSource, final InputStream in, final Map<Integer, File> samples) throws IOException
     {
         final int bodyVersion = readVersion (in);
         if (bodyVersion != SxtChunkConstants.VERSION_1_0_0)

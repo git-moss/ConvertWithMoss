@@ -184,7 +184,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             return Collections.emptyList ();
         }
 
-        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
 
         File previousFolder = null;
@@ -255,7 +255,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final String category = topElement.getAttribute (TX16WxTag.PROGRAM_ICON);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, category);
@@ -366,7 +366,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         {
             final String k = groupElement.getAttribute (TX16WxTag.NAME);
             final String groupName = k == null || k.isBlank () ? "Group " + groupCounter : k;
-            final DefaultGroup group = new DefaultGroup (groupName);
+            final IGroup group = new DefaultGroup (groupName);
 
             final Optional<IFilter> optFilter = this.parseGroup (group, groupElement, sampleMap, soundShapeElementMap);
             if (optFilter.isPresent () && filter.isEmpty ())
@@ -387,7 +387,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
      * @param soundShapeElementMap The sound shape elements mapped to their ID
      * @return The filter, if any
      */
-    private Optional<IFilter> parseGroup (final DefaultGroup group, final Element groupElement, final Map<String, ISampleZone> sampleMap, final Map<String, Element> soundShapeElementMap)
+    private Optional<IFilter> parseGroup (final IGroup group, final Element groupElement, final Map<String, ISampleZone> sampleMap, final Map<String, Element> soundShapeElementMap)
     {
         final double groupVolumeOffset = this.parseVolume (groupElement, TX16WxTag.VOLUME);
         final double groupPanningOffset = parsePercentage (groupElement, TX16WxTag.PANNING);
@@ -619,7 +619,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 poles = poleValue.intValue ();
         }
 
-        final DefaultFilter filter = new DefaultFilter (filterType, poles, frequency, resonance);
+        final IFilter filter = new DefaultFilter (filterType, poles, frequency, resonance);
         parseFilterModulation (filter, soundShapeElement, modulators);
         return Optional.of (filter);
     }

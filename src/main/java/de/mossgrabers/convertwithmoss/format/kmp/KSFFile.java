@@ -112,7 +112,7 @@ public class KSFFile
                     // No idea what 'second start' is, seems to be identical to loop start
                     in.readInt ();
 
-                    final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                    final ISampleLoop loop = new DefaultSampleLoop ();
                     loop.setStart (in.readInt ());
                     int loopEnd = in.readInt ();
                     // Loop end is exclusive
@@ -252,14 +252,14 @@ public class KSFFile
             out.writeInt (loop.getEnd () + 1);
         }
 
-        /////////////////////////////////////
+        ////////////////////////////////////
         // KSF_SAMPLE_NUMBER_ID
 
         out.write (KSF_SAMPLE_NUMBER_ID.getBytes ());
         out.writeInt (KSF_SAMPLE_NUMBER_SIZE);
         out.writeInt (sampleIndex);
 
-        /////////////////////////////////////
+        ////////////////////////////////////
         // KSF_SAMPLE_DATA_ID
 
         out.write (KSF_SAMPLE_DATA_ID.getBytes ());
@@ -326,7 +326,7 @@ public class KSFFile
             }
         }
 
-        /////////////////////////////////////
+        ////////////////////////////////////
         // KSF_SAMPLE_NAME_ID
 
         out.write (KSF_SAMPLE_NAME_ID.getBytes ());

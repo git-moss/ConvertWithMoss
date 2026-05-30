@@ -192,7 +192,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
         if (sampleLoop.playMode == AiffLoop.NO_LOOPING || markerChunk == null)
             return;
 
-        final DefaultSampleLoop loop = new DefaultSampleLoop ();
+        final ISampleLoop loop = new DefaultSampleLoop ();
         switch (sampleLoop.playMode)
         {
             default:

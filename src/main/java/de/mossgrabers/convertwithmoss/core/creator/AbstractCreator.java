@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -203,7 +204,37 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     public static String createSafeFilename (final String filename)
     {
-        return filename.replaceAll ("[\\\\/:*?\"<>|&\\.']", "_").trim ();
+        if (filename == null)
+            return "Unnamed";
+
+        // Normalize UNICODE (optional but recommended)
+        String sanitized = Normalizer.normalize (filename, Normalizer.Form.NFKC);
+
+        // Remove control characters
+        sanitized = sanitized.replaceAll ("[\\p{Cntrl}]", "");
+
+        // Replace invalid filename characters
+        // Windows forbidden: \ / : * ? " < > |
+        // Also remove Unix path separator /
+        sanitized = sanitized.replaceAll ("[\\\\/:*?\"<>|&\\.']", "_");
+
+        // Remove leading/trailing spaces and dots (Windows issue)
+        sanitized = sanitized.replaceAll ("^[ .]+", "");
+        sanitized = sanitized.replaceAll ("[ .]+$", "");
+        if (sanitized.isBlank ())
+            return "Unnamed";
+
+        // Avoid reserved Windows filenames
+        String upper = sanitized.toUpperCase ();
+        if (upper.matches ("CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]"))
+            sanitized = "_" + sanitized;
+
+        // Limit length
+        int MAX_LENGTH = 255;
+        if (sanitized.length () > MAX_LENGTH)
+            sanitized = sanitized.substring (0, MAX_LENGTH);
+
+        return sanitized;
     }
 
 
@@ -472,22 +503,30 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected static void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate, final boolean onlyIfLarger) throws IOException
     {
         for (final IGroup group: multisampleSource.getGroups ())
-            for (final ISampleZone zone: group.getSampleZones ())
+            for (final ISampleZone sampleZone: group.getSampleZones ())
             {
-                final ISampleData sampleData = zone.getSampleData ();
+                final ISampleData sampleData = sampleZone.getSampleData ();
                 if (sampleData == null)
                     continue;
                 final int sampleRate = sampleData.getAudioMetadata ().getSampleRate ();
                 if (onlyIfLarger && sampleRate <= newSampleRate)
                     continue;
                 final double sampleRateRatio = newSampleRate / (double) sampleRate;
-                zone.setStart ((int) Math.round (zone.getStart () * sampleRateRatio));
-                zone.setStop ((int) Math.round (zone.getStop () * sampleRateRatio));
+                final int start = sampleZone.getStart ();
+                if (start > 0)
+                    sampleZone.setStart ((int) Math.round (start * sampleRateRatio));
+                final int stop = sampleZone.getStop ();
+                if (stop > 0)
+                    sampleZone.setStop ((int) Math.round (stop * sampleRateRatio));
 
-                for (final ISampleLoop loop: zone.getLoops ())
+                for (final ISampleLoop loop: sampleZone.getLoops ())
                 {
-                    loop.setStart ((int) Math.round (loop.getStart () * sampleRateRatio));
-                    loop.setEnd ((int) Math.round (loop.getEnd () * sampleRateRatio));
+                    final int loopStart = loop.getStart ();
+                    if (loopStart > 0)
+                        loop.setStart ((int) Math.round (loopStart * sampleRateRatio));
+                    final int loopEnd = loop.getEnd ();
+                    if (loopEnd > 0)
+                        loop.setEnd ((int) Math.round (loopEnd * sampleRateRatio));
                 }
             }
     }

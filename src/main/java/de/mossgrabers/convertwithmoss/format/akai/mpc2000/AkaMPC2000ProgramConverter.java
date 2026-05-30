@@ -68,7 +68,7 @@ public class AkaMPC2000ProgramConverter
      */
     public IMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final AkaiMPC2000Program program, final Map<String, ISampleData> samples, final String programName) throws IOException
     {
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName, programName);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
         multisampleSource.setGroups (this.createSampleZones (program, samples));
 
         // Detect metadata

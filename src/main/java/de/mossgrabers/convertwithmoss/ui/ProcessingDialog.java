@@ -54,6 +54,8 @@ public class ProcessingDialog extends AbstractDialog
     public ComboBox<String>        reduceBitDepthCombobox;
     /** Combo-box for the target sample frequency. */
     public ComboBox<String>        reduceFrequencyCombobox;
+    /** Check-box to enable always re-sample option. */
+    public CheckBox                alwaysResampleCheckbox;
 
 
     /**
@@ -64,6 +66,8 @@ public class ProcessingDialog extends AbstractDialog
     protected ProcessingDialog (final Window owner)
     {
         super (owner, "@IDS_PROCESSING_DIALOG", true, true, 400, 300);
+
+        this.setResizable (false);
 
         this.basicInit ();
 
@@ -190,6 +194,8 @@ public class ProcessingDialog extends AbstractDialog
         BasePanel.limitToNumbers (this.maxSamplesField);
         this.reduceBitDepthCombobox = panel.createComboBox ("@IDS_PROCESSING_REDUCE_BIT_DEPTH", "@IDS_PROCESSING_REDUCE_BIT_DEPTH_TOOLTIP", BIT_DEPTH);
         this.reduceFrequencyCombobox = panel.createComboBox ("@IDS_PROCESSING_REDUCE_FREQUENCY", "@IDS_PROCESSING_REDUCE_FREQUENCY_TOOLTIP", FREQ_RESOLUTiON);
+        this.alwaysResampleCheckbox = panel.createCheckBox ("@IDS_PROCESSING_ALWAYS_RESAMPLE_LABEL", "@IDS_PROCESSING_ALWAYS_RESAMPLE_TOOLTIP");
+
         this.setButtons ("@IDS_SETTINGS_DLG_OK", "@IDS_SETTINGS_DLG_CANCEL");
 
         this.traversalManager.add (this.normalizeCheckbox);
@@ -198,6 +204,7 @@ public class ProcessingDialog extends AbstractDialog
         this.traversalManager.add (this.maxSamplesField);
         this.traversalManager.add (this.reduceBitDepthCombobox);
         this.traversalManager.add (this.reduceFrequencyCombobox);
+        this.traversalManager.add (this.alwaysResampleCheckbox);
         this.traversalManager.add (this.getOKButton ());
         this.traversalManager.add (this.getCancelButton ());
 

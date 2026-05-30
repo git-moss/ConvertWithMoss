@@ -64,6 +64,7 @@ import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineCreator;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineDetector;
 import de.mossgrabers.convertwithmoss.format.omnisphere.OmnisphereCreator;
 import de.mossgrabers.convertwithmoss.format.omnisphere.OmnisphereDetector;
+import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -143,6 +144,7 @@ public class ConverterBackend
             new KontaktDetector (notifier),
             new MaschineDetector (notifier),
             new OmnisphereDetector (notifier),
+            new S5xxDetector (notifier),
             new SxtDetector (notifier),
             new SampleFileDetector (notifier),
             new SfzDetector (notifier),
@@ -223,7 +225,10 @@ public class ConverterBackend
         this.collectedPerformanceSources.clear ();
 
         this.notifier.log ("TITLE");
-        this.notifier.log ("IDS_NOTIFY_DETECTING", detector.getName (), creator.getName ());
+        if (this.onlyAnalyse)
+            this.notifier.log ("IDS_NOTIFY_DETECTING_NO_CONVERSION", detector.getName ());
+        else
+            this.notifier.log ("IDS_NOTIFY_DETECTING", detector.getName (), creator.getName ());
         this.creator.clearCancelled ();
         this.detector.detect (detectionSettings.sourceFolder, new MultisampleSourceConsumer (), new PerformanceSourceConsumer (), detectPerformances);
     }
@@ -280,11 +285,9 @@ public class ConverterBackend
         {
             if (!this.onlyAnalyse)
                 this.collectedPresetSources.add (multisampleSource);
-            this.notifier.log ("IDS_NOTIFY_COLLECTING", multisampleSource.getMappingName ());
+            this.notifier.log ("IDS_NOTIFY_COLLECTING", multisampleSource.getName ());
             return;
         }
-
-        this.notifier.log ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ());
 
         if (this.onlyAnalyse)
         {
@@ -354,7 +357,6 @@ public class ConverterBackend
     {
         ensureSafeSampleFileNames (multisampleSource);
         this.processSamples (multisampleSource);
-        this.applyRenaming (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
     }
 
@@ -369,7 +371,7 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            /////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -386,7 +388,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            /////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)
@@ -414,10 +416,12 @@ public class ConverterBackend
                 this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH_TO", Integer.toString (this.detectionSettings.reduceBitDepth));
             if (this.detectionSettings.reduceFrequency > 0)
                 this.notifier.log ("IDS_PROCESSING_REDUCE_FREQUENCY_TO", Integer.toString (this.detectionSettings.reduceFrequency));
+            if (this.detectionSettings.alwaysResample)
+                this.notifier.log ("IDS_PROCESSING_ALWAYS_RESAMPLE");
             if (this.detectionSettings.enableNormalize)
                 this.notifier.log ("IDS_PROCESSING_NORMALIZING");
             this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-            AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.enableNormalize);
+            AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.alwaysResample, this.detectionSettings.enableNormalize);
         }
         catch (final IOException | UnsupportedAudioFileException ex)
         {
@@ -461,28 +465,6 @@ public class ConverterBackend
             }
         if (wasSet)
             this.notifier.log ("IDS_NOTIFY_APPLY_DEFAULT_ENVELOPE", category.isBlank () ? "Unknown" : category);
-    }
-
-
-    /**
-     * Applies the renaming of a IMultisampleSource according to the renaming table.
-     *
-     * @param multisampleSource the multi-sample source to be renamed.
-     */
-    private void applyRenaming (final IMultisampleSource multisampleSource)
-    {
-        if (this.detectionSettings.csvRenameFile == null || this.detectionSettings.csvRenameFile.isEmpty ())
-            return;
-
-        final String sourceName = multisampleSource.getName ();
-        final String targetName = this.detectionSettings.csvRenameFile.getMapping (sourceName);
-        if (targetName != null)
-        {
-            this.notifier.log ("IDS_NOTIFY_RENAMING_SOURCE_TO", sourceName, targetName);
-            multisampleSource.setName (targetName);
-        }
-        else
-            this.notifier.log ("IDS_NOTIFY_RENAMING_NOT_DEFINED", sourceName);
     }
 
 

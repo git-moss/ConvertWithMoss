@@ -76,7 +76,7 @@ public class ElektronMultiDetector extends AbstractDetector<MetadataSettingsUI>
     private IMultisampleSource convertMultiFile (final File sourceFile, final ElektronMultiFile elektronMultiFile, final String [] parts) throws IOException
     {
         final String multiSampleName = elektronMultiFile.name;
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName, multiSampleName);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName);
 
         // Create all sample zones and store them by their root note and velocity low value. From
         // these the key-/velocity ranges need to be calculated in the next step

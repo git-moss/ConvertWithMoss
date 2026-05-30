@@ -208,7 +208,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private IMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final String multiSampleName, final MirageProgram mirageProgramLower, final List<MirageWaveSample> waveSamplesLower, final List<ISampleData> sampleDataLower, final MirageProgram mirageProgramUpper, final List<MirageWaveSample> waveSamplesUpper, final List<ISampleData> sampleDataUpper)
     {
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName, multiSampleName);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName);
         multisampleSource.setGroups (createSampleZones (multiSampleName, mirageProgramLower, waveSamplesLower, sampleDataLower, mirageProgramUpper, waveSamplesUpper, sampleDataUpper));
 
         // Detect metadata

@@ -4,7 +4,13 @@
 
 * Added support for Elektron Tonverk emulti.
 * Added support for Omnisphere 3.
-* Added support for loop tuning: Ableton ADV/ADG, EXS24, Korgmultisample, Kontakt, SFZ, YSFC (partially)
+* Added support for reading Roland S-550.
+* Added support for loop tuning: Ableton ADV/ADG, EXS24, Korgmultisample, Kontakt, SFZ, YSFC (partially).
+* New: Processing can now up-sample as well (option: 'Always re-sample').
+* New: Removed renaming feature.
+* New: Made settings and processing dialogs non-resizable.
+* Fixed: Processing did not work when Normalize was not enabled.
+* Fixed: Processing did not work for 12-bit samples.
 * 1010music samplers
   * New: If there are overlapping sample zones which so far cannot be handled by the 1010music samplers, the overlapping ones are removed to create limited but working output files.
 * Akai MPC

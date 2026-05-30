@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -106,8 +107,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             if (this.settingsConfiguration.addFileName () || this.settingsConfiguration.addProgramNumber ())
                 presetName = this.addPrefixes (presetName, preset.getProgramNumber (), FileUtils.getNameWithoutType (sourceFile));
 
-            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + presetName;
-            final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName, mappingName);
+            final IMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName);
             final IMetadata metadata = source.getMetadata ();
             this.fillMetadata (sf2File, parts, metadata);
 
@@ -126,7 +126,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 generators.setPresetZoneGenerators (presetZone.getGenerators ());
 
                 final Sf2Instrument instrument = presetZone.getInstrument ();
-                final DefaultGroup group = new DefaultGroup (instrument.getName ());
+                final IGroup group = new DefaultGroup (instrument.getName ());
 
                 for (int instrumentZoneIndex = 0; instrumentZoneIndex < instrument.getZoneCount (); instrumentZoneIndex++)
                 {
@@ -436,7 +436,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         try
         {
             final Sf2SampleData sampleData = new Sf2SampleData (sample);
-            final DefaultSampleZone zone = new DefaultSampleZone (sample.getName (), sampleData);
+            final ISampleZone zone = new DefaultSampleZone (sample.getName (), sampleData);
 
             final Integer panning = generators.getSignedValue (Generator.PANNING);
             if (panning != null)
@@ -477,7 +477,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             // Set loop, if any
             if ((generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue () & 1) > 0)
             {
-                final DefaultSampleLoop sampleLoop = new DefaultSampleLoop ();
+                final ISampleLoop sampleLoop = new DefaultSampleLoop ();
                 final Integer startOffset = generators.getSignedValue (Generator.START_LOOP_ADDRS_OFFSET);
                 final int startOffsetInt = startOffset == null ? 0 : startOffset.intValue ();
                 sampleLoop.setStart ((int) (sample.getLoopStart () - sampleStart + startOffsetInt));

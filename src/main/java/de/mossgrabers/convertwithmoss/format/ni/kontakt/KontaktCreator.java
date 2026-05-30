@@ -101,7 +101,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
         final List<IInstrumentSource> instrumentSources = new ArrayList<> ();
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
+            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
             instrumentSource.setName (multisampleSource.getName ());
             instrumentSources.add (instrumentSource);
         }

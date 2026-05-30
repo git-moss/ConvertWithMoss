@@ -147,7 +147,8 @@ public class Maschine1Format implements IMaschineFormat
         // Create the multi-sample with 1 group
         final String name = FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
+
         final IGroup group = new DefaultGroup ();
         multisampleSource.setGroups (Collections.singletonList (group));
 
@@ -480,7 +481,7 @@ public class Maschine1Format implements IMaschineFormat
      *
      * @param multisampleSource The multi-sample
      */
-    private void applyMetadata (final DefaultMultisampleSource multisampleSource)
+    private void applyMetadata (final IMultisampleSource multisampleSource)
     {
         if (this.soundinfoDocument == null)
             return;

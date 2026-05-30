@@ -76,8 +76,8 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
             final AkaiMPC1000Program program = new AkaiMPC1000Program (input);
             final String programName = FileUtils.getNameWithoutType (sourceFile).trim ();
             final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, programName);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
 
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName, programName);
             final IGroup group = new DefaultGroup ();
             multisampleSource.setGroups (Collections.singletonList (group));
             this.createSampleZones (group, program, sourceFile.getParentFile ());

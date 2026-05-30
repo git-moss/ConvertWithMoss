@@ -170,7 +170,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
         try
         {
             final AkaiMPC60Set setFile = new AkaiMPC60Set (fileContent);
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName, programName);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
             multisampleSource.setGroups (createSampleZones (setFile));
 
             // Detect metadata

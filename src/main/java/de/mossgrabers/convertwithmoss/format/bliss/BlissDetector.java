@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -198,7 +199,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
 
         // Create multi-sample
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
         this.updateCreationDateTime (metadata, sourceFile);
@@ -232,7 +233,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private void parseZone (final File zipFile, final IGroup group, final Element zoneElement, final int programIndex, final int zoneIndex)
     {
-        final DefaultSampleZone zone = this.initZone (zipFile, zoneElement, programIndex, zoneIndex);
+        final ISampleZone zone = this.initZone (zipFile, zoneElement, programIndex, zoneIndex);
         if (zone == null)
             return;
 

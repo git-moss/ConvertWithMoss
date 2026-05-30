@@ -178,7 +178,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         final String name = programNameElement == null ? FileUtils.getNameWithoutType (file) : programNameElement.getTextContent ();
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, n);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
 
         final Element instrumentsElement = XMLUtils.getChildElementByName (programElement, MPCKeygroupTag.PROGRAM_INSTRUMENTS);
         if (instrumentsElement == null)
@@ -764,17 +764,16 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             // project: volume, pan, transposition
 
             final String programName = programNode.get ("name").asText ();
-
             final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : programName;
             final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, programName, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, programName);
 
             final IGroup group = new DefaultGroup ();
 
             multisampleSource.setName (programName);
             final double programTranspose = programNode.get ("transpose").asDouble ();
 
-            /////////
+            ////
             // Read all sample info
             final Iterator<JsonNode> sampleNodes = dataNode.get ("samples").elements ();
             final Map<String, SampleInfo> sampleInfos = new HashMap<> ();
@@ -793,7 +792,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 }
             }
 
-            /////////
+            ////
             // Read key-group parameters
             final JsonNode keygroupNode = programNode.get ("keygroup");
             double keygroupTranspose = 0;
@@ -809,7 +808,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 globalEnvelopesAndFilter = new MPCEnvelopesAndFilter (synthSectionNode, true);
             }
 
-            /////////
+            ////
             // Read all layers - strangely all key-group settings seem to be under drum
             final JsonNode drumNode = programNode.get ("drum");
             final Iterator<JsonNode> instrumentsNodes = drumNode.get ("instruments").elements ();
@@ -836,7 +835,6 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             multisampleSource.setGroups (groups);
             final boolean isDrum = false;
             this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, isDrum ? "Drums" : null);
-            multisampleSource.setMappingName (multiSampleFile.getName () + " : " + multisampleSource.getName ());
             results.add (multisampleSource);
         }
 

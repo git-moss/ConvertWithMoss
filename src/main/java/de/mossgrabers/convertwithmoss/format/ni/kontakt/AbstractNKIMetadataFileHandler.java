@@ -137,8 +137,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
             // Only K2
             final String midiChannelStr = topParameters.get (String.format ("midiChannel_slot0%02d", Integer.valueOf (i)));
-            if (midiChannelStr != null && instrumentSource instanceof final DefaultInstrumentSource defSource)
-                defSource.setMidiChannel (Integer.parseInt (midiChannelStr) - 1);
+            if (midiChannelStr != null)
+                instrumentSource.setMidiChannel (Integer.parseInt (midiChannelStr) - 1);
 
             instruments.add (instrumentSource);
         }
@@ -180,12 +180,10 @@ public abstract class AbstractNKIMetadataFileHandler
         final List<IInstrumentSource> instrumentSources = new ArrayList<> ();
         for (final Element programElement: programElements)
         {
-            final String mappingNameFolder = AudioFileUtils.subtractPaths (sourceFolder, sourceFile);
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingNameFolder);
-            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null);
+            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
             if (this.parseProgram (programElement, instrumentSource, monolithSamples))
             {
-                multisampleSource.setMappingName (mappingNameFolder + " : " + multisampleSource.getName ());
                 updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
                 instrumentSources.add (instrumentSource);
             }
@@ -510,7 +508,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return True if successful
      * @throws IOException Could not create path for samples
      */
-    private boolean parseProgram (final Element programElement, final DefaultInstrumentSource instrumentSource, final Map<String, ISampleData> monolithSamples) throws IOException
+    private boolean parseProgram (final Element programElement, final IInstrumentSource instrumentSource, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
 
@@ -553,7 +551,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param instrumentSource The instrument source
      * @param programParameters The program parameter
      */
-    protected void readInstrumentParameters (final DefaultInstrumentSource instrumentSource, final Map<String, String> programParameters)
+    protected void readInstrumentParameters (final IInstrumentSource instrumentSource, final Map<String, String> programParameters)
     {
         final String lowKey = programParameters.get ("lowKey");
         if (lowKey != null)
@@ -699,7 +697,7 @@ public abstract class AbstractNKIMetadataFileHandler
         if (groupElement == null)
             return null;
 
-        final DefaultGroup group = new DefaultGroup ();
+        final IGroup group = new DefaultGroup ();
         group.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
         final IFilter filter = this.readFilter (groupElement);
@@ -1007,7 +1005,7 @@ public abstract class AbstractNKIMetadataFileHandler
             if ((loopMode.equals (this.tags.untilEndValue ()) || loopMode.equals (this.tags.untilReleaseValue ())) && alternatingLoop.equals (this.tags.yes ()))
                 loopType = LoopType.ALTERNATING;
 
-            final DefaultSampleLoop loop = new DefaultSampleLoop ();
+            final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
             loop.setEnd (loopLength + loopStart);
             loop.setTuning (12.0 * (Math.log (loopTuning) / Math.log (2.0)));
@@ -1335,7 +1333,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
         try
         {
-            final DefaultEnvelopeModulator modulator = new DefaultEnvelopeModulator (0);
+            final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (0);
             final IEnvelope env = modulator.getSource ();
 
             final Map<String, String> envParams = this.readValueMap (envElement);

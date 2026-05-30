@@ -207,7 +207,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
     /**
      * This value indicates how many bytes of wave data must be streamed to a D/A converter per
      * second in order to play the wave file. This information is useful when determining if data
-     * can be streamed from the source fast enough to keep up with playback. This value can be
+     * can be streamed from the source fast enough to keep up with play-back. This value can be
      * easily calculated with the formula: AvgBytesPerSec = SampleRate * BlockAlign * Channels
      *
      * @return The four bytes converted to an integer
@@ -252,7 +252,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
     {
         final int bitsPerSample = this.getSignificantBitsPerSample ();
         final int numberOfChannels = this.getNumberOfChannels ();
-        final int blockAlign = bitsPerSample / 8 * numberOfChannels;
+        final int blockAlign = (bitsPerSample + 7) / 8 * numberOfChannels; // ceiling division
         this.rawRiffChunk.setIntAsTwoBytes (0x0C, blockAlign);
 
         this.updateAverageBytesPerSecond ();
@@ -318,14 +318,16 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
 
 
     /**
-     * Calculate the number of bytes which are used for one sample depending on the significant bite
+     * Calculate the number of bytes which are used for one sample depending on the significant bits
      * per sample and the number of channels.
      *
      * @return The number of bytes
      */
     public int calculateBytesPerSample ()
     {
-        return this.getNumberOfChannels () * this.getSignificantBitsPerSample () / 8;
+        final int bitsPerSample = this.getSignificantBitsPerSample ();
+        final int bytesPerSample = (bitsPerSample + 7) / 8; // ceiling division
+        return this.getNumberOfChannels () * bytesPerSample;
     }
 
 

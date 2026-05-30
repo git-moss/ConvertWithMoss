@@ -160,7 +160,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
             final AkmFile akmFile = new AkmFile (file);
             this.notifier.log ("IDS_AKM_VERSION", akmFile.getVersion (), akmFile.isS5000Series () ? "S5000/S6000" : "Z4/Z8");
 
-            final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+            final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
             performanceSource.setName (FileUtils.getNameWithoutType (file));
 
             for (final AkmPart part: akmFile.getParts ())

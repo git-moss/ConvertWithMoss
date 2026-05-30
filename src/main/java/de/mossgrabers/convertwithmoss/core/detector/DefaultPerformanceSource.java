@@ -38,11 +38,8 @@ public class DefaultPerformanceSource extends DefaultSource implements IPerforma
     }
 
 
-    /**
-     * Create and add an instrument source to the performance source.
-     *
-     * @param instrumentSource The instrument source to add
-     */
+    /** {@inheritDoc} */
+    @Override
     public void addInstrument (final IInstrumentSource instrumentSource)
     {
         this.instruments.add (instrumentSource);
