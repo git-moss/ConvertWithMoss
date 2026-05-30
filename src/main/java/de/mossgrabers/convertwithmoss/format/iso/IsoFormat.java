@@ -28,8 +28,8 @@ public enum IsoFormat
     /** The ISO 9660 format. */
     ISO_9660,
     /** The format used by Roland S550 and compatible samplers. */
-    ROLAND_S550_W30_DJ70,
-    /** The format used by Roland S7xx. */
+    ROLAND_S5XX,
+    /** The format used by Roland S7xx and compatible samplers. */
     ROLAND_S7XX,
     /** Unknown format. */
     UNKNOWN;
@@ -44,7 +44,7 @@ public enum IsoFormat
         NAMES.put (AKAI_S3000, "Akai S3000/MPC2000 series");
         NAMES.put (ENSONIQ, "Ensoniq");
         NAMES.put (ISO_9660, "ISO 9660");
-        NAMES.put (ROLAND_S550_W30_DJ70, "Roland S550, W30, DJ70");
+        NAMES.put (ROLAND_S5XX, "Roland S5xx");
         NAMES.put (ROLAND_S7XX, "Roland S7xx");
         NAMES.put (UNKNOWN, "Unknown Format");
     }

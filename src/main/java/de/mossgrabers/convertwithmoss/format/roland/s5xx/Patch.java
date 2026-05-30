@@ -408,17 +408,16 @@ public class Patch
      *
      * @param layer The layer 0 or 1
      * @param key The key
-     * @return The assigned tone
+     * @return The assigned tone, -1 if negative or larger than 31
      */
     public int getToneToKey (final int layer, final int key)
     {
+        if (layer < 0 || layer > 1)
+            throw new IllegalArgumentException ("Invalid table");
         if (key < 0 || key > 128)
             throw new IllegalArgumentException ("Invalid key");
-        if (layer == 0)
-            return this.toneToKey1[key] & 0x1F;
-        if (layer == 1)
-            return this.toneToKey2[key] & 0x1F;
-        throw new IllegalArgumentException ("Invalid table");
+        final byte value = layer == 0 ? this.toneToKey1[key] : this.toneToKey2[key];
+        return value < 0 || value > 31 ? -1 : value;
     }
 
 

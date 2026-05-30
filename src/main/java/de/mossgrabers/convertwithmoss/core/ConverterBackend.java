@@ -291,7 +291,7 @@ public class ConverterBackend
 
         if (this.onlyAnalyse)
         {
-            this.notifier.log ("IDS_NOTIFY_OK");
+            this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", multisampleSource.getName ());
             return;
         }
 
@@ -371,7 +371,7 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            /////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -388,7 +388,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            /////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)

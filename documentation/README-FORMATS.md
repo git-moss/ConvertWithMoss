@@ -57,6 +57,7 @@ The following multi-sample formats are supported:
 * [Logic EXS24](#logic-exs24)
 * [Native Instruments Maschine](#native-instruments-maschine)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+* [Roland S-5xx](#roland-s-5xx)
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
@@ -309,6 +310,7 @@ Searches for files ending with *.ISO or *.IMG. Currently, the following formats 
 * [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
+* [Roland](#roland-s-5xx)
 
 ## Kontakt NKI/NKM
 
@@ -408,6 +410,11 @@ Note that Maschine contains an auto-sampler with which you can sample plugins or
 The Propellerhead Reason NN-XT is a software sampler that is included in the Reason software package. Reason is a digital audio workstation (DAW) software developed by Propellerhead Software. It allows users to load and play back sampled sounds, such as instruments or drum hits. The file ending is *sxt*.
 
 There are metadata fields for creator and a creator URL.
+
+## Roland S-5xx
+
+S-50, S-330, S-550, W-30
+**TODO**
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 

@@ -94,7 +94,7 @@ public class DiskImageParser
 
         final InputStream input = new ByteArrayInputStream (this.data);
 
-        final DiskImageHeader header = new DiskImageHeader (input);
+        final RolandDiskImageHeader header = new RolandDiskImageHeader (input);
         final SamplerType samplerType = header.getSamplerType ();
         if (samplerType == SamplerType.LAND)
         {
@@ -188,7 +188,7 @@ public class DiskImageParser
     }
 
 
-    private List<DirectoryEntry> parseLandDirectory (final DiskImageHeader header)
+    private List<DirectoryEntry> parseLandDirectory (final RolandDiskImageHeader header)
     {
         final boolean isCdRom = header.isCdRom ();
         final int baseOffset = isCdRom ? LAND_CD_OFFSET : LAND_HD_OFFSET;

@@ -15,7 +15,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class DiskImageHeader
+public class RolandDiskImageHeader
 {
     private final SamplerType samplerType;
     private final String      osVersionString;
@@ -28,7 +28,7 @@ public class DiskImageHeader
      * @param input The input stream to read from
      * @throws IOException Could not read the header
      */
-    public DiskImageHeader (final InputStream input) throws IOException
+    public RolandDiskImageHeader (final InputStream input) throws IOException
     {
         input.skipNBytes (4);
 

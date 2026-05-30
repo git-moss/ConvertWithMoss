@@ -13,6 +13,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
+import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
 
 
 /**
@@ -23,6 +24,7 @@ import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetecto
 public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
 {
     private final EnsoniqEpsAsrDetector ensoniqDetector;
+    private final S5xxDetector          rolandDetector;
 
 
     /**
@@ -32,9 +34,10 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
      */
     public IsoDetector (final INotifier notifier)
     {
-        super ("ISO/IMG file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso", ".img");
+        super ("ISO/IMG file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso", ".img", ".out", ".sdk");
 
         this.ensoniqDetector = new EnsoniqEpsAsrDetector (notifier);
+        this.rolandDetector = new S5xxDetector (notifier);
     }
 
 
@@ -64,7 +67,11 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
                 this.notifier.logError ("IDS_ISO_UNSUPPORTED_9660");
                 return Collections.emptyList ();
 
-            case ROLAND_S550_W30_DJ70:
+            case ROLAND_S5XX:
+                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                this.rolandDetector.setSourceFolder (this.sourceFolder);
+                return this.rolandDetector.readPresetFile (sourceFile);
+
             case ROLAND_S7XX:
             case UNKNOWN:
             default:

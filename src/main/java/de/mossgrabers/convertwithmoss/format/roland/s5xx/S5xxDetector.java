@@ -72,7 +72,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
+    public List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -80,7 +80,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
         try
         {
             final DiskImage image = new DiskImageParser (sourceFile).parse ();
-            final DiskImageHeader hdr = image.getHeader ();
+            final RolandDiskImageHeader hdr = image.getHeader ();
             this.notifier.log ("IDS_S5XX_VERSION", hdr.getSamplerType ().getDescription (), hdr.getOsVersionString ());
             return this.readPatches (sourceFile, image);
         }
@@ -135,33 +135,37 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
             // Create one sample zone for each tone range
             for (int key = 0; key <= TOP_KEY; key++)
             {
-                final int toneToKey = patch.getToneToKey (layer, key);
+                final int nextToneId = patch.getToneToKey (layer, key);
                 if (toneId == -1)
-                    toneId = toneToKey;
-                else if (toneId != toneToKey || key == TOP_KEY)
+                    toneId = nextToneId;
+                else if (toneId != nextToneId || key == TOP_KEY)
                 {
                     highKey = key == TOP_KEY ? TOP_KEY : key - 1;
 
-                    final Tone tone = tones.get (toneToKey);
-                    final String toneName = tone.getName ();
-                    final ISampleZone sampleZone = new DefaultSampleZone (toneName, lowKey, highKey);
-                    if (layer == 0)
-                        groupLayer1.addSampleZone (sampleZone);
-                    else
+                    // Only create zone if tone is enabled
+                    if (toneId >= 0)
                     {
-                        groupLayer2.addSampleZone (sampleZone);
-                        // Possible stereo setup
-                        if (patch.getKeyMode () == 4 && tone.getOutputAssign () == 1)
-                            sampleZone.setPanning (1);
+                        final Tone tone = tones.get (toneId);
+                        final String toneName = tone.getName ();
+                        final ISampleZone sampleZone = new DefaultSampleZone (toneName, lowKey, highKey);
+                        if (layer == 0)
+                            groupLayer1.addSampleZone (sampleZone);
+                        else
+                        {
+                            groupLayer2.addSampleZone (sampleZone);
+                            // Possible stereo setup
+                            if (patch.getKeyMode () == 4 && tone.getOutputAssign () == 1)
+                                sampleZone.setPanning (1);
+                        }
+
+                        sampleZone.setBendUp (bendRange);
+                        sampleZone.setBendDown (-bendRange);
+
+                        applyParameters (sampleZone, tone, waveData, tones, image.getHeader ().getSamplerType ());
                     }
 
-                    sampleZone.setBendUp (bendRange);
-                    sampleZone.setBendDown (-bendRange);
-
-                    applyParameters (sampleZone, tone, waveData, tones, image.getHeader ().getSamplerType ());
-
                     lowKey = key;
-                    toneId = toneToKey;
+                    toneId = nextToneId;
                 }
             }
         }
@@ -375,7 +379,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
 
         // Release phase
         time = 0;
-        if (levels[sustainPoint] == 0)
+        if (levels[sustainPoint] == 0 && sustainPoint > 0)
             // If the sustain phase is already 0, use the previous point
             time = calculateTime (levels[sustainPoint - 1], 0, Math.clamp (rates[endPoint], 1, 127));
         else
