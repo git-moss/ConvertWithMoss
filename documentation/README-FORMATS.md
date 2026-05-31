@@ -57,7 +57,7 @@ The following multi-sample formats are supported:
 * [Logic EXS24](#logic-exs24)
 * [Native Instruments Maschine](#native-instruments-maschine)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
-* [Roland S-5xx](#roland-s-5xx)
+* [Roland S-50 Series](#roland-s-50-series) - read only
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
@@ -411,10 +411,11 @@ The Propellerhead Reason NN-XT is a software sampler that is included in the Rea
 
 There are metadata fields for creator and a creator URL.
 
-## Roland S-5xx
+## Roland S-50 Series
 
-S-50, S-330, S-550, W-30
-**TODO**
+The Roland S-50 series (S-50, S-330, S-550, W-30), introduced in the mid-1980s, represented a significant development in digital sampling technology. Based on 12-bit pulse-code modulation (PCM) sampling, the system combined waveform acquisition, editing, and keyboard performance capabilities within a single instrument. The series was notable for its integration of video-based graphical editing, enabling detailed visualization and manipulation of sampled waveforms.
+
+The format of the S-50 is slightly different to the one used on the other models. All of them store 12-bit samples with 15/30kHz sample rate. It is a good idea to up-sample them (with the Processing feature) to e.g. 16-bit/44.1kHz to prevent compatibility issues. Only reading is supported.
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
