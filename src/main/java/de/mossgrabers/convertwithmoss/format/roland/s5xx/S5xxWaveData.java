@@ -13,7 +13,7 @@ import java.io.InputStream;
  *
  * @author Jürgen Moßgraber
  */
-public class WaveData
+public class S5xxWaveData
 {
     /** The number samples contained in one Wave Data segment. */
     public static final int  SAMPLES_PER_SEGMENT    = 12288;
@@ -29,7 +29,7 @@ public class WaveData
      * @param input The input stream from which to read the wave data
      * @throws IOException Could not read the data
      */
-    public WaveData (final InputStream input) throws IOException
+    public S5xxWaveData (final InputStream input) throws IOException
     {
         input.read (this.data);
     }

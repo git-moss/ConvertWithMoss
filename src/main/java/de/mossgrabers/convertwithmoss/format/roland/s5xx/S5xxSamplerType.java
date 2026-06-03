@@ -9,7 +9,7 @@ package de.mossgrabers.convertwithmoss.format.roland.s5xx;
  * 
  * @author Jürgen Moßgraber
  */
-public enum SamplerType
+public enum S5xxSamplerType
 {
     /** Roland S-550. */
     S550("S550", "Roland S-550"),
@@ -41,7 +41,7 @@ public enum SamplerType
      * @param id The ID of the type
      * @param description The description
      */
-    private SamplerType (final String id, final String description)
+    private S5xxSamplerType (final String id, final String description)
     {
         this.id = id;
         this.description = description;
@@ -76,9 +76,9 @@ public enum SamplerType
      * @param id The ID of the sampler type
      * @return The instance
      */
-    public static SamplerType fromId (final String id)
+    public static S5xxSamplerType fromId (final String id)
     {
-        for (final SamplerType t: values ())
+        for (final S5xxSamplerType t: values ())
             if (t.id.equals (id))
                 return t;
         return UNKNOWN;

@@ -15,7 +15,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class ToneList
+public class S5xxToneList
 {
     private final String name;
     private final int    orgSubTone;
@@ -28,7 +28,7 @@ public class ToneList
      * @param input The input stream to read from
      * @throws IOException Could not read
      */
-    public ToneList (final InputStream input) throws IOException
+    public S5xxToneList (final InputStream input) throws IOException
     {
         this.name = StreamUtils.readAscii (input, 8).trim ();
 

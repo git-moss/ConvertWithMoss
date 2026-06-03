@@ -15,9 +15,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class Tone
+public class S5xxTone
 {
-    private final ToneList listEntry;
+    private final S5xxToneList listEntry;
     private final String   name;
 
     // Wave Data
@@ -133,7 +133,7 @@ public class Tone
      * @param input The input stream to read from
      * @throws IOException Could not read the tone
      */
-    public Tone (final ToneList listEntry, final InputStream input) throws IOException
+    public S5xxTone (final S5xxToneList listEntry, final InputStream input) throws IOException
     {
         this.listEntry = listEntry;
 
@@ -257,7 +257,7 @@ public class Tone
      *
      * @return The list entry
      */
-    public ToneList getListEntry ()
+    public S5xxToneList getListEntry ()
     {
         return this.listEntry;
     }

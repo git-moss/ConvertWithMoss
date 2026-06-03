@@ -16,7 +16,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class Patch
+public class S5xxPatch
 {
     private final int        index;
     private final String     patchId;
@@ -35,7 +35,7 @@ public class Patch
     private int              velocityMixRatio;
     private int              afterTouchAssign;
     private int              keyAssign;
-    private final OutputJack outputJack;
+    private final S5xxOutputJack outputJack;
 
 
     /**
@@ -47,7 +47,7 @@ public class Patch
      * @param type The specific sampler type
      * @throws IOException Could not parse the parameters
      */
-    public Patch (final int index, final String patchId, final InputStream input, final SamplerType type) throws IOException
+    public S5xxPatch (final int index, final String patchId, final InputStream input, final S5xxSamplerType type) throws IOException
     {
         this.index = index;
         this.patchId = patchId;
@@ -80,7 +80,7 @@ public class Patch
         this.velocityMixRatio = StreamUtils.readUnsigned8 (input);
         this.afterTouchAssign = StreamUtils.readUnsigned8 (input);
         this.keyAssign = StreamUtils.readUnsigned8 (input);
-        this.outputJack = OutputJack.fromByte (StreamUtils.readUnsigned8 (input));
+        this.outputJack = S5xxOutputJack.fromByte (StreamUtils.readUnsigned8 (input));
 
         // Some more dummy bytes
     }
@@ -459,7 +459,7 @@ public class Patch
      *
      * @return The output jack
      */
-    public OutputJack getOutputJack ()
+    public S5xxOutputJack getOutputJack ()
     {
         return this.outputJack;
     }
@@ -473,7 +473,7 @@ public class Patch
     }
 
 
-    private static void readToneToKey (final byte [] array, final SamplerType type, final InputStream input) throws IOException
+    private static void readToneToKey (final byte [] array, final S5xxSamplerType type, final InputStream input) throws IOException
     {
         final boolean isS50 = type.isS50 ();
         input.readNBytes (array, isS50 ? 0 : 12, isS50 ? 128 : 109);

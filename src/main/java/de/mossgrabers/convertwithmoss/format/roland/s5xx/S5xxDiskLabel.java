@@ -18,7 +18,7 @@ package de.mossgrabers.convertwithmoss.format.roland.s5xx;
  *
  * @author Jürgen Moßgraber
  */
-public class DiskLabel
+public class S5xxDiskLabel
 {
     /** The number of label rows. */
     public static final int ROWS          = 5;
@@ -34,7 +34,7 @@ public class DiskLabel
      * 
      * @param rows The label rows
      */
-    public DiskLabel (final String [] rows)
+    public S5xxDiskLabel (final String [] rows)
     {
         if (rows.length != ROWS)
             throw new IllegalArgumentException ("DiskLabel requires exactly " + ROWS + " rows");
