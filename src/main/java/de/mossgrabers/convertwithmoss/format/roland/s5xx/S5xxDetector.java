@@ -79,8 +79,8 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
-            final DiskImage image = new DiskImageParser (sourceFile).parse ();
-            final RolandDiskImageHeader hdr = image.getHeader ();
+            final S5xxDiskImage image = new S5xxDiskImageParser (sourceFile).parse ();
+            final S5xxDiskImageHeader hdr = image.getHeader ();
             this.notifier.log ("IDS_S5XX_VERSION", hdr.getSamplerType ().getDescription (), hdr.getOsVersionString ());
             return this.readPatches (sourceFile, image);
         }
@@ -92,12 +92,12 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private List<IMultisampleSource> readPatches (final File sourceFile, final DiskImage image)
+    private List<IMultisampleSource> readPatches (final File sourceFile, final S5xxDiskImage image)
     {
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         final String metadataDescription = createMetadataDescription (image.getDiskLabel ());
 
-        for (final Patch patch: image.getPatches ())
+        for (final S5xxPatch patch: image.getPatches ())
         {
             final String patchName = patch.getName ();
             if (patchName.isBlank ())
@@ -112,14 +112,14 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private IMultisampleSource readPatch (final File sourceFile, final Patch patch, final String patchName, final String metadataDescription, final DiskImage image)
+    private IMultisampleSource readPatch (final File sourceFile, final S5xxPatch patch, final String patchName, final String metadataDescription, final S5xxDiskImage image)
     {
         final File parentFile = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, patchName);
         final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, patchName);
 
-        final List<Tone> tones = image.getTones ();
-        final List<WaveData> waveData = image.getWaveData ();
+        final List<S5xxTone> tones = image.getTones ();
+        final List<S5xxWaveData> waveData = image.getWaveData ();
 
         final IGroup groupLayer1 = new DefaultGroup ("Layer 1");
         final IGroup groupLayer2 = new DefaultGroup ("Layer 2");
@@ -145,7 +145,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
                     // Only create zone if tone is enabled
                     if (toneId >= 0)
                     {
-                        final Tone tone = tones.get (toneId);
+                        final S5xxTone tone = tones.get (toneId);
                         final String toneName = tone.getName ();
                         final ISampleZone sampleZone = new DefaultSampleZone (toneName, lowKey, highKey);
                         if (layer == 0)
@@ -186,7 +186,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static void applyParameters (final ISampleZone sampleZone, final Tone tone, final List<WaveData> waveData, final List<Tone> tones, final SamplerType samplerType)
+    private static void applyParameters (final ISampleZone sampleZone, final S5xxTone tone, final List<S5xxWaveData> waveData, final List<S5xxTone> tones, final S5xxSamplerType samplerType)
     {
         sampleZone.setSampleData (createSampleData (tone.getOrigSubTone () == 1 ? tones.get (tone.getSourceTone ()) : tone, waveData));
         sampleZone.setKeyRoot (tone.getOrigKeyNumber ());
@@ -226,7 +226,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static void createFilter (final ISampleZone sampleZone, final Tone tone)
+    private static void createFilter (final ISampleZone sampleZone, final S5xxTone tone)
     {
         if (tone.getTvfSwitch () == 0)
             return;
@@ -244,15 +244,15 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static ISampleData createSampleData (final Tone tone, final List<WaveData> waveData)
+    private static ISampleData createSampleData (final S5xxTone tone, final List<S5xxWaveData> waveData)
     {
         final int startSegment = (tone.getWaveBank () == 1 ? 18 : 0) + tone.getWaveSegmentTop ();
         final int numSegments = tone.getWaveSegmentLength ();
-        short [] samples = new short [numSegments * WaveData.SAMPLES_PER_SEGMENT];
+        short [] samples = new short [numSegments * S5xxWaveData.SAMPLES_PER_SEGMENT];
         for (int i = 0; i < numSegments; i++)
         {
             final short [] segmentSamples = waveData.get (startSegment + i).getSamples ();
-            System.arraycopy (segmentSamples, 0, samples, i * WaveData.SAMPLES_PER_SEGMENT, segmentSamples.length);
+            System.arraycopy (segmentSamples, 0, samples, i * S5xxWaveData.SAMPLES_PER_SEGMENT, segmentSamples.length);
         }
 
         final int endPoint = tone.getEndPoint ();
@@ -264,7 +264,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static List<IGroup> applyLayerSetup (final Patch patch, final IGroup groupLayer1, final IGroup groupLayer2)
+    private static List<IGroup> applyLayerSetup (final S5xxPatch patch, final IGroup groupLayer1, final IGroup groupLayer2)
     {
         switch (patch.getKeyMode ())
         {
@@ -339,7 +339,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static String createMetadataDescription (final DiskLabel diskLabel)
+    private static String createMetadataDescription (final S5xxDiskLabel diskLabel)
     {
         if (diskLabel == null)
             return "";

@@ -10,7 +10,7 @@ package de.mossgrabers.convertwithmoss.format.roland.s5xx;
  *
  * @author Jürgen Moßgraber
  */
-public class DirectoryEntry
+public class S5xxDirectoryEntry
 {
     private final int    slot; // 1-based
     private final String name; // up to 50 printable ASCII chars
@@ -22,7 +22,7 @@ public class DirectoryEntry
      * @param slot The 1-based slot number within the directory
      * @param name The name of the directory
      */
-    public DirectoryEntry (final int slot, final String name)
+    public S5xxDirectoryEntry (final int slot, final String name)
     {
         this.slot = slot;
         this.name = name == null ? "" : name;

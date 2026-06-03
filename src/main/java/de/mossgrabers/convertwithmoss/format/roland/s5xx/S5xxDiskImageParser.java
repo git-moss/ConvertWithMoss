@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author Jürgen Moßgraber
  */
-public class DiskImageParser
+public class S5xxDiskImageParser
 {
     /** Minimum file size to read the full header. */
     private static final int HDR_MIN_SIZE      = 512;
@@ -76,7 +76,7 @@ public class DiskImageParser
      * @param file The disk file to read
      * @throws IOException Could not read the file
      */
-    public DiskImageParser (final File file) throws IOException
+    public S5xxDiskImageParser (final File file) throws IOException
     {
         this.data = Files.readAllBytes (file.toPath ());
     }
@@ -85,44 +85,44 @@ public class DiskImageParser
     /**
      * Parse the disk image.
      *
-     * @return Fully parsed {@link DiskImage}
+     * @return Fully parsed {@link S5xxDiskImage}
      * @throws IOException on insufficient data, unknown type, or S770 (rejected)
      */
-    public DiskImage parse () throws IOException
+    public S5xxDiskImage parse () throws IOException
     {
         this.requireMinSize (HDR_MIN_SIZE, "header region");
 
         final InputStream input = new ByteArrayInputStream (this.data);
 
-        final RolandDiskImageHeader header = new RolandDiskImageHeader (input);
-        final SamplerType samplerType = header.getSamplerType ();
-        if (samplerType == SamplerType.LAND)
+        final S5xxDiskImageHeader header = new S5xxDiskImageHeader (input);
+        final S5xxSamplerType samplerType = header.getSamplerType ();
+        if (samplerType == S5xxSamplerType.LAND)
         {
             @SuppressWarnings("unused")
-            final List<DirectoryEntry> landDirectory = this.parseLandDirectory (header);
+            final List<S5xxDirectoryEntry> landDirectory = this.parseLandDirectory (header);
             throw new IOException ("HD / CD-Roms currently not supported.");
         }
 
-        return new DiskImage (header, this.parsePatches (samplerType), this.parseTones (), this.parseDiskLabel (), this.readWaveData ());
+        return new S5xxDiskImage (header, this.parsePatches (samplerType), this.parseTones (), this.parseDiskLabel (), this.readWaveData ());
     }
 
 
-    private List<WaveData> readWaveData () throws IOException
+    private List<S5xxWaveData> readWaveData () throws IOException
     {
         final InputStream input = new ByteArrayInputStream (this.data, WAVE_DATA_A, WAVE_DATA_SIZE);
-        final List<WaveData> result = new ArrayList<> ();
+        final List<S5xxWaveData> result = new ArrayList<> ();
         for (int i = 0; i < 36; i++)
-            result.add (new WaveData (input));
+            result.add (new S5xxWaveData (input));
         return result;
     }
 
 
-    private List<Patch> parsePatches (final SamplerType type) throws IOException
+    private List<S5xxPatch> parsePatches (final S5xxSamplerType type) throws IOException
     {
         final int blockSize = type.patchBlockSize ();
         final int patchCount = type.patchCount ();
 
-        final List<Patch> patches = new ArrayList<> ();
+        final List<S5xxPatch> patches = new ArrayList<> ();
 
         // Bank 1 - first 8 patches
         final int bank1Count = type.isS50 () ? patchCount : Math.min (8, patchCount);
@@ -135,7 +135,7 @@ public class DiskImageParser
     }
 
 
-    private void parsePatchBank (final List<Patch> out, final int bankStart, final int blockSize, final int count, final int globalIndexOffset, final SamplerType type) throws IOException
+    private void parsePatchBank (final List<S5xxPatch> out, final int bankStart, final int blockSize, final int count, final int globalIndexOffset, final S5xxSamplerType type) throws IOException
     {
         for (int i = 0; i < count; i++)
         {
@@ -144,9 +144,9 @@ public class DiskImageParser
                 break;
 
             final int gi = globalIndexOffset + i;
-            final String patchId = buildPatchId (gi, type == SamplerType.S330);
+            final String patchId = buildPatchId (gi, type == S5xxSamplerType.S330);
             final InputStream input = new ByteArrayInputStream (this.data, off, blockSize);
-            out.add (new Patch (gi, patchId, input, type));
+            out.add (new S5xxPatch (gi, patchId, input, type));
         }
     }
 
@@ -174,27 +174,27 @@ public class DiskImageParser
     }
 
 
-    private List<Tone> parseTones () throws IOException
+    private List<S5xxTone> parseTones () throws IOException
     {
-        final List<Tone> tones = new ArrayList<> ();
+        final List<S5xxTone> tones = new ArrayList<> ();
 
         for (int i = 0; i < TONE_COUNT; i++)
         {
             final InputStream toneListInput = new ByteArrayInputStream (this.data, TONE_LIST_OFFSET + i * TONE_LIST_SIZE, TONE_LIST_SIZE);
             final InputStream toneInput = new ByteArrayInputStream (this.data, TONE_OFFSET + i * TONE_SIZE, TONE_SIZE);
-            tones.add (new Tone (new ToneList (toneListInput), toneInput));
+            tones.add (new S5xxTone (new S5xxToneList (toneListInput), toneInput));
         }
         return tones;
     }
 
 
-    private List<DirectoryEntry> parseLandDirectory (final RolandDiskImageHeader header)
+    private List<S5xxDirectoryEntry> parseLandDirectory (final S5xxDiskImageHeader header)
     {
         final boolean isCdRom = header.isCdRom ();
         final int baseOffset = isCdRom ? LAND_CD_OFFSET : LAND_HD_OFFSET;
         final int maxSlots = isCdRom ? LAND_CD_MAX : LAND_HD_MAX;
 
-        final List<DirectoryEntry> entries = new ArrayList<> ();
+        final List<S5xxDirectoryEntry> entries = new ArrayList<> ();
 
         for (int slot = 0; slot < maxSlots; slot++)
         {
@@ -209,13 +209,13 @@ public class DiskImageParser
             if (isCdRom && name.isEmpty ())
                 break;
 
-            entries.add (new DirectoryEntry (slot + 1, name));
+            entries.add (new S5xxDirectoryEntry (slot + 1, name));
         }
         return entries;
     }
 
 
-    private DiskLabel parseDiskLabel ()
+    private S5xxDiskLabel parseDiskLabel ()
     {
         // Last byte needed is index 68718 = LABEL_ROWS25_OFF + 12 groups × 4 bytes − 1
         final int endNeeded = LABEL_ROWS25_OFF + LABEL_ROW_LEN * 4; // 68719
@@ -241,7 +241,7 @@ public class DiskImageParser
         for (int r = 0; r < 4; r++)
             rows[r + 1] = new String (chars[r]);
 
-        return new DiskLabel (rows);
+        return new S5xxDiskLabel (rows);
     }
 
 

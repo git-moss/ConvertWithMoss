@@ -15,9 +15,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class RolandDiskImageHeader
+public class S5xxDiskImageHeader
 {
-    private final SamplerType samplerType;
+    private final S5xxSamplerType samplerType;
     private final String      osVersionString;
     private final String      mediaType;
 
@@ -28,15 +28,15 @@ public class RolandDiskImageHeader
      * @param input The input stream to read from
      * @throws IOException Could not read the header
      */
-    public RolandDiskImageHeader (final InputStream input) throws IOException
+    public S5xxDiskImageHeader (final InputStream input) throws IOException
     {
         input.skipNBytes (4);
 
         final String typeRaw = StreamUtils.readAscii (input, 4);
-        this.samplerType = SamplerType.fromId (typeRaw);
-        if (this.samplerType == SamplerType.UNKNOWN)
+        this.samplerType = S5xxSamplerType.fromId (typeRaw);
+        if (this.samplerType == S5xxSamplerType.UNKNOWN)
             throw new IOException ("Unrecognised sampler type ID: \"" + typeRaw + "\"");
-        if (this.samplerType == SamplerType.S770)
+        if (this.samplerType == S5xxSamplerType.S770)
             throw new IOException ("Sampler type S770 (SP-700 / S-750 / S-760 / S-770 / DJ-70) is not supported");
 
         input.skipNBytes (24);
@@ -54,7 +54,7 @@ public class RolandDiskImageHeader
      * 
      * @return The type of the sampler
      */
-    public SamplerType getSamplerType ()
+    public S5xxSamplerType getSamplerType ()
     {
         return this.samplerType;
     }

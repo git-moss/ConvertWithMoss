@@ -10,8 +10,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-import de.mossgrabers.convertwithmoss.format.roland.s5xx.RolandDiskImageHeader;
-import de.mossgrabers.convertwithmoss.format.roland.s5xx.SamplerType;
+import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDiskImageHeader;
+import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxSamplerType;
 
 
 /**
@@ -91,11 +91,11 @@ public class IsoFormatIdentifier
         // Roland S-5xx / S-7xx
         try
         {
-            final RolandDiskImageHeader header = new RolandDiskImageHeader (new ByteArrayInputStream (data));
-            final SamplerType samplerType = header.getSamplerType ();
-            if (samplerType != SamplerType.UNKNOWN && samplerType != SamplerType.LAND)
+            final S5xxDiskImageHeader header = new S5xxDiskImageHeader (new ByteArrayInputStream (data));
+            final S5xxSamplerType samplerType = header.getSamplerType ();
+            if (samplerType != S5xxSamplerType.UNKNOWN && samplerType != S5xxSamplerType.LAND)
             {
-                if (samplerType == SamplerType.S770)
+                if (samplerType == S5xxSamplerType.S770)
                     return IsoFormat.ROLAND_S7XX;
                 return IsoFormat.ROLAND_S5XX;
             }

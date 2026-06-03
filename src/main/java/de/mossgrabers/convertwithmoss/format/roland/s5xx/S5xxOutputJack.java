@@ -10,7 +10,7 @@ package de.mossgrabers.convertwithmoss.format.roland.s5xx;
  *
  * @author Jürgen Moßgraber
  */
-public enum OutputJack
+public enum S5xxOutputJack
 {
     /** Jack 1. */
     JACK_1(0, "Jack 1"),
@@ -44,7 +44,7 @@ public enum OutputJack
      * @param value The value
      * @param label The label
      */
-    private OutputJack (final int value, final String label)
+    private S5xxOutputJack (final int value, final String label)
     {
         this.value = value;
         this.label = label;
@@ -79,10 +79,10 @@ public enum OutputJack
      * @param b The byte containing the index
      * @return The output jack
      */
-    public static OutputJack fromByte (final int b)
+    public static S5xxOutputJack fromByte (final int b)
     {
         final int unsigned = b & 0xFF;
-        for (final OutputJack j: values ())
+        for (final S5xxOutputJack j: values ())
             if (j.value == unsigned)
                 return j;
         return UNKNOWN;

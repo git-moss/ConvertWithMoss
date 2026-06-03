@@ -13,13 +13,13 @@ import java.util.List;
  *
  * @author Jürgen Moßgraber
  */
-public class DiskImage
+public class S5xxDiskImage
 {
-    private final RolandDiskImageHeader header;
-    private final List<Patch>     patches;
-    private final List<Tone>      tones;
-    private final DiskLabel       diskLabel;
-    private final List<WaveData>  waveData;
+    private final S5xxDiskImageHeader header;
+    private final List<S5xxPatch>     patches;
+    private final List<S5xxTone>      tones;
+    private final S5xxDiskLabel       diskLabel;
+    private final List<S5xxWaveData>  waveData;
 
 
     /**
@@ -31,7 +31,7 @@ public class DiskImage
      * @param diskLabel The label of the disk
      * @param waveData The wave data on the disk
      */
-    public DiskImage (final RolandDiskImageHeader header, final List<Patch> patches, final List<Tone> tones, final DiskLabel diskLabel, final List<WaveData> waveData)
+    public S5xxDiskImage (final S5xxDiskImageHeader header, final List<S5xxPatch> patches, final List<S5xxTone> tones, final S5xxDiskLabel diskLabel, final List<S5xxWaveData> waveData)
     {
         this.header = header;
         this.patches = Collections.unmodifiableList (patches);
@@ -46,7 +46,7 @@ public class DiskImage
      * 
      * @return The header
      */
-    public RolandDiskImageHeader getHeader ()
+    public S5xxDiskImageHeader getHeader ()
     {
         return this.header;
     }
@@ -57,7 +57,7 @@ public class DiskImage
      * 
      * @return The patches
      */
-    public List<Patch> getPatches ()
+    public List<S5xxPatch> getPatches ()
     {
         return this.patches;
     }
@@ -68,7 +68,7 @@ public class DiskImage
      * 
      * @return The tones
      */
-    public List<Tone> getTones ()
+    public List<S5xxTone> getTones ()
     {
         return this.tones;
     }
@@ -79,7 +79,7 @@ public class DiskImage
      * 
      * @return The label, null for LAND type
      */
-    public DiskLabel getDiskLabel ()
+    public S5xxDiskLabel getDiskLabel ()
     {
         return this.diskLabel;
     }
@@ -92,7 +92,7 @@ public class DiskImage
      */
     public boolean isLandType ()
     {
-        return this.header.getSamplerType () == SamplerType.LAND;
+        return this.header.getSamplerType () == S5xxSamplerType.LAND;
     }
 
 
@@ -101,7 +101,7 @@ public class DiskImage
      * 
      * @return The wave data
      */
-    public List<WaveData> getWaveData ()
+    public List<S5xxWaveData> getWaveData ()
     {
         return this.waveData;
     }
