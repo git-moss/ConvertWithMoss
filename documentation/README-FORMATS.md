@@ -308,11 +308,11 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 
 Searches for files ending with *.ISO or *.IMG. Currently, the following formats can be handled:
 
-* Akai S1000/3000
-* Akai MPC2000/MPC2000XL
-* Ensoniq EPS/ASR
-* Roland S-50 series
-* Roland S-770 series
+* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
+* [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
+* [Roland S-50 series](#roland-s-50-series)
+* [Roland S-770 series](#roland-s-770-series)
 
 ## Kontakt NKI/NKM
 
@@ -421,7 +421,9 @@ The format of the S-50 is slightly different to the one used on the other models
 
 ## Roland S-770 Series
 
-xxx
+The Roland S-770 series comprises a family of digital PCM samplers introduced between 1989 and 1995, including the S-750, S-770, S-760, DJ-70, DJ-70 MkII, and SP-700. These instruments share a common sampling architecture based on high-resolution PCM playback, digital resonant Time Variant Filters (TVFs), and sophisticated modulation and envelope generators. The flagship S-770 expanded the platform with advanced multisampling capabilities, internal digital signal processing, and video-based graphical editing, while the later S-760 provided similar functionality in a more compact and cost-effective form. The DJ-70 and SP-700 adapted the technology for performance-oriented and phrase-sampling applications.
+
+Only reading is supported. But it supports both HD/CD-Rom and diskette image files. Also files that span multiple diskettes are supported (all disk files need to be in the same folder).
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
@@ -506,15 +508,15 @@ The db files need to be in the same folder as the zmap file. The presets need to
 
 First locate the Omnisphere STEAM folder on your computer. On Windows it is normally:
 
-> C:\ProgramData\Spectrasonics\STEAM
+> `C:\ProgramData\Spectrasonics\STEAM`
 
 The db and zmap files are stored in:
 
-> <STEAM_FOLDER>\Omnisphere\Settings Library\Patches\User
+> `<STEAM_FOLDER>\Omnisphere\Settings Library\Patches\User`
 
 The preset files are stored in:
 
-> <STEAM_FOLDER>\Omnisphere\Soundsources\User
+> `<STEAM_FOLDER>\Omnisphere\Soundsources\User`
 
 You can create sub-folders in these folders as well.
 
@@ -526,11 +528,11 @@ When reading preset files the related db and zmap files must be in the sub-folde
 
 ConvertWithMoss creates a sub-folder for each source multi-sample. This folder contains all db files as well as the zmap and prt_omn files. Copy the whole folder to
 
-> <STEAM_FOLDER>\Omnisphere\Soundsources\User
+> `<STEAM_FOLDER>\Omnisphere\Soundsources\User`
 
 then move the prt_omn file to 
 
-> <STEAM_FOLDER>\Omnisphere\Settings Library\Patches\User
+> `<STEAM_FOLDER>\Omnisphere\Settings Library\Patches\User`
 
 **Note 1**: You can create a sub-folder with the name of a category, e.g. "Vox Humana" and put it there.
 **Note 2**: When opening Omnisphere both the presets and soundsources need to be rescanned! If only the presets are scanned an error shows up that the soundsource cannot be located!
