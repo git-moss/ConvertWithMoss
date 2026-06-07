@@ -311,6 +311,8 @@ Searches for files ending with *.ISO or *.IMG. Currently, the following formats 
 * [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
+* [Roland S-50 series](#roland-s-50-series)
+* [Roland S-770 series](#roland-s-770-series)
 
 ## Kontakt NKI/NKM
 
@@ -419,9 +421,7 @@ The format of the S-50 is slightly different to the one used on the other models
 
 ## Roland S-770 Series
 
-The Roland S-770 series comprises a family of digital PCM samplers introduced between 1989 and 1995, including the S-750, S-770, S-760, DJ-70, DJ-70 MkII, and SP-700. These instruments share a common sampling architecture based on high-resolution PCM playback, digital resonant Time Variant Filters (TVFs), and sophisticated modulation and envelope generators. The flagship S-770 expanded the platform with advanced multisampling capabilities, internal digital signal processing, and video-based graphical editing, while the later S-760 provided similar functionality in a more compact and cost-effective form. The DJ-70 and SP-700 adapted the technology for performance-oriented and phrase-sampling applications.
-
-Only reading is supported. But it supports both HD/CD-Rom and diskette image files. Also files that span multiple diskettes are supported (all disk files need to be in the same folder).
+xxx
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
