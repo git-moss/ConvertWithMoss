@@ -58,6 +58,7 @@ The following multi-sample formats are supported:
 * [Native Instruments Maschine](#native-instruments-maschine)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
 * [Roland S-50 Series](#roland-s-50-series) - read only
+* [Roland S-770 Series](#roland-s-770-series) - read only
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
