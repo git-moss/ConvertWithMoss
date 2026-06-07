@@ -29,13 +29,10 @@ jobs:
             --toc \
             --number-sections \
             -V geometry:margin=2.5cm \
+            -o output/ConvertWithMoss-Manual.pdf \
             documentation/README.md \
             documentation/README-FORMATS.md \
-            documentation/CHANGELOG.md \
-            -o output/ConvertWithMoss-Manual.pdf      
-#        uses: docker://pandoc/latex:2.9
-#        with:
-#          args: --standalone --toc -V geometry:margin=2.5cm --number-sections --output=output/ConvertWithMoss-Manual.pdf documentation/README.md documentation/README-FORMATS.md documentation/CHANGELOG.md
+            documentation/CHANGELOG.md
       
       - name: Publish result
         uses: actions/upload-artifact@v4
