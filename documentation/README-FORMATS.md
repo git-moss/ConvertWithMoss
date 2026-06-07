@@ -522,7 +522,7 @@ You can create sub-folders in these folders as well.
 
 ### Reading preset files
 
-When reading preset files the related db and zmap files must be in the sub-folder Soundsources\User which is either in the same directory as the zmap file or in an up-wards directory.
+When reading preset files the related db and zmap files must be in the sub-folder `Soundsources\User` which is either in the same directory as the zmap file or in an up-wards directory.
 
 ### Writing preset files
 
