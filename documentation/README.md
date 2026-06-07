@@ -103,6 +103,7 @@ Alternatively, press *Analyse* to analyse all potential source file but not to w
 
 ## Options
 
+* **Renaming**: Allows to rename multi-samples. Enable the checkbox to use this feature. If enabled select the file which contains the mapped names. The file is a simple text file in UTF-8 format (important if non-ASCII characters are used!). Each row contains one mapping. A mapping consists of 2 names separated either by ';' or ','. E.g. a row which contains "AcPno;Acoustic Piano" would name a multi-sample with the name "AcPno" into "Acoustic Piano" as output.
 * **Create folder structure**: If enabled, sub-folders from the source folder are created as well in the output folder. For example, if I select my whole "Sounds" folder, there are sub-folders like `Sounds\07 Synth\Lead\01W Emerson'70 Samples`. In that case the output folder would contain e.g. `07 Synth\Lead\01W Emerson'70.multisample` if Bitwig multisample is selected as the destination format.
 * **Add new files**: Starts the conversion even if the output folder is not empty. Duplicates will get unique names by adding numbers.
 * **Dark Mode**: Toggles the user interface between a light and dark layout.
@@ -122,7 +123,7 @@ First display all of the available attributes by typing:
 The following output is displayed:
 
 ```
-Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY]
+Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY] [-r=RENAME]
                        -s=SOURCE [-t=TYPE] [-p[=KEY=VALUE...]]... SOURCE_FOLDER
                        DESTINATION_FOLDER
       SOURCE_FOLDER        The source folder to process.
@@ -136,6 +137,7 @@ Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY]
   -l, --library=LIBRARY    Name for the library. Set to create a library.
   -p=[KEY=VALUE...]        Key-value pairs in the form -pkey1=value1,
                              key2=value2,...
+  -r, --rename=RENAME      Configuration file for automatic file renaming.
   -s, --source=SOURCE      The source format.
   -t, --type=TYPE          Set to either 'preset' (the default if absent) or
                              'performance' (without the quotes).
