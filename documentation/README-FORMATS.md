@@ -58,7 +58,6 @@ The following multi-sample formats are supported:
 * [Native Instruments Maschine](#native-instruments-maschine)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
 * [Roland S-50 Series](#roland-s-50-series) - read only
-* [Roland S-770 Series](#roland-s-770-series) - read only
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
@@ -311,8 +310,7 @@ Searches for files ending with *.ISO or *.IMG. Currently, the following formats 
 * [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
-* [Roland S-50 series](#roland-s-50-series)
-* [Roland S-770 series](#roland-s-770-series)
+* [Roland](#roland-s-5xx)
 
 ## Kontakt NKI/NKM
 
@@ -418,12 +416,6 @@ There are metadata fields for creator and a creator URL.
 The Roland S-50 series (S-50, S-330, S-550, W-30), introduced in the mid-1980s, represented a significant development in digital sampling technology. Based on 12-bit pulse-code modulation (PCM) sampling, the system combined waveform acquisition, editing, and keyboard performance capabilities within a single instrument. The series was notable for its integration of video-based graphical editing, enabling detailed visualization and manipulation of sampled waveforms.
 
 The format of the S-50 is slightly different to the one used on the other models. All of them store 12-bit samples with 15/30kHz sample rate. It is a good idea to up-sample them (with the Processing feature) to e.g. 16-bit/44.1kHz to prevent compatibility issues. Only reading is supported.
-
-## Roland S-770 Series
-
-The Roland S-770 series comprises a family of digital PCM samplers introduced between 1989 and 1995, including the S-750, S-770, S-760, DJ-70, DJ-70 MkII, and SP-700. These instruments share a common sampling architecture based on high-resolution PCM playback, digital resonant Time Variant Filters (TVFs), and sophisticated modulation and envelope generators. The flagship S-770 expanded the platform with advanced multisampling capabilities, internal digital signal processing, and video-based graphical editing, while the later S-760 provided similar functionality in a more compact and cost-effective form. The DJ-70 and SP-700 adapted the technology for performance-oriented and phrase-sampling applications.
-
-Only reading is supported. But it supports both HD/CD-Rom and diskette image files. Also files that span multiple diskettes are supported (all disk files need to be in the same folder).
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
