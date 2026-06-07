@@ -24,7 +24,7 @@ jobs:
       
       - name: Convert MD files to PDF
         run: |
-          pandoc --standalone --toc -V geometry:margin=2.5cm --number-sections --output=output/ConvertWithMoss-Manual.pdf documentation/README.md documentation/README-FORMATS.md documentation/CHANGELOG.md
+          pandoc --standalone --toc -V geometry:margin=2.5cm --number-sections --output=output/ConvertWithMoss-Manual.pdf documentation/README.md
       
       - name: Publish result
         uses: actions/upload-artifact@v4
