@@ -11,8 +11,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * Roland S-770 sample point (u4, little-endian). fine = raw_value &amp; 0xFF (lower 8 bits) address
- * = raw_value &gt;&gt; 8 (upper 24 bits)
+ * Roland S-770 sample point (u4, little-endian).
  *
  * @author Jürgen Moßgraber
  */
@@ -21,26 +20,45 @@ public class S770SamplePoint
     private final long rawValue;
 
 
-    public S770SamplePoint (final InputStream in) throws IOException
+    /**
+     * Constructor.
+     *
+     * @param input The input stream to read from
+     * @throws IOException Could not read
+     */
+    public S770SamplePoint (final InputStream input) throws IOException
     {
-        this.rawValue = StreamUtils.readUnsigned32 (in, false);
+        this.rawValue = StreamUtils.readUnsigned32 (input, false);
     }
 
 
+    /**
+     * Get the raw value.
+     *
+     * @return The raw value
+     */
     public long getRawValue ()
     {
         return this.rawValue;
     }
 
 
-    /** Fine tuning component (bits 0-7). */
+    /**
+     * Get the Fine tuning component (bits 0-7).
+     *
+     * @return The fine tuning
+     */
     public int getFine ()
     {
         return (int) (this.rawValue & 0xFF);
     }
 
 
-    /** Sample address (bits 8-31). */
+    /**
+     * Get the Sample address (bits 8-31).
+     *
+     * @return The address
+     */
     public long getAddress ()
     {
         return this.rawValue >> 8;

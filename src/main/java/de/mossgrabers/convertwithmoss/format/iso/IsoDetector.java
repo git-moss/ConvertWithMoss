@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
+import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
 
 
 /**
@@ -24,7 +25,8 @@ import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
 public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
 {
     private final EnsoniqEpsAsrDetector ensoniqDetector;
-    private final S5xxDetector          rolandDetector;
+    private final S5xxDetector          rolandS5xxDetector;
+    private final S770Detector          rolandS7xxDetector;
 
 
     /**
@@ -37,7 +39,8 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
         super ("ISO/IMG file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso", ".img", ".out", ".sdk");
 
         this.ensoniqDetector = new EnsoniqEpsAsrDetector (notifier);
-        this.rolandDetector = new S5xxDetector (notifier);
+        this.rolandS5xxDetector = new S5xxDetector (notifier);
+        this.rolandS7xxDetector = new S770Detector (notifier);
     }
 
 
@@ -69,10 +72,14 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
 
             case ROLAND_S5XX:
                 this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
-                this.rolandDetector.setSourceFolder (this.sourceFolder);
-                return this.rolandDetector.readPresetFile (sourceFile);
+                this.rolandS5xxDetector.setSourceFolder (this.sourceFolder);
+                return this.rolandS5xxDetector.readPresetFile (sourceFile);
 
             case ROLAND_S7XX:
+                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                this.rolandS7xxDetector.setSourceFolder (this.sourceFolder);
+                return this.rolandS7xxDetector.readPresetFile (sourceFile);
+
             case UNKNOWN:
             default:
                 this.notifier.logError ("IDS_ISO_UNSUPPORTED_FORMAT", IsoFormat.getName (isoFormat));

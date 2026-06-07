@@ -1,10 +1,11 @@
 # Changes
 
-## 17.5.0 (unreleased)
+## 18.0.0
 
 * Added support for Elektron Tonverk emulti.
 * Added support for Omnisphere 3.
 * Added support for reading Roland S-50, S-330, S-550, W-30.
+* Added support for reading Roland S-750, S-770, S-760, DJ-70, DJ-70 MkII, and SP-700.
 * Added support for loop tuning: Ableton ADV/ADG, EXS24, Korgmultisample, Kontakt, SFZ, YSFC (partially).
 * New: Processing can now up-sample as well (option: 'Always re-sample').
 * New: Removed renaming feature.

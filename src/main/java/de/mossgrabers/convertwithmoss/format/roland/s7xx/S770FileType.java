@@ -30,7 +30,7 @@ public enum S770FileType
 
     /**
      * Constructor.
-     * 
+     *
      * @param value The ID of the type
      */
     private S770FileType (final int value)
@@ -41,7 +41,7 @@ public enum S770FileType
 
     /**
      * Get the ID of the type.
-     * 
+     *
      * @return The ID
      */
     public int getValue ()
@@ -52,7 +52,7 @@ public enum S770FileType
 
     /**
      * Get an enumeration instance from the value.
-     * 
+     *
      * @param value The type ID
      * @return The file type
      */

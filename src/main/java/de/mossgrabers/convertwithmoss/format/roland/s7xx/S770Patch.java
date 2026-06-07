@@ -12,228 +12,340 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * Roland S-770 patch parameter (256 bytes).
- *
- * 16 patch_name u1×15 (program_change_num … analog_feel) 1 (pad) u1×88 keys_partial_selection 8
- * (pad) u1×88 keys_assign_type 8 (pad) 4 bender_section 7 after_touch_section 4 modulation_section
- * 1 (pad) 8 controller_section 8 (pad)
+ * Roland S-770 patch parameter.
  *
  * @author Jürgen Moßgraber
  */
 public class S770Patch
 {
-    private final String            patchName;
-    private final int               programChangeNum;
-    private final int               stereoMixLevel;
-    private final int               totalPan;
-    private final int               patchLevel;
-    private final int               outputAssign8;
-    private final int               priority;
-    private final int               cutoff;
-    private final int               velocitySensitivity;
-    private final int               octaveShift;
-    private final int               coarseTune;
-    private final int               fineTune;
-    private final int               smtCtrlSelection;
-    private final int               smtCtrlSensitivity;
-    private final int               outAssign;
-    private final int               analogFeel;
-    private final int []            keysPartialSelection;
-    private final int []            keysAssignType;
-    private final BenderSection     bender;
-    private final AfterTouchSection afterTouch;
-    private final ModulationSection modulation;
-    private final ControllerSection controller;
-
-    private final int []            partialList;
+    private final String               patchName;
+    private final int                  programChangeNumber;
+    private final int                  stereoMixLevel;
+    private final int                  totalPan;
+    private final int                  patchLevel;
+    private final int                  outputAssignment8;
+    private final int                  patchPriority;
+    private final int                  cutoff;
+    private final int                  velocitySensitivity;
+    private final int                  octaveShift;
+    private final int                  coarseTune;
+    private final int                  fineTune;
+    private final int                  smtCtrlSelection;
+    private final int                  smtCtrlSensitivity;
+    private final int                  outAssign;
+    private final int                  analogFeel;
+    private final int []               keysPartialSelection;
+    private final int []               keysAssignType;
+    private final BenderSection        bender;
+    private final AfterTouchSection    afterTouch;
+    private final LfoModulationSection modulation;
+    private final ControllerSection    controller;
 
 
-    public S770Patch (final InputStream in) throws IOException
+    /**
+     * Constructor.
+     *
+     * @param input The input stream to read from
+     * @param isDiskette True if this is stored on a diskette otherwise HD/CD-ROM
+     * @throws IOException The input stream
+     */
+    public S770Patch (final InputStream input, final boolean isDiskette) throws IOException
     {
-        this.patchName = StreamUtils.readAscii (in, 16);
-        this.programChangeNum = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.stereoMixLevel = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.totalPan = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.patchLevel = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.outputAssign8 = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.priority = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.cutoff = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.velocitySensitivity = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.octaveShift = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.coarseTune = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.fineTune = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.smtCtrlSelection = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.smtCtrlSensitivity = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.outAssign = StreamUtils.readUnsigned8 (in) & 0xFF;
-        this.analogFeel = StreamUtils.readUnsigned8 (in) & 0xFF;
-        in.skipNBytes (1);
+        this.patchName = StreamUtils.readAscii (input, 16);
+        this.programChangeNumber = StreamUtils.readUnsigned8 (input);
+        this.stereoMixLevel = StreamUtils.readUnsigned8 (input);
+        this.totalPan = StreamUtils.readSigned8 (input);
+        this.patchLevel = StreamUtils.readUnsigned8 (input);
+        this.outputAssignment8 = StreamUtils.readUnsigned8 (input);
+        this.patchPriority = StreamUtils.readUnsigned8 (input);
+        this.cutoff = StreamUtils.readUnsigned8 (input);
+        this.velocitySensitivity = StreamUtils.readUnsigned8 (input);
+        this.octaveShift = StreamUtils.readSigned8 (input);
+        this.coarseTune = StreamUtils.readSigned8 (input);
+        this.fineTune = StreamUtils.readSigned8 (input);
+        this.smtCtrlSelection = StreamUtils.readUnsigned8 (input);
+        this.smtCtrlSensitivity = StreamUtils.readUnsigned8 (input);
+        this.outAssign = StreamUtils.readUnsigned8 (input);
+        this.analogFeel = StreamUtils.readUnsigned8 (input);
+        input.skipNBytes (1);
 
         this.keysPartialSelection = new int [88];
         for (int i = 0; i < 88; i++)
-            this.keysPartialSelection[i] = StreamUtils.readUnsigned8 (in) & 0xFF;
-        in.skipNBytes (8);
+            this.keysPartialSelection[i] = StreamUtils.readSigned8 (input);
+        input.skipNBytes (8);
 
         this.keysAssignType = new int [88];
         for (int i = 0; i < 88; i++)
-            this.keysAssignType[i] = StreamUtils.readUnsigned8 (in) & 0xFF;
-        in.skipNBytes (8);
+            this.keysAssignType[i] = StreamUtils.readUnsigned8 (input);
+        input.skipNBytes (8);
 
-        this.bender = new BenderSection (in);
-        this.afterTouch = new AfterTouchSection (in);
-        this.modulation = new ModulationSection (in);
-        in.skipNBytes (1);
-        this.controller = new ControllerSection (in);
-        in.skipNBytes (8);
+        this.bender = new BenderSection (input);
+        this.afterTouch = new AfterTouchSection (input);
+        this.modulation = new LfoModulationSection (input);
+        input.skipNBytes (1);
+        this.controller = new ControllerSection (input);
+        input.skipNBytes (8);
 
-        this.partialList = new int [88];
+        if (isDiskette)
+            return;
+
+        // Support for partial indices larger than 128
         for (int i = 0; i < 88; i++)
-            this.partialList[i] = StreamUtils.readSigned16 (in, false);
-
-        in.skipNBytes (0x50);
+            this.keysPartialSelection[i] = StreamUtils.readSigned16 (input, false);
+        input.skipNBytes (0x50);
     }
 
 
-    public String getPatchName ()
+    /**
+     * Get the name of the patch.
+     *
+     * @return The name of the patch
+     */
+    public String getName ()
     {
         return this.patchName;
     }
 
 
-    public int getProgramChangeNum ()
+    /**
+     * Get the program change number of the patch.
+     *
+     * @return The PC number in the range of 1-127
+     */
+    public int getProgramChangeNumber ()
     {
-        return this.programChangeNum;
+        return this.programChangeNumber;
     }
 
 
+    /**
+     * Get the output level for the STEREO output of the Patch.
+     *
+     * @return The level in the range of 0..127
+     */
     public int getStereoMixLevel ()
     {
         return this.stereoMixLevel;
     }
 
 
+    /**
+     * Get the panning setting used for the output to the STEREO output jacks.
+     *
+     * @return The panning (L31 — Center — R31)
+     */
     public int getTotalPan ()
     {
         return this.totalPan;
     }
 
 
+    /**
+     * Get the level of the patch.
+     *
+     * @return The level in the range of 0..127
+     */
     public int getPatchLevel ()
     {
         return this.patchLevel;
     }
 
 
-    public int getOutputAssign8 ()
+    /**
+     * Get the output assignment in the 8-outs mode.
+     *
+     * @return The output index, -1=off, 0-7 = 1-8
+     */
+    public int getOutputAssignment8 ()
     {
-        return this.outputAssign8;
+        return this.outputAssignment8;
     }
 
 
-    public int getPriority ()
+    /**
+     * Get the patch priority. If enabled, the patch playing notes of this patch will kept with
+     * higher priority if the polyphony has reached its limit
+     *
+     * @return On/Off
+     */
+    public int getPatchPriority ()
     {
-        return this.priority;
+        return this.patchPriority;
     }
 
 
+    /**
+     * Get the filter cutoff offset. The specified value is added to the Cutoff Frequency of each
+     * Partial used in the Patch.
+     *
+     * @return The cutoff offset in the range of -63..63
+     */
     public int getCutoff ()
     {
         return this.cutoff;
     }
 
 
+    /**
+     * Get the velocity sensitivity.
+     *
+     * @return The sensitivity value
+     */
     public int getVelocitySensitivity ()
     {
         return this.velocitySensitivity;
     }
 
 
+    /**
+     * Get the octave shift. This moves the split points as well!
+     *
+     * @return The octave shift in the range of -2..2, positive values move the range downwards!
+     */
     public int getOctaveShift ()
     {
         return this.octaveShift;
     }
 
 
+    /**
+     * Get the coarse tuning.
+     *
+     * @return The coarse tuning value in the range of -48..48 semi-tones
+     */
     public int getCoarseTune ()
     {
         return this.coarseTune;
     }
 
 
+    /**
+     * Get the fine tuning.
+     *
+     * @return The fine tuning value in the range of -50..+50 cents
+     */
     public int getFineTune ()
     {
         return this.fineTune;
     }
 
 
+    /**
+     * Selects the Sample Mix Control (SMT) source.
+     *
+     * @return The source
+     */
     public int getSmtCtrlSelection ()
     {
         return this.smtCtrlSelection;
     }
 
 
+    /**
+     * Get the sensitivity value of the SMT.
+     *
+     * @return The sensitivity
+     */
     public int getSmtCtrlSensitivity ()
     {
         return this.smtCtrlSensitivity;
     }
 
 
+    /**
+     * Get the output assignment.
+     *
+     * @return Off, Partial, 1, 2, 3, 4, 5 6
+     */
     public int getOutAssign ()
     {
         return this.outAssign;
     }
 
 
+    /**
+     * Get the analog feel.
+     *
+     * @return The analog feel value in the range of 0..127
+     */
     public int getAnalogFeel ()
     {
         return this.analogFeel;
     }
 
 
+    /**
+     * Get the selected partial for each key (from 21 to 108).
+     *
+     * @return The partial indices, -1 if off
+     */
     public int [] getKeysPartialSelection ()
     {
         return this.keysPartialSelection;
     }
 
 
+    /**
+     * Get the assign types.
+     *
+     * @return 0: Poly, 1: Mono, 2-17: Ext 1-Ext 16
+     */
     public int [] getKeysAssignType ()
     {
         return this.keysAssignType;
     }
 
 
+    /**
+     * Get the bender section.
+     *
+     * @return The bender section
+     */
     public BenderSection getBender ()
     {
         return this.bender;
     }
 
 
+    /**
+     * Get the after-touch section.
+     *
+     * @return The after-touch section
+     */
     public AfterTouchSection getAfterTouch ()
     {
         return this.afterTouch;
     }
 
 
-    public ModulationSection getModulation ()
+    /**
+     * Get the modulation section.
+     *
+     * @return The modulation section
+     */
+    public LfoModulationSection getLfoModulation ()
     {
         return this.modulation;
     }
 
 
+    /**
+     * Get the controller section.
+     *
+     * @return The controller section
+     */
     public ControllerSection getController ()
     {
         return this.controller;
     }
 
 
+    /** {@inheritDoc} */
     @Override
     public String toString ()
     {
-        return "S770PatchParameter [\n" + "  patchName='" + this.patchName.trim () + "'\n" + "  programChangeNum=" + this.programChangeNum + "\n" + "  stereoMixLevel=" + this.stereoMixLevel + "\n" + "  totalPan=" + this.totalPan + "\n" + "  patchLevel=" + this.patchLevel + "\n" + "  outputAssign8=" + this.outputAssign8 + "\n" + "  priority=" + this.priority + "\n" + "  cutoff=" + this.cutoff + "\n" + "  velocitySensitivity=" + this.velocitySensitivity + "\n" + "  octaveShift=" + this.octaveShift + "\n" + "  coarseTune=" + this.coarseTune + "\n" + "  fineTune=" + this.fineTune + "\n" + "  smtCtrlSelection=" + this.smtCtrlSelection + "\n" + "  smtCtrlSensitivity=" + this.smtCtrlSensitivity + "\n" + "  outAssign=" + this.outAssign + "\n" + "  analogFeel=" + this.analogFeel + "\n" + "  keysPartialSelection=" + Arrays.toString (this.keysPartialSelection) + "\n" + "  keysAssignType=" + Arrays.toString (this.keysAssignType) + "\n" + "  bender=" + this.bender + "\n" + "  afterTouch=" + this.afterTouch + "\n" + "  modulation=" + this.modulation + "\n" + "  controller=" + this.controller + "\n]";
+        return "S770PatchParameter [\n" + "  patchName='" + this.patchName.trim () + "'\n" + "  programChangeNum=" + this.programChangeNumber + "\n" + "  stereoMixLevel=" + this.stereoMixLevel + "\n" + "  totalPan=" + this.totalPan + "\n" + "  patchLevel=" + this.patchLevel + "\n" + "  outputAssign8=" + this.outputAssignment8 + "\n" + "  priority=" + this.patchPriority + "\n" + "  cutoff=" + this.cutoff + "\n" + "  velocitySensitivity=" + this.velocitySensitivity + "\n" + "  octaveShift=" + this.octaveShift + "\n" + "  coarseTune=" + this.coarseTune + "\n" + "  fineTune=" + this.fineTune + "\n" + "  smtCtrlSelection=" + this.smtCtrlSelection + "\n" + "  smtCtrlSensitivity=" + this.smtCtrlSensitivity + "\n" + "  outAssign=" + this.outAssign + "\n" + "  analogFeel=" + this.analogFeel + "\n" + "  keysPartialSelection=" + Arrays.toString (this.keysPartialSelection) + "\n" + "  keysAssignType=" + Arrays.toString (this.keysAssignType) + "\n" + "  bender=" + this.bender + "\n" + "  afterTouch=" + this.afterTouch + "\n" + "  modulation=" + this.modulation + "\n" + "  controller=" + this.controller + "\n]";
     }
-
-    // -------------------------------------------------------------------------
-    // Inner section classes
-    // -------------------------------------------------------------------------
 
 
     /** Bender section (4 bytes). */
@@ -245,39 +357,66 @@ public class S770Patch
         private final int tvfCtrl;
 
 
-        public BenderSection (final InputStream in) throws IOException
+        /**
+         * Constructor.
+         *
+         * @param input The input stream to read from
+         * @throws IOException Could not read
+         */
+        public BenderSection (final InputStream input) throws IOException
         {
-            this.pitchCtrlUp = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.pitchCtrlDown = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.tvaCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.tvfCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
+            this.pitchCtrlUp = StreamUtils.readUnsigned8 (input);
+            this.pitchCtrlDown = StreamUtils.readUnsigned8 (input);
+            this.tvaCtrl = StreamUtils.readUnsigned8 (input);
+            this.tvfCtrl = StreamUtils.readUnsigned8 (input);
         }
 
 
+        /**
+         * Get the pitch upwards.
+         *
+         * @return The pitch in the range of 0..48 semi-tones
+         */
         public int getPitchCtrlUp ()
         {
             return this.pitchCtrlUp;
         }
 
 
+        /**
+         * Get the pitch downwards.
+         *
+         * @return The pitch in the range of 0..48 semi-tones
+         */
         public int getPitchCtrlDown ()
         {
             return this.pitchCtrlDown;
         }
 
 
+        /**
+         * Get the TVA control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getTvaCtrl ()
         {
             return this.tvaCtrl;
         }
 
 
+        /**
+         * Get the TVF control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getTvfCtrl ()
         {
             return this.tvfCtrl;
         }
 
 
+        /** {@inheritDoc} */
         @Override
         public String toString ()
         {
@@ -298,60 +437,102 @@ public class S770Patch
         private final int lfoTvfDepth;
 
 
-        public AfterTouchSection (final InputStream in) throws IOException
+        /**
+         * Constructor.
+         *
+         * @param input The input stream to read from
+         * @throws IOException Could not read
+         */
+        public AfterTouchSection (final InputStream input) throws IOException
         {
-            this.pitchCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.tvaCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.tvfCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoRateCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoPitchCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoTvaDepth = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoTvfDepth = StreamUtils.readUnsigned8 (in) & 0xFF;
+            this.pitchCtrl = StreamUtils.readUnsigned8 (input);
+            this.tvaCtrl = StreamUtils.readUnsigned8 (input);
+            this.tvfCtrl = StreamUtils.readUnsigned8 (input);
+            this.lfoRateCtrl = StreamUtils.readUnsigned8 (input);
+            this.lfoPitchCtrl = StreamUtils.readUnsigned8 (input);
+            this.lfoTvaDepth = StreamUtils.readUnsigned8 (input);
+            this.lfoTvfDepth = StreamUtils.readUnsigned8 (input);
         }
 
 
+        /**
+         * Get the pitch control.
+         *
+         * @return The control in the range of -48..48
+         */
         public int getPitchCtrl ()
         {
             return this.pitchCtrl;
         }
 
 
+        /**
+         * Get the TVA control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getTvaCtrl ()
         {
             return this.tvaCtrl;
         }
 
 
+        /**
+         * Get the TVF control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getTvfCtrl ()
         {
             return this.tvfCtrl;
         }
 
 
+        /**
+         * Get the LFO rate control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoRateCtrl ()
         {
             return this.lfoRateCtrl;
         }
 
 
+        /**
+         * Get the LFO pitch control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoPitchCtrl ()
         {
             return this.lfoPitchCtrl;
         }
 
 
+        /**
+         * Get the LFO TVA depth control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoTvaDepth ()
         {
             return this.lfoTvaDepth;
         }
 
 
+        /**
+         * Get the LFO TVF depth control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoTvfDepth ()
         {
             return this.lfoTvfDepth;
         }
 
 
+        /** {@inheritDoc} */
         @Override
         public String toString ()
         {
@@ -361,7 +542,7 @@ public class S770Patch
 
 
     /** Modulation section (4 bytes). */
-    public static class ModulationSection
+    public static class LfoModulationSection
     {
         private final int lfoRateCtrl;
         private final int lfoPitchCtrl;
@@ -369,39 +550,66 @@ public class S770Patch
         private final int lfoTvfDepth;
 
 
-        public ModulationSection (final InputStream in) throws IOException
+        /**
+         * Constructor.
+         *
+         * @param input The input stream to read from
+         * @throws IOException Could not read
+         */
+        public LfoModulationSection (final InputStream input) throws IOException
         {
-            this.lfoRateCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoPitchCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoTvaDepth = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoTvfDepth = StreamUtils.readUnsigned8 (in) & 0xFF;
+            this.lfoRateCtrl = StreamUtils.readUnsigned8 (input);
+            this.lfoPitchCtrl = StreamUtils.readUnsigned8 (input);
+            this.lfoTvaDepth = StreamUtils.readUnsigned8 (input);
+            this.lfoTvfDepth = StreamUtils.readUnsigned8 (input);
         }
 
 
+        /**
+         * Get the LFO rate control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoRateCtrl ()
         {
             return this.lfoRateCtrl;
         }
 
 
+        /**
+         * Get the LFO pitch control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoPitchCtrl ()
         {
             return this.lfoPitchCtrl;
         }
 
 
+        /**
+         * Get the LFO TVA depth control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoTvaDepth ()
         {
             return this.lfoTvaDepth;
         }
 
 
+        /**
+         * Get the LFO TVF depth control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoTvfDepth ()
         {
             return this.lfoTvfDepth;
         }
 
 
+        /** {@inheritDoc} */
         @Override
         public String toString ()
         {
@@ -413,7 +621,7 @@ public class S770Patch
     /** Controller section (8 bytes). */
     public static class ControllerSection
     {
-        private final int ctrlNum;
+        private final int ctrlSelect;
         private final int pitchCtrl;
         private final int tvaCtrl;
         private final int tvfCtrl;
@@ -423,61 +631,107 @@ public class S770Patch
         private final int lfoTvfDepth;
 
 
-        public ControllerSection (final InputStream in) throws IOException
+        /**
+         * Constructor.
+         *
+         * @param input The input stream to read from
+         * @throws IOException Could not read
+         */
+        public ControllerSection (final InputStream input) throws IOException
         {
-            this.ctrlNum = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.pitchCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.tvaCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.tvfCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoRateCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoPitchCtrl = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoTvaDepth = StreamUtils.readUnsigned8 (in) & 0xFF;
-            this.lfoTvfDepth = StreamUtils.readUnsigned8 (in) & 0xFF;
+            this.ctrlSelect = StreamUtils.readUnsigned8 (input);
+            this.pitchCtrl = StreamUtils.readUnsigned8 (input);
+            this.tvaCtrl = StreamUtils.readUnsigned8 (input);
+            this.tvfCtrl = StreamUtils.readUnsigned8 (input);
+            this.lfoRateCtrl = StreamUtils.readUnsigned8 (input);
+            this.lfoPitchCtrl = StreamUtils.readUnsigned8 (input);
+            this.lfoTvaDepth = StreamUtils.readUnsigned8 (input);
+            this.lfoTvfDepth = StreamUtils.readUnsigned8 (input);
         }
 
 
-        public int getCtrlNum ()
+        /**
+         * Get the control select.
+         *
+         * @return The controller in the range of 0..95
+         */
+        public int getCtrlSelect ()
         {
-            return this.ctrlNum;
+            return this.ctrlSelect;
         }
 
 
+        /**
+         * Get the pitch control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getPitchCtrl ()
         {
             return this.pitchCtrl;
         }
 
 
+        /**
+         * Get the TVA control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getTvaCtrl ()
         {
             return this.tvaCtrl;
         }
 
 
+        /**
+         * Get the TVF control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getTvfCtrl ()
         {
             return this.tvfCtrl;
         }
 
 
+        /**
+         * Get the LFO rate control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoRateCtrl ()
         {
             return this.lfoRateCtrl;
         }
 
 
+        /**
+         * Get the LFO pitch control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoPitchCtrl ()
         {
             return this.lfoPitchCtrl;
         }
 
 
+        /**
+         * Get the LFO TVA control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoTvaDepth ()
         {
             return this.lfoTvaDepth;
         }
 
 
+        /**
+         * Get the LFO TVF control.
+         *
+         * @return The control in the range of -63..63
+         */
         public int getLfoTvfDepth ()
         {
             return this.lfoTvfDepth;
@@ -488,7 +742,7 @@ public class S770Patch
         @Override
         public String toString ()
         {
-            return "ControllerSection [ctrlNum=" + this.ctrlNum + ", pitchCtrl=" + this.pitchCtrl + ", tvaCtrl=" + this.tvaCtrl + ", tvfCtrl=" + this.tvfCtrl + ", lfoRateCtrl=" + this.lfoRateCtrl + ", lfoPitchCtrl=" + this.lfoPitchCtrl + ", lfoTvaDepth=" + this.lfoTvaDepth + ", lfoTvfDepth=" + this.lfoTvfDepth + "]";
+            return "ControllerSection [ctrlNum=" + this.ctrlSelect + ", pitchCtrl=" + this.pitchCtrl + ", tvaCtrl=" + this.tvaCtrl + ", tvfCtrl=" + this.tvfCtrl + ", lfoRateCtrl=" + this.lfoRateCtrl + ", lfoPitchCtrl=" + this.lfoPitchCtrl + ", lfoTvaDepth=" + this.lfoTvaDepth + ", lfoTvfDepth=" + this.lfoTvfDepth + "]";
         }
     }
 }

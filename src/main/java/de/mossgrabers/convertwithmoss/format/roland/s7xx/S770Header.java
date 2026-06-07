@@ -17,7 +17,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class S770Header
 {
-    private static final int     DISKETTE_SIZE    = 1474560;
+    private static final int     DISKETTE_SIZE = 1474560;
 
     private final long           revision;
     private final String         s70Str;
@@ -32,7 +32,8 @@ public class S770Header
     private int                  numPartials;
     private int                  numSamples;
 
-    private final int []         disketteFatWords = new int [4];
+    private int                  indexDiskette;
+    private int                  numDiskettes;
 
 
     /**
@@ -69,7 +70,7 @@ public class S770Header
     /**
      * Reads the CD-ROM tail fields from the current stream position (0x100). Consumes exactly 256
      * bytes.
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read the tail
      */
@@ -88,14 +89,18 @@ public class S770Header
 
     /**
      * Reads the diskette tail fields from the current stream position (0x100).
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read the tail
      */
     private void readDisketteTail (final InputStream input) throws IOException
     {
-        for (int i = 0; i < 4; i++)
-            this.disketteFatWords[i] = StreamUtils.readUnsigned16 (input, false); // 0x100–0x107
+        // 0x100–0x101
+        this.indexDiskette = StreamUtils.readUnsigned8 (input);
+        this.numDiskettes = StreamUtils.readUnsigned8 (input);
+
+        input.skipNBytes (6); // 0x102–0x107
+
         this.numVolumes = 1;
         this.numPerformances = StreamUtils.readUnsigned16 (input, false); // 0x108–0x109
         this.numPatches = StreamUtils.readUnsigned16 (input, false); // 0x10A–0x10B
@@ -120,7 +125,7 @@ public class S770Header
 
     /**
      * Get the revision number.
-     * 
+     *
      * @return The revision
      */
     public long getRevision ()
@@ -130,41 +135,53 @@ public class S770Header
 
 
     /**
-     * Get the S770 version text.
+     * Get the identification string.
      * 
+     * @return The identification string
+     */
+    public String getS70Str ()
+    {
+        return cleanText (this.s70Str);
+    }
+
+
+    /**
+     * Get the S770 version text.
+     *
      * @return The text
      */
     public String getVersionStr ()
     {
-        return this.versionStr;
+        // There is strangely "2.0Q" instead of "2.00"
+        return cleanText (this.versionStr).replace ('Q', '0');
     }
 
 
     /**
      * Get the S770 copyright text.
-     * 
+     *
      * @return The text
      */
     public String getCopyrightStr ()
     {
-        return this.copyrightStr;
+        return cleanText (this.copyrightStr);
     }
 
 
     /**
      * Get the name of the disk.
-     * 
+     *
      * @return The name, might be empty
      */
     public String getDiskName ()
     {
-        return this.diskName;
+        return cleanText (this.diskName);
     }
 
 
     /**
      * Get the disk capacity.
-     * 
+     *
      * @return The capacity
      */
     public long getDiskCapacity ()
@@ -175,7 +192,7 @@ public class S770Header
 
     /**
      * The number of volumes.
-     * 
+     *
      * @return Always returns 1 for diskettes
      */
     public int getNumVolumes ()
@@ -186,7 +203,7 @@ public class S770Header
 
     /**
      * Get the number of performances.
-     * 
+     *
      * @return The number of performances
      */
     public int getNumPerformances ()
@@ -197,7 +214,7 @@ public class S770Header
 
     /**
      * Get the number of patches.
-     * 
+     *
      * @return The number of patches
      */
     public int getNumPatches ()
@@ -208,7 +225,7 @@ public class S770Header
 
     /**
      * Get the number of partials.
-     * 
+     *
      * @return The number of partials
      */
     public int getNumPartials ()
@@ -219,12 +236,34 @@ public class S770Header
 
     /**
      * Get the number of samples.
-     * 
+     *
      * @return The number of samples
      */
     public int getNumSamples ()
     {
         return this.numSamples;
+    }
+
+
+    /**
+     * Get the index of the diskette in case the content is split over several ones.
+     *
+     * @return The index (zero based)
+     */
+    public int getIndexDiskette ()
+    {
+        return this.indexDiskette;
+    }
+
+
+    /**
+     * Get the number of diskettes to follow.
+     *
+     * @return The number, e.g. 0 if none is following
+     */
+    public int getNumDiskettes ()
+    {
+        return this.numDiskettes;
     }
 
 
@@ -247,9 +286,14 @@ public class S770Header
         sb.append ("  numPartials=").append (this.numPartials).append ('\n');
         sb.append ("  numSamples=").append (this.numSamples).append ('\n');
         if (this.diskFormat == S770DiskFormat.DISKETTE)
-            for (int i = 0; i < this.disketteFatWords.length; i++)
-                sb.append ("  disketteFatWord" + i + "=0x").append (Integer.toHexString (this.disketteFatWords[i])).append ('\n');
+            sb.append ("  diskette " + (this.indexDiskette + 1) + "/" + (this.numDiskettes + 1)).append ('\n');
         sb.append (']');
         return sb.toString ();
+    }
+
+
+    private static String cleanText (final String s)
+    {
+        return s == null ? "(none)" : s.trim ().replaceAll ("\\s+", " ");
     }
 }

@@ -26,7 +26,7 @@ public class S770HdDirectoryArea
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read the directory
      */
@@ -56,7 +56,7 @@ public class S770HdDirectoryArea
 
     /**
      * Get the volume directories.
-     * 
+     *
      * @return The volume directories
      */
     public List<S770DirectoryEntry> getVolumeDirectories ()
@@ -67,7 +67,7 @@ public class S770HdDirectoryArea
 
     /**
      * Get the performance directories.
-     * 
+     *
      * @return The performance directories
      */
     public List<S770DirectoryEntry> getPerformanceDirectories ()
@@ -78,7 +78,7 @@ public class S770HdDirectoryArea
 
     /**
      * Get the patch directories.
-     * 
+     *
      * @return The patch directories
      */
     public List<S770DirectoryEntry> getPatchDirectories ()
@@ -89,7 +89,7 @@ public class S770HdDirectoryArea
 
     /**
      * Get the partial directories.
-     * 
+     *
      * @return The partial directories
      */
     public List<S770DirectoryEntry> getPartialDirectories ()
@@ -100,7 +100,7 @@ public class S770HdDirectoryArea
 
     /**
      * Get the sample directories.
-     * 
+     *
      * @return The sample directories
      */
     public List<S770DirectoryEntry> getSampleDirectories ()
