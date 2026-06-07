@@ -1,13 +1,13 @@
 ---
 title: The ConvertWithMoss Manual
 author: 
-- Jürgen Moßgraber
+    - Jürgen Moßgraber
 header-includes:
-    \usepackage{fancyhdr}
-    \pagestyle{fancy}
+    - \usepackage{fancyhdr}
+    - \pagestyle{fancy}
 geometry: margin=2.5cm
 papersize: a4paper
-date:   \today
+date: \today
 ...
 
 <div style="page-break-after: always; visibility: hidden"> 
