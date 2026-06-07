@@ -308,11 +308,11 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 
 Searches for files ending with *.ISO or *.IMG. Currently, the following formats can be handled:
 
-* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
-* [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
-* [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
-* [Roland S-50 series](#roland-s-50-series)
-* [Roland S-770 series](#roland-s-770-series)
+* Akai S1000/3000
+* Akai MPC2000/MPC2000XL
+* Ensoniq EPS/ASR
+* Roland S-50 series
+* Roland S-770 series
 
 ## Kontakt NKI/NKM
 
