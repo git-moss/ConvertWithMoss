@@ -18,8 +18,8 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class S5xxDiskImageHeader
 {
     private final S5xxSamplerType samplerType;
-    private final String      osVersionString;
-    private final String      mediaType;
+    private final String          osVersionString;
+    private final String          mediaType;
 
 
     /**

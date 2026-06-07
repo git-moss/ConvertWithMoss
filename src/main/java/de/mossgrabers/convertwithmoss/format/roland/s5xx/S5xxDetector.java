@@ -39,8 +39,8 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 
 
 /**
- * Detects recursively Roland S5xx sampler disk files in folders. Files must end with <i>.out</i>,
- * <i>.img</i> or <i>sdk</i>.
+ * Detects recursively Roland S-5xx sampler disk files in folders. Files must end with <i>.out</i>,
+ * <i>.img</i> or <i>.sdk</i>.
  *
  * @author Jürgen Moßgraber
  */
@@ -66,7 +66,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public S5xxDetector (final INotifier notifier)
     {
-        super ("Roland S5xx", "S5xx", notifier, new MetadataSettingsUI ("S5xx"), ".out", ".img", ".sdk");
+        super ("Roland S-5xx", "S5xx", notifier, new MetadataSettingsUI ("S5xx"), ".out", ".img", ".sdk");
     }
 
 
@@ -172,10 +172,6 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
 
         final List<IGroup> groups = applyLayerSetup (patch, groupLayer1, groupLayer2);
         multisampleSource.setGroups (groups);
-        final int octaveShift = patch.getOctaveShift () * 12;
-        for (final IGroup group: groups)
-            for (final ISampleZone sampleZone: group.getSampleZones ())
-                sampleZone.setTuning (sampleZone.getTuning () + octaveShift);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         metadata.setDescription (metadataDescription);

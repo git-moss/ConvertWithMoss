@@ -29,7 +29,7 @@ public class S770DirectoryEntry
 
     /**
      * Constructor for a HD/CD-ROM directory entry.
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read the directory entry
      */
@@ -50,7 +50,7 @@ public class S770DirectoryEntry
 
     /**
      * Constructor for storing a simple diskette directory entry.
-     * 
+     *
      * @param input The input to read the entry name from
      * @param fileType The type of entry
      * @param numClusters So far an unknown value...
@@ -71,7 +71,7 @@ public class S770DirectoryEntry
 
     /**
      * Get the name of the entry.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -82,7 +82,7 @@ public class S770DirectoryEntry
 
     /**
      * Get the type of the file referenced by this entry.
-     * 
+     *
      * @return The type
      */
     public S770FileType getFileType ()
@@ -93,7 +93,7 @@ public class S770DirectoryEntry
 
     /**
      * Get the file attributes.
-     * 
+     *
      * @return The file attributes (specific meaning unknown)
      */
     public int getFileAttributes ()
@@ -104,7 +104,7 @@ public class S770DirectoryEntry
 
     /**
      * Pointer to the next entry.
-     * 
+     *
      * @return The pointer
      */
     public int getForwardLinkPtr ()
@@ -115,7 +115,7 @@ public class S770DirectoryEntry
 
     /**
      * Pointer to the previous entry.
-     * 
+     *
      * @return The pointer
      */
     public int getBackwardLinkPtr ()
@@ -126,7 +126,7 @@ public class S770DirectoryEntry
 
     /**
      * Get the ID of the link.
-     * 
+     *
      * @return The ID
      */
     public int getLinkId ()
@@ -137,7 +137,7 @@ public class S770DirectoryEntry
 
     /**
      * Get the number of clusters used by the referenced file.
-     * 
+     *
      * @return The number of clusters
      */
     public int getNumClusters ()

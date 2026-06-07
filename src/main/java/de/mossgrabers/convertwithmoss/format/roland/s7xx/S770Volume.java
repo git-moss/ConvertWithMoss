@@ -12,36 +12,52 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * Roland S-770 volume entry (256 bytes). 16 name 16 (pad) u2×64 performance_ptrs 0x60 (pad)
+ * Roland S-770 volume entry.
  *
  * @author Jürgen Moßgraber
  */
 public class S770Volume
 {
     private final String name;
-    private final int [] performancePtrs;
+    private final int [] performancePointers;
 
 
-    public S770Volume (final InputStream in) throws IOException
+    /**
+     * Constructor.
+     *
+     * @param input The input stream to read from
+     * @throws IOException Could not read the volume
+     */
+    public S770Volume (final InputStream input) throws IOException
     {
-        this.name = StreamUtils.readAscii (in, 16);
-        in.skipNBytes (16);
-        this.performancePtrs = new int [64];
+        this.name = StreamUtils.readAscii (input, 16);
+        input.skipNBytes (16);
+        this.performancePointers = new int [64];
         for (int i = 0; i < 64; i++)
-            this.performancePtrs[i] = StreamUtils.readUnsigned16 (in, false);
-        in.skipNBytes (0x60);
+            this.performancePointers[i] = StreamUtils.readUnsigned16 (input, false);
+        input.skipNBytes (0x60);
     }
 
 
+    /**
+     * Get the name of the volume.
+     *
+     * @return The name
+     */
     public String getName ()
     {
         return this.name;
     }
 
 
-    public int [] getPerformancePtrs ()
+    /**
+     * Get the indices of the referenced performances.
+     *
+     * @return The part indices
+     */
+    public int [] getPerformancePointers ()
     {
-        return this.performancePtrs;
+        return this.performancePointers;
     }
 
 
@@ -49,6 +65,6 @@ public class S770Volume
     @Override
     public String toString ()
     {
-        return "S770VolumeEntry [name='" + this.name.trim () + "', performancePtrs=" + Arrays.toString (this.performancePtrs) + "]";
+        return "S770VolumeEntry [name='" + this.name.trim () + "', performancePtrs=" + Arrays.toString (this.performancePointers) + "]";
     }
 }

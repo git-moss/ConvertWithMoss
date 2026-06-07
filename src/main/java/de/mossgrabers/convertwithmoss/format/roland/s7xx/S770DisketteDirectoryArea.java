@@ -77,7 +77,7 @@ public class S770DisketteDirectoryArea
 
     /**
      * Get the performance directories.
-     * 
+     *
      * @return The performance directories
      */
     public List<S770DirectoryEntry> getPerformanceDirectories ()
@@ -88,7 +88,7 @@ public class S770DisketteDirectoryArea
 
     /**
      * Get the patch directories.
-     * 
+     *
      * @return The patch directories
      */
     public List<S770DirectoryEntry> getPatchDirectories ()
@@ -99,7 +99,7 @@ public class S770DisketteDirectoryArea
 
     /**
      * Get the partial directories.
-     * 
+     *
      * @return The partial directories
      */
     public List<S770DirectoryEntry> getPartialDirectories ()
@@ -110,7 +110,7 @@ public class S770DisketteDirectoryArea
 
     /**
      * Get the sample directories.
-     * 
+     *
      * @return The sample directories
      */
     public List<S770DirectoryEntry> getSampleDirectories ()
