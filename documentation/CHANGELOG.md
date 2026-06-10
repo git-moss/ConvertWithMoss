@@ -2,6 +2,16 @@
 
 ## 18.0.1 (unreleased)
 
+* Elektron Tonverk (thanks to Douglas Carmichael)
+  * New: Sample chunks are only written when a loop is present and instrument/broadcast audio chunks are off by default since the Tonverk WAV parser is strict (factory files only contain 'fmt ', 'data' and 'smpl' chunks).
+  * Fixed: The preset file is now written with the correct '.elmulti' extension (was '.emulti') which the Tonverk requires.
+  * Fixed: Samples are now physically trimmed to the zone start/end instead of writing 'trim-start'/'trim-end' which the Tonverk only supports for single-file multi-samples and rejected the preset otherwise.
+  * Fixed: Loop positions written to the preset file were not updated for re-sampling and trimming. Loops are also clamped into the sample boundaries and short single-cycle loops keep their exact length when re-sampling to prevent pitch drift.
+  * Fixed: A velocity layer with velocity 0.0 made the Tonverk reject the whole preset and import the WAV files as loose samples. The factory default velocity is used instead.
+  * Fixed: The key-center was written with an inverted tuning direction.
+  * Fixed: Sample file references in the preset file could differ from the written WAV file names if a zone name contained characters which needed to be replaced. Samples are now named following the Elektron factory convention 'Name-VVV-NNN-note.wav'.
+  * Fixed: 'keep-looping-on-release' is now written for looped samples (the Tonverk otherwise stops looping on key release).
+  * Fixed: Preset names containing a single quote produced an invalid preset file.
 * Ensoniq EPS/EPS16+/ASR-10
   * New: Added a 'P' in front of the Patch-number for better readability.
   * Fixed: EFE files which use "Instrument" instead of "Instr" as the file type identifier could not be loaded.
@@ -25,16 +35,6 @@
   * New: Added support to read JSON based .xpm files.
 * Akai S1000/S3000
   * Fixed: Loops were not imported.
-* Elektron Tonverk
-  * Fixed: The preset file is now written with the correct '.elmulti' extension (was '.emulti') which the Tonverk requires.
-  * Fixed: Samples are now physically trimmed to the zone start/end instead of writing 'trim-start'/'trim-end' which the Tonverk only supports for single-file multi-samples and rejected the preset otherwise.
-  * Fixed: Loop positions written to the preset file were not updated for re-sampling and trimming. Loops are also clamped into the sample boundaries and short single-cycle loops keep their exact length when re-sampling to prevent pitch drift.
-  * Fixed: A velocity layer with velocity 0.0 made the Tonverk reject the whole preset and import the WAV files as loose samples. The factory default velocity is used instead.
-  * Fixed: The key-center was written with an inverted tuning direction.
-  * Fixed: Sample file references in the preset file could differ from the written WAV file names if a zone name contained characters which needed to be replaced. Samples are now named following the Elektron factory convention 'Name-VVV-NNN-note.wav'.
-  * Fixed: 'keep-looping-on-release' is now written for looped samples (the Tonverk otherwise stops looping on key release).
-  * Fixed: Preset names containing a single quote produced an invalid preset file.
-  * New: Sample chunks are only written when a loop is present and instrument/broadcast audio chunks are off by default since the Tonverk WAV parser is strict (factory files only contain 'fmt ', 'data' and 'smpl' chunks).
 * ISO File
   * New: Added detection of Ensoniq EPS/ASR ISOs.
   * New: Added detection of Roland images.
