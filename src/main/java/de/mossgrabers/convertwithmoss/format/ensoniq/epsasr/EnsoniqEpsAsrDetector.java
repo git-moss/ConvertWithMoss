@@ -281,7 +281,7 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
             lastPatch = patch;
 
-            final String name = TagDetector.toCamelCase (multiSampleName) + " " + (i + 1);
+            final String name = TagDetector.toCamelCase (multiSampleName) + " P" + (i + 1);
             final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
             final List<IGroup> patchGroups = new ArrayList<> ();
             for (int p = 0; p < numLayers; p++)
