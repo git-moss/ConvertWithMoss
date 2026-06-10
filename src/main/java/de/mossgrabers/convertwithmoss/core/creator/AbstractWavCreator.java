@@ -136,7 +136,13 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
     }
 
 
-    private static void updateInstrumentChunk (final ISampleZone zone, final WaveFile wavFile)
+    /**
+     * Updates all parameters of a WAV instrument chunk.
+     *
+     * @param zone The zone from which to read the parameters
+     * @param wavFile The WAV file to update
+     */
+    protected static void updateInstrumentChunk (final ISampleZone zone, final WaveFile wavFile)
     {
         InstrumentChunk instrumentChunk = wavFile.getInstrumentChunk ();
         if (instrumentChunk == null)
@@ -155,7 +161,13 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
     }
 
 
-    private static void updateBroadcastAudioChunk (final IMetadata metadata, final WaveFile wavFile)
+    /**
+     * Updates all parameters of a WAV broadcast audio extension chunk.
+     *
+     * @param metadata The metadata from which to read the parameters
+     * @param wavFile The WAV file to update
+     */
+    protected static void updateBroadcastAudioChunk (final IMetadata metadata, final WaveFile wavFile)
     {
         BroadcastAudioExtensionChunk broadcastAudioChunk = wavFile.getBroadcastAudioExtensionChunk ();
         if (broadcastAudioChunk == null)

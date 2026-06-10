@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -94,8 +95,11 @@ public class ElektronMultiFile
         public Integer loopEnd;
         /** Loop cross-fade length in samples */
         public Integer loopCrossfade;
-        /** Continue looping after key release (used for waveforms). */
-        public Boolean keepLoopingOnRelease = Boolean.TRUE;
+        /**
+         * Continue looping after key release. If omitted, the Tonverk stops looping on key release
+         * (sustain loop).
+         */
+        public Boolean keepLoopingOnRelease = Boolean.FALSE;
         /** Sample start position within WAV file (for single-file multi-sample). */
         public Integer trimStart;
         /** Sample end position within WAV file (for single-file multi-sample). */
@@ -104,14 +108,32 @@ public class ElektronMultiFile
 
 
     /**
-     * Creates a sample name.
+     * Creates a sample file name including the '.wav' file ending.
      *
      * @param instrumentName The instrument name to add to the sample name
      * @param velocityLayer The velocity layer index to add to the sample name
      * @param midiNote The MIDI note to add to the sample name
-     * @return The formatted sample name
+     * @return The formatted sample file name
      */
     public static String createSampleFileName (final String instrumentName, final int velocityLayer, final int midiNote)
+    {
+        return createSampleName (instrumentName, velocityLayer, midiNote, 0) + ".wav";
+    }
+
+
+    /**
+     * Creates a sample name (without the file ending) following the Elektron factory naming
+     * convention: 'instrumentName-VVV-NNN-note' with an additional '-rrN' suffix for round-robin
+     * samples.
+     *
+     * @param instrumentName The instrument name to add to the sample name
+     * @param velocityLayer The velocity layer index to add to the sample name
+     * @param midiNote The MIDI note to add to the sample name
+     * @param roundRobinIndex The index of the sample in a round-robin chain, no suffix is added
+     *            for values less than 1
+     * @return The formatted sample name
+     */
+    public static String createSampleName (final String instrumentName, final int velocityLayer, final int midiNote, final int roundRobinIndex)
     {
         if (midiNote < 0 || midiNote > 127)
             throw new IllegalArgumentException ("midiNote out of range");
@@ -119,7 +141,8 @@ public class ElektronMultiFile
             throw new IllegalArgumentException ("velocityLayer must be >= 0");
         final int note = midiNote % 12;
         final int octave = midiNote / 12 - 2;
-        return String.format ("%s-%03d-%03d-%s%d.wav", instrumentName, Integer.valueOf (velocityLayer), Integer.valueOf (midiNote), NOTE_NAMES[note], Integer.valueOf (octave));
+        final String name = String.format ("%s-%03d-%03d-%s%d", instrumentName, Integer.valueOf (velocityLayer), Integer.valueOf (midiNote), NOTE_NAMES[note], Integer.valueOf (octave));
+        return roundRobinIndex > 0 ? name + "-rr" + roundRobinIndex : name;
     }
 
 
@@ -201,48 +224,48 @@ public class ElektronMultiFile
         final List<String> out = new ArrayList<> ();
         out.add ("# ELEKTRON MULTI-SAMPLE MAPPING FORMAT");
         out.add ("version = " + this.version);
-        out.add ("name = '" + escape (this.name) + "'");
-        out.add ("");
+        out.add ("name = " + quote (this.name));
 
         for (final ElektronKeyZone keyZone: this.keyZones)
         {
+            out.add ("");
             out.add ("[[key-zones]]");
             out.add ("pitch = " + keyZone.pitch);
-            out.add ("key-center = " + keyZone.keyCenter);
-            out.add ("");
+            out.add ("key-center = " + formatNumber (keyZone.keyCenter));
 
             for (final ElektronVelocityLayer velocityLayer: keyZone.velocityLayers)
             {
-                out.add ("[[key-zones.velocity-layers]]");
-                out.add ("velocity = " + velocityLayer.velocity);
-                if (velocityLayer.strategy != null)
-                    out.add ("strategy = '" + escape (velocityLayer.strategy) + "'");
                 out.add ("");
+                out.add ("[[key-zones.velocity-layers]]");
+                out.add ("velocity = " + formatNumber (velocityLayer.velocity));
+                if (velocityLayer.strategy != null)
+                    out.add ("strategy = " + quote (velocityLayer.strategy));
 
                 for (final ElektronSampleSlot sampleSlot: velocityLayer.sampleSlots)
                 {
+                    out.add ("");
                     out.add ("[[key-zones.velocity-layers.sample-slots]]");
-                    out.add ("sample = '" + escape (sampleSlot.sample) + "'");
-                    if (sampleSlot.loopMode != null)
-                        out.add ("loop-mode = '" + escape (sampleSlot.loopMode) + "'");
-                    if (sampleSlot.loopStart != null && sampleSlot.loopStart.intValue () >= 0)
-                        out.add ("loop-start = " + sampleSlot.loopStart);
-                    if (sampleSlot.loopEnd != null && sampleSlot.loopEnd.intValue () >= 0)
-                        out.add ("loop-end = " + sampleSlot.loopEnd);
-                    if (sampleSlot.loopCrossfade != null && sampleSlot.loopCrossfade.intValue () >= 0)
-                        out.add ("loop-crossfade = " + sampleSlot.loopCrossfade);
-                    if (sampleSlot.keepLoopingOnRelease != null && !sampleSlot.keepLoopingOnRelease.booleanValue ())
-                        out.add ("keep-looping-on-release = " + sampleSlot.keepLoopingOnRelease);
+                    out.add ("sample = " + quote (sampleSlot.sample));
                     if (sampleSlot.trimStart != null && sampleSlot.trimStart.intValue () >= 0)
                         out.add ("trim-start = " + sampleSlot.trimStart);
                     if (sampleSlot.trimEnd != null && sampleSlot.trimEnd.intValue () >= 0)
                         out.add ("trim-end = " + sampleSlot.trimEnd);
-                    out.add ("");
+                    if (sampleSlot.loopMode != null)
+                        out.add ("loop-mode = " + quote (sampleSlot.loopMode));
+                    if ("Forward".equals (sampleSlot.loopMode))
+                    {
+                        if (sampleSlot.loopStart != null && sampleSlot.loopStart.intValue () >= 0)
+                            out.add ("loop-start = " + sampleSlot.loopStart);
+                        if (sampleSlot.loopEnd != null && sampleSlot.loopEnd.intValue () >= 0)
+                            out.add ("loop-end = " + sampleSlot.loopEnd);
+                        if (sampleSlot.loopCrossfade != null && sampleSlot.loopCrossfade.intValue () >= 0)
+                            out.add ("loop-crossfade = " + sampleSlot.loopCrossfade);
+                        if (sampleSlot.keepLoopingOnRelease != null && sampleSlot.keepLoopingOnRelease.booleanValue ())
+                            out.add ("keep-looping-on-release = true");
+                    }
                 }
             }
         }
-        if (out.get (out.size () - 1).isBlank ())
-            out.remove (out.size () - 1);
         Files.write (path, out);
     }
 
@@ -305,9 +328,44 @@ public class ElektronMultiFile
     }
 
 
-    private static String escape (final String s)
+    /**
+     * Quotes a string value. Uses single quotes except when the value contains a single quote, in
+     * that case double quotes are used and contained double quotes are escaped.
+     *
+     * @param value The value to quote
+     * @return The quoted value
+     */
+    private static String quote (final String value)
     {
-        return s == null ? "" : s.replace ("'", "\'");
+        final String text = value == null ? "" : value;
+        if (!text.contains ("'"))
+            return "'" + text + "'";
+        return '"' + text.replace ("\"", "\\\"") + '"';
+    }
+
+
+    /**
+     * Formats a floating point number like the Tonverk factory files: integral values get one
+     * decimal place (e.g. '60.0'), all others a maximum of 8 significant digits (e.g.
+     * '0.49411765').
+     *
+     * @param value The value to format
+     * @return The formatted value
+     */
+    private static String formatNumber (final double value)
+    {
+        if (value == Math.rint (value) && Math.abs (value) < 1e15)
+            return String.format (Locale.US, "%.1f", Double.valueOf (value));
+
+        String text = String.format (Locale.US, "%.8g", Double.valueOf (value));
+        if (text.indexOf ('e') < 0 && text.indexOf ('E') < 0 && text.indexOf ('.') >= 0)
+        {
+            // Remove trailing zeros but keep at least one decimal digit
+            text = text.replaceAll ("0+$", "");
+            if (text.endsWith ("."))
+                text += "0";
+        }
+        return text;
     }
 
 
