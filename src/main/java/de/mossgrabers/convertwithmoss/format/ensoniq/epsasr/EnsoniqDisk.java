@@ -220,7 +220,7 @@ public class EnsoniqDisk
         if (this.description.endsWith (":"))
             this.description = this.description.substring (0, this.description.length () - 1);
 
-        if (!"Instr".equals (type))
+        if (!type.startsWith ("Instr"))
         {
             // Unsupported type will be shown in log
             this.description = type;
@@ -328,7 +328,8 @@ public class EnsoniqDisk
         final HfeVersion hfeVersion = hfeFile.getHfeVersion ();
         if (hfeVersion != HfeVersion.VERSION_1)
             throw new IOException (Functions.getMessage ("IDS_HFE_VERSION_NOT_SUPPORTED", hfeVersion == HfeVersion.VERSION_2 ? "v2" : "v3"));
-        if (hfeFile.getFloppyInterfaceMode () != HfeFile.FLOPPYMODE_GENERIC_SHUGGART_DD)
+        final int floppyInterfaceMode = hfeFile.getFloppyInterfaceMode ();
+        if (floppyInterfaceMode != HfeFile.FLOPPYMODE_GENERIC_SHUGGART_DD && floppyInterfaceMode != HfeFile.FLOPPYMODE_IBM_PC_HD)
             throw new IOException (Functions.getMessage ("IDS_HFE_CAN_ONLY_DECODE_FLOPPY_MODE", "Generic Shuggart"));
 
         final List<Sector> allSectors = hfeFile.decodeMfmSectors ();

@@ -1,5 +1,11 @@
 # Changes
 
+## 18.0.1 (unreleased)
+
+* Ensoniq EPS/EPS16+/ASR-10
+  * New: Added a 'P' in front of the Patch-number for better readability.
+  * Fixed: EFE files which use "Instrument" instead of "Instr" as the file type identifier could not be loaded.
+
 ## 18.0.0
 
 * Added support for Elektron Tonverk emulti.
@@ -36,7 +42,7 @@
   * Fixed: When writing WAV files preserve the chunks 'meta', 'atem' and 'ID3 '.
   * Fixed: Don't overwrite WAV samples multiple times if they already exist
   * Fixed: Failed resolution conversions are now logged properly.
-  * Fixed: Conversion from 32-bit float to 16-bit PMC did not always work.
+  * Fixed: Conversion from 32-bit float to 16-bit PCM did not always work.
 
 ## 17.1.0
 
