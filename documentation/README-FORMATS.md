@@ -252,7 +252,7 @@ Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipp
 ## Elektron Tonverk
 
 The Elektron Tonverk is a dedicated hardware sampler that marks an important milestone for Elektron as its first instrument to support multi-samples. This allows users to map multiple sampled sounds across keys or velocity ranges, creating more expressive and realistic instruments than single-sample playback alone.
-Sadly, the emulti format is very basic and limited. It only supports the basic multi-sample layout does not contain any synthesizer parameters like envelopes or filter settings.
+Sadly, the elmulti format is very basic and limited. It only supports the basic multi-sample layout does not contain any synthesizer parameters like envelopes or filter settings.
 Furthermore, even this basic setup has some limitations:
 
 * There are no key ranges, the Tonverk always plays the sample with the closest root note. This can lead to different key-ranges than in the source multi-sample.

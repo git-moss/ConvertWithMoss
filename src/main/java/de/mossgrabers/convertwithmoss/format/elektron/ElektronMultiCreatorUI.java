@@ -20,7 +20,7 @@ import javafx.scene.control.CheckBox;
 
 
 /**
- * Settings for the Elektron emulti creators.
+ * Settings for the Elektron elmulti creators.
  *
  * @author Jürgen Moßgraber
  */
@@ -40,7 +40,9 @@ public class ElektronMultiCreatorUI extends WavChunkSettingsUI
      */
     public ElektronMultiCreatorUI (final String prefix)
     {
-        super (prefix, true, true, true, true);
+        // Only the sample chunk is enabled by default: the Tonverk factory WAV files contain only
+        // 'fmt ', 'data' and 'smpl' chunks and the Tonverk WAV parser is strict
+        super (prefix, false, false, true, true);
     }
 
 
