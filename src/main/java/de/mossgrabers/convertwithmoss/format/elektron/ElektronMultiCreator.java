@@ -279,10 +279,10 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
 
     /**
      * Re-calculates the sample start, stop and loop positions for 48kHz. Contrary to
-     * recalculateSamplePositions, the loop points are handled like in the reference
-     * implementation: normal loop points are truncated; short 'single-cycle' loops keep their
-     * exact length to prevent pitch drift (rounding both end points individually can change the
-     * loop length by 1 sample which detunes a e.g. 90 samples long waveform by about 19 cents).
+     * recalculateSamplePositions, the loop points are handled like in the reference implementation:
+     * normal loop points are truncated; short 'single-cycle' loops keep their exact length to
+     * prevent pitch drift (rounding both end points individually can change the loop length by 1
+     * sample which detunes a e.g. 90 samples long waveform by about 19 cents).
      *
      * @param multisampleSource The multi-sample source
      * @throws IOException Could not retrieve the current sample rate
