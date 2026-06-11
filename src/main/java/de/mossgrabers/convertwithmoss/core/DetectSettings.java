@@ -37,12 +37,14 @@ public class DetectSettings
     public boolean enableTrimSample;
     /** The maximum number of samples to limit to. */
     public int     maxNumberOfSamples;
-    /** The bit depth to reduce to. */
-    public int     reduceBitDepth  = -1;
-    /** The frequency to reduce to. */
-    public int     reduceFrequency = -1;
+    /** The bit depth to reduce to. 0 is off. */
+    public int     reduceBitDepth  = 0;
+    /** The frequency to reduce to. 0 is off. */
+    public int     reduceFrequency = 0;
     /** Does up-sampling as well. */
     public boolean alwaysResample  = false;
+    /** The fixed loop cross-fade. 0 is off. */
+    public int     loopCrossfades  = 0;
 
 
     /**
@@ -52,6 +54,6 @@ public class DetectSettings
      */
     public boolean needsProcessing ()
     {
-        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize);
+        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize || this.loopCrossfades > 0);
     }
 }

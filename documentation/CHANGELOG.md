@@ -1,7 +1,10 @@
 # Changes
 
-## 18.0.1 (unreleased)
+## 18.1.0
 
+* New: Added CLI parameters ProcessAlwaysResample and ProcessLoopCrossfade.
+* New: Added processing option to set a fixed loop cross-fade.
+* New: Redesign of processing dialog.
 * Elektron Tonverk (thanks to Douglas Carmichael)
   * New: Sample chunks are only written when a loop is present and instrument/broadcast audio chunks are off by default since the Tonverk WAV parser is strict (factory files only contain 'fmt ', 'data' and 'smpl' chunks).
   * Fixed: The preset file is now written with the correct '.elmulti' extension (was '.emulti') which the Tonverk requires.
@@ -15,6 +18,8 @@
 * Ensoniq EPS/EPS16+/ASR-10
   * New: Added a 'P' in front of the Patch-number for better readability.
   * Fixed: EFE files which use "Instrument" instead of "Instr" as the file type identifier could not be loaded.
+* Omnisphere 3
+  * Fixed: Samples with a delayed play-back start were not written (empty db-file). 
 
 ## 18.0.0
 

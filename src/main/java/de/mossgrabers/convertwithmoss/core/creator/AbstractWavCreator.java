@@ -4,19 +4,15 @@
 
 package de.mossgrabers.convertwithmoss.core.creator;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Date;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
 import de.mossgrabers.convertwithmoss.file.wav.InstrumentChunk;
@@ -24,7 +20,6 @@ import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.file.wav.WaveRiffChunkId;
-import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -68,21 +63,8 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
 
     /** {@inheritDoc} */
     @Override
-    protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
+    protected void additionalProcessing (final IMultisampleSource multisampleSource, final ISampleZone zone, final WaveFile wavFile)
     {
-        final ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
-            return;
-
-        // Convert resolution
-        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
-        if (wavFile.getDataChunk () == null)
-            throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
-
-        // Trim sample from zone start to end
-        if (trim)
-            trimStartToEnd (wavFile, zone);
-
         // Update information chunks
         if (this.settingsConfiguration.isUpdateBroadcastAudioChunk ())
             updateBroadcastAudioChunk (multisampleSource.getMetadata (), wavFile);
@@ -92,8 +74,6 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
             updateSampleChunk (zone, wavFile);
         if (this.settingsConfiguration.isRemoveJunkChunks ())
             wavFile.removeChunks (CommonRiffChunkId.JUNK_ID, CommonRiffChunkId.JUNK2_ID, WaveRiffChunkId.FILLER_ID, WaveRiffChunkId.MD5_ID);
-
-        wavFile.write (outputStream);
     }
 
 
