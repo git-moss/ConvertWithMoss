@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -254,7 +255,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN && isNotRoundRobinGroup)
             addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
-        //////////////////////////////////////////
+        //////////////////////////////////
         // Key range
 
         final int keyRoot = zone.getKeyRoot ();
@@ -287,7 +288,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
         }
 
-        //////////////////////////////////////////
+        //////////////////////////////////
         // Velocity
 
         final int velocityLow = zone.getVelocityLow ();
@@ -311,7 +312,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
         }
 
-        //////////////////////////////////////////
+        //////////////////////////////////
         // Start, end, tune, volume
 
         final int start = zone.getStart ();
@@ -331,7 +332,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         createVolume (buffer, zone, ampEnvParameterLevel);
 
-        //////////////////////////////////////////
+        //////////////////////////////////
         // Pitch Bend / Envelope
 
         final int bendUp = zone.getBendUp ();
@@ -415,7 +416,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                     {
                         loopLengthInSeconds = loopLength / (double) zone.getSampleData ().getAudioMetadata ().getSampleRate ();
                         final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
-                        buffer.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (crossfadeInSeconds);
+                        buffer.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (formatAsFloat (crossfadeInSeconds));
                     }
                     catch (final IOException ex)
                     {
@@ -424,7 +425,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                 }
             }
 
-            buffer.append (' ').append (SfzOpcode.LOOP_TUNE).append ('=').append (Math.round (sampleLoop.getTuning () * 100.0));
+            buffer.append (' ').append (SfzOpcode.LOOP_TUNE).append ('=').append (formatAsFloat (Math.round (sampleLoop.getTuning () * 100.0)));
         }
         buffer.append (LINE_FEED);
     }
@@ -558,7 +559,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             return;
         if (!sb.isEmpty ())
             sb.append (' ');
-        sb.append (opcode).append ('=').append (Math.clamp (value, 0.0, 100.0));
+        sb.append (opcode).append ('=').append (formatAsFloat (Math.clamp (value, 0.0, 100.0)));
     }
 
 
@@ -568,7 +569,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             return;
         if (!sb.isEmpty ())
             sb.append (' ');
-        sb.append (opcode).append ('=').append (Math.clamp (value * 100.0, 0.0, 100.0));
+        sb.append (opcode).append ('=').append (formatAsFloat (Math.clamp (value * 100.0, 0.0, 100.0)));
     }
 
 
@@ -578,7 +579,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             return;
         if (!sb.isEmpty ())
             sb.append (' ');
-        sb.append (opcode).append ('=').append (Math.clamp (value * 10.0, -10.0, 10.0));
+        sb.append (opcode).append ('=').append (formatAsFloat (Math.clamp (value * 10.0, -10.0, 10.0)));
     }
 
 
@@ -604,5 +605,11 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             result.append (COMMENT_PREFIX).append (currentLine).append ("\n");
 
         return result.toString ();
+    }
+
+
+    private static String formatAsFloat (final double value)
+    {
+        return new BigDecimal (Float.toString ((float) value)).stripTrailingZeros ().toPlainString ();
     }
 }

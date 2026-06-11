@@ -13,10 +13,12 @@ import de.mossgrabers.tools.ui.ControlFunctions;
 import de.mossgrabers.tools.ui.TraversalManager;
 import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
+import de.mossgrabers.tools.ui.panel.TwoColsPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -31,11 +33,13 @@ public class ProcessingDialog extends AbstractDialog
 {
     private static final List<String> BIT_DEPTH       = new ArrayList<> ();
     private static final List<String> FREQ_RESOLUTiON = new ArrayList<> ();
+    private static final List<String> LOOP_CROSSFADES = new ArrayList<> ();
 
     static
     {
         Collections.addAll (BIT_DEPTH, "Ignore", "24 bit", "16 bit", "8 bit");
         Collections.addAll (FREQ_RESOLUTiON, "Ignore", "48 kHz", "44.1 kHz", "32 kHz", "31.25 kHz", "30 kHz", "28 kHz", "27 kHz", "24 kHz", "22.05 kHz", "16 kHz", "12 kHz", "11.025 kHz", "8 kHz");
+        Collections.addAll (LOOP_CROSSFADES, "Off", "0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "8%", "9%", "10%", "11%", "12%", "13%", "14%", "15%", "16%", "17%", "18%", "19%", "20%", "21%", "22%", "23%", "24%", "25%", "26%", "27%", "28%", "29%", "30%", "31%", "32%", "33%", "34%", "35%", "36%", "37%", "38%", "39%", "40%", "41%", "42%", "43%", "44%", "45%", "46%", "47%", "48%", "49%", "50%", "51%", "52%", "53%", "54%", "55%", "56%", "57%", "58%", "59%", "60%", "61%", "62%", "63%", "64%", "65%", "66%", "67%", "68%", "69%", "70%", "71%", "72%", "73%", "74%", "75%", "76%", "77%", "78%", "79%", "80%", "81%", "82%", "83%", "84%", "85%", "86%", "87%", "88%", "89%", "90%", "91%", "92%", "93%", "94%", "95%", "96%", "97%", "98%", "99%", "100%");
     }
 
     private final TraversalManager traversalManager = new TraversalManager ();
@@ -56,6 +60,8 @@ public class ProcessingDialog extends AbstractDialog
     public ComboBox<String>        reduceFrequencyCombobox;
     /** Check-box to enable always re-sample option. */
     public CheckBox                alwaysResampleCheckbox;
+    /** Combo-box for the loop cross-fades. */
+    public ComboBox<String>        loopCrossfadesCombobox;
 
 
     /**
@@ -146,6 +152,17 @@ public class ProcessingDialog extends AbstractDialog
 
 
     /**
+     * Select the loop cross-fades.
+     * 
+     * @param loopCrossfades The loop cross-fades, 0 = Off, 1 = 0%, 2= 1%, ...
+     */
+    public void selectLoopCrossfades (final int loopCrossfades)
+    {
+        this.loopCrossfadesCombobox.getSelectionModel ().select (loopCrossfades);
+    }
+
+
+    /**
      * Get the the maximum frequency.
      *
      * @return The frequency, e.g. 44100, -1 to ignore
@@ -176,26 +193,44 @@ public class ProcessingDialog extends AbstractDialog
     }
 
 
+    /**
+     * Get the loop cross-fades.
+     * 
+     * @return The loop cross-fades
+     */
+    public int getLoopCrossfades ()
+    {
+        return this.loopCrossfadesCombobox.getSelectionModel ().getSelectedIndex ();
+    }
+
+
     /** {@inheritDoc} */
     @Override
     protected Pane init ()
     {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        final BoxPanel panel1 = new BoxPanel (Orientation.VERTICAL);
+        this.normalizeCheckbox = panel1.createCheckBox ("@IDS_PROCESSING_NORMALIZE", "@IDS_PROCESSING_NORMALIZE_TOOLTIP");
 
-        this.enableProcessingCheckbox = panel.createCheckBox ("@IDS_PROCESSING_ENABLE", "@IDS_PROCESSING_ENABLE_TOOLTIP");
-
-        panel.createSeparator ("@IDS_PROCESSING_NORMALIZE_HEADER");
-        this.normalizeCheckbox = panel.createCheckBox ("@IDS_PROCESSING_NORMALIZE", "@IDS_PROCESSING_NORMALIZE_TOOLTIP");
-
-        panel.createSeparator ("@IDS_PROCESSING_MINIMIZE_HEADER");
-        this.makeMonoCheckbox = panel.createCheckBox ("@IDS_PROCESSING_MONO", "@IDS_PROCESSING_MONO_TOOLTIP");
-        this.trimSample = panel.createCheckBox ("@IDS_PROCESSING_TRUNCATE_START", "@IDS_PROCESSING_TRUNCATE_START_TOOLTIP");
-        this.maxSamplesField = panel.createPositiveIntegerField ("@IDS_PROCESSING_MAX_SAMPLES", "@IDS_PROCESSING_MAX_SAMPLES_TOOLTIP");
+        final BoxPanel panel2 = new BoxPanel (Orientation.VERTICAL);
+        this.makeMonoCheckbox = panel2.createCheckBox ("@IDS_PROCESSING_MONO", "@IDS_PROCESSING_MONO_TOOLTIP");
+        this.trimSample = panel2.createCheckBox ("@IDS_PROCESSING_TRUNCATE_START", "@IDS_PROCESSING_TRUNCATE_START_TOOLTIP");
+        this.maxSamplesField = panel2.createPositiveIntegerField ("@IDS_PROCESSING_MAX_SAMPLES", "@IDS_PROCESSING_MAX_SAMPLES_TOOLTIP");
         BasePanel.limitToNumbers (this.maxSamplesField);
-        this.reduceBitDepthCombobox = panel.createComboBox ("@IDS_PROCESSING_REDUCE_BIT_DEPTH", "@IDS_PROCESSING_REDUCE_BIT_DEPTH_TOOLTIP", BIT_DEPTH);
-        this.reduceFrequencyCombobox = panel.createComboBox ("@IDS_PROCESSING_REDUCE_FREQUENCY", "@IDS_PROCESSING_REDUCE_FREQUENCY_TOOLTIP", FREQ_RESOLUTiON);
-        this.alwaysResampleCheckbox = panel.createCheckBox ("@IDS_PROCESSING_ALWAYS_RESAMPLE_LABEL", "@IDS_PROCESSING_ALWAYS_RESAMPLE_TOOLTIP");
 
+        final BoxPanel panel3 = new TwoColsPanel ();
+        this.reduceBitDepthCombobox = panel3.createComboBox ("@IDS_PROCESSING_REDUCE_BIT_DEPTH", "@IDS_PROCESSING_REDUCE_BIT_DEPTH_TOOLTIP", BIT_DEPTH);
+        this.reduceFrequencyCombobox = panel3.createComboBox ("@IDS_PROCESSING_REDUCE_FREQUENCY", "@IDS_PROCESSING_REDUCE_FREQUENCY_TOOLTIP", FREQ_RESOLUTiON);
+        this.alwaysResampleCheckbox = panel3.createCheckBox ("@IDS_PROCESSING_ALWAYS_RESAMPLE_LABEL", "@IDS_PROCESSING_ALWAYS_RESAMPLE_TOOLTIP");
+
+        final BoxPanel panel4 = new TwoColsPanel ();
+        this.loopCrossfadesCombobox = panel4.createComboBox ("@IDS_PROCESSING_LOOP_CROSSFADE", "@IDS_PROCESSING_LOOP_CROSSFADE_TOOLTIP", LOOP_CROSSFADES);
+
+        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+        this.enableProcessingCheckbox = panel.createCheckBox ("@IDS_PROCESSING_ENABLE", "@IDS_PROCESSING_ENABLE_TOOLTIP");
+        panel.addComponent (layoutPane (panel1, "@IDS_PROCESSING_NORMALIZE_HEADER"));
+        panel.addComponent (layoutPane (panel2, "@IDS_PROCESSING_MINIMIZE_HEADER"));
+        panel.addComponent (layoutPane (panel3, "@IDS_PROCESSING_RESOLUTION"));
+        panel.addComponent (layoutPane (panel4, "@IDS_PROCESSING_LOOPS"));
         this.setButtons ("@IDS_SETTINGS_DLG_OK", "@IDS_SETTINGS_DLG_CANCEL");
 
         this.traversalManager.add (this.normalizeCheckbox);
@@ -205,6 +240,7 @@ public class ProcessingDialog extends AbstractDialog
         this.traversalManager.add (this.reduceBitDepthCombobox);
         this.traversalManager.add (this.reduceFrequencyCombobox);
         this.traversalManager.add (this.alwaysResampleCheckbox);
+        this.traversalManager.add (this.loopCrossfadesCombobox);
         this.traversalManager.add (this.getOKButton ());
         this.traversalManager.add (this.getCancelButton ());
 
@@ -220,5 +256,14 @@ public class ProcessingDialog extends AbstractDialog
     protected boolean onOk ()
     {
         return true;
+    }
+
+
+    private static final TitledPane layoutPane (final BoxPanel panel, final String label)
+    {
+        final TitledPane titledPane = panel.wrapInTitledPane (label);
+        titledPane.setExpanded (true);
+        titledPane.setCollapsible (false);
+        return titledPane;
     }
 }

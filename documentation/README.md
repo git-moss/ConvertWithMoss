@@ -119,7 +119,7 @@ First display all of the available attributes by typing:
 
 ```./ConvertWithMoss -h```
 
-The following output is displayed:
+The following output is displayed (the processing parameters are omitted):
 
 ```
 Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY]

@@ -908,6 +908,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Writes the sample of the given zone and updates/adds their instrument and sample chunks.
+     * Overwrite to implement other output formats than WAV.
      *
      * @param multisampleSource The multi-sample source
      * @param zone The zone from which to take the data to store into the chunks
@@ -918,7 +919,35 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
-        // Overwrite to implement rewriting
+        final ISampleData sampleData = zone.getSampleData ();
+        if (sampleData == null)
+            return;
+
+        // Convert resolution
+        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
+        if (wavFile.getDataChunk () == null)
+            throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
+
+        // Trim sample from zone start to end
+        if (trim)
+            trimStartToEnd (wavFile, zone);
+
+        this.additionalProcessing (multisampleSource, zone, wavFile);
+
+        wavFile.write (outputStream);
+    }
+
+
+    /**
+     * Overwrite to implement other modifications on the wavFile.
+     * 
+     * @param multisampleSource The multi-sample source
+     * @param zone The zone from which to take the data to store into the chunks
+     * @param wavFile The WAV file to modify
+     */
+    protected void additionalProcessing (final IMultisampleSource multisampleSource, final ISampleZone zone, final WaveFile wavFile)
+    {
+        // Overwrite to implement other modifications on the wavFile
     }
 
 

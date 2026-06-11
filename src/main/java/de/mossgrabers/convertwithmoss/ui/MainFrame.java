@@ -92,6 +92,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private static final String          PROCESSING_REDUCE_BIT_DEPTH         = "ProcessingReduceBitDepth";
     private static final String          PROCESSING_REDUCE_FREQUENCY         = "ProcessingReduceFrequency";
     private static final String          PROCESSING_ALWAYS_RESAMPLE          = "ProcessingAlwaysResample";
+    private static final String          PROCESSING_LOOP_CROSSFADES          = "ProcessingLoopCrossfades";
 
     private static final int             DEST_TYPE_PRESET                    = 0;
     private static final int             DEST_TYPE_PRESET_LIBRARY            = 1;
@@ -176,7 +177,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
 
-        //////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////
         // Source pane
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
@@ -205,7 +206,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final BorderPane sourcePane = new BorderPane (this.sourceTabPane);
         sourcePane.setTop (sourceUpperPane.getPane ());
 
-        //////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////
         // Destination pane
 
         final BorderPane destinationFolderPanel = new BorderPane (this.destinationPathField);
@@ -442,7 +443,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void loadConfiguration ()
     {
-        /////////////////////////////////////
+        //////////////////////////////
         // Source configuration
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -458,7 +459,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.sourcePathHistory.isEmpty ())
             this.sourcePathField.getEditor ().setText (this.sourcePathHistory.get (0));
 
-        ////////////////////////////////////
+        /////////////////////////////
         // Destination Configuration
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -490,7 +491,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
 
-        ////////////////////////////////////
+        /////////////////////////////
         // Processing
 
         this.detectSettings.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
@@ -501,8 +502,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.detectSettings.reduceBitDepth = this.config.getInteger (PROCESSING_REDUCE_BIT_DEPTH, 0);
         this.detectSettings.reduceFrequency = this.config.getInteger (PROCESSING_REDUCE_FREQUENCY, 0);
         this.detectSettings.alwaysResample = this.config.getBoolean (PROCESSING_ALWAYS_RESAMPLE, false);
+        this.detectSettings.loopCrossfades = this.config.getInteger (PROCESSING_LOOP_CROSSFADES, 0);
 
-        ////////////////////////////////////
+        /////////////////////////////
         // Options
 
         this.detectSettings.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
@@ -542,7 +544,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setProperty (PRESET_LIBRARY_FILENAME, this.presetLibraryFilename.getText ());
         this.config.setProperty (PERFORMANCE_LIBRARY_FILENAME, this.performanceLibraryFilename.getText ());
 
-        ////////////////////////////////////
+        /////////////////////////////
         // Processing
 
         this.config.setBoolean (PROCESSING_ENABLE, this.detectSettings.enableProcessing);
@@ -553,8 +555,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setInteger (PROCESSING_REDUCE_BIT_DEPTH, this.detectSettings.reduceBitDepth);
         this.config.setInteger (PROCESSING_REDUCE_FREQUENCY, this.detectSettings.reduceFrequency);
         this.config.setBoolean (PROCESSING_ALWAYS_RESAMPLE, this.detectSettings.alwaysResample);
+        this.config.setInteger (PROCESSING_LOOP_CROSSFADES, this.detectSettings.loopCrossfades);
 
-        ////////////////////////////////////
+        /////////////////////////////
         // Options
 
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.detectSettings.createFolderStructure);
@@ -618,6 +621,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.processingDialog.selectBitDepth (this.detectSettings.reduceBitDepth);
         this.processingDialog.selectFrequency (this.detectSettings.reduceFrequency);
         this.processingDialog.alwaysResampleCheckbox.setSelected (this.detectSettings.alwaysResample);
+        this.processingDialog.selectLoopCrossfades (this.detectSettings.loopCrossfades);
 
         if (this.processingDialog.display ())
         {
@@ -630,6 +634,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.detectSettings.reduceBitDepth = this.processingDialog.getBitDepth ();
             this.detectSettings.reduceFrequency = this.processingDialog.getFrequency ();
             this.detectSettings.alwaysResample = this.processingDialog.alwaysResampleCheckbox.isSelected ();
+            this.detectSettings.loopCrossfades = this.processingDialog.getLoopCrossfades ();
         }
     }
 
@@ -663,7 +668,7 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         this.detectSettings.libraryName = (detectPerformances ? this.performanceLibraryFilename : this.presetLibraryFilename).getText ().trim ();
         this.detectSettings.wantsMultipleFiles = detectPerformances ? this.wantsMultiplePerformanceFiles () : this.wantsMultiplePresetFiles ();
-        Platform.runLater ( () -> this.backend.detect (detector, creator, this.detectSettings, detectPerformances, onlyAnalyse));
+        Platform.runLater (() -> this.backend.detect (detector, creator, this.detectSettings, detectPerformances, onlyAnalyse));
     }
 
 
@@ -848,7 +853,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     @Override
     public void updateButtonStates (final boolean canClose)
     {
-        Platform.runLater ( () -> {
+        Platform.runLater (() -> {
 
             this.cancelButton.setDisable (canClose);
             this.closeButton.setDisable (!canClose);
@@ -959,7 +964,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             l.setPrefHeight (0);
             tab.setGraphic (l);
 
-            Platform.runLater ( () -> rotateTabLabels (tab));
+            Platform.runLater (() -> rotateTabLabels (tab));
         }
     }
 
@@ -971,7 +976,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final Parent parent = tab.getGraphic ().getParent ();
         if (parent == null)
         {
-            Platform.runLater ( () -> rotateTabLabels (tab));
+            Platform.runLater (() -> rotateTabLabels (tab));
             return;
         }
         final Parent tabContainer = parent.getParent ();
