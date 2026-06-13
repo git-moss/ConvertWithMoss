@@ -105,7 +105,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 if (isXML)
                 {
                     final String content = this.loadTextFile (sourceFile).trim ();
-                    return this.parseMetadataFile (sourceFile, content);
+                    return this.readXmlFile (sourceFile, content);
                 }
             }
             catch (final IOException ex)
@@ -115,7 +115,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             }
         }
 
-        return this.readJSONPresetFile (sourceFile);
+        return this.readJsonPresetFile (sourceFile);
     }
 
 
@@ -126,7 +126,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @param content The XML content to parse
      * @return The result
      */
-    private List<IMultisampleSource> parseMetadataFile (final File file, final String content)
+    private List<IMultisampleSource> readXmlFile (final File file, final String content)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -134,7 +134,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         try
         {
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseDescription (file, document);
+            return this.parseXml (file, document);
         }
         catch (final SAXException ex)
         {
@@ -156,7 +156,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @return The parsed multi-sample source
      * @throws FileNotFoundException The WAV file could not be found
      */
-    private List<IMultisampleSource> parseDescription (final File file, final Document document) throws FileNotFoundException
+    private List<IMultisampleSource> parseXml (final File file, final Document document) throws FileNotFoundException
     {
         final Optional<Element> programElementOpt = this.getProgramElement (document);
         if (programElementOpt.isEmpty ())
@@ -188,7 +188,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         final List<IGroup> groups = this.parseGroups (file.getParentFile (), numKeygroups, instrumentElements, isDrum);
 
         if (isDrum)
-            this.applyPadNoteMap (programElement, groups);
+            this.applyDrumPadNoteMap (programElement, groups);
 
         multisampleSource.setGroups (groups);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, isDrum ? "Drums" : null);
@@ -544,7 +544,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     private void readMissingData (final boolean isDrum, final ISampleZone zone, final boolean isOneShot) throws FileNotFoundException
     {
         final boolean needsUpdate = zone.getStop () > 0;
-        final boolean needsRootKey = !isDrum && zone.getKeyRoot () >= 0;
+        final boolean needsRootKey = !isDrum && zone.getKeyRoot () < 0;
 
         try
         {
@@ -598,7 +598,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @param programElement The program element which contains the pad note map
      * @param groups The groups which contain the samples to be updated
      */
-    private void applyPadNoteMap (final Element programElement, final List<IGroup> groups)
+    private void applyDrumPadNoteMap (final Element programElement, final List<IGroup> groups)
     {
         final Element padNoteMapElement = XMLUtils.getChildElementByName (programElement, MPCKeygroupTag.PROGRAM_PAD_NOTE_MAP);
         if (padNoteMapElement == null)
@@ -685,7 +685,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     }
 
 
-    private List<IMultisampleSource> readJSONPresetFile (final File sourceFile)
+    private List<IMultisampleSource> readJsonPresetFile (final File sourceFile)
     {
         try (final BufferedReader reader = new BufferedReader (new InputStreamReader (new GZIPInputStream (new FileInputStream (sourceFile)), StandardCharsets.UTF_8)))
         {
@@ -729,7 +729,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             if (this.waitForDelivery ())
                 return Collections.emptyList ();
 
-            return this.parseJsonData (sourceFile, this.getContent (jsonCode), jsonFormat);
+            return this.readJsonData (sourceFile, this.getContent (jsonCode), jsonFormat);
         }
         catch (final IOException ex)
         {
@@ -748,7 +748,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @return The result
      * @throws IOException Error reading the file
      */
-    private List<IMultisampleSource> parseJsonData (final File multiSampleFile, final JsonNode root, final JSONFormat jsonFormat) throws IOException
+    private List<IMultisampleSource> readJsonData (final File multiSampleFile, final JsonNode root, final JSONFormat jsonFormat) throws IOException
     {
         final JsonNode dataNode = root.get ("data");
         if (dataNode == null)
@@ -773,7 +773,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             multisampleSource.setName (programName);
             final double programTranspose = programNode.get ("transpose").asDouble ();
 
-            ////
+            ///
             // Read all sample info
             final Iterator<JsonNode> sampleNodes = dataNode.get ("samples").elements ();
             final Map<String, SampleInfo> sampleInfos = new HashMap<> ();
@@ -792,7 +792,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 }
             }
 
-            ////
+            ///
             // Read key-group parameters
             final JsonNode keygroupNode = programNode.get ("keygroup");
             double keygroupTranspose = 0;
@@ -808,7 +808,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 globalEnvelopesAndFilter = new MPCEnvelopesAndFilter (synthSectionNode, true);
             }
 
-            ////
+            ///
             // Read all layers - strangely all key-group settings seem to be under drum
             final JsonNode drumNode = programNode.get ("drum");
             final Iterator<JsonNode> instrumentsNodes = drumNode.get ("instruments").elements ();
@@ -825,7 +825,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 final Iterator<JsonNode> layersNodes = instrumentNode.get ("layersv").elements ();
                 while (layersNodes.hasNext ())
                 {
-                    final ISampleZone sampleZone = this.readSampleZone (multiSampleFile, instrumentNode, layersNodes.next (), lowNote, highNote, pitchBendUp, pitchBendDown, tuning, sampleInfos, globalEnvelopesAndFilter, jsonFormat);
+                    final ISampleZone sampleZone = this.readJsonSampleZone (multiSampleFile, instrumentNode, layersNodes.next (), lowNote, highNote, pitchBendUp, pitchBendDown, tuning, sampleInfos, globalEnvelopesAndFilter, jsonFormat);
                     if (sampleZone != null)
                         group.addSampleZone (sampleZone);
                 }
@@ -872,7 +872,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     }
 
 
-    private ISampleZone readSampleZone (final File multiSampleFile, final JsonNode instrumentNode, final JsonNode layerNode, final int lowNote, final int highNote, final int pitchBendUp, final int pitchBendDown, final double tuning, final Map<String, SampleInfo> sampleInfos, final MPCEnvelopesAndFilter globalEnvelopesAndFilter, final JSONFormat jsonFormat) throws IOException
+    private ISampleZone readJsonSampleZone (final File multiSampleFile, final JsonNode instrumentNode, final JsonNode layerNode, final int lowNote, final int highNote, final int pitchBendUp, final int pitchBendDown, final double tuning, final Map<String, SampleInfo> sampleInfos, final MPCEnvelopesAndFilter globalEnvelopesAndFilter, final JSONFormat jsonFormat) throws IOException
     {
         if (!layerNode.get ("active").asBoolean ())
             return null;

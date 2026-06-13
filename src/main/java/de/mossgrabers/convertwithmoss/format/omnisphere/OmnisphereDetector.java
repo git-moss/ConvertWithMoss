@@ -197,8 +197,9 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, multiSampleName);
         final IMultisampleSource multisampleSource = new DefaultMultisampleSource (presetFile, parts, multiSampleName);
 
-        final int pitchBendUp = (int) Math.round (parseFloatAttribute (synthEngElement, "pbup", 0.04f) * 96.0);
-        final int pitchBendDown = (int) -Math.round (parseFloatAttribute (synthEngElement, "pbdn", 0.04f) * 96.0);
+        // 5000.0 = 100 * 100 / 2
+        final int pitchBendUp = (int) Math.round (parseFloatAttribute (synthEngElement, "pbup", 0.04f) * 5000.0);
+        final int pitchBendDown = (int) -Math.round (parseFloatAttribute (synthEngElement, "pbdn", 0.04f) * 5000.0);
 
         final Element entryDescriptionElement = XMLUtils.getChildElementByName (synthEngElement, "ENTRYDESCR");
         if (entryDescriptionElement != null)

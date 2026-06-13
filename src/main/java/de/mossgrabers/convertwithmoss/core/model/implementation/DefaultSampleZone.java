@@ -45,8 +45,8 @@ public class DefaultSampleZone implements ISampleZone
     protected double             panning                    = 0;
     protected double             tune                       = 0;
     protected double             keyTracking                = 1.0;
-    protected int                bendUp                     = 0;
-    protected int                bendDown                   = 0;
+    protected int                bendUp                     = 200;
+    protected int                bendDown                   = -200;
     protected boolean            isReversed                 = false;
     protected IModulator         amplitudeVelocityModulator = new DefaultModulator (1);
     protected IEnvelopeModulator amplitudeEnvelopeModulator = new DefaultEnvelopeModulator (1);
