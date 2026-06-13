@@ -285,10 +285,8 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
             final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
             final List<IGroup> patchGroups = new ArrayList<> ();
             for (int p = 0; p < numLayers; p++)
-            {
                 if (MathUtils.isBitSet (patch, p))
                     patchGroups.add (sampleGroups.get (p));
-            }
             if (patchGroups.isEmpty ())
                 continue;
 
@@ -328,17 +326,16 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
         final List<EnsoniqLayer> layers = instrument.getLayers ();
         for (int i = 0; i < layers.size (); i++)
         {
-            EnsoniqLayer layer = layers.get (i);
-
             if (!activeLayers.contains (Integer.valueOf (i)))
                 continue;
 
+            final EnsoniqLayer layer = layers.get (i);
             final IGroup group = new DefaultGroup ("Layer " + layer.getIndex ());
             groups.add (group);
 
             for (final KeyboardRange keyboardRange: this.createKeyboardRanges (i, layer, waveSamples))
             {
-                EnsoniqWaveSample waveSample = keyboardRange.waveSample;
+                final EnsoniqWaveSample waveSample = keyboardRange.waveSample;
 
                 InMemorySampleData sampleData = waveSample.getSampleData ();
                 final int waveSampleCopy = waveSample.getWaveSampleCopy ();
@@ -425,10 +422,8 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
 
             // Hard pan left/right when stereo link is enabled
             if (layer.isStereoLink ())
-            {
                 for (final ISampleZone sampleZone: group.getSampleZones ())
                     sampleZone.setPanning (i % 2 == 0 ? -1.0 : 1.0);
-            }
         }
 
         return groups;
@@ -546,7 +541,6 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
         keyboardRanges.add (keyboardRange);
         keyboardRange.refID = referencedWaveSamples[0];
         for (int i = 1; i < referencedWaveSamples.length; i++)
-        {
             if (keyboardRange.refID != referencedWaveSamples[i])
             {
                 keyboardRange.keyHigh = i - 1;
@@ -556,7 +550,6 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 keyboardRanges.add (keyboardRange);
                 keyboardRange.refID = referencedWaveSamples[i];
             }
-        }
         return keyboardRanges;
     }
 
@@ -565,15 +558,11 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
     {
         final Set<Integer> activeLayers = new TreeSet<> ();
         final int [] patches = instrument.getPatches ();
-        for (int i = 0; i < patches.length; i++)
+        for (final int patch: patches)
         {
-            final int patch = patches[i];
-
             for (int p = 0; p < 8; p++)
-            {
                 if (MathUtils.isBitSet (patch, p))
                     activeLayers.add (Integer.valueOf (p));
-            }
         }
         return activeLayers;
     }

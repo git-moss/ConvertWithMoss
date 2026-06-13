@@ -1,5 +1,17 @@
 # Changes
 
+## 18.1.1
+
+* New: If the source does not contain pitch bend values, the default is now 2 semi-tones (instead of 0).
+* Ableton
+  * Fixed: Created files could not be opened if the source file did not contain a loop.
+* Akai MPC
+  * Fixed: Root note was not read from WAV file when missing in XML.
+* Ensoniq EPS/EPS16+/ASR-10
+  * Fixed: Samples had appended silence which doubled the length of the sample.
+* Omnisphere 3
+  * Fixed: Pitch-bend was scaled wrong.
+
 ## 18.1.0
 
 * New: Added CLI parameters ProcessAlwaysResample and ProcessLoopCrossfade.

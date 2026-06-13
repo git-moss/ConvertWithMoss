@@ -195,7 +195,7 @@ public class EnsoniqWaveSample
             this.pcmData[i + 1] = store;
         }
 
-        this.sampleData = new InMemorySampleData (new DefaultAudioMetadata (1, this.sampleRate, 16, this.pcmData.length), this.pcmData);
+        this.sampleData = new InMemorySampleData (new DefaultAudioMetadata (1, this.sampleRate, 16, this.pcmData.length / 2), this.pcmData);
     }
 
 
