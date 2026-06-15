@@ -194,6 +194,7 @@ public class RIFFParser
         long size = this.in.readUDWORD ();
         final long offset = this.getPosition ();
         final int type = this.in.readFourCC ();
+
         if (!isGroupType (type))
             throw new ParseException ("Invalid FORM Type: \"" + RiffChunkId.toASCII (type) + "\"");
 
