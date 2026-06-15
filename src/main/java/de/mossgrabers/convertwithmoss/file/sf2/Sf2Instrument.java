@@ -38,7 +38,7 @@ public class Sf2Instrument extends AbstractGroupedZones<Sf2InstrumentZone>
         while (pos < 20 && data[offset + pos] != 0)
             pos++;
         this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
-        this.firstZoneIndex = chunk.getTwoBytesAsInt (offset + 20);
+        this.firstZoneIndex = chunk.getTwoBytesAsUnsignedInt (offset + 20);
     }
 
 

@@ -138,7 +138,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getCompressionCode ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (0x00);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (0x00);
     }
 
 
@@ -162,7 +162,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getNumberOfChannels ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (0x02);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (0x02);
     }
 
 
@@ -186,7 +186,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getSampleRate ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x04);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x04);
     }
 
 
@@ -214,7 +214,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getAverageBytesPerSecond ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x08);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x08);
     }
 
 
@@ -239,7 +239,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getBlockAlign ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (0x0C);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (0x0C);
     }
 
 
@@ -271,7 +271,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
     public int getSignificantBitsPerSample ()
     {
         if (0x0E < this.rawRiffChunk.getData ().length)
-            return this.rawRiffChunk.getTwoBytesAsInt (0x0E);
+            return this.rawRiffChunk.getTwoBytesAsUnsignedInt (0x0E);
         return 0;
     }
 

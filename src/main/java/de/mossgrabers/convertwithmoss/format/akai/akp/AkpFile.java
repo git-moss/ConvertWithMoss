@@ -71,7 +71,7 @@ public class AkpFile extends AbstractRIFFFile
      */
     public AkpFile (final File akpFile) throws IOException, ParseException
     {
-        super (AkpRiffChunkId.APRG_ID);
+        super (AkpRiffChunkId.APRG_ID, true);
 
         this.akpFile = akpFile;
 
@@ -87,7 +87,7 @@ public class AkpFile extends AbstractRIFFFile
      */
     public AkpFile ()
     {
-        super (AkpRiffChunkId.APRG_ID);
+        super (AkpRiffChunkId.APRG_ID, true);
 
         this.akpFile = null;
     }

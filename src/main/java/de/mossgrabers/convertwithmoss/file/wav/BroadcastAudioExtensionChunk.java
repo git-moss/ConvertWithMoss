@@ -199,7 +199,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public int getTimeReference ()
     {
-        return (this.rawRiffChunk.getFourBytesAsInt (342) << 32) + this.rawRiffChunk.getFourBytesAsInt (338);
+        return (this.rawRiffChunk.getFourBytesAsUnsignedInt (342) << 32) + this.rawRiffChunk.getFourBytesAsUnsignedInt (338);
     }
 
 
@@ -212,7 +212,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public int getVersion ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (346);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (346);
     }
 
 
@@ -239,7 +239,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public int getLoudnessValue ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (412);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (412);
     }
 
 
@@ -250,7 +250,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public int getLoudnessRange ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (414);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (414);
     }
 
 
@@ -262,7 +262,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public int getMaxTruePeakLevel ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (416);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (416);
     }
 
 
@@ -274,7 +274,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public int getMaxMomentaryLoudness ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (418);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (418);
     }
 
 
@@ -286,7 +286,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      */
     public int getMaxShortTermLoudness ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (420);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (420);
     }
 
 

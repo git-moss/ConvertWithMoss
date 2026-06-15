@@ -84,7 +84,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getManufacturer ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x00);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x00);
     }
 
 
@@ -97,7 +97,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getProduct ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x04);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x04);
     }
 
 
@@ -110,7 +110,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getSamplePeriod ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x08);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x08);
     }
 
 
@@ -134,7 +134,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getMIDIUnityNoteRaw ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x0C);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x0C);
     }
 
 
@@ -147,7 +147,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getMIDIUnityNote ()
     {
-        final int unityNote = this.rawRiffChunk.getFourBytesAsInt (0x0C);
+        final int unityNote = this.rawRiffChunk.getFourBytesAsUnsignedInt (0x0C);
         return this.getMIDIPitchFractionAsCents () < 0 ? unityNote + 1 : unityNote;
     }
 
@@ -179,7 +179,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public long getMIDIPitchFraction ()
     {
-        return this.rawRiffChunk.getFourBytesAsLong (0x10);
+        return this.rawRiffChunk.getFourBytesAsUnsignedLong (0x10);
     }
 
 
@@ -250,7 +250,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getSMPTEFormat ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x14);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x14);
     }
 
 
@@ -262,7 +262,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getSMPTEOffset ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x18);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x18);
     }
 
 
@@ -274,7 +274,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getNumSampleLoops ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x1C);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x1C);
     }
 
 
@@ -299,7 +299,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public int getSamplerData ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x20);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x20);
     }
 
 
@@ -380,7 +380,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
          */
         public int getCuePointID ()
         {
-            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x00);
+            return this.getRawChunk ().getFourBytesAsUnsignedInt (this.offset + 0x00);
         }
 
 
@@ -399,7 +399,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
          */
         public int getType ()
         {
-            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x04);
+            return this.getRawChunk ().getFourBytesAsUnsignedInt (this.offset + 0x04);
         }
 
 
@@ -422,7 +422,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
          */
         public int getStart ()
         {
-            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x08);
+            return this.getRawChunk ().getFourBytesAsUnsignedInt (this.offset + 0x08);
         }
 
 
@@ -445,7 +445,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
          */
         public int getEnd ()
         {
-            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x0C);
+            return this.getRawChunk ().getFourBytesAsUnsignedInt (this.offset + 0x0C);
         }
 
 
@@ -471,7 +471,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
          */
         public int getFraction ()
         {
-            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x10);
+            return this.getRawChunk ().getFourBytesAsUnsignedInt (this.offset + 0x10);
         }
 
 
@@ -486,7 +486,7 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
          */
         public int getPlayCount ()
         {
-            return this.getRawChunk ().getFourBytesAsInt (this.offset + 0x14);
+            return this.getRawChunk ().getFourBytesAsUnsignedInt (this.offset + 0x14);
         }
 
 

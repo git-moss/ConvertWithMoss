@@ -53,7 +53,7 @@ public class AkmFile extends AbstractRIFFFile
      */
     public AkmFile (final File akmFile) throws IOException, ParseException
     {
-        super (AkmRiffChunkId.AMUL_ID);
+        super (AkmRiffChunkId.AMUL_ID, false);
 
         try (final FileInputStream stream = new FileInputStream (akmFile))
         {
