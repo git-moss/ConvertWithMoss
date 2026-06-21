@@ -415,7 +415,7 @@ There are metadata fields for creator and a creator URL.
 
 ## Renoise
 
-Renoise is a tracker-based digital audio workstation. Its instrument format (file ending *xrni*) is a ZIP archive which contains an *Instrument.xml* description file and all samples (in FLAC format) in a *SampleData* folder. Both reading and writing are supported. Files saved by Renoise 3.0 up to 3.5 (document version 24 - 34) can be read; created files use document version 34 (Renoise 3.5).
+Renoise is a tracker-based digital audio workstation. Its instrument format (file ending *xrni*) is a ZIP archive which contains an *Instrument.xml* description file and all samples (in FLAC format) in a *SampleData* folder. Both reading and writing are supported. Files saved by Renoise 3.0 up to 3.5 (document version 24 - 34) can be read; created files use document version 33 (Renoise 3.3) so they load in newer Renoise versions as well as in the Renoise Redux plug-in.
 
 The converter maps the key and velocity ranges, root note, tuning (transpose + fine-tune), volume, panning and the loop (off / forward / backward / ping-pong). The amplitude envelope is stored as the AHDSR volume modulation device. A per-sample filter (low-pass, high-pass, band-pass and band-stop) is stored as the native sampler filter inside the modulation set together with its cutoff, resonance and an optional cutoff envelope; a pitch envelope is stored as well. The instrument comment is used as the description metadata. Samples whose velocity ranges are identical are combined into one velocity layer (group); if the keyzone overlapping mode is set to *Cycle* or *Random*, overlapping samples are treated as round-robin.
 

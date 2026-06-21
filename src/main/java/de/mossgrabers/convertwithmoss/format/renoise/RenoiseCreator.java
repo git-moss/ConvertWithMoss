@@ -53,8 +53,10 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 {
-    /** The document version to write (Renoise 3.5). */
-    private static final String DOC_VERSION         = "34";
+    /** The document version to write. 33 (Renoise 3.3) is used instead of the latest version since
+     * the written structure is valid for it and it loads in newer Renoise versions as well as in
+     * Renoise Redux. */
+    private static final String DOC_VERSION         = "33";
     private static final String SAMPLE_DATA_FOLDER  = "SampleData";
 
     /** The neutral (mid-position) value for a mixer cutoff/resonance when there is no filter. */
