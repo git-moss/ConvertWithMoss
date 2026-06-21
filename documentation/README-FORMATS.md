@@ -413,6 +413,19 @@ The Propellerhead Reason NN-XT is a software sampler that is included in the Rea
 
 There are metadata fields for creator and a creator URL.
 
+## Renoise
+
+Renoise is a tracker-based digital audio workstation. Its instrument format (file ending *xrni*) is a ZIP archive which contains an *Instrument.xml* description file and all samples (in FLAC format) in a *SampleData* folder. Both reading and writing are supported. Files saved by Renoise 3.0 up to 3.5 (document version 24 - 34) can be read; created files use document version 34 (Renoise 3.5).
+
+The converter maps the key and velocity ranges, root note, tuning (transpose + fine-tune), volume, panning and the loop (off / forward / backward / ping-pong). The amplitude envelope is stored as the AHDSR volume modulation device. A per-sample filter (low-pass, high-pass, band-pass and band-stop) is stored as the native sampler filter inside the modulation set together with its cutoff, resonance and an optional cutoff envelope; a pitch envelope is stored as well. The instrument comment is used as the description metadata. Samples whose velocity ranges are identical are combined into one velocity layer (group); if the keyzone overlapping mode is set to *Cycle* or *Random*, overlapping samples are treated as round-robin.
+
+The following limitations apply:
+
+* Renoise uses a 10 octave keyboard (notes 0 to 119), so notes above B-9 are clamped when writing.
+* The filter cutoff frequency mapping is an approximation since Renoise's normalized cutoff to frequency curve is internal and not part of the format.
+* There are no dedicated category, author or keyword fields in the format; only the name and a free-text comment are available.
+* Samples stored as 32-bit FLAC inside a source instrument cannot be transcoded (a limitation of the bundled FLAC decoder) and are skipped with an error.
+
 ## Roland S-50 Series
 
 The Roland S-50 series (S-50, S-330, S-550, W-30), introduced in the mid-1980s, represented a significant development in digital sampling technology. Based on 12-bit pulse-code modulation (PCM) sampling, the system combined waveform acquisition, editing, and keyboard performance capabilities within a single instrument. The series was notable for its integration of video-based graphical editing, enabling detailed visualization and manipulation of sampled waveforms.
