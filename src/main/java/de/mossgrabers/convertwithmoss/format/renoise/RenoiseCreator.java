@@ -7,12 +7,13 @@ package de.mossgrabers.convertwithmoss.format.renoise;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.zip.CRC32;
 import java.util.zip.ZipOutputStream;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -101,7 +102,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         {
             zos.setMethod (ZipOutputStream.STORED);
             AbstractCreator.storeTextFile (zos, "Instrument.xml", metadata.get (), multisampleSource.getMetadata ().getCreationDateTime ());
-            this.storeSampleFiles (zos, null, multisampleSource);
+            this.storeRenoiseSamples (zos, multisampleSource);
         }
 
         this.progress.notifyDone ();
@@ -337,43 +338,97 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    protected boolean requiresRewrite (final DestinationAudioFormat destinationFormat)
+    /**
+     * Store all samples of the multi-sample into the ZIP. The samples are stored as FLAC; if the
+     * (bundled) FLAC encoder fails on a sample - some samples trigger a bug in the encoder library -
+     * the sample is stored as an uncompressed WAV file instead, which Renoise reads as well.
+     *
+     * @param zipOutputStream The ZIP output stream
+     * @param multisampleSource The multi-sample
+     * @throws IOException Could not store a sample
+     */
+    private void storeRenoiseSamples (final ZipOutputStream zipOutputStream, final IMultisampleSource multisampleSource) throws IOException
     {
-        // Always rewrite to produce FLAC encoded samples
-        return true;
+        final Date dateTime = multisampleSource.getMetadata ().getCreationDateTime ();
+        int zoneIndex = 0;
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                this.progress.notifyProgress ();
+                this.storeRenoiseSample (zipOutputStream, zone, zoneIndex, dateTime);
+                zoneIndex++;
+            }
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
+    /**
+     * Store one sample. It is FLAC encoded; if the FLAC encoder fails it is stored as WAV instead.
+     *
+     * @param zipOutputStream The ZIP output stream
+     * @param zone The sample zone
+     * @param zoneIndex The global index of the zone
+     * @param dateTime The creation date/time for the ZIP entry
+     * @throws IOException Could not store the sample
+     */
+    private void storeRenoiseSample (final ZipOutputStream zipOutputStream, final ISampleZone zone, final int zoneIndex, final Date dateTime) throws IOException
     {
         final ISampleData sampleData = zone.getSampleData ();
         if (sampleData == null)
+        {
+            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), this.sampleBaseName (zoneIndex, zone));
+            this.notifier.logText ("\n");
             return;
+        }
 
-        // It is important to write to a file otherwise the FLAC header is broken! 32-bit float
-        // samples are reduced to a FLAC compatible resolution by compressToFLAC.
+        // Renoise has no loop cross-fade parameter. By default the loop is written exactly as it is
+        // (faithful). Only if a cross-fade is requested - e.g. via the loop cross-fade processing
+        // option - it is baked into the sample audio here.
+        ISampleData renderSource = sampleData;
+        final ISampleLoop loop = getCrossfadeLoop (zone);
+        if (loop != null)
+        {
+            final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
+            applyLoopCrossfade (waveFile, loop.getStart (), loop.getEnd (), loop.getCrossfadeInSamples ());
+            renderSource = new WavFileSampleData (waveFile);
+        }
+
+        byte [] data;
+        String extension;
+        try
+        {
+            data = encodeToFlac (renderSource);
+            extension = ".flac";
+        }
+        catch (final IOException | RuntimeException ex)
+        {
+            this.notifier.logError ("IDS_RENOISE_FLAC_FALLBACK", zone.getName ());
+            data = AudioFileUtils.convertToWavData (renderSource, DESTINATION_AUDIO_FORMAT);
+            extension = ".wav";
+        }
+
+        final String name = SAMPLE_DATA_FOLDER + FORWARD_SLASH + this.sampleBaseName (zoneIndex, zone) + extension;
+        final CRC32 crc = new CRC32 ();
+        crc.update (data);
+        putUncompressedEntry (zipOutputStream, name, data, crc, dateTime);
+    }
+
+
+    /**
+     * FLAC encode the given sample data and return the bytes. It is important to write to a file
+     * first otherwise the FLAC header is not updated. 32-bit float samples are reduced to a FLAC
+     * compatible resolution by compressToFLAC.
+     *
+     * @param sampleData The sample data
+     * @return The FLAC encoded bytes
+     * @throws IOException Could not encode the sample
+     */
+    private static byte [] encodeToFlac (final ISampleData sampleData) throws IOException
+    {
         final Path tempFile = Files.createTempFile ("CWM-Renoise-", ".flac");
         try
         {
-            ISampleData flacSource = sampleData;
-
-            // Renoise has no loop cross-fade parameter. By default the loop is written exactly as it
-            // is (faithful). Only if a cross-fade is requested - e.g. via the loop cross-fade
-            // processing option - it is baked into the sample audio here.
-            final ISampleLoop loop = getCrossfadeLoop (zone);
-            if (loop != null)
-            {
-                final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
-                applyLoopCrossfade (waveFile, loop.getStart (), loop.getEnd (), loop.getCrossfadeInSamples ());
-                flacSource = new WavFileSampleData (waveFile);
-            }
-
-            AudioFileUtils.compressToFLAC (flacSource, FLAC_TARGET_FORMAT, tempFile.toFile ());
-            Files.copy (tempFile, outputStream);
+            AudioFileUtils.compressToFLAC (sampleData, FLAC_TARGET_FORMAT, tempFile.toFile ());
+            return Files.readAllBytes (tempFile);
         }
         catch (final UnsupportedAudioFileException ex)
         {
@@ -484,14 +539,6 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         data[pos + 1] = (byte) ((value >> 8) & 0xFF);
         if (bytesPerChannel == 3)
             data[pos + 2] = (byte) ((value >> 16) & 0xFF);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    protected String createFileName (final int zoneIndex, final ISampleZone zone)
-    {
-        return SAMPLE_DATA_FOLDER + FORWARD_SLASH + this.sampleBaseName (zoneIndex, zone) + ".flac";
     }
 
 
