@@ -584,6 +584,18 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static class ModulationSet
     {
+        /**
+         * A high-pass at or below this cutoff (in Hz) only removes infra-bass and a low-pass at or
+         * above {@link #TRANSPARENT_LOW_PASS_MIN_HERTZ} only removes ultra-treble - both are
+         * sonically transparent. Renoise attaches a filter to virtually every instrument via its
+         * always-present mixer device, so such "parked wide open" filters are common. Emitted as an
+         * active filter they are at best pointless and at worst harmful: the Waldorf Iridium, for
+         * example, mutes a patch whose high-pass is parked at the bottom of its range. They are
+         * therefore treated as "no filter" so the conversion stays faithful for every target format.
+         */
+        private static final double TRANSPARENT_HIGH_PASS_MAX_HERTZ = 40.0;
+        private static final double TRANSPARENT_LOW_PASS_MIN_HERTZ   = 18000.0;
+
         IEnvelope volumeEnvelope;
         IEnvelope pitchEnvelope;
         IEnvelope cutoffEnvelope;
@@ -595,7 +607,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         /**
          * Create the filter described by this modulation set.
          *
-         * @return The filter or null if this set does not select a (plain) filter
+         * @return The filter or null if this set does not select a (plain) filter or the selected
+         *         filter is parked wide open and therefore sonically transparent
          */
         IFilter createFilter ()
         {
@@ -604,6 +617,13 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                 return null;
 
             final double cutoff = this.cutoffValue < 0 ? IFilter.MAX_FREQUENCY : RenoiseValueConverter.mixerToCutoff (this.cutoffValue);
+
+            // A filter parked wide open is sonically transparent - treat it as no filter
+            if (filterType == FilterType.HIGH_PASS && cutoff <= TRANSPARENT_HIGH_PASS_MAX_HERTZ)
+                return null;
+            if (filterType == FilterType.LOW_PASS && cutoff >= TRANSPARENT_LOW_PASS_MIN_HERTZ)
+                return null;
+
             final double resonance = this.resonanceValue < 0 ? 0 : RenoiseValueConverter.mixerToResonance (this.resonanceValue);
             final IFilter filter = new DefaultFilter (filterType, 2, cutoff, resonance);
             if (this.cutoffEnvelope != null)
