@@ -568,7 +568,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     private static double convertFromTime (final double y)
     {
-        return Math.log (y / 0.06) / Math.log (1000);
+        // The minimum representable time is 0.06 seconds (parameter value 0). Anything at or below
+        // that - including a zero attack/decay/release - maps to 0. Without this guard the
+        // logarithm returns negative values, and exactly 0 yields negative infinity, which would be
+        // written as a corrupt float and produce e.g. a click at the start of every note.
+        if (y <= 0.06)
+            return 0;
+        return Math.clamp (Math.log (y / 0.06) / Math.log (1000), 0, 1);
     }
 
 
