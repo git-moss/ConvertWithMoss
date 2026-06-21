@@ -419,6 +419,8 @@ Renoise is a tracker-based digital audio workstation. Its instrument format (fil
 
 The converter maps the key and velocity ranges, root note, tuning (transpose + fine-tune), volume, panning and the loop (off / forward / backward / ping-pong). The amplitude envelope is stored as the AHDSR volume modulation device. A per-sample filter (low-pass, high-pass, band-pass and band-stop) is stored as the native sampler filter inside the modulation set together with its cutoff, resonance and an optional cutoff envelope; a pitch envelope is stored as well. The instrument comment is used as the description metadata. Samples whose velocity ranges are identical are combined into one velocity layer (group); if the keyzone overlapping mode is set to *Cycle* or *Random*, overlapping samples are treated as round-robin.
 
+Renoise has no loop cross-fade parameter, so by default loops are written exactly as they are (faithful). If the loop cross-fade processing option is enabled, the cross-fade is baked into the sample audio so that looped samples wrap seamlessly - this is useful for source formats whose loops contain a discontinuity (e.g. some SoundFonts).
+
 The following limitations apply:
 
 * Renoise uses a 10 octave keyboard (notes 0 to 119), so notes above B-9 are clamped when writing.

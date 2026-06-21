@@ -2,7 +2,7 @@
 
 ## 18.2.0
 
-* New: Added support for the Renoise instrument format (XRNI) for both reading and writing. The key/velocity mapping, root note, tuning, volume, panning, loops, the amplitude envelope, a per-sample sampler filter (type, cutoff and resonance with a cutoff envelope), a pitch envelope and round-robins are translated. The filter is written as the native sampler filter (including the required mixer modulation device) so the instruments load in Renoise 3.5.
+* New: Added support for the Renoise instrument format (XRNI) for both reading and writing. The key/velocity mapping, root note, tuning, volume, panning, loops, the amplitude envelope, a per-sample sampler filter (type, cutoff and resonance with a cutoff envelope), a pitch envelope and round-robins are translated. The filter is written as the native sampler filter (including the required mixer modulation device) so the instruments load in Renoise 3.5. By default loops are written exactly (faithful); if the loop cross-fade processing option is enabled the cross-fade is baked into the looped samples since Renoise has no cross-fade parameter.
 * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress with a 'mark/reset not supported' error.
 
 ## 18.1.1

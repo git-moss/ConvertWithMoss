@@ -32,10 +32,15 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.XMLUtils;
 
 
@@ -53,9 +58,17 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
     private static final String SAMPLE_DATA_FOLDER  = "SampleData";
 
     /** The neutral (mid-position) value for a mixer cutoff/resonance when there is no filter. */
-    private static final double DEFAULT_MIXER_VALUE = 64.0;
+    private static final double                 DEFAULT_MIXER_VALUE      = 64.0;
 
-    private int                 padWidth            = 2;
+    // Used when a loop cross-fade needs to be baked into the audio. 32-bit float samples are
+    // reduced to 24 bit; the sample rate is kept unchanged.
+    private static final DestinationAudioFormat DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
+    {
+        16,
+        24
+    }, -1, false);
+
+    private int                                 padWidth                 = 2;
 
 
     /**
@@ -344,7 +357,20 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final Path tempFile = Files.createTempFile ("CWM-Renoise-", ".flac");
         try
         {
-            AudioFileUtils.compressToFLAC (sampleData, FLAC_TARGET_FORMAT, tempFile.toFile ());
+            ISampleData flacSource = sampleData;
+
+            // Renoise has no loop cross-fade parameter. By default the loop is written exactly as it
+            // is (faithful). Only if a cross-fade is requested - e.g. via the loop cross-fade
+            // processing option - it is baked into the sample audio here.
+            final ISampleLoop loop = getCrossfadeLoop (zone);
+            if (loop != null)
+            {
+                final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
+                applyLoopCrossfade (waveFile, loop.getStart (), loop.getEnd (), loop.getCrossfadeInSamples ());
+                flacSource = new WavFileSampleData (waveFile);
+            }
+
+            AudioFileUtils.compressToFLAC (flacSource, FLAC_TARGET_FORMAT, tempFile.toFile ());
             Files.copy (tempFile, outputStream);
         }
         catch (final UnsupportedAudioFileException ex)
@@ -355,6 +381,107 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         {
             Files.deleteIfExists (tempFile);
         }
+    }
+
+
+    /**
+     * Get the (first) loop of a zone if a cross-fade should be baked into its audio. Only forward
+     * loops with a cross-fade greater than zero are considered.
+     *
+     * @param zone The zone
+     * @return The loop or null if no cross-fade should be applied
+     */
+    private static ISampleLoop getCrossfadeLoop (final ISampleZone zone)
+    {
+        final List<ISampleLoop> loops = zone.getLoops ();
+        if (loops.isEmpty ())
+            return null;
+        final ISampleLoop loop = loops.get (0);
+        if (loop.getType () == LoopType.FORWARDS && loop.getCrossfade () > 0 && loop.getStart () >= 0 && loop.getEnd () > loop.getStart ())
+            return loop;
+        return null;
+    }
+
+
+    /**
+     * Bake a loop cross-fade into the audio of a forward loop. The cross-fade region at the end of
+     * the loop is blended with the audio preceding the loop start so that the loop wraps seamlessly.
+     *
+     * @param waveFile The WAV file whose audio data is modified in place
+     * @param loopStart The loop start frame
+     * @param loopEnd The loop end frame (exclusive)
+     * @param crossfadeSamples The requested cross-fade length in frames
+     */
+    private static void applyLoopCrossfade (final WaveFile waveFile, final int loopStart, final int loopEnd, final int crossfadeSamples)
+    {
+        final FormatChunk formatChunk = waveFile.getFormatChunk ();
+        final DataChunk dataChunk = waveFile.getDataChunk ();
+        if (formatChunk == null || dataChunk == null || crossfadeSamples <= 0)
+            return;
+
+        final int channels = formatChunk.getNumberOfChannels ();
+        final int bytesPerFrame = formatChunk.calculateBytesPerSample ();
+        final int bytesPerChannel = channels == 0 ? 0 : bytesPerFrame / channels;
+        if (bytesPerChannel != 2 && bytesPerChannel != 3)
+            return;
+
+        final byte [] data = dataChunk.getData ();
+        final int totalFrames = data.length / bytesPerFrame;
+        final int end = Math.min (loopEnd, totalFrames);
+
+        // The cross-fade can neither be longer than the loop nor reach before the start of the sample
+        final int crossfade = Math.min (crossfadeSamples, Math.min (end - loopStart, loopStart));
+        if (crossfade <= 0)
+            return;
+
+        for (int j = 0; j < crossfade; j++)
+        {
+            final int endFrame = end - crossfade + j;
+            final int preFrame = loopStart - crossfade + j;
+            final double mix = (j + 1.0) / crossfade;
+            for (int c = 0; c < channels; c++)
+            {
+                final int endPos = endFrame * bytesPerFrame + c * bytesPerChannel;
+                final int prePos = preFrame * bytesPerFrame + c * bytesPerChannel;
+                final int blended = (int) Math.round (readSample (data, endPos, bytesPerChannel) * (1.0 - mix) + readSample (data, prePos, bytesPerChannel) * mix);
+                writeSample (data, endPos, bytesPerChannel, blended);
+            }
+        }
+
+        dataChunk.setData (data);
+    }
+
+
+    /**
+     * Read a little-endian signed PCM sample.
+     *
+     * @param data The audio data
+     * @param pos The byte position
+     * @param bytesPerChannel The number of bytes per channel sample (2 or 3)
+     * @return The signed sample value
+     */
+    private static int readSample (final byte [] data, final int pos, final int bytesPerChannel)
+    {
+        if (bytesPerChannel == 2)
+            return (short) ((data[pos] & 0xFF) | ((data[pos + 1] & 0xFF) << 8));
+        return (data[pos] & 0xFF) | ((data[pos + 1] & 0xFF) << 8) | (data[pos + 2] << 16);
+    }
+
+
+    /**
+     * Write a little-endian signed PCM sample.
+     *
+     * @param data The audio data
+     * @param pos The byte position
+     * @param bytesPerChannel The number of bytes per channel sample (2 or 3)
+     * @param value The sample value
+     */
+    private static void writeSample (final byte [] data, final int pos, final int bytesPerChannel, final int value)
+    {
+        data[pos] = (byte) (value & 0xFF);
+        data[pos + 1] = (byte) ((value >> 8) & 0xFF);
+        if (bytesPerChannel == 3)
+            data[pos + 2] = (byte) ((value >> 16) & 0xFF);
     }
 
 
