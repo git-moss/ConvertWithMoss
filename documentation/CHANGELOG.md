@@ -1,5 +1,9 @@
 # Changes
 
+## 18.1.2
+
+* Fixed: Stereo (multi-channel) samples stored in a compressed format (e.g. FLAC or OGG) were truncated to half their length when decompressed while writing to an uncompressed destination. This dropped the second half of every such sample and could move loop points to the wrong position (audible as a click at the loop point).
+
 ## 18.1.1
 
 * New: If the source does not contain pitch bend values, the default is now 2 semi-tones (instead of 0).
