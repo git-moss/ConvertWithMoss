@@ -7,6 +7,7 @@
 * Fixed: A Renoise filter that is parked wide open (a high-pass at the bottom of its range or a low-pass at the top) is now treated as no filter. Renoise attaches a filter to almost every instrument through its always-present mixer device, so writing such a transparent filter as an active filter was pointless and could even silence the instrument on some target devices (the Waldorf Iridium muted a patch whose high-pass was parked at its lowest cutoff). Audible filters are unaffected, and because this is handled while reading the Renoise file it applies to every output format.
 * Waldorf Quantum/Iridium
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
+  * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
 
 ## 18.1.1
 
