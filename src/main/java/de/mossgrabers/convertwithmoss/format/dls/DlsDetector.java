@@ -31,6 +31,8 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.dls.DlsFile;
 import de.mossgrabers.convertwithmoss.file.dls.DlsInstrument;
 import de.mossgrabers.convertwithmoss.file.dls.DlsRegion;
+import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 
@@ -49,7 +51,7 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public DlsDetector (final INotifier notifier)
     {
-        super ("Downloadable Sounds (DLS)", "DLS", notifier, new MetadataSettingsUI ("DLS"), ".dls");
+        super ("Downloadable Sounds", "DLS", notifier, new MetadataSettingsUI ("DLS"), ".dls");
     }
 
 
@@ -93,6 +95,7 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
         for (final DlsInstrument instrument: instruments)
         {
+            this.notifier.log ("IDS_DLS_FOUND_INSTRUMENT", instrument.getName ());
             final Optional<IMultisampleSource> multisample = this.createMultisample (file, dlsFile, instrument, waveSampleData);
             if (multisample.isPresent ())
                 multiSampleSources.add (multisample.get ());
@@ -143,13 +146,11 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             zone.setVelocityLow (dlsRegion.getVelocityRangeLow ());
             zone.setVelocityHigh (dlsRegion.getVelocityRangeHigh ());
 
-            // TODO convert the gain
             zone.setGain (dlsRegion.getGain ());
 
-            // TODO check if this is correct -> it's not
-            final int fineTuning = dlsRegion.getFineTune ();
+            final double fineTuning = dlsRegion.getFineTune ();
             if (fineTuning != 0)
-                zone.setTuning (fineTuning / 100.0);
+                zone.setTuning (fineTuning);
 
             // Could be used for panning
             final long channelPlacement = dlsRegion.getChannelPlacement ();
@@ -166,10 +167,29 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         // TODO applyGlobalParameters (multisampleSource, dlsFile.getParameters ());
 
         final IMetadata metadata = multisampleSource.getMetadata ();
-        // TODO set metadata
-        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
+        this.fillMetadata (dlsFile, parts, metadata, name, instrument);
         return Optional.of (multisampleSource);
+    }
+
+
+    private void fillMetadata (final DlsFile dlsFile, final String [] parts, final IMetadata metadata, final String name, final DlsInstrument instrument)
+    {
+        String description = dlsFile.formatInfoFields (InfoRiffChunkId.INFO_CMNT, InfoRiffChunkId.INFO_ICMT, InfoRiffChunkId.INFO_COMM, InfoRiffChunkId.INFO_ICOP, InfoRiffChunkId.INFO_IMIT, InfoRiffChunkId.INFO_IMIU, InfoRiffChunkId.INFO_TORG, InfoRiffChunkId.INFO_TORG);
+        // Remove unnecessary 'Comment' labels. Order is important!
+        description = description.replace (InfoRiffChunkId.INFO_COMM.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_ICMT.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_CMNT.getDescription () + ": ", "");
+
+        final List<String> tags = new ArrayList<> ();
+        Collections.addAll (tags, parts);
+        tags.add (name);
+        tags.add (instrument.getName ());
+        metadata.detectMetadata (this.settingsConfiguration, tags.toArray (new String [tags.size ()]), instrument.isDrumInstrument () ? TagDetector.CATEGORY_DRUM : null);
+
+        if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
+            metadata.setCategory (TagDetector.detectCategory (description.split ("\n")));
+
+        metadata.setCreator (dlsFile.getSoundDesigner ());
+        metadata.setCreationDateTime (dlsFile.getParsedCreationDate ());
+        metadata.setDescription (description);
     }
 
 
@@ -185,6 +205,7 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         return new DefaultSampleZone (waveInfoChunks.get ((int) sampleIndex), waveSampleData.get ((int) sampleIndex));
     }
 
+    // TODO
     // private static void applyGlobalParameters (final IMultisampleSource multisampleSource, final
     // DlsParameters parameters)
     // {

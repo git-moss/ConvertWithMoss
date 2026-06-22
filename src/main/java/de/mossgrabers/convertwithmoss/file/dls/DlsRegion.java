@@ -36,7 +36,7 @@ public class DlsRegion
     // Wave Sample data
     private int                     unityNote;
     private int                     fineTune;
-    private long                    gain;
+    private int                     gain;
     private long                    waveOptions;
     private final List<ISampleLoop> loops       = new ArrayList<> ();
 
@@ -88,7 +88,7 @@ public class DlsRegion
         this.unityNote = waveSampleChunk.getTwoBytesAsUnsignedInt (4);
         this.fineTune = waveSampleChunk.getTwoBytesAsSignedInt (6);
 
-        this.gain = waveSampleChunk.getFourBytesAsUnsignedLong (8);
+        this.gain = waveSampleChunk.getFourBytesAsSignedLong (8);
         this.waveOptions = waveSampleChunk.getFourBytesAsUnsignedLong (12);
         final long numLoops = waveSampleChunk.getFourBytesAsUnsignedLong (16);
 
@@ -233,24 +233,29 @@ public class DlsRegion
 
 
     /**
-     * Get the tuning offset from the unity note.
+     * Get the tuning offset from the unity note. The fine tune is stored as 16 bit relative pitch,
+     * representing 1/32768th semi-tone.
      *
-     * @return The fine tune in 16 bit relative pitch (in log tuning)
+     * @return The fine tune converted to semi-tones (1-cent is 0.01) in the range of -0.5 to 0.5
      */
-    public int getFineTune ()
+    public double getFineTune ()
     {
-        return this.fineTune;
+        return Math.clamp (this.fineTune, -32768.0, 32768.0) / 32768.0;
     }
 
 
     /**
-     * Get the gain to be applied to this sample.
+     * Get the gain to be applied to this sample. The gain in 32 bit relative gain units as
+     * 1/655360dB. The specification is pretty unclear about this value and different tools seem to
+     * assume different algorithms.
      *
-     * @return The gain in 32 bit relative gain units
+     * @return The value converted back to dB
      */
-    public long getGain ()
+    public double getGain ()
     {
-        return this.gain;
+        // There are examples which seem to use a different format (full integer range), therefore,
+        // limit to +-2dB
+        return Math.clamp (this.gain / 655360.0, -2, 2);
     }
 
 
