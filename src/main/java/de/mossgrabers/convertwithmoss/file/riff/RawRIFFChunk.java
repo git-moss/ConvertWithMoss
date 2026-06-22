@@ -269,7 +269,7 @@ public class RawRIFFChunk implements IRiffChunk
 
 
     /**
-     * Convert 4 bytes to an integer. MSB is first byte.
+     * Convert 4 bytes to an unsigned long. MSB is first byte.
      *
      * @param offset The offset into the data array
      * @return The integer value
@@ -278,6 +278,21 @@ public class RawRIFFChunk implements IRiffChunk
     {
         final byte [] d = this.getData ();
         return Byte.toUnsignedLong (d[offset + 3]) << 24 | Byte.toUnsignedLong (d[offset + 2]) << 16 | Byte.toUnsignedLong (d[offset + 1]) << 8 | Byte.toUnsignedLong (d[offset + 0]);
+    }
+
+
+    /**
+     * Convert 4 bytes to a signed integer. MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @return The integer value
+     */
+    public int getFourBytesAsSignedLong (final int offset)
+    {
+        final byte [] d = this.getData ();
+        final ByteBuffer buffer = ByteBuffer.wrap (d, offset, 4);
+        buffer.order (ByteOrder.BIG_ENDIAN);
+        return buffer.getInt ();
     }
 
 

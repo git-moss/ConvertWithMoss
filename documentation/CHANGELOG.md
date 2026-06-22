@@ -1,5 +1,9 @@
 # Changes
 
+## 18.2.0 (unreleased)
+
+* New: Added several new tags for category detection.
+
 ## 18.1.1
 
 * New: If the source does not contain pitch bend values, the default is now 2 semi-tones (instead of 0).

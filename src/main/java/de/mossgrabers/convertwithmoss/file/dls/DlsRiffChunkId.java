@@ -56,7 +56,16 @@ public enum DlsRiffChunkId implements RiffChunkId
     /** ID for a sample format chunk. */
     FMT_ID("Wave format", "fmt "),
     /** ID for a data chunk. */
-    DATA_ID("Sample Data", "data");
+    DATA_ID("Sample Data", "data"),
+
+    /** ID for an articulation list chunk v1. */
+    LART_ID("Articulation list", "lart"),
+    /** ID for an articulation chunk v1. */
+    ART1_ID("Articulation v1", "art1"),
+    /** ID for an articulation list chunk v2. */
+    LAR2_ID("Articulation list", "lar2"),
+    /** ID for an articulation chunk v2. */
+    ART2_ID("Articulation v2", "art2");
 
 
     private final int    fourCC;

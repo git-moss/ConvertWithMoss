@@ -255,7 +255,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN && isNotRoundRobinGroup)
             addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
-        //////////////////////////////////
+        ////////////////////////////////
         // Key range
 
         final int keyRoot = zone.getKeyRoot ();
@@ -288,7 +288,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
         }
 
-        //////////////////////////////////
+        ////////////////////////////////
         // Velocity
 
         final int velocityLow = zone.getVelocityLow ();
@@ -312,7 +312,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
         }
 
-        //////////////////////////////////
+        ////////////////////////////////
         // Start, end, tune, volume
 
         final int start = zone.getStart ();
@@ -332,7 +332,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         createVolume (buffer, zone, ampEnvParameterLevel);
 
-        //////////////////////////////////
+        ////////////////////////////////
         // Pitch Bend / Envelope
 
         final int bendUp = zone.getBendUp ();
@@ -425,7 +425,9 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                 }
             }
 
-            buffer.append (' ').append (SfzOpcode.LOOP_TUNE).append ('=').append (formatAsFloat (Math.round (sampleLoop.getTuning () * 100.0)));
+            final double tuning = sampleLoop.getTuning ();
+            if (tuning != 0)
+                buffer.append (' ').append (SfzOpcode.LOOP_TUNE).append ('=').append (formatAsFloat (Math.round (tuning * 100.0)));
         }
         buffer.append (LINE_FEED);
     }

@@ -152,7 +152,9 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_BASS, new String []
         {
+            "Acoustic Bs",
             "Bass Guitar",
+            "Picked Bs",
             CATEGORY_BASS,
             "Fretless",
             "Slap",
@@ -227,6 +229,7 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_DRUM, new String []
         {
             CATEGORY_DRUM,
+            "Reverse Cym",
             "Drum Kit",
             "Drum-Set",
             "Drumset",
@@ -246,30 +249,59 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_FX, new String []
         {
             CATEGORY_FX,
-            "SciFi",
-            "Sci-Fi",
-            "Wind",
-            "Rain",
-            "Thunder",
+            "Helicopter",
             "Telephone",
-            "Metal",
-            "Noise",
-            "Cricket",
             "Experiment",
-            "Gun",
-            "Heart",
-            "Stadium",
+            "Explosion",
+            "Seashore",
             "Applause",
             "Surround",
-            "Alarm"
+            "Starship",
+            "Scratch",
+            "Stadium",
+            "Cricket",
+            "Thunder",
+            "Bubble",
+            "Stream",
+            "Scream",
+            "Sci-Fi",
+            "SciFi",
+            "Laugh",
+            "Punch",
+            "Heart",
+            "Alarm",
+            "Metal",
+            "Noise",
+            "Horse",
+            "Siren",
+            "Wind",
+            "Rain",
+            "Bird",
+            "Door",
+            "Gun",
+            "Car",
+            "Dog",
+            "Jet"
         });
         CATEGORIES.put (CATEGORY_GUITAR, new String []
         {
             "Electric Guitar",
             "Mandolin",
             CATEGORY_GUITAR,
+            "Ukulele",
+            "Hawaiian",
+            "Nylon",
             "Rajao",
             "Banjo",
+            "Chorus Gt",
+            "Clean Gt",
+            "Jazz Gt",
+            "Muted Gt",
+            "Funk Gt",
+            "Overdrive",
+            "Distortion",
+            "Feedback",
+            "Charango",
             "GTR"
         });
         CATEGORIES.put (CATEGORY_HI_HAT, new String []
@@ -309,9 +341,10 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_ORCHESTRAL, new String []
         {
             CATEGORY_ORCHESTRAL,
+            "Soundtrack",
             "Orchestra",
             "Score",
-            "Cinema"
+            "Cinema",
         });
         CATEGORIES.put (CATEGORY_ORGAN, new String []
         {
@@ -319,9 +352,11 @@ public class TagDetector
             CATEGORY_ORGAN,
             "Tonewheel",
             "Accordion",
+            "Bandoneon",
             "Hammond",
             "Farfisa",
             "Gospel",
+            "Church",
             "B3",
             "C3"
         });
@@ -338,6 +373,7 @@ public class TagDetector
             "Tambourine",
             "Woodblock",
             "Triangle",
+            "Castanets",
             "Cowbell",
             "Timbale",
             "Timpani",
@@ -349,13 +385,16 @@ public class TagDetector
             "Chimes",
             "Conga",
             "Cuica",
-            "Tabla"
+            "Tabla",
+            "Taiko",
+            "Perc"
         });
         CATEGORIES.put (CATEGORY_PIANO, new String []
         {
             CATEGORY_PIANO,
             "Grand",
             "Electric Piano",
+            "Honky-Tonk",
             "E-Piano",
             "Upright",
             "Digital Piano",
@@ -389,7 +428,9 @@ public class TagDetector
             "Hackbrett",
             "Dulcimer",
             "Mandolin",
+            "Shamisen",
             "Zither",
+            "Santur",
             "Sitar",
             "Harp",
             "Koto",
@@ -408,6 +449,7 @@ public class TagDetector
             "Violin",
             "Cello",
             "Double Bass",
+            "Tremolo St",
             "Pizzicato",
             "Arco",
             "Str.",
@@ -445,6 +487,8 @@ public class TagDetector
             "Woodwind",
             "Bassoon",
             "Musette",
+            "Ocarina",
+            "Bottle",
             "Oboe",
             "Sax"
         });
@@ -477,7 +521,7 @@ public class TagDetector
         Collections.addAll (words, KEYWORDS);
         for (final String w: words)
             WORD_DICT.add (w.toUpperCase (Locale.ROOT));
-        WORD_DICT.sort ( (a, b) -> Integer.compare (b.length (), a.length ()));
+        WORD_DICT.sort ((a, b) -> Integer.compare (b.length (), a.length ()));
     }
 
 
