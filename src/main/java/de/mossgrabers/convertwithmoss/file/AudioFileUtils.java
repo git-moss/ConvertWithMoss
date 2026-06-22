@@ -377,8 +377,11 @@ public final class AudioFileUtils
                 audioDataBytes = convertedAudioInputStream.readAllBytes ();
             }
 
-            // Step 2 - Convert from raw data to WAV format
-            final int numFrames = audioDataBytes.length / (convertFormat.getFrameSize () * channels);
+            // Step 2 - Convert from raw data to WAV format. Note: getFrameSize() already accounts
+            // for all channels (bytes-per-sample * channels), so it must not be multiplied by the
+            // channel count again - doing so halved the frame count for stereo samples and
+            // truncated them to half their length.
+            final int numFrames = audioDataBytes.length / convertFormat.getFrameSize ();
             final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream (audioDataBytes);
             try (final AudioInputStream wavAudioInputStream = new AudioInputStream (byteArrayInputStream, convertFormat, numFrames))
             {
