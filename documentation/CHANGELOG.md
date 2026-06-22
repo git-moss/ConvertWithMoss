@@ -1,7 +1,8 @@
 # Changes
 
-## 18.1.2
+## 18.2.0 (unreleased)
 
+* New: Added several new tags for category detection.
 * Fixed: Stereo (multi-channel) samples stored in a compressed format (e.g. FLAC or OGG) were truncated to half their length when decompressed while writing to an uncompressed destination. This dropped the second half of every such sample and could move loop points to the wrong position (audible as a click at the loop point).
 
 ## 18.1.1
