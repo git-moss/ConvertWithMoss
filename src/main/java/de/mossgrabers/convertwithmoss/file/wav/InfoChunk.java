@@ -194,7 +194,13 @@ public class InfoChunk extends AbstractListChunk
     }
 
 
-    private static String chunkDataToAsciiString (final IRiffChunk chunk)
+    /**
+     * Get the chunk data as an ASCII string.
+     * 
+     * @param chunk The chunk from which to read the data
+     * @return The ASCII string
+     */
+    public static String chunkDataToAsciiString (final IRiffChunk chunk)
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         try

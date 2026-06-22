@@ -44,6 +44,7 @@ import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExDetector;
+import de.mossgrabers.convertwithmoss.format.dls.DlsDetector;
 import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiCreator;
 import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiDetector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
@@ -137,6 +138,7 @@ public class ConverterBackend
             new BlissDetector (notifier),
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),
+            new DlsDetector (notifier),
             new DistingExDetector (notifier),
             new ElektronMultiDetector (notifier),
             new EnsoniqEpsAsrDetector (notifier),
@@ -378,7 +380,7 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            ////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////
             // Loop cross-fade
 
             if (this.detectionSettings.loopCrossfades > 0)
@@ -393,7 +395,7 @@ public class ConverterBackend
                     }
             }
 
-            ///////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -410,7 +412,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            ///////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)
@@ -426,7 +428,7 @@ public class ConverterBackend
             }
             multisampleSource.setGroups (groups);
 
-            ///////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////
             // Audio processing
 
             final List<ISampleZone> sampleZones = new ArrayList<> ();

@@ -362,6 +362,10 @@ The format is documented in detail (more or less) in the appendix of the respect
 * KSC: A KSC contains a list of KMP files (and sometimes other files) which allows to load them in one go. It contains no other additional information.
 * PCG: This contains a full program which combines several KMPs into a complete multi-sample (stereo positioning and velocity layers). Since these are different for each workstation and not publicly documented, they are currently not supported.
 
+### PA series
+
+The .PCM format belongs to the KORG Family of PA Models. It is used in combination with a KMP file which has a different format as the KMP/KSF combination. **These formats are not supported.** 
+
 ### Source Options
 
 * Use KSC files as the input: By default ConvertWithMoss searches for KPM files. If enabled, KSC files are searched and the KMP files referenced in a KSC file are loaded (if found). Furthermore, it tries to combine stereo-split files into stereo files by the prefixes of the KMP names and the long names stored in the KSF files (they normally end with -L for the left and -R for the right channel).

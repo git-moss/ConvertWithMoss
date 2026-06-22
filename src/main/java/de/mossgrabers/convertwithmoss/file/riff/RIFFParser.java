@@ -194,6 +194,10 @@ public class RIFFParser
         long size = this.in.readUDWORD ();
         final long offset = this.getPosition ();
         final int type = this.in.readFourCC ();
+        // TODO add marker that this is on top and add a callback to the visitor to check the type,
+        // e.g. DLS or SF2
+        // IO.println (RiffChunkId.toASCII (type));
+
         if (!isGroupType (type))
             throw new ParseException ("Invalid FORM Type: \"" + RiffChunkId.toASCII (type) + "\"");
 

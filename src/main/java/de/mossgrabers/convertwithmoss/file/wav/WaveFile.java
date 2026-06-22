@@ -96,11 +96,27 @@ public class WaveFile extends AbstractRIFFFile
 
 
     /**
+     * Constructor.
+     * 
+     * @param formatChunk The format chunk
+     * @param dataChunk The data chunk
+     */
+    public WaveFile (final FormatChunk formatChunk, final DataChunk dataChunk)
+    {
+        this ();
+
+        this.formatChunk = formatChunk;
+        this.dataChunk = dataChunk;
+        this.fillChunkStack ();
+    }
+
+
+    /**
      * Constructor. Use in combination with the read-method to read a WAV file from a stream.
      */
     public WaveFile ()
     {
-        super (WaveRiffChunkId.WAVE_ID);
+        super (WaveRiffChunkId.WAVE_ID, true);
     }
 
 
