@@ -68,6 +68,8 @@ import de.mossgrabers.convertwithmoss.format.omnisphere.OmnisphereCreator;
 import de.mossgrabers.convertwithmoss.format.omnisphere.OmnisphereDetector;
 import de.mossgrabers.convertwithmoss.format.polyend.PolyendTrackerCreator;
 import de.mossgrabers.convertwithmoss.format.polyend.PolyendTrackerDetector;
+import de.mossgrabers.convertwithmoss.format.renoise.RenoiseCreator;
+import de.mossgrabers.convertwithmoss.format.renoise.RenoiseDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
@@ -151,6 +153,7 @@ public class ConverterBackend
             new MaschineDetector (notifier),
             new OmnisphereDetector (notifier),
             new PolyendTrackerDetector (notifier),
+            new RenoiseDetector (notifier),
             new S5xxDetector (notifier),
             new S770Detector (notifier),
             new SxtDetector (notifier),
@@ -181,6 +184,7 @@ public class ConverterBackend
             new MaschineCreator (notifier),
             new OmnisphereCreator (notifier),
             new PolyendTrackerCreator (notifier),
+            new RenoiseCreator (notifier),
             new SxtCreator (notifier),
             new WavCreator (notifier),
             new SfzCreator (notifier),
