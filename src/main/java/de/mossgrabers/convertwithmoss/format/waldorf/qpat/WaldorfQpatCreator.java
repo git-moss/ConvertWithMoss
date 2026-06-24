@@ -115,8 +115,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<IGroup> groups, final String relativeSamplePath) throws IOException
     {
-        final List<WaldorfQpatParameter> parameters = createParameters (groups);
-        final List<String> sampleMaps = createSampleMaps (groups, relativeSamplePath);
+        // A zero-attack/zero-decay amplitude envelope that sustains below full level makes the
+        // device pop at the start of each note: it snaps to the 100% attack peak and then instantly
+        // drops to the sustain level. Such an envelope is meant to be flat, so write a full sustain
+        // and fold the sustain level into the zone gain instead.
+        final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
+        final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0);
+        final List<String> sampleMaps = createSampleMaps (groups, relativeSamplePath, ampGainFold);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
@@ -160,15 +165,50 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
+     * Determines the amplitude gain to fold into the zone gains when the amplitude envelope must be
+     * flattened. When the envelope has (effectively) no attack and no decay but sustains below full
+     * level, the device snaps to the 100% attack peak and then instantly drops to the sustain level
+     * at the start of each note, which is audible as a click/pop. Such an envelope is meant to be
+     * flat at the sustain level, so it is written with a full sustain (see createEnvelope) and the
+     * sustain level is applied to the zone gain instead.
+     *
+     * @param groups The groups
+     * @return The gain factor to fold into the zone gains [0..1], or 1.0 if no flattening is needed
+     */
+    private static double computeFlatAmpEnvelopeLevel (final List<IGroup> groups)
+    {
+        if (groups.isEmpty () || groups.get (0).getSampleZones ().isEmpty ())
+            return 1.0;
+
+        final IEnvelope envelope = groups.get (0).getSampleZones ().get (0).getAmplitudeEnvelopeModulator ().getSource ();
+        if (envelope == null)
+            return 1.0;
+
+        // The minimum representable envelope time is 0.06 seconds; anything at or below that is
+        // written as an instant stage (see convertFromTime).
+        final double attackTime = envelope.getAttackTime ();
+        final double decayTime = Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ());
+        double sustainLevel = envelope.getSustainLevel ();
+        if (sustainLevel == -1)
+            sustainLevel = 1;
+        if (attackTime <= 0.06 && decayTime <= 0.06 && sustainLevel > 0 && sustainLevel < 1)
+            return sustainLevel;
+        return 1.0;
+    }
+
+
+    /**
      * Create a sample map for each group. A sample map is a text file which describes a basic
      * multi-sample configuration.
      *
      * @param groups The groups
      * @param relativeSamplePath The relative path to the samples
+     * @param gainFactor A linear gain factor applied to every zone (used to fold a flattened
+     *            amplitude envelope's sustain level into the gain)
      * @return The sample maps
      * @throws IOException Could not read the necessary audio metadata of a sample
      */
-    private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath) throws IOException
+    private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath, final double gainFactor) throws IOException
     {
         final List<String> sampleMaps = new ArrayList<> ();
 
@@ -197,7 +237,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
                 // Gain
                 final double v = Math.clamp (zone.getGain (), Double.NEGATIVE_INFINITY, 20);
-                sb.append (formatMapDouble (Math.pow (10, v / 20))).append ('\t');
+                sb.append (formatMapDouble (Math.pow (10, v / 20) * gainFactor)).append ('\t');
 
                 // FromVelo / ToVelo
                 sb.append (zone.getVelocityLow ()).append ('\t').append (zone.getVelocityHigh ()).append ('\t');
@@ -268,7 +308,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
 
-    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups)
+    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope)
     {
         final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
 
@@ -311,7 +351,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
                 final IEnvelopeModulator amplitudeEnvelopeModulator = firstZone.getAmplitudeEnvelopeModulator ();
                 final IEnvelope envelope = amplitudeEnvelopeModulator.getSource ();
-                createEnvelope (parameters, envelope, "AmpEnv", "AmpEnv");
+                createEnvelope (parameters, envelope, "AmpEnv", "AmpEnv", flattenAmpEnvelope);
 
                 // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
                 final double ampVeloAmount = amplitudeEnvelopeModulator.getDepth ();
@@ -346,7 +386,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         parameters.add (new WaldorfQpatParameter ("MatrixAmount" + oscIndex, depthStr, (float) ((depth + 1.0) / 2.0)));
 
         final String prefix = "FreeEnv" + oscIndex;
-        createEnvelope (parameters, pitchEnvelopeModulator.getSource (), prefix, prefix);
+        createEnvelope (parameters, pitchEnvelopeModulator.getSource (), prefix, prefix, false);
     }
 
 
@@ -414,11 +454,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         final IEnvelope envelope = modulator.getSource ();
 
-        createEnvelope (parameters, envelope, "Filter1Env", "Filter1");
+        createEnvelope (parameters, envelope, "Filter1Env", "Filter1", false);
     }
 
 
-    private static void createEnvelope (final List<WaldorfQpatParameter> parameters, final IEnvelope envelope, final String prefix, final String slopePrefix)
+    private static void createEnvelope (final List<WaldorfQpatParameter> parameters, final IEnvelope envelope, final String prefix, final String slopePrefix, final boolean flattenSustain)
     {
         final boolean isPitch = prefix.startsWith ("Free");
 
@@ -449,10 +489,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final double releaseTime = Math.clamp (envelope.getReleaseTime (), 0, 60);
         parameters.add (new WaldorfQpatParameter (prefix + "Release", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (releaseTime)), (float) convertFromTime (releaseTime)));
 
-        // xxxEnvSustain
+        // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is folded
+        // into the zone gain instead (see computeFlatAmpEnvelopeLevel)
         double sustainLevel = envelope.getSustainLevel ();
         if (sustainLevel == -1)
             sustainLevel = isPitch ? 0 : 1;
+        if (flattenSustain)
+            sustainLevel = 1;
         parameters.add (new WaldorfQpatParameter (prefix + "Sustain", String.format (Locale.US, "%.2f", Double.valueOf (sustainLevel * 100.0)) + " %", (float) sustainLevel));
 
         if (isPitch && envelope.getStartLevel () != 0)
@@ -568,7 +611,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     private static double convertFromTime (final double y)
     {
-        return Math.log (y / 0.06) / Math.log (1000);
+        // The minimum representable time is 0.06 seconds (parameter value 0). Anything at or below
+        // that - including a zero attack/decay/release - maps to 0. Without this guard the
+        // logarithm returns negative values, and exactly 0 yields negative infinity, which would be
+        // written as a corrupt float and produce e.g. a click at the start of every note.
+        if (y <= 0.06)
+            return 0;
+        return Math.clamp (Math.log (y / 0.06) / Math.log (1000), 0, 1);
     }
 
 
