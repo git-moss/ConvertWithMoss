@@ -22,7 +22,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 public class DlsRegion
 {
     /** The length of the RGNH structure. */
-    private static final int        LENGTH_RGNH = 12;
+    private static final int        LENGTH_RGNH   = 12;
 
     // Region header data
     private final int               keyRangeLow;
@@ -31,20 +31,22 @@ public class DlsRegion
     private final int               velocityRangeHigh;
     private final int               options;
     private final int               keyGroup;
-    private int                     layer       = 0;
+    private int                     layer         = 0;
 
     // Wave Sample data
     private int                     unityNote;
     private int                     fineTune;
     private int                     gain;
     private long                    waveOptions;
-    private final List<ISampleLoop> loops       = new ArrayList<> ();
+    private final List<ISampleLoop> loops         = new ArrayList<> ();
 
     // Wave Sample Link data
     private int                     linkOptions;
     private int                     phaseGroup;
     private long                    channelPlacement;
     private long                    tableIndex;
+
+    private List<DlsArticulation>   articulations = new ArrayList<> ();
 
 
     /**
@@ -352,6 +354,28 @@ public class DlsRegion
     public long getTableIndex ()
     {
         return this.tableIndex;
+    }
+
+
+    /**
+     * Add an articulation to the region.
+     * 
+     * @param articulation The articulation
+     */
+    public void addArticulation (final DlsArticulation articulation)
+    {
+        this.articulations.add (articulation);
+    }
+
+
+    /**
+     * Get the articulations of the region.
+     * 
+     * @return The articulations
+     */
+    public List<DlsArticulation> getArticulations ()
+    {
+        return this.articulations;
     }
 
 

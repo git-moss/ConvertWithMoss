@@ -20,14 +20,18 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.dls.DlsArticulation;
 import de.mossgrabers.convertwithmoss.file.dls.DlsFile;
 import de.mossgrabers.convertwithmoss.file.dls.DlsInstrument;
 import de.mossgrabers.convertwithmoss.file.dls.DlsRegion;
@@ -95,6 +99,9 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
         for (final DlsInstrument instrument: instruments)
         {
+            if (this.waitForDelivery ())
+                return Collections.emptyList ();
+
             this.notifier.log ("IDS_DLS_FOUND_INSTRUMENT", instrument.getName ());
             final Optional<IMultisampleSource> multisample = this.createMultisample (file, dlsFile, instrument, waveSampleData);
             if (multisample.isPresent ())
@@ -129,7 +136,7 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             if (this.waitForDelivery ())
                 return Optional.empty ();
 
-            final ISampleZone zone = this.createAndCheckSampleZone (dlsRegion, dlsFile.getWaveInfoFileNames (), waveSampleData);
+            final ISampleZone zone = this.createAndCheckSampleZone (instrument, dlsRegion, dlsFile.getWaveInfoFileNames (), waveSampleData);
             if (zone == null)
                 continue;
             final Integer layerIndex = Integer.valueOf (dlsRegion.getLayer ());
@@ -140,31 +147,10 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
                 groupsMap.put (layerIndex, group);
             }
 
-            zone.setKeyRoot (dlsRegion.getUnityNote ());
-            zone.setKeyLow (dlsRegion.getKeyRangeLow ());
-            zone.setKeyHigh (dlsRegion.getKeyRangeHigh ());
-            zone.setVelocityLow (dlsRegion.getVelocityRangeLow ());
-            zone.setVelocityHigh (dlsRegion.getVelocityRangeHigh ());
-
-            zone.setGain (dlsRegion.getGain ());
-
-            final double fineTuning = dlsRegion.getFineTune ();
-            if (fineTuning != 0)
-                zone.setTuning (fineTuning);
-
-            // Could be used for panning
-            final long channelPlacement = dlsRegion.getChannelPlacement ();
-            if (channelPlacement != 1)
-                this.notifier.logError ("IDS_DLS_CHANNEL_PLACEMENT");
-
-            zone.getLoops ().addAll (dlsRegion.getLoops ());
-
             group.addSampleZone (zone);
         }
 
         multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
-
-        // TODO applyGlobalParameters (multisampleSource, dlsFile.getParameters ());
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.fillMetadata (dlsFile, parts, metadata, name, instrument);
@@ -193,189 +179,174 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private ISampleZone createAndCheckSampleZone (final DlsRegion dlsRegion, final List<String> waveInfoChunks, final List<WavFileSampleData> waveSampleData)
+    private ISampleZone createAndCheckSampleZone (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final List<String> waveInfoChunks, final List<WavFileSampleData> waveSampleData)
     {
-        long sampleIndex = dlsRegion.getTableIndex ();
+        final long sampleIndex = dlsRegion.getTableIndex ();
         if (sampleIndex >= waveSampleData.size ())
         {
             this.notifier.logError ("IDS_EXS_SAMPLE_INDEX_OUT_OF_BOUNDS", Long.toString (sampleIndex));
             return null;
         }
 
-        return new DefaultSampleZone (waveInfoChunks.get ((int) sampleIndex), waveSampleData.get ((int) sampleIndex));
+        final ISampleZone zone = new DefaultSampleZone (waveInfoChunks.get ((int) sampleIndex), waveSampleData.get ((int) sampleIndex));
+
+        zone.setKeyRoot (dlsRegion.getUnityNote ());
+        zone.setKeyLow (dlsRegion.getKeyRangeLow ());
+        zone.setKeyHigh (dlsRegion.getKeyRangeHigh ());
+        zone.setVelocityLow (dlsRegion.getVelocityRangeLow ());
+        zone.setVelocityHigh (dlsRegion.getVelocityRangeHigh ());
+
+        zone.setGain (dlsRegion.getGain ());
+
+        final double fineTuning = dlsRegion.getFineTune ();
+        if (fineTuning != 0)
+            zone.setTuning (fineTuning);
+
+        // Could be used for panning
+        final long channelPlacement = dlsRegion.getChannelPlacement ();
+        if (channelPlacement != 1)
+            this.notifier.logError ("IDS_DLS_CHANNEL_PLACEMENT");
+
+        applyArticulations (dlsInstrument, dlsRegion, zone);
+
+        zone.getLoops ().addAll (dlsRegion.getLoops ());
+
+        return zone;
     }
 
-    // TODO
-    // private static void applyGlobalParameters (final IMultisampleSource multisampleSource, final
-    // DlsParameters parameters)
-    // {
-    // applyFilterParameters (multisampleSource, parameters);
-    //
-    // // Pitch bend up/down
-    // final Integer pitchBendUp = parameters.get (DlsParameters.PITCH_BEND_UP);
-    // final Integer pitchBendDown = parameters.get (DlsParameters.PITCH_BEND_DOWN);
-    // final int bendUp = pitchBendUp != null ? pitchBendUp.intValue () * 100 : 200;
-    // int bendDown = -200;
-    // if (pitchBendDown != null)
-    // bendDown = pitchBendDown.intValue () == -1 ? -bendUp : pitchBendDown.intValue () * -100;
-    //
-    // final Integer globalCoarseTune = parameters.get (DlsParameters.COARSE_TUNE);
-    // final int coarseTune = globalCoarseTune == null ? 0 : globalCoarseTune.intValue ();
-    // final Integer globalFineTune = parameters.get (DlsParameters.FINE_TUNE);
-    // final int fineTune = globalFineTune == null ? 0 : globalFineTune.intValue ();
-    // final double tuneOffset = coarseTune + fineTune / 100.0;
-    //
-    // final IEnvelope globalAmplitudeEnvelope = createEnvelope (parameters, 1);
-    // final Integer env1Velocity = parameters.get (DlsParameters.ENV1_VEL_SENS);
-    // final double velocityModulation = env1Velocity == null ? 1 : 1 - Math.clamp
-    // (env1Velocity.intValue () / -60.0, 0, 1);
-    //
-    // for (final IGroup group: multisampleSource.getGroups ())
-    // for (final ISampleZone zone: group.getSampleZones ())
-    // {
-    // zone.setBendUp (bendUp);
-    // zone.setBendDown (bendDown);
-    // zone.setTuning (zone.getTuning () + tuneOffset);
-    //
-    // final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
-    // amplitudeModulator.setDepth (1.0);
-    // amplitudeModulator.setSource (globalAmplitudeEnvelope);
-    //
-    // zone.getAmplitudeVelocityModulator ().setDepth (velocityModulation);
-    // }
-    // }
-    //
-    //
-    // private static IEnvelope createEnvelope (final DlsParameters parameters, final int
-    // envelopeIndex)
-    // {
-    // final Integer delay = parameters.get (envelopeIndex == 1 ? DlsParameters.ENV1_DELAY_START :
-    // DlsParameters.ENV2_DELAY_START);
-    // final Integer attack = parameters.get (envelopeIndex == 1 ? DlsParameters.ENV1_ATK_HI_VEL :
-    // DlsParameters.ENV2_ATK_HI_VEL);
-    // final Integer hold = parameters.get (envelopeIndex == 1 ? DlsParameters.ENV1_HOLD :
-    // DlsParameters.ENV2_HOLD);
-    // final Integer decay = parameters.get (envelopeIndex == 1 ? DlsParameters.ENV1_DECAY :
-    // DlsParameters.ENV2_DECAY);
-    // final Integer sustain = parameters.get (envelopeIndex == 1 ? DlsParameters.ENV1_SUSTAIN :
-    // DlsParameters.ENV2_SUSTAIN);
-    // final Integer release = parameters.get (envelopeIndex == 1 ? DlsParameters.ENV1_RELEASE :
-    // DlsParameters.ENV2_RELEASE);
-    // final Integer attackCurve = parameters.get (envelopeIndex == 1 ? DlsParameters.ENV1_ATK_CURVE
-    // : DlsParameters.ENV2_ATK_CURVE);
-    //
-    // final IEnvelope envelope = new DefaultEnvelope ();
-    // // Maximum time for each step are 10 seconds
-    // envelope.setDelayTime (delay == null ? 0 : delay.doubleValue () / 127.0 * 10.0);
-    // envelope.setAttackTime (attack == null ? 0 : attack.intValue ());
-    // envelope.setHoldTime (hold == null ? 0 : hold.doubleValue () / 127.0 * 10.0);
-    // envelope.setDecayTime (decay == null ? 0 : decay.doubleValue () / 127.0 * 10.0);
-    // envelope.setSustainLevel (sustain == null ? 1.0 : sustain.doubleValue () / 127.0);
-    // envelope.setReleaseTime (release == null ? 0 : release.doubleValue () / 127.0 * 10.0);
-    //
-    // if (attackCurve != null)
-    // {
-    // int v = attackCurve.intValue ();
-    // if (v >= 0xFF00)
-    // v = v - 0xFF00 - 0x100;
-    // envelope.setAttackSlope (Math.clamp (v / 99.0, -1, 1));
-    // }
-    //
-    // return envelope;
-    // }
-    //
-    //
-    // private static void applyFilterParameters (final IMultisampleSource multisampleSource, final
-    // DlsParameters parameters)
-    // {
-    // final Integer isFilterEnabled = parameters.get (DlsParameters.FILTER1_TOGGLE);
-    // if (isFilterEnabled == null || isFilterEnabled.intValue () <= 0)
-    // return;
-    //
-    // final Integer filterTypeIndex = parameters.get (DlsParameters.FILTER1_TYPE);
-    // if (filterTypeIndex == null)
-    // return;
-    //
-    // final IEnvelope globalFilterEnvelope = createEnvelope (parameters, 2);
-    //
-    // final FilterType filterType;
-    // final int poles;
-    // switch (filterTypeIndex.intValue ())
-    // {
-    // default:
-    // case 0:
-    // filterType = FilterType.LOW_PASS;
-    // poles = 4;
-    // break;
-    // case 1:
-    // filterType = FilterType.LOW_PASS;
-    // poles = 3;
-    // break;
-    // case 2:
-    // filterType = FilterType.LOW_PASS;
-    // poles = 2;
-    // break;
-    // case 3:
-    // filterType = FilterType.LOW_PASS;
-    // poles = 1;
-    // break;
-    // case 4:
-    // filterType = FilterType.HIGH_PASS;
-    // poles = 2;
-    // break;
-    // case 5:
-    // filterType = FilterType.BAND_PASS;
-    // poles = 2;
-    // break;
-    // }
-    //
-    // final Integer filterFrequency = parameters.get (DlsParameters.FILTER1_CUTOFF);
-    // final Integer filterResonance = parameters.get (DlsParameters.FILTER1_RESO);
-    //
-    // final int frequency = filterFrequency == null ? 1000 : filterFrequency.intValue ();
-    // final int resonance = filterResonance == null ? 0 : filterResonance.intValue ();
-    //
-    // final double cutoff = MathUtils.denormalize (frequency / 1000.0, 0, IFilter.MAX_FREQUENCY);
-    // final IFilter filter = new DefaultFilter (filterType, poles, cutoff, Math.clamp (resonance /
-    // 1000.0, 0, 1));
-    // final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-    // cutoffModulator.setDepth (1.0);
-    // cutoffModulator.setSource (globalFilterEnvelope);
-    // multisampleSource.setGlobalFilter (filter);
-    // }
-    //
-    //
-    // private static boolean limitByGroupAttributes (final DlsGroup DlsGroup, final ISampleZone
-    // zone)
-    // {
-    // // Note: volume values can be added since the zone volume is relative!
-    // if (DlsGroup.volume != 0)
-    // zone.setGain (DlsGroup.volume + zone.getGain ());
-    // if (DlsGroup.pan != 0)
-    // zone.setPanning (zone.getPanning () + DlsGroup.pan);
-    //
-    // // Zone is completely outside of the groups' velocity range
-    // if (zone.getVelocityHigh () < DlsGroup.minVelocity)
-    // return false;
-    // if (DlsGroup.minVelocity != 0 && zone.getVelocityLow () < DlsGroup.minVelocity)
-    // zone.setVelocityLow (DlsGroup.minVelocity);
-    // // Zone is completely outside of the groups' velocity range
-    // if (zone.getVelocityLow () > DlsGroup.maxVelocity)
-    // return false;
-    // if (DlsGroup.maxVelocity != 0 && zone.getVelocityHigh () > DlsGroup.maxVelocity)
-    // zone.setVelocityHigh (DlsGroup.maxVelocity);
-    //
-    // // Zone is completely outside of the groups' note range
-    // if (zone.getKeyHigh () < DlsGroup.startNote)
-    // return false;
-    // if (DlsGroup.startNote != 0 && zone.getKeyLow () < DlsGroup.startNote)
-    // zone.setKeyLow (DlsGroup.startNote);
-    // // Zone is completely outside of the groups' note range
-    // if (zone.getKeyLow () > DlsGroup.endNote)
-    // return false;
-    // if (DlsGroup.endNote != 0 && zone.getKeyHigh () > DlsGroup.endNote)
-    // zone.setKeyHigh (DlsGroup.endNote);
-    //
-    // return true;
-    // }
+
+    private static void applyArticulations (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final ISampleZone zone)
+    {
+        // Amplitude
+        final IEnvelope amplitudeEnvelope = createEnvelope (dlsInstrument, dlsRegion, true);
+        final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
+        amplitudeModulator.setDepth (1.0);
+        amplitudeModulator.setSource (amplitudeEnvelope);
+
+        final DlsArticulation velocityModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_KEYONVELOCITY, DlsArticulation.CONN_DST_GAIN);
+        if (velocityModulation != null)
+            zone.getAmplitudeVelocityModulator ().setDepth (gainToLinear (velocityModulation.getScale ()));
+
+        // Pitch bend up/down
+        final DlsArticulation pitchBendModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_PITCHWHEEL, DlsArticulation.CONN_DST_PITCH);
+        if (pitchBendModulation != null)
+        {
+            final int bendValue = pitchBendModulation.getScale ();
+            zone.setBendUp (bendValue);
+            zone.setBendDown (-bendValue);
+        }
+
+        // Pitch envelope
+        final DlsArticulation pitchModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_EG2, DlsArticulation.CONN_DST_PITCH);
+        if (pitchModulation != null)
+        {
+            final IEnvelope pitchEnvelope = createEnvelope (dlsInstrument, dlsRegion, true);
+            final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
+            pitchEnvelopeModulator.setDepth (normalizeEG2ToPitch (pitchModulation.getScale ()));
+            pitchEnvelopeModulator.setSource (pitchEnvelope);
+        }
+
+        // Pitch tuning
+        final DlsArticulation pitchTuning = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_PITCH);
+        if (pitchTuning != null)
+        {
+            final double tuning = normalizeEG2ToPitch (pitchTuning.getScale ());
+            zone.setTuning (zone.getTuning () + tuning);
+        }
+
+        // Note: filters are supported but there is no example file...
+    }
+
+
+    private static DlsArticulation getArticulation (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int source, final int destination)
+    {
+        DlsArticulation articulation = getArticulation (dlsRegion.getArticulations (), source, destination);
+        if (articulation == null)
+            articulation = getArticulation (dlsInstrument.getArticulations (), source, destination);
+        return articulation;
+    }
+
+
+    private static DlsArticulation getArticulation (final List<DlsArticulation> articulations, final int source, final int destination)
+    {
+        for (final DlsArticulation articulation: articulations)
+            if (articulation.getSource () == source && articulation.getDestination () == destination)
+                return articulation;
+        return null;
+    }
+
+
+    private static IEnvelope createEnvelope (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final boolean isEnvelope1)
+    {
+        final double delay = getTime (dlsInstrument, dlsRegion, isEnvelope1 ? DlsArticulation.CONN_DST_EG1_DELAYTIME : DlsArticulation.CONN_DST_EG2_DELAYTIME);
+        final double attack = getTime (dlsInstrument, dlsRegion, isEnvelope1 ? DlsArticulation.CONN_DST_EG1_ATTACKTIME : DlsArticulation.CONN_DST_EG2_ATTACKTIME);
+        final double hold = getTime (dlsInstrument, dlsRegion, isEnvelope1 ? DlsArticulation.CONN_DST_EG1_HOLDTIME : DlsArticulation.CONN_DST_EG2_HOLDTIME);
+        final double decay = getTime (dlsInstrument, dlsRegion, isEnvelope1 ? DlsArticulation.CONN_DST_EG1_DECAYTIME : DlsArticulation.CONN_DST_EG2_DECAYTIME);
+        final double release = getTime (dlsInstrument, dlsRegion, isEnvelope1 ? DlsArticulation.CONN_DST_EG1_RELEASETIME : DlsArticulation.CONN_DST_EG2_RELEASETIME);
+
+        final double sustain;
+        if (isEnvelope1)
+            sustain = getLevel (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_EG1_SUSTAINLEVEL);
+        else
+        {
+            final DlsArticulation articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_EG2_SUSTAINLEVEL);
+            sustain = articulation == null ? -1 : normalizeEG2ToPitch (articulation.getScale ());
+        }
+
+        final IEnvelope envelope = new DefaultEnvelope ();
+        if (delay >= 0)
+            envelope.setDelayTime (delay);
+        if (attack >= 0)
+            envelope.setAttackTime (attack);
+        if (hold >= 0)
+            envelope.setHoldTime (hold);
+        if (decay >= 0)
+            envelope.setDecayTime (decay);
+        if (sustain >= 0)
+            envelope.setSustainLevel (sustain);
+        if (release >= 0)
+            envelope.setReleaseTime (release);
+
+        return envelope;
+    }
+
+
+    private static double getTime (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int destination)
+    {
+        final DlsArticulation articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, destination);
+        return articulation == null ? -1 : DlsArticulation.absoluteTimeToSeconds (articulation.getScale ());
+    }
+
+
+    private static double getLevel (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int destination)
+    {
+        final DlsArticulation articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, destination);
+        return articulation == null ? -1 : DlsArticulation.normalizeSustainLevel (articulation.getScale ());
+    }
+
+
+    /**
+     * Converts a DLS Gain scale value to a normalized linear amplitude [0.0, 1.0]. Per Section
+     * 1.14.4: Gain Units = 200 * log10(v/V) * 65536 1.0 = 0 dB (unity), values below represent
+     * attenuation.
+     *
+     * @param value Raw 32-bit signed gain value
+     * @return Linear amplitude in range [0.0, 1.0]
+     */
+    private static double gainToLinear (final int value)
+    {
+        return Math.pow (10.0, value / (200.0 * 65536.0));
+    }
+
+
+    /**
+     * Normalizes a DLS Modulation EG to Pitch lScale value to the range 0.0..1.0.
+     *
+     * @param cents The raw 32-bit signed relative pitch value
+     * @return Normalized value in range [0.0, 1.0]
+     */
+    public static double normalizeEG2ToPitch (final int cents)
+    {
+        return Math.clamp (cents, -1200, 1200) / 1200.0;
+    }
 }

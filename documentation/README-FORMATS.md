@@ -46,15 +46,16 @@ The following multi-sample formats are supported:
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
+* [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
 * [Elektron Tonverk](#elektron-tonverk)
 * [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [ISO/IMG Files](#isoimg-files)
-* [Kontakt NKI/NKM](#kontakt-nkinkm)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
 * [Logic EXS24](#logic-exs24)
+* [Native Instruments Kontakt](#native-instruments-kontakt)
 * [Native Instruments Maschine](#native-instruments-maschine)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
 * [Roland S-50 Series](#roland-s-50-series) - read only
@@ -249,6 +250,11 @@ Bliss is a multi-platform (Windows, MacOS & Linux) sampler by discoDSP (https://
 It provides support for multi-samples and a bank system (containing up to 128 patches).
 Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipped) with a XML description file and all samples. The samples are stored in FLAC format (16/24 bit). The full format specification is available here: https://github.com/reales/bliss-format.
 
+## Downloadable Sounds (DLS)
+
+The DLS format (*.dls) is a standardized file format developed for storing and distributing collections of digital musical instrument sounds, enabling their use in software synthesizers and hardware devices compatible with the MIDI protocol. It encapsulates audio samples, instrument definitions, articulations, and performance parameters into a single file. Developed in the 1990s initially by the Interactive Audio Special Interest Group (IASIG) and later standardized by the MIDI Manufacturers Association (MMA), with the first formal specification released in 1999.
+There is no write support.
+
 ## Elektron Tonverk
 
 The Elektron Tonverk is a dedicated hardware sampler that marks an important milestone for Elektron as its first instrument to support multi-samples. This allows users to map multiple sampled sounds across keys or velocity ranges, creating more expressive and realistic instruments than single-sample playback alone.
@@ -314,34 +320,6 @@ Searches for files ending with *.ISO or *.IMG. Currently, the following formats 
 * [Roland S-50 series](#roland-s-50-series)
 * [Roland S-770 series](#roland-s-770-series)
 
-## Kontakt NKI/NKM
-
-Kontakt is a sampler from Native Instruments which uses a plethora of file formats which all are sadly proprietary and therefore no documentation is publicly available. Nevertheless, several people analyzed the format and by now sufficient information is available to provide the support as the source.
-
-However, the format changed many times across the different Kontakt versions. So far, the following formats are known and supported as a source:
-
-| Kontakt Version |
-| :-------------- |
-| 1               |
-| 1.5             |
-| 2 - 4.1.x       |
-| 4.2.2+          |
-| 5 - 7           |
-
-A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the usual multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters as well as pitchbend.
-(Most) NCW encoded sample files can be read as well.
-A NKM file contains up to 64 instruments and is supported as well as a source.
-
-Encrypted files are not supported.
-
-If selected as a destination, a NKI file is written and all samples are placed in a sub-folder with the same name.
-
-If selected as a source and 'Performance' is selected as the destination type, only NKM files are used as sources.
-
-### Destination Options
-
-* Output Format: Currently, only the Kontakt 1 format is supported which sadly does not contain any metadata information.
-
 ## Korg KSC/KMP/KSF
 
 The KSC/KMP/KSF format (*.KSC, *.KMP, *.KSF) was first introduced in the Korg Trinity workstation (1995) and since then supported in many Korg workstations and entertainment keyboards up to the latest Korg Nautilus (2020). The following devices are known to support the format:
@@ -388,6 +366,34 @@ Since the format supports only one group of a multi-sample, multiple destination
 The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digital audio workstation. It is primarily used for storing and playback of sampled instruments and sounds within Logic Pro. The format allows for comprehensive mapping and editing of samples, as well as providing various modulation and performance options.
 
 The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. *The number of folders can be configured*.
+
+## Native Instruments Kontakt
+
+Kontakt is a sampler from Native Instruments which uses a plethora of file formats which all are sadly proprietary and therefore no documentation is publicly available. Nevertheless, several people analyzed the format and by now sufficient information is available to provide the support as the source.
+
+However, the format changed many times across the different Kontakt versions. So far, the following formats (NKI/NKM) are known and supported as a source:
+
+| Kontakt Version |
+| :-------------- |
+| 1               |
+| 1.5             |
+| 2 - 4.1.x       |
+| 4.2.2+          |
+| 5 - 7           |
+
+A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the usual multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters as well as pitchbend.
+(Most) NCW encoded sample files can be read as well.
+A NKM file contains up to 64 instruments and is supported as well as a source.
+
+Encrypted files are not supported.
+
+If selected as a destination, a NKI file is written and all samples are placed in a sub-folder with the same name.
+
+If selected as a source and 'Performance' is selected as the destination type, only NKM files are used as sources.
+
+### Destination Options
+
+* Output Format: Currently, only the Kontakt 1 format is supported which sadly does not contain any metadata information.
 
 ## Native Instruments Maschine
 

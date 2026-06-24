@@ -19,14 +19,15 @@ import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 public class DlsInstrument
 {
     /** The length of the INSH structure. */
-    private static final int      LENGTH_INSH = 12;
+    private static final int      LENGTH_INSH   = 12;
 
     private final long            numRegions;
-    private String                name        = "<undefined>";
+    private String                name          = "<undefined>";
     private final long            program;
     private final int             bankCc32;
     private final int             bankCc0;
     private final boolean         isDrumInstrument;
+    private List<DlsArticulation> articulations = new ArrayList<> ();
     private final List<DlsRegion> regions;
 
 
@@ -68,7 +69,10 @@ public class DlsInstrument
      */
     public void setName (final String name)
     {
-        this.name = name;
+        this.name = name.trim ();
+        final int pos = this.name.indexOf (0);
+        if (pos >= 0)
+            this.name = this.name.substring (0, pos);
     }
 
 
@@ -79,7 +83,7 @@ public class DlsInstrument
      */
     public String getName ()
     {
-        return this.name.trim ();
+        return this.name;
     }
 
 
@@ -113,6 +117,28 @@ public class DlsInstrument
     public boolean isDrumInstrument ()
     {
         return this.isDrumInstrument;
+    }
+
+
+    /**
+     * Add an articulation to the region.
+     * 
+     * @param articulation The articulation
+     */
+    public void addArticulation (final DlsArticulation articulation)
+    {
+        this.articulations.add (articulation);
+    }
+
+
+    /**
+     * Get the articulations of the instrument.
+     * 
+     * @return The articulations
+     */
+    public List<DlsArticulation> getArticulations ()
+    {
+        return this.articulations;
     }
 
 

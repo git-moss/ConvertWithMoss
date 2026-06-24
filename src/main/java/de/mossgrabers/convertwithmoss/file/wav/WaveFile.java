@@ -461,6 +461,15 @@ public class WaveFile extends AbstractRIFFFile
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    public void checkTopChunk (final int type) throws ParseException
+    {
+        if (WaveRiffChunkId.WAVE_ID.getFourCC () != type)
+            throw new ParseException ("Top chunk must be 'WAVE' but is '" + RiffChunkId.toASCII (type) + "'");
+    }
+
+
     private static final class DataChunkPositionRIFFVisitor implements RIFFVisitor
     {
         private final RIFFParser parser;
@@ -503,6 +512,14 @@ public class WaveFile extends AbstractRIFFFile
         {
             if (chunk.getId ().getFourCC () == WaveRiffChunkId.DATA_ID.getFourCC ())
                 this.dataChunkPosition = this.parser.getPosition () - chunk.getSize ();
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public void checkTopChunk (final int type) throws ParseException
+        {
+            // Intentionally empty
         }
     }
 }
