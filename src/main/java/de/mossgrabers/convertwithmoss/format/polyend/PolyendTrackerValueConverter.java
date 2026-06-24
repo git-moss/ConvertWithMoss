@@ -45,7 +45,7 @@ public final class PolyendTrackerValueConverter
         if (totalFrames <= 0)
             return 0;
         final long frame = Math.round (point / (double) PolyendTrackerConstants.NORMALIZED_MAX * totalFrames);
-        return (int) Math.clamp (frame, 0, totalFrames);
+        return Math.clamp (frame, 0, totalFrames);
     }
 
 
@@ -62,7 +62,7 @@ public final class PolyendTrackerValueConverter
         if (totalFrames <= 0)
             return 0;
         final long point = Math.round (frame / (double) totalFrames * PolyendTrackerConstants.NORMALIZED_MAX);
-        return (int) Math.clamp (point, 0, PolyendTrackerConstants.NORMALIZED_MAX);
+        return Math.clamp (point, 0, PolyendTrackerConstants.NORMALIZED_MAX);
     }
 
 
@@ -90,7 +90,7 @@ public final class PolyendTrackerValueConverter
     public static int gainToRawVolume (final double gainDecibels)
     {
         final double linear = Math.pow (10.0, gainDecibels / 20.0);
-        return (int) Math.clamp (Math.round (linear * VOLUME_UNITY), 0, 100);
+        return Math.clamp (Math.round (linear * VOLUME_UNITY), 0, 100);
     }
 
 
@@ -114,7 +114,7 @@ public final class PolyendTrackerValueConverter
      */
     public static int modelPanningToRaw (final double panning)
     {
-        return (int) Math.clamp (Math.round (Math.clamp (panning, -1.0, 1.0) * VOLUME_UNITY + PANNING_CENTER), 0, 100);
+        return Math.clamp (Math.round (Math.clamp (panning, -1.0, 1.0) * VOLUME_UNITY + PANNING_CENTER), 0, 100);
     }
 
 
@@ -189,7 +189,7 @@ public final class PolyendTrackerValueConverter
      */
     public static int tuningToTune (final double tuning)
     {
-        return (int) Math.clamp (Math.round (tuning), -24, 24);
+        return Math.clamp (Math.round (tuning), -24, 24);
     }
 
 
@@ -202,7 +202,7 @@ public final class PolyendTrackerValueConverter
     public static int tuningToFinetune (final double tuning)
     {
         final double fraction = tuning - tuningToTune (tuning);
-        return (int) Math.clamp (Math.round (fraction * 100.0), -100, 100);
+        return Math.clamp (Math.round (fraction * 100.0), -100, 100);
     }
 
 
@@ -228,6 +228,6 @@ public final class PolyendTrackerValueConverter
     {
         if (seconds <= 0)
             return 0;
-        return (int) Math.clamp (Math.round (seconds * 1000.0), 0, PolyendTrackerConstants.NORMALIZED_MAX);
+        return Math.clamp (Math.round (seconds * 1000.0), 0, PolyendTrackerConstants.NORMALIZED_MAX);
     }
 }

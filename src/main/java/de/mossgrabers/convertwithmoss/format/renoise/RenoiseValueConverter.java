@@ -21,10 +21,10 @@ package de.mossgrabers.convertwithmoss.format.renoise;
 public final class RenoiseValueConverter
 {
     /** The highest playable Renoise note (B-9); Renoise uses a 0..119 keyboard. */
-    public static final int    MAX_NOTE            = 119;
+    public static final int     MAX_NOTE              = 119;
 
     /** Maximum sample volume in Renoise: +12 dB which equals a linear gain factor of 4.0. */
-    private static final double MAX_VOLUME_LINEAR   = 4.0;
+    private static final double MAX_VOLUME_LINEAR     = 4.0;
 
     /** A Finetune value of +/-127 equals +/-1 semitone. */
     private static final double FINETUNE_PER_SEMITONE = 127.0;
@@ -38,8 +38,8 @@ public final class RenoiseValueConverter
     public static final double  MIXER_PARAM_MAX       = 127.0;
 
     // Filter cutoff mapping. The 0..127 cutoff maps exponentially over the audible range.
-    private static final double FILTER_MIN_HERTZ       = 20.0;
-    private static final double FILTER_MAX_HERTZ       = 20000.0;
+    private static final double FILTER_MIN_HERTZ      = 20.0;
+    private static final double FILTER_MAX_HERTZ      = 20000.0;
 
 
     /**

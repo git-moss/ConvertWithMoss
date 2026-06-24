@@ -112,7 +112,7 @@ public interface IMultisampleSource extends ISource
 
     /**
      * Collect all sample zones from all groups into one list.
-     * 
+     *
      * @param filterReleaseTriggers Removes all groups which do only contain release triggers
      * @return All sample zones of the multi-sample
      */
@@ -129,14 +129,14 @@ public interface IMultisampleSource extends ISource
     /**
      * Get all sample zones of the multi-sample ordered by their root note and then by their
      * low-velocity (for each root note).
-     * 
+     *
      * @param filterReleaseTriggers Removes all groups which do only contain release triggers
      * @return All sample zones of the multi-sample ordered by root note and low-velocity
      */
     default TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> getOrderedSampleZones (final boolean filterReleaseTriggers)
     {
         final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> result = new TreeMap<> ();
-        for (final ISampleZone sampleZone: getAllSampleZones (filterReleaseTriggers))
+        for (final ISampleZone sampleZone: this.getAllSampleZones (filterReleaseTriggers))
         {
             final TreeMap<Integer, List<ISampleZone>> velocityLayers = result.computeIfAbsent (Integer.valueOf (sampleZone.getKeyRoot ()), _ -> new TreeMap<> ());
             final List<ISampleZone> sameZone = velocityLayers.computeIfAbsent (Integer.valueOf (sampleZone.getVelocityLow ()), _ -> new ArrayList<> ());

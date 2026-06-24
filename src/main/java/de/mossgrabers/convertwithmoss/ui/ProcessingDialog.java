@@ -153,7 +153,7 @@ public class ProcessingDialog extends AbstractDialog
 
     /**
      * Select the loop cross-fades.
-     * 
+     *
      * @param loopCrossfades The loop cross-fades, 0 = Off, 1 = 0%, 2= 1%, ...
      */
     public void selectLoopCrossfades (final int loopCrossfades)
@@ -195,7 +195,7 @@ public class ProcessingDialog extends AbstractDialog
 
     /**
      * Get the loop cross-fades.
-     * 
+     *
      * @return The loop cross-fades
      */
     public int getLoopCrossfades ()

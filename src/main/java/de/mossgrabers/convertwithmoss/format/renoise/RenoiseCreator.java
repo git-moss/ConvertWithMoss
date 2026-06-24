@@ -54,11 +54,13 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 {
-    /** The document version to write. 33 (Renoise 3.3) is used instead of the latest version since
+    /**
+     * The document version to write. 33 (Renoise 3.3) is used instead of the latest version since
      * the written structure is valid for it and it loads in newer Renoise versions as well as in
-     * Renoise Redux. */
-    private static final String DOC_VERSION         = "33";
-    private static final String SAMPLE_DATA_FOLDER  = "SampleData";
+     * Renoise Redux.
+     */
+    private static final String                 DOC_VERSION              = "33";
+    private static final String                 SAMPLE_DATA_FOLDER       = "SampleData";
 
     /** The neutral (mid-position) value for a mixer cutoff/resonance when there is no filter. */
     private static final double                 DEFAULT_MIXER_VALUE      = 64.0;
@@ -213,8 +215,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Create the modulation set for one zone. It holds the amplitude envelope and - if present - the
-     * sampler filter (type, cutoff, resonance and filter envelope) and the pitch envelope.
+     * Create the modulation set for one zone. It holds the amplitude envelope and - if present -
+     * the sampler filter (type, cutoff, resonance and filter envelope) and the pitch envelope.
      *
      * @param document The XML document
      * @param modulationSetsElement The element to which to add the modulation set
@@ -340,8 +342,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Store all samples of the multi-sample into the ZIP. The samples are stored as FLAC; if the
-     * (bundled) FLAC encoder fails on a sample - some samples trigger a bug in the encoder library -
-     * the sample is stored as an uncompressed WAV file instead, which Renoise reads as well.
+     * (bundled) FLAC encoder fails on a sample - some samples trigger a bug in the encoder library
+     * - the sample is stored as an uncompressed WAV file instead, which Renoise reads as well.
      *
      * @param zipOutputStream The ZIP output stream
      * @param multisampleSource The multi-sample
@@ -462,7 +464,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Bake a loop cross-fade into the audio of a forward loop. The cross-fade region at the end of
-     * the loop is blended with the audio preceding the loop start so that the loop wraps seamlessly.
+     * the loop is blended with the audio preceding the loop start so that the loop wraps
+     * seamlessly.
      *
      * @param waveFile The WAV file whose audio data is modified in place
      * @param loopStart The loop start frame
@@ -486,7 +489,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final int totalFrames = data.length / bytesPerFrame;
         final int end = Math.min (loopEnd, totalFrames);
 
-        // The cross-fade can neither be longer than the loop nor reach before the start of the sample
+        // The cross-fade can neither be longer than the loop nor reach before the start of the
+        // sample
         final int crossfade = Math.min (crossfadeSamples, Math.min (end - loopStart, loopStart));
         if (crossfade <= 0)
             return;
@@ -520,8 +524,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
     private static int readSample (final byte [] data, final int pos, final int bytesPerChannel)
     {
         if (bytesPerChannel == 2)
-            return (short) ((data[pos] & 0xFF) | ((data[pos + 1] & 0xFF) << 8));
-        return (data[pos] & 0xFF) | ((data[pos + 1] & 0xFF) << 8) | (data[pos + 2] << 16);
+            return (short) (data[pos] & 0xFF | (data[pos + 1] & 0xFF) << 8);
+        return data[pos] & 0xFF | (data[pos + 1] & 0xFF) << 8 | data[pos + 2] << 16;
     }
 
 
@@ -536,9 +540,9 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
     private static void writeSample (final byte [] data, final int pos, final int bytesPerChannel, final int value)
     {
         data[pos] = (byte) (value & 0xFF);
-        data[pos + 1] = (byte) ((value >> 8) & 0xFF);
+        data[pos + 1] = (byte) (value >> 8 & 0xFF);
         if (bytesPerChannel == 3)
-            data[pos + 2] = (byte) ((value >> 16) & 0xFF);
+            data[pos + 2] = (byte) (value >> 16 & 0xFF);
     }
 
 

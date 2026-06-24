@@ -32,8 +32,8 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 /**
  * Creator for Polyend Tracker instrument files (file ending <i>.pti</i>). A PTI file holds exactly
- * one sample, therefore only one representative sample zone of the multi-sample is stored. The audio
- * is converted to 16-bit / 44.1kHz (mono or stereo).
+ * one sample, therefore only one representative sample zone of the multi-sample is stored. The
+ * audio is converted to 16-bit / 44.1kHz (mono or stereo).
  *
  * @author Jürgen Moßgraber
  */
@@ -179,7 +179,8 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
 
         // Audio data. A stereo sample is stored non-interleaved (the complete left channel followed
         // by the complete right channel); a mono sample is copied unchanged. The trailing checksum
-        // is left as zero which is accepted by the hardware (factory files use a zero checksum too).
+        // is left as zero which is accepted by the hardware (factory files use a zero checksum
+        // too).
         writeAudio (output, pcm, channels, frames);
 
         return output;
