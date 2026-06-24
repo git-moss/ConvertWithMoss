@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.file.riff;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -267,12 +269,12 @@ public class RawRIFFChunk implements IRiffChunk
 
 
     /**
-     * Convert 4 bytes to an integer. MSB is first byte.
+     * Convert 4 bytes to an unsigned long. MSB is first byte.
      *
      * @param offset The offset into the data array
      * @return The integer value
      */
-    public long getFourBytesAsLong (final int offset)
+    public long getFourBytesAsUnsignedLong (final int offset)
     {
         final byte [] d = this.getData ();
         return Byte.toUnsignedLong (d[offset + 3]) << 24 | Byte.toUnsignedLong (d[offset + 2]) << 16 | Byte.toUnsignedLong (d[offset + 1]) << 8 | Byte.toUnsignedLong (d[offset + 0]);
@@ -280,12 +282,27 @@ public class RawRIFFChunk implements IRiffChunk
 
 
     /**
-     * Convert 4 bytes to an integer. MSB is first byte.
+     * Convert 4 bytes to a signed integer. MSB is first byte.
      *
      * @param offset The offset into the data array
      * @return The integer value
      */
-    public int getFourBytesAsInt (final int offset)
+    public int getFourBytesAsSignedLong (final int offset)
+    {
+        final byte [] d = this.getData ();
+        final ByteBuffer buffer = ByteBuffer.wrap (d, offset, 4);
+        buffer.order (ByteOrder.BIG_ENDIAN);
+        return buffer.getInt ();
+    }
+
+
+    /**
+     * Convert 4 bytes to an integer. MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @return The long value
+     */
+    public int getFourBytesAsUnsignedInt (final int offset)
     {
         final byte [] d = this.getData ();
         return Byte.toUnsignedInt (d[offset + 3]) << 24 | Byte.toUnsignedInt (d[offset + 2]) << 16 | Byte.toUnsignedInt (d[offset + 1]) << 8 | Byte.toUnsignedInt (d[offset + 0]);
@@ -298,10 +315,25 @@ public class RawRIFFChunk implements IRiffChunk
      * @param offset The offset into the data array
      * @return The integer value
      */
-    public int getTwoBytesAsInt (final int offset)
+    public int getTwoBytesAsUnsignedInt (final int offset)
     {
         final byte [] d = this.getData ();
         return Byte.toUnsignedInt (d[offset + 1]) << 8 | Byte.toUnsignedInt (d[offset]);
+    }
+
+
+    /**
+     * Convert 2 bytes to an integer MSB is first byte.
+     *
+     * @param offset The offset into the data array
+     * @return The signed integer value
+     */
+    public int getTwoBytesAsSignedInt (final int offset)
+    {
+        final byte [] d = this.getData ();
+        final ByteBuffer buffer = ByteBuffer.wrap (d, offset, 2);
+        buffer.order (ByteOrder.BIG_ENDIAN);
+        return buffer.getShort ();
     }
 
 

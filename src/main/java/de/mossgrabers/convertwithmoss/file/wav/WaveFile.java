@@ -96,11 +96,27 @@ public class WaveFile extends AbstractRIFFFile
 
 
     /**
+     * Constructor.
+     * 
+     * @param formatChunk The format chunk
+     * @param dataChunk The data chunk
+     */
+    public WaveFile (final FormatChunk formatChunk, final DataChunk dataChunk)
+    {
+        this ();
+
+        this.formatChunk = formatChunk;
+        this.dataChunk = dataChunk;
+        this.fillChunkStack ();
+    }
+
+
+    /**
      * Constructor. Use in combination with the read-method to read a WAV file from a stream.
      */
     public WaveFile ()
     {
-        super (WaveRiffChunkId.WAVE_ID);
+        super (WaveRiffChunkId.WAVE_ID, true);
     }
 
 
@@ -445,6 +461,15 @@ public class WaveFile extends AbstractRIFFFile
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    public void checkTopChunk (final int type) throws ParseException
+    {
+        if (WaveRiffChunkId.WAVE_ID.getFourCC () != type)
+            throw new ParseException ("Top chunk must be 'WAVE' but is '" + RiffChunkId.toASCII (type) + "'");
+    }
+
+
     private static final class DataChunkPositionRIFFVisitor implements RIFFVisitor
     {
         private final RIFFParser parser;
@@ -487,6 +512,14 @@ public class WaveFile extends AbstractRIFFFile
         {
             if (chunk.getId ().getFourCC () == WaveRiffChunkId.DATA_ID.getFourCC ())
                 this.dataChunkPosition = this.parser.getPosition () - chunk.getSize ();
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public void checkTopChunk (final int type) throws ParseException
+        {
+            // Intentionally empty
         }
     }
 }

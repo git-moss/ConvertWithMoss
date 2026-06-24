@@ -1,8 +1,10 @@
 # Changes
 
-## 18.3.0
+## 18.2.0 (unreleased)
 
 * New: Added support for the Polyend Tracker instrument format (PTI) for both reading and writing. A PTI file holds a single 16-bit / 44.1kHz sample (mono or stereo); the play mode, the playback start/end and loop points, the loop mode (forward / backward / ping-pong), a filter (low-, high- and band-pass with cutoff, resonance and a cutoff envelope), the amplitude and pitch envelopes as well as the volume, panning and tuning are translated. Instruments in a slice play mode are split into one trimmed sample zone per slice, mapped chromatically from MIDI note 60. When writing a multi-sample, the zone covering note 60 (otherwise the first zone) is stored since the format holds only a single sample. This has **not** been verified on physical Polyend Tracker hardware; it was validated against the official tracker-lib reference implementation and round-trip conversions.
+* New: Added several new tags for category detection.
+* Fixed: Stereo (multi-channel) samples stored in a compressed format (e.g. FLAC or OGG) were truncated to half their length when decompressed while writing to an uncompressed destination. This dropped the second half of every such sample and could move loop points to the wrong position (audible as a click at the loop point).
 
 ## 18.1.1
 

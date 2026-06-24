@@ -156,7 +156,7 @@ public class RIFFParser
 
         if (id == CommonRiffChunkId.RIFF_ID.getFourCC ())
         {
-            this.parseFORM (null);
+            this.parseFORM (null, true);
             return;
         }
 
@@ -186,14 +186,18 @@ public class RIFFParser
      * Parses a FORM group.
      *
      * @param props The property chunks
+     * @param isTopForm If the form is a root chunk
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseFORM (final Map<Integer, RawRIFFChunk> props) throws ParseException, IOException
+    private void parseFORM (final Map<Integer, RawRIFFChunk> props, final boolean isTopForm) throws ParseException, IOException
     {
         long size = this.in.readUDWORD ();
         final long offset = this.getPosition ();
         final int type = this.in.readFourCC ();
+        if (isTopForm)
+            this.visitor.checkTopChunk (type);
+
         if (!isGroupType (type))
             throw new ParseException ("Invalid FORM Type: \"" + RiffChunkId.toASCII (type) + "\"");
 
@@ -230,7 +234,7 @@ public class RIFFParser
                 }
 
                 if (id == CommonRiffChunkId.RIFF_ID.getFourCC ())
-                    this.parseFORM (props);
+                    this.parseFORM (props, false);
                 else if (id == CommonRiffChunkId.LIST_ID.getFourCC ())
                     this.parseLIST (props);
                 else if (isLocalChunkID (id))

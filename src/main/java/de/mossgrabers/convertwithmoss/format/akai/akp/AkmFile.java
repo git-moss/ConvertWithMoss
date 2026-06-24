@@ -53,7 +53,7 @@ public class AkmFile extends AbstractRIFFFile
      */
     public AkmFile (final File akmFile) throws IOException, ParseException
     {
-        super (AkmRiffChunkId.AMUL_ID);
+        super (AkmRiffChunkId.AMUL_ID, false);
 
         try (final FileInputStream stream = new FileInputStream (akmFile))
         {
@@ -158,5 +158,14 @@ public class AkmFile extends AbstractRIFFFile
             return;
 
         // Not used since writing is not supported
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void checkTopChunk (final int type) throws ParseException
+    {
+        if (AkmRiffChunkId.AMUL_ID.getFourCC () != type)
+            throw new ParseException ("Top chunk must be 'APRG' but is '" + RiffChunkId.toASCII (type) + "'");
     }
 }

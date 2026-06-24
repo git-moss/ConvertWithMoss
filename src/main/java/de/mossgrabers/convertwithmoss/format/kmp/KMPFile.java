@@ -230,7 +230,7 @@ public class KMPFile
             zone.setGain ((Math.clamp (in.readByte (), -99, 99) / 99.0 + 1) / 3.0);
 
             // Panning - unused in KMP itself, 64 is center
-            in.read ();
+            in.readByte ();
 
             // Filter Cutoff - unused in KMP itself
             in.readByte ();

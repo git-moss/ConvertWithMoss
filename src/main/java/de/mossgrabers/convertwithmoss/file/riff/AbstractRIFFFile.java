@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,10 +37,14 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
      * Constructor.
      *
      * @param topRiffChunkId The top RIFF ID of the file
+     * @param hasInfo True if the format has an info chunk
      */
-    protected AbstractRIFFFile (final RiffChunkId topRiffChunkId)
+    protected AbstractRIFFFile (final RiffChunkId topRiffChunkId, final boolean hasInfo)
     {
         this.topRiffChunkId = topRiffChunkId;
+
+        if (hasInfo)
+            this.infoChunk = new InfoChunk ();
     }
 
 
@@ -51,6 +56,48 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
     public InfoChunk getInfoChunk ()
     {
         return this.infoChunk;
+    }
+
+
+    /**
+     * Get the creation date as a date object.
+     *
+     * @return The date object
+     */
+    public Date getParsedCreationDate ()
+    {
+        if (this.infoChunk != null)
+            return this.infoChunk.getCreationDate ();
+        return new Date ();
+    }
+
+
+    /**
+     * Get the names of any sound designers or engineers responsible for the SoundFont compatible
+     * bank (optional).
+     *
+     * @return The names, empty string if not present
+     */
+    public String getSoundDesigner ()
+    {
+        if (this.infoChunk == null)
+            return "";
+        final String result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IENG, InfoRiffChunkId.INFO_IART, InfoRiffChunkId.INFO_ITCH, InfoRiffChunkId.INFO_ISTR, InfoRiffChunkId.INFO_STAR);
+        return result == null ? "" : result.trim ();
+    }
+
+
+    /**
+     * Get keywords.
+     *
+     * @return The keywords, empty string if not present
+     */
+    public String getKeywords ()
+    {
+        if (this.infoChunk == null)
+            return "";
+        final String result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IKEY);
+        return result == null ? "" : result.trim ();
     }
 
 
