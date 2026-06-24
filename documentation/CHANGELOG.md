@@ -1,14 +1,15 @@
 # Changes
 
-## 18.2.0 (unreleased)
+## 18.5.0 (unreleased)
 
-* New: Added support for the Polyend Tracker instrument format (PTI) for both reading and writing. A PTI file holds a single 16-bit / 44.1kHz sample (mono or stereo); the play mode, the playback start/end and loop points, the loop mode (forward / backward / ping-pong), a filter (low-, high- and band-pass with cutoff, resonance and a cutoff envelope), the amplitude and pitch envelopes as well as the volume, panning and tuning are translated. Instruments in a slice play mode are split into one trimmed sample zone per slice, mapped chromatically from MIDI note 60. When writing a multi-sample, the zone covering note 60 (otherwise the first zone) is stored since the format holds only a single sample. This has **not** been verified on physical Polyend Tracker hardware; it was validated against the official tracker-lib reference implementation and round-trip conversions.
-* New: Added support for the Renoise instrument format (XRNI) for both reading and writing. The key/velocity mapping, root note, tuning, volume, panning, loops, the amplitude envelope, a per-sample sampler filter (type, cutoff and resonance with a cutoff envelope), a pitch envelope and round-robins are translated. The filter is written as the native sampler filter (including the required mixer modulation device) so the instruments load correctly. Created files use document version 33 so they load in Renoise as well as the Renoise Redux plug-in. By default loops are written exactly (faithful); if the loop cross-fade processing option is enabled the cross-fade is baked into the looped samples since Renoise has no cross-fade parameter. Samples which the bundled FLAC encoder cannot encode are stored as WAV instead so the conversion does not fail.
+* New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
+* New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
+* New: Added support for the Downloadable Sound format (DLS) - read only.
 * New: Added several new tags for category detection.
-* Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress with a 'mark/reset not supported' error.
-* Fixed: A Renoise filter that is parked wide open (a high-pass at the bottom of its range or a low-pass at the top) is now treated as no filter. Renoise attaches a filter to almost every instrument through its always-present mixer device, so writing such a transparent filter as an active filter was pointless and could even silence the instrument on some target devices (the Waldorf Iridium muted a patch whose high-pass was parked at its lowest cutoff). Audible filters are unaffected, and because this is handled while reading the Renoise file it applies to every output format.
-* Fixed: Stereo (multi-channel) samples stored in a compressed format (e.g. FLAC or OGG) were truncated to half their length when decompressed while writing to an uncompressed destination. This dropped the second half of every such sample and could move loop points to the wrong position (audible as a click at the loop point).
-* Waldorf Quantum/Iridium
+* FLAC/OGG
+  * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
+  * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
+* Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
   * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
 
@@ -237,7 +238,7 @@
 * Korg KSF
   * Fixed: Reading: The play-back end is now set to the length of the sample to prevent issues with output formats which require the end (e.g. Korg wavestate).
   * Fixed: The KSF loop end is exclusive and therefore was off by 1.
-* Soundfont 2 (thanks @douglas-carmichael)
+* Soundfont 2 (thanks to Douglas Carmichael)
   * New: Added option to resample 24bit to 16bit.
   * Fixed: Always writes a global chunk.
 

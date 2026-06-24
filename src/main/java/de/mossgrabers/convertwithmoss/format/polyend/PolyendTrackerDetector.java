@@ -49,7 +49,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
 {
     /** A filter parked wide open is sonically transparent and therefore treated as no filter. */
     private static final double TRANSPARENT_HIGH_PASS_MAX_HERTZ = 40.0;
-    private static final double TRANSPARENT_LOW_PASS_MIN_HERTZ   = 18000.0;
+    private static final double TRANSPARENT_LOW_PASS_MIN_HERTZ  = 18000.0;
 
 
     /**
@@ -149,7 +149,8 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         if (sliced)
         {
             // Each slice becomes a self-contained sample mapped chromatically to one key, starting
-            // at the default root note. The audio is trimmed to the slice region so that there is no
+            // at the default root note. The audio is trimmed to the slice region so that there is
+            // no
             // redundant audio data.
             final int channels = audioMetadata.getChannels ();
             final int bytesPerFrame = channels * 2;
@@ -263,13 +264,11 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         if (filterType == null)
             return null;
 
-        final double cutoff = Math.clamp ((double) buffer.getFloat (PolyendTrackerConstants.OFF_CUTOFF), 0.0, 1.0);
+        final double cutoff = Math.clamp (buffer.getFloat (PolyendTrackerConstants.OFF_CUTOFF), 0.0, 1.0);
         final double hertz = PolyendTrackerValueConverter.normalizedCutoffToHertz (cutoff);
 
         // A filter parked wide open is sonically transparent - treat it as no filter
-        if (filterType == FilterType.HIGH_PASS && hertz <= TRANSPARENT_HIGH_PASS_MAX_HERTZ)
-            return null;
-        if (filterType == FilterType.LOW_PASS && hertz >= TRANSPARENT_LOW_PASS_MIN_HERTZ)
+        if ((filterType == FilterType.HIGH_PASS && hertz <= TRANSPARENT_HIGH_PASS_MAX_HERTZ) || (filterType == FilterType.LOW_PASS && hertz >= TRANSPARENT_LOW_PASS_MIN_HERTZ))
             return null;
 
         final double resonance = PolyendTrackerValueConverter.rawResonanceToModel (buffer.getFloat (PolyendTrackerConstants.OFF_RESONANCE));
@@ -279,7 +278,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         if (cutoffEnvelope != null)
         {
             final int base = PolyendTrackerConstants.OFF_ENVELOPES + PolyendTrackerConstants.ENV_CUTOFF * PolyendTrackerConstants.ENVELOPE_SIZE;
-            final double amount = Math.clamp ((double) buffer.getFloat (base + PolyendTrackerConstants.ENV_OFF_AMOUNT), 0.0, 1.0);
+            final double amount = Math.clamp (buffer.getFloat (base + PolyendTrackerConstants.ENV_OFF_AMOUNT), 0.0, 1.0);
             final double depth = PolyendTrackerValueConverter.normalizedCutoffToHertz (Math.clamp (cutoff + amount, 0.0, 1.0)) - hertz;
             if (depth != 0)
             {

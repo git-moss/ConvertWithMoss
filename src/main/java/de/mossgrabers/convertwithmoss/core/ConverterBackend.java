@@ -384,7 +384,7 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            /////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////
             // Loop cross-fade
 
             if (this.detectionSettings.loopCrossfades > 0)
@@ -393,13 +393,11 @@ public class ConverterBackend
                 final double crossfadeFactor = Math.clamp (this.detectionSettings.loopCrossfades - 1, 0, 100) / 100.0;
                 for (final IGroup group: multisampleSource.getGroups ())
                     for (final ISampleZone zone: group.getSampleZones ())
-                    {
                         for (final ISampleLoop loop: zone.getLoops ())
                             loop.setCrossfade (crossfadeFactor);
-                    }
             }
 
-            ////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -416,7 +414,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            ////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)
@@ -432,7 +430,7 @@ public class ConverterBackend
             }
             multisampleSource.setGroups (groups);
 
-            ////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////
             // Audio processing
 
             final List<ISampleZone> sampleZones = new ArrayList<> ();

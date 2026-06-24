@@ -65,7 +65,7 @@ public class StreamUtils
         if (value == -1)
             throw new IOException ("Unexpected end of stream");
         // Converts to signed byte, then widens to int
-        return ((byte) value) & 0XFF;
+        return (byte) value & 0XFF;
     }
 
 

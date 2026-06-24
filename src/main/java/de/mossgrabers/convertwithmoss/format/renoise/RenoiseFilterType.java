@@ -26,19 +26,21 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
  */
 public final class RenoiseFilterType
 {
-    /** The Renoise filter bank version that the {@link #toFilterTypeIndex(FilterType)} indices use. */
-    public static final int FILTER_BANK_VERSION = 3;
+    /**
+     * The Renoise filter bank version that the {@link #toFilterTypeIndex(FilterType)} indices use.
+     */
+    public static final int  FILTER_BANK_VERSION = 3;
 
     /** Filter type index: no filter. */
-    public static final int INDEX_NONE          = 0;
+    public static final int  INDEX_NONE          = 0;
 
-    private static final int INDEX_LP_CLEAN     = 1;
-    private static final int INDEX_LP_DIODE     = 4;
-    private static final int INDEX_HP_CLEAN     = 5;
-    private static final int INDEX_HP_MOOG      = 7;
-    private static final int INDEX_BP_CLEAN     = 8;
-    private static final int INDEX_BANDPASS     = 11;
-    private static final int INDEX_BANDSTOP     = 12;
+    private static final int INDEX_LP_CLEAN      = 1;
+    private static final int INDEX_LP_DIODE      = 4;
+    private static final int INDEX_HP_CLEAN      = 5;
+    private static final int INDEX_HP_MOOG       = 7;
+    private static final int INDEX_BP_CLEAN      = 8;
+    private static final int INDEX_BANDPASS      = 11;
+    private static final int INDEX_BANDSTOP      = 12;
 
 
     /**
