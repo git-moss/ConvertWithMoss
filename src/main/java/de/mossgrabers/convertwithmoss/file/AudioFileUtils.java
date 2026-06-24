@@ -360,8 +360,12 @@ public final class AudioFileUtils
      */
     public static void decompressToWav (final InputStream inputStream, final OutputStream outputStream) throws IOException
     {
+        // AudioSystem.getAudioInputStream requires a stream which supports mark/reset to probe the
+        // audio format. A raw ZIP entry stream does not, so wrap it if necessary.
+        final InputStream markableStream = inputStream.markSupported () ? inputStream : new BufferedInputStream (inputStream);
+
         // The conversion needs to be a 2 step process to get the length of the data
-        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputStream))
+        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (markableStream))
         {
             final AudioFormat sourceFormat = audioInputStream.getFormat ();
             final int channels = sourceFormat.getChannels ();
