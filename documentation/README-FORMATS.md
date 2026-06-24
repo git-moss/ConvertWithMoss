@@ -57,6 +57,7 @@ The following multi-sample formats are supported:
 * [Logic EXS24](#logic-exs24)
 * [Native Instruments Kontakt](#native-instruments-kontakt)
 * [Native Instruments Maschine](#native-instruments-maschine)
+* [Polyend Tracker](#polyend-tracker)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
 * [Roland S-50 Series](#roland-s-50-series) - read only
 * [Roland S-770 Series](#roland-s-770-series) - read only
@@ -416,6 +417,22 @@ Note that Maschine contains an auto-sampler with which you can sample plugins or
 ### Destination Options
 
 * Output Format: Select the Maschine output format. Selecting **Maschine 1** will create a MSND file, otherwise a MXSND file is created.
+
+## Polyend Tracker
+
+The Polyend Tracker (and the Tracker Mini / Tracker+) is a standalone hardware sampler, sequencer and tracker. Its instrument format (file ending *pti*) is a single binary file which holds exactly one 16-bit / 44.1kHz PCM sample (mono or stereo) together with the instrument parameters. Both reading and writing are supported.
+
+When reading, the play mode, the playback start/end and loop points, the loop mode (forward / backward / ping-pong), the filter (low-, high- and band-pass with cutoff, resonance and the cutoff envelope), the amplitude and pitch envelopes as well as the volume, panning and tuning are converted. Instruments in one of the slice play modes are split into one sample zone per slice; each slice is trimmed to its own audio and mapped chromatically to a single key starting at MIDI note 60 (middle C).
+
+When writing, the play mode (one-shot or one of the loop modes), the start/end and loop points, the filter, the amplitude/cutoff/pitch envelopes as well as the volume, panning and tuning are stored. The audio is converted to 16-bit / 44.1kHz; mono or stereo is preserved.
+
+### Limitations
+
+* A Polyend Tracker instrument holds only a single sample. When converting a multi-sample, the zone whose key range covers MIDI note 60 (middle C) is stored - otherwise the first zone - and all other zones are ignored (a note is logged).
+* The wavetable and granular play modes are read as a plain one-shot sample. The wavetable/granular specific parameters, the LFOs and the delay/reverb sends and overdrive are not converted.
+* The playback start/end, loop and slice positions are stored proportionally to the sample length (0 to 65535). Loop points can therefore differ by a tiny fraction of the sample length after a round-trip.
+* The filter cutoff frequency mapping is an approximation since the Tracker's normalized cutoff to frequency curve is internal and not part of the format.
+* This format has **not** been verified on physical Polyend Tracker hardware. It was validated against the official *tracker-lib* reference implementation and round-trip conversions.
 
 ## Propellerhead Reason NN-XT
 
