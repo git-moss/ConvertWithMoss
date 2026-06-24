@@ -44,14 +44,14 @@ public class DlsFile extends AbstractRIFFFile
         Collections.addAll (DLS_RIFF_CHUNK_IDS, CommonRiffChunkId.class, InfoRiffChunkId.class, DlsRiffChunkId.class);
     }
 
-    private final Set<String>       ignoredChunks           = new HashSet<> ();
-    private List<DlsInstrument>     instruments             = null;
-    private List<Long>              cueOffsets              = new ArrayList<> ();
+    private final Set<String>       ignoredChunks    = new HashSet<> ();
+    private List<DlsInstrument>     instruments      = null;
+    private List<Long>              cueOffsets       = new ArrayList<> ();
 
     // Wave data
-    private final List<FormatChunk> waveFormatChunks        = new ArrayList<> ();
-    private final List<DataChunk>   waveDataChunks          = new ArrayList<> ();
-    private final List<String>      waveInfoChunks          = new ArrayList<> ();
+    private final List<FormatChunk> waveFormatChunks = new ArrayList<> ();
+    private final List<DataChunk>   waveDataChunks   = new ArrayList<> ();
+    private final List<String>      waveInfoChunks   = new ArrayList<> ();
 
     // Used only for reading
     private DlsInstrument           currentInstrument;
@@ -59,9 +59,6 @@ public class DlsFile extends AbstractRIFFFile
     private boolean                 isInstrumentChunk;
     private boolean                 isRegionChunk;
     private boolean                 isWaveChunk;
-
-    private List<DlsArticulation>   regionArticulations     = new ArrayList<> ();
-    private List<DlsArticulation>   instrumentArticulations = new ArrayList<> ();
 
 
     /**
@@ -314,23 +311,27 @@ public class DlsFile extends AbstractRIFFFile
         // Articulation chunks
         //
 
-        if (id == DlsRiffChunkId.ART1_ID.getFourCC ())
+        if (id == DlsRiffChunkId.ART1_ID.getFourCC () || id == DlsRiffChunkId.ART2_ID.getFourCC ())
         {
-            final long size = chunk.getFourBytesAsUnsignedLong (0);
+            // Size, not used
+            chunk.getFourBytesAsUnsignedLong (0);
             final long numArticulations = chunk.getFourBytesAsUnsignedLong (4);
             for (int i = 0; i < numArticulations; i++)
             {
+                final DlsArticulation articulation = new DlsArticulation (chunk, 8 + i * ARTICULATION_CONNECTION_BLOCK_SIZE);
                 if (this.isRegionChunk)
-                    this.regionArticulations.add (new DlsArticulation (chunk, 8 + i * ARTICULATION_CONNECTION_BLOCK_SIZE));
+                {
+                    if (this.currentRegion == null)
+                        throw new ParseException ("Unsound articulation chunk.");
+                    this.currentRegion.addArticulation (articulation);
+                }
                 else
-                    this.instrumentArticulations.add (new DlsArticulation (chunk, 8 + i * ARTICULATION_CONNECTION_BLOCK_SIZE));
+                {
+                    if (this.currentInstrument == null)
+                        throw new ParseException ("Unsound articulation chunk.");
+                    this.currentInstrument.addArticulation (articulation);
+                }
             }
-            return;
-        }
-
-        if (id == DlsRiffChunkId.ART2_ID.getFourCC ())
-        {
-            // TODO
             return;
         }
 
@@ -411,51 +412,11 @@ public class DlsFile extends AbstractRIFFFile
     }
 
 
-    // TODO remove
-    public static void main (final String [] args)
+    /** {@inheritDoc} */
+    @Override
+    public void checkTopChunk (final int type) throws ParseException
     {
-        try
-        {
-            // final DlsFile dlsFile = new DlsFile (new File
-            // ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\DLS\\Mario_Kart_64_Soundfont.dls"));
-
-            // final File parentFile = new File
-            // ("C:\\Privat\\Programming\\ConvertWithMoss\\Testdateien\\DLS\\");
-            final File parentFile = new File ("C:\\Users\\mos\\Desktop\\TEST\\");
-            for (final String filename: parentFile.list ())
-            {
-                if (!filename.endsWith (".dls"))
-                    continue;
-
-                // IO.println (dlsFile.infoText ());
-                final DlsFile dlsFile = new DlsFile (new File (parentFile, filename));
-
-                List<DlsInstrument> instruments = dlsFile.getInstruments ();
-                if (instruments == null)
-                {
-                    IO.println ("No instrument in : " + filename);
-                    continue;
-                }
-                for (final DlsInstrument instrument: instruments)
-                {
-                    for (final DlsRegion region: instrument.getRegions ())
-                    {
-                        // IO.println (region.getChannelPlacement () + " : " + region.getLinkOptions
-                        // () + " : " + region.getPhaseGroup ());
-
-                        IO.println (instrument.getName () + ": " + region.getGain () + " -> " + region.getKeyRangeLow () + ":" + +region.getKeyRangeHigh () + " -> " + region.getVelocityRangeLow () + ":" + +region.getVelocityRangeHigh ());
-
-                        // region.getGain ();
-                    }
-
-                }
-
-                // IO.println (dlsFile.infoText ());
-            }
-        }
-        catch (IOException | ParseException e)
-        {
-            e.printStackTrace ();
-        }
+        if (DlsRiffChunkId.DLS_ID.getFourCC () != type)
+            throw new ParseException ("Top chunk must be DLS but is '" + RiffChunkId.toASCII (type) + "'");
     }
 }

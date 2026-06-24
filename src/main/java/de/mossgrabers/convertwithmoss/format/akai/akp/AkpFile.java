@@ -239,4 +239,13 @@ public class AkpFile extends AbstractRIFFFile
 
         // Not used since writing is not supported
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void checkTopChunk (final int type) throws ParseException
+    {
+        if (AkpRiffChunkId.APRG_ID.getFourCC () != type)
+            throw new ParseException ("Top chunk must be 'AMUL' but is '" + RiffChunkId.toASCII (type) + "'");
+    }
 }

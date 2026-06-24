@@ -300,7 +300,7 @@ public class RawRIFFChunk implements IRiffChunk
      * Convert 4 bytes to an integer. MSB is first byte.
      *
      * @param offset The offset into the data array
-     * @return The integer value
+     * @return The long value
      */
     public int getFourBytesAsUnsignedInt (final int offset)
     {
