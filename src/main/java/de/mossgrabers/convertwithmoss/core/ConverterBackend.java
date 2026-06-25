@@ -79,6 +79,8 @@ import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
 import de.mossgrabers.convertwithmoss.format.sxt.SxtCreator;
 import de.mossgrabers.convertwithmoss.format.sxt.SxtDetector;
+import de.mossgrabers.convertwithmoss.format.synthstrom.DelugeCreator;
+import de.mossgrabers.convertwithmoss.format.synthstrom.DelugeDetector;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxCreator;
@@ -154,6 +156,7 @@ public class ConverterBackend
             new OmnisphereDetector (notifier),
             new PolyendTrackerDetector (notifier),
             new RenoiseDetector (notifier),
+            new DelugeDetector (notifier),
             new S5xxDetector (notifier),
             new S770Detector (notifier),
             new SxtDetector (notifier),
@@ -185,6 +188,7 @@ public class ConverterBackend
             new OmnisphereCreator (notifier),
             new PolyendTrackerCreator (notifier),
             new RenoiseCreator (notifier),
+            new DelugeCreator (notifier),
             new SxtCreator (notifier),
             new WavCreator (notifier),
             new SfzCreator (notifier),
