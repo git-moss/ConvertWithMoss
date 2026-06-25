@@ -266,7 +266,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.loadConfiguration ();
 
         this.updateTitle (null);
-        this.sourcePathField.requestFocus ();
+        this.sourceTaskPane.search.requestFocus ();
 
         this.configureTraversalManager ();
 
