@@ -18,16 +18,6 @@
     -fx-background-color: transparent;
 }
 
-.horizontal-tab-pane *.tab {
-	/* Determines the tab height */
-	-fx-pref-width: 30px; 
-	/* Everything else is just aesthetics */
-	-fx-padding: 12px;
-	-fx-background-insets: 2 -1 -1 -1;
-	-fx-border-width: 1 0 1 1;
-	-fx-border-color: rgb(55, 55, 56) black black black;
-}
-
 /** Remove the focus border which interlapped the text. */
 .tab-pane > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
     -fx-border-color: transparent;
@@ -35,15 +25,6 @@
 
 .tab-pane > .tab-header-area > .headers-region > .tab {
     -fx-background-insets: 0 0 0 0, 0 1 0 0, 1 2 0 1;
-}
-
-.horizontal-tab-pane *.tab:selected {
-	-fx-border-width: 4px 0px 1px 1px;
-	-fx-border-color: rgb(200, 0, 0) black rgb(45, 45, 46) black;
-}
-
-.horizontal-tab-pane:focused {
-	-fx-border-color: -fx-focus-color;
 }
 
 .titled-pane>*.content {
@@ -72,7 +53,7 @@
 }
 
 .paddingLeftBottomRight {
-    -fx-padding: 0.0 15.0 15.0 7.0;
+    -fx-padding: 0.0 15.0 15.0 15.0;
 }
 
 .no-padding {
@@ -96,6 +77,24 @@
 .flat-button {
     -fx-background-color: transparent;
     -fx-padding: 0.0;
+}
+
+/*********************
+ * Field with clear
+ *********************/
+ 
+.text-field-with-clear {
+	-fx-padding: 4 24 4 4; 
+}
+ 
+.text-field-clear-button {
+	-fx-background-color: transparent;
+	-fx-cursor: hand;
+	-fx-padding: 0;
+}
+
+.text-field-clear-button:hover {
+	-fx-text-fill: derive(-fx-text-base-color, -30%);
 }
 
 /*********************

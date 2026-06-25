@@ -159,7 +159,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         // Parse the indexed modulation sets which carry the envelopes and the sampler filter
-        final List<ModulationSet> modulationSets = this.parseModulationSets (sampleGenerator);
+        final List<ModulationSet> modulationSets = parseModulationSets (sampleGenerator);
 
         final String overlapMode = XMLUtils.getChildElementContent (sampleGenerator, RenoiseTag.KEYZONE_OVERLAPPING_MODE);
         final boolean roundRobin = RenoiseTag.OVERLAP_CYCLE.equals (overlapMode) || RenoiseTag.OVERLAP_RANDOM.equals (overlapMode);
@@ -403,7 +403,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      * @param sampleGenerator The sample generator element
      * @return The indexed list of modulation sets
      */
-    private List<ModulationSet> parseModulationSets (final Element sampleGenerator)
+    private static List<ModulationSet> parseModulationSets (final Element sampleGenerator)
     {
         final List<ModulationSet> result = new ArrayList<> ();
         final Element modulationSetsElement = XMLUtils.getChildElementByName (sampleGenerator, RenoiseTag.MODULATION_SETS);

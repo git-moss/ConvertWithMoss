@@ -8,7 +8,7 @@ import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.tools.ui.BasicConfig;
-import javafx.scene.Node;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -23,7 +23,7 @@ public interface ICoreTaskSettings
      *
      * @return The pane
      */
-    Node getEditPane ();
+    Pane getEditPane ();
 
 
     /**

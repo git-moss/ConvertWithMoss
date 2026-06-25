@@ -14,9 +14,8 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -51,7 +50,7 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
@@ -60,11 +59,7 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
         this.directorySearchComboBox.getSelectionModel ().select (Integer.valueOf (1));
 
         this.addTo (panel);
-
-        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
-        scrollPane.fitToWidthProperty ().set (true);
-        scrollPane.fitToHeightProperty ().set (true);
-        return scrollPane;
+        return panel.getPane ();
     }
 
 

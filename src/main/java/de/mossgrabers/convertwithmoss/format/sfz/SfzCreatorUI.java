@@ -14,8 +14,8 @@ import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -44,7 +44,7 @@ public class SfzCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
         panel.createSeparator ("@IDS_OUTPUT_FORMAT");
