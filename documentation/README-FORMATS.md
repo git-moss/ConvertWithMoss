@@ -65,6 +65,7 @@ The following multi-sample formats are supported:
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
 * [Spectrasonics Omnisphere 3](#spectrasonics-omnisphere-3)
+* [Synthstrom Deluge](#synthstrom-deluge)
 * [TAL Sampler](#tal-sampler)
 * [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
@@ -578,6 +579,23 @@ then move the prt_omn file to
 
 **Note 1**: You can create a sub-folder with the name of a category, e.g. "Vox Humana" and put it there.
 **Note 2**: When opening Omnisphere both the presets and soundsources need to be rescanned! If only the presets are scanned an error shows up that the soundsource cannot be located!
+
+## Synthstrom Deluge
+
+The Synthstrom Audible Deluge is a standalone hardware synthesizer, sampler and sequencer. Its sounds are stored as XML files (file ending *xml*) on the SD-card; a *sound* holds a (multi-)sample based synth voice and a *kit* holds a set of drums. The samples themselves are referenced by a path which is relative to the SD-card root (e.g. *SAMPLES/My Patch/C3.wav*). Both reading and writing are supported.
+
+The Deluge has gone through several firmware generations which changed how the XML is written: the official firmware (up to v4) stores the parameters as child elements while the community firmware additionally writes them as attributes. When reading, **both** variants - and both *sound* and *kit* files - are understood, so patches authored on either firmware are translated without losing information. The sample mapping (key ranges), the original root note (from the *transpose* / *cents* offset, or the fixed root note of a drum), the sample playback start/end and loop points, the loop mode (one-shot or loop), the reversed flag, the low- and high-pass filter (with the various filter modes) as well as the amplitude envelope and the velocity-to-volume modulation are converted.
+
+When writing, a multi-sample is stored as a *sound* patch with a single sample oscillator whose zones are written as a *sampleRanges* list. The file is written in the **element-based form of the official v4 firmware** (`firmwareVersion="4.1.0-alpha"`), so it loads on both the official v4 firmware and on the community firmware - no community-only features are used. The output mirrors the Deluge SD-card layout: the patch is written to a *SYNTHS* sub-folder and its samples to *SAMPLES/&lt;name&gt;/* next to it, and the *fileName* references are written relative to that card root.
+
+### Destination Options
+
+* Options to write/update [WAV Chunk Information](#wav-chunk-information).
+
+### Limitations
+
+* A Deluge *sound* has a single sample oscillator with one sample per key, therefore only one velocity layer is written. If a source contains several velocity layers, the loudest zone of each key is kept and the others are ignored.
+* The filter cut-off / resonance and the envelope times are stored as the Deluge's internal 32-bit parameter values. Since the device uses internal (table driven) curves for these, the conversion is a musically faithful approximation rather than an exact match.
 
 ## TAL Sampler
 

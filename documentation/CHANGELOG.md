@@ -4,6 +4,7 @@
 
 * New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
+* New: Added support for the Synthstrom Deluge instrument format.
 * New: Added support for the Downloadable Sound format (DLS) - read only.
 * New: Added several new tags for category detection.
 * FLAC/OGG
