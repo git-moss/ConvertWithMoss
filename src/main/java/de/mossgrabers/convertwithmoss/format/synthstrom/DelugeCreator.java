@@ -23,6 +23,7 @@ import org.w3c.dom.Element;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -32,8 +33,12 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -47,6 +52,11 @@ import de.mossgrabers.tools.XMLUtils;
  * Only features available on the official v4 firmware are written so that the created instruments
  * load on both the official and the community firmware. The element based file structure is used
  * which is understood by all firmware versions.
+ * <p>
+ * The Deluge has no loop cross-fade parameter of its own. Like the Renoise creator, a loop
+ * cross-fade - set with the 'Set fixed loop-crossfade' processing option or read from the source -
+ * is therefore baked into the looped sample audio. No extra option is needed for this; the
+ * cross-fade is applied automatically whenever a forward loop carries one.
  *
  * @author Jürgen Moßgraber
  */
@@ -302,10 +312,10 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final Element envelope1 = XMLUtils.addElement (document, defaultParams, DelugeTag.ENVELOPE1);
         final IEnvelope ampEnvelope = firstZone.getAmplitudeEnvelopeModulator ().getSource ();
-        XMLUtils.addTextElement (document, envelope1, DelugeTag.ATTACK, DelugeValues.formatHex (DelugeValues.timeToParam (ampEnvelope.getAttackTime ())));
+        XMLUtils.addTextElement (document, envelope1, DelugeTag.ATTACK, DelugeValues.formatHex (DelugeValues.attackTimeToParam (ampEnvelope.getAttackTime ())));
         XMLUtils.addTextElement (document, envelope1, DelugeTag.DECAY, DelugeValues.formatHex (envelopeDecay (ampEnvelope)));
         XMLUtils.addTextElement (document, envelope1, DelugeTag.SUSTAIN, DelugeValues.formatHex (envelopeSustain (ampEnvelope)));
-        XMLUtils.addTextElement (document, envelope1, DelugeTag.RELEASE, DelugeValues.formatHex (DelugeValues.timeToParam (ampEnvelope.getReleaseTime ())));
+        XMLUtils.addTextElement (document, envelope1, DelugeTag.RELEASE, DelugeValues.formatHex (DelugeValues.releaseTimeToParam (ampEnvelope.getReleaseTime ())));
 
         // Make the sound velocity sensitive (matches the firmware's default for sample based sounds)
         final Element patchCables = XMLUtils.addElement (document, defaultParams, DelugeTag.PATCH_CABLES);
@@ -390,7 +400,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private static int envelopeDecay (final IEnvelope envelope)
     {
         final double decayTime = Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ());
-        return envelope.getDecayTime () < 0 && envelope.getHoldTime () < 0 ? DelugeValues.userValueToParam (20) : DelugeValues.timeToParam (decayTime);
+        return envelope.getDecayTime () < 0 && envelope.getHoldTime () < 0 ? DelugeValues.userValueToParam (20) : DelugeValues.releaseTimeToParam (decayTime);
     }
 
 
@@ -404,5 +414,133 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         final double sustainLevel = envelope.getSustainLevel ();
         return sustainLevel < 0 ? DelugeValues.PARAM_MAX : DelugeValues.levelToParam (sustainLevel);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected boolean requiresRewrite (final DestinationAudioFormat destinationFormat)
+    {
+        // The Deluge reads all sample bounds and loop points from the XML, never from chunks in the
+        // WAV file. Reconstructing the sample is therefore loss-less for it and lets a loop
+        // cross-fade be baked into the audio - the same way the Renoise creator always re-encodes
+        // its samples.
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void additionalProcessing (final IMultisampleSource multisampleSource, final ISampleZone zone, final WaveFile wavFile)
+    {
+        super.additionalProcessing (multisampleSource, zone, wavFile);
+
+        // The Deluge has no loop cross-fade parameter. A loop cross-fade (set via the 'Set fixed
+        // loop-crossfade' processing option or read from the source) is baked into the sample audio
+        // so that forward loops do not click at the loop point.
+        final ISampleLoop loop = getCrossfadeLoop (zone);
+        if (loop != null)
+            applyLoopCrossfade (wavFile, loop.getStart (), loop.getEnd (), loop.getCrossfadeInSamples ());
+    }
+
+
+    /**
+     * Get the (first) loop of a zone if a cross-fade should be baked into its audio. Only forward
+     * loops with a cross-fade greater than zero are considered.
+     *
+     * @param zone The zone
+     * @return The loop or null if no cross-fade should be applied
+     */
+    private static ISampleLoop getCrossfadeLoop (final ISampleZone zone)
+    {
+        final List<ISampleLoop> loops = zone.getLoops ();
+        if (loops.isEmpty ())
+            return null;
+        final ISampleLoop loop = loops.get (0);
+        if (loop.getCrossfade () > 0 && loop.getType () == LoopType.FORWARDS && loop.getStart () >= 0 && loop.getEnd () > loop.getStart ())
+            return loop;
+        return null;
+    }
+
+
+    /**
+     * Bake a loop cross-fade into the audio of a forward loop. The cross-fade region at the end of
+     * the loop is blended with the audio preceding the loop start so that the loop wraps seamlessly.
+     *
+     * @param wavFile The WAV file whose audio data is modified in place
+     * @param loopStart The loop start frame
+     * @param loopEnd The loop end frame (exclusive)
+     * @param crossfadeSamples The requested cross-fade length in frames
+     */
+    private static void applyLoopCrossfade (final WaveFile wavFile, final int loopStart, final int loopEnd, final int crossfadeSamples)
+    {
+        final FormatChunk formatChunk = wavFile.getFormatChunk ();
+        final DataChunk dataChunk = wavFile.getDataChunk ();
+        if (formatChunk == null || dataChunk == null || crossfadeSamples <= 0)
+            return;
+
+        final int channels = formatChunk.getNumberOfChannels ();
+        final int bytesPerFrame = formatChunk.calculateBytesPerSample ();
+        final int bytesPerChannel = channels == 0 ? 0 : bytesPerFrame / channels;
+        if (bytesPerChannel != 2 && bytesPerChannel != 3)
+            return;
+
+        final byte [] data = dataChunk.getData ();
+        final int totalFrames = data.length / bytesPerFrame;
+        final int end = Math.min (loopEnd, totalFrames);
+
+        // The cross-fade can neither be longer than the loop nor reach before the start of the sample
+        final int crossfade = Math.min (crossfadeSamples, Math.min (end - loopStart, loopStart));
+        if (crossfade <= 0)
+            return;
+
+        for (int j = 0; j < crossfade; j++)
+        {
+            final int endFrame = end - crossfade + j;
+            final int preFrame = loopStart - crossfade + j;
+            final double mix = (j + 1.0) / crossfade;
+            for (int c = 0; c < channels; c++)
+            {
+                final int endPos = endFrame * bytesPerFrame + c * bytesPerChannel;
+                final int prePos = preFrame * bytesPerFrame + c * bytesPerChannel;
+                final int blended = (int) Math.round (readSample (data, endPos, bytesPerChannel) * (1.0 - mix) + readSample (data, prePos, bytesPerChannel) * mix);
+                writeSample (data, endPos, bytesPerChannel, blended);
+            }
+        }
+
+        dataChunk.setData (data);
+    }
+
+
+    /**
+     * Read a little-endian signed PCM sample.
+     *
+     * @param data The audio data
+     * @param pos The byte position
+     * @param bytesPerChannel The number of bytes per channel sample (2 or 3)
+     * @return The signed sample value
+     */
+    private static int readSample (final byte [] data, final int pos, final int bytesPerChannel)
+    {
+        if (bytesPerChannel == 2)
+            return (short) (data[pos] & 0xFF | (data[pos + 1] & 0xFF) << 8);
+        return data[pos] & 0xFF | (data[pos + 1] & 0xFF) << 8 | data[pos + 2] << 16;
+    }
+
+
+    /**
+     * Write a little-endian signed PCM sample.
+     *
+     * @param data The audio data
+     * @param pos The byte position
+     * @param bytesPerChannel The number of bytes per channel sample (2 or 3)
+     * @param value The sample value
+     */
+    private static void writeSample (final byte [] data, final int pos, final int bytesPerChannel, final int value)
+    {
+        data[pos] = (byte) (value & 0xFF);
+        data[pos + 1] = (byte) (value >> 8 & 0xFF);
+        if (bytesPerChannel == 3)
+            data[pos + 2] = (byte) (value >> 16 & 0xFF);
     }
 }

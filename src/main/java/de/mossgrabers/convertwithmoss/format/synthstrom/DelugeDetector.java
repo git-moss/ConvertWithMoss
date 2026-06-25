@@ -468,13 +468,13 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         final String release = getValue (envelopeElement, DelugeTag.RELEASE);
 
         if (!attack.isBlank ())
-            envelope.setAttackTime (DelugeValues.paramToTime (DelugeValues.parseValue (attack, DelugeValues.PARAM_MIN)));
+            envelope.setAttackTime (DelugeValues.paramToAttackTime (DelugeValues.parseValue (attack, DelugeValues.PARAM_MIN)));
         if (!decay.isBlank ())
-            envelope.setDecayTime (DelugeValues.paramToTime (DelugeValues.parseValue (decay, DelugeValues.PARAM_MIN)));
+            envelope.setDecayTime (DelugeValues.paramToReleaseTime (DelugeValues.parseValue (decay, DelugeValues.PARAM_MIN)));
         if (!sustain.isBlank ())
             envelope.setSustainLevel (DelugeValues.paramToLevel (DelugeValues.parseValue (sustain, DelugeValues.PARAM_MAX)));
         if (!release.isBlank ())
-            envelope.setReleaseTime (DelugeValues.paramToTime (DelugeValues.parseValue (release, DelugeValues.PARAM_MIN)));
+            envelope.setReleaseTime (DelugeValues.paramToReleaseTime (DelugeValues.parseValue (release, DelugeValues.PARAM_MIN)));
     }
 
 

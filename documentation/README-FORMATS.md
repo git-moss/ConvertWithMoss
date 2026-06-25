@@ -588,6 +588,8 @@ The Deluge has gone through several firmware generations which changed how the X
 
 When writing, a multi-sample is stored as a *sound* patch with a single sample oscillator whose zones are written as a *sampleRanges* list. The file is written in the **element-based form of the official v4 firmware** (`firmwareVersion="4.1.0-alpha"`), so it loads on both the official v4 firmware and on the community firmware - no community-only features are used. The output mirrors the Deluge SD-card layout: the patch is written to a *SYNTHS* sub-folder and its samples to *SAMPLES/&lt;name&gt;/* next to it, and the *fileName* references are written relative to that card root.
 
+The Deluge has no loop cross-fade parameter of its own, so - exactly like the Renoise format - a loop cross-fade is baked into the looped sample audio. This happens automatically (there is no extra option) whenever a forward loop has a cross-fade: set one with the *Set fixed loop-crossfade* processing option, or it is taken from the source. This removes clicks at the loop point of samples whose loop was not designed to be click-free without a cross-fade (many auto-sampled instruments rely on the host applying a cross-fade at play time). With no cross-fade set, the loop is written exactly as it is.
+
 ### Destination Options
 
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
@@ -595,7 +597,7 @@ When writing, a multi-sample is stored as a *sound* patch with a single sample o
 ### Limitations
 
 * A Deluge *sound* has a single sample oscillator with one sample per key, therefore only one velocity layer is written. If a source contains several velocity layers, the loudest zone of each key is kept and the others are ignored.
-* The filter cut-off / resonance and the envelope times are stored as the Deluge's internal 32-bit parameter values. Since the device uses internal (table driven) curves for these, the conversion is a musically faithful approximation rather than an exact match.
+* The amplitude envelope attack, decay and release times are converted using the Deluge's internal rate tables (attack about 0.7 ms .. 3 s, decay/release about 6 ms .. 6 s); times outside that range are clamped. The filter cut-off / resonance are stored as the Deluge's internal 32-bit parameter values and are a musically faithful approximation rather than an exact match.
 
 ## TAL Sampler
 

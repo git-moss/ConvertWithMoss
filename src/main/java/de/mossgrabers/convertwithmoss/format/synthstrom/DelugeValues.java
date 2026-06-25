@@ -36,10 +36,32 @@ public final class DelugeValues
     /** The scaling factor of one user value step (see firmware getParamFromUserValue). */
     private static final long   USER_VALUE_STEP  = 85899345L;
 
-    private static final double MIN_ENV_TIME     = 0.001;
-    private static final double MAX_ENV_TIME     = 20.0;
     private static final double MIN_FREQUENCY    = 20.0;
     private static final double MAX_FREQUENCY    = 20000.0;
+
+    /** The envelope stage length threshold (2^23) used by the firmware envelope engine. */
+    private static final int    ENV_STAGE_LENGTH = 8388608;
+    /** The device sample rate in Hz at which the envelope rate tables are defined. */
+    private static final double DEVICE_RATE      = 44100.0;
+
+    /**
+     * The attack rate table of the firmware indexed by the knob position (0..50). The actual attack
+     * time is <code>ENV_STAGE_LENGTH / (rate * DEVICE_RATE)</code> seconds (about 0.7 ms .. 3.0 s).
+     */
+    private static final int [] ATTACK_RATE_TABLE  =
+    {
+        262144, 221969, 187951, 159147, 134757, 114105, 96618, 81811, 69273, 58656, 49667, 42055, 35610, 30153, 25532, 21619, 18306, 15500, 13125, 11113, 9410, 7968, 6747, 5713, 4837, 4096, 3468, 2937, 2487, 2106, 1783, 1510, 1278, 1082, 917, 776, 657, 556, 471, 399, 338, 286, 242, 205, 174, 147, 124, 105, 89, 76, 64
+    };
+
+    /**
+     * The decay/release rate table of the firmware indexed by the knob position (0..50). Decay and
+     * release share this table. The actual time is <code>ENV_STAGE_LENGTH / (rate * DEVICE_RATE)</code>
+     * seconds (about 5.8 ms .. 5.9 s).
+     */
+    private static final int [] RELEASE_RATE_TABLE =
+    {
+        32691, 4604, 2444, 1648, 1234, 980, 809, 685, 592, 519, 460, 412, 372, 338, 309, 283, 261, 241, 224, 208, 194, 181, 169, 159, 149, 140, 132, 124, 117, 110, 104, 98, 93, 88, 83, 78, 74, 70, 66, 62, 59, 56, 53, 50, 47, 44, 41, 39, 36, 34, 32
+    };
 
 
     /**
@@ -145,30 +167,98 @@ public final class DelugeValues
 
 
     /**
-     * Convert an envelope time in seconds to a 32-bit parameter value (approximated).
+     * Convert an attack time in seconds to a 32-bit parameter value using the firmware attack rate
+     * table.
      *
-     * @param seconds The time in seconds, a negative value is interpreted as the fastest time
+     * @param seconds The time in seconds
      * @return The parameter value
      */
-    public static int timeToParam (final double seconds)
+    public static int attackTimeToParam (final double seconds)
     {
-        if (seconds <= MIN_ENV_TIME)
-            return PARAM_MIN;
-        final double userValue = MAX_USER_VALUE * Math.log (seconds / MIN_ENV_TIME) / Math.log (MAX_ENV_TIME / MIN_ENV_TIME);
-        return userValueToParam ((int) Math.round (userValue));
+        return timeToParam (seconds, ATTACK_RATE_TABLE);
     }
 
 
     /**
-     * Convert a 32-bit envelope time parameter value to seconds (approximated).
+     * Convert a 32-bit attack parameter value to a time in seconds.
      *
      * @param param The parameter value
      * @return The time in seconds
      */
-    public static double paramToTime (final int param)
+    public static double paramToAttackTime (final int param)
     {
-        final int userValue = paramToUserValue (param);
-        return MIN_ENV_TIME * Math.pow (MAX_ENV_TIME / MIN_ENV_TIME, userValue / (double) MAX_USER_VALUE);
+        return paramToTime (param, ATTACK_RATE_TABLE);
+    }
+
+
+    /**
+     * Convert a decay or release time in seconds to a 32-bit parameter value. Decay and release
+     * share the same firmware rate table.
+     *
+     * @param seconds The time in seconds
+     * @return The parameter value
+     */
+    public static int releaseTimeToParam (final double seconds)
+    {
+        return timeToParam (seconds, RELEASE_RATE_TABLE);
+    }
+
+
+    /**
+     * Convert a 32-bit decay or release parameter value to a time in seconds.
+     *
+     * @param param The parameter value
+     * @return The time in seconds
+     */
+    public static double paramToReleaseTime (final int param)
+    {
+        return paramToTime (param, RELEASE_RATE_TABLE);
+    }
+
+
+    private static double rateToSeconds (final int rate)
+    {
+        return rate <= 0 ? Double.MAX_VALUE : ENV_STAGE_LENGTH / (rate * DEVICE_RATE);
+    }
+
+
+    private static int timeToParam (final double seconds, final int [] rateTable)
+    {
+        final int last = rateTable.length - 1;
+        if (seconds <= rateToSeconds (rateTable[0]))
+            return PARAM_MIN;
+        if (seconds >= rateToSeconds (rateTable[last]))
+            return PARAM_MAX;
+        for (int i = 0; i < last; i++)
+        {
+            final double t0 = rateToSeconds (rateTable[i]);
+            final double t1 = rateToSeconds (rateTable[i + 1]);
+            if (seconds >= t0 && seconds <= t1)
+            {
+                final double userValue = i + (t1 <= t0 ? 0.0 : (seconds - t0) / (t1 - t0));
+                return userValueToParam (userValue);
+            }
+        }
+        return PARAM_MAX;
+    }
+
+
+    private static double paramToTime (final int param, final int [] rateTable)
+    {
+        final int last = rateTable.length - 1;
+        final double userValue = Math.clamp ((param + 2147483648.0) / USER_VALUE_STEP, 0, MAX_USER_VALUE);
+        final int index = (int) Math.floor (userValue);
+        if (index >= last)
+            return rateToSeconds (rateTable[last]);
+        final double t0 = rateToSeconds (rateTable[index]);
+        final double t1 = rateToSeconds (rateTable[index + 1]);
+        return t0 + (t1 - t0) * (userValue - index);
+    }
+
+
+    private static int userValueToParam (final double userValue)
+    {
+        return (int) Math.round (Math.clamp (userValue, 0, MAX_USER_VALUE) * USER_VALUE_STEP - 2147483648.0);
     }
 
 
