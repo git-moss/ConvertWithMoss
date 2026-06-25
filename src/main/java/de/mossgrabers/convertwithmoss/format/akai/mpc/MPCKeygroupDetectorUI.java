@@ -14,9 +14,8 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -45,27 +44,23 @@ public class MPCKeygroupDetectorUI extends MetadataSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ///////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////
         // Options
 
         panel.createSeparator ("@IDS_MPC_OPTIONS");
 
         this.ignoreLoopsCheckBox = panel.createCheckBox ("@IDS_MPC_IGNORE_LOOPS", "@IDS_MPC_IGNORE_LOOPS_TOOLTIP");
 
-        ///////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);
         this.getSeparator ().getStyleClass ().add ("titled-separator-pane");
-
-        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
-        scrollPane.fitToWidthProperty ().set (true);
-        scrollPane.fitToHeightProperty ().set (true);
-        return scrollPane;
+        return panel.getPane ();
     }
 
 

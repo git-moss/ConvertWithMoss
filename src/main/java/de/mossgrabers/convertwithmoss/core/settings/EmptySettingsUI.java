@@ -10,7 +10,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -35,7 +35,7 @@ public class EmptySettingsUI implements ICoreTaskSettings
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         return new BoxPanel (Orientation.VERTICAL).getPane ();
     }

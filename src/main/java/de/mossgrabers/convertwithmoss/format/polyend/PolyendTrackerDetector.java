@@ -109,7 +109,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
         final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
 
-        final List<ISampleZone> zones = this.createZones (buffer, audioMetadata, interleaved, frames, name);
+        final List<ISampleZone> zones = createZones (buffer, audioMetadata, interleaved, frames, name);
         if (zones.isEmpty ())
         {
             this.notifier.logError ("IDS_PTI_NO_AUDIO_DATA", file.getName ());
@@ -139,7 +139,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
      * @param name The instrument name
      * @return The zones
      */
-    private List<ISampleZone> createZones (final ByteBuffer buffer, final DefaultAudioMetadata audioMetadata, final byte [] interleaved, final int frames, final String name)
+    private static List<ISampleZone> createZones (final ByteBuffer buffer, final DefaultAudioMetadata audioMetadata, final byte [] interleaved, final int frames, final String name)
     {
         final int playmode = buffer.get (PolyendTrackerConstants.OFF_PLAYMODE) & 0xFF;
         final int numSlices = buffer.get (PolyendTrackerConstants.OFF_NUM_SLICES) & 0xFF;
@@ -150,8 +150,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         {
             // Each slice becomes a self-contained sample mapped chromatically to one key, starting
             // at the default root note. The audio is trimmed to the slice region so that there is
-            // no
-            // redundant audio data.
+            // no redundant audio data.
             final int channels = audioMetadata.getChannels ();
             final int bytesPerFrame = channels * 2;
             for (int i = 0; i < numSlices; i++)
@@ -173,7 +172,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
                 zone.setKeyHigh (note);
                 zone.setStart (0);
                 zone.setStop (sliceFrames);
-                this.applyInstrumentParameters (zone, buffer);
+                applyInstrumentParameters (zone, buffer);
                 zones.add (zone);
             }
             return zones;
@@ -207,7 +206,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        this.applyInstrumentParameters (zone, buffer);
+        applyInstrumentParameters (zone, buffer);
         zones.add (zone);
         return zones;
     }
@@ -220,7 +219,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
      * @param zone The zone to configure
      * @param buffer The buffer with the file content
      */
-    private void applyInstrumentParameters (final ISampleZone zone, final ByteBuffer buffer)
+    private static void applyInstrumentParameters (final ISampleZone zone, final ByteBuffer buffer)
     {
         zone.setGain (PolyendTrackerValueConverter.rawVolumeToGain (buffer.get (PolyendTrackerConstants.OFF_VOLUME) & 0xFF));
         zone.setPanning (PolyendTrackerValueConverter.rawPanningToModel (buffer.getShort (PolyendTrackerConstants.OFF_PANNING)));

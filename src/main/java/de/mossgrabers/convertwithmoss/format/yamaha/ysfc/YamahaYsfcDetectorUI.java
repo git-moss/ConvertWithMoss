@@ -15,10 +15,9 @@ import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -47,11 +46,11 @@ public class YamahaYsfcDetectorUI extends MetadataSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ///////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////
         // Options
 
         panel.createSeparator ("@IDS_YSFC_SOURCE_TYPE");
@@ -64,16 +63,12 @@ public class YamahaYsfcDetectorUI extends MetadataSettingsUI
         order2.setAccessibleHelp (Functions.getMessage ("IDS_YSFC_SOURCE_TYPE"));
         order2.setToggleGroup (this.sourceTypeToggleGroup);
 
-        ///////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);
         this.getSeparator ().getStyleClass ().add ("titled-separator-pane");
-
-        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
-        scrollPane.fitToWidthProperty ().set (true);
-        scrollPane.fitToHeightProperty ().set (true);
-        return scrollPane;
+        return panel.getPane ();
     }
 
 

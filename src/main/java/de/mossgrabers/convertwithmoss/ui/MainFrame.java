@@ -12,9 +12,11 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -22,6 +24,7 @@ import java.util.stream.Stream;
 
 import de.mossgrabers.convertwithmoss.core.ConverterBackend;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
+import de.mossgrabers.convertwithmoss.core.ICoreTask;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
@@ -38,14 +41,21 @@ import de.mossgrabers.tools.ui.panel.BoxPanel;
 import de.mossgrabers.tools.ui.panel.ButtonPanel;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.geometry.Side;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.MultipleSelectionModel;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
@@ -69,76 +79,72 @@ import javafx.util.Duration;
  */
 public class MainFrame extends AbstractFrame implements INotifier
 {
-    private static final String          PADDING_LEFT_BOTTOM_RIGHT           = "paddingLeftBottomRight";
+    private static final int       NUMBER_OF_DIRECTORIES               = 20;
+    private static final int       MAXIMUM_NUMBER_OF_LOG_ENTRIES       = 100000;
 
-    private static final int             NUMBER_OF_DIRECTORIES               = 20;
-    private static final int             MAXIMUM_NUMBER_OF_LOG_ENTRIES       = 100000;
+    private static final String    ENABLE_DARK_MODE                    = "EnableDarkMode";
+    private static final String    DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
+    private static final String    DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
+    private static final String    DESTINATION_PATH                    = "DestinationPath";
+    private static final String    DESTINATION_FORMAT                  = "DestinationFormat";
+    private static final String    DESTINATION_TYPE                    = "DestinationType";
+    private static final String    SOURCE_PATH                         = "SourcePath";
+    private static final String    SOURCE_TYPE                         = "SourceType";
+    private static final String    PRESET_LIBRARY_FILENAME             = "PresetLibraryFilename";
+    private static final String    PERFORMANCE_LIBRARY_FILENAME        = "PerformanceLibraryFilename";
+    private static final String    PROCESSING_ENABLE                   = "ProcessingEnable";
+    private static final String    PROCESSING_ENABLE_NORMALIZE         = "ProcessingEnableNormalize";
+    private static final String    PROCESSING_MAKE_MONO                = "ProcessingMakeMono";
+    private static final String    PROCESSING_ENABLE_TRIM_SAMPLE       = "ProcessingEnableTrimSample";
+    private static final String    PROCESSING_MAX_NUMBER_OF_SAMPLES    = "ProcessingMaxNumberOfSamples";
+    private static final String    PROCESSING_REDUCE_BIT_DEPTH         = "ProcessingReduceBitDepth";
+    private static final String    PROCESSING_REDUCE_FREQUENCY         = "ProcessingReduceFrequency";
+    private static final String    PROCESSING_ALWAYS_RESAMPLE          = "ProcessingAlwaysResample";
+    private static final String    PROCESSING_LOOP_CROSSFADES          = "ProcessingLoopCrossfades";
 
-    private static final String          ENABLE_DARK_MODE                    = "EnableDarkMode";
-    private static final String          DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
-    private static final String          DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
-    private static final String          DESTINATION_PATH                    = "DestinationPath";
-    private static final String          DESTINATION_FORMAT                  = "DestinationFormat";
-    private static final String          DESTINATION_TYPE                    = "DestinationType";
-    private static final String          SOURCE_PATH                         = "SourcePath";
-    private static final String          SOURCE_TYPE                         = "SourceType";
-    private static final String          PRESET_LIBRARY_FILENAME             = "PresetLibraryFilename";
-    private static final String          PERFORMANCE_LIBRARY_FILENAME        = "PerformanceLibraryFilename";
-    private static final String          PROCESSING_ENABLE                   = "ProcessingEnable";
-    private static final String          PROCESSING_ENABLE_NORMALIZE         = "ProcessingEnableNormalize";
-    private static final String          PROCESSING_MAKE_MONO                = "ProcessingMakeMono";
-    private static final String          PROCESSING_ENABLE_TRIM_SAMPLE       = "ProcessingEnableTrimSample";
-    private static final String          PROCESSING_MAX_NUMBER_OF_SAMPLES    = "ProcessingMaxNumberOfSamples";
-    private static final String          PROCESSING_REDUCE_BIT_DEPTH         = "ProcessingReduceBitDepth";
-    private static final String          PROCESSING_REDUCE_FREQUENCY         = "ProcessingReduceFrequency";
-    private static final String          PROCESSING_ALWAYS_RESAMPLE          = "ProcessingAlwaysResample";
-    private static final String          PROCESSING_LOOP_CROSSFADES          = "ProcessingLoopCrossfades";
+    private static final int       DEST_TYPE_PRESET                    = 0;
+    private static final int       DEST_TYPE_PRESET_LIBRARY            = 1;
+    private static final int       DEST_TYPE_PERFORMANCE               = 2;
+    private static final int       DEST_TYPE_PERFORMANCE_LIBRARY       = 3;
 
-    private static final int             DEST_TYPE_PRESET                    = 0;
-    private static final int             DEST_TYPE_PRESET_LIBRARY            = 1;
-    private static final int             DEST_TYPE_PERFORMANCE               = 2;
-    private static final int             DEST_TYPE_PERFORMANCE_LIBRARY       = 3;
+    private BorderPane             mainPane;
+    private BorderPane             executePane;
+    private final ComboBox<String> sourcePathField                     = new ComboBox<> ();
+    private final ComboBox<String> destinationPathField                = new ComboBox<> ();
 
-    private BorderPane                   mainPane;
-    private BorderPane                   executePane;
-    private final ComboBox<String>       sourcePathField                     = new ComboBox<> ();
-    private final ComboBox<String>       destinationPathField                = new ComboBox<> ();
+    private Button                 convertButton;
+    private Button                 analyseButton;
+    private Button                 closeButton;
+    private Button                 cancelButton;
+    private Button                 processingButton;
+    private Button                 settingsButton;
+    private Button                 sourceFolderSelectButton;
+    private Button                 destinationFolderSelectButton;
 
-    private Button                       convertButton;
-    private Button                       analyseButton;
-    private Button                       closeButton;
-    private Button                       cancelButton;
-    private Button                       processingButton;
-    private Button                       settingsButton;
-    private Button                       sourceFolderSelectButton;
-    private Button                       destinationFolderSelectButton;
+    private final TabPane          destinationTypeTabPane              = new TabPane ();
 
-    private final TabPane                sourceTabPane                       = new TabPane ();
-    private final TabPane                destinationTabPane                  = new TabPane ();
-    private final TabPane                destinationTypeTabPane              = new TabPane ();
+    private final List<String>     sourcePathHistory                   = new ArrayList<> ();
+    private final List<String>     destinationPathHistory              = new ArrayList<> ();
 
-    private final List<String>           sourcePathHistory                   = new ArrayList<> ();
-    private final List<String>           destinationPathHistory              = new ArrayList<> ();
+    private final LoggerBoxLogger  logger                              = new LoggerBoxLogger (MAXIMUM_NUMBER_OF_LOG_ENTRIES);
+    private final LoggerBox        loggingArea                         = new LoggerBox (this.logger);
+    private final TraversalManager traversalManager                    = new TraversalManager ();
 
-    private final LoggerBoxLogger        logger                              = new LoggerBoxLogger (MAXIMUM_NUMBER_OF_LOG_ENTRIES);
-    private final LoggerBox              loggingArea                         = new LoggerBox (this.logger);
-    private final TraversalManager       traversalManager                    = new TraversalManager ();
+    private FileWriter             logWriter;
+    private boolean                combineWithPreviousMessage          = false;
+    private TextField              presetLibraryFilename;
+    private TextField              performanceLibraryFilename;
+    private final ConverterBackend backend;
 
-    private FileWriter                   logWriter;
-    private boolean                      combineWithPreviousMessage          = false;
-    private TextField                    presetLibraryFilename;
-    private TextField                    performanceLibraryFilename;
-    private final Map<Tab, ICreator<?>>  creatorTabs                         = new HashMap<> ();
-    private final Map<Tab, IDetector<?>> sourceTabs                          = new HashMap<> ();
-    private final ConverterBackend       backend;
-
-    private SettingsDialog               settingsDialog;
-    private ProcessingDialog             processingDialog;
-    private final DetectSettings         detectSettings                      = new DetectSettings ();
+    private SettingsDialog         settingsDialog;
+    private ProcessingDialog       processingDialog;
+    private final DetectSettings   detectSettings                      = new DetectSettings ();
 
     // Parameters of Settings dialog
-    private boolean                      addNewFiles;
-    private boolean                      enableDarkMode;
+    private boolean                addNewFiles;
+    private boolean                enableDarkMode;
+    private TaskPane<IDetector<?>> sourceTaskPane;
+    private TaskPane<ICreator<?>>  destinationTaskPane;
 
 
     /**
@@ -177,8 +183,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
 
-        ///////////////////////////////////////////////////////
         // Source pane
+        //
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         this.sourceFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_TOOLTIP")));
@@ -190,24 +196,13 @@ public class MainFrame extends AbstractFrame implements INotifier
         sourceUpperPane.addComponent (new BorderPane (this.sourcePathField, null, this.sourceFolderSelectButton, null, null));
         this.sourcePathField.setMaxWidth (Double.MAX_VALUE);
 
-        this.sourceTabPane.getStyleClass ().add (PADDING_LEFT_BOTTOM_RIGHT);
-        final ObservableList<Tab> tabs = this.sourceTabPane.getTabs ();
-        for (final IDetector<?> detector: this.backend.getDetectors ())
-        {
-            final ICoreTaskSettings userInterface = detector.getSettings ();
-            final Tab tab = new Tab (detector.getName (), userInterface.getEditPane ());
-            tab.setClosable (false);
-            tab.setTooltip (new Tooltip (formatFileEndings (detector.getFileEndings ())));
-            tabs.add (tab);
-            this.sourceTabs.put (tab, detector);
-        }
-        setTabPaneLeftTabsHorizontal (this.sourceTabPane);
-
-        final BorderPane sourcePane = new BorderPane (this.sourceTabPane);
+        this.sourceTaskPane = new TaskPane<> (Arrays.asList (this.backend.getDetectors ()), true);
+        final BorderPane sourcePane = new BorderPane ();
         sourcePane.setTop (sourceUpperPane.getPane ());
+        sourcePane.setCenter (this.sourceTaskPane.formatPane);
 
-        ///////////////////////////////////////////////////////
         // Destination pane
+        //
 
         final BorderPane destinationFolderPanel = new BorderPane (this.destinationPathField);
 
@@ -223,23 +218,13 @@ public class MainFrame extends AbstractFrame implements INotifier
         destinationUpperPart.addComponent (destinationFolderPanel);
         this.destinationPathField.setMaxWidth (Double.MAX_VALUE);
 
-        this.destinationTabPane.getStyleClass ().add (PADDING_LEFT_BOTTOM_RIGHT);
-        final ObservableList<Tab> destinationTabs = this.destinationTabPane.getTabs ();
-        for (final ICreator<?> creator: this.backend.getCreators ())
-        {
-            final ICoreTaskSettings userInterface = creator.getSettings ();
-            final Tab tab = new Tab (creator.getName (), userInterface.getEditPane ());
-            tab.setClosable (false);
-            destinationTabs.add (tab);
-            this.creatorTabs.put (tab, creator);
-        }
-        setTabPaneLeftTabsHorizontal (this.destinationTabPane);
-
+        this.destinationTaskPane = new TaskPane<> (Arrays.asList (this.backend.getCreators ()), false);
         this.configureDestinationTypePane ();
-
-        final BorderPane destinationPane = new BorderPane (this.destinationTabPane);
+        final BorderPane destinationPane = new BorderPane ();
         destinationPane.setTop (destinationUpperPart.getPane ());
+        destinationPane.setCenter (this.destinationTaskPane.formatPane);
         destinationPane.setBottom (this.destinationTypeTabPane);
+        this.destinationTypeTabPane.getStyleClass ().add ("paddingLeftBottomRight");
 
         // Tie it all together ...
         final HBox grid = new HBox ();
@@ -284,26 +269,30 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.sourcePathField.requestFocus ();
 
         this.configureTraversalManager ();
+
+        this.show ();
     }
 
 
     private static String formatFileEndings (final Set<String> fileEndings)
     {
-        final StringBuilder sb = new StringBuilder ();
+        if (fileEndings.isEmpty ())
+            return "";
+
+        final StringBuilder sb = new StringBuilder (" (");
         for (final String ending: fileEndings)
         {
             if (!sb.isEmpty ())
                 sb.append (", ");
             sb.append ("*").append (ending);
         }
-        return sb.toString ();
+        return sb.append (')').toString ();
     }
 
 
     private void configureDestinationTypePane ()
     {
         final ObservableList<Tab> destinationTypeTabs = this.destinationTypeTabPane.getTabs ();
-        this.destinationTypeTabPane.getStyleClass ().add (PADDING_LEFT_BOTTOM_RIGHT);
 
         // Add the preset destination type
         Tab tab = new Tab (Functions.getMessage ("IDS_DEST_TYPE_PRESET"), new BorderPane ());
@@ -332,57 +321,6 @@ public class MainFrame extends AbstractFrame implements INotifier
         tab.setTooltip (new Tooltip (Functions.getMessage ("IDS_DEST_TYPE_PERFORMANCE_LIBRARY_INFO")));
         tab.setClosable (false);
         destinationTypeTabs.add (tab);
-
-        setTabPaneLeftTabsHorizontal (this.destinationTypeTabPane);
-
-        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener (_ -> this.updateFormats ());
-    }
-
-
-    private void updateFormats ()
-    {
-        final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
-        boolean needsSelection = false;
-
-        // Enable only the destination formats which support the selected output type
-        for (final Tab destinationTab: this.destinationTabPane.getTabs ())
-        {
-            final ICreator<?> creator = this.creatorTabs.get (destinationTab);
-            final boolean showTab = selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_PRESET_LIBRARY && creator.supportsPresetLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances () || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY && creator.supportsPerformanceLibraries ();
-            destinationTab.setDisable (!showTab);
-            if (!showTab && destinationTab.isSelected ())
-                needsSelection = true;
-        }
-        if (needsSelection)
-        {
-            // Select the first enabled destination format, if required
-            for (final Tab destinationTab: this.destinationTabPane.getTabs ())
-                if (!destinationTab.isDisabled ())
-                {
-                    this.destinationTabPane.getSelectionModel ().select (destinationTab);
-                    break;
-                }
-
-            needsSelection = false;
-        }
-
-        // Enable only the source formats which support the selected output type
-        for (final Tab sourceTab: this.sourceTabPane.getTabs ())
-        {
-            final IDetector<?> detector = this.sourceTabs.get (sourceTab);
-            final boolean showTab = selectedType != DEST_TYPE_PERFORMANCE && selectedType != DEST_TYPE_PERFORMANCE_LIBRARY || detector.supportsPerformances ();
-            sourceTab.setDisable (!showTab);
-            if (!showTab && sourceTab.isSelected ())
-                needsSelection = true;
-        }
-        if (needsSelection)
-            // Select the first enabled source format, if required
-            for (final Tab sourceTab: this.sourceTabPane.getTabs ())
-                if (!sourceTab.isDisabled ())
-                {
-                    this.sourceTabPane.getSelectionModel ().select (sourceTab);
-                    break;
-                }
     }
 
 
@@ -390,17 +328,28 @@ public class MainFrame extends AbstractFrame implements INotifier
     {
         this.traversalManager.add (this.sourcePathField);
         this.traversalManager.add (this.sourceFolderSelectButton);
-        this.traversalManager.add (this.sourceTabPane);
-        for (final Tab tab: this.sourceTabPane.getTabs ())
-            if (tab.getContent () instanceof final Parent content)
-                this.traversalManager.addChildren (content);
+
+        this.traversalManager.add (this.sourceTaskPane.search);
+        this.traversalManager.add (this.sourceTaskPane.formatList);
+        for (final Node content: this.sourceTaskPane.mappedPanes.values ())
+        {
+            content.focusTraversableProperty ().bind (content.visibleProperty ());
+            if (content instanceof final Parent parent)
+                this.traversalManager.addChildren (parent);
+        }
 
         this.traversalManager.add (this.destinationPathField);
         this.traversalManager.add (this.destinationFolderSelectButton);
-        this.traversalManager.add (this.destinationTabPane);
-        for (final Tab tab: this.destinationTabPane.getTabs ())
-            if (tab.getContent () instanceof final Parent content)
-                this.traversalManager.addChildren (content);
+
+        this.traversalManager.add (this.destinationTaskPane.search);
+        this.traversalManager.add (this.destinationTaskPane.formatList);
+        for (final Node content: this.destinationTaskPane.mappedPanes.values ())
+        {
+            content.focusTraversableProperty ().bind (content.visibleProperty ());
+            if (content instanceof final Parent parent)
+                this.traversalManager.addChildren (parent);
+        }
+
         this.traversalManager.add (this.destinationTypeTabPane);
         for (final Tab tab: this.destinationTypeTabPane.getTabs ())
             if (tab.getContent () instanceof final Parent content)
@@ -443,8 +392,8 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void loadConfiguration ()
     {
-        //////////////////////////////
         // Source configuration
+        //
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
         {
@@ -459,8 +408,13 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.sourcePathHistory.isEmpty ())
             this.sourcePathField.getEditor ().setText (this.sourcePathHistory.get (0));
 
-        /////////////////////////////
+        for (final IDetector<?> detector: this.backend.getDetectors ())
+            detector.getSettings ().loadSettings (this.config);
+        final int sourceFormat = this.config.getInteger (SOURCE_TYPE, 0);
+        this.sourceTaskPane.setSelectedFormat (sourceFormat);
+
         // Destination Configuration
+        //
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
         {
@@ -475,15 +429,10 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.destinationPathHistory.isEmpty ())
             this.destinationPathField.getEditor ().setText (this.destinationPathHistory.get (0));
 
-        for (final IDetector<?> detector: this.backend.getDetectors ())
-            detector.getSettings ().loadSettings (this.config);
         for (final ICreator<?> creator: this.backend.getCreators ())
             creator.getSettings ().loadSettings (this.config);
-
-        final int sourceFormat = this.config.getInteger (SOURCE_TYPE, 0);
-        this.sourceTabPane.getSelectionModel ().select (sourceFormat);
         final int destinationFormat = this.config.getInteger (DESTINATION_FORMAT, 0);
-        this.destinationTabPane.getSelectionModel ().select (destinationFormat);
+        this.destinationTaskPane.setSelectedFormat (destinationFormat);
 
         final int destinationType = this.config.getInteger (DESTINATION_TYPE, DEST_TYPE_PRESET);
         this.destinationTypeTabPane.getSelectionModel ().select (destinationType);
@@ -491,8 +440,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
 
-        /////////////////////////////
         // Processing
+        //
 
         this.detectSettings.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
         this.detectSettings.enableNormalize = this.config.getBoolean (PROCESSING_ENABLE_NORMALIZE, false);
@@ -504,8 +453,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.detectSettings.alwaysResample = this.config.getBoolean (PROCESSING_ALWAYS_RESAMPLE, false);
         this.detectSettings.loopCrossfades = this.config.getInteger (PROCESSING_LOOP_CROSSFADES, 0);
 
-        /////////////////////////////
         // Options
+        //
 
         this.detectSettings.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
         this.addNewFiles = this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false);
@@ -533,9 +482,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         for (final ICreator<?> creator: this.backend.getCreators ())
             creator.getSettings ().saveSettings (this.config);
 
-        final int sourceSelectedIndex = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
+        final int sourceSelectedIndex = this.sourceTaskPane.getSelectedFormat ();
         this.config.setInteger (SOURCE_TYPE, sourceSelectedIndex);
-        final int destinationSelectedIndex = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
+        final int destinationSelectedIndex = this.destinationTaskPane.getSelectedFormat ();
         this.config.setInteger (DESTINATION_FORMAT, destinationSelectedIndex);
 
         final int destinationTypeSelectedIndex = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
@@ -544,7 +493,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setProperty (PRESET_LIBRARY_FILENAME, this.presetLibraryFilename.getText ());
         this.config.setProperty (PERFORMANCE_LIBRARY_FILENAME, this.performanceLibraryFilename.getText ());
 
-        /////////////////////////////
+        //
         // Processing
 
         this.config.setBoolean (PROCESSING_ENABLE, this.detectSettings.enableProcessing);
@@ -557,7 +506,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setBoolean (PROCESSING_ALWAYS_RESAMPLE, this.detectSettings.alwaysResample);
         this.config.setInteger (PROCESSING_LOOP_CROSSFADES, this.detectSettings.loopCrossfades);
 
-        /////////////////////////////
+        //
         // Options
 
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.detectSettings.createFolderStructure);
@@ -576,7 +525,6 @@ public class MainFrame extends AbstractFrame implements INotifier
                 detector.shutdown ();
 
             this.saveConfiguration ();
-            // Store configuration
             super.exit ();
         }
         catch (final RuntimeException ex)
@@ -649,13 +597,21 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.verifyFolders ())
             return;
 
-        final int selectedDetector = this.sourceTabPane.getSelectionModel ().getSelectedIndex ();
-        final int selectedCreator = this.destinationTabPane.getSelectionModel ().getSelectedIndex ();
-        if (selectedDetector < 0 || selectedCreator < 0)
+        final int selectedDetector = this.sourceTaskPane.getSelectedFormat ();
+        final int selectedCreator = this.destinationTaskPane.getSelectedFormat ();
+        if (selectedDetector < 0)
+        {
+            Functions.message ("@IDS_NOTIFY_SELECT_SOURCE_FORMAT");
             return;
+        }
+        if (selectedCreator < 0)
+        {
+            Functions.message ("@IDS_NOTIFY_SELECT_DESTINATION_FORMAT");
+            return;
+        }
         final IDetector<?> detector = this.backend.getDetectors ()[selectedDetector];
         final ICreator<?> creator = this.backend.getCreators ()[selectedCreator];
-        if (!detector.getSettings ().checkSettingsUI (this) || !creator.getSettings ().checkSettingsUI (this) || (this.detectSettings.enableProcessing && !creator.checkProcessingCompatibility (this.detectSettings)))
+        if (!detector.getSettings ().checkSettingsUI (this) || !creator.getSettings ().checkSettingsUI (this) || this.detectSettings.enableProcessing && !creator.checkProcessingCompatibility (this.detectSettings))
             return;
 
         this.clearLog ();
@@ -948,45 +904,6 @@ public class MainFrame extends AbstractFrame implements INotifier
     }
 
 
-    private static void setTabPaneLeftTabsHorizontal (final TabPane tabPane)
-    {
-        tabPane.setSide (Side.LEFT);
-        tabPane.setRotateGraphic (true);
-        tabPane.setTabMinHeight (160); // Determines tab width. I know, its odd.
-        tabPane.setTabMaxHeight (200);
-        tabPane.getStyleClass ().add ("horizontal-tab-pane");
-
-        for (final Tab tab: tabPane.getTabs ())
-        {
-            final Label l = new Label ("    ");
-            l.setVisible (false);
-            l.setMaxHeight (0);
-            l.setPrefHeight (0);
-            tab.setGraphic (l);
-
-            Platform.runLater (() -> rotateTabLabels (tab));
-        }
-    }
-
-
-    private static void rotateTabLabels (final Tab tab)
-    {
-        // Get the "tab-container" node. This is what we want to rotate/shift for easy
-        // left-alignment.
-        final Parent parent = tab.getGraphic ().getParent ();
-        if (parent == null)
-        {
-            Platform.runLater (() -> rotateTabLabels (tab));
-            return;
-        }
-        final Parent tabContainer = parent.getParent ();
-        tabContainer.setRotate (90);
-        // By default the display will originate from the center.
-        // Applying a negative Y transformation will move it left.
-        tabContainer.setTranslateY (-80);
-    }
-
-
     private static void updateHistory (final String newItem, final List<String> history)
     {
         history.remove (newItem);
@@ -1020,5 +937,157 @@ public class MainFrame extends AbstractFrame implements INotifier
         }
 
         return result;
+    }
+
+
+    private boolean isVisibleInFilter (final String filterText, final String itemText, final boolean isSource)
+    {
+        if (filterText == null || filterText.isBlank () || itemText.toLowerCase ().contains (filterText.toLowerCase ()))
+        {
+            if (this.sourceTaskPane == null || this.destinationTaskPane == null)
+                return true;
+
+            final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+            if (isSource)
+            {
+                final IDetector<?> detector = this.sourceTaskPane.mappedTasks.get (itemText);
+                return selectedType != DEST_TYPE_PERFORMANCE && selectedType != DEST_TYPE_PERFORMANCE_LIBRARY || detector.supportsPerformances ();
+            }
+
+            final ICreator<?> creator = this.destinationTaskPane.mappedTasks.get (itemText);
+            return selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_PRESET_LIBRARY && creator.supportsPresetLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances () || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY && creator.supportsPerformanceLibraries ();
+        }
+        return false;
+    }
+
+
+    private class TaskPane<T extends ICoreTask<?>>
+    {
+        private final BorderPane           formatPane    = new BorderPane ();
+        private final TextField            search        = new TextField ();
+        private final StackPane            contentArea   = new StackPane ();
+        private final ListView<String>     formatList;
+        private final Map<String, T>       mappedTasks   = new HashMap<> ();
+        private final Map<String, Integer> mappedIndices = new HashMap<> ();
+        private final List<String>         indices       = new ArrayList<> ();
+        private final Map<String, Node>    mappedPanes   = new HashMap<> ();
+
+        private String                     lastSelected  = null;
+
+
+        private TaskPane (final List<T> tasks, final boolean isSource)
+        {
+            final List<String> taskNames = new ArrayList<> ();
+            for (int i = 0; i < tasks.size (); i++)
+            {
+                final T task = tasks.get (i);
+                String name = task.getName ();
+                final String fileEndings = formatFileEndings (task.getFileEndings ());
+                if (fileEndings.length () > 0)
+                    name += fileEndings;
+                taskNames.add (name);
+
+                final ICoreTaskSettings userInterface = task.getSettings ();
+                final ScrollPane scrollPane = new ScrollPane (userInterface.getEditPane ());
+                scrollPane.fitToWidthProperty ().set (true);
+                scrollPane.fitToHeightProperty ().set (true);
+
+                this.contentArea.getChildren ().add (scrollPane);
+                this.mappedPanes.put (name, scrollPane);
+                this.mappedTasks.put (name, task);
+                this.mappedIndices.put (name, Integer.valueOf (i));
+                this.indices.add (name);
+            }
+
+            this.search.setPromptText (Functions.getMessage ("IDS_MAIN_SEARCH_FORMAT"));
+            this.search.getStyleClass ().add ("text-field-with-clear");
+
+            final ObservableList<String> observableList = FXCollections.observableList (taskNames);
+            final FilteredList<String> filtered = new FilteredList<> (observableList, _ -> true);
+            this.formatList = new ListView<> (filtered);
+
+            filtered.predicateProperty ().bind (Bindings.createObjectBinding (() -> f -> MainFrame.this.isVisibleInFilter (this.search.getText (), f, isSource), this.search.textProperty (), MainFrame.this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ()));
+
+            // Ensure that there is always a selected element (select by value)
+            this.formatList.getSelectionModel ().selectedItemProperty ().addListener ((_, _, newVal) -> {
+                if (newVal != null)
+                    this.lastSelected = newVal;
+            });
+            filtered.addListener ((ListChangeListener<String>) _ -> {
+                if (filtered.isEmpty ())
+                    return;
+                if (this.lastSelected != null && filtered.contains (this.lastSelected))
+                    this.formatList.getSelectionModel ().select (this.lastSelected);
+                else
+                    this.formatList.getSelectionModel ().selectFirst ();
+            });
+
+            this.formatList.getSelectionModel ().selectedItemProperty ().addListener ((_, _, selected) -> {
+                if (selected != null)
+                    this.showPane (selected);
+            });
+
+            final BorderPane sidebar = new BorderPane ();
+            sidebar.setTop (addClearButton (this.search));
+            sidebar.setCenter (this.formatList);
+            this.formatPane.setLeft (sidebar);
+            this.formatPane.setCenter (this.contentArea);
+            this.formatPane.getStyleClass ().add ("paddingLeftBottomRight");
+        }
+
+
+        private void showPane (final String selected)
+        {
+            for (final Entry<String, Node> layer: this.mappedPanes.entrySet ())
+                layer.getValue ().setVisible (layer.getKey ().equals (selected));
+        }
+
+
+        /**
+         * Set the key of the selected detector/creator.
+         *
+         * @param sourceFormat The index of the format to select
+         */
+        public void setSelectedFormat (final int sourceFormat)
+        {
+            final String name = this.indices.get (Math.clamp (sourceFormat, 0, this.indices.size () - 1));
+            final MultipleSelectionModel<String> selectionModel = this.formatList.getSelectionModel ();
+            selectionModel.select (name);
+            if (selectionModel.getSelectedItem () == null)
+                selectionModel.select (0);
+        }
+
+
+        /**
+         * Get the key of the selected detector/creator. Takes care of different selection indices
+         * due to filtered entries.
+         *
+         * @return The index if one is selected
+         */
+        public int getSelectedFormat ()
+        {
+            final String selectedItem = this.formatList.getSelectionModel ().getSelectedItem ();
+            if (selectedItem == null)
+                return -1;
+            final Integer key = this.mappedIndices.get (selectedItem);
+            return key == null ? -1 : key.intValue ();
+        }
+
+
+        private static StackPane addClearButton (final TextField textField)
+        {
+            final Button clearButton = new Button ("✕");
+            clearButton.getStyleClass ().add ("text-field-clear-button");
+            clearButton.visibleProperty ().bind (textField.textProperty ().isNotEmpty ());
+            clearButton.setOnAction (_ -> textField.clear ());
+
+            StackPane.setAlignment (clearButton, Pos.CENTER_RIGHT);
+            StackPane.setMargin (clearButton, new Insets (0, 5, 0, 0));
+
+            // Prevent the button from stealing focus from the text field
+            clearButton.setFocusTraversable (false);
+
+            return new StackPane (textField, clearButton);
+        }
     }
 }

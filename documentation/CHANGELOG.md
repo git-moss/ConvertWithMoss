@@ -1,7 +1,8 @@
 # Changes
 
-## 18.5.0 (unreleased)
+## 19.0.0 (unreleased)
 
+* New: Improved user interface for long lists of formats.
 * New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.

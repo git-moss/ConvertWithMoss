@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.core.detector;
 
 import java.io.File;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
@@ -24,14 +23,6 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
  */
 public interface IDetector<T extends ICoreTaskSettings> extends ICoreTask<T>, Runnable
 {
-    /**
-     * Get all file endings which are detected by this detector.
-     *
-     * @return The file endings
-     */
-    Set<String> getFileEndings ();
-
-
     /**
      * Start the detection.
      *

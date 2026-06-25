@@ -20,14 +20,13 @@ import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -149,20 +148,20 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
         final String comma = Functions.getMessage ("IDS_NOTIFY_COMMA");
 
-        ///////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Sample file types
 
         panel.createSeparator ("@IDS_FILE_TYPES");
         for (int i = 0; i < FILE_TYPES.length; i++)
             this.sampleFileTypeCheckBoxes[i] = panel.createCheckBox (FILE_TYPES[i].getName ());
 
-        ///////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Groups
 
         panel.createSeparator ("@IDS_FILE_GROUPS").getStyleClass ().add ("titled-separator-pane");
@@ -188,13 +187,13 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
         this.monoSplitsField = panel.createField ("@IDS_FILE_MONO_STEREO", comma, -1);
 
-        ///////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Metadata
 
         this.addTo (panel);
         this.getSeparator ().getStyleClass ().add ("titled-separator-pane");
 
-        ///////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         // Options
 
         panel.createSeparator ("@IDS_FILE_OPTIONS").getStyleClass ().add ("titled-separator-pane");
@@ -203,11 +202,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
         this.crossfadeVelocitiesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_VELOCITIES");
         this.postfixField = panel.createField ("@IDS_FILE_POSTFIX", comma, -1);
         this.ignoreLoops = panel.createCheckBox ("@IDS_WAV_IGNORE_LOOPS");
-
-        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
-        scrollPane.fitToWidthProperty ().set (true);
-        scrollPane.fitToHeightProperty ().set (true);
-        return scrollPane;
+        return panel.getPane ();
     }
 
 
