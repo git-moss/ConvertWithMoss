@@ -372,13 +372,23 @@ public final class AudioFileUtils
             int sampleSizeInBits = sourceFormat.getSampleSizeInBits ();
             if (sampleSizeInBits < 0)
                 sampleSizeInBits = 16;
+
             final AudioFormat convertFormat = new AudioFormat (sourceFormat.getSampleRate (), sampleSizeInBits, channels, true, false);
 
+            // 2-step approach to prevent conversion not supported for a specific reader/writer
+            // format combination
+
             // Step 1 - First convert to raw sample data
-            final byte [] audioDataBytes;
+            byte [] audioDataBytes;
             try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (convertFormat, audioInputStream))
             {
                 audioDataBytes = convertedAudioInputStream.readAllBytes ();
+            }
+            catch (final IllegalArgumentException ex)
+            {
+                // Fallback for, e.g., 32-bit FLAC: many FLAC SPIs provide already-decoded PCM bytes
+                // during direct reading, even if the format tag still indicates FLAC.
+                audioDataBytes = audioInputStream.readAllBytes ();
             }
 
             // Step 2 - Convert from raw data to WAV format. Note: getFrameSize() already accounts
