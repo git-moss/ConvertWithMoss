@@ -311,7 +311,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             entryName = findSampleEntry (fileName, sampleEntries);
         if (entryName == null)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", fileName == null ? "?" : fileName);
+            // Found sample sections without a filename and the names "Repeater Mode" or "Repeater
+            // Divisor". Couldn't find anything in the manual, if someone knows, get in touch
             return null;
         }
 

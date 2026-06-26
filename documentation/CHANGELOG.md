@@ -11,6 +11,7 @@
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
+  * Fixed: Implemented workaround for converting 32-bit FLAC files (might not always work).
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
   * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
