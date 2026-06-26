@@ -15,6 +15,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -38,6 +39,7 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -53,15 +55,23 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
-    private static final String ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
-    private static final String ERR_SAMPLE_MISSING    = "IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST";
+    private static final String [] OSC_TAGS              = new String []
+    {
+        DelugeTag.OSC1,
+        DelugeTag.OSC2
+    };
 
-    private static final String ENDING_DELUGE         = ".xml";
-    private static final int    KIT_BASE_NOTE         = 36;
-    private static final int    SEARCH_LEVELS         = 4;
+    private static final String    XML_HEADER            = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 
-    private File                previousSampleFolder;
+    private static final String    ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
+    private static final String    ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String    ERR_SAMPLE_MISSING    = "IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST";
+
+    private static final String    ENDING_DELUGE         = ".xml";
+    private static final int       KIT_BASE_NOTE         = 36;
+    private static final int       SEARCH_LEVELS         = 2;
+
+    private File                   previousSampleFolder;
 
 
     /**
@@ -86,21 +96,39 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
-            final String content = this.loadTextFile (file);
+            final String content = fixBrokenXml (this.loadTextFile (file));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
-            return this.parseMetadataFile (file, document);
+            return this.parseXmlDocument (file, document);
         }
-        catch (final SAXException _)
+        catch (final SAXParseException ex)
         {
-            // The file is not (valid) XML - might be a JSON Deluge file or an unrelated XML file.
-            // Simply ignore it since the '.xml' ending is shared with other formats.
+            this.notifier.logError ("IDS_NOTIFY_ERR_COULD_NOT_PARSE_XML", Integer.toString (ex.getLineNumber ()), Integer.toString (ex.getColumnNumber ()), ex.getLocalizedMessage ());
             return Collections.emptyList ();
         }
-        catch (final IOException ex)
+        catch (final SAXException | IOException ex)
         {
             this.notifier.logError (ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
+    }
+
+
+    /**
+     * Removes tags outside of the root tag which prevent parsing the XML file. 'firmwareVersion'
+     * and 'earliestCompatibleFirmware'.
+     * 
+     * @param xmlCode The XML document code
+     * @return The cleaned document code
+     * @throws IOException If the root tag could not be found
+     */
+    private static String fixBrokenXml (final String xmlCode) throws IOException
+    {
+        int pos = xmlCode.indexOf ("<kit>");
+        if (pos < 0)
+            pos = xmlCode.indexOf ("<sound>");
+        if (pos < 0)
+            throw new IOException (Functions.getMessage ("IDS_DELUGE_NOT_A_DELUGE_FILE"));
+        return XML_HEADER + xmlCode.substring (pos);
     }
 
 
@@ -111,20 +139,21 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param document The parsed XML document
      * @return The parsed multi-sample source as a singleton list or an empty list
      */
-    private List<IMultisampleSource> parseMetadataFile (final File file, final Document document)
+    private List<IMultisampleSource> parseXmlDocument (final File file, final Document document)
     {
         final Element top = document.getDocumentElement ();
         if (top == null)
             return Collections.emptyList ();
 
         final String rootName = top.getNodeName ();
+        // Root tag is either 'kit' or 'sound', already checked in fixBrokenXml
         final boolean isKit = DelugeTag.KIT.equals (rootName);
-        if (!isKit && !DelugeTag.SOUND.equals (rootName))
-            return Collections.emptyList ();
-
         final List<IGroup> groups = isKit ? this.parseKit (file, top) : this.parseSound (file, top);
         if (groups.isEmpty ())
+        {
+            this.notifier.logError ("IDS_DELUGE_NO_SAMPLE_REFS");
             return Collections.emptyList ();
+        }
 
         final String presetName = FileUtils.getNameWithoutType (file);
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : presetName;
@@ -149,7 +178,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private List<IGroup> parseSound (final File file, final Element soundElement)
     {
-        final Element oscElement = findSampleOscillator (soundElement);
+        final Element oscElement = findSampleOscillatorElement (soundElement);
         if (oscElement == null)
             return Collections.emptyList ();
 
@@ -187,20 +216,23 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         int note = KIT_BASE_NOTE;
         for (final Element drumSound: getDirectChildren (soundSources, DelugeTag.SOUND))
         {
-            if (note <= 127)
+            if (this.waitForDelivery ())
+                return Collections.emptyList ();
+
+            final Element oscElement = findSampleOscillatorElement (drumSound);
+            if (oscElement != null)
             {
-                final Element oscElement = findSampleOscillator (drumSound);
-                if (oscElement != null)
+                final ISampleZone zone = this.createDrumZone (file, oscElement, note);
+                if (zone != null)
                 {
-                    final ISampleZone zone = this.createDrumZone (file, oscElement, note);
-                    if (zone != null)
-                    {
-                        applySoundParameters (drumSound, Collections.singletonList (zone));
-                        group.addSampleZone (zone);
-                        note++;
-                    }
+                    applySoundParameters (drumSound, Collections.singletonList (zone));
+                    group.addSampleZone (zone);
+                    note++;
                 }
             }
+
+            if (note > 127)
+                break;
         }
 
         final List<IGroup> groups = new ArrayList<> ();
@@ -216,13 +248,9 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param soundElement The sound element to search
      * @return The oscillator element or null if there is no sample based oscillator
      */
-    private static Element findSampleOscillator (final Element soundElement)
+    private static Element findSampleOscillatorElement (final Element soundElement)
     {
-        for (final String oscTag: new String []
-        {
-            DelugeTag.OSC1,
-            DelugeTag.OSC2
-        })
+        for (final String oscTag: OSC_TAGS)
         {
             final Element osc = getDirectChild (soundElement, oscTag);
             if (osc != null && DelugeTag.TYPE_SAMPLE.equals (getValue (osc, DelugeTag.TYPE)) && (getDirectChild (osc, DelugeTag.SAMPLE_RANGES) != null || !getValue (osc, DelugeTag.FILE_NAME).isBlank ()))
@@ -320,7 +348,16 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         if (fileName.isBlank ())
             return null;
 
-        final File sampleFile = findSampleFile (this.notifier, file.getParentFile (), this.previousSampleFolder, fileName, SEARCH_LEVELS);
+        // Expect the sample 1 folder upwards from KIT or SYNTHS in a SAMPLES folder (which is part
+        // of the relative path in fileName)
+        final File parentFile = file.getParentFile ();
+        final String parentFolderName = parentFile.getName ();
+        File sampleFile = null;
+        if (parentFolderName.equalsIgnoreCase ("KITS") || parentFolderName.equalsIgnoreCase ("SYNTHS"))
+            sampleFile = new File (parentFile.getParentFile (), fileName);
+        // Search from 2 folders upwards if not found...
+        if (sampleFile == null || !sampleFile.exists ())
+            sampleFile = findSampleFile (this.notifier, parentFile, this.previousSampleFolder, fileName, SEARCH_LEVELS);
         if (!sampleFile.exists ())
         {
             this.notifier.logError (ERR_SAMPLE_MISSING, sampleFile.getAbsolutePath ());
