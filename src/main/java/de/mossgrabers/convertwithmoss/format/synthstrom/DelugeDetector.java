@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -42,8 +43,8 @@ import de.mossgrabers.tools.XMLUtils;
 /**
  * Detects recursively Synthstrom Deluge instrument files in folders. Files must end with
  * <i>.xml</i> and contain a synth (<i>sound</i>) or drum kit (<i>kit</i>) at the top level. Synths
- * which use sample oscillators are read as a multi-sample (one zone per sample range). Kits are read
- * as a multi-sample with one zone per drum, mapped to ascending notes.
+ * which use sample oscillators are read as a multi-sample (one zone per sample range). Kits are
+ * read as a multi-sample with one zone per drum, mapped to ascending notes.
  * <p>
  * The Deluge format exists in two flavors which are both supported: the older format stores values
  * as XML child elements while newer firmware stores them as XML attributes.
@@ -89,7 +90,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (file, document);
         }
-        catch (final SAXException ex)
+        catch (final SAXException _)
         {
             // The file is not (valid) XML - might be a JSON Deluge file or an unrelated XML file.
             // Simply ignore it since the '.xml' ending is shared with other formats.
@@ -156,7 +157,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         if (zones.isEmpty ())
             return Collections.emptyList ();
 
-        this.applySoundParameters (soundElement, zones);
+        applySoundParameters (soundElement, zones);
 
         final IGroup group = new DefaultGroup ();
         for (final ISampleZone zone: zones)
@@ -169,8 +170,8 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Parse a drum kit preset. Each drum which uses a sample is mapped to one zone with an ascending
-     * note starting at {@link #KIT_BASE_NOTE}.
+     * Parse a drum kit preset. Each drum which uses a sample is mapped to one zone with an
+     * ascending note starting at {@link #KIT_BASE_NOTE}.
      *
      * @param file The source file
      * @param kitElement The kit element
@@ -186,19 +187,20 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         int note = KIT_BASE_NOTE;
         for (final Element drumSound: getDirectChildren (soundSources, DelugeTag.SOUND))
         {
-            if (note > 127)
-                break;
-            final Element oscElement = findSampleOscillator (drumSound);
-            if (oscElement == null)
-                continue;
-
-            final ISampleZone zone = this.createDrumZone (file, oscElement, note);
-            if (zone == null)
-                continue;
-
-            this.applySoundParameters (drumSound, Collections.singletonList (zone));
-            group.addSampleZone (zone);
-            note++;
+            if (note <= 127)
+            {
+                final Element oscElement = findSampleOscillator (drumSound);
+                if (oscElement != null)
+                {
+                    final ISampleZone zone = this.createDrumZone (file, oscElement, note);
+                    if (zone != null)
+                    {
+                        applySoundParameters (drumSound, Collections.singletonList (zone));
+                        group.addSampleZone (zone);
+                        note++;
+                    }
+                }
+            }
         }
 
         final List<IGroup> groups = new ArrayList<> ();
@@ -350,7 +352,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setTuning (rootNote - keyRoot);
 
         final boolean isLoop = loopMode == DelugeTag.LOOP_MODE_LOOP;
-        final DefaultSampleLoop loop = this.applyZonePositions (getDirectChild (zoneParent, DelugeTag.ZONE), zone, sampleData, isLoop);
+        final ISampleLoop loop = applyZonePositions (getDirectChild (zoneParent, DelugeTag.ZONE), zone, sampleData, isLoop);
 
         try
         {
@@ -376,7 +378,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param isLoop True if the oscillator loop mode is set to loop
      * @return The created loop or null if there is none
      */
-    private DefaultSampleLoop applyZonePositions (final Element zoneElement, final ISampleZone zone, final ISampleData sampleData, final boolean isLoop)
+    private static ISampleLoop applyZonePositions (final Element zoneElement, final ISampleZone zone, final ISampleData sampleData, final boolean isLoop)
     {
         if (zoneElement == null)
             return null;
@@ -389,7 +391,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             sampleRate = audioMetadata.getSampleRate ();
             numberOfSamples = audioMetadata.getNumberOfSamples ();
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Ignore - fall back to no millisecond conversion
         }
@@ -418,7 +420,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         if (loopStart <= 0 && loopEnd <= 0)
             return null;
 
-        final DefaultSampleLoop loop = new DefaultSampleLoop ();
+        final ISampleLoop loop = new DefaultSampleLoop ();
         loop.setType (LoopType.FORWARDS);
         if (loopStart >= 0)
             loop.setStart (loopStart);
@@ -436,7 +438,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param soundElement The sound element
      * @param zones The zones to fill
      */
-    private void applySoundParameters (final Element soundElement, final List<ISampleZone> zones)
+    private static void applySoundParameters (final Element soundElement, final List<ISampleZone> zones)
     {
         final Element defaultParams = getDirectChild (soundElement, DelugeTag.DEFAULT_PARAMS);
         if (defaultParams == null)
@@ -580,10 +582,6 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    ////////////////////////////////////////////////////////////
-    // Helpers which read a value from either an XML attribute (newer format) or a child element
-    // (older format).
-
     /**
      * Get a value which is stored either as an XML attribute or as the text content of a direct
      * child element.
@@ -611,7 +609,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         {
             return Integer.parseInt (value.trim ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -627,7 +625,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         {
             return Double.parseDouble (value.trim ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }

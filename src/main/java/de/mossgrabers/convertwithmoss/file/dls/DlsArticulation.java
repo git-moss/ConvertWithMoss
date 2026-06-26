@@ -412,7 +412,6 @@ public class DlsArticulation
      */
     public static double normalizeSustainLevel (final int value)
     {
-        final double normalized = value / 1000.0;
-        return Math.max (0.0, Math.min (1.0, normalized));
+        return Math.clamp (value / 1000.0, 0.0, 1.0);
     }
 }

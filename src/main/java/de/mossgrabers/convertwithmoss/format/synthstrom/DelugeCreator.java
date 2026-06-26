@@ -226,7 +226,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.addTextElement (document, osc1, DelugeTag.TIME_STRETCH_AMOUNT, "0");
 
         if (zones.size () == 1)
-            this.writeZone (document, osc1, zones.get (0), relativeSampleFolder, -1);
+            writeZone (document, osc1, zones.get (0), relativeSampleFolder, -1);
         else
         {
             final Element sampleRanges = XMLUtils.addElement (document, osc1, DelugeTag.SAMPLE_RANGES);
@@ -235,7 +235,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 final Element sampleRange = XMLUtils.addElement (document, sampleRanges, DelugeTag.SAMPLE_RANGE);
                 // The last (highest) range does not store the top note - it covers everything above
                 final int topNote = i == zones.size () - 1 ? -1 : limitToDefault (zones.get (i).getKeyHigh (), 127);
-                this.writeZone (document, sampleRange, zones.get (i), relativeSampleFolder, topNote);
+                writeZone (document, sampleRange, zones.get (i), relativeSampleFolder, topNote);
             }
         }
 
@@ -252,7 +252,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.addTextElement (document, unison, DelugeTag.UNISON_NUM, "1");
         XMLUtils.addTextElement (document, unison, DelugeTag.UNISON_DETUNE, "8");
 
-        this.writeDefaultParams (document, soundElement, zones.get (0));
+        writeDefaultParams (document, soundElement, zones.get (0));
 
         return this.createXMLString (document);
     }
@@ -267,7 +267,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param relativeSampleFolder The card-relative path of the sample folder
      * @param topNote The top note of the range or -1 if it should not be written
      */
-    private void writeZone (final Document document, final Element parent, final ISampleZone zone, final String relativeSampleFolder, final int topNote)
+    private static void writeZone (final Document document, final Element parent, final ISampleZone zone, final String relativeSampleFolder, final int topNote)
     {
         if (topNote >= 0)
             XMLUtils.addTextElement (document, parent, DelugeTag.RANGE_TOP_NOTE, Integer.toString (topNote));
@@ -301,7 +301,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param soundElement The sound element
      * @param firstZone The first zone (used for the amplitude envelope and filter)
      */
-    private void writeDefaultParams (final Document document, final Element soundElement, final ISampleZone firstZone)
+    private static void writeDefaultParams (final Document document, final Element soundElement, final ISampleZone firstZone)
     {
         final Element defaultParams = XMLUtils.addElement (document, soundElement, DelugeTag.DEFAULT_PARAMS);
 
@@ -317,7 +317,8 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.addTextElement (document, envelope1, DelugeTag.SUSTAIN, DelugeValues.formatHex (envelopeSustain (ampEnvelope)));
         XMLUtils.addTextElement (document, envelope1, DelugeTag.RELEASE, DelugeValues.formatHex (DelugeValues.releaseTimeToParam (ampEnvelope.getReleaseTime ())));
 
-        // Make the sound velocity sensitive (matches the firmware's default for sample based sounds)
+        // Make the sound velocity sensitive (matches the firmware's default for sample based
+        // sounds)
         final Element patchCables = XMLUtils.addElement (document, defaultParams, DelugeTag.PATCH_CABLES);
         final Element patchCable = XMLUtils.addElement (document, patchCables, DelugeTag.PATCH_CABLE);
         XMLUtils.addTextElement (document, patchCable, DelugeTag.SOURCE, DelugeTag.SOURCE_VELOCITY);
@@ -365,8 +366,8 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Get the end sample position of a zone. If the zone does not specify an end the total number of
-     * samples is used.
+     * Get the end sample position of a zone. If the zone does not specify an end the total number
+     * of samples is used.
      *
      * @param zone The zone
      * @return The end position in samples
@@ -383,7 +384,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
             if (numberOfSamples > 0)
                 return numberOfSamples;
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Ignore and fall through
         }
@@ -465,7 +466,8 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     /**
      * Bake a loop cross-fade into the audio of a forward loop. The cross-fade region at the end of
-     * the loop is blended with the audio preceding the loop start so that the loop wraps seamlessly.
+     * the loop is blended with the audio preceding the loop start so that the loop wraps
+     * seamlessly.
      *
      * @param wavFile The WAV file whose audio data is modified in place
      * @param loopStart The loop start frame
@@ -489,7 +491,8 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final int totalFrames = data.length / bytesPerFrame;
         final int end = Math.min (loopEnd, totalFrames);
 
-        // The cross-fade can neither be longer than the loop nor reach before the start of the sample
+        // The cross-fade can neither be longer than the loop nor reach before the start of the
+        // sample
         final int crossfade = Math.min (crossfadeSamples, Math.min (end - loopStart, loopStart));
         if (crossfade <= 0)
             return;
