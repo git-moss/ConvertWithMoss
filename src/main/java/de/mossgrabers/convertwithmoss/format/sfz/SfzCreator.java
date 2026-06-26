@@ -70,18 +70,18 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         FILTER_TYPE_MAP.put (FilterType.BAND_PASS, "bpf");
         FILTER_TYPE_MAP.put (FilterType.BAND_REJECTION, "brf");
 
-        final Set<Integer> BPF_POLES = new HashSet<> ();
-        Collections.addAll (BPF_POLES, Integer.valueOf (1), Integer.valueOf (2));
-        FILTER_POLES.put ("bpf", BPF_POLES);
-        final Set<Integer> BRF_POLES = new HashSet<> ();
-        Collections.addAll (BRF_POLES, Integer.valueOf (1), Integer.valueOf (2));
-        FILTER_POLES.put ("brf", BRF_POLES);
-        final Set<Integer> HPF_POLES = new HashSet<> ();
-        Collections.addAll (HPF_POLES, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
-        FILTER_POLES.put ("hpf", HPF_POLES);
-        final Set<Integer> LPF_POLES = new HashSet<> ();
-        Collections.addAll (LPF_POLES, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
-        FILTER_POLES.put ("lpf", LPF_POLES);
+        final Set<Integer> bpfPoles = new HashSet<> ();
+        Collections.addAll (bpfPoles, Integer.valueOf (1), Integer.valueOf (2));
+        FILTER_POLES.put ("bpf", bpfPoles);
+        final Set<Integer> brfPoles = new HashSet<> ();
+        Collections.addAll (brfPoles, Integer.valueOf (1), Integer.valueOf (2));
+        FILTER_POLES.put ("brf", brfPoles);
+        final Set<Integer> hpfPoles = new HashSet<> ();
+        Collections.addAll (hpfPoles, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
+        FILTER_POLES.put ("hpf", hpfPoles);
+        final Set<Integer> lpfPoles = new HashSet<> ();
+        Collections.addAll (lpfPoles, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
+        FILTER_POLES.put ("lpf", lpfPoles);
 
         LOOP_TYPE_MAP.put (LoopType.FORWARDS, "forward");
         LOOP_TYPE_MAP.put (LoopType.BACKWARDS, "backward");
@@ -255,7 +255,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN && isNotRoundRobinGroup)
             addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
-        ////////////////////////////////
+        //////////////////////////////
         // Key range
 
         final int keyRoot = zone.getKeyRoot ();
@@ -288,7 +288,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
         }
 
-        ////////////////////////////////
+        //////////////////////////////
         // Velocity
 
         final int velocityLow = zone.getVelocityLow ();
@@ -312,7 +312,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
         }
 
-        ////////////////////////////////
+        //////////////////////////////
         // Start, end, tune, volume
 
         final int start = zone.getStart ();
@@ -332,7 +332,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         createVolume (buffer, zone, ampEnvParameterLevel);
 
-        ////////////////////////////////
+        //////////////////////////////
         // Pitch Bend / Envelope
 
         final int bendUp = zone.getBendUp ();
@@ -593,7 +593,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         StringBuilder currentLine = new StringBuilder ();
 
         for (final String word: words)
-            if (currentLine.length () == 0)
+            if (currentLine.isEmpty ())
                 currentLine.append (word);
             else if (currentLine.length () + 1 + word.length () <= LINE_LIMIT)
                 currentLine.append (" ").append (word);
@@ -603,7 +603,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                 currentLine = new StringBuilder (word);
             }
 
-        if (currentLine.length () > 0)
+        if (!currentLine.isEmpty ())
             result.append (COMMENT_PREFIX).append (currentLine).append ("\n");
 
         return result.toString ();

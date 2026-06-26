@@ -578,7 +578,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.detectSettings.enableMakeMono = this.processingDialog.makeMonoCheckbox.isSelected ();
             this.detectSettings.enableTrimSample = this.processingDialog.trimSample.isSelected ();
             final String maxNumberText = this.processingDialog.maxSamplesField.getText ();
-            this.detectSettings.maxNumberOfSamples = maxNumberText.length () == 0 || maxNumberText.isBlank () ? -1 : Integer.parseInt (maxNumberText);
+            this.detectSettings.maxNumberOfSamples = maxNumberText.isEmpty () || maxNumberText.isBlank () ? -1 : Integer.parseInt (maxNumberText);
             this.detectSettings.reduceBitDepth = this.processingDialog.getBitDepth ();
             this.detectSettings.reduceFrequency = this.processingDialog.getFrequency ();
             this.detectSettings.alwaysResample = this.processingDialog.alwaysResampleCheckbox.isSelected ();
@@ -798,7 +798,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             {
                 this.logWriter.append (message);
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 // Ignore
             }
@@ -832,7 +832,7 @@ public class MainFrame extends AbstractFrame implements INotifier
                 {
                     this.logWriter.close ();
                 }
-                catch (final IOException ex)
+                catch (final IOException _)
                 {
                     // Ignore
                 }
@@ -925,7 +925,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         {
             result = paths.filter (path -> !Pattern.matches ("^(\\.(DS_Store|desktop)|Thumbs.db|ConvertWithMoss.log)$", path.getFileName ().toString ())).count () == 0;
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             result = false;
         }
@@ -937,27 +937,6 @@ public class MainFrame extends AbstractFrame implements INotifier
         }
 
         return result;
-    }
-
-
-    private boolean isVisibleInFilter (final String filterText, final String itemText, final boolean isSource)
-    {
-        if (filterText == null || filterText.isBlank () || itemText.toLowerCase ().contains (filterText.toLowerCase ()))
-        {
-            if (this.sourceTaskPane == null || this.destinationTaskPane == null)
-                return true;
-
-            final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
-            if (isSource)
-            {
-                final IDetector<?> detector = this.sourceTaskPane.mappedTasks.get (itemText);
-                return selectedType != DEST_TYPE_PERFORMANCE && selectedType != DEST_TYPE_PERFORMANCE_LIBRARY || detector.supportsPerformances ();
-            }
-
-            final ICreator<?> creator = this.destinationTaskPane.mappedTasks.get (itemText);
-            return selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_PRESET_LIBRARY && creator.supportsPresetLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances () || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY && creator.supportsPerformanceLibraries ();
-        }
-        return false;
     }
 
 
@@ -983,7 +962,7 @@ public class MainFrame extends AbstractFrame implements INotifier
                 final T task = tasks.get (i);
                 String name = task.getName ();
                 final String fileEndings = formatFileEndings (task.getFileEndings ());
-                if (fileEndings.length () > 0)
+                if (!fileEndings.isEmpty ())
                     name += fileEndings;
                 taskNames.add (name);
 
@@ -1006,7 +985,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             final FilteredList<String> filtered = new FilteredList<> (observableList, _ -> true);
             this.formatList = new ListView<> (filtered);
 
-            filtered.predicateProperty ().bind (Bindings.createObjectBinding (() -> f -> MainFrame.this.isVisibleInFilter (this.search.getText (), f, isSource), this.search.textProperty (), MainFrame.this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ()));
+            filtered.predicateProperty ().bind (Bindings.createObjectBinding (() -> f -> this.isVisibleInFilter (this.search.getText (), f, isSource), this.search.textProperty (), MainFrame.this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ()));
 
             // Ensure that there is always a selected element (select by value)
             this.formatList.getSelectionModel ().selectedItemProperty ().addListener ((_, _, newVal) -> {
@@ -1071,6 +1050,27 @@ public class MainFrame extends AbstractFrame implements INotifier
                 return -1;
             final Integer key = this.mappedIndices.get (selectedItem);
             return key == null ? -1 : key.intValue ();
+        }
+
+
+        private boolean isVisibleInFilter (final String filterText, final String itemText, final boolean isSource)
+        {
+            if (filterText == null || filterText.isBlank () || itemText.toLowerCase ().contains (filterText.toLowerCase ()))
+            {
+                if (MainFrame.this.sourceTaskPane == null || MainFrame.this.destinationTaskPane == null)
+                    return true;
+
+                final int selectedType = MainFrame.this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+                if (isSource)
+                {
+                    final IDetector<?> detector = MainFrame.this.sourceTaskPane.mappedTasks.get (itemText);
+                    return selectedType != DEST_TYPE_PERFORMANCE && selectedType != DEST_TYPE_PERFORMANCE_LIBRARY || detector.supportsPerformances ();
+                }
+
+                final ICreator<?> creator = MainFrame.this.destinationTaskPane.mappedTasks.get (itemText);
+                return selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_PRESET_LIBRARY && creator.supportsPresetLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances () || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY && creator.supportsPerformanceLibraries ();
+            }
+            return false;
         }
 
 

@@ -8,8 +8,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,20 +59,20 @@ public class MaschinePresetAccessor
     private static final int                      PRE_X0D_FIRST_ZONE_PLUGIN_NAME = 126;
     private static final int                      PRE_X0D_ZONE_SIZE              = 59;
 
-    private static final int                      PRE_X0D_ZONE_SAMPLE_START      = 3;               // 114
-    private static final int                      PRE_X0D_ZONE_SAMPLE_END        = 5;               // 116
-    private static final int                      PRE_X0D_ZONE_LOOP_ENABLED      = 13;              // 124
-    private static final int                      PRE_X0D_ZONE_LOOP_START        = 8;               // 119
-    private static final int                      PRE_X0D_ZONE_LOOP_END          = 10;              // 121
-    private static final int                      PRE_X0D_ZONE_LOOP_CROSSFADE    = 16;              // 127
-    private static final int                      PRE_X0D_ZONE_ROOT_KEY          = 25;              // 136
-    private static final int                      PRE_X0D_ZONE_LOW_KEY           = 28;              // 139
-    private static final int                      PRE_X0D_ZONE_HIGH_KEY          = 30;              // 141
-    private static final int                      PRE_X0D_ZONE_VELOCITY_LOW      = 33;              // 144
-    private static final int                      PRE_X0D_ZONE_VELOCITY_HIGH     = 35;              // 146;
-    private static final int                      PRE_X0D_ZONE_GAIN              = 38;              // 149
-    private static final int                      PRE_X0D_ZONE_PANNING           = 41;              // 152
-    private static final int                      PRE_X0D_ZONE_TUNE              = 44;              // 155
+    private static final int                      PRE_X0D_ZONE_SAMPLE_START      = 3;                               // 114
+    private static final int                      PRE_X0D_ZONE_SAMPLE_END        = 5;                               // 116
+    private static final int                      PRE_X0D_ZONE_LOOP_ENABLED      = 13;                              // 124
+    private static final int                      PRE_X0D_ZONE_LOOP_START        = 8;                               // 119
+    private static final int                      PRE_X0D_ZONE_LOOP_END          = 10;                              // 121
+    private static final int                      PRE_X0D_ZONE_LOOP_CROSSFADE    = 16;                              // 127
+    private static final int                      PRE_X0D_ZONE_ROOT_KEY          = 25;                              // 136
+    private static final int                      PRE_X0D_ZONE_LOW_KEY           = 28;                              // 139
+    private static final int                      PRE_X0D_ZONE_HIGH_KEY          = 30;                              // 141
+    private static final int                      PRE_X0D_ZONE_VELOCITY_LOW      = 33;                              // 144
+    private static final int                      PRE_X0D_ZONE_VELOCITY_HIGH     = 35;                              // 146
+    private static final int                      PRE_X0D_ZONE_GAIN              = 38;                              // 149
+    private static final int                      PRE_X0D_ZONE_PANNING           = 41;                              // 152
+    private static final int                      PRE_X0D_ZONE_TUNE              = 44;                              // 155
 
     @SuppressWarnings("unused")
     private static final int                      X0D_START_OF_SOUND             = 642;
@@ -81,22 +83,22 @@ public class MaschinePresetAccessor
     private static final int                      X0D_FIRST_ZONE_PLUGIN_NAME     = 682;
     private static final int                      X0D_ZONE_SIZE                  = 80;
 
-    private static final int                      X0D_ZONE_SAMPLE_START          = 4;               // 671
-    private static final int                      X0D_ZONE_SAMPLE_END            = 7;               // 674
-    private static final int                      X0D_ZONE_LOOP_ENABLED          = 18;              // 685;
-    private static final int                      X0D_ZONE_LOOP_START            = 11;              // 678;
-    private static final int                      X0D_ZONE_LOOP_END              = 14;              // 681;
-    private static final int                      X0D_ZONE_LOOP_CROSSFADE        = 22;              // 689;
-    private static final int                      X0D_ZONE_ROOT_KEY              = 34;              // 701;
-    private static final int                      X0D_ZONE_LOW_KEY               = 38;              // 705;
-    private static final int                      X0D_ZONE_HIGH_KEY              = 41;              // 708;
-    private static final int                      X0D_ZONE_VELOCITY_LOW          = 45;              // 712;
-    private static final int                      X0D_ZONE_VELOCITY_HIGH         = 48;              // 715;
-    private static final int                      X0D_ZONE_GAIN                  = 52;              // 719;
-    private static final int                      X0D_ZONE_PANNING               = 56;              // 723;
-    private static final int                      X0D_ZONE_TUNE                  = 60;              // 727;
-    private static final int                      X0D_ZONE_SAMPLE_LENGTH         = 75;              // 742;
-    private static final int                      X0D_ZONE_LAST_ROW              = 79;              // 746;
+    private static final int                      X0D_ZONE_SAMPLE_START          = 4;                               // 671
+    private static final int                      X0D_ZONE_SAMPLE_END            = 7;                               // 674
+    private static final int                      X0D_ZONE_LOOP_ENABLED          = 18;                              // 685
+    private static final int                      X0D_ZONE_LOOP_START            = 11;                              // 678
+    private static final int                      X0D_ZONE_LOOP_END              = 14;                              // 681
+    private static final int                      X0D_ZONE_LOOP_CROSSFADE        = 22;                              // 689
+    private static final int                      X0D_ZONE_ROOT_KEY              = 34;                              // 701
+    private static final int                      X0D_ZONE_LOW_KEY               = 38;                              // 705
+    private static final int                      X0D_ZONE_HIGH_KEY              = 41;                              // 708
+    private static final int                      X0D_ZONE_VELOCITY_LOW          = 45;                              // 712
+    private static final int                      X0D_ZONE_VELOCITY_HIGH         = 48;                              // 715
+    private static final int                      X0D_ZONE_GAIN                  = 52;                              // 719
+    private static final int                      X0D_ZONE_PANNING               = 56;                              // 723
+    private static final int                      X0D_ZONE_TUNE                  = 60;                              // 727
+    private static final int                      X0D_ZONE_SAMPLE_LENGTH         = 75;                              // 742
+    private static final int                      X0D_ZONE_LAST_ROW              = 79;                              // 746
 
     private static final int                      X0D_GLOBAL_PITCHBEND           = 13;
     private static final int                      X0D_GLOBAL_TUNING              = 31;
@@ -116,11 +118,11 @@ public class MaschinePresetAccessor
     private static final float                    GAIN                           = 80.05f;
     /** Results to 0dB. */
     private static final float                    REFERENCE_DB                   = 0.75f;
-    private final static String                   PLUGIN_MASCHINE_SAMPLER        = "Sampler";
-    private final static String                   PLUGIN_HOST                    = "PluginHost";
+    private static final String                   PLUGIN_MASCHINE_SAMPLER        = "Sampler";
+    private static final String                   PLUGIN_HOST                    = "PluginHost";
 
-    private final static Map<Integer, FilterType> FILTER_TYPE_LOOKUP             = new HashMap<> ();
-    private final static Map<FilterType, Integer> INV_FILTER_TYPE_LOOKUP         = new HashMap<> ();
+    private static final Map<Integer, FilterType> FILTER_TYPE_LOOKUP             = new HashMap<> ();
+    private static final Map<FilterType, Integer> INV_FILTER_TYPE_LOOKUP         = new EnumMap<> (FilterType.class);
     static
     {
         FILTER_TYPE_LOOKUP.put (Integer.valueOf (1), FilterType.LOW_PASS);
@@ -183,31 +185,17 @@ public class MaschinePresetAccessor
             // characters; 3 more bytes (01 01 00)
             final ByteArrayInputStream sampleInfoIn = new ByteArrayInputStream (parameterArrayRaw.get (offsets.offsetFirstZone + zoneOffset));
 
-            if (sampleIndex == 0)
+            if (!checkSample (sampleInfoIn, sampleIndex))
             {
-                final byte [] introBytes = sampleInfoIn.readNBytes (2);
-                if (introBytes.length == 0)
-                {
-                    this.notifier.logError ("IDS_NI_MASCHINE_SAMPLER_HAS_NO_SAMPLES");
+                if (filePaths.isEmpty ())
                     return Optional.empty ();
-                }
-                if (introBytes[0] != 0 || introBytes[1] != 0)
-                    throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Unknown Sampleinfo structure"));
-            }
-
-            if (sampleInfoIn.available () == 0)
-            {
-                this.notifier.logError ("IDS_NI_MASCHINE_NO_MORE_SAMPLES");
                 break;
             }
 
-            final boolean isLibrary = sampleInfoIn.read () > 0;
-            if (isLibrary)
-                sampleInfoIn.skip (1);
             final String samplePath = MaschinePresetParameterArray.readString (sampleInfoIn);
 
             // Quick and dirty workaround for some 2.0.0.0 zones being 1 row longer...
-            if ((samplePath.length () == 0 || samplePath.charAt (0) == 0) && sampleIndex == 1 && offsetZone == PRE_X0D_ZONE_SIZE)
+            if ((samplePath.isEmpty () || samplePath.charAt (0) == 0) && sampleIndex == 1 && offsetZone == PRE_X0D_ZONE_SIZE)
             {
                 offsetZone = 60;
                 zoneOffset = 60;
@@ -247,6 +235,34 @@ public class MaschinePresetAccessor
         offsets.update (soundinfoIndex + 1);
 
         return Optional.of (multisampleSource);
+    }
+
+
+    private boolean checkSample (final InputStream sampleInfoIn, final int sampleIndex) throws IOException
+    {
+        if (sampleIndex == 0)
+        {
+            final byte [] introBytes = sampleInfoIn.readNBytes (2);
+            if (introBytes.length == 0)
+            {
+                this.notifier.logError ("IDS_NI_MASCHINE_SAMPLER_HAS_NO_SAMPLES");
+                return false;
+            }
+            if (introBytes[0] != 0 || introBytes[1] != 0)
+                throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Unknown Sampleinfo structure"));
+        }
+
+        if (sampleInfoIn.available () == 0)
+        {
+            this.notifier.logError ("IDS_NI_MASCHINE_NO_MORE_SAMPLES");
+            return false;
+        }
+
+        final boolean isLibrary = sampleInfoIn.read () > 0;
+        if (isLibrary)
+            sampleInfoIn.skipNBytes (1);
+
+        return true;
     }
 
 
@@ -645,7 +661,7 @@ public class MaschinePresetAccessor
             final int [] references = parameterArray.readIntegers (newOffset, 10);
             return newOffset + 32 * references[9];
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             return newOffset;
         }

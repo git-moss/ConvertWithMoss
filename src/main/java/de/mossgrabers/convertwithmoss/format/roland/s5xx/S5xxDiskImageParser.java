@@ -199,17 +199,15 @@ public class S5xxDiskImageParser
         for (int slot = 0; slot < maxSlots; slot++)
         {
             final int off = baseOffset + slot * LAND_STRIDE;
-            if (off >= this.data.length)
-                break;
+            if (off < this.data.length)
+            {
+                final int available = Math.min (LAND_NAME_CHARS, this.data.length - off);
+                final String name = this.readAsciiPrintable (off, available);
 
-            final int available = Math.min (LAND_NAME_CHARS, this.data.length - off);
-            final String name = this.readAsciiPrintable (off, available);
-
-            // CD-ROM: the tool stops at the first all-blank slot
-            if (isCdRom && name.isEmpty ())
-                break;
-
-            entries.add (new S5xxDirectoryEntry (slot + 1, name));
+                // CD-ROM: the tool stops at the first all-blank slot
+                if (!(isCdRom && name.isEmpty ()))
+                    entries.add (new S5xxDirectoryEntry (slot + 1, name));
+            }
         }
         return entries;
     }
@@ -261,7 +259,7 @@ public class S5xxDiskImageParser
      */
     private String readAscii (final int offset, final int length)
     {
-        final int safeLen = Math.max (0, Math.min (length, this.data.length - offset));
+        final int safeLen = Math.clamp (this.data.length - (long) offset, 0, length);
         return new String (this.data, offset, safeLen, StandardCharsets.US_ASCII);
     }
 
