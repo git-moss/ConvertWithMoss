@@ -484,15 +484,26 @@ public class TonverkPresetFile
     private static String stripQuotes (final String value)
     {
         final String trimmed = value.trim ();
-        if (trimmed.length () >= 2 && trimmed.startsWith ("'") && trimmed.endsWith ("'"))
+        if (trimmed.length () >= 2 && (trimmed.startsWith ("\"") && trimmed.endsWith ("\"") || trimmed.startsWith ("'") && trimmed.endsWith ("'")))
             return trimmed.substring (1, trimmed.length () - 1);
         return trimmed;
     }
 
 
+    /**
+     * Quotes a string value. Uses single quotes except when the value contains a single quote, in
+     * that case double quotes are used and contained double quotes are escaped (single-quoted TOML
+     * scalars cannot contain a single quote, which the Tonverk rejects).
+     *
+     * @param value The value to quote
+     * @return The quoted value
+     */
     private static String quote (final String value)
     {
-        return "'" + (value == null ? "" : value) + "'";
+        final String text = value == null ? "" : value;
+        if (!text.contains ("'"))
+            return "'" + text + "'";
+        return '"' + text.replace ("\"", "\\\"") + '"';
     }
 
 
