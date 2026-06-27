@@ -294,6 +294,9 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
                 loop.setEnd (slot.loopEnd.intValue ());
             if (slot.loopCrossfade != null && slot.loopCrossfade.intValue () >= 0)
                 loop.setCrossfadeInSamples (slot.loopCrossfade.intValue ());
+            // The Tonverk keeps looping during release only when 'keep-looping-on-release' is set;
+            // otherwise the loop stops on release and the remainder is played (sustain loop)
+            loop.setLoopUntilRelease (slot.keepLoopingOnRelease == null || !slot.keepLoopingOnRelease.booleanValue ());
             zone.getLoops ().add (loop);
         }
 
