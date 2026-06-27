@@ -43,7 +43,7 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public TonverkMultiDetector (final INotifier notifier)
     {
-        super ("Elektron Multi", "Elektron", notifier, new MetadataSettingsUI ("Elektron"), ".elmulti", ".eldrum");
+        super ("Elektron Tonverk Multisample", "Elektron", notifier, new MetadataSettingsUI ("Elektron"), ".elmulti", ".eldrum");
     }
 
 

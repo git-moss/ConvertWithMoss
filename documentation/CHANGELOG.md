@@ -4,7 +4,7 @@
 
 * New: Improved user interface for long lists of formats.
 * New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes) and write (Multi or Drum machine) (thanks to Douglas Carmichael).
-* New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
+* New: The Elektron Tonverk multi-sample mapping format (.elmulti/.eldrum) is now labelled "Elektron Tonverk Multisample" consistently for both reading and writing - it was previously shown as "Elektron Multi" as a source but "Elektron Tonverk" as a destination, the latter being easily confused with "Elektron Tonverk Preset" (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.

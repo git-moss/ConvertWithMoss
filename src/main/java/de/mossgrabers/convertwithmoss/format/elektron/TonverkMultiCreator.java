@@ -76,7 +76,7 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
      */
     public TonverkMultiCreator (final INotifier notifier)
     {
-        super ("Elektron Tonverk", "Emulti", notifier, new TonverkMultiCreatorUI ("Emulti"));
+        super ("Elektron Tonverk Multisample", "Emulti", notifier, new TonverkMultiCreatorUI ("Emulti"));
     }
 
 
