@@ -3,11 +3,15 @@
 ## 19.0.0 (unreleased)
 
 * New: Improved user interface for long lists of formats.
-* New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
+* New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes whose normalized times are mapped to seconds with a warped-exponential curve calibrated against hardware resamples) and write (Multi or Drum machine). Writing mirrors the device's SD-card layout: the preset is stored as a flat file in 'User/Presets' and its samples in 'User/Multi-sampled Instruments/<name>', referenced by their absolute device path, so the created 'User' folder can be copied straight onto the Tonverk (thanks to Douglas Carmichael).
+* New: The Elektron Tonverk multi-sample mapping format (.elmulti/.eldrum) is now labelled "Elektron Tonverk Multisample" consistently for both reading and writing - it was previously shown as "Elektron Multi" as a source but "Elektron Tonverk" as a destination, the latter being easily confused with "Elektron Tonverk Preset" (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
 * New: Added several new tags for category detection.
+* Elektron Tonverk Multisample (thanks to Douglas Carmichael)
+  * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
+  * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
