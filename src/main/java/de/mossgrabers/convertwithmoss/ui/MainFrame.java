@@ -279,9 +279,12 @@ public class MainFrame extends AbstractFrame implements INotifier
             return "";
 
         final StringBuilder sb = new StringBuilder (" (");
+        boolean first = true;
         for (final String ending: fileEndings)
         {
-            if (!sb.isEmpty ())
+            if (first)
+                first = false;
+            else
                 sb.append (", ");
             sb.append ("*").append (ending);
         }
