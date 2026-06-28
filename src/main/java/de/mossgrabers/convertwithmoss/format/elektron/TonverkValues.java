@@ -10,45 +10,80 @@ package de.mossgrabers.convertwithmoss.format.elektron;
  * by the ConvertWithMoss model (envelope times in seconds, filter cut-off in Hertz).
  * <p>
  * The Tonverk firmware uses internal, non-published curves to map these normalized values to times
- * and frequencies. Since those curves are not contained in the preset files, the mappings below are
- * a power curve for times and an exponential curve for the filter cut-off. The envelope time maxima
- * were calibrated against hardware resamples (see the constants below); the firmware was found to
- * follow the same power curve, so the seconds mapping is close, not merely a guess. A
- * Tonverk-to-Tonverk round-trip is loss-less either way (the inverse functions are exact). All range
- * constants are gathered here so they can be tuned in one place.
+ * and frequencies. They are not contained in the preset files, so the mappings below were
+ * reverse-engineered by resampling probe presets on real hardware and measuring the resulting
+ * envelopes. The firmware maps a normalized value to a time with a <b>warped exponential</b>:
+ *
+ * <pre>
+ * seconds = floor * (ceiling / floor) ^ (normalized ^ warp)
+ * </pre>
+ *
+ * i.e. a logarithmic interpolation between a per-stage floor (the time at normalized 0) and ceiling
+ * (the time at normalized 1), with the control value first warped by a power. This is the same
+ * exponential form already used for the filter cut-off (where <code>warp = 1</code>), so the two
+ * mappings are consistent. The inverse is exact, hence a Tonverk-to-Tonverk round-trip is loss-less.
+ * <p>
+ * Calibration (2026-06-28) against Tonverk resamples of probe presets with known normalized values:
+ * <ul>
+ * <li>Attack is a linear amplitude ramp. Three probes (norm 0.25 -&gt; 0.056 s, 0.50 -&gt; 0.256 s,
+ * 0.97 -&gt; 3.77 s) fit floor ~0.01 s, ceiling ~4.46 s, warp ~0.91 (within 0.2 %).</li>
+ * <li>Decay and release are an exponential fade; their time is measured to -60 dB. They were found
+ * to share one curve (decay and release both gave 4.64 s at norm 0.60). Three probes (norm 0.30 -&gt;
+ * 0.72 s, 0.60 -&gt; 4.65 s, 0.90 -&gt; 19.96 s) fit floor ~0.01 s, ceiling ~30.8 s, warp ~0.53.</li>
+ * <li>Hold and delay were not probed; they reuse the attack curve (delay keeps its 4 s ceiling).</li>
+ * </ul>
+ * Earlier guesses (a cube law with attack 1.6 s / 8 s and release 22 s / 24 s ceilings) had both the
+ * wrong shape and the wrong ceilings - the hardware demonstrably takes 3.77 s at attack norm 0.97,
+ * already past the old 1.6 s maximum. All range constants are gathered here so they can be tuned in
+ * one place.
  *
  * @author Jürgen Moßgraber
  */
 public final class TonverkValues
 {
-    // Envelope time maxima (the seconds reached at normalized value 1.0). Hardware-calibrated
-    // 2026-06-27 against Tonverk resamples of presets with known normalized values: the firmware
-    // follows the same seconds = max * normalized^3 cube law the writer uses, so each maximum
-    // below is the device's measured time at normalized 1.0. Attack is a linear ramp topping out
-    // near 1.6 s (two probes agree: norm 0.63 -> 0.40 s and norm 0.79 -> 0.78 s, both implying
-    // max ~1.58 s). Decay/release are an exponential fade whose time to -60 dB tops out near 22 s
-    // (norm 0.63 -> ~5.5 s). Earlier guesses (attack 8 s, release 24 s) made attacks 5x too fast.
+    // Per-stage envelope time curves: the floor (seconds at normalized 0), the ceiling (seconds at
+    // normalized 1) and the warp exponent applied to the normalized value. See the class comment for
+    // the calibration measurements.
 
-    /** Maximum attack time in seconds (normalized value 1.0). */
-    private static final double ATTACK_MAX_SECONDS  = 1.6;
-    /** Maximum hold time in seconds (normalized value 1.0); shares the attack scale (unprobed). */
-    private static final double HOLD_MAX_SECONDS    = 1.6;
-    /** Maximum decay time in seconds (normalized value 1.0); shares the release scale (unprobed). */
-    private static final double DECAY_MAX_SECONDS   = 22.0;
-    /** Maximum release time in seconds (normalized value 1.0). */
-    private static final double RELEASE_MAX_SECONDS = 22.0;
-    /** Maximum delay time in seconds (normalized value 1.0). */
-    private static final double DELAY_MAX_SECONDS   = 4.0;
-    /**
-     * The exponent of the power curve used for all envelope times. A value &gt; 1 gives finer control
-     * for short times. <code>seconds = max * normalized^curve</code>.
-     */
-    private static final double TIME_CURVE          = 3.0;
+    /** Delay time floor in seconds (normalized 0); unprobed, reuses the attack shape. */
+    private static final double DELAY_FLOOR_SECONDS     = 0.010;
+    /** Delay time ceiling in seconds (normalized 1); unprobed, reuses the attack shape. */
+    private static final double DELAY_CEILING_SECONDS   = 4.0;
+    /** Delay time warp exponent; unprobed, reuses the attack shape. */
+    private static final double DELAY_WARP              = 0.911;
+
+    /** Attack time floor in seconds (normalized 0); hardware-calibrated. */
+    private static final double ATTACK_FLOOR_SECONDS    = 0.010;
+    /** Attack time ceiling in seconds (normalized 1); hardware-calibrated. */
+    private static final double ATTACK_CEILING_SECONDS  = 4.46;
+    /** Attack time warp exponent; hardware-calibrated. */
+    private static final double ATTACK_WARP             = 0.911;
+
+    /** Hold time floor in seconds (normalized 0); unprobed, reuses the attack shape. */
+    private static final double HOLD_FLOOR_SECONDS      = 0.010;
+    /** Hold time ceiling in seconds (normalized 1); unprobed, reuses the attack shape. */
+    private static final double HOLD_CEILING_SECONDS    = 4.46;
+    /** Hold time warp exponent; unprobed, reuses the attack shape. */
+    private static final double HOLD_WARP               = 0.911;
+
+    /** Decay time floor in seconds (normalized 0); shares the release curve. */
+    private static final double DECAY_FLOOR_SECONDS     = 0.011;
+    /** Decay time ceiling in seconds (normalized 1); shares the release curve. */
+    private static final double DECAY_CEILING_SECONDS   = 30.8;
+    /** Decay time warp exponent; shares the release curve. */
+    private static final double DECAY_WARP              = 0.533;
+
+    /** Release time floor in seconds (normalized 0); hardware-calibrated. */
+    private static final double RELEASE_FLOOR_SECONDS   = 0.011;
+    /** Release time ceiling in seconds (normalized 1); hardware-calibrated. */
+    private static final double RELEASE_CEILING_SECONDS = 30.8;
+    /** Release time warp exponent; hardware-calibrated. */
+    private static final double RELEASE_WARP            = 0.533;
 
     /** Minimum filter cut-off frequency in Hertz (normalized value 0.0). */
-    private static final double MIN_CUTOFF_HZ       = 20.0;
+    private static final double MIN_CUTOFF_HZ           = 20.0;
     /** Maximum filter cut-off frequency in Hertz (normalized value 1.0). */
-    private static final double MAX_CUTOFF_HZ       = 20000.0;
+    private static final double MAX_CUTOFF_HZ           = 20000.0;
 
 
     private TonverkValues ()
@@ -65,7 +100,7 @@ public final class TonverkValues
      */
     public static double normalizedToDelayTime (final double normalized)
     {
-        return normalizedToTime (normalized, DELAY_MAX_SECONDS);
+        return normalizedToTime (normalized, DELAY_FLOOR_SECONDS, DELAY_CEILING_SECONDS, DELAY_WARP);
     }
 
 
@@ -77,7 +112,7 @@ public final class TonverkValues
      */
     public static double delayTimeToNormalized (final double seconds)
     {
-        return timeToNormalized (seconds, DELAY_MAX_SECONDS);
+        return timeToNormalized (seconds, DELAY_FLOOR_SECONDS, DELAY_CEILING_SECONDS, DELAY_WARP);
     }
 
 
@@ -89,7 +124,7 @@ public final class TonverkValues
      */
     public static double normalizedToAttackTime (final double normalized)
     {
-        return normalizedToTime (normalized, ATTACK_MAX_SECONDS);
+        return normalizedToTime (normalized, ATTACK_FLOOR_SECONDS, ATTACK_CEILING_SECONDS, ATTACK_WARP);
     }
 
 
@@ -101,7 +136,7 @@ public final class TonverkValues
      */
     public static double attackTimeToNormalized (final double seconds)
     {
-        return timeToNormalized (seconds, ATTACK_MAX_SECONDS);
+        return timeToNormalized (seconds, ATTACK_FLOOR_SECONDS, ATTACK_CEILING_SECONDS, ATTACK_WARP);
     }
 
 
@@ -113,7 +148,7 @@ public final class TonverkValues
      */
     public static double normalizedToHoldTime (final double normalized)
     {
-        return normalizedToTime (normalized, HOLD_MAX_SECONDS);
+        return normalizedToTime (normalized, HOLD_FLOOR_SECONDS, HOLD_CEILING_SECONDS, HOLD_WARP);
     }
 
 
@@ -125,7 +160,7 @@ public final class TonverkValues
      */
     public static double holdTimeToNormalized (final double seconds)
     {
-        return timeToNormalized (seconds, HOLD_MAX_SECONDS);
+        return timeToNormalized (seconds, HOLD_FLOOR_SECONDS, HOLD_CEILING_SECONDS, HOLD_WARP);
     }
 
 
@@ -137,7 +172,7 @@ public final class TonverkValues
      */
     public static double normalizedToDecayTime (final double normalized)
     {
-        return normalizedToTime (normalized, DECAY_MAX_SECONDS);
+        return normalizedToTime (normalized, DECAY_FLOOR_SECONDS, DECAY_CEILING_SECONDS, DECAY_WARP);
     }
 
 
@@ -149,7 +184,7 @@ public final class TonverkValues
      */
     public static double decayTimeToNormalized (final double seconds)
     {
-        return timeToNormalized (seconds, DECAY_MAX_SECONDS);
+        return timeToNormalized (seconds, DECAY_FLOOR_SECONDS, DECAY_CEILING_SECONDS, DECAY_WARP);
     }
 
 
@@ -161,7 +196,7 @@ public final class TonverkValues
      */
     public static double normalizedToReleaseTime (final double normalized)
     {
-        return normalizedToTime (normalized, RELEASE_MAX_SECONDS);
+        return normalizedToTime (normalized, RELEASE_FLOOR_SECONDS, RELEASE_CEILING_SECONDS, RELEASE_WARP);
     }
 
 
@@ -173,7 +208,7 @@ public final class TonverkValues
      */
     public static double releaseTimeToNormalized (final double seconds)
     {
-        return timeToNormalized (seconds, RELEASE_MAX_SECONDS);
+        return timeToNormalized (seconds, RELEASE_FLOOR_SECONDS, RELEASE_CEILING_SECONDS, RELEASE_WARP);
     }
 
 
@@ -218,18 +253,40 @@ public final class TonverkValues
     }
 
 
-    private static double normalizedToTime (final double normalized, final double maxSeconds)
+    /**
+     * Map a normalized value to a time using the firmware's warped-exponential curve:
+     * <code>seconds = floor * (ceiling / floor) ^ (normalized ^ warp)</code>.
+     *
+     * @param normalized The normalized value [0..1]
+     * @param floorSeconds The time in seconds at normalized 0
+     * @param ceilingSeconds The time in seconds at normalized 1
+     * @param warp The exponent applied to the normalized value before the exponential
+     * @return The time in seconds
+     */
+    private static double normalizedToTime (final double normalized, final double floorSeconds, final double ceilingSeconds, final double warp)
     {
-        return maxSeconds * Math.pow (clampNormalized (normalized), TIME_CURVE);
+        final double clamped = clampNormalized (normalized);
+        return floorSeconds * Math.pow (ceilingSeconds / floorSeconds, Math.pow (clamped, warp));
     }
 
 
-    private static double timeToNormalized (final double seconds, final double maxSeconds)
+    /**
+     * Inverse of {@link #normalizedToTime}: map a time back to a normalized value. Times at or below
+     * the floor map to 0, times at or above the ceiling map to 1.
+     *
+     * @param seconds The time in seconds
+     * @param floorSeconds The time in seconds at normalized 0
+     * @param ceilingSeconds The time in seconds at normalized 1
+     * @param warp The exponent applied to the normalized value before the exponential
+     * @return The normalized value [0..1]
+     */
+    private static double timeToNormalized (final double seconds, final double floorSeconds, final double ceilingSeconds, final double warp)
     {
-        if (seconds <= 0)
+        if (seconds <= floorSeconds)
             return 0;
-        if (seconds >= maxSeconds)
+        if (seconds >= ceilingSeconds)
             return 1;
-        return Math.pow (seconds / maxSeconds, 1.0 / TIME_CURVE);
+        final double exponent = Math.log (seconds / floorSeconds) / Math.log (ceilingSeconds / floorSeconds);
+        return Math.pow (exponent, 1.0 / warp);
     }
 }

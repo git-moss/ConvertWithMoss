@@ -3,7 +3,7 @@
 ## 19.0.0 (unreleased)
 
 * New: Improved user interface for long lists of formats.
-* New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes) and write (Multi or Drum machine). Writing mirrors the device's SD-card layout: the preset is stored as a flat file in 'User/Presets' and its samples in 'User/Multi-sampled Instruments/<name>', referenced by their absolute device path, so the created 'User' folder can be copied straight onto the Tonverk (thanks to Douglas Carmichael).
+* New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes whose normalized times are mapped to seconds with a warped-exponential curve calibrated against hardware resamples) and write (Multi or Drum machine). Writing mirrors the device's SD-card layout: the preset is stored as a flat file in 'User/Presets' and its samples in 'User/Multi-sampled Instruments/<name>', referenced by their absolute device path, so the created 'User' folder can be copied straight onto the Tonverk (thanks to Douglas Carmichael).
 * New: The Elektron Tonverk multi-sample mapping format (.elmulti/.eldrum) is now labelled "Elektron Tonverk Multisample" consistently for both reading and writing - it was previously shown as "Elektron Multi" as a source but "Elektron Tonverk" as a destination, the latter being easily confused with "Elektron Tonverk Preset" (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
