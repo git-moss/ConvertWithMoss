@@ -20,6 +20,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -127,12 +128,14 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
             if ("Forward".equals (sampleSlot.loopMode))
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
-                if (sampleSlot.loopStart != null)
+                loop.setType (LoopType.FORWARDS);
+                if (sampleSlot.loopStart != null && sampleSlot.loopStart.intValue () >= 0)
                     loop.setStart (sampleSlot.loopStart.intValue ());
-                if (sampleSlot.loopEnd != null)
+                if (sampleSlot.loopEnd != null && sampleSlot.loopEnd.intValue () >= 0)
                     loop.setEnd (sampleSlot.loopEnd.intValue ());
-                if (sampleSlot.loopCrossfade != null)
+                if (sampleSlot.loopCrossfade != null && sampleSlot.loopCrossfade.intValue () >= 0)
                     loop.setCrossfadeInSamples (sampleSlot.loopCrossfade.intValue ());
+                sampleZone.getLoops ().add (loop);
             }
 
             sampleZones.add (sampleZone);

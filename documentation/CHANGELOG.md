@@ -9,6 +9,9 @@
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
 * New: Added several new tags for category detection.
+* Elektron Tonverk Multisample (thanks to Douglas Carmichael)
+  * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
+  * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
