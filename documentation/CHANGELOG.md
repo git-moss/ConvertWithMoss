@@ -3,6 +3,8 @@
 ## 19.0.0 (unreleased)
 
 * New: Improved user interface for long lists of formats.
+* New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes) and write (Multi or Drum machine) (thanks to Douglas Carmichael).
+* New: The sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) is now preserved between the formats that encode it - SoundFont 2 (sample mode 1/3), SFZ (loop_continuous/loop_sustain), Renoise (LoopRelease), NI Kontakt (read) and Elektron Tonverk/Multi (keep-looping-on-release) - instead of always converting to a continuous loop (thanks to Douglas Carmichael).
 * New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
