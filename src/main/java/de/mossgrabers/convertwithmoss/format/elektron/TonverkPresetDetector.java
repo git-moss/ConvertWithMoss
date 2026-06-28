@@ -106,7 +106,13 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
             case DRUM -> groups = this.buildDrumGroups (file, preset);
             default ->
             {
-                this.notifier.logError ("IDS_TONVERK_UNKNOWN_MACHINE", preset.param ("gen_machine"));
+                // A file that parsed without any parameters is empty or corrupt (e.g. a zero-filled
+                // file left by a failed write), not a real preset with an unsupported machine.
+                final String genMachine = preset.param ("gen_machine");
+                if (preset.parameters.isEmpty ())
+                    this.notifier.logError ("IDS_TONVERK_EMPTY_OR_CORRUPT", file.getName ());
+                else
+                    this.notifier.logError ("IDS_TONVERK_UNKNOWN_MACHINE", genMachine == null ? "" : genMachine);
                 return null;
             }
         }
