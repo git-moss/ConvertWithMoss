@@ -3,6 +3,7 @@
 ## 19.0.0 (unreleased)
 
 * New: Improved user interface for long lists of formats.
+* Fixed: The source format list showed a stray comma before the file extensions, e.g. "SFZ (, *.sfz)" instead of "SFZ (*.sfz)" (thanks to Douglas Carmichael).
 * New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
