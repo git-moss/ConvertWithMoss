@@ -8,6 +8,7 @@
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
 * New: Added several new tags for category detection.
+* Fixed: Converting into the root of a USB stick or external drive could fail with "The output folder is not empty" even when it looked empty, because the operating system keeps hidden bookkeeping files there (e.g. .Spotlight-V100, .Trashes and .fseventsd on macOS). Hidden files/folders and the known Windows system folders are now ignored by the empty-folder check (thanks to Douglas Carmichael).
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
