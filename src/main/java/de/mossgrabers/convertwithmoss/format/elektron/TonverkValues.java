@@ -11,23 +11,32 @@ package de.mossgrabers.convertwithmoss.format.elektron;
  * <p>
  * The Tonverk firmware uses internal, non-published curves to map these normalized values to times
  * and frequencies. Since those curves are not contained in the preset files, the mappings below are
- * documented approximations: a power curve for times and an exponential curve for the filter cut-off.
- * They are chosen so that a Tonverk-to-Tonverk round-trip is loss-less (the inverse functions are
- * exact), while a conversion to/from a unit-based format (e.g. seconds) is a close approximation. All
- * range constants are gathered here so they can be tuned in one place.
+ * a power curve for times and an exponential curve for the filter cut-off. The envelope time maxima
+ * were calibrated against hardware resamples (see the constants below); the firmware was found to
+ * follow the same power curve, so the seconds mapping is close, not merely a guess. A
+ * Tonverk-to-Tonverk round-trip is loss-less either way (the inverse functions are exact). All range
+ * constants are gathered here so they can be tuned in one place.
  *
  * @author Jürgen Moßgraber
  */
 public final class TonverkValues
 {
+    // Envelope time maxima (the seconds reached at normalized value 1.0). Hardware-calibrated
+    // 2026-06-27 against Tonverk resamples of presets with known normalized values: the firmware
+    // follows the same seconds = max * normalized^3 cube law the writer uses, so each maximum
+    // below is the device's measured time at normalized 1.0. Attack is a linear ramp topping out
+    // near 1.6 s (two probes agree: norm 0.63 -> 0.40 s and norm 0.79 -> 0.78 s, both implying
+    // max ~1.58 s). Decay/release are an exponential fade whose time to -60 dB tops out near 22 s
+    // (norm 0.63 -> ~5.5 s). Earlier guesses (attack 8 s, release 24 s) made attacks 5x too fast.
+
     /** Maximum attack time in seconds (normalized value 1.0). */
-    private static final double ATTACK_MAX_SECONDS  = 8.0;
-    /** Maximum hold time in seconds (normalized value 1.0). */
-    private static final double HOLD_MAX_SECONDS    = 8.0;
-    /** Maximum decay time in seconds (normalized value 1.0). */
-    private static final double DECAY_MAX_SECONDS   = 24.0;
+    private static final double ATTACK_MAX_SECONDS  = 1.6;
+    /** Maximum hold time in seconds (normalized value 1.0); shares the attack scale (unprobed). */
+    private static final double HOLD_MAX_SECONDS    = 1.6;
+    /** Maximum decay time in seconds (normalized value 1.0); shares the release scale (unprobed). */
+    private static final double DECAY_MAX_SECONDS   = 22.0;
     /** Maximum release time in seconds (normalized value 1.0). */
-    private static final double RELEASE_MAX_SECONDS = 24.0;
+    private static final double RELEASE_MAX_SECONDS = 22.0;
     /** Maximum delay time in seconds (normalized value 1.0). */
     private static final double DELAY_MAX_SECONDS   = 4.0;
     /**
