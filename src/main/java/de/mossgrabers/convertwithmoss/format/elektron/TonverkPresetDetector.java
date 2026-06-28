@@ -279,10 +279,12 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyRoot (pitch);
         zone.setTuning (pitch - keyCenter);
 
-        if (slot.trimStart != null && slot.trimStart.intValue () >= 0)
-            zone.setStart (slot.trimStart.intValue ());
-        if (slot.trimEnd != null && slot.trimEnd.intValue () >= 0)
-            zone.setStop (slot.trimEnd.intValue ());
+        // A mapping slot without explicit trim points plays the whole sample. Default to the full
+        // range (0 .. number-of-frames) rather than leaving the model default of -1, which other
+        // formats would write out verbatim (e.g. the Waldorf QPAT shows a sample start/end of -1).
+        final int frames = zone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+        zone.setStart (slot.trimStart != null && slot.trimStart.intValue () >= 0 ? slot.trimStart.intValue () : 0);
+        zone.setStop (slot.trimEnd != null && slot.trimEnd.intValue () >= 0 ? slot.trimEnd.intValue () : frames);
 
         if ("Forward".equals (slot.loopMode))
         {
