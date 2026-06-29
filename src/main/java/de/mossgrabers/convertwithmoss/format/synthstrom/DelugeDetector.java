@@ -116,19 +116,53 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Removes tags outside of the root tag which prevent parsing the XML file. 'firmwareVersion'
      * and 'earliestCompatibleFirmware'.
-     * 
+     * <p>
+     * The root tag (<i>kit</i> or <i>sound</i>) might carry attributes (e.g.
+     * <code>&lt;sound firmwareVersion="3.0.5" ...&gt;</code>) which is why the tag start is matched
+     * rather than the exact <code>&lt;kit&gt;</code>/<code>&lt;sound&gt;</code> literal.
+     *
      * @param xmlCode The XML document code
      * @return The cleaned document code
      * @throws IOException If the root tag could not be found
      */
     private static String fixBrokenXml (final String xmlCode) throws IOException
     {
-        int pos = xmlCode.indexOf ("<kit>");
+        int pos = findRootTag (xmlCode, DelugeTag.KIT);
         if (pos < 0)
-            pos = xmlCode.indexOf ("<sound>");
+            pos = findRootTag (xmlCode, DelugeTag.SOUND);
         if (pos < 0)
             throw new IOException (Functions.getMessage ("IDS_DELUGE_NOT_A_DELUGE_FILE"));
         return XML_HEADER + xmlCode.substring (pos);
+    }
+
+
+    /**
+     * Find the start position of the opening root tag with the given name. The tag is matched
+     * whether it has attributes (e.g. <code>&lt;sound firmwareVersion="..."&gt;</code>) or not
+     * (e.g. <code>&lt;sound&gt;</code>). Tags which merely start with the given name (e.g.
+     * <code>soundSources</code>) are not matched.
+     *
+     * @param xmlCode The XML document code
+     * @param tagName The name of the tag to find
+     * @return The index of the opening '&lt;' or -1 if not found
+     */
+    private static int findRootTag (final String xmlCode, final String tagName)
+    {
+        final String tagStart = "<" + tagName;
+        int pos = xmlCode.indexOf (tagStart);
+        while (pos >= 0)
+        {
+            final int after = pos + tagStart.length ();
+            if (after < xmlCode.length ())
+            {
+                // The tag name must be followed by whitespace, the tag end or a self-closing slash
+                final char c = xmlCode.charAt (after);
+                if (c == '>' || c == '/' || Character.isWhitespace (c))
+                    return pos;
+            }
+            pos = xmlCode.indexOf (tagStart, after);
+        }
+        return -1;
     }
 
 
