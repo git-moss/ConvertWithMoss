@@ -392,6 +392,23 @@ public final class DelugeValues
 
 
     /**
+     * Convert a Deluge patch-cable amount (e.g. the <i>note</i> to <i>lpfFrequency</i> modulation
+     * used for filter keyboard tracking, or <i>envelope2</i>/<i>velocity</i> to a filter/amplitude
+     * destination) into a normalized modulation depth in the range of [-1..1]. A patch amount of
+     * {@link #PATCH_CABLE_FULL} (a fully open modulation) is mapped to full positive depth (+1, i.e.
+     * +100%). This is an approximation of the Deluge's modulation depth; the reference amount is the
+     * single place to calibrate it.
+     *
+     * @param amount The patch-cable amount
+     * @return The modulation depth in the range of [-1..1]
+     */
+    public static double patchAmountToModulationDepth (final int amount)
+    {
+        return Math.clamp (amount / (double) PATCH_CABLE_FULL, -1.0, 1.0);
+    }
+
+
+    /**
      * Calculate the root note of a sample from the Deluge transpose and cents values.
      *
      * @param transpose The transpose value in semitones

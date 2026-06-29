@@ -456,6 +456,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final double filterEnvAmount = modulator.getDepth ();
         parameters.add (new WaldorfQpatParameter ("Filter1EnvAmount", String.format (Locale.US, "%.2f", Double.valueOf (filterEnvAmount * 100.0)) + " %", (float) ((filterEnvAmount + 1.0) / 2.0)));
 
+        // Filter1Keytrack / Filter2Keytrack: [0.00] "-100.00 %" ... [0.50] "0.00 %" ... [1.00]
+        // "+100.00 %". Both filters track so the patch stays bright across the keyboard.
+        final double keyTracking = filter.getCutoffKeyTracking ();
+        final float keyTrackingValue = (float) Math.clamp ((keyTracking + 1.0) / 2.0, 0, 1);
+        final String keyTrackingText = String.format (Locale.US, "%.2f", Double.valueOf (keyTracking * 100.0)) + " %";
+        parameters.add (new WaldorfQpatParameter ("Filter1Keytrack", keyTrackingText, keyTrackingValue));
+        parameters.add (new WaldorfQpatParameter ("Filter2Keytrack", keyTrackingText, keyTrackingValue));
+
         final IEnvelope envelope = modulator.getSource ();
 
         createEnvelope (parameters, envelope, "Filter1Env", "Filter1", false);

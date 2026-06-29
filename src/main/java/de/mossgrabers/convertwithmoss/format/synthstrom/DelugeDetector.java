@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -516,14 +517,22 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             return;
 
         final Element envelope1 = getDirectChild (defaultParams, DelugeTag.ENVELOPE1);
-        if (envelope1 != null)
-            for (final ISampleZone zone: zones)
-                readEnvelope (envelope1, zone.getAmplitudeEnvelopeModulator ().getSource ());
+        // The Deluge expresses velocity sensitivity of the amplitude as a "velocity" patch cable
+        // routed to the post-effects volume.
+        final double amplitudeVelocityDepth = readPatchCableDepth (defaultParams, DelugeTag.SOURCE_VELOCITY, DelugeTag.DESTINATION_VOLUME);
 
-        final IFilter filter = readFilter (soundElement, defaultParams);
-        if (filter != null)
-            for (final ISampleZone zone: zones)
-                zone.setFilter (new DefaultFilter (filter.getType (), filter.getPoles (), filter.getCutoff (), filter.getResonance ()));
+        for (final ISampleZone zone: zones)
+        {
+            final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
+            if (envelope1 != null)
+                readEnvelope (envelope1, amplitudeModulator.getSource ());
+            amplitudeModulator.setDepth (amplitudeVelocityDepth);
+
+            // A fresh filter is read per zone so the zones do not share mutable modulators.
+            final IFilter filter = readFilter (soundElement, defaultParams);
+            if (filter != null)
+                zone.setFilter (filter);
+        }
     }
 
 
@@ -573,7 +582,9 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             {
                 final String lpfResonance = nestedLpf != null ? getValue (nestedLpf, DelugeTag.RESONANCE) : getValue (defaultParams, DelugeTag.LPF_RESONANCE);
                 final double resonance = DelugeValues.paramToLevel (DelugeValues.parseValue (lpfResonance, DelugeValues.PARAM_MIN));
-                return createFilter (getValue (soundElement, DelugeTag.LPF_MODE), FilterType.LOW_PASS, 4, DelugeValues.paramToCutoff (frequencyParam), resonance);
+                final IFilter filter = createFilter (getValue (soundElement, DelugeTag.LPF_MODE), FilterType.LOW_PASS, 4, DelugeValues.paramToCutoff (frequencyParam), resonance);
+                applyFilterModulation (filter, defaultParams, DelugeTag.LPF_FREQUENCY);
+                return filter;
             }
         }
 
@@ -586,11 +597,78 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             {
                 final String hpfResonance = nestedHpf != null ? getValue (nestedHpf, DelugeTag.RESONANCE) : getValue (defaultParams, DelugeTag.HPF_RESONANCE);
                 final double resonance = DelugeValues.paramToLevel (DelugeValues.parseValue (hpfResonance, DelugeValues.PARAM_MIN));
-                return createFilter (getValue (soundElement, DelugeTag.HPF_MODE), FilterType.HIGH_PASS, 2, DelugeValues.paramToCutoff (frequencyParam), resonance);
+                final IFilter filter = createFilter (getValue (soundElement, DelugeTag.HPF_MODE), FilterType.HIGH_PASS, 2, DelugeValues.paramToCutoff (frequencyParam), resonance);
+                applyFilterModulation (filter, defaultParams, DelugeTag.HPF_FREQUENCY);
+                return filter;
             }
         }
 
         return null;
+    }
+
+
+    /**
+     * Apply the filter cutoff modulations which the Deluge stores as patch cables routed to the
+     * filter frequency: keyboard tracking (<i>note</i> source), the modulation envelope
+     * (<i>envelope2</i>) and velocity sensitivity (<i>velocity</i> source).
+     *
+     * @param filter The filter to fill
+     * @param defaultParams The default parameters element which contains the patch cables and the
+     *            modulation envelope
+     * @param frequencyDestination The filter frequency modulation destination (lpfFrequency or
+     *            hpfFrequency)
+     */
+    private static void applyFilterModulation (final IFilter filter, final Element defaultParams, final String frequencyDestination)
+    {
+        // Keyboard tracking: the "note" source routed to the filter frequency.
+        filter.setCutoffKeyTracking (readPatchCableDepth (defaultParams, DelugeTag.SOURCE_NOTE, frequencyDestination));
+
+        // Filter envelope: the modulation envelope (envelope2) routed to the filter frequency.
+        final Element envelope2 = getDirectChild (defaultParams, DelugeTag.ENVELOPE2);
+        final IEnvelopeModulator envelopeModulator = filter.getCutoffEnvelopeModulator ();
+        if (envelope2 != null)
+            readEnvelope (envelope2, envelopeModulator.getSource ());
+        envelopeModulator.setDepth (readPatchCableDepth (defaultParams, DelugeTag.ENVELOPE2, frequencyDestination));
+
+        // Filter velocity: the "velocity" source routed to the filter frequency.
+        filter.getCutoffVelocityModulator ().setDepth (readPatchCableDepth (defaultParams, DelugeTag.SOURCE_VELOCITY, frequencyDestination));
+    }
+
+
+    /**
+     * Read the normalized depth of the first patch cable with the given source and destination.
+     *
+     * @param defaultParams The default parameters element which contains the patch cables
+     * @param source The modulation source to match
+     * @param destination The modulation destination to match
+     * @return The modulation depth in the range of [-1..1], 0 if there is no such patch cable
+     */
+    private static double readPatchCableDepth (final Element defaultParams, final String source, final String destination)
+    {
+        final String amount = findPatchCableAmount (defaultParams, source, destination);
+        if (amount.isBlank ())
+            return 0;
+        return DelugeValues.patchAmountToModulationDepth (DelugeValues.parseValue (amount, 0));
+    }
+
+
+    /**
+     * Find the amount of the first patch cable with the given source and destination.
+     *
+     * @param defaultParams The default parameters element which contains the patch cables
+     * @param source The modulation source to match
+     * @param destination The modulation destination to match
+     * @return The amount value or an empty string if there is no matching patch cable
+     */
+    private static String findPatchCableAmount (final Element defaultParams, final String source, final String destination)
+    {
+        final Element patchCables = getDirectChild (defaultParams, DelugeTag.PATCH_CABLES);
+        if (patchCables == null)
+            return "";
+        for (final Element cable: getDirectChildren (patchCables, DelugeTag.PATCH_CABLE))
+            if (source.equals (getValue (cable, DelugeTag.SOURCE)) && destination.equals (getValue (cable, DelugeTag.DESTINATION)))
+                return getValue (cable, DelugeTag.AMOUNT);
+        return "";
     }
 
 
