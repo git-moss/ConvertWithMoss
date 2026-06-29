@@ -520,6 +520,18 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             for (final ISampleZone zone: zones)
                 readEnvelope (envelope1, zone.getAmplitudeEnvelopeModulator ().getSource ());
 
+        // The post-effects "volume" parameter is the per-patch output level set by the sound
+        // designer. Carry it as a zone gain so the relative balance between patches is preserved;
+        // the full volume maps to 0 dB and lower volumes attenuate (it never boosts).
+        final String volume = getValue (defaultParams, DelugeTag.VOLUME);
+        if (!volume.isBlank ())
+        {
+            final double gain = DelugeValues.paramToGainDecibels (DelugeValues.parseValue (volume, DelugeValues.PARAM_MAX));
+            if (gain < 0)
+                for (final ISampleZone zone: zones)
+                    zone.setGain (gain);
+        }
+
         final IFilter filter = readFilter (soundElement, defaultParams);
         if (filter != null)
             for (final ISampleZone zone: zones)

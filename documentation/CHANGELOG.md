@@ -12,6 +12,7 @@
 * Fixed: Converting into the root of a USB stick or external drive could fail with "The output folder is not empty" even when it looked empty, because the operating system keeps hidden bookkeeping files there (e.g. .Spotlight-V100, .Trashes and .fseventsd on macOS). Hidden files/folders and the known Windows system folders are now ignored by the empty-folder check (thanks to Douglas Carmichael).
 * Synthstrom Deluge (thanks to Douglas Carmichael)
   * Fixed: Sample-based SOUND and KIT files were rejected with "This is not a Deluge KIT or SOUND file" when the root tag carried attributes (e.g. `firmwareVersion` written inline by firmware 3.x). The broken-XML workaround only matched the bare `<sound>`/`<kit>` tag; the root tag is now matched with or without attributes.
+  * The per-patch post-effects volume is now carried as a sample-zone gain, so a converted patch keeps the relative level the sound designer set (previously every patch was converted at full level regardless of its volume). The full volume maps to 0 dB and lower volumes attenuate - it never boosts.
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
