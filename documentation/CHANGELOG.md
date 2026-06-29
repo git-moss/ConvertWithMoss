@@ -11,12 +11,14 @@
 * New: Added several new tags for category detection.
 * Fixed: Converting into the root of a USB stick or external drive could fail with "The output folder is not empty" even when it looked empty, because the operating system keeps hidden bookkeeping files there (e.g. .Spotlight-V100, .Trashes and .fseventsd on macOS). Hidden files/folders and the known Windows system folders are now ignored by the empty-folder check (thanks to Douglas Carmichael).
 * Synthstrom Deluge (thanks to Douglas Carmichael)
+  * New: Filter and amplitude modulations stored as patch cables are now read so they can be carried over to formats that support them: filter cutoff keyboard-tracking (the "note" source routed to the filter frequency), the filter modulation envelope (envelope2 routed to the filter frequency), filter velocity (velocity routed to the filter frequency) and amplitude velocity (velocity routed to the volume).
   * Fixed: Sample-based SOUND and KIT files were rejected with "This is not a Deluge KIT or SOUND file" when the root tag carried attributes (e.g. `firmwareVersion` written inline by firmware 3.x). The broken-XML workaround only matched the bare `<sound>`/`<kit>` tag; the root tag is now matched with or without attributes.
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
   * Fixed: Implemented workaround for converting 32-bit FLAC files (might not always work).
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+  * New: The filter cutoff keyboard-tracking is now written (Filter1Keytrack/Filter2Keytrack), so e.g. a converted Synthstrom Deluge patch keeps its brightness across the keyboard range instead of sounding dark in the upper octaves.
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
   * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
   * Fixed: A sample zone without an explicit start/end (e.g. converted from a format that stores only loop points) was written with a sample start and end of -1; the whole sample is now used.

@@ -67,4 +67,22 @@ public interface IFilter
      * @return The modulator
      */
     IEnvelopeModulator getCutoffEnvelopeModulator ();
+
+
+    /**
+     * Get the keyboard tracking amount applied to the filter cutoff. A value of 0 means no tracking,
+     * 1 means the cutoff follows the played note one-to-one (one semitone per semitone, +100%) and
+     * -1 means inverse tracking (-100%).
+     *
+     * @return The key-tracking amount in the range of [-1..1]
+     */
+    double getCutoffKeyTracking ();
+
+
+    /**
+     * Set the keyboard tracking amount applied to the filter cutoff.
+     *
+     * @param keyTracking The key-tracking amount in the range of [-1..1] (0 = no tracking)
+     */
+    void setCutoffKeyTracking (double keyTracking);
 }
