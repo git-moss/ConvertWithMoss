@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
+import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.algorithm.MultiSampleReducer;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
@@ -455,6 +456,15 @@ public class ConverterBackend
                 this.notifier.log ("IDS_PROCESSING_NORMALIZING");
             this.notifier.log ("IDS_NOTIFY_LINE_FEED");
             AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.alwaysResample, this.detectionSettings.enableNormalize);
+
+            ///////////////////////////////////////////////////////
+            // Snap forward loop boundaries to zero-crossings to remove loop clicks
+
+            if (this.detectionSettings.snapLoopsToZero)
+            {
+                final int snapped = LoopZeroSnapper.snap (sampleZones);
+                this.notifier.log ("IDS_PROCESSING_SNAP_LOOPS", Integer.toString (snapped));
+            }
         }
         catch (final IOException | UnsupportedAudioFileException ex)
         {
