@@ -495,8 +495,18 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         loop.setType (LoopType.FORWARDS);
         if (loopStart >= 0)
             loop.setStart (loopStart);
+        // The Deluge omits the loop end when the loop runs to the end of the (played) sample. Default
+        // it to the sample/zone end so a valid loop is created; otherwise the unset end (-1) would be
+        // written as a negative, degenerate loop and the sound would lose its sustain on export (e.g.
+        // a pad ending abruptly instead of looping until the release).
         if (loopEnd > 0)
             loop.setEnd (loopEnd);
+        else
+        {
+            final int loopEndDefault = end > 0 ? end : numberOfSamples;
+            if (loopEndDefault > 0 && loopEndDefault != Integer.MAX_VALUE)
+                loop.setEnd (loopEndDefault);
+        }
         zone.addLoop (loop);
         return loop;
     }
