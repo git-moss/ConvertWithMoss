@@ -422,7 +422,12 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyRoot (keyRoot);
         zone.setTuning (rootNote - keyRoot);
 
-        final boolean isLoop = loopMode == DelugeTag.LOOP_MODE_LOOP;
+        // A Deluge oscillator in STRETCH (time-stretch) mode sustains by looping its sample through
+        // the granular time-stretch engine. ConvertWithMoss cannot reproduce the time-stretch, but
+        // such a sample still carries a loop start and is meant to sustain, so it is treated as a
+        // normal forward loop here. Without this a held STRETCH patch (e.g. a sustained pad) would
+        // play its sample once and then drop out, because no loop was created at all.
+        final boolean isLoop = loopMode == DelugeTag.LOOP_MODE_LOOP || loopMode == DelugeTag.LOOP_MODE_STRETCH;
         final ISampleLoop loop = applyZonePositions (getDirectChild (zoneParent, DelugeTag.ZONE), zone, sampleData, isLoop);
 
         try
