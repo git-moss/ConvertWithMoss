@@ -269,6 +269,22 @@ public final class DelugeValues
 
 
     /**
+     * Convert a 32-bit volume parameter value to a gain in decibels. The value is interpreted as a
+     * linear amplitude level (see {@link #paramToLevel}), so the gain is <code>20 * log10(level)</code>
+     * relative to the full volume, which maps to 0 dB. Lower volumes attenuate; the maximum never
+     * boosts. A muted volume is clamped to a very low but finite gain to avoid negative infinity.
+     *
+     * @param param The 32-bit parameter value
+     * @return The gain in decibels (0 or negative)
+     */
+    public static double paramToGainDecibels (final int param)
+    {
+        final double level = paramToLevel (param);
+        return level <= 0 ? -120.0 : 20.0 * Math.log10 (level);
+    }
+
+
+    /**
      * Convert an attack time in seconds to a 32-bit parameter value using the firmware attack rate
      * table.
      *
