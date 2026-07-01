@@ -224,9 +224,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 final ISampleData sampleData = zone.getSampleData ();
                 final double numSampleFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
 
-                // Sample Path - '4:' refers to the USB drive. This is required to trigger the
-                // copying of the samples to the internal memory
-                sb.append ("\"4:").append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
+                // Sample path, written relative to the preset (no leading drive number). The device
+                // resolves it against the folder the preset itself was loaded from, so it locates the
+                // samples on whatever drive the preset sits on. A leading drive number was written
+                // here before (an absolute path such as "4:samples/..."), but the device then prepends
+                // its own drive again when you use "Export -> With Samples", producing an invalid,
+                // doubled path (e.g. "3:2:samples/...") so the samples could not be backed up. A
+                // relative path both loads and exports/backs up cleanly (confirmed on Iridium OS 4).
+                sb.append ('"').append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!
