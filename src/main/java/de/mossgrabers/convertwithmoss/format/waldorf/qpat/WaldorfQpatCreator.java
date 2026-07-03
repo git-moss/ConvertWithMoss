@@ -224,9 +224,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 final ISampleData sampleData = zone.getSampleData ();
                 final double numSampleFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
 
-                // Sample Path - '4:' refers to the USB drive. This is required to trigger the
-                // copying of the samples to the internal memory
-                sb.append ("\"4:").append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
+                // Sample path, written relative to the preset (no leading drive number). The device
+                // resolves it against the folder the preset itself was loaded from, so it locates the
+                // samples on whatever drive the preset sits on. A leading drive number was written
+                // here before (an absolute path such as "4:samples/..."), but the device then prepends
+                // its own drive again when you use "Export -> With Samples", producing an invalid,
+                // doubled path (e.g. "3:2:samples/...") so the samples could not be backed up. A
+                // relative path both loads and exports/backs up cleanly (confirmed on Iridium OS 4).
+                sb.append ('"').append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!
@@ -245,14 +250,18 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // Pan - CURRENTLY IGNORED
                 sb.append (formatMapDouble ((zone.getPanning () + 1.0) / 2.0)).append ('\t');
 
-                // Start / End
-                sb.append (formatMapDouble (zone.getStart () / numSampleFrames)).append ('\t');
-                sb.append (formatMapDouble (zone.getStop () / numSampleFrames)).append ('\t');
+                // Start / End - a zone whose start/stop was never set keeps the model default of -1,
+                // which would otherwise be written as a negative position (the device then shows a
+                // sample start/end of -1). Treat an unset start/stop as the full sample.
+                final double startFrame = zone.getStart () < 0 ? 0 : zone.getStart ();
+                final double stopFrame = zone.getStop () <= 0 ? numSampleFrames : zone.getStop ();
+                sb.append (formatMapDouble (startFrame / numSampleFrames)).append ('\t');
+                sb.append (formatMapDouble (stopFrame / numSampleFrames)).append ('\t');
 
                 // Loop mode, start, stop
                 final List<ISampleLoop> loops = zone.getLoops ();
                 if (loops.isEmpty ())
-                    sb.append ("0\t0\t").append (formatMapDouble (zone.getStop () / numSampleFrames)).append ('\t');
+                    sb.append ("0\t0\t").append (formatMapDouble (stopFrame / numSampleFrames)).append ('\t');
                 else
                 {
                     final ISampleLoop loop = loops.get (0);

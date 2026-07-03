@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import de.mossgrabers.convertwithmoss.core.ConverterBackend;
@@ -280,9 +279,12 @@ public class MainFrame extends AbstractFrame implements INotifier
             return "";
 
         final StringBuilder sb = new StringBuilder (" (");
+        boolean first = true;
         for (final String ending: fileEndings)
         {
-            if (!sb.isEmpty ())
+            if (first)
+                first = false;
+            else
                 sb.append (", ");
             sb.append ("*").append (ending);
         }
@@ -912,8 +914,10 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
-     * Checks if folder is empty. Ignores OS thumb-nail files like .DS_Store on MAC and Thumbs.db on
-     * Windows.
+     * Checks if folder is empty. Ignores hidden files/folders (e.g. .DS_Store on macOS and the
+     * .Spotlight-V100, .Trashes and .fseventsd folders created on the root of a removable volume)
+     * as well as the known Windows system folders, so that the root of a USB stick or external
+     * drive is not wrongly reported as non-empty.
      *
      * @param directoryPath Path of folder to check
      * @return True if directory is empty
@@ -923,7 +927,13 @@ public class MainFrame extends AbstractFrame implements INotifier
         boolean result = true;
         try (final Stream<Path> paths = Files.list (Path.of (directoryPath)))
         {
-            result = paths.filter (path -> !Pattern.matches ("^(\\.(DS_Store|desktop)|Thumbs.db|ConvertWithMoss.log)$", path.getFileName ().toString ())).count () == 0;
+            result = paths.filter (path -> {
+                // Ignore hidden entries (e.g. macOS .DS_Store and the volume-root
+                // .Spotlight-V100, .Trashes, .fseventsd folders) and the known Windows system
+                // folders, none of which the user wants to preserve.
+                final String name = path.getFileName ().toString ();
+                return !name.startsWith (".") && !"Thumbs.db".equals (name) && !"ConvertWithMoss.log".equals (name) && !"System Volume Information".equals (name) && !"$RECYCLE.BIN".equals (name);
+            }).count () == 0;
         }
         catch (final IOException _)
         {

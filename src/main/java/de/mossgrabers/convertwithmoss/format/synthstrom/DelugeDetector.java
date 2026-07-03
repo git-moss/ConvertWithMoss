@@ -116,19 +116,53 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Removes tags outside of the root tag which prevent parsing the XML file. 'firmwareVersion'
      * and 'earliestCompatibleFirmware'.
-     * 
+     * <p>
+     * The root tag (<i>kit</i> or <i>sound</i>) might carry attributes (e.g.
+     * <code>&lt;sound firmwareVersion="3.0.5" ...&gt;</code>) which is why the tag start is matched
+     * rather than the exact <code>&lt;kit&gt;</code>/<code>&lt;sound&gt;</code> literal.
+     *
      * @param xmlCode The XML document code
      * @return The cleaned document code
      * @throws IOException If the root tag could not be found
      */
     private static String fixBrokenXml (final String xmlCode) throws IOException
     {
-        int pos = xmlCode.indexOf ("<kit>");
+        int pos = findRootTag (xmlCode, DelugeTag.KIT);
         if (pos < 0)
-            pos = xmlCode.indexOf ("<sound>");
+            pos = findRootTag (xmlCode, DelugeTag.SOUND);
         if (pos < 0)
             throw new IOException (Functions.getMessage ("IDS_DELUGE_NOT_A_DELUGE_FILE"));
         return XML_HEADER + xmlCode.substring (pos);
+    }
+
+
+    /**
+     * Find the start position of the opening root tag with the given name. The tag is matched
+     * whether it has attributes (e.g. <code>&lt;sound firmwareVersion="..."&gt;</code>) or not
+     * (e.g. <code>&lt;sound&gt;</code>). Tags which merely start with the given name (e.g.
+     * <code>soundSources</code>) are not matched.
+     *
+     * @param xmlCode The XML document code
+     * @param tagName The name of the tag to find
+     * @return The index of the opening '&lt;' or -1 if not found
+     */
+    private static int findRootTag (final String xmlCode, final String tagName)
+    {
+        final String tagStart = "<" + tagName;
+        int pos = xmlCode.indexOf (tagStart);
+        while (pos >= 0)
+        {
+            final int after = pos + tagStart.length ();
+            if (after < xmlCode.length ())
+            {
+                // The tag name must be followed by whitespace, the tag end or a self-closing slash
+                final char c = xmlCode.charAt (after);
+                if (c == '>' || c == '/' || Character.isWhitespace (c))
+                    return pos;
+            }
+            pos = xmlCode.indexOf (tagStart, after);
+        }
+        return -1;
     }
 
 
@@ -388,7 +422,12 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyRoot (keyRoot);
         zone.setTuning (rootNote - keyRoot);
 
-        final boolean isLoop = loopMode == DelugeTag.LOOP_MODE_LOOP;
+        // A Deluge oscillator in STRETCH (time-stretch) mode sustains by looping its sample through
+        // the granular time-stretch engine. ConvertWithMoss cannot reproduce the time-stretch, but
+        // such a sample still carries a loop start and is meant to sustain, so it is treated as a
+        // normal forward loop here. Without this a held STRETCH patch (e.g. a sustained pad) would
+        // play its sample once and then drop out, because no loop was created at all.
+        final boolean isLoop = loopMode == DelugeTag.LOOP_MODE_LOOP || loopMode == DelugeTag.LOOP_MODE_STRETCH;
         final ISampleLoop loop = applyZonePositions (getDirectChild (zoneParent, DelugeTag.ZONE), zone, sampleData, isLoop);
 
         try
@@ -461,8 +500,18 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         loop.setType (LoopType.FORWARDS);
         if (loopStart >= 0)
             loop.setStart (loopStart);
+        // The Deluge omits the loop end when the loop runs to the end of the (played) sample. Default
+        // it to the sample/zone end so a valid loop is created; otherwise the unset end (-1) would be
+        // written as a negative, degenerate loop and the sound would lose its sustain on export (e.g.
+        // a pad ending abruptly instead of looping until the release).
         if (loopEnd > 0)
             loop.setEnd (loopEnd);
+        else
+        {
+            final int loopEndDefault = end > 0 ? end : numberOfSamples;
+            if (loopEndDefault > 0 && loopEndDefault != Integer.MAX_VALUE)
+                loop.setEnd (loopEndDefault);
+        }
         zone.addLoop (loop);
         return loop;
     }
@@ -485,6 +534,18 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         if (envelope1 != null)
             for (final ISampleZone zone: zones)
                 readEnvelope (envelope1, zone.getAmplitudeEnvelopeModulator ().getSource ());
+
+        // The post-effects "volume" parameter is the per-patch output level set by the sound
+        // designer. Carry it as a zone gain so the relative balance between patches is preserved;
+        // the full volume maps to 0 dB and lower volumes attenuate (it never boosts).
+        final String volume = getValue (defaultParams, DelugeTag.VOLUME);
+        if (!volume.isBlank ())
+        {
+            final double gain = DelugeValues.paramToGainDecibels (DelugeValues.parseValue (volume, DelugeValues.PARAM_MAX));
+            if (gain < 0)
+                for (final ISampleZone zone: zones)
+                    zone.setGain (gain);
+        }
 
         final IFilter filter = readFilter (soundElement, defaultParams);
         if (filter != null)

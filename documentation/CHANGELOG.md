@@ -2,14 +2,17 @@
 
 ## 19.0.0 (unreleased)
 
-* New: Improved user interface for long lists of formats.
-* New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes whose normalized times are mapped to seconds with a warped-exponential curve calibrated against hardware resamples) and write (Multi or Drum machine). Writing mirrors the device's SD-card layout: the preset is stored as a flat file in 'User/Presets' and its samples in 'User/Multi-sampled Instruments/<name>', referenced by their absolute device path, so the created 'User' folder can be copied straight onto the Tonverk (thanks to Douglas Carmichael).
-* New: The Elektron Tonverk multi-sample mapping format (.elmulti/.eldrum) is now labelled "Elektron Tonverk Multisample" consistently for both reading and writing - it was previously shown as "Elektron Multi" as a source but "Elektron Tonverk" as a destination, the latter being easily confused with "Elektron Tonverk Preset" (thanks to Douglas Carmichael).
+* New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
+* New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes whose normalized times are mapped to seconds with a warped-exponential curve calibrated against hardware resamples) and write (Multi or Drum machine). Writing mirrors the device's SD-card layout: the preset is stored as a flat file in 'User/Presets' and its samples in 'User/Multi-sampled Instruments/<name>', referenced by their absolute device path, so the created 'User' folder can be copied straight onto the Tonverk (thanks to Douglas Carmichael).
+* New: Improved user interface for long lists of formats.
 * New: Added several new tags for category detection.
+* Fixed: Converting into the root of a USB stick or external drive could fail with "The output folder is not empty" even when it looked empty, because the operating system keeps hidden bookkeeping files there (e.g. .Spotlight-V100, .Trashes and .fseventsd on macOS). Hidden files/folders and the known Windows system folders are now ignored by the empty-folder check (thanks to Douglas Carmichael).
+* Fixed: The source format list showed a stray comma before the file extensions, e.g. "SFZ (, *.sfz)" instead of "SFZ (*.sfz)" (thanks to Douglas Carmichael).
 * Elektron Tonverk Multisample (thanks to Douglas Carmichael)
+  * New: This format is now labelled "Elektron Tonverk Multisample" consistently for both reading and writing - it was previously shown as "Elektron Multi" as a source but "Elektron Tonverk" as a destination, the latter being easily confused with "Elektron Tonverk Preset" (thanks to Douglas Carmichael).
   * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
   * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
 * FLAC/OGG
@@ -17,8 +20,10 @@
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
   * Fixed: Implemented workaround for converting 32-bit FLAC files (might not always work).
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+  * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
   * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
+  * Fixed: A sample zone without an explicit start/end (e.g. converted from a format that stores only loop points) was written with a sample start and end of -1; the whole sample is now used.
 
 ## 18.1.1
 
