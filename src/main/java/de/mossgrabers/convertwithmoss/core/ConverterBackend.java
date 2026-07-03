@@ -45,8 +45,10 @@ import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector
 import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExDetector;
 import de.mossgrabers.convertwithmoss.format.dls.DlsDetector;
-import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiCreator;
-import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiDetector;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiCreator;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiDetector;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetCreator;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetDetector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.mirage.MirageDetector;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Creator;
@@ -144,7 +146,8 @@ public class ConverterBackend
             new DecentSamplerDetector (notifier),
             new DlsDetector (notifier),
             new DistingExDetector (notifier),
-            new ElektronMultiDetector (notifier),
+            new TonverkMultiDetector (notifier),
+            new TonverkPresetDetector (notifier),
             new EnsoniqEpsAsrDetector (notifier),
             new MirageDetector (notifier),
             new IsoDetector (notifier),
@@ -179,7 +182,8 @@ public class ConverterBackend
             new TX16WxCreator (notifier),
             new DecentSamplerCreator (notifier),
             new DistingExCreator (notifier),
-            new ElektronMultiCreator (notifier),
+            new TonverkMultiCreator (notifier),
+            new TonverkPresetCreator (notifier),
             new KMPCreator (notifier),
             new KorgmultisampleCreator (notifier),
             new EXS24Creator (notifier),

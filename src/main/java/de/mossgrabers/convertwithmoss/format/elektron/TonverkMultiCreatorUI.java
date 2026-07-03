@@ -24,7 +24,7 @@ import javafx.scene.layout.Pane;
  *
  * @author Jürgen Moßgraber
  */
-public class ElektronMultiCreatorUI extends WavChunkSettingsUI
+public class TonverkMultiCreatorUI extends WavChunkSettingsUI
 {
     private static final String RESAMPLE_TO_24_48 = "ResampleTo2448";
 
@@ -38,7 +38,7 @@ public class ElektronMultiCreatorUI extends WavChunkSettingsUI
      *
      * @param prefix The prefix to use for the identifier
      */
-    public ElektronMultiCreatorUI (final String prefix)
+    public TonverkMultiCreatorUI (final String prefix)
     {
         // Only the sample chunk is enabled by default: the Tonverk factory WAV files contain only
         // 'fmt ', 'data' and 'smpl' chunks and the Tonverk WAV parser is strict
