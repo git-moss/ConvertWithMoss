@@ -12,8 +12,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
 
-import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -30,18 +30,18 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetFile.Machine;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetFile.Machine;
 
 
 /**
- * Detector for Elektron Tonverk preset files (*.tvpst). Supports all three generator machines: Multi
- * (multi-sample), One-Shot (single sample) and Drum (a kit of up to several voices). The amplitude
- * envelope, the filter and its envelope, sample loops, gain and panning are read into the model. The
- * remaining, synth-specific parameters (arpeggiator, FX, global LFOs, modulation matrix) have no
- * representation in the multi-sample model and are therefore not converted.
+ * Detector for Elektron Tonverk preset files (*.tvpst). Supports all three generator machines:
+ * Multi (multi-sample), One-Shot (single sample) and Drum (a kit of up to several voices). The
+ * amplitude envelope, the filter and its envelope, sample loops, gain and panning are read into the
+ * model. The remaining, synth-specific parameters (arpeggiator, FX, global LFOs, modulation matrix)
+ * have no representation in the multi-sample model and are therefore not converted.
  *
  * @author Jürgen Moßgraber
  */
@@ -68,7 +68,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readPresetFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -76,12 +76,12 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         try
         {
             final TonverkPresetFile preset = new TonverkPresetFile ();
-            preset.parse (file.toPath ());
+            preset.parse (sourceFile.toPath ());
 
             for (final String error: preset.errors)
                 this.notifier.logText (error);
 
-            final IMultisampleSource source = this.convertPreset (file, preset);
+            final IMultisampleSource source = this.convertPreset (sourceFile, preset);
             return source == null ? Collections.emptyList () : Collections.singletonList (source);
         }
         catch (final IOException ex)
@@ -92,25 +92,24 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private IMultisampleSource convertPreset (final File file, final TonverkPresetFile preset) throws IOException
+    private IMultisampleSource convertPreset (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
-        final String presetName = nameWithoutEnding (file);
-        final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, file.getName ());
-        final IMultisampleSource source = new DefaultMultisampleSource (file, parts, presetName);
+        final String presetName = nameWithoutEnding (sourceFile);
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, sourceFile.getName ());
+        final IMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName);
 
         final List<IGroup> groups;
         switch (preset.machine)
         {
-            case MULTI -> groups = this.buildMultiGroups (file, preset);
-            case ONESHOT -> groups = this.buildOneShotGroups (file, preset);
-            case DRUM -> groups = this.buildDrumGroups (file, preset);
-            default ->
-            {
+            case MULTI -> groups = this.buildMultiGroups (sourceFile, preset);
+            case ONESHOT -> groups = this.buildOneShotGroups (sourceFile, preset);
+            case DRUM -> groups = this.buildDrumGroups (sourceFile, preset);
+            default -> {
                 // A file that parsed without any parameters is empty or corrupt (e.g. a zero-filled
                 // file left by a failed write), not a real preset with an unsupported machine.
                 final String genMachine = preset.param ("gen_machine");
                 if (preset.parameters.isEmpty ())
-                    this.notifier.logError ("IDS_TONVERK_EMPTY_OR_CORRUPT", file.getName ());
+                    this.notifier.logError ("IDS_TONVERK_EMPTY_OR_CORRUPT", sourceFile.getName ());
                 else
                     this.notifier.logError ("IDS_TONVERK_UNKNOWN_MACHINE", genMachine == null ? "" : genMachine);
                 return null;
@@ -137,10 +136,15 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Build the groups of a Multi machine: the key-zones are spread across key- and velocity-ranges
-     * (identical to the elmulti mapping), and the single, global generator envelope/filter is applied
-     * to every zone.
+     * (identical to the elmulti mapping), and the single, global generator envelope/filter is
+     * applied to every zone.
+     *
+     * @param sourceFile The source file
+     * @param preset The preset
+     * @return The converted groups
+     * @throws IOException Could not read
      */
-    private List<IGroup> buildMultiGroups (final File file, final TonverkPresetFile preset) throws IOException
+    private List<IGroup> buildMultiGroups (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
         final String prefix = Machine.MULTI.getParameterPrefix ();
         final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> orderedKeyRanges = new TreeMap<> ();
@@ -153,12 +157,12 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
                 final List<ISampleZone> zones = new ArrayList<> ();
                 for (final TonverkSampleSlot slot: velocityLayer.sampleSlots)
                 {
-                    final ISampleZone zone = this.createMappedZone (file, slot, keyZone.pitch, keyZone.keyCenter);
+                    final ISampleZone zone = this.createMappedZone (sourceFile, slot, keyZone.pitch, keyZone.keyCenter);
                     if (zone == null)
                         continue;
-                    this.applyAmplitudeEnvelope (zone, preset, prefix);
-                    this.applyFilter (zone, preset, prefix);
-                    this.applyGainAndPanning (zone, preset, prefix);
+                    applyAmplitudeEnvelope (zone, preset, prefix);
+                    applyFilter (zone, preset, prefix);
+                    applyGainAndPanning (zone, preset, prefix);
                     zones.add (zone);
                 }
                 if (zones.isEmpty ())
@@ -179,14 +183,19 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Build the single group of a One-Shot machine: one sample mapped across the whole keyboard. The
-     * sample start/end and loop points are stored normalized [0..1] and are scaled by the number of
-     * sample frames.
+     * Build the single group of a One-Shot machine: one sample mapped across the whole keyboard.
+     * The sample start/end and loop points are stored normalized [0..1] and are scaled by the
+     * number of sample frames.
+     *
+     * @param sourceFile The source file
+     * @param preset The preset
+     * @return The converted groups
+     * @throws IOException Could not read
      */
-    private List<IGroup> buildOneShotGroups (final File file, final TonverkPresetFile preset) throws IOException
+    private List<IGroup> buildOneShotGroups (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
         final String prefix = Machine.ONESHOT.getParameterPrefix ();
-        final File sampleFile = this.resolveSample (file, preset.param (prefix + "_sample_slot"));
+        final File sampleFile = resolveSample (sourceFile, preset.param (prefix + "_sample_slot"));
         if (sampleFile == null)
         {
             this.notifier.logError ("IDS_TONVERK_SAMPLE_NOT_FOUND", preset.param (prefix + "_sample_slot"));
@@ -225,9 +234,9 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        this.applyAmplitudeEnvelope (zone, preset, prefix);
-        this.applyFilter (zone, preset, prefix);
-        this.applyGainAndPanning (zone, preset, prefix);
+        applyAmplitudeEnvelope (zone, preset, prefix);
+        applyFilter (zone, preset, prefix);
+        applyGainAndPanning (zone, preset, prefix);
 
         final IGroup group = new DefaultGroup ();
         group.addSampleZone (zone);
@@ -239,8 +248,13 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
      * Build the single group of a Drum machine: each key-zone maps one drum sample to a single key.
      * The Nth key-zone is played by the Nth drum voice, so the per-voice envelope, filter, gain and
      * panning are applied accordingly.
+     *
+     * @param sourceFile The source file
+     * @param preset The preset
+     * @return The converted groups
+     * @throws IOException Could not read
      */
-    private List<IGroup> buildDrumGroups (final File file, final TonverkPresetFile preset) throws IOException
+    private List<IGroup> buildDrumGroups (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
         final IGroup group = new DefaultGroup ();
         int voiceIndex = 0;
@@ -250,16 +264,16 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
             for (final TonverkVelocityLayer velocityLayer: keyZone.velocityLayers)
                 for (final TonverkSampleSlot slot: velocityLayer.sampleSlots)
                 {
-                    final ISampleZone zone = this.createMappedZone (file, slot, keyZone.pitch, keyZone.keyCenter);
+                    final ISampleZone zone = this.createMappedZone (sourceFile, slot, keyZone.pitch, keyZone.keyCenter);
                     if (zone == null)
                         continue;
                     zone.setKeyLow (keyZone.pitch);
                     zone.setKeyHigh (keyZone.pitch);
                     zone.setVelocityLow (0);
                     zone.setVelocityHigh (127);
-                    this.applyAmplitudeEnvelope (zone, preset, voicePrefix);
-                    this.applyFilter (zone, preset, voicePrefix);
-                    this.applyGainAndPanning (zone, preset, voicePrefix);
+                    applyAmplitudeEnvelope (zone, preset, voicePrefix);
+                    applyFilter (zone, preset, voicePrefix);
+                    applyGainAndPanning (zone, preset, voicePrefix);
                     group.addSampleZone (zone);
                 }
             voiceIndex++;
@@ -269,12 +283,19 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Create a sample zone from a mapping-slot sample: resolves the (absolute) sample path, sets the
-     * root note, tuning, trim and an (absolute, in samples) loop.
+     * Create a sample zone from a mapping-slot sample: resolves the (absolute) sample path, sets
+     * the root note, tuning, trim and an (absolute, in samples) loop.
+     *
+     * @param sourceFile The source file
+     * @param slot The sample slot
+     * @param pitch The pitch
+     * @param keyCenter The key-center
+     * @return The created sample zone
+     * @throws IOException Could not read
      */
-    private ISampleZone createMappedZone (final File file, final TonverkSampleSlot slot, final int pitch, final double keyCenter) throws IOException
+    private ISampleZone createMappedZone (final File sourceFile, final TonverkSampleSlot slot, final int pitch, final double keyCenter) throws IOException
     {
-        final File sampleFile = this.resolveSample (file, slot.sample);
+        final File sampleFile = resolveSample (sourceFile, slot.sample);
         if (sampleFile == null)
         {
             this.notifier.logError ("IDS_TONVERK_SAMPLE_NOT_FOUND", slot.sample);
@@ -316,10 +337,11 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
      * @param preset The preset
      * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot' or 'gen_drum_voiceN')
      */
-    private void applyAmplitudeEnvelope (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
+    private static void applyAmplitudeEnvelope (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
     {
         // The amplitude envelope is either ADSR (amp_mode == 2) or AHD (otherwise). In AHD mode the
-        // hold phase is active and the decay runs all the way to zero, so there is neither a sustain
+        // hold phase is active and the decay runs all the way to zero, so there is neither a
+        // sustain
         // level nor a separate release phase.
         final boolean adsr = preset.paramInt (prefix + "_amp_mode", 2) == 2;
         final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
@@ -335,13 +357,14 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Apply the Tonverk filter and its DADSR envelope (parameters &lt;prefix&gt;_filter_*) to a zone.
+     * Apply the Tonverk filter and its DADSR envelope (parameters &lt;prefix&gt;_filter_*) to a
+     * zone.
      *
      * @param zone The zone
      * @param preset The preset
      * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot' or 'gen_drum_voiceN')
      */
-    private void applyFilter (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
+    private static void applyFilter (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
     {
         final double cutoff = TonverkValues.normalizedToCutoff (preset.paramDouble (prefix + "_filter_frequency", 1.0));
         final double resonance = TonverkValues.clampNormalized (preset.paramDouble (prefix + "_filter_resonance", 0));
@@ -370,7 +393,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
      * @param preset The preset
      * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot' or 'gen_drum_voiceN')
      */
-    private void applyGainAndPanning (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
+    private static void applyGainAndPanning (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
     {
         final double volume = preset.paramDouble (prefix + "_volume", 1.0);
         zone.setGain (volume <= 0 ? Double.NEGATIVE_INFINITY : 20.0 * Math.log10 (volume));
@@ -388,7 +411,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
      * @param devicePath The absolute device path of the sample
      * @return The resolved file or null if it could not be found
      */
-    private File resolveSample (final File file, final String devicePath)
+    private static File resolveSample (final File file, final String devicePath)
     {
         if (devicePath == null || devicePath.isBlank ())
             return null;

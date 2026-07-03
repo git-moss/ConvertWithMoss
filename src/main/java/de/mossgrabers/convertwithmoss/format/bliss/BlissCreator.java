@@ -51,10 +51,12 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 {
+    private static final String                   TAG_VALUE                = "value";
+
     // The version number to use: 3.8.0
     private static final int                      BLISS_VERSION            = 0x30800;
 
-    private final static DestinationAudioFormat   DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat   DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16,
         24
@@ -159,7 +161,8 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
             }
 
             final Optional<String> xml = this.createXMLString (document);
-            AbstractCreator.storeTextFile (zos, "bank.xml", xml.get (), null);
+            if (xml.isPresent ())
+                AbstractCreator.storeTextFile (zos, "bank.xml", xml.get (), null);
         }
         this.progress.notifyDone ();
     }
@@ -205,7 +208,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
                     // A program may contain up to 128 zones
                     if (zoneIndex == 128)
                         break;
-                    createSampleZone (document, roundRobinGroup, sequenceLength, zonesElement, zoneIndex, zone);
+                    createSampleZone (document, roundRobinGroup, sequenceLength, zonesElement, zone);
                     zoneIndex++;
                 }
             }
@@ -221,11 +224,10 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
      * @param roundRobinGroup The index of the group () if it is used for round-robin
      * @param sequenceLength The sequence length for round-robin
      * @param multisampleElement The element where to add the sample zone information
-     * @param zoneIndex The index of the zone
      * @param zone Where to get the sample zone info from
      * @throws IOException Could not access the sample
      */
-    private static void createSampleZone (final Document document, final int roundRobinGroup, final int sequenceLength, final Element multisampleElement, final int zoneIndex, final ISampleZone zone) throws IOException
+    private static void createSampleZone (final Document document, final int roundRobinGroup, final int sequenceLength, final Element multisampleElement, final ISampleZone zone) throws IOException
     {
         final Element zoneElement = XMLUtils.addElement (document, multisampleElement, BlissTag.ZONE);
         zoneElement.setAttribute ("name", zone.getName () + ".wav");
@@ -317,8 +319,8 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
                 // The [0..1] value is first squared (x²) to give it a perceptual curve, then
                 // linearly mapped to 20 Hz – 22050 Hz
                 final double normalizedCutoff = Math.sqrt ((filter.getCutoff () - 20) / (22050.0 - 20.0));
-                XMLUtils.setDoubleAttribute (cutoffElement, "value", normalizedCutoff, 8);
-                XMLUtils.setDoubleAttribute (resonanceElement, "value", filter.getResonance (), 8);
+                XMLUtils.setDoubleAttribute (cutoffElement, TAG_VALUE, normalizedCutoff, 8);
+                XMLUtils.setDoubleAttribute (resonanceElement, TAG_VALUE, filter.getResonance (), 8);
 
                 final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
                 final double cutoffDepth = cutoffEnvelopeModulator.getDepth ();
@@ -397,7 +399,6 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         setDoubleValueAttribute (document, zoneElement, prefix + "_env_sus", sustainLevel < 0 ? 1 : sustainLevel);
         setDoubleValueAttribute (document, zoneElement, prefix + "_env_rel", normalizeTime (envelope.getReleaseTime ()));
         setDoubleValueAttribute (document, zoneElement, prefix + "_env_rel_shp", normalizeSlope (envelope.getReleaseSlope ()));
-        return;
     }
 
 
@@ -420,7 +421,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     private static void setDoubleValueAttribute (final Document document, final Element parentElement, final String childElementName, final double value)
     {
         final Element childElement = XMLUtils.addElement (document, parentElement, childElementName);
-        XMLUtils.setDoubleAttribute (childElement, "value", value, 2);
+        XMLUtils.setDoubleAttribute (childElement, TAG_VALUE, value, 2);
     }
 
 

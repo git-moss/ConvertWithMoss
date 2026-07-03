@@ -85,7 +85,7 @@ public class AkaiMPC2000SampleData extends AbstractFileSampleData
         final short [] sampleData = this.sndFile.getSampleData ();
         final ByteBuffer buffer = ByteBuffer.allocate (sampleData.length * 2);
         buffer.order (ByteOrder.LITTLE_ENDIAN);
-        for (short sample: sampleData)
+        for (final short sample: sampleData)
             buffer.putShort (sample);
 
         dataChunk.setData (buffer.array ());
@@ -126,7 +126,7 @@ public class AkaiMPC2000SampleData extends AbstractFileSampleData
 
     /**
      * Get the sound file.
-     * 
+     *
      * @return The sound file
      */
     public AkaiMPC2000Sound getSndFile ()

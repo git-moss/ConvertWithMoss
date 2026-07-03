@@ -17,8 +17,17 @@ import java.util.Map;
 public class NameValueParser
 {
     /**
+     * Constructor.
+     */
+    protected NameValueParser ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Parses all name/value pairs from the input.
-     * 
+     *
      * @param input The input like name1=value1;name2=value2
      * @return The pairs, the value of duplicated keys are in the list
      */

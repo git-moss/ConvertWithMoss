@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.omnisphere;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class OmnisphereFilterUtils
     private static final Map<Float, Integer>                    FILTER_TYPES          = new HashMap<> ();
     private static final Map<Integer, Float>                    INVERTED_FILTER_TYPES = new HashMap<> ();
     private static final Map<Integer, IFilter>                  FILTERS               = new HashMap<> ();
-    private static final Map<FilterType, Map<Integer, Integer>> FILTER_INDICES        = new HashMap<> ();
+    private static final Map<FilterType, Map<Integer, Integer>> FILTER_INDICES        = new EnumMap<> (FilterType.class);
     static
     {
         // LPF
@@ -91,7 +92,7 @@ public class OmnisphereFilterUtils
         FILTERS.put (Integer.valueOf (15), new DefaultFilter (FilterType.LOW_PASS, 4, 0, 0)); // Sauce LPF 4-pole
         FILTERS.put (Integer.valueOf (16), new DefaultFilter (FilterType.LOW_PASS, 1, 0, 0)); // Subtle LPF 1-pole
         FILTERS.put (Integer.valueOf (17), new DefaultFilter (FilterType.LOW_PASS, 2, 0, 0)); // Subtle LPF 2-pole
-        
+
         FILTERS.put (Integer.valueOf (18), new DefaultFilter (FilterType.HIGH_PASS, 1, 0, 0)); // Jupiter HPF 1-pole
         FILTERS.put (Integer.valueOf (19), new DefaultFilter (FilterType.HIGH_PASS, 2, 0, 0)); // Jupiter HPF 2-pole
         FILTERS.put (Integer.valueOf (20), new DefaultFilter (FilterType.HIGH_PASS, 4, 0, 0)); // Jupiter HPF 4-pole
@@ -99,7 +100,7 @@ public class OmnisphereFilterUtils
         FILTERS.put (Integer.valueOf (22), new DefaultFilter (FilterType.HIGH_PASS, 4, 0, 0)); // OB HPF 4-pole
         FILTERS.put (Integer.valueOf (23), new DefaultFilter (FilterType.HIGH_PASS, 2, 0, 0)); // Sauce HPF 2-pole
         FILTERS.put (Integer.valueOf (24), new DefaultFilter (FilterType.HIGH_PASS, 4, 0, 0)); // Sauce HPF 4-pole
-        
+
         FILTERS.put (Integer.valueOf (25), new DefaultFilter (FilterType.BAND_PASS, 2, 0, 0)); // Beefy BPF 2-pole
         FILTERS.put (Integer.valueOf (26), new DefaultFilter (FilterType.BAND_PASS, 4, 0, 0)); // Beefy BPF 4-pole
         FILTERS.put (Integer.valueOf (27), new DefaultFilter (FilterType.BAND_PASS, 2, 0, 0)); // OB BPF 2-pole
@@ -140,8 +141,17 @@ public class OmnisphereFilterUtils
 
 
     /**
+     * Constructor.
+     */
+    protected OmnisphereFilterUtils ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Get the filter which matches the given float value.
-     * 
+     *
      * @param indexValue The float index value
      * @return The matching filter or a default 4 pole low-pass
      */
@@ -154,7 +164,7 @@ public class OmnisphereFilterUtils
 
     /**
      * Get the float value which matches the given filter.
-     * 
+     *
      * @param filter The filter for which to get the float index
      * @return The float index of the filter (returns Classic 4-pole low-pass if it could not
      *         matched)
@@ -174,7 +184,7 @@ public class OmnisphereFilterUtils
 
     /**
      * Maps normalized value [0..1] to frequency [50..19000] Hz
-     * 
+     *
      * @param normalizedValue The normalized value
      * @return The value in Hertz
      */
@@ -187,7 +197,7 @@ public class OmnisphereFilterUtils
 
     /**
      * Maps frequency [50..19000] Hz back to normalized [0..1].
-     * 
+     *
      * @param hz The value in Hertz
      * @return The normalized
      */
@@ -198,7 +208,7 @@ public class OmnisphereFilterUtils
     }
 
 
-    private static double clamp01 (double v)
+    private static double clamp01 (final double v)
     {
         return Math.clamp (v, 0.0, 1.0);
     }

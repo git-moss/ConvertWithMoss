@@ -50,19 +50,19 @@ public class AkaiS900Keygroup
         this.attack = input.read ();
 
         // Not used
-        input.skip (11);
+        input.skipNBytes (11);
 
         this.outputChannel = input.read ();
         this.midiChannelOffset = input.read ();
 
         // Not used
-        input.skip (3);
+        input.skipNBytes (3);
 
         this.layers[0] = new KeygroupLayer (input);
         this.layers[1] = new KeygroupLayer (input);
 
         // Address of next key-group (updated by sampler)
-        input.skip (2);
+        input.skipNBytes (2);
     }
 
 
@@ -211,7 +211,7 @@ public class AkaiS900Keygroup
         {
             this.sample = StreamUtils.readAscii (input, 10).trim ();
             // Padding
-            input.skip (6);
+            input.skipNBytes (6);
             this.sampleHeaderAddress = StreamUtils.readUnsigned16 (input, false);
             this.tuning = StreamUtils.readUnsigned16 (input, false);
             this.filter = input.read ();

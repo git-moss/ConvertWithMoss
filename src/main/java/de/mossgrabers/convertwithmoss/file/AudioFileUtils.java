@@ -379,17 +379,7 @@ public final class AudioFileUtils
             // format combination
 
             // Step 1 - First convert to raw sample data
-            byte [] audioDataBytes;
-            try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (convertFormat, audioInputStream))
-            {
-                audioDataBytes = convertedAudioInputStream.readAllBytes ();
-            }
-            catch (final IllegalArgumentException ex)
-            {
-                // Fallback for, e.g., 32-bit FLAC: many FLAC SPIs provide already-decoded PCM bytes
-                // during direct reading, even if the format tag still indicates FLAC.
-                audioDataBytes = audioInputStream.readAllBytes ();
-            }
+            final byte [] audioDataBytes = readAudioData (audioInputStream, convertFormat);
 
             // Step 2 - Convert from raw data to WAV format. Note: getFrameSize() already accounts
             // for all channels (bytes-per-sample * channels), so it must not be multiplied by the
@@ -405,6 +395,21 @@ public final class AudioFileUtils
         catch (final UnsupportedAudioFileException ex)
         {
             throw new IOException (ex);
+        }
+    }
+
+
+    private static byte [] readAudioData (final AudioInputStream audioInputStream, final AudioFormat convertFormat) throws IOException
+    {
+        try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (convertFormat, audioInputStream))
+        {
+            return convertedAudioInputStream.readAllBytes ();
+        }
+        catch (final IllegalArgumentException _)
+        {
+            // Fallback for, e.g., 32-bit FLAC: many FLAC SPIs provide already-decoded PCM bytes
+            // during direct reading, even if the format tag still indicates FLAC.
+            return audioInputStream.readAllBytes ();
         }
     }
 

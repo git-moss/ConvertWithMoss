@@ -79,7 +79,7 @@ public abstract class AbstractWavCreator<T extends WavChunkSettingsUI> extends A
 
     /**
      * Updates all parameters of a WAV sample chunk.
-     * 
+     *
      * @param zone The zone from which to read the parameters
      * @param wavFile The WAV file to update
      */

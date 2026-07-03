@@ -13,4 +13,12 @@ public abstract class AbstractAkaiImage implements AutoCloseable, IAkaiImage
 {
     protected static final int MAX_TEXT_LENGTH = 12;
 
+
+    /**
+     * Constructor.
+     */
+    protected AbstractAkaiImage ()
+    {
+        // Intentionally empty
+    }
 }

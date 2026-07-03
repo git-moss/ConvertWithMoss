@@ -33,7 +33,7 @@ public class MfmDecoder
 
     /**
      * Enable debug output to console.
-     * 
+     *
      * @param debug True to enable
      */
     public void setDebug (final boolean debug)
@@ -96,12 +96,11 @@ public class MfmDecoder
                 if (markByte == IDAM)
                 {
                     final Sector sector = this.readSectorHeader (bitStream);
-                    if (sector != null && sector.isCrcValid ())
-                        if (findNextDataMark (bitStream))
-                        {
-                            this.readSectorData (bitStream, sector);
-                            sectors.add (sector);
-                        }
+                    if (sector != null && sector.isCrcValid () && findNextDataMark (bitStream))
+                    {
+                        this.readSectorData (bitStream, sector);
+                        sectors.add (sector);
+                    }
                 }
             }
 
@@ -232,7 +231,7 @@ public class MfmDecoder
 
     /**
      * Calculate CRC-CCITT (IBM format). Polynomial: 0x1021, Init: 0xFFFF.
-     * 
+     *
      * @param data The data over which to calculate the CRC
      * @return The CRC
      */

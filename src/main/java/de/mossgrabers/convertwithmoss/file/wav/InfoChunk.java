@@ -196,7 +196,7 @@ public class InfoChunk extends AbstractListChunk
 
     /**
      * Get the chunk data as an ASCII string.
-     * 
+     *
      * @param chunk The chunk from which to read the data
      * @return The ASCII string
      */

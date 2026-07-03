@@ -22,31 +22,31 @@ import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 public class DlsRegion
 {
     /** The length of the RGNH structure. */
-    private static final int        LENGTH_RGNH   = 12;
+    private static final int            LENGTH_RGNH   = 12;
 
     // Region header data
-    private final int               keyRangeLow;
-    private final int               keyRangeHigh;
-    private final int               velocityRangeLow;
-    private final int               velocityRangeHigh;
-    private final int               options;
-    private final int               keyGroup;
-    private int                     layer         = 0;
+    private final int                   keyRangeLow;
+    private final int                   keyRangeHigh;
+    private final int                   velocityRangeLow;
+    private final int                   velocityRangeHigh;
+    private final int                   options;
+    private final int                   keyGroup;
+    private int                         layer         = 0;
 
     // Wave Sample data
-    private int                     unityNote;
-    private int                     fineTune;
-    private int                     gain;
-    private long                    waveOptions;
-    private final List<ISampleLoop> loops         = new ArrayList<> ();
+    private int                         unityNote;
+    private int                         fineTune;
+    private int                         gain;
+    private long                        waveOptions;
+    private final List<ISampleLoop>     loops         = new ArrayList<> ();
 
     // Wave Sample Link data
-    private int                     linkOptions;
-    private int                     phaseGroup;
-    private long                    channelPlacement;
-    private long                    tableIndex;
+    private int                         linkOptions;
+    private int                         phaseGroup;
+    private long                        channelPlacement;
+    private long                        tableIndex;
 
-    private List<DlsArticulation>   articulations = new ArrayList<> ();
+    private final List<DlsArticulation> articulations = new ArrayList<> ();
 
 
     /**
@@ -305,7 +305,7 @@ public class DlsRegion
      * channel steering information and all the channel steering data in the articulation chunk
      * should be ignored.
      * </ul>
-     * 
+     *
      * @return The link options
      */
     public int getLinkOptions ()
@@ -319,7 +319,7 @@ public class DlsRegion
      * the same group are phase locked and follow the wave in the group with the
      * F_WAVELINK_PHASE_MASTER flag set. If a wave is not a member of a phase locked group, this
      * value should be set to 0.
-     * 
+     *
      * @return The phase group
      */
     public int getPhaseGroup ()
@@ -337,7 +337,7 @@ public class DlsRegion
      * 8 Surround Center, 9 Side Left, 10 Side Right, 11 Top, 12 Top Front Left, 13 Top Front
      * Center, 14 Top Front Right, 15 Top Rear Left, 16 Top Rear Center, 17 Top Rear Right, 18-31
      * Reserved (DO NOT USE).
-     * 
+     *
      * @return The channel placement
      */
     public long getChannelPlacement ()
@@ -348,7 +348,7 @@ public class DlsRegion
 
     /**
      * Get the 0 based index of the cue entry in the wave pool table.
-     * 
+     *
      * @return The table index
      */
     public long getTableIndex ()
@@ -359,7 +359,7 @@ public class DlsRegion
 
     /**
      * Add an articulation to the region.
-     * 
+     *
      * @param articulation The articulation
      */
     public void addArticulation (final DlsArticulation articulation)
@@ -370,7 +370,7 @@ public class DlsRegion
 
     /**
      * Get the articulations of the region.
-     * 
+     *
      * @return The articulations
      */
     public List<DlsArticulation> getArticulations ()

@@ -54,7 +54,7 @@ public interface RIFFVisitor
 
     /**
      * Check if the top chunk is acceptable.
-     * 
+     *
      * @param type The type of the top chunk
      * @throws ParseException Thrown if the top chunk is not accepted
      */

@@ -24,7 +24,7 @@ public class S5xxDiskImage
 
     /**
      * Constructor.
-     * 
+     *
      * @param header The image header
      * @param patches The patch blocks
      * @param tones The tones
@@ -43,7 +43,7 @@ public class S5xxDiskImage
 
     /**
      * Get the disk header.
-     * 
+     *
      * @return The header
      */
     public S5xxDiskImageHeader getHeader ()
@@ -54,7 +54,7 @@ public class S5xxDiskImage
 
     /**
      * Get the patches.
-     * 
+     *
      * @return The patches
      */
     public List<S5xxPatch> getPatches ()
@@ -65,7 +65,7 @@ public class S5xxDiskImage
 
     /**
      * Get the tones.
-     * 
+     *
      * @return The tones
      */
     public List<S5xxTone> getTones ()
@@ -76,7 +76,7 @@ public class S5xxDiskImage
 
     /**
      * Get the disk label.
-     * 
+     *
      * @return The label, null for LAND type
      */
     public S5xxDiskLabel getDiskLabel ()
@@ -87,7 +87,7 @@ public class S5xxDiskImage
 
     /**
      * {@code true} when this is a LAND-type hard-drive / CD-ROM container.
-     * 
+     *
      * @return True if it is a HD / CD
      */
     public boolean isLandType ()
@@ -98,7 +98,7 @@ public class S5xxDiskImage
 
     /**
      * Get the wave data.
-     * 
+     *
      * @return The wave data
      */
     public List<S5xxWaveData> getWaveData ()

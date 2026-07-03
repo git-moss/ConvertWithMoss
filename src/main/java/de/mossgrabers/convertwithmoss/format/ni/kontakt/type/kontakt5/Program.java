@@ -358,6 +358,8 @@ public class Program
     private void writeZoneList (final KontaktPresetChunk programPresetChunk) throws IOException
     {
         final KontaktPresetChunk zoneListChunk = findChunk (programPresetChunk.getChildren (), KontaktPresetChunkID.ZONE_LIST);
+        if (zoneListChunk == null)
+            throw new IOException ("Zone List Chunk not found.");
 
         final List<KontaktPresetChunk> zoneChunks = new ArrayList<> ();
 

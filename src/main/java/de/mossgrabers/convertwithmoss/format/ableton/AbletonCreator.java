@@ -301,7 +301,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             cents += 100;
         }
 
-        zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (Math.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - semitones, 0, 127)));
+        zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (Math.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - (long) semitones, 0, 127)));
         zoneContent = zoneContent.replace ("%DETUNE%", Integer.toString (cents));
         zoneContent = zoneContent.replace ("%TUNE_SCALE%", Integer.toString ((int) Math.round (zone.getKeyTracking () * 100)));
         zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getPanning ()));

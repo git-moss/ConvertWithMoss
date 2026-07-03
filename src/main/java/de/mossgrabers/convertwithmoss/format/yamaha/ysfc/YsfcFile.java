@@ -320,7 +320,7 @@ public class YsfcFile
         {
             return Integer.parseInt ("" + versionStr.charAt (0) + versionStr.charAt (2) + versionStr.charAt (4));
         }
-        catch (final NumberFormatException | IndexOutOfBoundsException ex)
+        catch (final NumberFormatException | IndexOutOfBoundsException _)
         {
             return 100;
         }

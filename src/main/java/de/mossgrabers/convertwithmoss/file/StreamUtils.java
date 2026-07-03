@@ -127,10 +127,8 @@ public class StreamUtils
      * @param offset The offset into the array
      * @param isBigEndian True if bytes are stored big-endian otherwise little-endian
      * @return The converted integer
-     * @throws IOException The stream has been closed and the contained input stream does not
-     *             support reading after close, or another I/O error occurs.
      */
-    public static int readSigned16 (final byte [] array, final int offset, final boolean isBigEndian) throws IOException
+    public static int readSigned16 (final byte [] array, final int offset, final boolean isBigEndian)
     {
         final ByteBuffer buffer = ByteBuffer.wrap (array, offset, 2);
         buffer.order (isBigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
@@ -259,10 +257,8 @@ public class StreamUtils
      * @param bytes The 3 bytes to convert
      * @param isBigEndian True if bytes are stored big-endian
      * @return The converted integer
-     * @throws IOException The stream has been closed and the contained input stream does not
-     *             support reading after close, or another I/O error occurs.
      */
-    public static int readUnsigned24 (final byte [] bytes, final boolean isBigEndian) throws IOException
+    public static int readUnsigned24 (final byte [] bytes, final boolean isBigEndian)
     {
         if (isBigEndian)
             return bytes[2] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[0] & 0xFF) << 16;
@@ -752,9 +748,8 @@ public class StreamUtils
      *
      * @param buffer The buffer to read from
      * @return The read text
-     * @throws IOException Could not read
      */
-    public static String readUtf8 (final ByteBuffer buffer) throws IOException
+    public static String readUtf8 (final ByteBuffer buffer)
     {
         final byte [] data = new byte [buffer.remaining ()];
         buffer.get (data);
@@ -767,9 +762,8 @@ public class StreamUtils
      *
      * @param data The bytes to interpret as UTF-8
      * @return The UTF-8 text
-     * @throws IOException Could not read
      */
-    private static String readUtf8 (final byte [] data) throws IOException
+    private static String readUtf8 (final byte [] data)
     {
         final String content = new String (data, StandardCharsets.UTF_8);
         // Remove UTF-8 BOM
@@ -1365,9 +1359,8 @@ public class StreamUtils
      * @param offset The offset from which to start reading
      * @param numBytes The number of bytes to read
      * @return The read bytes
-     * @throws IOException Could not read the bytes
      */
-    public static byte [] readNBytes (final ByteBuffer buffer, final int offset, final int numBytes) throws IOException
+    public static byte [] readNBytes (final ByteBuffer buffer, final int offset, final int numBytes)
     {
         buffer.position (offset);
         final byte [] data = new byte [numBytes];

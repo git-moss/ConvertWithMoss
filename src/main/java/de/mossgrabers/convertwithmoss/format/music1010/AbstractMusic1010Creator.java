@@ -126,11 +126,10 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
     /**
      * Creates the filter effect elements.
      *
-     * @param document The XML document
      * @param paramsElement Where to add the effect elements
      * @param multisampleSource The multi-sample
      */
-    protected static void createFilter (final Document document, final Element paramsElement, final IMultisampleSource multisampleSource)
+    protected static void createFilter (final Element paramsElement, final IMultisampleSource multisampleSource)
     {
         final Optional<IFilter> optFilter = multisampleSource.getGlobalFilter ();
         if (optFilter.isEmpty ())
@@ -182,16 +181,13 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
     protected List<IGroup> cleanGroups (final IMultisampleSource multisampleSource) throws IOException
     {
         List<IGroup> groups = this.combineSplitStereo (multisampleSource);
-        if (!groups.isEmpty ())
+        if (!groups.isEmpty () && this.checkOverlappingRanges (groups))
         {
-            if (this.checkOverlappingRanges (groups))
+            final List<List<IGroup>> splitLayers = LayerSplitter.splitIntoNonOverlappingLayers (groups);
+            if (splitLayers.size () > 1)
             {
-                final List<List<IGroup>> splitLayers = LayerSplitter.splitIntoNonOverlappingLayers (groups);
-                if (splitLayers.size () > 1)
-                {
-                    this.notifier.logError ("IDS_1010_SOURCE_CONTAINS_OVERLAPS");
-                    groups = splitLayers.get (0);
-                }
+                this.notifier.logError ("IDS_1010_SOURCE_CONTAINS_OVERLAPS");
+                groups = splitLayers.get (0);
             }
         }
         multisampleSource.setGroups (groups);

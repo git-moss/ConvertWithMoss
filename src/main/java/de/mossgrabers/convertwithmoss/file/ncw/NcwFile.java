@@ -47,7 +47,7 @@ public class NcwFile
 
     private int [] []        channelData;
     private float [] []      channelDataFloat;
-    private final File       ncwFile;
+    private final File       ncwSourceFile;
     private final Object     lazyLoadingLock = new Object ();
 
 
@@ -59,8 +59,8 @@ public class NcwFile
      */
     public NcwFile (final File ncwFile) throws IOException
     {
-        this.ncwFile = ncwFile;
-        if (this.ncwFile == null)
+        this.ncwSourceFile = ncwFile;
+        if (this.ncwSourceFile == null)
             throw new IOException (Functions.getMessage ("IDS_NCW_FILE_MUST_NOT_BE_NULL"));
     }
 
@@ -73,7 +73,7 @@ public class NcwFile
      */
     public NcwFile (final InputStream inputStream) throws IOException
     {
-        this.ncwFile = null;
+        this.ncwSourceFile = null;
         this.read (inputStream);
     }
 
@@ -163,7 +163,7 @@ public class NcwFile
             wavFile.write (outputStream);
 
             // Dirty workaround to allow fast garbage collection
-            if (this.ncwFile != null)
+            if (this.ncwSourceFile != null)
             {
                 this.channelData = null;
                 this.channelDataFloat = null;
@@ -179,7 +179,7 @@ public class NcwFile
             if (this.channelData != null || this.channelDataFloat != null)
                 return;
 
-            try (final FileInputStream stream = new FileInputStream (this.ncwFile))
+            try (final FileInputStream stream = new FileInputStream (this.ncwSourceFile))
             {
                 this.read (stream);
             }

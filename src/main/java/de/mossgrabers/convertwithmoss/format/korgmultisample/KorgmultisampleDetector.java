@@ -84,7 +84,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         final byte [] headerTag = in.readNBytes (4);
         StreamUtils.checkTag (KorgmultisampleConstants.TAG_KORG, headerTag);
 
-        //////////////////////////////////
+        // -----------------------------------------------------------
         // Read all 3 chunks and check first chunk
 
         final List<byte []> chunks = parseChunks (in);
@@ -94,7 +94,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         if (Arrays.compare (KorgmultisampleConstants.HEADER_CHUNK, chunks.get (0)) != 0)
             throw new IOException (Functions.getMessage ("IDS_WS_NO_MULTISAMPLE_HEADER"));
 
-        //////////////////////////////////
+        // -----------------------------------------------------------
         // Read the 2nd chunk
 
         final InputStream secondIn = new ByteArrayInputStream (chunks.get (1));

@@ -42,8 +42,8 @@ class EXS24Block
 
     private static final String      BIG_ENDIAN_MAGIC           = "SOBT";
     private static final String      LITTLE_ENDIAN_MAGIC        = "TBOS";
-    private static final Set<String> BIG_ENDIAN_MAGIC_BYTES     = new HashSet<> (2);
-    private static final Set<String> LITTLE_ENDIAN_MAGIC_BYTES  = new HashSet<> (2);
+    private static final Set<String> BIG_ENDIAN_MAGIC_BYTES     = HashSet.newHashSet (2);
+    private static final Set<String> LITTLE_ENDIAN_MAGIC_BYTES  = HashSet.newHashSet (2);
     static
     {
         Collections.addAll (BIG_ENDIAN_MAGIC_BYTES, "SOBT", "SOBJ");

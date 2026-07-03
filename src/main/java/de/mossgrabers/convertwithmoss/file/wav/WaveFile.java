@@ -97,7 +97,7 @@ public class WaveFile extends AbstractRIFFFile
 
     /**
      * Constructor.
-     * 
+     *
      * @param formatChunk The format chunk
      * @param dataChunk The data chunk
      */

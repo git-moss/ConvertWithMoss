@@ -20,14 +20,14 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class AkaiS900Program
 {
     /** The name of the program. */
-    private final String                       name;
+    private final String                 name;
 
     /**
      * Key-group (positional) cross-fade enable: Samples may be assigned so that the high range of
      * one sample overlaps the low range of another sample. With positional cross-fade on, the lower
      * sample will fade out as the higher sample fades in over the range of the overlap.
      */
-    private final int                          keygroupCrossfadeEnable;
+    private final int                    keygroupCrossfadeEnable;
 
     private final List<AkaiS900Keygroup> keygroups = new ArrayList<> ();
 
@@ -43,26 +43,26 @@ public class AkaiS900Program
         this.name = StreamUtils.readAscii (input, 10).trim ();
 
         // Padding
-        input.skip (6);
+        input.skipNBytes (6);
 
         // Always 00 00
-        input.skip (2);
+        input.skipNBytes (2);
 
         // Address of first key-group
         StreamUtils.readUnsigned16 (input, false);
 
         // 00
-        input.skip (1);
+        input.skipNBytes (1);
 
         this.keygroupCrossfadeEnable = input.read ();
 
         // FF
-        input.skip (1);
+        input.skipNBytes (1);
 
         final int numberOfKeygroups = input.read ();
 
         // Nothing meaningful in there (1 increasing number and FF)
-        input.skip (14);
+        input.skipNBytes (14);
 
         for (int i = 0; i < numberOfKeygroups; i++)
             this.keygroups.add (new AkaiS900Keygroup (input));

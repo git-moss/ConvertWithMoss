@@ -31,9 +31,9 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class S3pFile
 {
-    private final static String MAGIC   = "PSYSSS30";
+    private static final String MAGIC   = "PSYSSS30";
 
-    private AkaiS1000Program         program = null;
+    private AkaiS1000Program    program = null;
 
 
     /**
@@ -76,9 +76,7 @@ public class S3pFile
                     this.program = parseProgram (extractContent (sysexMessage, 7));
                     break;
                 case 9:
-                    final AkaiS1000Keygroup keygroup = parseKeygroup (extractContent (sysexMessage, 8));
-                    if (keygroup != null)
-                        keygroups.add (keygroup);
+                    keygroups.add (parseKeygroup (extractContent (sysexMessage, 8)));
                     break;
                 default:
                     // Not used

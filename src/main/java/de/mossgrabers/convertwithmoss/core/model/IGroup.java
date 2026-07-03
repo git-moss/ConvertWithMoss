@@ -139,10 +139,8 @@ public interface IGroup
             return false;
 
         for (final ISampleZone zone: sampleZones)
-        {
             if (zone.getPlayLogic () != PlayLogic.ROUND_ROBIN)
                 return false;
-        }
         return true;
     }
 
@@ -159,10 +157,8 @@ public interface IGroup
             return false;
 
         for (final ISampleZone zone: sampleZones)
-        {
             if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
                 return true;
-        }
         return false;
     }
 }

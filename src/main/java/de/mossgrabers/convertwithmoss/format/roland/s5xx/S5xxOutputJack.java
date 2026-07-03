@@ -40,7 +40,7 @@ public enum S5xxOutputJack
 
     /**
      * Constructor.
-     * 
+     *
      * @param value The value
      * @param label The label
      */
@@ -53,7 +53,7 @@ public enum S5xxOutputJack
 
     /**
      * Get the value of the jack.
-     * 
+     *
      * @return The value
      */
     public int getValue ()
@@ -64,7 +64,7 @@ public enum S5xxOutputJack
 
     /**
      * Get the label of the jack.
-     * 
+     *
      * @return The label
      */
     public String getLabel ()
@@ -75,7 +75,7 @@ public enum S5xxOutputJack
 
     /**
      * Resolves from a raw unsigned byte; returns {@link #UNKNOWN} for unrecognized values.
-     * 
+     *
      * @param b The byte containing the index
      * @return The output jack
      */

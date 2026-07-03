@@ -500,10 +500,10 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         loop.setType (LoopType.FORWARDS);
         if (loopStart >= 0)
             loop.setStart (loopStart);
-        // The Deluge omits the loop end when the loop runs to the end of the (played) sample. Default
-        // it to the sample/zone end so a valid loop is created; otherwise the unset end (-1) would be
-        // written as a negative, degenerate loop and the sound would lose its sustain on export (e.g.
-        // a pad ending abruptly instead of looping until the release).
+        // The Deluge omits the loop end when the loop runs to the end of the (played) sample.
+        // Default it to the sample/zone end so a valid loop is created; otherwise the unset end
+        // (-1) would be written as a negative, degenerate loop and the sound would lose its sustain
+        // on export (e.g. a pad ending abruptly instead of looping until the release).
         if (loopEnd > 0)
             loop.setEnd (loopEnd);
         else
@@ -536,8 +536,8 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
                 readEnvelope (envelope1, zone.getAmplitudeEnvelopeModulator ().getSource ());
 
         // The post-effects "volume" parameter is the per-patch output level set by the sound
-        // designer. Carry it as a zone gain so the relative balance between patches is preserved;
-        // the full volume maps to 0 dB and lower volumes attenuate (it never boosts).
+        // designer. Carry it as a zone gain so the relative balance between patches is preserved.
+        // The full volume maps to 0 dB and lower volumes attenuate (it never boosts).
         final String volume = getValue (defaultParams, DelugeTag.VOLUME);
         if (!volume.isBlank ())
         {

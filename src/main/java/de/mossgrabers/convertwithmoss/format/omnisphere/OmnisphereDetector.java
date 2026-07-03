@@ -207,10 +207,8 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 
         final Element modMatrixElement = XMLUtils.getChildElementByName (synthEngElement, "MOD_MATRIX");
         float pitchEnvelopeAmount = 0;
-        if (modMatrixElement != null)
-            if ("ModEnv1".equals (modMatrixElement.getAttribute ("source0")) && "A tune".equals (modMatrixElement.getAttribute ("target0")))
-                if (parseFloatAttribute (modMatrixElement, "hi0", 0) > 0)
-                    pitchEnvelopeAmount = (float) (parseFloatAttribute (modMatrixElement, "defV0", 0.5f) * 2.0 - 1.0);
+        if (modMatrixElement != null && "ModEnv1".equals (modMatrixElement.getAttribute ("source0")) && "A tune".equals (modMatrixElement.getAttribute ("target0")) && parseFloatAttribute (modMatrixElement, "hi0", 0) > 0)
+            pitchEnvelopeAmount = (float) (parseFloatAttribute (modMatrixElement, "defV0", 0.5f) * 2.0 - 1.0);
 
         for (int i = 0; i < 4; i++)
             if (voiceElements.get (i) instanceof final Element voiceElement && multisampleElements.get (i) instanceof final String soundSourceName)
@@ -278,7 +276,6 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         final double modSustainLevel = parseFloatAttribute (modEnvParamsElement, "sust", 1.0f);
 
         for (final IGroup group: groups)
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setBendUp (pitchBendUp);
@@ -305,7 +302,6 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                 if (filter != null)
                     zone.setFilter (filter);
             }
-        }
     }
 
 
@@ -392,7 +388,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         if (sampleZones.isEmpty ())
             return Optional.empty ();
 
-        final List<IGroup> groups = detectAndLoadSamples (parentFolder, sampleZones);
+        final List<IGroup> groups = this.detectAndLoadSamples (parentFolder, sampleZones);
         if (groups.isEmpty ())
             return Optional.empty ();
         multisampleSource.setGroups (groups);
@@ -588,7 +584,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         if (hex == null)
             return defaultValue;
         // Parse hex string as unsigned 32-bit integer and reinterpret bits as float
-        float value = Float.intBitsToFloat ((int) Long.parseLong (hex, 16));
+        final float value = Float.intBitsToFloat ((int) Long.parseLong (hex, 16));
         return Float.isNaN (value) ? defaultValue : value;
     }
 
@@ -621,7 +617,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 
     /**
      * Converts linear amplitude to dB. Returns -Infinity for 0 input.
-     * 
+     *
      * @param linear The linear value
      * @return The absolute dB value
      */

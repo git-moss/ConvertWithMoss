@@ -41,7 +41,7 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
      * @param userInterface The user interface
      * @param fileEndings The file endings to search for
      */
-    public AbstractIsoDetector (final String name, final String prefix, final INotifier notifier, final T userInterface, final String... fileEndings)
+    protected AbstractIsoDetector (final String name, final String prefix, final INotifier notifier, final T userInterface, final String... fileEndings)
     {
         super (name, prefix, notifier, userInterface, fileEndings);
     }
@@ -74,14 +74,12 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
                 this.notifier.log ("IDS_ISO_PROCESSING_PARTITION", partition.getName ());
 
                 for (final IAkaiVolume volume: partition.getVolumes ())
-                {
-                    if (volume instanceof AkaiS1000Volume s1000Volume)
+                    if (volume instanceof final AkaiS1000Volume s1000Volume)
                     {
                         final List<AkaiS1000Sample> samples = s1000Volume.getSamples ();
                         for (final AkaiS1000Program program: s1000Volume.getPrograms ())
                             multiSampleSources.add (converter.createMultiSample (sourceFile, parts, samples, program, s1000Volume.getName ()));
                     }
-                }
             }
 
             this.notifier.log ("IDS_NOTIFY_LINE_FEED");

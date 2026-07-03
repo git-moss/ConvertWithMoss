@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**
@@ -70,7 +69,7 @@ public class KSCFile
     {
         final String content = Files.readString (kscFile.toPath ());
         this.kmpFiles.clear ();
-        this.kmpFiles.addAll (content.lines ().map (String::trim).filter (line -> !line.isEmpty () && !line.startsWith ("#") && line.endsWith (KMP_EXTENSION)).collect (Collectors.toList ()));
+        this.kmpFiles.addAll (content.lines ().map (String::trim).filter (line -> !line.isEmpty () && !line.startsWith ("#") && line.endsWith (KMP_EXTENSION)).toList ());
     }
 
 

@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.akai.mpc2000.diskformat;
 
 /**
  * Directory Entry structure.
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public class AkaiMPC2000DirectoryEntry
@@ -23,7 +23,7 @@ public class AkaiMPC2000DirectoryEntry
 
     /**
      * Get the name of the entry.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -34,7 +34,7 @@ public class AkaiMPC2000DirectoryEntry
 
     /**
      * Get the file name extension.
-     * 
+     *
      * @return The extension
      */
     public String getExtension ()
@@ -45,7 +45,7 @@ public class AkaiMPC2000DirectoryEntry
 
     /**
      * Get the full filename.
-     * 
+     *
      * @return The filename
      */
     public String getFullName ()

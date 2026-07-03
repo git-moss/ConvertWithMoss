@@ -60,7 +60,7 @@ public class S770DisketteDirectoryArea
         final int [] result = new int [count];
         for (int i = 0; i < count; i++)
             result[i] = StreamUtils.readUnsigned16 (input, false);
-        input.skipNBytes (ENTRIES_SIZE - 2 * count);
+        input.skipNBytes (ENTRIES_SIZE - 2L * count);
         return result;
     }
 
@@ -70,7 +70,7 @@ public class S770DisketteDirectoryArea
         final List<S770DirectoryEntry> result = new ArrayList<> (count);
         for (int i = 0; i < count; i++)
             result.add (new S770DirectoryEntry (input, fileType, entries[i]));
-        input.skipNBytes (size - count * 16);
+        input.skipNBytes (size - count * 16L);
         return result;
     }
 

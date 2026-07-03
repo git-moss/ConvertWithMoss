@@ -150,26 +150,15 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
         final Map<Integer, IGroup> indexedGroups = new TreeMap<> ();
         int groupCounter = 0;
         for (final Element groupElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.GROUP))
-        {
-            this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.GROUP));
+            groupCounter = this.createGroup (BitwigMultisampleTag.GROUP, indexedGroups, groupCounter, groupElement);
 
-            final String k = groupElement.getAttribute ("name");
-            final String groupName = k.isBlank () ? "Group " + (groupCounter + 1) : k;
-            indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
-            groupCounter++;
-        }
         // Additional group for potentially un-grouped samples
         indexedGroups.put (Integer.valueOf (-1), new DefaultGroup ());
 
         // Parse (deprecated) layer tag
         for (final Element layerElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.LAYER))
         {
-            this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LAYER));
-
-            final String k = layerElement.getAttribute ("name");
-            final String groupName = k == null || k.isBlank () ? "Group " + (groupCounter + 1) : k;
-            indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
-            groupCounter++;
+            groupCounter = this.createGroup (BitwigMultisampleTag.LAYER, indexedGroups, groupCounter, layerElement);
 
             // Parse all samples of the layer
             for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, BitwigMultisampleTag.SAMPLE, false))
@@ -186,6 +175,17 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
         this.printUnsupportedAttributes ();
 
         return Collections.singletonList (multisampleSource);
+    }
+
+
+    private int createGroup (final String tagName, final Map<Integer, IGroup> indexedGroups, final int groupCounter, final Element groupElement)
+    {
+        this.checkAttributes (tagName, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (tagName));
+
+        final String k = groupElement.getAttribute ("name");
+        final String groupName = k == null || k.isBlank () ? "Group " + (groupCounter + 1) : k;
+        indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
+        return groupCounter + 1;
     }
 
 

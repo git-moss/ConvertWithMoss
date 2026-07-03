@@ -109,7 +109,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
     protected List<IPerformanceSource> readPerformanceFile (final File file)
     {
         if (this.waitForDelivery () || !"project.xml".equals (file.getName ()))
-            return null;
+            return Collections.emptyList ();
         // Step out of the Projects folder; Patches folder is expected on that level!
         final String basePath = file.getParentFile ().getParentFile ().getParent ();
         final IPerformanceSource processPresetFile = this.processPresetFile (file, basePath);
@@ -371,7 +371,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        //////////////////////////////////////////
+        // -----------------------------------------------------------
         // Play-range & Loops
 
         sampleZone.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0));
@@ -396,7 +396,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
         sampleZone.setReversed (isReversed);
 
-        //////////////////////////////////////////
+        // -----------------------------------------------------------
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();

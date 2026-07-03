@@ -225,12 +225,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 final double numSampleFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
 
                 // Sample path, written relative to the preset (no leading drive number). The device
-                // resolves it against the folder the preset itself was loaded from, so it locates the
-                // samples on whatever drive the preset sits on. A leading drive number was written
-                // here before (an absolute path such as "4:samples/..."), but the device then prepends
-                // its own drive again when you use "Export -> With Samples", producing an invalid,
-                // doubled path (e.g. "3:2:samples/...") so the samples could not be backed up. A
-                // relative path both loads and exports/backs up cleanly (confirmed on Iridium OS 4).
+                // resolves it against the folder the preset itself was loaded from, so it locates
+                // the samples on whatever drive the preset sits on. A leading drive number was
+                // written here before (an absolute path such as "4:samples/..."), but the device
+                // then prepends its own drive again when you use "Export -> With Samples",
+                // producing an invalid, doubled path (e.g. "3:2:samples/...") so the samples could
+                // not be backed up. A relative path both loads and exports/backs up cleanly
+                // (confirmed on Iridium OS 4).
                 sb.append ('"').append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
@@ -250,9 +251,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // Pan - CURRENTLY IGNORED
                 sb.append (formatMapDouble ((zone.getPanning () + 1.0) / 2.0)).append ('\t');
 
-                // Start / End - a zone whose start/stop was never set keeps the model default of -1,
-                // which would otherwise be written as a negative position (the device then shows a
-                // sample start/end of -1). Treat an unset start/stop as the full sample.
+                // Start / End - a zone whose start/stop was never set keeps the model default of
+                // -1, which would otherwise be written as a negative position (the device then
+                // shows a sample start/end of -1). Treat an unset start/stop as the full sample.
                 final double startFrame = zone.getStart () < 0 ? 0 : zone.getStart ();
                 final double stopFrame = zone.getStop () <= 0 ? numSampleFrames : zone.getStop ();
                 sb.append (formatMapDouble (startFrame / numSampleFrames)).append ('\t');
@@ -498,7 +499,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final double releaseTime = Math.clamp (envelope.getReleaseTime (), 0, 60);
         parameters.add (new WaldorfQpatParameter (prefix + "Release", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (releaseTime)), (float) convertFromTime (releaseTime)));
 
-        // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is folded
+        // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is
+        // folded
         // into the zone gain instead (see computeFlatAmpEnvelopeLevel)
         double sustainLevel = envelope.getSustainLevel ();
         if (sustainLevel == -1)

@@ -80,7 +80,7 @@ public class AkpOutput extends AbstractSpecificRIFFChunk
      */
     public int getPanMod2 ()
     {
-        return this.panMod1;
+        return this.panMod2;
     }
 
 
@@ -91,7 +91,7 @@ public class AkpOutput extends AbstractSpecificRIFFChunk
      */
     public int getPanMod3 ()
     {
-        return this.panMod1;
+        return this.panMod3;
     }
 
 

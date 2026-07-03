@@ -70,8 +70,8 @@ public class AbletonCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        final int abletonVersion = config.getInteger (ABLETON_VERSION, 12);
-        this.abletonVersionGroup.selectToggle (this.abletonVersionGroup.getToggles ().get (abletonVersion == 12 ? 1 : 0));
+        final int version = config.getInteger (ABLETON_VERSION, 12);
+        this.abletonVersionGroup.selectToggle (this.abletonVersionGroup.getToggles ().get (version == 12 ? 1 : 0));
 
         super.loadSettings (config);
     }
@@ -121,7 +121,7 @@ public class AbletonCreatorUI extends WavChunkSettingsUI
                 }
             }
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             notifier.logError ("IDS_CLI_VALUE_MUST_BE_INTEGER", ABLETON_VERSION);
             return false;

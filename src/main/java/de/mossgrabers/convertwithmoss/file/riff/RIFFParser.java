@@ -254,7 +254,7 @@ public class RIFFParser
                 this.in.align ();
             }
         }
-        catch (final EOFException ex)
+        catch (final EOFException _)
         {
             final NumberFormat numberInstance = NumberFormat.getInstance ();
             chunk.setParserMessage ("Unexpected EOF after " + numberInstance.format (this.getPosition () - offset) + " bytes. Expected " + numberInstance.format (finish) + " bytes");
@@ -645,7 +645,7 @@ public class RIFFParser
             {
                 sb.append (" near ").append (this.iin.getStreamPosition ()).append (" 0x").append (Long.toHexString (this.iin.getStreamPosition ()));
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 sb.append (", no further information available.");
             }

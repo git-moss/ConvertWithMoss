@@ -73,7 +73,7 @@ public class AiffSampleFileType implements SampleFileType
                 if (sampleFileData instanceof final AiffFileSampleData sd && sd.getAiffFile ().getInstrumentChunk () == null)
                     return false;
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 return false;
             }

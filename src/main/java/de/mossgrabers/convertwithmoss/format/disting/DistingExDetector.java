@@ -317,6 +317,6 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
         final File sampleFolder = new File (parentPath, subPath);
         if (!sampleFolder.exists ())
             throw new IOException (Functions.getMessage ("IDS_DEX_NO_SAMPLE_FOLDER", sampleFolder.getCanonicalPath ()));
-        return sampleFolder.listFiles ( (parent, name) -> new File (parent, name).isFile () && name.toLowerCase (Locale.US).endsWith (".wav"));
+        return sampleFolder.listFiles ((parent, name) -> new File (parent, name).isFile () && name.toLowerCase (Locale.US).endsWith (".wav"));
     }
 }

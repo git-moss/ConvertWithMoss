@@ -159,7 +159,7 @@ public class EnsoniqDisk
 
         final byte [] fileInd = new byte [4];
         b.get (fileInd);
-        if (!"TDDF".equals (new String (fileInd, "ISO-8859-1")))
+        if (!"TDDF".equals (new String (fileInd, StandardCharsets.ISO_8859_1)))
             throw new IOException (Functions.getMessage ("IDS_EPS_INVALID_GKH"));
         final int nti = b.get () & 0xFF;
         if (nti != 'I')
@@ -381,7 +381,7 @@ public class EnsoniqDisk
         b.getShort ();
         b.getShort ();
         b.getShort ();
-        final long bytesPerBlock = b.getInt () & 0xFFFFFFFFL;
+        final long bytesPerBlockLong = b.getInt () & 0xFFFFFFFFL;
         // Blocks on disk (informational)
         b.getInt ();
         // Medium type, density code
@@ -405,7 +405,7 @@ public class EnsoniqDisk
         if (signature[0] != 'I' || signature[1] != 'D')
             throw new IOException (Functions.getMessage ("IDS_EPS_INVALID_DEVICE_ID_SIG"));
 
-        this.bytesPerBlock = (int) bytesPerBlock;
+        this.bytesPerBlock = (int) bytesPerBlockLong;
         this.sizeBlocks = this.calculateBlockCount ();
 
         // Strip leading 0xFF marker byte then remove non-printable chars
@@ -576,7 +576,7 @@ public class EnsoniqDisk
                 sb.append (String.format ("%02x", Byte.valueOf (hb)));
             this.diskID = sb.toString ();
         }
-        catch (final NoSuchAlgorithmException e)
+        catch (final NoSuchAlgorithmException _)
         {
             this.diskID = Integer.toHexString (this.getSourceFile ().hashCode ());
         }
@@ -793,7 +793,7 @@ public class EnsoniqDisk
 
     /**
      * Get the disk encoding type.
-     * 
+     *
      * @return The encoding type
      */
     public EncodingType getEncodingType ()
@@ -826,7 +826,7 @@ public class EnsoniqDisk
 
     /**
      * Get the source file.
-     * 
+     *
      * @return The source file
      */
     public File getSourceFile ()

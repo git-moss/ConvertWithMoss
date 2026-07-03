@@ -450,7 +450,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             {
                 sampleZone.setTrigger (TriggerType.valueOf (triggerAttribute.toUpperCase (Locale.ENGLISH)));
             }
-            catch (final IllegalArgumentException ex)
+            catch (final IllegalArgumentException _)
             {
                 this.notifier.logError ("IDS_DS_UNKNOWN_TRIGGER", triggerAttribute);
             }
@@ -476,7 +476,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        ///////////////////////////////////////////
+        // -----------------------------------------------------------
         // Loops
 
         final int loopStart = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, -1));
@@ -536,7 +536,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         if (sampleName == null || sampleName.isBlank ())
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Path attribute");
-            Optional.empty ();
+            return Optional.empty ();
         }
 
         final File sampleFile = new File (basePath, sampleName);
@@ -636,7 +636,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         {
             return Double.parseDouble (value.get ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }

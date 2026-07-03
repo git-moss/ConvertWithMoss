@@ -62,16 +62,15 @@ import de.mossgrabers.tools.XMLUtils;
  * associated with a track. A track consists of two elements; the track file itself and a trackData
  * folder containing the samples used within the track. It's a complete snapshot of an entire
  * sequencer track, and reloading this to a track will exactly recreate the original track.
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 {
-    private static final String BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY = "IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY";
+    private static final String BAD_METADATA_FILE                 = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
 
-    private final ObjectMapper  mapper            = new ObjectMapper ();
-    private String              version;
-    private String              operatingSystem;
+    private final ObjectMapper  mapper                            = new ObjectMapper ();
 
 
     /**
@@ -94,7 +93,6 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
         // Old Key-group XML format?
         if (sourceFile.getName ().toLowerCase ().endsWith (".xpm"))
-        {
             try
             {
                 boolean isXML = false;
@@ -113,7 +111,6 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
                 return Collections.emptyList ();
             }
-        }
 
         return this.readJsonPresetFile (sourceFile);
     }
@@ -140,10 +137,6 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         {
             this.notifier.logError (BAD_METADATA_FILE, ex);
         }
-        catch (final FileNotFoundException ex)
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", ex);
-        }
         return Collections.emptyList ();
     }
 
@@ -154,9 +147,8 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @param file The file which contained the XML document
      * @param document The metadata XML document
      * @return The parsed multi-sample source
-     * @throws FileNotFoundException The WAV file could not be found
      */
-    private List<IMultisampleSource> parseXml (final File file, final Document document) throws FileNotFoundException
+    private List<IMultisampleSource> parseXml (final File file, final Document document)
     {
         final Optional<Element> programElementOpt = this.getProgramElement (document);
         if (programElementOpt.isEmpty ())
@@ -236,9 +228,8 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @param instrumentElements The instrument elements
      * @param isDrum True, if it is a drum type (not a key-group)
      * @return The parsed groups
-     * @throws FileNotFoundException The WAV file could not be found
      */
-    private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final List<Element> instrumentElements, final boolean isDrum) throws FileNotFoundException
+    private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final List<Element> instrumentElements, final boolean isDrum)
     {
         final List<ISampleZone> zones = new ArrayList<> ();
         for (final Element instrumentElement: instrumentElements)
@@ -261,10 +252,10 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 final String zonePlayStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_ZONE_PLAY);
                 zonePlay = zonePlayStr == null || zonePlayStr.isBlank () ? PlayLogic.ALWAYS : ZonePlay.values ()[Integer.parseInt (zonePlayStr)].to ();
             }
-            catch (final RuntimeException ex)
+            catch (final RuntimeException _)
             {
                 zonePlay = PlayLogic.ALWAYS;
-                this.notifier.logError ("IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY");
+                this.notifier.logError (IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY);
             }
 
             boolean isOneShot = false;
@@ -298,7 +289,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     }
 
 
-    private void readZones (final File basePath, final boolean isDrum, final List<ISampleZone> zones, final Element instrumentElement, final int keyLow, final int keyHigh, final PlayLogic zonePlay, final boolean isOneShot, final TriggerType triggerType) throws FileNotFoundException
+    private void readZones (final File basePath, final boolean isDrum, final List<ISampleZone> zones, final Element instrumentElement, final int keyLow, final int keyHigh, final PlayLogic zonePlay, final boolean isOneShot, final TriggerType triggerType)
     {
         final String ignoreBaseNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE);
         final boolean ignoreBaseNote = ignoreBaseNoteStr != null && MPCKeygroupTag.TRUE.equals (ignoreBaseNoteStr);
@@ -348,7 +339,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
             zone.setFilter (filter);
 
-            this.readMissingData (isDrum, zone, isOneShot);
+            this.readMissingData (isDrum, zone);
         }
     }
 
@@ -432,9 +423,9 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         {
             sampleData = new WavFileSampleData (new File (basePath, sampleName + ".WAV"));
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
-            this.notifier.logError ("IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY");
+            this.notifier.logError (IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY);
             return null;
         }
         final ISampleZone zone = new DefaultSampleZone (sampleName, sampleData);
@@ -445,9 +436,9 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         {
             zone.setPlayLogic (zonePlay);
         }
-        catch (final RuntimeException ex)
+        catch (final RuntimeException _)
         {
-            this.notifier.logError ("IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY");
+            this.notifier.logError (IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY);
         }
         if (triggerType != TriggerType.ATTACK)
             zone.setTrigger (triggerType);
@@ -538,10 +529,8 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      *
      * @param isDrum True if it is a Drum patch
      * @param zone Where to store the data
-     * @param isOneShot True if it is a one-shot
-     * @throws FileNotFoundException The WAV file does not exist
      */
-    private void readMissingData (final boolean isDrum, final ISampleZone zone, final boolean isOneShot) throws FileNotFoundException
+    private void readMissingData (final boolean isDrum, final ISampleZone zone)
     {
         final boolean needsUpdate = zone.getStop () > 0;
         final boolean needsRootKey = !isDrum && zone.getKeyRoot () < 0;
@@ -604,7 +593,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         if (padNoteMapElement == null)
             return;
 
-        final Map<Integer, Integer> padNoteMap = new HashMap<> (128);
+        final Map<Integer, Integer> padNoteMap = HashMap.newHashMap (128);
         for (final Element padNoteElement: XMLUtils.getChildElementsByName (padNoteMapElement, MPCKeygroupTag.PAD_NOTE_MAP_PAD_NOTE, false))
         {
             final int padNumber = XMLUtils.getIntegerAttribute (padNoteElement, MPCKeygroupTag.PAD_NOTE_NUMBER, 0);
@@ -717,9 +706,9 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 }
             }
 
-            this.version = header[1];
-            this.operatingSystem = header[4];
-            this.notifier.log ("IDS_MPC_TRACK_OR_PROJECT_VERSION", jsonFormat.getName (), this.version, this.operatingSystem);
+            final String version = header[1];
+            final String operatingSystem = header[4];
+            this.notifier.log ("IDS_MPC_TRACK_OR_PROJECT_VERSION", jsonFormat.getName (), version, operatingSystem);
 
             if (this.waitForDelivery ())
                 return Collections.emptyList ();
@@ -773,7 +762,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             multisampleSource.setName (programName);
             final double programTranspose = programNode.get ("transpose").asDouble ();
 
-            ///
+            //
             // Read all sample info
             final Iterator<JsonNode> sampleNodes = dataNode.get ("samples").elements ();
             final Map<String, SampleInfo> sampleInfos = new HashMap<> ();
@@ -792,7 +781,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 }
             }
 
-            ///
+            //
             // Read key-group parameters
             final JsonNode keygroupNode = programNode.get ("keygroup");
             double keygroupTranspose = 0;
@@ -808,7 +797,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 globalEnvelopesAndFilter = new MPCEnvelopesAndFilter (synthSectionNode, true);
             }
 
-            ///
+            //
             // Read all layers - strangely all key-group settings seem to be under drum
             final JsonNode drumNode = programNode.get ("drum");
             final Iterator<JsonNode> instrumentsNodes = drumNode.get ("instruments").elements ();
@@ -847,7 +836,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         if (jsonFormat == JSONFormat.PROGRAM)
             return Collections.singletonList (dataNode);
 
-        if (jsonFormat == JSONFormat.PROGRAM)
+        if (jsonFormat == JSONFormat.TRACK)
         {
             final JsonNode programNode = dataNode.get ("program");
             // 1 == key-group program
@@ -855,18 +844,18 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         }
 
         // jsonFormat == JSONFormat.PROJECT
-        final List<JsonNode> programNodes = new ArrayList<> ();
         final JsonNode tracksNode = dataNode.get ("tracks");
-        if (tracksNode != null)
+        if (tracksNode == null)
+            return Collections.emptyList ();
+
+        final List<JsonNode> programNodes = new ArrayList<> ();
+        final Iterator<JsonNode> trackNodes = tracksNode.elements ();
+        while (trackNodes.hasNext ())
         {
-            final Iterator<JsonNode> trackNodes = tracksNode.elements ();
-            while (trackNodes.hasNext ())
-            {
-                final JsonNode programNode = trackNodes.next ().get ("program");
-                // 1 == key-group program
-                if (programNode != null && programNode.get ("type").asInt () == 1)
-                    programNodes.add (programNode);
-            }
+            final JsonNode programNode = trackNodes.next ().get ("program");
+            // 1 == key-group program
+            if (programNode != null && programNode.get ("type").asInt () == 1)
+                programNodes.add (programNode);
         }
         return programNodes;
     }
@@ -1032,7 +1021,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
         /**
          * Get the name of the format.
-         * 
+         *
          * @return The name
          */
         public String getName ()

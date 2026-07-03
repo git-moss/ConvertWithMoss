@@ -118,7 +118,7 @@ public class Group
                     internalModulator.read (childChunk);
                     this.internalModulators.add (internalModulator);
                 }
-                catch (final RuntimeException | IOException ex)
+                catch (final RuntimeException | IOException _)
                 {
                     // TODO Improve reading InternalModulator
                     // Ignore unknown formats (a user reported for v8.1) but don't crash

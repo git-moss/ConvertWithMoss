@@ -48,7 +48,7 @@ public class AiffSoundDataChunk extends AiffChunk
             this.offset = StreamUtils.readUnsigned32 (in, true);
             this.blockSize = StreamUtils.readUnsigned32 (in, true);
             if (this.offset > 0)
-                in.skip (this.offset);
+                in.skipNBytes (this.offset);
             if (sampleDataSize < 0)
                 this.soundData = in.readAllBytes ();
             else

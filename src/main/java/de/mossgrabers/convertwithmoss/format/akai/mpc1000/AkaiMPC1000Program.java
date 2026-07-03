@@ -25,10 +25,10 @@ public class AkaiMPC1000Program
     private static final String        MAGIC = "MPC1000 PGM 1.00";
 
     private final List<AkaiMPC1000Pad> pads  = new ArrayList<> ();
-    private final byte []                    midiNotes;
-    private final byte []                    assignedPads;
+    private final byte []              midiNotes;
+    private final byte []              assignedPads;
     @SuppressWarnings("unused")
-    private final int                        midiProgramChange;
+    private final int                  midiProgramChange;
 
 
     /**

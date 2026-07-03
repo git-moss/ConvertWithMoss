@@ -69,7 +69,7 @@ public class EnsoniqLayer
 
     /**
      * Get the index of the layer. 1-based.
-     * 
+     *
      * @return The index
      */
     public int getIndex ()
@@ -91,7 +91,7 @@ public class EnsoniqLayer
 
     /**
      * Check if stereo linking should be applied.
-     * 
+     *
      * @return Is stereo link enabled?
      */
     public boolean isStereoLink ()
@@ -102,7 +102,7 @@ public class EnsoniqLayer
 
     /**
      * Get the lowest velocity value of the layer.
-     * 
+     *
      * @return The velocity low, 0-127
      */
     public int getVelocityLow ()
@@ -113,7 +113,7 @@ public class EnsoniqLayer
 
     /**
      * Get the highest velocity value of the layer.
-     * 
+     *
      * @return The velocity high, 0-127
      */
     public int getVelocityHigh ()
@@ -124,7 +124,7 @@ public class EnsoniqLayer
 
     /**
      * Get the wave sample references.
-     * 
+     *
      * @return The 88 wave sample indices, 1-based
      */
     public int [] getWaveSamples ()

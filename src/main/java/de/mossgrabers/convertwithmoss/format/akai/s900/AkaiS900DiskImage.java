@@ -155,9 +155,8 @@ public class AkaiS900DiskImage
      *
      * @param sample The Akai S900 sample to convert
      * @return The created WaveFile
-     * @throws IOException Could not convert the data
      */
-    public static WaveFile writeSample (final AkaiS900Sample sample) throws IOException
+    public static WaveFile writeSample (final AkaiS900Sample sample)
     {
         final byte [] sampleData = sample.getSampleData ();
 

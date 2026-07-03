@@ -26,7 +26,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
 {
     private static final String PREFER_FOLDER_NAME = "PreferFolderName";
     private static final String DEFAULT_CREATOR    = "DefaultCreator";
-    private static final String CREATORS           = "Creators";
+    private static final String TAG_CREATORS       = "Creators";
 
     private TitledSeparator     separator;
     protected final String      prefix;
@@ -81,7 +81,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
     {
         this.preferFolderNameCheckBox.setSelected (configuration.getBoolean (this.prefix + PREFER_FOLDER_NAME, false));
         this.defaultCreatorField.setText (configuration.getProperty (this.prefix + DEFAULT_CREATOR, "moss"));
-        this.creatorsField.setText (configuration.getProperty (this.prefix + CREATORS, ""));
+        this.creatorsField.setText (configuration.getProperty (this.prefix + TAG_CREATORS, ""));
     }
 
 
@@ -91,7 +91,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
     {
         configuration.setProperty (this.prefix + PREFER_FOLDER_NAME, Boolean.toString (this.preferFolderNameCheckBox.isSelected ()));
         configuration.setProperty (this.prefix + DEFAULT_CREATOR, this.defaultCreatorField.getText ());
-        configuration.setProperty (this.prefix + CREATORS, this.creatorsField.getText ());
+        configuration.setProperty (this.prefix + TAG_CREATORS, this.creatorsField.getText ());
     }
 
 
@@ -115,7 +115,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
 
         this.defaultCreator = parameters.remove (this.prefix + DEFAULT_CREATOR);
 
-        value = parameters.remove (this.prefix + CREATORS);
+        value = parameters.remove (this.prefix + TAG_CREATORS);
         this.creators = value == null ? new String [0] : StringUtils.splitByComma (value);
         return true;
     }
@@ -129,7 +129,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
         {
             this.prefix + PREFER_FOLDER_NAME,
             this.prefix + DEFAULT_CREATOR,
-            this.prefix + CREATORS
+            this.prefix + TAG_CREATORS
         };
     }
 

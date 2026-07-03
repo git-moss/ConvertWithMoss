@@ -99,16 +99,15 @@ public class YamahaYsfcEntry
             if (version > 402 && version < 410 || version >= 500)
                 this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
 
+            // Additional unknown bytes for Montage M
+            // 0F - 0 0 0 0 0 0 - 28 AA
+            // FF - 0 0 0 0 0 0 - 28 F7
+            // 05 - 0 0 0 0 0 0 - 28 AA
+            // 03 - 0 0 0 0 0 0 - 28 AA
+            @SuppressWarnings("unused")
+            byte [] unknown = null;
             if (version >= 410 && version < 500)
-            {
-                // Additional unknown bytes for Montage M
-                // 0F - 0 0 0 0 0 0 - 28 AA
-                // FF - 0 0 0 0 0 0 - 28 F7
-                // 05 - 0 0 0 0 0 0 - 28 AA
-                // 03 - 0 0 0 0 0 0 - 28 AA
-                @SuppressWarnings("unused")
-                final byte [] unknown = contentStream.readNBytes (9);
-            }
+                unknown = contentStream.readNBytes (9);
         }
 
         this.itemName = StreamUtils.readAsciiNullTerminated (contentStream);

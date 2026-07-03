@@ -31,6 +31,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import de.mossgrabers.tools.XMLUtils;
+
 
 /**
  * Reads/writes a container file that starts with a FileSystem XML header followed by binary file
@@ -38,9 +40,9 @@ import org.xml.sax.SAXException;
  */
 public class OmnisphereAggregatedFile
 {
-    private final static String        FILE_SYSTEM_END_TAG = "</FileSystem>\n";
-    private final static Charset       DEFAULT_ENCODING    = StandardCharsets.ISO_8859_1;
-    private final static String        NONSENSE_DOCTYPE    = "<!DOCTYPE s1 SYSTEM \"sbk:/style/dtd/document.dtd\">";
+    private static final String        FILE_SYSTEM_END_TAG = "</FileSystem>\n";
+    private static final Charset       DEFAULT_ENCODING    = StandardCharsets.ISO_8859_1;
+    private static final String        NONSENSE_DOCTYPE    = "<!DOCTYPE s1 SYSTEM \"sbk:/style/dtd/document.dtd\">";
 
     private final Map<String, byte []> files               = new LinkedHashMap<> ();
 
@@ -80,7 +82,7 @@ public class OmnisphereAggregatedFile
         {
             fileSystemXml = this.createFileSystemXml ();
         }
-        catch (final ParserConfigurationException | TransformerException ex)
+        catch (final ParserConfigurationException ex)
         {
             throw new IOException (ex);
         }
@@ -157,7 +159,7 @@ public class OmnisphereAggregatedFile
 
     /**
      * Get a all XML files with a specific root tag parsed as a documents.
-     * 
+     *
      * @param rootTag The root tag to look for
      * @return The parsed documents, the key is their filename
      * @throws IOException Could not parse the file
@@ -210,9 +212,8 @@ public class OmnisphereAggregatedFile
      *
      * @return The XML document as bytes
      * @throws ParserConfigurationException Cold not configure the XML parser
-     * @throws TransformerException Could not transform the document to XML code
      */
-    private byte [] createFileSystemXml () throws ParserConfigurationException, TransformerException
+    private byte [] createFileSystemXml () throws ParserConfigurationException
     {
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance ();
         final DocumentBuilder builder = factory.newDocumentBuilder ();
@@ -338,16 +339,13 @@ public class OmnisphereAggregatedFile
      */
     public static Document parseXml (final String xmlCode) throws IOException
     {
-        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance ();
-        factory.setNamespaceAware (true);
-
         final String cleanedUpXmlCode = xmlCode.replace (NONSENSE_DOCTYPE, "");
 
         try
         {
-            return factory.newDocumentBuilder ().parse (new InputSource (new StringReader (cleanedUpXmlCode)));
+            return XMLUtils.parseDocument (new InputSource (new StringReader (cleanedUpXmlCode)));
         }
-        catch (final ParserConfigurationException | SAXException ex)
+        catch (final SAXException ex)
         {
             throw new IOException (ex);
         }

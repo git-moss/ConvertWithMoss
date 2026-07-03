@@ -32,7 +32,7 @@ public class BitStream
 
     /**
      * Constructor.
-     * 
+     *
      * @param data The data to 'stream'
      * @param mode The read mode to use
      */
@@ -46,7 +46,7 @@ public class BitStream
 
     /**
      * Are there more bits?
-     * 
+     *
      * @return True if there are more bits
      */
     public boolean hasRemaining ()
@@ -57,7 +57,7 @@ public class BitStream
 
     /**
      * Get the current bit position.
-     * 
+     *
      * @return The position
      */
     public int getBitPosition ()
@@ -68,7 +68,7 @@ public class BitStream
 
     /**
      * Read a single bit according to the current mode.
-     * 
+     *
      * @return The bit 0/1
      */
     private int readBit ()
@@ -114,7 +114,7 @@ public class BitStream
 
     /**
      * Peek at a 16-bit word without advancing.
-     * 
+     *
      * @return The word value
      */
     public int peekWord ()
@@ -132,7 +132,7 @@ public class BitStream
 
     /**
      * Skip bits.
-     * 
+     *
      * @param count The number of bits to skip
      */
     public void skipBits (final int count)
@@ -143,7 +143,7 @@ public class BitStream
 
     /**
      * Read one MFM-encoded byte (16 bits -> 8 data bits).
-     * 
+     *
      * @return The read byte
      */
     public int readMfmByte ()
@@ -161,7 +161,7 @@ public class BitStream
 
     /**
      * Peek MFM byte without advancing.
-     * 
+     *
      * @return The byte value
      */
     public int peekMfmByte ()

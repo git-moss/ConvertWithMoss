@@ -203,7 +203,7 @@ public class Zone
         // Unknown
         out.write (0);
 
-        this.sampleSize = this.numFrames * this.numChannels * this.sampleResolution;
+        this.sampleSize = this.numFrames * this.numChannels * (long) this.sampleResolution;
         StreamUtils.writeUnsigned32 (out, this.sampleSize, false);
 
         return out.toByteArray ();

@@ -48,6 +48,12 @@ public class InMemorySampleData implements ISampleData
      */
     public InMemorySampleData (final IAudioMetadata audioMetadata, final short [] sampleData)
     {
+        this (audioMetadata, convertToByteArray (audioMetadata, sampleData));
+    }
+
+
+    private static byte [] convertToByteArray (final IAudioMetadata audioMetadata, final short [] sampleData)
+    {
         if (!audioMetadata.isMono ())
             throw new IllegalArgumentException ("short [] constructor can only be called for mono samples");
 
@@ -55,8 +61,7 @@ public class InMemorySampleData implements ISampleData
         buffer.order (ByteOrder.LITTLE_ENDIAN);
         for (final short s: sampleData)
             buffer.putShort (s);
-
-        this (audioMetadata, buffer.array ());
+        return buffer.array ();
     }
 
 

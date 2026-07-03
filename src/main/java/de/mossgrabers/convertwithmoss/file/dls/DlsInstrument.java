@@ -19,16 +19,16 @@ import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 public class DlsInstrument
 {
     /** The length of the INSH structure. */
-    private static final int      LENGTH_INSH   = 12;
+    private static final int            LENGTH_INSH   = 12;
 
-    private final long            numRegions;
-    private String                name          = "<undefined>";
-    private final long            program;
-    private final int             bankCc32;
-    private final int             bankCc0;
-    private final boolean         isDrumInstrument;
-    private List<DlsArticulation> articulations = new ArrayList<> ();
-    private final List<DlsRegion> regions;
+    private final long                  numRegions;
+    private String                      name          = "<undefined>";
+    private final long                  program;
+    private final int                   bankCc32;
+    private final int                   bankCc0;
+    private final boolean               isDrumInstrument;
+    private final List<DlsArticulation> articulations = new ArrayList<> ();
+    private final List<DlsRegion>       regions;
 
 
     /**
@@ -78,7 +78,7 @@ public class DlsInstrument
 
     /**
      * Get the name of the instrument.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -89,7 +89,7 @@ public class DlsInstrument
 
     /**
      * Get the regions.
-     * 
+     *
      * @return The regions
      */
     public List<DlsRegion> getRegions ()
@@ -122,7 +122,7 @@ public class DlsInstrument
 
     /**
      * Add an articulation to the region.
-     * 
+     *
      * @param articulation The articulation
      */
     public void addArticulation (final DlsArticulation articulation)
@@ -133,7 +133,7 @@ public class DlsInstrument
 
     /**
      * Get the articulations of the instrument.
-     * 
+     *
      * @return The articulations
      */
     public List<DlsArticulation> getArticulations ()

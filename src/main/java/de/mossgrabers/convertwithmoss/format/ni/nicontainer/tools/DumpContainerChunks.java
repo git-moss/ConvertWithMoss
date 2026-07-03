@@ -36,14 +36,7 @@ public class DumpContainerChunks
         try (final InputStream inputStream = new FileInputStream (new File (args[0])))
         {
             final NIContainerItem niContainerItem = new NIContainerItem ();
-            try
-            {
-                niContainerItem.read (inputStream);
-            }
-            catch (final Exception ex)
-            {
-                ex.printStackTrace ();
-            }
+            niContainerItem.read (inputStream);
             System.out.println (niContainerItem.dump (0));
         }
         catch (final IOException ex)

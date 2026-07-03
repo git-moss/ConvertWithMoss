@@ -102,8 +102,8 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
     public Set<String> getAllFileEndings ()
     {
         final Set<String> endings = new TreeSet<> ();
-        for (int i = 0; i < FILE_TYPES.length; i++)
-            endings.addAll (Arrays.asList (FILE_TYPES[i].getFileEndings ()));
+        for (final SampleFileType element: FILE_TYPES)
+            endings.addAll (Arrays.asList (element.getFileEndings ()));
         return endings;
     }
 
@@ -154,14 +154,14 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
         final String comma = Functions.getMessage ("IDS_NOTIFY_COMMA");
 
-        ////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Sample file types
 
         panel.createSeparator ("@IDS_FILE_TYPES");
         for (int i = 0; i < FILE_TYPES.length; i++)
             this.sampleFileTypeCheckBoxes[i] = panel.createCheckBox (FILE_TYPES[i].getName ());
 
-        ////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Groups
 
         panel.createSeparator ("@IDS_FILE_GROUPS").getStyleClass ().add ("titled-separator-pane");
@@ -187,13 +187,13 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
         this.monoSplitsField = panel.createField ("@IDS_FILE_MONO_STEREO", comma, -1);
 
-        ////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Metadata
 
         this.addTo (panel);
         this.getSeparator ().getStyleClass ().add ("titled-separator-pane");
 
-        ////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Options
 
         panel.createSeparator ("@IDS_FILE_OPTIONS").getStyleClass ().add ("titled-separator-pane");
@@ -223,8 +223,8 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
             return false;
         }
 
-        final String [] groupPatterns = StringUtils.splitByComma (this.detectionPatternField.getText ());
-        for (final String groupPattern: groupPatterns)
+        final String [] groupPatternsRaw = StringUtils.splitByComma (this.detectionPatternField.getText ());
+        for (final String groupPattern: groupPatternsRaw)
             if (!groupPattern.contains ("*"))
             {
                 Functions.message ("@IDS_NOTIFY_ERR_SPLIT_REGEX", groupPattern);
@@ -233,8 +233,8 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
                 return false;
             }
 
-        final int crossfadeNotes = this.parseCrossfadeNotes ();
-        if (crossfadeNotes > 127)
+        final int crossfadeNotesValueRaw = this.parseCrossfadeNotes ();
+        if (crossfadeNotesValueRaw > 127)
         {
             Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_NOTES");
             notifier.updateButtonStates (true);
@@ -242,20 +242,20 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
             return false;
         }
 
-        final int crossfadeVelocities = this.parseCrossfadeVelocities ();
-        if (crossfadeVelocities > 127)
+        final int crossfadeVelocitiesValue = this.parseCrossfadeVelocities ();
+        if (crossfadeVelocitiesValue > 127)
         {
             notifier.updateButtonStates (true);
             Functions.message ("@IDS_NOTIFY_ERR_CROSSFADE_VELOCITIES");
             return false;
         }
 
-        this.groupPatterns = groupPatterns;
+        this.groupPatterns = groupPatternsRaw;
         this.isAscending = this.sortAscendingGroup.getToggles ().get (1).isSelected ();
         this.monoSplitPatterns = StringUtils.splitByComma (this.monoSplitsField.getText ());
         this.postfixTexts = StringUtils.splitByComma (this.postfixField.getText ());
-        this.crossfadeNotes = crossfadeNotes;
-        this.crossfadeVelocities = crossfadeVelocities;
+        this.crossfadeNotes = crossfadeNotesValueRaw;
+        this.crossfadeVelocities = crossfadeVelocitiesValue;
         this.shouldIgnoreLoops = this.ignoreLoops.isSelected ();
 
         return true;
@@ -264,16 +264,16 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     private int parseCrossfadeVelocities ()
     {
-        int crossfadeVelocities;
+        int crossfadeVelocitiesRaw;
         try
         {
-            crossfadeVelocities = Integer.parseInt (this.crossfadeVelocitiesField.getText ());
+            crossfadeVelocitiesRaw = Integer.parseInt (this.crossfadeVelocitiesField.getText ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
-            crossfadeVelocities = 0;
+            crossfadeVelocitiesRaw = 0;
         }
-        return crossfadeVelocities;
+        return crossfadeVelocitiesRaw;
     }
 
 
@@ -284,7 +284,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
         {
             crossfadeNotes = Integer.parseInt (this.crossfadeNotesField.getText ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             crossfadeNotes = 0;
         }
@@ -458,7 +458,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
                 return defaultValue;
             return Integer.parseInt (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             notifier.logError ("IDS_CLI_VALUE_MUST_BE_INTEGER", identifier);
             return -1;

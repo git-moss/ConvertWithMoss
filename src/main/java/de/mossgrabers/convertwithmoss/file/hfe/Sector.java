@@ -21,7 +21,7 @@ public class Sector implements Comparable<Sector>
 
     /**
      * Constructor.
-     * 
+     *
      * @param cylinder The cylinder/track number
      * @param head The head/side number
      * @param sectorNumber The sector number
@@ -42,7 +42,7 @@ public class Sector implements Comparable<Sector>
 
     /**
      * Sets if the CRC is valid.
-     * 
+     *
      * @param crcValid True to set it to valid
      */
     public void setCrcValid (final boolean crcValid)
@@ -53,7 +53,7 @@ public class Sector implements Comparable<Sector>
 
     /**
      * Get the cylinder of the sector.
-     * 
+     *
      * @return The cylinder
      */
     public int getCylinder ()
@@ -64,7 +64,7 @@ public class Sector implements Comparable<Sector>
 
     /**
      * Get the head of the sector.
-     * 
+     *
      * @return The head
      */
     public int getHead ()
@@ -75,7 +75,7 @@ public class Sector implements Comparable<Sector>
 
     /**
      * Get the number of the sector.
-     * 
+     *
      * @return The number
      */
     public int getSectorNumber ()
@@ -86,7 +86,7 @@ public class Sector implements Comparable<Sector>
 
     /**
      * Get the size bytes.
-     * 
+     *
      * @return 128, 256, 512, 1024 bytes
      */
     public int getSizeBytes ()
@@ -97,7 +97,7 @@ public class Sector implements Comparable<Sector>
 
     /**
      * Get the data of the sector.
-     * 
+     *
      * @return The data
      */
     public byte [] getData ()
@@ -108,7 +108,7 @@ public class Sector implements Comparable<Sector>
 
     /**
      * Is the CRC valid?
-     * 
+     *
      * @return True if valid
      */
     public boolean isCrcValid ()

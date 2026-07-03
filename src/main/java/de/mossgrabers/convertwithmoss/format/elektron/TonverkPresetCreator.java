@@ -36,7 +36,6 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveRiffChunkId;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
-import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetCreatorUI.OutputEngine;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetFile.Machine;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -47,8 +46,8 @@ import de.mossgrabers.tools.ui.Functions;
  * device path; therefore this creator mirrors the device's SD-card layout below the chosen output
  * folder: the preset is written to <code>User/Presets/&lt;name&gt;.tvpst</code> and its samples to
  * <code>User/Multi-sampled Instruments/&lt;name&gt;/</code>, each referenced as
- * <code>/mnt/sdcard/User/Multi-sampled Instruments/&lt;name&gt;/&lt;sample&gt;.wav</code>. The whole
- * <code>User</code> folder can then be copied straight onto the device. The full
+ * <code>/mnt/sdcard/User/Multi-sampled Instruments/&lt;name&gt;/&lt;sample&gt;.wav</code>. The
+ * whole <code>User</code> folder can then be copied straight onto the device. The full
  * <code>[parameters]</code> block is created from a neutral factory template (FX bypassed,
  * LFOs/arpeggiator/modulation neutralized); the amplitude envelope, the filter and its envelope,
  * gain and panning are written from the model. The output engine (Multi or Drum) can be selected;
@@ -142,10 +141,10 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
 
         // The preset must be created after the samples were written since trimming updates the
         // zone/loop positions
-        final TonverkPresetFile preset = drum ? this.buildDrumPreset (multisampleSource, presetName) : this.buildMultiPreset (multisampleSource);
+        final TonverkPresetFile preset = drum ? this.buildDrumPreset (multisampleSource, presetName) : buildMultiPreset (multisampleSource);
         applyMetadata (preset, multisampleSource);
 
-        // The Tonverk only resolves a preset's samples through an absolute '/mnt/sdcard/...' path;
+        // The Tonverk only resolves a preset's samples through an absolute '/mnt/sdcard/...' path
         // a bare file name (as used by the elmulti format) is not found
         referenceSamplesAbsolutely (preset, presetName);
 
@@ -215,7 +214,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     }
 
 
-    private TonverkPresetFile buildMultiPreset (final IMultisampleSource multisampleSource) throws IOException
+    private static TonverkPresetFile buildMultiPreset (final IMultisampleSource multisampleSource) throws IOException
     {
         final TonverkPresetFile preset = loadTemplate (MULTI_TEMPLATE);
         preset.machine = Machine.MULTI;

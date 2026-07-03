@@ -18,7 +18,7 @@ public class S5xxDirectoryEntry
 
     /**
      * Constructor.
-     * 
+     *
      * @param slot The 1-based slot number within the directory
      * @param name The name of the directory
      */
@@ -31,7 +31,7 @@ public class S5xxDirectoryEntry
 
     /**
      * Get the slot number.
-     * 
+     *
      * @return 1-based slot number within the directory
      */
     public int getSlot ()
@@ -42,7 +42,7 @@ public class S5xxDirectoryEntry
 
     /**
      * Get the disk name.
-     * 
+     *
      * @return Up to 50 printable ASCII characters
      */
     public String getName ()
@@ -53,7 +53,7 @@ public class S5xxDirectoryEntry
 
     /**
      * Check if the directory entry is empty.
-     * 
+     *
      * @return {@code true} if the name is blank (empty / whitespace only)
      */
     public boolean isEmpty ()

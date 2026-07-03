@@ -88,7 +88,7 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
                 {
                     return attribute == null ? 0 : Double.parseDouble (attribute);
                 }
-                catch (final NumberFormatException ex)
+                catch (final NumberFormatException _)
                 {
                     return 0;
                 }

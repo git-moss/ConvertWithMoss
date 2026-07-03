@@ -106,7 +106,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
     {
         try
         {
-            return readImgFile (sourceFile, Files.readAllBytes (sourceFile.toPath ()));
+            return this.readImgFile (sourceFile, Files.readAllBytes (sourceFile.toPath ()));
         }
         catch (final IOException ex)
         {
@@ -121,7 +121,6 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
         final AkaiMPC2000DiskImage diskImage = new AkaiMPC2000DiskImage (containerContent);
         final List<byte []> sets = new ArrayList<> ();
         for (final AkaiMPC2000DirectoryEntry entry: diskImage.getEntries ())
-        {
             switch (entry.getExtension ().toLowerCase ())
             {
                 case "set":
@@ -137,7 +136,6 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
                     this.notifier.logError ("IDS_MPC2000_UNSUPPORTED_FILE_FORMAT", entry.getExtension ());
                     break;
             }
-        }
 
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
         for (final byte [] fileContent: sets)
@@ -151,7 +149,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
     {
         try
         {
-            return readSetFile (sourceFile, Files.readAllBytes (sourceFile.toPath ()));
+            return this.readSetFile (sourceFile, Files.readAllBytes (sourceFile.toPath ()));
         }
         catch (final IOException ex)
         {

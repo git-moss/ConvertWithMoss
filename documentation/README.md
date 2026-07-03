@@ -101,6 +101,21 @@ For Linux (BSD not tested) there is also a `Makefile` for build and install with
 
 Alternatively, press *Analyse* to analyse all potential source file but not to write any files. Use this to check for errors before finally running the conversion.
 
+## Processing
+
+Clicking the *Process* button open a dialog to configure processing options which will be executed for each sample during the conversion process.
+
+* **Enable**: Use this to activate or deactivate all processing features below.
+* **Normalize**: Normalizes all samples. The algorithm normalizes across all samples of a multi-sample and not each sample individually.
+* **Make Mono**: Combines all stereo (incl. mono-split) samples to mono samples.
+* **Trim sample start/end**: If there is an unused area of the sample before the start or after the end, it will be removed.
+* **Maximum number of samples**: Reduces the number of samples in a multi-sample to this number (clear the field to ignore). The algorithm tries to keep the distribution of samples over thes key- and velocity range.
+* **Reduce bit-depth**: If the source sample has a higher bit-depth, it will be reduced to this setting.
+* **Reduce sample frequency**: Reduces the sample frequency of all samples to the given value. If the sample frequency is smaller than the selected value the sample is not modified.
+* **Always re-sample**: Does as well up-sampling to the set sample frequency and bit depth, if enabled.
+* **Set fixed loop-crossfade**: Sets all loop cross-fades (if supported by the destination format) to this percentage value.
+* **Snap loops to zero-crossings**: Moves the start and end of forward loops to a nearby zero-crossing, which removes the click that some sample libraries have at the loop point (e.g. auto-sampled instruments whose loop was not designed to be click-free). The adjustment is conservative: single-cycle loops are left untouched and a boundary is only moved when it actually reduces the discontinuity at the loop wrap. Enabled with `-Zs` on the command line.
+
 ## Options
 
 * **Create folder structure**: If enabled, sub-folders from the source folder are created as well in the output folder. For example, if I select my whole "Sounds" folder, there are sub-folders like `Sounds/07 Synth/Lead/01W Emerson'70 Samples`. In that case the output folder would contain e.g. `07 Synth/Lead/01W Emerson'70.multisample` if Bitwig multisample is selected as the destination format.

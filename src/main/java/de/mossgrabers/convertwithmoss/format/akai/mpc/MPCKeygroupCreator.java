@@ -302,7 +302,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         instrumentElement.setAttribute ("number", Integer.toString (calcInstrumentNumber (keygroupsMap)));
         instrumentsElement.appendChild (instrumentElement);
 
-        ///////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         final Optional<IFilter> optFilter = zone.getFilter ();
@@ -336,14 +336,14 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
                 XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_FILTER_AMOUNT, formatDouble (filterCutoffVelocityAmount, 2));
         }
 
-        // ///////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Range
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, Integer.toString (keyLow));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, zone.getKeyTracking () == 0 ? "True" : "False");
 
-        // ///////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Amplitude
 
         final double ampVelocityAmount = zone.getAmplitudeVelocityModulator ().getDepth ();
@@ -360,7 +360,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY_CURVE, amplitudeEnvelope.getDecaySlope ());
         setEnvelopeCurveAttribute (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE_CURVE, amplitudeEnvelope.getReleaseSlope ());
 
-        ///////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Pitch
 
         final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();

@@ -340,7 +340,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
                 paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_SUSTAIN, Integer.toString (sustain));
             }
 
-            createFilter (document, paramsElement, multisampleSource);
+            createFilter (paramsElement, multisampleSource);
         }
 
         return this.createXMLString (document);
@@ -403,7 +403,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
      */
     private static void createSample (final Document document, final String presetPath, final Element groupElement, final ISampleZone zone, final int sampleIndex, final int slot, final boolean trim)
     {
-        /////////////////////////
+        // -----------------------------------------------------------
         // Sample element and attributes
 
         final Element cellElement = XMLUtils.addElement (document, groupElement, Music1010Tag.CELL);
@@ -428,11 +428,11 @@ public class Music1010Creator extends AbstractMusic1010Creator
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, stop);
         }
 
-        // No zone.getTrigger ();
+        // No zone trigger
 
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_REVERSE, zone.isReversed () ? 1 : 0);
 
-        /////////////////////////
+        // -----------------------------------------------------------
         // Key & Velocity attributes
 
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
@@ -447,7 +447,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         // No fades info.getVelocityCrossfadeLow ()
         // No fades info.getVelocityCrossfadeHigh ()
 
-        /////////////////////////
+        // -----------------------------------------------------------
         // Loops
 
         // ... are stored in the WAV files

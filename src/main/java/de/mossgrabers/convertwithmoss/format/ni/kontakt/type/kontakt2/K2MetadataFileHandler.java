@@ -92,7 +92,7 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
                     {
                         return attribute == null ? 0 : Double.parseDouble (attribute);
                     }
-                    catch (final NumberFormatException ex)
+                    catch (final NumberFormatException _)
                     {
                         return 0;
                     }
@@ -174,7 +174,7 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
         {
             roundRobinPosition = cycleClassValue != null ? Integer.parseInt (cycleClassValue) : -1;
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             roundRobinPosition = -1;
         }

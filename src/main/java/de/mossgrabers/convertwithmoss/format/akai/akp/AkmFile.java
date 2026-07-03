@@ -154,9 +154,6 @@ public class AkmFile extends AbstractRIFFFile
     @Override
     protected void fillChunkStack ()
     {
-        if (!this.chunkStack.isEmpty ())
-            return;
-
         // Not used since writing is not supported
     }
 

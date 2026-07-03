@@ -48,7 +48,7 @@ public class SubTreeItemChunkData extends AbstractChunkData
             {
                 uncompressedData = FastLZ.uncompress (data, sizeUncompressed);
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 this.isEncrypted = true;
                 return;

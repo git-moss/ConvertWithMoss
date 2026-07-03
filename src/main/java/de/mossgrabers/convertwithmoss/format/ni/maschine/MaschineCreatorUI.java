@@ -130,7 +130,7 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
         {
             this.outputFormat = Integer.parseInt (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             notifier.logError ("IDS_NI_MASCHINE_ONLY_V1_NOT_SUPPORTED");
             return false;

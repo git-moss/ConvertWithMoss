@@ -522,7 +522,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         // No key tracking
 
-        ////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Key & Velocity attributes
 
         final Element boundsElement = XMLUtils.addElement (document, regionElement, TX16WxTag.BOUNDS);
@@ -581,7 +581,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             // The whole group can be delayed which is basically the same as the amplitude delay
             soundshapeElement.setAttribute (TX16WxTag.GROUP_DELAY, formatTime (amplitudeEnvelope.getDelayTime ()));
 
-            /////////////////////////////////////
+            // -----------------------------------------------------------
             // Amplitude
 
             final double sustain = amplitudeEnvelope.getSustainLevel ();
@@ -606,7 +606,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             pitchbend = pitchbend <= 0 ? 200 : pitchbend;
             addModulationEntry (document, modulationElement, "Pitchbend", "Pitch", pitchbend + "Ct");
 
-            /////////////////////////////////////
+            // -----------------------------------------------------------
             // Filter
 
             final Optional<IFilter> optFilter = zone.getFilter ();
@@ -650,7 +650,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     addModulationEntry (document, modulationElement, "Vel", "Filter 1 Freq", (int) Math.round (filterVelocityDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
 
-            /////////////////////////////////////
+            // -----------------------------------------------------------
             // Pitch
 
             final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();

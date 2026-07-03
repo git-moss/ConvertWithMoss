@@ -96,7 +96,7 @@ public class MirageWaveSample
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The input from which to read the parameters
      * @throws IOException Could not read the parameters
      */
@@ -104,13 +104,13 @@ public class MirageWaveSample
     {
         // These 4 values are only relevant for internal Mirage handling
         @SuppressWarnings("unused")
-        int sampleStartPointer = StreamUtils.readUnsigned16 (input, false);
+        final int sampleStartPointer = StreamUtils.readUnsigned16 (input, false);
         @SuppressWarnings("unused")
-        int sampleEndPointer = StreamUtils.readUnsigned16 (input, false);
+        final int sampleEndPointer = StreamUtils.readUnsigned16 (input, false);
         @SuppressWarnings("unused")
-        int loopStartPointer = StreamUtils.readUnsigned16 (input, false);
+        final int loopStartPointer = StreamUtils.readUnsigned16 (input, false);
         @SuppressWarnings("unused")
-        int loopEndPointer = StreamUtils.readUnsigned16 (input, false);
+        final int loopEndPointer = StreamUtils.readUnsigned16 (input, false);
 
         this.loopMode = input.read ();
         this.coarseTune = input.read ();
@@ -121,15 +121,15 @@ public class MirageWaveSample
         // 0..99 - Sets the upper limit of the cutoff frequency for the current wave-sample,
         // regardless of any other filter value (program, envelope, velocity).
         @SuppressWarnings("unused")
-        int maximumFilterFreq = input.read ();
+        final int maximumFilterFreq = input.read ();
 
         this.topKey = input.read ();
         this.sampleStart = input.read () * PAGE_SIZE;
         this.sampleEnd = (input.read () + 1) * PAGE_SIZE;
         this.loopStart = input.read () * PAGE_SIZE;
-        this.loopEnd = (input.read () + 1) * PAGE_SIZE + (0xFF - input.read ());
+        this.loopEnd = (input.read () + 1) * PAGE_SIZE + 0xFF - input.read ();
         @SuppressWarnings("unused")
-        int freeRunFlag = input.read ();
+        final int freeRunFlag = input.read ();
 
         // Reserved
         input.skipNBytes (3);

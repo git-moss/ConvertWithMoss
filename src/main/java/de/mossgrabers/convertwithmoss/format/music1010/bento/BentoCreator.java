@@ -343,7 +343,7 @@ public class BentoCreator extends AbstractMusic1010Creator
             if (loopReverses.size () == 1)
                 paramsElement.setAttribute (Music1010Tag.ATTR_REVERSE, loopReverses.iterator ().next ());
 
-            createFilter (document, paramsElement, multisampleSource);
+            createFilter (paramsElement, multisampleSource);
         }
 
         return this.createXMLString (document);
@@ -363,7 +363,7 @@ public class BentoCreator extends AbstractMusic1010Creator
     {
         // Stored in WAV file: zone.getGain (), zone.getTune ()
 
-        ////////////////////////////////
+        // -----------------------------------------------------------
         // Sample element and attributes
 
         final Element cellElement = XMLUtils.addElement (document, groupElement, Music1010Tag.CELL);
@@ -385,7 +385,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         // pitch="-19350"
         // panpos="-352"
 
-        ////////////////////////////////
+        // -----------------------------------------------------------
         // Key & Velocity attributes
 
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
@@ -414,7 +414,7 @@ public class BentoCreator extends AbstractMusic1010Creator
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, stop);
         }
 
-        ////////////////////////////////
+        // -----------------------------------------------------------
         // Loops
 
         // Set to one-shot if there are no loops

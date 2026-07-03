@@ -357,7 +357,7 @@ public class DlsArticulation
 
     /**
      * Get the source.
-     * 
+     *
      * @return The source, see the CONN_SRC_* constants
      */
     public int getSource ()
@@ -368,7 +368,7 @@ public class DlsArticulation
 
     /**
      * Get the destination.
-     * 
+     *
      * @return The source, see the CONN_DST_* constants
      */
     public int getDestination ()
@@ -379,7 +379,7 @@ public class DlsArticulation
 
     /**
      * Get the scale value.
-     * 
+     *
      * @return The scale value
      */
     public int getScale ()

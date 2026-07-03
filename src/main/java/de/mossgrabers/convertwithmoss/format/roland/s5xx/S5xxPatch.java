@@ -18,23 +18,23 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class S5xxPatch
 {
-    private final int        index;
-    private final String     patchId;
-    private final String     name;
-    private int              bendRange;
-    private int              afterTouchSensitivity;
-    private int              keyMode;
-    private int              velocitySwThreshold;
-    private final byte []    toneToKey1 = new byte [128];
-    private final byte []    toneToKey2 = new byte [128];
-    private int              copySource;
-    private int              octaveShift;
-    private int              outputLevel;
-    private final int        modulationDepth;
-    private int              detune;
-    private int              velocityMixRatio;
-    private int              afterTouchAssign;
-    private int              keyAssign;
+    private final int            index;
+    private final String         patchId;
+    private final String         name;
+    private int                  bendRange;
+    private int                  afterTouchSensitivity;
+    private int                  keyMode;
+    private int                  velocitySwThreshold;
+    private final byte []        toneToKey1 = new byte [128];
+    private final byte []        toneToKey2 = new byte [128];
+    private int                  copySource;
+    private int                  octaveShift;
+    private int                  outputLevel;
+    private final int            modulationDepth;
+    private int                  detune;
+    private int                  velocityMixRatio;
+    private int                  afterTouchAssign;
+    private int                  keyAssign;
     private final S5xxOutputJack outputJack;
 
 
@@ -234,7 +234,7 @@ public class S5xxPatch
 
     /**
      * Get the copy source.
-     * 
+     *
      * @return The copy source in the range of 0..31
      */
     public int getCopySource ()
@@ -245,7 +245,7 @@ public class S5xxPatch
 
     /**
      * Set the copy source.
-     * 
+     *
      * @param copySource The copy source in the range of 0..31
      */
     public void setCopySource (final byte copySource)
@@ -258,7 +258,7 @@ public class S5xxPatch
 
     /**
      * This can shift the pitch of the entire keyboard from -2 to 2 octaves in octave steps.
-     * 
+     *
      * @return -2, -1, 0, 1, 2
      */
     public int getOctaveShift ()
@@ -269,7 +269,7 @@ public class S5xxPatch
 
     /**
      * Sets the octave shift.
-     * 
+     *
      * @param octaveShift The octave shift
      */
     public void setOctaveShift (final int octaveShift)
@@ -283,7 +283,7 @@ public class S5xxPatch
     /**
      * This can set the output level of each Patch separately. At 127, each Tone assigned to the
      * Patch is played at its set level.
-     * 
+     *
      * @return The output level in the range of 0..127.
      */
     public int getOutputLevel ()
@@ -294,7 +294,7 @@ public class S5xxPatch
 
     /**
      * Set the output level.
-     * 
+     *
      * @param outputLevel The output level in the range of 0..127.
      */
     public void setOutputLevel (final byte outputLevel)
@@ -319,7 +319,7 @@ public class S5xxPatch
 
     /**
      * Set the de-tuning of the 2nd layer.
-     * 
+     *
      * @param detune The de-tuning in cents in the range of -50..50
      */
     public void setDetune (final int detune)
@@ -357,7 +357,7 @@ public class S5xxPatch
 
     /**
      * Get the after-touch assignment.
-     * 
+     *
      * @return 0 = Vibrato, 1 = Volume, 2 = Bend Up, 3 = Bend Down
      */
     public int getAfterTouchAssign ()
@@ -368,7 +368,7 @@ public class S5xxPatch
 
     /**
      * Sets the after-touch assignment.
-     * 
+     *
      * @param afterTouchAssign 0 = Vibrato, 1 = Volume, 2 = Bend Up, 3 = Bend Down
      */
     public void setAfterTouchAssign (final int afterTouchAssign)
@@ -381,7 +381,7 @@ public class S5xxPatch
 
     /**
      * Get the key assignment.
-     * 
+     *
      * @return The key assignment in the range of 0..31
      */
     public int getKeyAssign ()
@@ -392,7 +392,7 @@ public class S5xxPatch
 
     /**
      * Set the key assignment.
-     * 
+     *
      * @param keyAssign The key assignment in the range of 0..31
      */
     public void setKeyAssign (final byte keyAssign)

@@ -207,7 +207,7 @@ public class MirageFile
      * <li>Discard first 1024 bytes (parameter block)</li>
      * <li>Result = 65,536 bytes waveform PCM</li>
      * </ol>
-     * 
+     *
      * @param sourceFile The file to read
      * @throws IOException Could not read the file
      */
@@ -219,7 +219,7 @@ public class MirageFile
 
     /**
      * Constructor.
-     * 
+     *
      * @param nameStub The name of the source file
      * @param mirageData The data from the file
      * @throws IOException Could not read the data
@@ -251,7 +251,7 @@ public class MirageFile
 
     /**
      * Get the global sample rate.
-     * 
+     *
      * @return The sample rate in Hertz
      */
     public int getSampleRate ()
@@ -263,7 +263,7 @@ public class MirageFile
 
     /**
      * Reads the global settings which are stored in Track 12 Sector 5.
-     * 
+     *
      * @param mirageData The full disk image data.
      * @throws IOException Could not read the settings block
      */
@@ -279,18 +279,18 @@ public class MirageFile
 
             // Parameter #21. Master tune. Range: 0..99, 50 (0x32) nominal — a440
             @SuppressWarnings("unused")
-            int masterTune = input.read ();
+            final int masterTune = input.read ();
             // Parameter #22. Pitch bend range: range 0..12, default: 2
             this.pitchBendRange = input.read ();
             // Parameter #23. Keyboard velocity sensitivity. Default 30 (0x1E)
             @SuppressWarnings("unused")
-            int keyboardVelocitySensitivity = input.read ();
+            final int keyboardVelocitySensitivity = input.read ();
             // Parameter #24. Keyboard balance - counts by twos. Default 32 (0x40)
             @SuppressWarnings("unused")
-            int keyboardBalance = input.read ();
+            final int keyboardBalance = input.read ();
             // Parameter #25. Upper/lower link (on/off)
             @SuppressWarnings("unused")
-            int upperLowerLink = input.read ();
+            final int upperLowerLink = input.read ();
 
             //
             // Sampling configuration settings
@@ -300,16 +300,16 @@ public class MirageFile
             // Parameter #74. Input filter frequency. Range: 00..99. Default 80. Hex is double the
             // decimal value, e.g. 80 = 0xA0
             @SuppressWarnings("unused")
-            int inputFilterFrequency = input.read ();
+            final int inputFilterFrequency = input.read ();
             // Parameter #75. Line/microphone level input: on/off
             @SuppressWarnings("unused")
-            int lineMicLevelInput = input.read ();
+            final int lineMicLevelInput = input.read ();
             // Parameter #76. Sampling threshold: Range: 00..63. Default 48 (0x30)
             @SuppressWarnings("unused")
-            int samplingThreshold = input.read ();
+            final int samplingThreshold = input.read ();
             // Parameter #77. User multi-sampling: on/off
             @SuppressWarnings("unused")
-            int userMultisampling = input.read ();
+            final int userMultisampling = input.read ();
 
             input.skipNBytes (4);
 
@@ -318,25 +318,25 @@ public class MirageFile
 
             // Parameter #81. MIDI OMNI (on/off)
             @SuppressWarnings("unused")
-            int midiOmni = input.read ();
+            final int midiOmni = input.read ();
             // Parameter #82. MIDI channel (1-16) [hex is $00~$0f, offset by 1]
             @SuppressWarnings("unused")
-            int midiChannel = input.read ();
+            final int midiChannel = input.read ();
             // Parameter #83. MIDI thru (on/off)
             @SuppressWarnings("unused")
-            int midiThru = input.read ();
+            final int midiThru = input.read ();
             // Parameter #84. MIDI function enable (0-3)
             @SuppressWarnings("unused")
-            int midiFunctionEnable = input.read ();
+            final int midiFunctionEnable = input.read ();
             // Parameter #85. MIDI external clock (on/off)
             @SuppressWarnings("unused")
-            int midiExternalClock = input.read ();
+            final int midiExternalClock = input.read ();
             // Parameter #86. External clock jack (on/off)
             @SuppressWarnings("unused")
-            int externalClockJack = input.read ();
+            final int externalClockJack = input.read ();
             // Parameter #87. Internal clock rate (default 96) [counts by twos]
             @SuppressWarnings("unused")
-            int internalClockRate = input.read ();
+            final int internalClockRate = input.read ();
         }
     }
 }

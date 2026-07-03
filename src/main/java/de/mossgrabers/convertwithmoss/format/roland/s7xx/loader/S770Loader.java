@@ -32,7 +32,7 @@ public class S770Loader
 {
     /**
      * The main method.
-     * 
+     *
      * @param args First argument is the file-path of the image to load
      */
     public static void main (final String [] args)

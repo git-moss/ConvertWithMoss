@@ -298,12 +298,10 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
                 boolean hasFullPanning = true;
                 final List<ISampleZone> sampleZones2 = groupLayer2.getSampleZones ();
                 for (final ISampleZone sampleZone: sampleZones2)
-                {
                     if (sampleZone.getPanning () == 1)
                         hasPanning = true;
                     else
                         hasFullPanning = false;
-                }
 
                 if (hasFullPanning)
                 {
@@ -322,10 +320,8 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
 
                 // Cleanup panning if it was not combined to stereo
                 if (hasPanning)
-                {
                     for (final ISampleZone sampleZone: sampleZones2)
                         sampleZone.setPanning (0);
-                }
                 break;
         }
 
@@ -418,27 +414,22 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static boolean checkStereoMatch (final List<ISampleZone> sampleZones1, final List<ISampleZone> sampleZones2)
     {
-        if (sampleZones1.size () != sampleZones2.size ())
+        final int size = sampleZones1.size ();
+        if (size != sampleZones2.size ())
             return false;
 
-        for (int i = 0; i < sampleZones1.size (); i++)
+        for (int i = 0; i < size; i++)
         {
             final ISampleZone sampleZone1 = sampleZones1.get (i);
-            final ISampleZone sampleZone2 = sampleZones1.get (i);
-            if (sampleZone1.getKeyLow () != sampleZone2.getKeyLow ())
-                return false;
-            if (sampleZone1.getKeyHigh () != sampleZone2.getKeyHigh ())
-                return false;
-            if (sampleZone1.getKeyRoot () != sampleZone2.getKeyRoot ())
-                return false;
-            if (sampleZone1.getStart () != sampleZone2.getStart ())
+            final ISampleZone sampleZone2 = sampleZones2.get (i);
+            if ((sampleZone1.getKeyLow () != sampleZone2.getKeyLow ()) || (sampleZone1.getKeyHigh () != sampleZone2.getKeyHigh ()) || (sampleZone1.getKeyRoot () != sampleZone2.getKeyRoot ()) || (sampleZone1.getStart () != sampleZone2.getStart ()))
                 return false;
             try
             {
                 if (sampleZone1.getSampleData ().getAudioMetadata ().getNumberOfSamples () != sampleZone2.getSampleData ().getAudioMetadata ().getNumberOfSamples ())
                     return false;
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 return false;
             }

@@ -634,7 +634,6 @@ public class Kontakt2Header
         final byte [] bytes = text.getBytes (StandardCharsets.ISO_8859_1);
         final StringBuilder sb = new StringBuilder ();
         for (int i = 0; i < text.length (); i++)
-        {
             if (bytes[i] == (byte) 0xEF && i + 2 < bytes.length)
             {
                 if (bytes[i + 1] == (byte) 0xBF && bytes[i + 2] == (byte) 0xBC)
@@ -653,7 +652,6 @@ public class Kontakt2Header
             }
             else
                 sb.append ((char) bytes[i]);
-        }
         return sb.toString ();
     }
 }

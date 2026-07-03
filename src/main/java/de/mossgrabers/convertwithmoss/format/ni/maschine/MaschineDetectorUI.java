@@ -46,14 +46,14 @@ public class MaschineDetectorUI extends MetadataSettingsUI
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Options
 
         panel.createSeparator ("@IDS_MASCHINE_OPTIONS");
 
         this.scanForMsndCheckBox = panel.createCheckBox ("@IDS_MASCHINE_SCAN_FOR_MSND");
 
-        ////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Metadata
 
         this.addTo (panel);
