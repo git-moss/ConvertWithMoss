@@ -62,6 +62,8 @@ public class ProcessingDialog extends AbstractDialog
     public CheckBox                alwaysResampleCheckbox;
     /** Combo-box for the loop cross-fades. */
     public ComboBox<String>        loopCrossfadesCombobox;
+    /** Check-box to snap forward loop boundaries to zero-crossings. */
+    public CheckBox                snapLoopsCheckbox;
 
 
     /**
@@ -224,6 +226,7 @@ public class ProcessingDialog extends AbstractDialog
 
         final BoxPanel panel4 = new TwoColsPanel ();
         this.loopCrossfadesCombobox = panel4.createComboBox ("@IDS_PROCESSING_LOOP_CROSSFADE", "@IDS_PROCESSING_LOOP_CROSSFADE_TOOLTIP", LOOP_CROSSFADES);
+        this.snapLoopsCheckbox = panel4.createCheckBox ("@IDS_PROCESSING_SNAP_LOOPS_LABEL", "@IDS_PROCESSING_SNAP_LOOPS_TOOLTIP");
 
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
         this.enableProcessingCheckbox = panel.createCheckBox ("@IDS_PROCESSING_ENABLE", "@IDS_PROCESSING_ENABLE_TOOLTIP");
@@ -241,6 +244,7 @@ public class ProcessingDialog extends AbstractDialog
         this.traversalManager.add (this.reduceFrequencyCombobox);
         this.traversalManager.add (this.alwaysResampleCheckbox);
         this.traversalManager.add (this.loopCrossfadesCombobox);
+        this.traversalManager.add (this.snapLoopsCheckbox);
         this.traversalManager.add (this.getOKButton ());
         this.traversalManager.add (this.getCancelButton ());
 

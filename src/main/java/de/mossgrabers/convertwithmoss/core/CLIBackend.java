@@ -110,6 +110,7 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-Zf", "--ProcessFrequency").paramLabel ("PROCESS_FREQUENCY").type (Integer.class).description ("Reduces the sample-rate of all samples to this maximum value, if processing is enabled. Valid numbers are: 48000, 44100, 32000, 31250, 30000, 28000, 27000, 24000, 22050, 16000, 12000, 11025 and 8000").build ());
             spec.addOption (OptionSpec.builder ("-Za", "--ProcessAlwaysResample").paramLabel ("PROCESS_ALWAYS_RESAMPLE").type (Boolean.class).description ("Does as well up-sampling to the set sample frequency and bit depth, if enabled.").build ());
             spec.addOption (OptionSpec.builder ("-Zl", "--ProcessLoopCrossfade").paramLabel ("PROCESS_LOOP_CROSSFADE").type (Integer.class).description ("Sets a fixed loop crossfade as a percentage. Valid values are 0-100.").build ());
+            spec.addOption (OptionSpec.builder ("-Zs", "--ProcessSnapLoops").paramLabel ("PROCESS_SNAP_LOOPS").type (Boolean.class).description ("Snaps forward loop boundaries to the nearest zero-crossing to remove loop clicks, if processing is enabled.").build ());
 
             spec.addPositional (PositionalParamSpec.builder ().paramLabel ("SOURCE_FOLDER").type (File.class).description ("The source folder to process.").required (true).build ());
             spec.addPositional (PositionalParamSpec.builder ().paramLabel ("DESTINATION_FOLDER").type (File.class).description ("The destination folder to write to.").required (true).build ());
@@ -192,6 +193,7 @@ public class CLIBackend implements INotifier
         }
         detectSettings.alwaysResample = parseResult.matchedOptionValue ("Za", Boolean.FALSE).booleanValue ();
         detectSettings.loopCrossfades = parseResult.matchedOptionValue ("Zl", Integer.valueOf (-1)).intValue () + 1;
+        detectSettings.snapLoopsToZero = parseResult.matchedOptionValue ("Zs", Boolean.FALSE).booleanValue ();
 
         // Renaming option & folder check
         detectSettings.sourceFolder = parseResult.matchedPositionalValue (0, null);
