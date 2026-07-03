@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.format.ni.kontakt;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -128,7 +127,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
     }
 
 
-    private void createNKM (final File destinationFolder, final List<IInstrumentSource> instrumentSources, final String libraryName, final IKontaktFormat kontaktType) throws IOException, FileNotFoundException
+    private void createNKM (final File destinationFolder, final List<IInstrumentSource> instrumentSources, final String libraryName, final IKontaktFormat kontaktType) throws IOException
     {
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "nkm");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());

@@ -5,21 +5,26 @@
 * New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
+* New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
-* New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes whose normalized times are mapped to seconds with a warped-exponential curve calibrated against hardware resamples) and write (Multi or Drum machine). Writing mirrors the device's SD-card layout: the preset is stored as a flat file in 'User/Presets' and its samples in 'User/Multi-sampled Instruments/<name>', referenced by their absolute device path, so the created 'User' folder can be copied straight onto the Tonverk (thanks to Douglas Carmichael).
 * New: Improved user interface for long lists of formats.
 * New: Added several new tags for category detection.
-* New: Added an opt-in *Snap loops to zero-crossings* processing option. It moves the start and end of forward loops to a nearby zero-crossing, which removes the click that some sample libraries have at the loop point (e.g. auto-sampled instruments whose loop was not designed to be click-free). The adjustment is conservative: single-cycle loops are left untouched and a boundary is only moved when it actually reduces the discontinuity at the loop wrap. Enabled with the *Snap loops to zero-crossings* check-box in the processing dialog or `-Zs` on the command line (thanks to Douglas Carmichael).
-* Fixed: Converting into the root of a USB stick or external drive could fail with "The output folder is not empty" even when it looked empty, because the operating system keeps hidden bookkeeping files there (e.g. .Spotlight-V100, .Trashes and .fseventsd on macOS). Hidden files/folders and the known Windows system folders are now ignored by the empty-folder check (thanks to Douglas Carmichael).
-* Fixed: The source format list showed a stray comma before the file extensions, e.g. "SFZ (, *.sfz)" instead of "SFZ (*.sfz)" (thanks to Douglas Carmichael).
+* New: Added an opt-in *Snap loops to zero-crossings* processing option.
+* Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
+* Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
+* Fixed: Fixed some potential NullPointerExceptions.
 * Elektron Tonverk Multisample (thanks to Douglas Carmichael)
-  * New: This format is now labelled "Elektron Tonverk Multisample" consistently for both reading and writing - it was previously shown as "Elektron Multi" as a source but "Elektron Tonverk" as a destination, the latter being easily confused with "Elektron Tonverk Preset" (thanks to Douglas Carmichael).
+  * New: Relabelled "Elektron Tonverk Multisample" to not confuse it with the new "Elektron Tonverk Preset".
   * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
   * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
   * Fixed: Implemented workaround for converting 32-bit FLAC files (might not always work).
+* Maschine 1
+  * Fixed: File version number was always written as 0.
+* MPC
+  * Fixed: Program in XTY file was not read.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
   * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.

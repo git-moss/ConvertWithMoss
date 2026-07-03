@@ -267,7 +267,7 @@ public class YamahaYsfcKeybank implements IStreamable
         StreamUtils.padBytes (out, 2, 0x00);
 
         // Size of all channels - only stereo samples with both mono of same length are supported
-        StreamUtils.writeUnsigned32 (out, this.channels * this.sampleLength, true);
+        StreamUtils.writeUnsigned32 (out, this.channels * (long) this.sampleLength, true);
 
         // Padding
         StreamUtils.padBytes (out, 4, 0x00);

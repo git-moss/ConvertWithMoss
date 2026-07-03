@@ -310,11 +310,9 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         if (entryName == null)
             entryName = findSampleEntry (fileName, sampleEntries);
         if (entryName == null)
-        {
             // Found sample sections without a filename and the names "Repeater Mode" or "Repeater
             // Divisor". Couldn't find anything in the manual, if someone knows, get in touch
             return null;
-        }
 
         try
         {

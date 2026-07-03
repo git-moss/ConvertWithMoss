@@ -160,16 +160,16 @@ public class EnsoniqWaveSample
         this.loopStart = calculateOffset (input);
 
         final int loopStop = calculatePreOffset (input);
-        final int loopEndFine = (loopStop >>> 5) & 0xF;
+        final int loopEndFine = loopStop >>> 5 & 0xF;
         this.loopEnd = (loopStop >>> 9) + loopEndFine;
 
         final int sampleRateIndex = StreamUtils.readUnsigned8FromWord (input);
-        if (sampleRateIndex == 0)
-            this.sampleRate = 48000;
-        else if (sampleRateIndex == 1)
-            this.sampleRate = 44100;
-        else
-            this.sampleRate = (int) Math.round (625000.0 / sampleRateIndex);
+        this.sampleRate = switch (sampleRateIndex)
+        {
+            case 0 -> 48000;
+            case 1 -> 44100;
+            default -> (int) Math.round (625000.0 / sampleRateIndex);
+        };
 
         this.keyRangeLow = StreamUtils.readUnsigned8FromWord (input);
         this.keyRangeHigh = StreamUtils.readUnsigned8FromWord (input);
@@ -512,7 +512,7 @@ public class EnsoniqWaveSample
 
     /**
      * Get the pitch envelope.
-     * 
+     *
      * @return The pitch envelope
      */
     public EnsoniqEnvelope getPitchEnvelope ()
@@ -523,7 +523,7 @@ public class EnsoniqWaveSample
 
     /**
      * Get the filter envelope.
-     * 
+     *
      * @return The filter envelope
      */
     public EnsoniqEnvelope getFilterEnvelope ()
@@ -534,7 +534,7 @@ public class EnsoniqWaveSample
 
     /**
      * Get the amplitude envelope.
-     * 
+     *
      * @return The amplitude envelope
      */
     public EnsoniqEnvelope getAmplitudeEnvelope ()

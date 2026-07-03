@@ -445,7 +445,7 @@ public class KeyMapping
                 final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (filename)), si);
                 groups.computeIfAbsent (id, _ -> new ArrayList<> ()).add (zone);
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_VEL_GROUP_DETECTED", filename));
             }
@@ -642,7 +642,7 @@ public class KeyMapping
         {
             return createNoteMap (zones);
         }
-        catch (final NoteNotDetectedException ex)
+        catch (final NoteNotDetectedException _)
         {
             // Second try to parse the note from the filename in different variations
             try

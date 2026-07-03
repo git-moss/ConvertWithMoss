@@ -131,7 +131,7 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
             final File parentFolder = sourceFile.getParentFile ();
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, programName);
 
-            final Map<String, ISampleData> samples = detectSamples (parentFolder, program.getSampleNames ());
+            final Map<String, ISampleData> samples = this.detectSamples (parentFolder, program.getSampleNames ());
             final AkaMPC2000ProgramConverter converter = new AkaMPC2000ProgramConverter (this.notifier, this.settingsConfiguration);
             return Collections.singletonList (converter.createMultiSample (sourceFile, parts, program, samples, programName));
         }
@@ -146,12 +146,12 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
     private Map<String, ISampleData> detectSamples (final File parentFolder, final List<String> sampleNames) throws IOException
     {
         final Map<String, ISampleData> samples = new HashMap<> ();
-        for (String sampleName: sampleNames)
+        for (final String sampleName: sampleNames)
         {
             if (sampleName == null || sampleName.isBlank ())
                 continue;
 
-            File sampleFile = findSample (parentFolder, sampleName);
+            final File sampleFile = findSample (parentFolder, sampleName);
             if (sampleFile == null)
             {
                 this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
@@ -187,7 +187,7 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Process an MPC2000 ISO file.
-     * 
+     *
      * @param sourceFile The ISO file
      * @param sourceFolder The source folder
      * @param notifier The notifier
@@ -211,7 +211,7 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Process an MPC2000 ISO file.
-     * 
+     *
      * @param diskImageData The data of an ISO file
      * @param sourceFolder The source folder
      * @param sourceFile The source file

@@ -196,7 +196,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                     return waveforms;
                 }
 
-                return this.createMultisamplesFromPerformances (waveforms, epfmChunk, dpfmChunk, file.getName (), format, ysfcFile.getVersion ());
+                return this.createMultisamplesFromPerformances (waveforms, epfmChunk, dpfmChunk, format, ysfcFile.getVersion ());
             }
         }
         catch (final IOException ex)
@@ -237,7 +237,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                     return Collections.emptyList ();
                 }
 
-                return this.createPerformancesFromPerformances (waveforms, epfmChunk, dpfmChunk, sourceFile.getName (), format, ysfcFile.getVersion ());
+                return this.createPerformancesFromPerformances (waveforms, epfmChunk, dpfmChunk, format, ysfcFile.getVersion ());
             }
         }
         catch (final IOException ex)
@@ -254,13 +254,12 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
      * @param waveforms The already read waveform data, each waveform is a IMultisampleSource
      * @param epfmChunk The performance entry chunk
      * @param dpfmChunk The performance data chunk
-     * @param filename The name of the library file
      * @param format The version of the format
      * @param version The specific version of the format
      * @return The multi-sample(s)
      * @throws IOException Could not read the multi-sample
      */
-    private List<IPerformanceSource> createPerformancesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final String filename, final YamahaYsfcFileFormat format, final int version) throws IOException
+    private List<IPerformanceSource> createPerformancesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
         // Waveforms list is not empty and all of them contain metadata which was detected from the
         // library filename
@@ -309,7 +308,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                         continue;
                     final List<IGroup> waveGroups = waveform.getGroups ();
                     if (waveGroups.isEmpty ())
-                        return null;
+                        return Collections.emptyList ();
 
                     for (final ISampleZone waveformSampleZone: waveGroups.get (0).getSampleZones ())
                     {
@@ -352,13 +351,12 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
      * @param waveforms The already read waveform data, each waveform is a IMultisampleSource
      * @param epfmChunk The performance entry chunk
      * @param dpfmChunk The performance data chunk
-     * @param filename The name of the library file
      * @param format The version of the format
      * @param version The specific version of the format
      * @return The multi-sample(s)
      * @throws IOException Could not read the multi-sample
      */
-    private List<IMultisampleSource> createMultisamplesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final String filename, final YamahaYsfcFileFormat format, final int version) throws IOException
+    private List<IMultisampleSource> createMultisamplesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
         // Waveforms list is not empty and all of them contain metadata which was detected from the
         // library filename
@@ -401,7 +399,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                         continue;
                     final List<IGroup> waveGroups = waveform.getGroups ();
                     if (waveGroups.isEmpty ())
-                        return null;
+                        return Collections.emptyList ();
 
                     for (final ISampleZone waveformSampleZone: waveGroups.get (0).getSampleZones ())
                     {

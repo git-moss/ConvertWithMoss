@@ -13,7 +13,7 @@ public interface IAkaiVolume
 {
     /**
      * Returns true if the volume has content and is not empty.
-     * 
+     *
      * @return True if not empty
      */
     boolean hasContent ();

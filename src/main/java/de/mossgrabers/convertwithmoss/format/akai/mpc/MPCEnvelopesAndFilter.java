@@ -18,7 +18,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeM
 
 /**
  * Helper class to read and store all envelopes and filter settings.
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public class MPCEnvelopesAndFilter
@@ -31,7 +31,7 @@ public class MPCEnvelopesAndFilter
 
     /**
      * Constructor.
-     * 
+     *
      * @param synthSectionNode THe synthesizer section node
      * @param isGlobal True if it is a global envelope
      */

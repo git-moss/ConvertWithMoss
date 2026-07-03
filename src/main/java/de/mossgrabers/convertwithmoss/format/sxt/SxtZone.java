@@ -504,7 +504,7 @@ class SxtZone
         if (this.alternateMode > 0)
             zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
 
-        /////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Pitch
 
         if (this.modEnvToPitch > 0)
@@ -523,12 +523,12 @@ class SxtZone
             modEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.modEnvRelease));
         }
 
-        /////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         if (this.filterIsOn > 0)
         {
-            final double freqHz = 440 * Math.pow (2, (this.filterFreq - 6900) / 1200);
+            final double freqHz = 440 * Math.pow (2, (this.filterFreq - 6900) / 1200.0);
 
             FilterType type;
             int poles = 2;
@@ -590,7 +590,7 @@ class SxtZone
                 filter.getCutoffVelocityModulator ().setDepth (this.velocityToFilterFreq / 1000.0);
         }
 
-        /////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Amplitude
 
         if (this.velocityToAmpGain != 0)
@@ -609,7 +609,7 @@ class SxtZone
         ampEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.ampEnvRelease));
 
         // Set gain and panning
-        zone.setGain (20 * Math.log10 (Math.pow ((this.ampEnvGain + 1440) / 1440, 3)));
+        zone.setGain (20 * Math.log10 (Math.pow ((this.ampEnvGain + 1440) / 1440.0, 3)));
         zone.setPanning (this.pan / 1000.0);
     }
 
@@ -628,7 +628,7 @@ class SxtZone
         this.velocityRangeEnd = Math.clamp (AbstractCreator.limitToDefault (zone.getVelocityHigh (), 127), 1, 127);
         this.velocityFadeIn = zone.getVelocityCrossfadeLow ();
         final int velocityCrossfadeHigh = zone.getVelocityCrossfadeHigh ();
-        this.velocityFadeOut = velocityCrossfadeHigh == 0 ? 0x80 : Math.clamp (127 - velocityCrossfadeHigh, 1, 127);
+        this.velocityFadeOut = velocityCrossfadeHigh == 0 ? 0x80 : Math.clamp (127L - velocityCrossfadeHigh, 1, 127);
         this.rootKey = AbstractCreator.limitToDefault (zone.getKeyRoot (), this.keyRangeStart);
         this.sampleStart = zone.getStart ();
         this.sampleEnd = zone.getStop ();
@@ -643,7 +643,7 @@ class SxtZone
 
         this.pitchWheelRange = Math.clamp (Math.abs (Math.round (zone.getBendUp () / 100.0)), 0, 24);
 
-        /////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Loop
 
         final List<ISampleLoop> loops = zone.getLoops ();
@@ -662,7 +662,7 @@ class SxtZone
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
             this.alternateMode = 1;
 
-        /////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Pitch
 
         final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
@@ -695,7 +695,7 @@ class SxtZone
             this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getReleaseTime ());
         }
 
-        /////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         final Optional<IFilter> optFilter = zone.getFilter ();
@@ -769,7 +769,7 @@ class SxtZone
                 this.velocityToFilterFreq = (int) Math.round (cutoffVelocityAmount * 1000.0);
         }
 
-        /////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Amplitude
 
         final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
@@ -804,7 +804,7 @@ class SxtZone
         // Set gain and panning
         final double dBValue = zone.getGain ();
         final double gainRatio = Math.pow (10, dBValue / 20);
-        this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3) * 1440 - 1440);
+        this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3.0) * 1440.0 - 1440);
 
         this.pan = (int) (zone.getPanning () * 1000.0);
     }

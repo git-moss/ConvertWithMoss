@@ -222,7 +222,7 @@ public class CLIBackend implements INotifier
             {
                 Thread.sleep (10);
             }
-            catch (final InterruptedException ex)
+            catch (final InterruptedException _)
             {
                 Thread.currentThread ().interrupt ();
             }

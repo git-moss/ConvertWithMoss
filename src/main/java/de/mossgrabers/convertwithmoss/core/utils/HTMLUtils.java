@@ -232,13 +232,10 @@ public class HTMLUtils
             final int ci = c;
             if (ci >= 160 && ci < 256)
                 builder.append (HTML_CHARS[ci - 160]);
+            else if (c == '\'')
+                builder.append ("&#39;");
             else
-            {
-                if (c == '\'')
-                    builder.append ("&#39;");
-                else
-                    builder.append (c);
-            }
+                builder.append (c);
         }
         return builder.toString ();
     }

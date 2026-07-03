@@ -98,7 +98,7 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
     protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
-            return null;
+            return Collections.emptyList ();
 
         try (final RandomAccessFile fileAccess = new RandomAccessFile (sourceFile, "r"))
         {
@@ -115,7 +115,7 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
         {
             this.notifier.logError (ex, false);
         }
-        return null;
+        return Collections.emptyList ();
     }
 
 

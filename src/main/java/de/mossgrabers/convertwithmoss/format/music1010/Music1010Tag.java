@@ -109,7 +109,8 @@ public class Music1010Tag
     /** The attribute for the loop fade amount. */
     public static final String ATTR_LOOP_FADE_AMOUNT      = "loopfadeamt";
 
-    ////////////////////// Bento specific
+    // -----------------------------------------------------------
+    // Bento specific
 
     /** The track tag. */
     public static final String TRACK                      = "track";

@@ -48,7 +48,7 @@ public class OmnisphereDetectorUI extends MetadataSettingsUI
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        //////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Options
 
         panel.createSeparator ("@IDS_OMNISPHERE_OPTIONS");
@@ -57,7 +57,7 @@ public class OmnisphereDetectorUI extends MetadataSettingsUI
         // Otherwise the underscore does not show up
         this.usePresetFilesCheckBox.setMnemonicParsing (false);
 
-        //////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Metadata
 
         this.addTo (panel);

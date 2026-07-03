@@ -29,7 +29,7 @@ public class AkaiMPC2000BootSector
 
     /**
      * Read the boot sector.
-     * 
+     *
      * @param buffer The buffer to read from
      * @return The boot sector
      */
@@ -100,7 +100,7 @@ public class AkaiMPC2000BootSector
         final StringBuilder sb = new StringBuilder ();
         sb.append ("=== MPC2000 Disk Info ===\n");
         sb.append ("OEM Name: ").append (this.oemName).append ("\n");
-        sb.append ("Volume Label: ").append ((this.volumeLabel.isEmpty () ? "(none)" : this.volumeLabel)).append ("\n");
+        sb.append ("Volume Label: ").append (this.volumeLabel.isEmpty () ? "(none)" : this.volumeLabel).append ("\n");
         sb.append ("File System: ").append (this.fileSystemType).append ("\n");
         sb.append ("Bytes per sector: ").append (this.bytesPerSector).append ("\n");
         sb.append ("Sectors per cluster: ").append (this.sectorsPerCluster).append ("\n");

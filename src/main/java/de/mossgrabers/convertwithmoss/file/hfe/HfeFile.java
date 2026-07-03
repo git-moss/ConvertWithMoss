@@ -135,7 +135,7 @@ public class HfeFile
 
     /**
      * Decodes all sectors from all tracks which are MFM encoded.
-     * 
+     *
      * @return The decoded sectors
      */
     public List<Sector> decodeMfmSectors ()
@@ -223,7 +223,7 @@ public class HfeFile
      */
     private void readTracks (final RandomAccessFile randomAccessFile) throws IOException
     {
-        randomAccessFile.seek (this.trackListOffset * BLOCK_SIZE);
+        randomAccessFile.seek (this.trackListOffset * (long) BLOCK_SIZE);
         this.tracks = new TrackData [this.numSides] [this.numTracks];
         final int [] trackOffsets = new int [this.numTracks];
         final int [] trackLengths = new int [this.numTracks];

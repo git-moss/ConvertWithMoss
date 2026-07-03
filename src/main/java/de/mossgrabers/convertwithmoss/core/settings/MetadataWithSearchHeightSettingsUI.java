@@ -111,7 +111,7 @@ public class MetadataWithSearchHeightSettingsUI extends MetadataSettingsUI
             {
                 this.directorySearch = Integer.parseInt (value);
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 notifier.logError ("IDS_CLI_VALUE_MUST_BE_INTEGER", this.prefix + DIRECTORY_SEARCH);
                 return false;

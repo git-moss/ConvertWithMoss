@@ -152,7 +152,7 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
             }
 
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             // Ignore
         }
@@ -197,9 +197,9 @@ public class BroadcastAudioExtensionChunk extends AbstractSpecificRIFFChunk
      *
      * @return The time reference
      */
-    public int getTimeReference ()
+    public long getTimeReference ()
     {
-        return (this.rawRiffChunk.getFourBytesAsUnsignedInt (342) << 32) + this.rawRiffChunk.getFourBytesAsUnsignedInt (338);
+        return (((long) this.rawRiffChunk.getFourBytesAsUnsignedInt (342)) << 32) + this.rawRiffChunk.getFourBytesAsUnsignedInt (338);
     }
 
 

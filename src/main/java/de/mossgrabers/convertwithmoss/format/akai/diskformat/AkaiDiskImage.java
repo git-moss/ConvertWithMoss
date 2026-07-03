@@ -41,7 +41,7 @@ public class AkaiDiskImage extends AbstractAkaiImage
     private RandomAccessFile          randomAccessFile        = null;
     private int                       position                = 0;
     private int                       cacheWindowIndex        = -1;
-    private final int                 size;
+    private final int                 imageSize;
     private byte []                   cache                   = new byte [CACHE_WINDOW_SIZE];
     private final List<AkaiPartition> partitions              = new ArrayList<> ();
 
@@ -55,7 +55,7 @@ public class AkaiDiskImage extends AbstractAkaiImage
     public AkaiDiskImage (final File file) throws IOException
     {
         this.randomAccessFile = new RandomAccessFile (file, "r");
-        this.size = (int) file.length ();
+        this.imageSize = (int) file.length ();
 
         this.loadPartitions ();
     }
@@ -76,7 +76,7 @@ public class AkaiDiskImage extends AbstractAkaiImage
 
     /**
      * Read the content of a volume in a specific format (S1000, S3000, MPC2000, ...).
-     * 
+     *
      * @param partition The partition which contains the volume to read
      * @param entry The directory entry of the volume
      * @return The content if supported and the volume is not empty
@@ -124,7 +124,7 @@ public class AkaiDiskImage extends AbstractAkaiImage
         {
             case START -> offset;
             case CURRENT_POSITION -> this.position + offset;
-            case END -> Math.max (0, this.size - offset);
+            case END -> Math.max (0, this.imageSize - offset);
             default -> offset;
         };
         return this.position;
@@ -135,7 +135,7 @@ public class AkaiDiskImage extends AbstractAkaiImage
     @Override
     public int available ()
     {
-        return this.size - this.position;
+        return this.imageSize - this.position;
     }
 
 
@@ -212,7 +212,7 @@ public class AkaiDiskImage extends AbstractAkaiImage
      */
     public int getSize ()
     {
-        return this.size;
+        return this.imageSize;
     }
 
 
@@ -267,7 +267,7 @@ public class AkaiDiskImage extends AbstractAkaiImage
         while (bytesRemaining > 0)
         {
             // Stop if logical read position exceeds disk image size
-            if (this.size <= this.position)
+            if (this.imageSize <= this.position)
                 return bytesReadTotal / wordSize;
 
             // Determine which cache window contains the requested position. The cache window is a

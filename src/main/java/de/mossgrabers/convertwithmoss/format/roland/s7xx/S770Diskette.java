@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -109,9 +108,9 @@ public class S770Diskette implements IS770Image
                     }
                 }
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
-                continue;
+                // Ignore and continue
             }
         }
 
@@ -146,35 +145,32 @@ public class S770Diskette implements IS770Image
         final int numSamples = this.header.getNumSamples ();
 
         // Performance entries
-        final List<S770Performance> perfs = new ArrayList<> (numPerformances);
+        this.performances = new ArrayList<> (numPerformances);
         for (int i = 0; i < numPerformances; i++)
-            perfs.add (new S770Performance (input, true));
-        this.performances = Collections.unmodifiableList (perfs);
+            this.performances.add (new S770Performance (input, true));
 
-        input.skipNBytes ((64 - numPerformances) * 256);
+        input.skipNBytes ((64 - numPerformances) * 256L);
 
         // Patch entries
-        final List<S770Patch> patches = new ArrayList<> (numPatches);
+        this.patches = new ArrayList<> (numPatches);
         for (int i = 0; i < numPatches; i++)
-            patches.add (new S770Patch (input, true));
-        this.patches = Collections.unmodifiableList (patches);
+            this.patches.add (new S770Patch (input, true));
 
-        input.skipNBytes ((128 - numPatches) * 256);
+        input.skipNBytes ((128 - numPatches) * 256L);
 
         // Partial entries
-        final List<S770Partial> partials = new ArrayList<> (numPartials);
+        this.partials = new ArrayList<> (numPartials);
         for (int i = 0; i < numPartials; i++)
-            partials.add (new S770Partial (input));
-        this.partials = Collections.unmodifiableList (partials);
+            this.partials.add (new S770Partial (input));
 
-        input.skipNBytes ((256 - numPartials) * 128);
+        input.skipNBytes ((256 - numPartials) * 128L);
 
         // Sample entries
         int read = 0;
-        final List<S770Sample> samples = new ArrayList<> (numSamples);
+        this.samples = new ArrayList<> (numSamples);
         for (int i = 0; i < numSamples; i++)
         {
-            samples.add (new S770Sample (input));
+            this.samples.add (new S770Sample (input));
             read += 48;
             // Each 10th sample seem to have additional 32 bytes appended
             if ((i + 1) % 10 == 0)
@@ -183,10 +179,9 @@ public class S770Diskette implements IS770Image
                 read += 32;
             }
         }
-        this.samples = Collections.unmodifiableList (samples);
 
         // Samples start at 0x1F800
-        input.skipNBytes (0x6A00 - read);
+        input.skipNBytes (0x6A00 - (long) read);
 
         this.loadWaveData (input);
     }

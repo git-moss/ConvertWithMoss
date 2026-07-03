@@ -49,9 +49,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
     private CheckBox            makeMonophonicCheckBox;
     private CheckBox            addFilterToGroupsCheckBox;
     private ComboBox<String>    templateFolderPathField;
-    private Button              templateFolderPathSelectButton;
     private final List<String>  templateFolderPathHistory      = new ArrayList<> ();
-    private Button              createTemplatesButton;
 
     private boolean             createBundle;
     private boolean             makeMonophonic;
@@ -92,18 +90,17 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
         templateFolderPathTitle.setLabelFor (this.templateFolderPathField);
         templateFolderPathPanel.addComponent (templateFolderPathTitle);
 
-        this.templateFolderPathSelectButton = new Button (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH"));
-        this.templateFolderPathSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH_TOOLTIP")));
-        this.templateFolderPathSelectButton.setOnAction (_ -> this.selectTemplateFolderPath (null));
+        final Button templateFolderPathSelectButton = new Button (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH"));
+        templateFolderPathSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_SELECT_TEMPLATE_PATH_TOOLTIP")));
+        templateFolderPathSelectButton.setOnAction (_ -> this.selectTemplateFolderPath (null));
 
-        this.createTemplatesButton = new Button (Functions.getText ("@IDS_DS_CREATE_TEMPLATES"));
-        this.createTemplatesButton.setTooltip (new Tooltip (Functions.getText ("@IDS_DS_CREATE_TEMPLATES_TOOLTIP")));
-        this.createTemplatesButton.setOnAction (_ -> this.createTemplates ());
+        final Button createTemplatesButton = new Button (Functions.getText ("@IDS_DS_CREATE_TEMPLATES"));
+        createTemplatesButton.setOnAction (_ -> this.createTemplates ());
 
-        templateFolderPathPanel.addComponent (new BorderPane (this.templateFolderPathField, null, this.templateFolderPathSelectButton, null, null));
+        templateFolderPathPanel.addComponent (new BorderPane (this.templateFolderPathField, null, templateFolderPathSelectButton, null, null));
         this.templateFolderPathField.setMaxWidth (Double.MAX_VALUE);
         panel.addComponent (templateFolderPathPanel);
-        panel.addComponent (this.createTemplatesButton);
+        panel.addComponent (createTemplatesButton);
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
         return panel.getPane ();
@@ -120,11 +117,11 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
         {
-            final String templateFolderPath = config.getProperty (DS_TEMPLATE_FOLDER_PATH + i);
-            if (templateFolderPath == null)
+            final String path = config.getProperty (DS_TEMPLATE_FOLDER_PATH + i);
+            if (path == null)
                 break;
-            if (!this.templateFolderPathHistory.contains (templateFolderPath))
-                this.templateFolderPathHistory.add (templateFolderPath);
+            if (!this.templateFolderPathHistory.contains (path))
+                this.templateFolderPathHistory.add (path);
         }
         this.templateFolderPathField.getItems ().addAll (this.templateFolderPathHistory);
         this.templateFolderPathField.setEditable (true);
@@ -282,14 +279,14 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
 
     private void createTemplates ()
     {
-        final File templateFolderPath = new File (this.templateFolderPathField.getEditor ().getText ());
-        if (!templateFolderPath.exists () && !templateFolderPath.mkdirs ())
+        final File path = new File (this.templateFolderPathField.getEditor ().getText ());
+        if (!path.exists () && !path.mkdirs ())
         {
             Functions.message ("@IDS_DS_COULD_NOT_CREATE_TEMPLATE_DIR");
             return;
         }
 
-        if (!templateFolderPath.isDirectory ())
+        if (!path.isDirectory ())
         {
             Functions.message ("@IDS_DS_TEMPLATE_DIR_IS_FILE");
             return;
@@ -299,7 +296,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
         {
             // Copy the template from the JAR resources to the given template folder
             final String uiTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ui.xml");
-            final File uiFile = new File (templateFolderPath, "ui.xml");
+            final File uiFile = new File (path, "ui.xml");
             if (!uiFile.exists ())
                 Files.write (uiFile.toPath (), uiTemplate.getBytes ());
         }

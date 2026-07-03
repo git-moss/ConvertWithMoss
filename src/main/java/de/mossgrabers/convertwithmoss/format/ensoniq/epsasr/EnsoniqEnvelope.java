@@ -43,7 +43,7 @@ public class EnsoniqEnvelope
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The stream from which to read the envelope data
      * @throws IOException Could not read the envelope
      */
@@ -76,7 +76,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the envelope type.
-     * 
+     *
      * @return The envelope type, default envelopes: 0-15
      */
     public int getEnvelopeType ()
@@ -87,7 +87,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the soft level 0
-     * 
+     *
      * @return Initial level: 0-127
      */
     public int getSoftLevel0 ()
@@ -98,7 +98,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the hard level 0
-     * 
+     *
      * @return Initial level: 0-127
      */
     public int getHardLevel0 ()
@@ -109,7 +109,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get time 1.
-     * 
+     *
      * @return Attack time; time from initial level to level: 0-127
      */
     public int getTime1 ()
@@ -120,7 +120,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the soft level 1.
-     * 
+     *
      * @return Peak level: 0-127
      */
     public int getSoftLevel1 ()
@@ -131,7 +131,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the hard level 1.
-     * 
+     *
      * @return Peak level: 0-127
      */
     public int getHardLevel1 ()
@@ -142,7 +142,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the time 2.
-     * 
+     *
      * @return First decay time; time from level 1 to level 2: 0-127
      */
     public int getTime2 ()
@@ -153,7 +153,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the soft level 2.
-     * 
+     *
      * @return 0-127
      */
     public int getSoftLevel2 ()
@@ -164,7 +164,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the hard level 2.
-     * 
+     *
      * @return 0-127
      */
     public int getHardLevel2 ()
@@ -175,7 +175,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the time 3.
-     * 
+     *
      * @return Second decay; time from level 2 to level 3: 0-127
      */
     public int getTime3 ()
@@ -186,7 +186,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the soft level 3.
-     * 
+     *
      * @return 0-127
      */
     public int getSoftLevel3 ()
@@ -197,7 +197,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the hard level 3.
-     * 
+     *
      * @return 0-127
      */
     public int getHardLevel3 ()
@@ -208,7 +208,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the time 4.
-     * 
+     *
      * @return Third decay; time from level 3 to level 4: 0-127
      */
     public int getTime4 ()
@@ -219,7 +219,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the soft level 4 (sustain).
-     * 
+     *
      * @return Sustain: 0-127
      */
     public int getSoftLevel4 ()
@@ -230,7 +230,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the hard level 4 (sustain).
-     * 
+     *
      * @return Sustain: 0-127
      */
     public int getHardLevel4 ()
@@ -241,7 +241,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the time 5 (release time).
-     * 
+     *
      * @return Time from level 4 to level 5: 0-127
      */
     public int getTime5 ()
@@ -252,7 +252,7 @@ public class EnsoniqEnvelope
 
     /**
      * Soft level on/off.
-     * 
+     *
      * @return 0/1
      */
     public int getVelocitySwitch ()
@@ -263,7 +263,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the level 5.
-     * 
+     *
      * @return Release breakpoint relative to sustain level (+/-): -127..127
      */
     public int getLevel5 ()
@@ -274,7 +274,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get time 6.
-     * 
+     *
      * @return Second release time; time from level 5 to 6
      */
     public int getTime6 ()
@@ -285,7 +285,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the time 1 velocity sensitivity.
-     * 
+     *
      * @return Time 1 velocity sensitivity: 0-127
      */
     public int getTime1VelSens ()
@@ -296,7 +296,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the keyboard time scaling.
-     * 
+     *
      * @return Keyboard Time Scaling: 0-127
      */
     public int getKbTimeScaling ()
@@ -307,7 +307,7 @@ public class EnsoniqEnvelope
 
     /**
      * Get the play mode.
-     * 
+     *
      * @return 0=normal, 1=cycle, 2=repeat
      */
     public int getMode ()

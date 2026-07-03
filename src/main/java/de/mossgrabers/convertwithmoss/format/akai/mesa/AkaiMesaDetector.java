@@ -97,7 +97,7 @@ public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
                     }
                     samples.add (new AkaiS1000Sample (sampleName, wavFileSampleData));
                 }
-                catch (final IOException | CompressionNotSupportedException ex)
+                catch (final IOException | CompressionNotSupportedException _)
                 {
                     this.notifier.logError ("IDS_S3P_BROKEN_WAV", sampleFile.getName ());
                 }

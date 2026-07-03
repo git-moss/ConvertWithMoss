@@ -393,20 +393,20 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            ////////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Loop cross-fade
 
             if (this.detectionSettings.loopCrossfades > 0)
             {
                 this.notifier.log ("IDS_PROCESSING_LOOP_CROSSFADE_LOG");
-                final double crossfadeFactor = Math.clamp (this.detectionSettings.loopCrossfades - 1, 0, 100) / 100.0;
+                final double crossfadeFactor = Math.clamp (this.detectionSettings.loopCrossfades - 1L, 0, 100) / 100.0;
                 for (final IGroup group: multisampleSource.getGroups ())
                     for (final ISampleZone zone: group.getSampleZones ())
                         for (final ISampleLoop loop: zone.getLoops ())
                             loop.setCrossfade (crossfadeFactor);
             }
 
-            ///////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -423,7 +423,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            ///////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)
@@ -439,7 +439,7 @@ public class ConverterBackend
             }
             multisampleSource.setGroups (groups);
 
-            ///////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Audio processing
 
             final List<ISampleZone> sampleZones = new ArrayList<> ();
@@ -461,7 +461,7 @@ public class ConverterBackend
             this.notifier.log ("IDS_NOTIFY_LINE_FEED");
             AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.alwaysResample, this.detectionSettings.enableNormalize);
 
-            ///////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Snap forward loop boundaries to zero-crossings to remove loop clicks
 
             if (this.detectionSettings.snapLoopsToZero)

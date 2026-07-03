@@ -54,12 +54,10 @@ public class AkaiMPC2000Program
             input.skipNBytes (1);
         }
 
+        // 1090 bytes have been read so far (2 + 17 * 64)
+        // MPC3000 name starts at position 2690 therefore skip 1600 bytes
         if (isMPC3000)
-        {
-            // 1090 bytes have been read so far (2 + 17 * 64)
-            // Name starts at position 2690 therefore skip 1600 bytes
             input.skipNBytes (1600);
-        }
         else
         {
             checkBytes (input, 0x1E);

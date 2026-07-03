@@ -25,7 +25,7 @@ public class MathUtils
 
     /**
      * Test a bit in an integer.
-     * 
+     *
      * @param value The value to test
      * @param bitIndex The index of the bit to test
      * @return True if the bit is set
@@ -414,7 +414,7 @@ public class MathUtils
 
     /**
      * Decode two complement.
-     * 
+     *
      * @param value The value to decode
      * @return The decoded value
      */
@@ -426,7 +426,7 @@ public class MathUtils
 
     /**
      * Encode two complement.
-     * 
+     *
      * @param value The value to encode
      * @return The encoded value
      */

@@ -22,8 +22,8 @@ import java.util.regex.Pattern;
  */
 public class TonverkMultiFile
 {
-    private static final Pattern       KV         = Pattern.compile ("^([A-Za-z0-9-]+)\\s*=\\s*(.+)$");
-    private static final String []     NOTE_NAMES =
+    private static final Pattern      KV         = Pattern.compile ("^([A-Za-z0-9-]+)\\s*=\\s*(.+)$");
+    private static final String []    NOTE_NAMES =
     {
         "c",
         "c#",
@@ -40,22 +40,22 @@ public class TonverkMultiFile
     };
 
     /** Format version. */
-    public int                         version    = 0;
+    public int                        version    = 0;
     /** Instrument display name. */
-    public String                      name;
+    public String                     name;
     /** The key-zones. */
     public final List<TonverkKeyZone> keyZones   = new ArrayList<> ();
     /** Errors happening during the parsing. */
-    public final List<String>          errors     = new ArrayList<> ();
+    public final List<String>         errors     = new ArrayList<> ();
 
 
     /** A key zone. */
     public static class TonverkKeyZone
     {
         /** MIDI note number (0-127). Defines the root note for this zone. */
-        public int                               pitch;
+        public int                              pitch;
         /** Pitch center for transposition. Usually equals pitch as float. */
-        public double                            keyCenter;
+        public double                           keyCenter;
         /** Each key zone contains one or more velocity layers. */
         public final List<TonverkVelocityLayer> velocityLayers = new ArrayList<> ();
     }
@@ -68,12 +68,12 @@ public class TonverkMultiFile
          * Velocity threshold. Sample plays when input velocity >= this value. 0.0 - 1.0 (= MIDI
          * velocity / 127.0).
          */
-        public double                         velocity;
+        public double                        velocity;
         /**
          * Round-robin play-back strategy. 'Forward'. Applied if multiple sample slots are assigned
          * to a velocity layer.
          */
-        public String                         strategy    = "Forward";
+        public String                        strategy    = "Forward";
         /** Each velocity layer contains one or more sample slots. */
         public final List<TonverkSampleSlot> sampleSlots = new ArrayList<> ();
     }
@@ -129,8 +129,8 @@ public class TonverkMultiFile
      * @param instrumentName The instrument name to add to the sample name
      * @param velocityLayer The velocity layer index to add to the sample name
      * @param midiNote The MIDI note to add to the sample name
-     * @param roundRobinIndex The index of the sample in a round-robin chain, no suffix is added
-     *            for values less than 1
+     * @param roundRobinIndex The index of the sample in a round-robin chain, no suffix is added for
+     *            values less than 1
      * @return The formatted sample name
      */
     public static String createSampleName (final String instrumentName, final int velocityLayer, final int midiNote, final int roundRobinIndex)

@@ -104,9 +104,7 @@ public final class LoopZeroSnapper
         int end = loop.getEnd ();
         if (end < 0 || end >= length)
             end = length - 1;
-        if (start < 0 || end <= start)
-            return false;
-        if (end - start < MINIMUM_LOOP_LENGTH)
+        if (start < 0 || end <= start || (end - start < MINIMUM_LOOP_LENGTH))
             return false;
 
         final int window = Math.min (MAXIMUM_WINDOW, (end - start) / 8);
@@ -114,11 +112,8 @@ public final class LoopZeroSnapper
             return false;
         final int newStart = nearestRisingZeroCrossing (signal, start, window);
         final int newEnd = nearestRisingZeroCrossing (signal, end, window);
-        if (newStart < 0 || newEnd < 0 || newEnd <= newStart)
-            return false;
-
         // Only apply the snap when it actually reduces the click at the wrap-around
-        if (discontinuity (signal, newStart, newEnd) >= discontinuity (signal, start, end))
+        if (newStart < 0 || newEnd < 0 || newEnd <= newStart || (discontinuity (signal, newStart, newEnd) >= discontinuity (signal, start, end)))
             return false;
 
         loop.setStart (newStart);
@@ -139,8 +134,8 @@ public final class LoopZeroSnapper
      */
     private static int discontinuity (final int [] signal, final int start, final int end)
     {
-        final int last = Math.max (0, Math.min (end, signal.length - 1));
-        final int first = Math.max (0, Math.min (start, signal.length - 1));
+        final int last = Math.clamp (end, 0, signal.length - 1);
+        final int first = Math.clamp (start, 0, signal.length - 1);
         return Math.abs (signal[last] - signal[first]);
     }
 
@@ -229,10 +224,10 @@ public final class LoopZeroSnapper
         int sample = 0;
         if (bigEndian)
             for (int b = 0; b < bytes; b++)
-                sample = (sample << 8) | (data[offset + b] & 0xFF);
+                sample = sample << 8 | data[offset + b] & 0xFF;
         else
             for (int b = bytes - 1; b >= 0; b--)
-                sample = (sample << 8) | (data[offset + b] & 0xFF);
+                sample = sample << 8 | data[offset + b] & 0xFF;
 
         // Sign-extend to a full integer
         final int shift = 32 - bits;

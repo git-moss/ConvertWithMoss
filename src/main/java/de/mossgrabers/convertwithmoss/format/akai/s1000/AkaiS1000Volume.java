@@ -26,7 +26,7 @@ public class AkaiS1000Volume implements IAkaiVolume
     /** Maximum number of directory file entries on Akai S3000 series. */
     public static final int              AKAI_MAX_FILE_ENTRIES_S3000 = 509;
 
-    private String                       name;
+    private final String                 name;
     private final List<AkaiS1000Program> programs                    = new ArrayList<> ();
     private final List<AkaiS1000Sample>  samples                     = new ArrayList<> ();
 

@@ -169,7 +169,7 @@ public class EnsoniqInstrument
 
     /**
      * Get the 4 patches.
-     * 
+     *
      * @return The patches 8-bit configurations (which layers are enabled)
      */
     public int [] getPatches ()
@@ -180,7 +180,7 @@ public class EnsoniqInstrument
 
     /**
      * Get the key down layers.
-     * 
+     *
      * @return The key down layers 8-bit configuration (which layers sound on key-press)
      */
     public int getKeyDownLayers ()
@@ -191,7 +191,7 @@ public class EnsoniqInstrument
 
     /**
      * Get the key up layers.
-     * 
+     *
      * @return The key up layers 8-bit configuration (which layers sound on key-release)
      */
     public int getKeyUpLayers ()
@@ -202,7 +202,7 @@ public class EnsoniqInstrument
 
     /**
      * Get the instrument ID.
-     * 
+     *
      * @return The instrument ID
      */
     public int getInstrumentID ()
@@ -213,7 +213,7 @@ public class EnsoniqInstrument
 
     /**
      * Get the lowest MIDI note of the instrument key-range.
-     * 
+     *
      * @return The key range low, 0-127
      */
     public int getKeyRangeLow ()
@@ -224,7 +224,7 @@ public class EnsoniqInstrument
 
     /**
      * Get the highest MIDI note of the instrument key-range.
-     * 
+     *
      * @return The key range high, 0-127
      */
     public int getKeyRangeHigh ()
@@ -235,7 +235,7 @@ public class EnsoniqInstrument
 
     /**
      * Get the transposition.
-     * 
+     *
      * @return The number of semi-tones, signed
      */
     public int getTransposition ()
@@ -257,7 +257,7 @@ public class EnsoniqInstrument
 
     /**
      * Get all wave-samples.
-     * 
+     *
      * @return The wave samples
      */
     public Map<Integer, EnsoniqWaveSample> getWaveSamples ()
@@ -268,15 +268,15 @@ public class EnsoniqInstrument
 
     private static int readEncoded24BitValue (final ByteBuffer buffer)
     {
-        int b0 = buffer.get () & 0xFF;
+        final int b0 = buffer.get () & 0xFF;
         buffer.get ();
-        int b2 = buffer.get () & 0xFF;
-        int b3 = buffer.get () & 0xFF;
+        final int b2 = buffer.get () & 0xFF;
+        final int b3 = buffer.get () & 0xFF;
 
-        int high = (b3 >> 4) & 0x0F; // upper 4 bits
-        int low = b3 & 0x0F; // lower 4 bits
+        final int high = b3 >> 4 & 0x0F; // upper 4 bits
+        final int low = b3 & 0x0F; // lower 4 bits
 
-        return (high << 20) // front 4 bits
-                | (b0 << 12) | (b2 << 4) | low; // last 4 bits
+        return high << 20 // front 4 bits
+                | b0 << 12 | b2 << 4 | low; // last 4 bits
     }
 }

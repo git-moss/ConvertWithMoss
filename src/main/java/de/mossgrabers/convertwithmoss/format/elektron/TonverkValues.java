@@ -21,28 +21,32 @@ package de.mossgrabers.convertwithmoss.format.elektron;
  * i.e. a logarithmic interpolation between a per-stage floor (the time at normalized 0) and ceiling
  * (the time at normalized 1), with the control value first warped by a power. This is the same
  * exponential form already used for the filter cut-off (where <code>warp = 1</code>), so the two
- * mappings are consistent. The inverse is exact, hence a Tonverk-to-Tonverk round-trip is loss-less.
+ * mappings are consistent. The inverse is exact, hence a Tonverk-to-Tonverk round-trip is
+ * loss-less.
  * <p>
  * Calibration (2026-06-28) against Tonverk resamples of probe presets with known normalized values:
  * <ul>
  * <li>Attack is a linear amplitude ramp. Three probes (norm 0.25 -&gt; 0.056 s, 0.50 -&gt; 0.256 s,
  * 0.97 -&gt; 3.77 s) fit floor ~0.01 s, ceiling ~4.46 s, warp ~0.91 (within 0.2 %).</li>
  * <li>Decay and release are an exponential fade; their time is measured to -60 dB. They were found
- * to share one curve (decay and release both gave 4.64 s at norm 0.60). Three probes (norm 0.30 -&gt;
- * 0.72 s, 0.60 -&gt; 4.65 s, 0.90 -&gt; 19.96 s) fit floor ~0.01 s, ceiling ~30.8 s, warp ~0.53.</li>
- * <li>Hold and delay were not probed; they reuse the attack curve (delay keeps its 4 s ceiling).</li>
+ * to share one curve (decay and release both gave 4.64 s at norm 0.60). Three probes (norm 0.30
+ * -&gt; 0.72 s, 0.60 -&gt; 4.65 s, 0.90 -&gt; 19.96 s) fit floor ~0.01 s, ceiling ~30.8 s, warp
+ * ~0.53.</li>
+ * <li>Hold and delay were not probed; they reuse the attack curve (delay keeps its 4 s
+ * ceiling).</li>
  * </ul>
- * Earlier guesses (a cube law with attack 1.6 s / 8 s and release 22 s / 24 s ceilings) had both the
- * wrong shape and the wrong ceilings - the hardware demonstrably takes 3.77 s at attack norm 0.97,
- * already past the old 1.6 s maximum. All range constants are gathered here so they can be tuned in
- * one place.
+ * Earlier guesses (a cube law with attack 1.6 s / 8 s and release 22 s / 24 s ceilings) had both
+ * the wrong shape and the wrong ceilings - the hardware demonstrably takes 3.77 s at attack norm
+ * 0.97, already past the old 1.6 s maximum. All range constants are gathered here so they can be
+ * tuned in one place.
  *
  * @author Jürgen Moßgraber
  */
 public final class TonverkValues
 {
     // Per-stage envelope time curves: the floor (seconds at normalized 0), the ceiling (seconds at
-    // normalized 1) and the warp exponent applied to the normalized value. See the class comment for
+    // normalized 1) and the warp exponent applied to the normalized value. See the class comment
+    // for
     // the calibration measurements.
 
     /** Delay time floor in seconds (normalized 0); unprobed, reuses the attack shape. */
@@ -271,8 +275,8 @@ public final class TonverkValues
 
 
     /**
-     * Inverse of {@link #normalizedToTime}: map a time back to a normalized value. Times at or below
-     * the floor map to 0, times at or above the ceiling map to 1.
+     * Inverse of {@link #normalizedToTime}: map a time back to a normalized value. Times at or
+     * below the floor map to 0, times at or above the ceiling map to 1.
      *
      * @param seconds The time in seconds
      * @param floorSeconds The time in seconds at normalized 0
