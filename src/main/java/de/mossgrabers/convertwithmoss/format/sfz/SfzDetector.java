@@ -621,8 +621,8 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
                     return;
 
                 case "loop_continuous", "loop_sustain":
-                    // 'loop_sustain' loops until the key is released and then plays the remainder of
-                    // the sample; 'loop_continuous' keeps looping
+                    // 'loop_sustain' loops until the key is released and then plays the remainder
+                    // of the sample; 'loop_continuous' keeps looping
                     loop.setLoopUntilRelease ("loop_sustain".equals (loopMode.get ()));
                     final Optional<String> loopType = this.getAttribute (SfzOpcode.LOOP_TYPE);
                     if (loopType.isPresent ())

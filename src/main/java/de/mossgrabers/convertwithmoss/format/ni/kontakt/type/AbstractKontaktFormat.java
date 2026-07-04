@@ -185,6 +185,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
                 if (loopMode == ZoneLoop.MODE_UNTIL_END || loopMode == ZoneLoop.MODE_UNTIL_RELEASE)
                 {
                     loop.setType (zoneLoop.isAlternating () ? LoopType.ALTERNATING : LoopType.FORWARDS);
+                    loop.setLoopUntilRelease (loopMode == ZoneLoop.MODE_UNTIL_RELEASE);
                     loop.setStart (zoneLoop.getLoopStart ());
                     loop.setEnd (zoneLoop.getLoopStart () + zoneLoop.getLoopLength ());
                     loop.setTuning (12.0 * (Math.log (zoneLoop.getLoopTuning ()) / Math.log (2.0)));

@@ -2,7 +2,7 @@
           <V name="loopStart" value="%LOOP_START%"/>
           <V name="loopLength" value="%LOOP_LENGTH%"/>
           <V name="loopCount" value="0"/>
-          <V name="mode" value="until_end"/>
+          <V name="mode" value="%LOOP_MODE%"/>
           <V name="alternatingLoop" value="%LOOP_ALTERNATING%"/>
           <V name="loopTuning" value="%LOOP_TUNING%"/>
           <V name="xfadeLength" value="%LOOP_XFADE%"/>

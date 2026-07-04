@@ -120,8 +120,7 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
 
             // A slot without explicit trim points plays the whole sample; default to the full range
             // (0 .. number-of-frames) rather than leaving the model default of -1, which
-            // destinations
-            // such as the Waldorf QPAT would otherwise write out verbatim.
+            // destinations such as the Waldorf QPAT would otherwise write out verbatim.
             final int frames = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
             sampleZone.setStart (sampleSlot.trimStart != null && sampleSlot.trimStart.intValue () >= 0 ? sampleSlot.trimStart.intValue () : 0);
             sampleZone.setStop (sampleSlot.trimEnd != null && sampleSlot.trimEnd.intValue () >= 0 ? sampleSlot.trimEnd.intValue () : frames);
@@ -136,6 +135,7 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
                     loop.setEnd (sampleSlot.loopEnd.intValue ());
                 if (sampleSlot.loopCrossfade != null && sampleSlot.loopCrossfade.intValue () >= 0)
                     loop.setCrossfadeInSamples (sampleSlot.loopCrossfade.intValue ());
+                loop.setLoopUntilRelease (sampleSlot.keepLoopingOnRelease == null || !sampleSlot.keepLoopingOnRelease.booleanValue ());
                 sampleZone.getLoops ().add (loop);
             }
 

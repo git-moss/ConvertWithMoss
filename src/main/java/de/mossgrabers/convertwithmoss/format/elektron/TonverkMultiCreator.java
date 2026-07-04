@@ -246,8 +246,8 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
                         if (crossfade > 0)
                             sampleSlot.loopCrossfade = Integer.valueOf (crossfade);
                         // Keep looping during release unless this is a sustain loop (loop until
-                        // release); continuous looping is the default for source formats without the
-                        // distinction
+                        // release); continuous looping is the default for source formats without
+                        // the distinction
                         sampleSlot.keepLoopingOnRelease = Boolean.valueOf (!sampleLoop.isLoopUntilRelease ());
                     }
 
