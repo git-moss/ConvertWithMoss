@@ -293,8 +293,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Load the sample data for a sample. If the sample references a file name it is matched against
-     * the entries in the SampleData folder, otherwise (and as a fall-back) the sample is matched
-     * positionally by its index.
+     * the entries in the SampleData folder, otherwise (and as a fall-back) the sample is matched by
+     * its index.
      *
      * @param sourceFile The XRNI file (the ZIP container)
      * @param fileName The file name reference of the sample (may be null)
@@ -304,7 +304,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private ISampleData loadSampleData (final File sourceFile, final String fileName, final int index, final List<String> sampleEntries)
     {
-        // Renoise resolves samples positionally by index. The FileName element holds the (absolute)
+        // Renoise resolves samples by its index. The FileName element holds the (absolute)
         // path on the original author's machine, so it is only used as a fall-back match.
         String entryName = index < sampleEntries.size () ? sampleEntries.get (index) : null;
         if (entryName == null)

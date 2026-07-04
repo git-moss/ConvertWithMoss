@@ -71,7 +71,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
      */
     public OmnisphereDetector (final INotifier notifier)
     {
-        super ("Omnisphere 3", "Omnisphere", notifier, new OmnisphereDetectorUI ("Omnisphere"));
+        super ("Spectrasonics Omnisphere 3", "Omnisphere", notifier, new OmnisphereDetectorUI ("Omnisphere"));
     }
 
 
