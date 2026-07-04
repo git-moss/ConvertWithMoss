@@ -295,7 +295,8 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
             final int crossfade = loop.getCrossfadeInSamples ();
             if (crossfade > 0)
                 sampleSlot.loopCrossfade = Integer.valueOf (crossfade);
-            sampleSlot.keepLoopingOnRelease = Boolean.TRUE;
+            // Keep looping during release unless this is a sustain loop (loop until release)
+            sampleSlot.keepLoopingOnRelease = Boolean.valueOf (!loop.isLoopUntilRelease ());
         }
         else
             sampleSlot.loopMode = "Off";

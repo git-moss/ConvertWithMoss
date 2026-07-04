@@ -475,9 +475,13 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             zone.setStop ((int) (sample.getEnd () - sampleStart + sampleEndOffsetInt));
 
             // Set loop, if any
-            if ((generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue () & 1) > 0)
+            final int sampleModes = generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue ();
+            if ((sampleModes & 1) > 0)
             {
                 final ISampleLoop sampleLoop = new DefaultSampleLoop ();
+                // Sample mode 3 keeps looping while the key is held and then plays the remainder of
+                // the sample on release (sustain loop); mode 1 loops continuously
+                sampleLoop.setLoopUntilRelease ((sampleModes & 2) > 0);
                 final Integer startOffset = generators.getSignedValue (Generator.START_LOOP_ADDRS_OFFSET);
                 final int startOffsetInt = startOffset == null ? 0 : startOffset.intValue ();
                 sampleLoop.setStart ((int) (sample.getLoopStart () - sampleStart + startOffsetInt));

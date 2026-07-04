@@ -267,6 +267,9 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             }
             loop.setStart (XMLUtils.getChildElementIntegerContent (sampleElement, RenoiseTag.LOOP_START, 0));
             loop.setEnd (XMLUtils.getChildElementIntegerContent (sampleElement, RenoiseTag.LOOP_END, zone.getStop ()));
+            // 'LoopRelease' true exits the loop on note-off and plays the remainder of the sample
+            // (sustain loop); false keeps looping
+            loop.setLoopUntilRelease ("true".equalsIgnoreCase (XMLUtils.getChildElementContent (sampleElement, RenoiseTag.LOOP_RELEASE)));
             zone.addLoop (loop);
         }
 

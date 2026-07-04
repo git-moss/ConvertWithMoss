@@ -245,9 +245,10 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
                         final int crossfade = sampleLoop.getCrossfadeInSamples ();
                         if (crossfade > 0)
                             sampleSlot.loopCrossfade = Integer.valueOf (crossfade);
-                        // Continue to loop in the release phase which is the default behavior of
-                        // all source formats
-                        sampleSlot.keepLoopingOnRelease = Boolean.TRUE;
+                        // Keep looping during release unless this is a sustain loop (loop until
+                        // release); continuous looping is the default for source formats without the
+                        // distinction
+                        sampleSlot.keepLoopingOnRelease = Boolean.valueOf (!sampleLoop.isLoopUntilRelease ());
                     }
 
                     if (tuningIsSame)

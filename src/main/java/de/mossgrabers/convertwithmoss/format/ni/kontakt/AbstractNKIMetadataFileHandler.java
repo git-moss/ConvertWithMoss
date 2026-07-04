@@ -1011,6 +1011,9 @@ public abstract class AbstractNKIMetadataFileHandler
             loop.setTuning (12.0 * (Math.log (loopTuning) / Math.log (2.0)));
             loop.setCrossfadeInSamples (xFadeLength);
             loop.setType (loopType);
+            // 'until_release' loops while the key is held and then plays the remainder of the sample
+            // on release (sustain loop); 'until_end' loops continuously
+            loop.setLoopUntilRelease (loopMode.equals (this.tags.untilReleaseValue ()));
             sampleMetadata.addLoop (loop);
         }
     }
