@@ -224,9 +224,15 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 final ISampleData sampleData = zone.getSampleData ();
                 final double numSampleFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
 
-                // Sample Path - '4:' refers to the USB drive. This is required to trigger the
-                // copying of the samples to the internal memory
-                sb.append ("\"4:").append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
+                // Sample path, written relative to the preset (no leading drive number). The device
+                // resolves it against the folder the preset itself was loaded from, so it locates
+                // the samples on whatever drive the preset sits on. A leading drive number was
+                // written here before (an absolute path such as "4:samples/..."), but the device
+                // then prepends its own drive again when you use "Export -> With Samples",
+                // producing an invalid, doubled path (e.g. "3:2:samples/...") so the samples could
+                // not be backed up. A relative path both loads and exports/backs up cleanly
+                // (confirmed on Iridium OS 4).
+                sb.append ('"').append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!
@@ -245,9 +251,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // Pan - CURRENTLY IGNORED
                 sb.append (formatMapDouble ((zone.getPanning () + 1.0) / 2.0)).append ('\t');
 
-                // Start / End - a zone whose start/stop was never set keeps the model default of -1,
-                // which would otherwise be written as a negative position (the device then shows a
-                // sample start/end of -1). Treat an unset start/stop as the full sample.
+                // Start / End - a zone whose start/stop was never set keeps the model default of
+                // -1, which would otherwise be written as a negative position (the device then
+                // shows a sample start/end of -1). Treat an unset start/stop as the full sample.
                 final double startFrame = zone.getStart () < 0 ? 0 : zone.getStart ();
                 final double stopFrame = zone.getStop () <= 0 ? numSampleFrames : zone.getStop ();
                 sb.append (formatMapDouble (startFrame / numSampleFrames)).append ('\t');
@@ -260,7 +266,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 else
                 {
                     final ISampleLoop loop = loops.get (0);
-                    sb.append (loop.getType () == LoopType.FORWARDS ? 1 : 2).append ('\t');
+                    sb.append (loop.getType () == LoopType.ALTERNATING ? 2 : 1).append ('\t');
                     sb.append (formatMapDouble (loop.getStart () / numSampleFrames)).append ('\t');
                     sb.append (formatMapDouble (loop.getEnd () / numSampleFrames)).append ('\t');
                 }
@@ -473,6 +479,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static void createEnvelope (final List<WaldorfQpatParameter> parameters, final IEnvelope envelope, final String prefix, final String slopePrefix, final boolean flattenSustain)
     {
         final boolean isPitch = prefix.startsWith ("Free");
+        // Only the amplitude envelope gates the VCA, so only it can click when a stage is instant;
+        // a short filter or pitch envelope stage is left unchanged.
+        final boolean isAmplitude = "AmpEnv".equals (prefix);
 
         if (isPitch && envelope.getStartLevel () != 0)
         {
@@ -490,7 +499,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             final double delayTime = Math.clamp (envelope.getDelayTime (), 0, 2);
             parameters.add (new WaldorfQpatParameter (prefix + "Delay", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (delayTime)), (float) convertFromDelayTime (delayTime)));
             // xxxEnvAttack
-            final double attackTime = Math.clamp (envelope.getAttackTime (), 0, 60);
+            final double attackTime = declickAmpTime (isAmplitude, Math.clamp (envelope.getAttackTime (), 0, 60));
             parameters.add (new WaldorfQpatParameter (prefix + "Attack", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (attackTime)), (float) convertFromTime (attackTime)));
             // xxxEnvDecay
             final double decayTime = Math.clamp (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()), 0, 60);
@@ -498,11 +507,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         }
 
         // xxxEnvRelease
-        final double releaseTime = Math.clamp (envelope.getReleaseTime (), 0, 60);
+        final double releaseTime = declickAmpTime (isAmplitude, Math.clamp (envelope.getReleaseTime (), 0, 60));
         parameters.add (new WaldorfQpatParameter (prefix + "Release", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (releaseTime)), (float) convertFromTime (releaseTime)));
 
-        // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is folded
-        // into the zone gain instead (see computeFlatAmpEnvelopeLevel)
+        // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is
+        // folded into the zone gain instead (see computeFlatAmpEnvelopeLevel)
         double sustainLevel = envelope.getSustainLevel ();
         if (sustainLevel == -1)
             sustainLevel = isPitch ? 0 : 1;
@@ -618,6 +627,24 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static double convertFromDelayTime (final double y)
     {
         return Math.sqrt (y / 2);
+    }
+
+
+    /**
+     * The device plays an envelope stage with parameter value 0 as instant. For the amplitude
+     * envelope a non-zero attack or release shorter than the ~0.06 second minimum would otherwise
+     * collapse to instant and click on note-on/off for a sample that does not start or end at a
+     * zero crossing. Clamp such a time up to the shortest audible length (0.07 seconds, verified on
+     * Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the VCA,
+     * so a short filter or pitch envelope stage is left unchanged.
+     *
+     * @param isAmplitude True if this is the amplitude (VCA) envelope
+     * @param seconds The envelope stage time in seconds
+     * @return The de-clicked time in seconds
+     */
+    private static double declickAmpTime (final boolean isAmplitude, final double seconds)
+    {
+        return isAmplitude && seconds > 0 ? Math.max (seconds, 0.07) : seconds;
     }
 
 

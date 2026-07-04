@@ -20,10 +20,10 @@ import java.util.regex.Pattern;
  *
  * @author Jürgen Moßgraber
  */
-public class ElektronMultiFile
+public class TonverkMultiFile
 {
-    private static final Pattern       KV         = Pattern.compile ("^([A-Za-z0-9-]+)\\s*=\\s*(.+)$");
-    private static final String []     NOTE_NAMES =
+    private static final Pattern      KV         = Pattern.compile ("^([A-Za-z0-9-]+)\\s*=\\s*(.+)$");
+    private static final String []    NOTE_NAMES =
     {
         "c",
         "c#",
@@ -40,42 +40,42 @@ public class ElektronMultiFile
     };
 
     /** Format version. */
-    public int                         version    = 0;
+    public int                        version    = 0;
     /** Instrument display name. */
-    public String                      name;
+    public String                     name;
     /** The key-zones. */
-    public final List<ElektronKeyZone> keyZones   = new ArrayList<> ();
+    public final List<TonverkKeyZone> keyZones   = new ArrayList<> ();
     /** Errors happening during the parsing. */
-    public final List<String>          errors     = new ArrayList<> ();
+    public final List<String>         errors     = new ArrayList<> ();
 
 
     /** A key zone. */
-    public static class ElektronKeyZone
+    public static class TonverkKeyZone
     {
         /** MIDI note number (0-127). Defines the root note for this zone. */
-        public int                               pitch;
+        public int                              pitch;
         /** Pitch center for transposition. Usually equals pitch as float. */
-        public double                            keyCenter;
+        public double                           keyCenter;
         /** Each key zone contains one or more velocity layers. */
-        public final List<ElektronVelocityLayer> velocityLayers = new ArrayList<> ();
+        public final List<TonverkVelocityLayer> velocityLayers = new ArrayList<> ();
     }
 
 
     /** A velocity layer. */
-    public static class ElektronVelocityLayer
+    public static class TonverkVelocityLayer
     {
         /**
          * Velocity threshold. Sample plays when input velocity >= this value. 0.0 - 1.0 (= MIDI
          * velocity / 127.0).
          */
-        public double                         velocity;
+        public double                        velocity;
         /**
          * Round-robin play-back strategy. 'Forward'. Applied if multiple sample slots are assigned
          * to a velocity layer.
          */
-        public String                         strategy    = "Forward";
+        public String                        strategy    = "Forward";
         /** Each velocity layer contains one or more sample slots. */
-        public final List<ElektronSampleSlot> sampleSlots = new ArrayList<> ();
+        public final List<TonverkSampleSlot> sampleSlots = new ArrayList<> ();
     }
 
 
@@ -83,7 +83,7 @@ public class ElektronMultiFile
      * A sample slot. Multiple sample slots under the same velocity layer create round-robin
      * variations.
      */
-    public static class ElektronSampleSlot
+    public static class TonverkSampleSlot
     {
         /** Filename (relative path, same directory). */
         public String  sample;
@@ -129,8 +129,8 @@ public class ElektronMultiFile
      * @param instrumentName The instrument name to add to the sample name
      * @param velocityLayer The velocity layer index to add to the sample name
      * @param midiNote The MIDI note to add to the sample name
-     * @param roundRobinIndex The index of the sample in a round-robin chain, no suffix is added
-     *            for values less than 1
+     * @param roundRobinIndex The index of the sample in a round-robin chain, no suffix is added for
+     *            values less than 1
      * @return The formatted sample name
      */
     public static String createSampleName (final String instrumentName, final int velocityLayer, final int midiNote, final int roundRobinIndex)
@@ -156,9 +156,9 @@ public class ElektronMultiFile
     {
         this.errors.clear ();
 
-        ElektronKeyZone currentZone = null;
-        ElektronVelocityLayer currentLayer = null;
-        ElektronSampleSlot currentSlot = null;
+        TonverkKeyZone currentZone = null;
+        TonverkVelocityLayer currentLayer = null;
+        TonverkSampleSlot currentSlot = null;
 
         for (final String raw: Files.readAllLines (path))
         {
@@ -168,7 +168,7 @@ public class ElektronMultiFile
 
             if (line.equals ("[[key-zones]]"))
             {
-                currentZone = new ElektronKeyZone ();
+                currentZone = new TonverkKeyZone ();
                 this.keyZones.add (currentZone);
                 currentLayer = null;
                 currentSlot = null;
@@ -180,7 +180,7 @@ public class ElektronMultiFile
                 if (currentZone == null)
                     throw new IllegalStateException ("velocity-layer without key-zone");
 
-                currentLayer = new ElektronVelocityLayer ();
+                currentLayer = new TonverkVelocityLayer ();
                 currentZone.velocityLayers.add (currentLayer);
                 currentSlot = null;
                 continue;
@@ -190,7 +190,7 @@ public class ElektronMultiFile
             {
                 if (currentLayer == null)
                     throw new IllegalStateException ("sample-slot without velocity-layer");
-                currentSlot = new ElektronSampleSlot ();
+                currentSlot = new TonverkSampleSlot ();
                 currentLayer.sampleSlots.add (currentSlot);
                 continue;
             }
@@ -226,14 +226,14 @@ public class ElektronMultiFile
         out.add ("version = " + this.version);
         out.add ("name = " + quote (this.name));
 
-        for (final ElektronKeyZone keyZone: this.keyZones)
+        for (final TonverkKeyZone keyZone: this.keyZones)
         {
             out.add ("");
             out.add ("[[key-zones]]");
             out.add ("pitch = " + keyZone.pitch);
             out.add ("key-center = " + formatNumber (keyZone.keyCenter));
 
-            for (final ElektronVelocityLayer velocityLayer: keyZone.velocityLayers)
+            for (final TonverkVelocityLayer velocityLayer: keyZone.velocityLayers)
             {
                 out.add ("");
                 out.add ("[[key-zones.velocity-layers]]");
@@ -241,7 +241,7 @@ public class ElektronMultiFile
                 if (velocityLayer.strategy != null)
                     out.add ("strategy = " + quote (velocityLayer.strategy));
 
-                for (final ElektronSampleSlot sampleSlot: velocityLayer.sampleSlots)
+                for (final TonverkSampleSlot sampleSlot: velocityLayer.sampleSlots)
                 {
                     out.add ("");
                     out.add ("[[key-zones.velocity-layers.sample-slots]]");
@@ -270,7 +270,7 @@ public class ElektronMultiFile
     }
 
 
-    private void assignRoot (final ElektronMultiFile multi, final String tag, final String value)
+    private void assignRoot (final TonverkMultiFile multi, final String tag, final String value)
     {
         switch (tag)
         {
@@ -281,7 +281,7 @@ public class ElektronMultiFile
     }
 
 
-    private void assignKeyZone (final ElektronKeyZone keyZone, final String tag, final String value)
+    private void assignKeyZone (final TonverkKeyZone keyZone, final String tag, final String value)
     {
         switch (tag)
         {
@@ -292,7 +292,7 @@ public class ElektronMultiFile
     }
 
 
-    private void assignVelocityLayer (final ElektronVelocityLayer velocityLayer, final String tag, final String value)
+    private void assignVelocityLayer (final TonverkVelocityLayer velocityLayer, final String tag, final String value)
     {
         switch (tag)
         {
@@ -303,7 +303,7 @@ public class ElektronMultiFile
     }
 
 
-    private void assignSampleSlot (final ElektronSampleSlot sampleSlot, final String tag, final String value)
+    private void assignSampleSlot (final TonverkSampleSlot sampleSlot, final String tag, final String value)
     {
         switch (tag)
         {
@@ -373,6 +373,6 @@ public class ElektronMultiFile
     @Override
     public String toString ()
     {
-        return "ElektronMultiFile{name='" + this.name + "', version=" + this.version + ", keyZones=" + this.keyZones.size () + "}";
+        return "TonverkMultiFile{name='" + this.name + "', version=" + this.version + ", keyZones=" + this.keyZones.size () + "}";
     }
 }

@@ -195,7 +195,9 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final List<ISampleLoop> loops = zone.getLoops ();
         final ISampleLoop loop = loops.isEmpty () ? null : loops.get (0);
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_MODE, loopMode (loop));
-        XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_RELEASE, "false");
+        // 'LoopRelease' true exits the loop on note-off and plays the remainder of the sample
+        // (sustain loop); false keeps looping
+        XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_RELEASE, loop != null && loop.isLoopUntilRelease () ? "true" : "false");
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_START, Integer.toString (loop == null ? 0 : Math.max (0, loop.getStart ())));
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_END, Integer.toString (loop == null ? 0 : Math.max (0, loop.getEnd ())));
 
@@ -401,7 +403,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
             data = encodeToFlac (renderSource);
             extension = ".flac";
         }
-        catch (final IOException | RuntimeException ex)
+        catch (final IOException | RuntimeException _)
         {
             this.notifier.logError ("IDS_RENOISE_FLAC_FALLBACK", zone.getName ());
             data = AudioFileUtils.convertToWavData (renderSource, DESTINATION_AUDIO_FORMAT);

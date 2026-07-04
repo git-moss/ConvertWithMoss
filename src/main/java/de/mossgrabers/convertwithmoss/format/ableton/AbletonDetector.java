@@ -233,7 +233,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final String relativePathType = getValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH_TYPE);
             type = Integer.parseInt (relativePathType);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             throw new IOException (Functions.getMessage (ERR_MISSING_TAG, AbletonTag.TAG_RELATIVE_PATH_TYPE));
         }
@@ -343,20 +343,22 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setReversed (reverseElement != null && "true".equals (getValueAttribute (reverseElement, AbletonTag.TAG_MANUAL)));
 
         final Element sustainLoopElement = XMLUtils.getChildElementByName (multiSamplePartElement, AbletonTag.TAG_SUSTAIN_LOOP);
-        if (sustainLoopElement != null)
-        {
-            final int loopMode = getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_MODE, 0);
-            if (loopMode > 0)
-            {
-                final ISampleLoop loop = new DefaultSampleLoop ();
-                loop.setStart (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_START, 0));
-                loop.setEnd (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_END, zone.getStop ()));
-                loop.setCrossfadeInSamples (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_CROSSFADE, 0));
-                loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
-                loop.setTuning (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
-                zone.getLoops ().add (loop);
-            }
-        }
+        if (sustainLoopElement == null)
+            return;
+        final int loopMode = getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_MODE, 0);
+        if (loopMode <= 0)
+            return;
+        final ISampleLoop loop = new DefaultSampleLoop ();
+        loop.setStart (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_START, 0));
+        loop.setEnd (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_END, zone.getStop ()));
+        loop.setCrossfadeInSamples (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_CROSSFADE, 0));
+        loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
+        loop.setTuning (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
+        zone.getLoops ().add (loop);
+
+        final Element releaseLoopElement = XMLUtils.getChildElementByName (multiSamplePartElement, AbletonTag.TAG_RELEASE_LOOP);
+        // 3 = Off
+        loop.setLoopUntilRelease (releaseLoopElement != null && getIntegerValueAttribute (releaseLoopElement, AbletonTag.TAG_LOOP_MODE, 0) < 3);
     }
 
 
@@ -465,7 +467,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
             return filter;
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // No filter configured
             return null;
@@ -576,7 +578,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                     }
                 }
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Ignore missing elements
         }
@@ -656,7 +658,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             return Double.parseDouble (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -670,7 +672,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             return Integer.parseInt (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }

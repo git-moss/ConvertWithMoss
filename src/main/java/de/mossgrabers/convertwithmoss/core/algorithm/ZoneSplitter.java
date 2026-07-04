@@ -34,7 +34,7 @@ public class ZoneSplitter
 
         /**
          * Constructor.
-         * 
+         *
          * @param zone The zone for which to create a key
          */
         ZoneKey (final ISampleZone zone)
@@ -68,6 +68,15 @@ public class ZoneSplitter
         {
             return Objects.hash (Integer.valueOf (this.keyLow), Integer.valueOf (this.keyHigh), Integer.valueOf (this.velocityLow), Integer.valueOf (this.velocityHigh));
         }
+    }
+
+
+    /**
+     * Constructor.
+     */
+    protected ZoneSplitter ()
+    {
+        // Intentionally empty
     }
 
 

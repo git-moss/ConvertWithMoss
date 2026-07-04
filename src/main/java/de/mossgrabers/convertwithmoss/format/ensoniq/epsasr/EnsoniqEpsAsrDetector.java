@@ -50,7 +50,7 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final int                      LOWEST_NOTE  = 21;
 
-    private static final Map<Integer, String>     HARDWARE_IDS = new HashMap<> (3);
+    private static final Map<Integer, String>     HARDWARE_IDS = HashMap.newHashMap (3);
     private static final Map<Integer, FilterType> FILTER_TYPES = new HashMap<> ();
     private static final Map<Integer, Integer>    FILTER_POLES = new HashMap<> ();
     private static final double []                TIMES        = new double [100];
@@ -410,6 +410,8 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                         loop.setType (LoopType.BACKWARDS);
                     else if (loopMode == 3)
                         loop.setType (LoopType.ALTERNATING);
+                    else if (loopMode == 3)
+                        loop.setLoopUntilRelease (true);
                     loop.setStart (waveSample.getLoopStart ());
                     loop.setEnd (waveSample.getLoopEnd ());
                     sampleZone.getLoops ().add (loop);
@@ -445,7 +447,6 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
 
         // It is not part of down or up layer
         sampleZones.clear ();
-        return;
     }
 
 
@@ -559,11 +560,9 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
         final Set<Integer> activeLayers = new TreeSet<> ();
         final int [] patches = instrument.getPatches ();
         for (final int patch: patches)
-        {
             for (int p = 0; p < 8; p++)
                 if (MathUtils.isBitSet (patch, p))
                     activeLayers.add (Integer.valueOf (p));
-        }
         return activeLayers;
     }
 

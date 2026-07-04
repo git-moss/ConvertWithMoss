@@ -46,7 +46,7 @@ public class DlsFile extends AbstractRIFFFile
 
     private final Set<String>       ignoredChunks    = new HashSet<> ();
     private List<DlsInstrument>     instruments      = null;
-    private List<Long>              cueOffsets       = new ArrayList<> ();
+    private final List<Long>        cueOffsets       = new ArrayList<> ();
 
     // Wave data
     private final List<FormatChunk> waveFormatChunks = new ArrayList<> ();
@@ -101,7 +101,7 @@ public class DlsFile extends AbstractRIFFFile
 
     /**
      * Get the DLS instruments.
-     * 
+     *
      * @return The instruments
      */
     public List<DlsInstrument> getInstruments ()
@@ -112,7 +112,7 @@ public class DlsFile extends AbstractRIFFFile
 
     /**
      * Create wave sample data from the format and data chunks.
-     * 
+     *
      * @return The wave samples
      * @throws IOException Could not read audio metadata
      */
@@ -131,7 +131,7 @@ public class DlsFile extends AbstractRIFFFile
 
     /**
      * Get the wave info file names.
-     * 
+     *
      * @return The wave info names
      */
     public List<String> getWaveInfoFileNames ()
@@ -173,7 +173,7 @@ public class DlsFile extends AbstractRIFFFile
     /**
      * Ensure that the cue offsets are in increasing order. If that is the case, the indices match
      * the order of the format/data lists.
-     * 
+     *
      * @throws ParseException If they are not in order
      */
     private void validate () throws ParseException
@@ -384,14 +384,12 @@ public class DlsFile extends AbstractRIFFFile
         if (this.waveDataChunks.size () != size || this.waveInfoChunks.size () != size)
             sb.append ("Unsound sample wave data.");
         else
-        {
             for (int i = 0; i < size; i++)
             {
                 sb.append ("--------------------- ").append (this.waveInfoChunks.get (i)).append ('\n');
                 final FormatChunk format = this.waveFormatChunks.get (i);
                 sb.append (format.infoText ()).append ('\n');
             }
-        }
 
         if (!this.ignoredChunks.isEmpty ())
         {

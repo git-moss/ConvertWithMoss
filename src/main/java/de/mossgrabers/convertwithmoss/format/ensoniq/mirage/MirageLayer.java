@@ -16,7 +16,7 @@ import java.util.List;
  * This class wraps the data 1 layer (lower or upper). It contains one long sample block with the up
  * to 8 concatenated wave-samples. The parameters describe the multi-sample layout. Furthermore,
  * there are 4 programs with different synthesizer settings for this multi-sample.
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public class MirageLayer
@@ -29,7 +29,7 @@ public class MirageLayer
 
     /**
      * Constructor.
-     * 
+     *
      * @param name The to use for this layer
      * @param soundData The long sample data block of 8-bit samples with the prefixed 1024 byte
      *            parameters
@@ -46,7 +46,7 @@ public class MirageLayer
         try (final ByteArrayInputStream input = new ByteArrayInputStream (parameterBlock))
         {
             @SuppressWarnings("unused")
-            int soundRevLevel = input.read ();
+            final int soundRevLevel = input.read ();
 
             for (int i = 0; i < 8; i++)
                 this.waveSamples.add (new MirageWaveSample (input));
@@ -62,7 +62,7 @@ public class MirageLayer
 
     /**
      * Extract the wave-sample data for the wave-sample at the given index.
-     * 
+     *
      * @param waveSampleIndex The index from 0-7
      * @return The wave-sample data
      */
@@ -86,7 +86,7 @@ public class MirageLayer
      * the loop. Otherwise the 16 zeros are put at the very end of the wave-sample data. If this
      * area is played back it causes a loud click. To fix this all 0x00 will be replaced with 0x80,
      * which represents silence.
-     * 
+     *
      * @param waveSamplePcm The PCM data to fix
      */
     private static void fixSampleClicks (final byte [] waveSamplePcm)

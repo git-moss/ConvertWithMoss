@@ -47,7 +47,7 @@ The following multi-sample formats are supported:
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
 * [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
-* [Elektron Tonverk](#elektron-tonverk)
+* [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
 * [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
@@ -260,7 +260,12 @@ There is no write support.
 ## Elektron Tonverk
 
 The Elektron Tonverk is a dedicated hardware sampler that marks an important milestone for Elektron as its first instrument to support multi-samples. This allows users to map multiple sampled sounds across keys or velocity ranges, creating more expressive and realistic instruments than single-sample playback alone.
-Sadly, the elmulti format is very basic and limited. It only supports the basic multi-sample layout does not contain any synthesizer parameters like envelopes or filter settings.
+
+ConvertWithMoss supports two Elektron Tonverk formats: the basic multi-sample mapping files (*.elmulti / *.eldrum) and the full preset (*.tvpst).
+
+### Multi-Sample Mapping (.elmulti / .eldrum)
+
+The elmulti format is very basic and limited. It only supports the basic multi-sample layout and does not contain any synthesizer parameters like envelopes or filter settings.
 Furthermore, even this basic setup has some limitations:
 
 * There are no key ranges, the Tonverk always plays the sample with the closest root note. This can lead to different key-ranges than in the source multi-sample.
@@ -268,8 +273,27 @@ Furthermore, even this basic setup has some limitations:
 * Duplicated velocity layers always result in round-robin of these samples (they do not sound at the same time).
 * Only 1 Pitch per key zone can be set which means you cannot tune individual samples.
 
-### Destination Options
+#### Destination Options
 
+* Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
+
+### Preset (.tvpst)
+
+In contrast to the mapping files, a Tonverk preset is a full sound that also contains the synthesizer parameters. All three generator machines are read:
+
+* **Multi**: a multi-sample mapped to key- and velocity-ranges.
+* **One-Shot**: a single sample mapped across the whole keyboard.
+* **Drum**: a kit of eight drum voices, each on its own key with its own settings.
+
+The amplitude envelope (AHD or ADSR), the multi-mode filter together with its envelope, the sample loops, gain and panning are converted. The remaining, synthesizer-specific parameters (arpeggiator, effects, global LFOs and the modulation matrix) have no equivalent in the multi-sample model and are therefore not converted.
+
+When writing, the samples are stored next to the preset and referenced by their relative file name, so the preset can be copied anywhere onto the SD card. The full parameter block is created from a neutral factory template (effects bypassed, LFOs, arpeggiator and modulation neutralized) and only the converted parameters above are filled in from the source.
+
+Note: the Tonverk stores envelope times and the filter cut-off frequency as normalized values using internal, non-published curves. ConvertWithMoss uses documented approximations for these. A Tonverk-to-Tonverk conversion is therefore loss-less, while a conversion to or from a unit-based format (such as Waldorf Quantum/Iridium or the Synthstrom Deluge) is a close approximation.
+
+#### Destination Options
+
+* Output Engine: Selects which machine to write. *Multi-Sample* and *Drum Kit* force that machine; *Auto (from source)* writes a Drum machine when the source looks like a drum kit (a percussion category or up to eight single-key zones) and a Multi machine otherwise.
 * Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
 
 ## Ensoniq EPS/EPS16+/ASR-10

@@ -255,7 +255,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN && isNotRoundRobinGroup)
             addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
-        //////////////////////////////
+        // -----------------------------------------------------------
         // Key range
 
         final int keyRoot = zone.getKeyRoot ();
@@ -288,7 +288,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
         }
 
-        //////////////////////////////
+        // -----------------------------------------------------------
         // Velocity
 
         final int velocityLow = zone.getVelocityLow ();
@@ -312,7 +312,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
         }
 
-        //////////////////////////////
+        // -----------------------------------------------------------
         // Start, end, tune, volume
 
         final int start = zone.getStart ();
@@ -332,7 +332,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         createVolume (buffer, zone, ampEnvParameterLevel);
 
-        //////////////////////////////
+        // -----------------------------------------------------------
         // Pitch Bend / Envelope
 
         final int bendUp = zone.getBendUp ();
@@ -369,12 +369,12 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                 buffer.append (envelopeStr).append (LINE_FEED);
         }
 
-        // //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Sample Loop
 
         this.createLoops (buffer, zone);
 
-        // //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         createFilter (buffer, zone);
@@ -395,8 +395,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);
-            // SFZ currently only supports forward looping
-            addAttribute (buffer, SfzOpcode.LOOP_MODE, "loop_continuous", false);
+            addAttribute (buffer, SfzOpcode.LOOP_MODE, sampleLoop.isLoopUntilRelease () ? "loop_sustain" : "loop_continuous", false);
             final String type = LOOP_TYPE_MAP.get (sampleLoop.getType ());
             // No need to write the default value
             if (!"forward".equals (type))

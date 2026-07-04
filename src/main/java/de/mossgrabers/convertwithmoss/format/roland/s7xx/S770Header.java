@@ -136,7 +136,7 @@ public class S770Header
 
     /**
      * Get the identification string.
-     * 
+     *
      * @return The identification string
      */
     public String getS70Str ()

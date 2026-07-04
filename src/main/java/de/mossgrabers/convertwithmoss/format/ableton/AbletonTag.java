@@ -92,6 +92,8 @@ public class AbletonTag
     public static final String TAG_SAMPLE_END              = "SampleEnd";
     /** The Sustain Loop tag. */
     public static final String TAG_SUSTAIN_LOOP            = "SustainLoop";
+    /** The Release Loop tag. */
+    public static final String TAG_RELEASE_LOOP            = "ReleaseLoop";
     /** The Loop Mode tag. */
     public static final String TAG_LOOP_MODE               = "Mode";
     /** The Loop Start tag. */

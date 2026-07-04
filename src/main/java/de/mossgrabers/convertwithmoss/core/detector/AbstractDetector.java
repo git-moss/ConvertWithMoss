@@ -118,7 +118,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     /**
      * Set the source folder.
-     * 
+     *
      * @param sourceFolder The sourceFolder to set
      */
     public void setSourceFolder (final File sourceFolder)
@@ -279,11 +279,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         {
             this.detect (this.sourceFolder);
         }
-        catch (final RuntimeException ex)
-        {
-            this.notifier.logError (ex);
-        }
-        catch (final OutOfMemoryError err)
+        catch (final RuntimeException | OutOfMemoryError err)
         {
             this.notifier.logError (err);
         }
@@ -302,7 +298,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         {
             Thread.sleep (10);
         }
-        catch (final InterruptedException ex)
+        catch (final InterruptedException _)
         {
             if (this.isCancelled ())
                 return true;
@@ -640,7 +636,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             final long modifiedTimeMillis = modifiedTime.toMillis ();
             metadata.setCreationDateTime (new Date (creationTimeMillis < modifiedTimeMillis ? creationTimeMillis : modifiedTimeMillis));
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             metadata.setCreationDateTime (new Date ());
         }

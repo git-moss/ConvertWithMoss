@@ -183,18 +183,15 @@ public class AkaiS1000ProgramConverter
                 {
                     int loopMode = keygroupSample.getLoopMode ();
                     loopMode = loopMode == 0 ? sample.getLoopMode () : loopMode - 1;
-                    if (loopMode < 2)
+                    if (loopMode < 2 && sample.getActiveLoops () > 0)
                     {
-                        if (sample.getActiveLoops () > 0)
-                        {
-                            final byte firstActiveLoop = sample.getFirstActiveLoop ();
-                            final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop];
-                            final int marker = loop.getEndMarker ();
-                            final ISampleLoop sampleLoop = new DefaultSampleLoop ();
-                            sampleLoop.setStart (marker - loop.getCoarseLength ());
-                            sampleLoop.setEnd (marker);
-                            sampleZone.getLoops ().add (sampleLoop);
-                        }
+                        final byte firstActiveLoop = sample.getFirstActiveLoop ();
+                        final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop];
+                        final int marker = loop.getEndMarker ();
+                        final ISampleLoop sampleLoop = new DefaultSampleLoop ();
+                        sampleLoop.setStart (marker - loop.getCoarseLength ());
+                        sampleLoop.setEnd (marker);
+                        sampleZone.getLoops ().add (sampleLoop);
                     }
                 }
 

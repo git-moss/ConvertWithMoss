@@ -109,7 +109,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                 final boolean isDiskette = header.getDiskFormat () == S770DiskFormat.DISKETTE;
                 this.notifier.log ("IDS_S7XX_VERSION", header.getS70Str (), header.getVersionStr (), header.getDiskName (), isDiskette ? "diskette" : "CD-ROM/HD");
 
-                final IS770Image image = isDiskette ? loadDiskette (input, header, sourceFile.getParentFile ()) : new S770Hd (input, header);
+                final IS770Image image = isDiskette ? this.loadDiskette (input, header, sourceFile.getParentFile ()) : new S770Hd (input, header);
                 if (image == null)
                     return Collections.emptyList ();
 
@@ -189,14 +189,14 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         final List<S770Sample> samples = image.getSamples ();
 
         int lowKey = 21;
-        int highKey = 21;
+        int highKey;
         int partialId = -1;
 
         final int [] keysPartialSelection = patch.getKeysPartialSelection ();
         // Key 21-108
         for (int p = 0; p < keysPartialSelection.length; p++)
         {
-            int key = 21 + p;
+            final int key = 21 + p;
 
             final int nextPartialId = keysPartialSelection[p];
             if (partialId == -1)
@@ -233,7 +233,6 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
         final int octaveShift = patch.getOctaveShift () * 12;
         if (octaveShift != 0)
-        {
             for (final IGroup group: multisampleSource.getGroups ())
                 for (final ISampleZone sampleZone: group.getSampleZones ())
                 {
@@ -241,7 +240,6 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                     sampleZone.setKeyHigh (Math.min (127, sampleZone.getKeyHigh () - octaveShift));
                     sampleZone.setTuning (sampleZone.getTuning () + octaveShift);
                 }
-        }
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         metadata.setDescription (metadataDescription);
@@ -268,6 +266,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final ISampleLoop sampleLoop = new DefaultSampleLoop ();
             sampleLoop.setType (LOOP_MODES[loopMode]);
+            sampleLoop.setLoopUntilRelease (loopMode == 1);
             sampleLoop.setStart ((int) sample.getSustainLoopStart ().getAddress ());
             sampleLoop.setCrossfadeInSamples (sample.getSustainLoopStart ().getFine () + sample.getSustainLoopEnd ().getFine ());
             sampleLoop.setEnd ((int) sample.getSustainLoopEnd ().getAddress ());
@@ -286,10 +285,10 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setTuning (patch.getCoarseTune () + partial.getCoarseTune () + sampleSection.getCoarseTune () + fineTuning);
 
         // Volume parameters
-        final double level = (patch.getPatchLevel () / 127.0) * (patch.getStereoMixLevel () / 127.0) * (partial.getPartialLevel () / 127.0) * (partial.getStereoMixLevel () / 127.0) * (sampleSection.getSampleLevel () / 127.0);
+        final double level = patch.getPatchLevel () / 127.0 * (patch.getStereoMixLevel () / 127.0) * (partial.getPartialLevel () / 127.0) * (partial.getStereoMixLevel () / 127.0) * (sampleSection.getSampleLevel () / 127.0);
         sampleZone.setGain (MathUtils.valueToDb (level));
 
-        double pan = (patch.getTotalPan () / 32.0) * (partial.getPan () / 32.0);
+        double pan = patch.getTotalPan () / 32.0 * (partial.getPan () / 32.0);
         final int samplePan = sampleSection.getPan ();
         // Ignore unsupported panning options
         if (samplePan <= 32)
@@ -332,7 +331,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
             cutoffEnvelopeModulator.setSource (envelope);
             cutoffEnvelopeModulator.setDepth (tvf.getEnvTvfDepth () / 63.0);
 
-            filter.getCutoffVelocityModulator ().setDepth (tvf.getVelocityCurveType () == 0 ? 0 : (tvf.getCutoffVelocitySens () / 63.0));
+            filter.getCutoffVelocityModulator ().setDepth (tvf.getVelocityCurveType () == 0 ? 0 : tvf.getCutoffVelocitySens () / 63.0);
 
             sampleZone.setFilter (filter);
         }

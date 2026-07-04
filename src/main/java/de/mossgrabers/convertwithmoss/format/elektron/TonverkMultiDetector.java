@@ -20,13 +20,14 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiFile.ElektronKeyZone;
-import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiFile.ElektronSampleSlot;
-import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiFile.ElektronVelocityLayer;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
 
 
 /**
@@ -34,16 +35,16 @@ import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiFile.Elektron
  *
  * @author Jürgen Moßgraber
  */
-public class ElektronMultiDetector extends AbstractDetector<MetadataSettingsUI>
+public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
 {
     /**
      * Constructor.
      *
      * @param notifier The notifier
      */
-    public ElektronMultiDetector (final INotifier notifier)
+    public TonverkMultiDetector (final INotifier notifier)
     {
-        super ("Elektron Multi", "Elektron", notifier, new MetadataSettingsUI ("Elektron"), ".elmulti", ".eldrum");
+        super ("Elektron Tonverk Multisample", "Elektron", notifier, new MetadataSettingsUI ("Elektron"), ".elmulti", ".eldrum");
     }
 
 
@@ -56,7 +57,7 @@ public class ElektronMultiDetector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
-            final ElektronMultiFile elektronMultiFile = new ElektronMultiFile ();
+            final TonverkMultiFile elektronMultiFile = new TonverkMultiFile ();
             elektronMultiFile.parse (file.toPath ());
 
             for (final String error: elektronMultiFile.errors)
@@ -73,7 +74,7 @@ public class ElektronMultiDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private IMultisampleSource convertMultiFile (final File sourceFile, final ElektronMultiFile elektronMultiFile, final String [] parts) throws IOException
+    private IMultisampleSource convertMultiFile (final File sourceFile, final TonverkMultiFile elektronMultiFile, final String [] parts) throws IOException
     {
         final String multiSampleName = elektronMultiFile.name;
         final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName);
@@ -81,10 +82,10 @@ public class ElektronMultiDetector extends AbstractDetector<MetadataSettingsUI>
         // Create all sample zones and store them by their root note and velocity low value. From
         // these the key-/velocity ranges need to be calculated in the next step
         final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> orderedKeyRanges = new TreeMap<> ();
-        for (final ElektronKeyZone zone: elektronMultiFile.keyZones)
+        for (final TonverkKeyZone zone: elektronMultiFile.keyZones)
         {
             final Map<Integer, List<ISampleZone>> keyRangeMap = orderedKeyRanges.computeIfAbsent (Integer.valueOf (zone.pitch), _ -> new TreeMap<> ());
-            for (final ElektronVelocityLayer velocityLayer: zone.velocityLayers)
+            for (final TonverkVelocityLayer velocityLayer: zone.velocityLayers)
             {
                 final List<ISampleZone> sampleZones = this.createSampleZone (zone, velocityLayer, sourceFile.getParentFile ());
                 final int velocity = (int) Math.clamp (velocityLayer.velocity * 127.0, 0, 127.0);
@@ -107,30 +108,35 @@ public class ElektronMultiDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private List<ISampleZone> createSampleZone (final ElektronKeyZone zone, final ElektronVelocityLayer velocityLayer, final File parentFile) throws IOException
+    private List<ISampleZone> createSampleZone (final TonverkKeyZone zone, final TonverkVelocityLayer velocityLayer, final File parentFile) throws IOException
     {
         final List<ISampleZone> sampleZones = new ArrayList<> ();
-        for (final ElektronSampleSlot sampleSlot: velocityLayer.sampleSlots)
+        for (final TonverkSampleSlot sampleSlot: velocityLayer.sampleSlots)
         {
             final ISampleZone sampleZone = this.createSampleZone (new File (parentFile, sampleSlot.sample));
 
             sampleZone.setKeyRoot (zone.pitch);
             sampleZone.setTuning (zone.pitch - zone.keyCenter);
 
-            if (sampleSlot.trimStart != null)
-                sampleZone.setStart (sampleSlot.trimStart.intValue ());
-            if (sampleSlot.trimEnd != null)
-                sampleZone.setStop (sampleSlot.trimEnd.intValue ());
+            // A slot without explicit trim points plays the whole sample; default to the full range
+            // (0 .. number-of-frames) rather than leaving the model default of -1, which
+            // destinations such as the Waldorf QPAT would otherwise write out verbatim.
+            final int frames = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+            sampleZone.setStart (sampleSlot.trimStart != null && sampleSlot.trimStart.intValue () >= 0 ? sampleSlot.trimStart.intValue () : 0);
+            sampleZone.setStop (sampleSlot.trimEnd != null && sampleSlot.trimEnd.intValue () >= 0 ? sampleSlot.trimEnd.intValue () : frames);
 
             if ("Forward".equals (sampleSlot.loopMode))
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
-                if (sampleSlot.loopStart != null)
+                loop.setType (LoopType.FORWARDS);
+                if (sampleSlot.loopStart != null && sampleSlot.loopStart.intValue () >= 0)
                     loop.setStart (sampleSlot.loopStart.intValue ());
-                if (sampleSlot.loopEnd != null)
+                if (sampleSlot.loopEnd != null && sampleSlot.loopEnd.intValue () >= 0)
                     loop.setEnd (sampleSlot.loopEnd.intValue ());
-                if (sampleSlot.loopCrossfade != null)
+                if (sampleSlot.loopCrossfade != null && sampleSlot.loopCrossfade.intValue () >= 0)
                     loop.setCrossfadeInSamples (sampleSlot.loopCrossfade.intValue ());
+                loop.setLoopUntilRelease (sampleSlot.keepLoopingOnRelease == null || !sampleSlot.keepLoopingOnRelease.booleanValue ());
+                sampleZone.getLoops ().add (loop);
             }
 
             sampleZones.add (sampleZone);
@@ -145,7 +151,7 @@ public class ElektronMultiDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static void calculateRanges (final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> orderedKeyRanges)
+    static void calculateRanges (final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> orderedKeyRanges)
     {
         if (orderedKeyRanges == null || orderedKeyRanges.isEmpty ())
             return;
@@ -201,7 +207,7 @@ public class ElektronMultiDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static List<IGroup> collapseToGroups (final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> orderedKeyRanges)
+    static List<IGroup> collapseToGroups (final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> orderedKeyRanges)
     {
         final IGroup defaultGroup = new DefaultGroup ();
         final List<IGroup> groups = new ArrayList<> ();

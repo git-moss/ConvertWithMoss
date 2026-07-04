@@ -18,112 +18,112 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class S5xxTone
 {
     private final S5xxToneList listEntry;
-    private final String   name;
+    private final String       name;
 
     // Wave Data
-    private final int      sourceTone;
-    private final int      orgSubTone;
-    private final int      samplingFrequency;
-    private final int      origKeyNumber;
-    private final int      waveBank;
-    private final int      waveSegmentTop;
-    private final int      waveSegmentLength;
+    private final int          sourceTone;
+    private final int          orgSubTone;
+    private final int          samplingFrequency;
+    private final int          origKeyNumber;
+    private final int          waveBank;
+    private final int          waveSegmentTop;
+    private final int          waveSegmentLength;
 
     // Play-back
-    private final int      startPoint;
-    private final int      endPoint;
-    private final int      loopMode;
-    private final int      loopPoint;
-    private final int      loopLength;
-    private final int      loopTune;
+    private final int          startPoint;
+    private final int          endPoint;
+    private final int          loopMode;
+    private final int          loopPoint;
+    private final int          loopLength;
+    private final int          loopTune;
 
     // LFO
     @SuppressWarnings("unused")
-    private final int      tvaLfoDepth;
+    private final int          tvaLfoDepth;
     @SuppressWarnings("unused")
-    private final int      lfoRate;
+    private final int          lfoRate;
     @SuppressWarnings("unused")
-    private final int      lfoSync;
+    private final int          lfoSync;
     @SuppressWarnings("unused")
-    private final int      lfoDelay;
+    private final int          lfoDelay;
     @SuppressWarnings("unused")
-    private final int      lfoMode;
+    private final int          lfoMode;
     @SuppressWarnings("unused")
-    private final int      oscLfoDepth;
+    private final int          oscLfoDepth;
     @SuppressWarnings("unused")
-    private final int      lfoPolarity;
+    private final int          lfoPolarity;
     @SuppressWarnings("unused")
-    private final int      lfoOffset;
+    private final int          lfoOffset;
 
     // Amplifier
-    private final int      level;
-    private final int      outputAssign;
-    private final int      tvaEnvSustainPoint;
-    private final int      tvaEnvEndPoint;
-    private final int []   tvaEnvLevels = new int [8];
-    private final int []   tvaEnvRates  = new int [8];
+    private final int          level;
+    private final int          outputAssign;
+    private final int          tvaEnvSustainPoint;
+    private final int          tvaEnvEndPoint;
+    private final int []       tvaEnvLevels = new int [8];
+    private final int []       tvaEnvRates  = new int [8];
     @SuppressWarnings("unused")
-    private final int      tvaEnvKeyRate;
+    private final int          tvaEnvKeyRate;
     @SuppressWarnings("unused")
-    private final int      tvaZoom;
+    private final int          tvaZoom;
     @SuppressWarnings("unused")
-    private final int      tvaLevelCurve;
+    private final int          tvaLevelCurve;
     @SuppressWarnings("unused")
-    private final int      envVelRate;
+    private final int          envVelRate;
 
     // Pitch
-    private final int      transpose;
-    private final int      fineTune;
-    private final int      pitchFollow;
+    private final int          transpose;
+    private final int          fineTune;
+    private final int          pitchFollow;
 
     // Modulation
     @SuppressWarnings("unused")
-    private final int      benderSwitch;
+    private final int          benderSwitch;
     @SuppressWarnings("unused")
-    private final int      afterTouchSwitch;
+    private final int          afterTouchSwitch;
 
     // Filter
-    private final int      tvfCutOff;
-    private final int      tvfResonance;
-    private final int      tvfEgDepth;
-    private final int      tvfEgPolarity;
-    private final int      tvfSwitch;
-    private final int      tvfEnvSustainPoint;
-    private final int      tvfEnvEndPoint;
-    private final int []   tvfEnvLevels = new int [8];
-    private final int []   tvfEnvRates  = new int [8];
+    private final int          tvfCutOff;
+    private final int          tvfResonance;
+    private final int          tvfEgDepth;
+    private final int          tvfEgPolarity;
+    private final int          tvfSwitch;
+    private final int          tvfEnvSustainPoint;
+    private final int          tvfEnvEndPoint;
+    private final int []       tvfEnvLevels = new int [8];
+    private final int []       tvfEnvRates  = new int [8];
     @SuppressWarnings("unused")
-    private final int      tvfVelocityRateFollow;
+    private final int          tvfVelocityRateFollow;
     @SuppressWarnings("unused")
-    private final int      tvfKeyRateFollow;
+    private final int          tvfKeyRateFollow;
     @SuppressWarnings("unused")
-    private final int      tvfLevelCurve;
+    private final int          tvfLevelCurve;
     @SuppressWarnings("unused")
-    private final int      tvfKeyFollow;
+    private final int          tvfKeyFollow;
     @SuppressWarnings("unused")
-    private final int      tvfLfoDepth;
+    private final int          tvfLfoDepth;
     @SuppressWarnings("unused")
-    private final int      tvfZoom;
+    private final int          tvfZoom;
 
     // Recording configuration
     @SuppressWarnings("unused")
-    private final int      recThreshold;
+    private final int          recThreshold;
     @SuppressWarnings("unused")
-    private final int      recPreTrigger;
+    private final int          recPreTrigger;
     @SuppressWarnings("unused")
-    private final int      recSamplingFrequency;
+    private final int          recSamplingFrequency;
     @SuppressWarnings("unused")
-    private final int      recStartPoint;
+    private final int          recStartPoint;
     @SuppressWarnings("unused")
-    private final int      recEndPoint;
+    private final int          recEndPoint;
     @SuppressWarnings("unused")
-    private final int      recLoopPoint;
+    private final int          recLoopPoint;
     @SuppressWarnings("unused")
-    private final int      zoomT;
+    private final int          zoomT;
     @SuppressWarnings("unused")
-    private final int      zoomL;
+    private final int          zoomL;
     @SuppressWarnings("unused")
-    private final int      copySource;
+    private final int          copySource;
 
 
     /**
@@ -157,12 +157,12 @@ public class S5xxTone
 
         // Dummy on S-50
         this.tvaLfoDepth = StreamUtils.readUnsigned8 (input);
-        input.skip (1);
+        input.skipNBytes (1);
         this.lfoRate = StreamUtils.readUnsigned8 (input);
         // Dummy on S-50
         this.lfoSync = StreamUtils.readUnsigned8 (input);
         this.lfoDelay = StreamUtils.readUnsigned8 (input);
-        input.skip (1);
+        input.skipNBytes (1);
         this.lfoMode = StreamUtils.readUnsigned8 (input);
         this.oscLfoDepth = StreamUtils.readUnsigned8 (input);
         // Dummy on S-50
@@ -178,7 +178,7 @@ public class S5xxTone
         this.tvfCutOff = StreamUtils.readUnsigned8 (input);
         this.tvfResonance = StreamUtils.readUnsigned8 (input);
         this.tvfKeyFollow = StreamUtils.readUnsigned8 (input);
-        input.skip (1);
+        input.skipNBytes (1);
         this.tvfLfoDepth = StreamUtils.readUnsigned8 (input);
         this.tvfEgDepth = StreamUtils.readUnsigned8 (input);
         this.tvfEgPolarity = StreamUtils.readUnsigned8 (input);
@@ -199,7 +199,7 @@ public class S5xxTone
             this.tvaEnvRates[i] = StreamUtils.readUnsigned8 (input);
         }
 
-        input.skip (1);
+        input.skipNBytes (1);
         this.tvaEnvKeyRate = StreamUtils.readUnsigned8 (input);
         this.level = StreamUtils.readUnsigned8 (input);
 
@@ -218,7 +218,7 @@ public class S5xxTone
         this.loopTune = StreamUtils.readSigned8 (input);
         this.tvaLevelCurve = StreamUtils.readUnsigned8 (input);
 
-        input.skip (12);
+        input.skipNBytes (12);
 
         this.loopLength = StreamUtils.readUnsigned24 (input, true);
 
@@ -236,7 +236,7 @@ public class S5xxTone
         }
 
         this.afterTouchSwitch = StreamUtils.readUnsigned8 (input);
-        input.skip (2);
+        input.skipNBytes (2);
         // <- Dummy on S-50 end
     }
 
@@ -507,7 +507,7 @@ public class S5xxTone
 
     /**
      * Get the state of the TVF.
-     * 
+     *
      * @return 0 = Off, 1 = On
      */
     public int getTvfSwitch ()
@@ -518,7 +518,7 @@ public class S5xxTone
 
     /**
      * Get the TVF cutoff.
-     * 
+     *
      * @return The cutoff in the range of 0..127
      */
     public int getTvfCutoff ()
@@ -529,7 +529,7 @@ public class S5xxTone
 
     /**
      * Get the TVF resonance.
-     * 
+     *
      * @return The resonance in the range of 0..127
      */
     public int getTvfResonance ()
@@ -540,7 +540,7 @@ public class S5xxTone
 
     /**
      * Get the index of the TVF envelope point which represents the sustain level.
-     * 
+     *
      * @return The index in the range of 1..7
      */
     public int getTvfEnvSustainPoint ()
@@ -551,7 +551,7 @@ public class S5xxTone
 
     /**
      * Get the index of the TVF envelope point which represents the end point.
-     * 
+     *
      * @return The index in the range of 2..8
      */
     public int getTvfEnvEndPoint ()
@@ -562,7 +562,7 @@ public class S5xxTone
 
     /**
      * Get the TVF envelope levels.
-     * 
+     *
      * @return The 8 levels in the range of 0..127
      */
     public int [] getTvfEnvLevels ()
@@ -573,7 +573,7 @@ public class S5xxTone
 
     /**
      * Get the TVF envelope rates.
-     * 
+     *
      * @return The 8 rates in the range of 1..127
      */
     public int [] getTvfEnvRates ()
@@ -584,7 +584,7 @@ public class S5xxTone
 
     /**
      * Get the depth of the envelope control on the cutoff point.
-     * 
+     *
      * @return The depth in the range of 0..127
      */
     public int getTvfEgDepth ()
@@ -595,7 +595,7 @@ public class S5xxTone
 
     /**
      * Get the polarity of the TVF envelope.
-     * 
+     *
      * @return 0 = normal, 1 = reversed (negative)
      */
     public int getTvfEgPolarity ()

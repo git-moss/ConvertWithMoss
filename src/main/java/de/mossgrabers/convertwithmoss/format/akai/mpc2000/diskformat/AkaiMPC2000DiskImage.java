@@ -31,12 +31,11 @@ public class AkaiMPC2000DiskImage
     private final int                             rootDirectoryOffset;
     private final int                             dataAreaOffset;
     private final List<AkaiMPC2000DirectoryEntry> entries;
-    private boolean                               isFAT12;
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param file The file to read
      * @throws IOException Could not read the file
      */
@@ -48,7 +47,7 @@ public class AkaiMPC2000DiskImage
 
     /**
      * Constructor.
-     * 
+     *
      * @param diskImage The bytes of the file to read
      * @throws IOException Could not read the file
      */
@@ -67,12 +66,12 @@ public class AkaiMPC2000DiskImage
 
     /**
      * Read the root directory.
-     * 
+     *
      * @return The root directory
      */
     private List<AkaiMPC2000DirectoryEntry> readRootDirectory ()
     {
-        final List<AkaiMPC2000DirectoryEntry> entries = new ArrayList<> ();
+        final List<AkaiMPC2000DirectoryEntry> dirEntries = new ArrayList<> ();
 
         for (int i = 0; i < this.bootSector.rootEntries; i++)
         {
@@ -89,12 +88,10 @@ public class AkaiMPC2000DiskImage
             if (firstByte == (byte) 0xE5)
                 continue;
 
-            final AkaiMPC2000DirectoryEntry entry = this.parseDirectoryEntry (entryOffset);
-            if (entry != null)
-                entries.add (entry);
+            dirEntries.add (this.parseDirectoryEntry (entryOffset));
         }
 
-        return entries;
+        return dirEntries;
     }
 
 
@@ -111,7 +108,7 @@ public class AkaiMPC2000DiskImage
 
     /**
      * Parse the File Allocation Table (FAT). Supports FAT12 and FAT16.
-     * 
+     *
      */
     private void parseFAT ()
     {
@@ -121,19 +118,19 @@ public class AkaiMPC2000DiskImage
         final int dataSectors = this.bootSector.totalSectors - this.bootSector.reservedSectors - this.bootSector.numberOfFATs * this.bootSector.sectorsPerFAT - rootDirSectors;
 
         final int countOfClusters = dataSectors / this.bootSector.sectorsPerCluster;
-        this.isFAT12 = countOfClusters < 4085;
 
         final int fatOffset = this.bootSector.reservedSectors * this.bootSector.bytesPerSector;
 
-        if (this.isFAT12)
+        final boolean isFAT12 = countOfClusters < 4085;
+        if (isFAT12)
         {
             final int totalEntries = countOfClusters + 2;
             this.fat = new int [totalEntries];
             for (int i = 0; i < totalEntries; i++)
             {
                 final int byteOffset = fatOffset + i * 3 / 2;
-                final int word = (this.diskImage[byteOffset] & 0xFF) | ((this.diskImage[byteOffset + 1] & 0xFF) << 8);
-                final int value = (i % 2 == 0) ? (word & 0x0FFF) : ((word >> 4) & 0x0FFF);
+                final int word = this.diskImage[byteOffset] & 0xFF | (this.diskImage[byteOffset + 1] & 0xFF) << 8;
+                final int value = i % 2 == 0 ? word & 0x0FFF : word >> 4 & 0x0FFF;
                 // End-of-Chain (>=0xFF8) normalize to 0xFFFF
                 this.fat[i] = value >= 0xFF8 ? 0xFFFF : value;
             }
@@ -185,7 +182,7 @@ public class AkaiMPC2000DiskImage
 
     /**
      * Read the content of a file.
-     * 
+     *
      * @param entry The entry which points to the file
      * @param notifier Where to report errors
      * @return The raw data of the file
@@ -230,7 +227,7 @@ public class AkaiMPC2000DiskImage
 
     /**
      * Get the directory entries.
-     * 
+     *
      * @return The entries
      */
     public List<AkaiMPC2000DirectoryEntry> getEntries ()

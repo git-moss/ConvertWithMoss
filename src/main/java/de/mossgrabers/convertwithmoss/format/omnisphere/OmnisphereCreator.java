@@ -55,9 +55,13 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 {
-    private static final String                    TEMPLATE        = "de/mossgrabers/convertwithmoss/templates/prt_omn/Template.xml";
+    private static final String                    ATTRIB_VALUE_DATA_TAG = "ATTRIB_VALUE_DATA";
+    private static final String                    DEFAULT_3F800000      = "3f800000";
+    private static final String                    DEFAULT_3F000000      = "3f000000";
+    private static final String                    HTML_RETURN           = "&#13;";
+    private static final String                    TEMPLATE              = "de/mossgrabers/convertwithmoss/templates/prt_omn/Template.xml";
 
-    private static final Map<String, List<String>> ATTRIBUTE_ORDER = new HashMap<> ();
+    private static final Map<String, List<String>> ATTRIBUTE_ORDER       = new HashMap<> ();
     static
     {
         final List<String> hitVelocityList = new ArrayList<> ();
@@ -67,7 +71,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
         Collections.addAll (sampleWaveformList, "RoundRobinSequenceNum", "BaseNote", "AudioFilePath", "Level", "A440");
         ATTRIBUTE_ORDER.put ("SampleWaveform", sampleWaveformList);
         final List<String> sampledInstrumentList = new ArrayList<> ();
-        Collections.addAll (sampledInstrumentList, "ATTRIB_VALUE_DATA", "PitchedInstr", "Level");
+        Collections.addAll (sampledInstrumentList, ATTRIB_VALUE_DATA_TAG, "PitchedInstr", "Level");
         ATTRIBUTE_ORDER.put ("SampledInstrument", sampledInstrumentList);
     }
 
@@ -79,7 +83,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
      */
     public OmnisphereCreator (final INotifier notifier)
     {
-        super ("Omnisphere 3", "Omnisphere", notifier, EmptySettingsUI.INSTANCE);
+        super ("Spectrasonics Omnisphere 3", "Omnisphere", notifier, EmptySettingsUI.INSTANCE);
     }
 
 
@@ -125,14 +129,14 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             text = text.replace ("%PITCHBEND_UP%", toHexFloat (Math.abs (firstSampleZone.getBendUp ()) / 5000.0));
             text = text.replace ("%PITCHBEND_DOWN%", toHexFloat (Math.abs (firstSampleZone.getBendDown ()) / 5000.0));
             text = text.replace ("%SOUND_SOURCE%", filename);
-            text = text.replace ("%KEY_TRACKING%", firstSampleZone.getKeyTracking () > 0 ? "3f800000" : "0");
+            text = text.replace ("%KEY_TRACKING%", firstSampleZone.getKeyTracking () > 0 ? DEFAULT_3F800000 : "0");
 
             final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
             if (globalFilter.isEmpty ())
             {
                 text = text.replace ("%FILTER_TYPE%", toHexFloat (OmnisphereFilterUtils.getFilterIndex (new DefaultFilter (FilterType.LOW_PASS, 4, 0, 0))));
                 text = text.replace ("%FILTER_IS_ACTIVE%", "0");
-                text = text.replace ("%FILTER_FREQ%", "3f800000");
+                text = text.replace ("%FILTER_FREQ%", DEFAULT_3F800000);
                 text = text.replace ("%FILTER_RES%", "0");
 
                 text = text.replace ("%FENV_ATTACK_SEC%", "0");
@@ -142,15 +146,15 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
                 text = text.replace ("%FENV_ATTACK%", "0");
                 text = text.replace ("%FENV_HOLD%", "3e8fb823");
                 text = text.replace ("%FENV_DECAY%", "3e8fb823");
-                text = text.replace ("%FENV_SUSTAIN%", "3f800000");
+                text = text.replace ("%FENV_SUSTAIN%", DEFAULT_3F800000);
                 text = text.replace ("%FENV_RELEASE%", "3d5794a3");
 
-                text = text.replace ("%FENV_ATTACK_SLOPE%", "3f000000");
-                text = text.replace ("%FENV_DECAY_SLOPE%", "3f000000");
-                text = text.replace ("%FENV_RELEASE_SLOPE%", "3f000000");
+                text = text.replace ("%FENV_ATTACK_SLOPE%", DEFAULT_3F000000);
+                text = text.replace ("%FENV_DECAY_SLOPE%", DEFAULT_3F000000);
+                text = text.replace ("%FENV_RELEASE_SLOPE%", DEFAULT_3F000000);
 
-                text = text.replace ("%FENV_VEL_SENS%", "3f000000");
-                text = text.replace ("%FENV_DEPTH%", "3f800000");
+                text = text.replace ("%FENV_VEL_SENS%", DEFAULT_3F000000);
+                text = text.replace ("%FENV_DEPTH%", DEFAULT_3F800000);
             }
             else
             {
@@ -158,7 +162,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
                 final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
                 final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();
                 text = text.replace ("%FILTER_TYPE%", toHexFloat (OmnisphereFilterUtils.getFilterIndex (filter)));
-                text = text.replace ("%FILTER_IS_ACTIVE%", "3f800000");
+                text = text.replace ("%FILTER_IS_ACTIVE%", DEFAULT_3F800000);
                 text = text.replace ("%FILTER_FREQ%", toHexFloat (OmnisphereFilterUtils.hertzToNormalized (filter.getCutoff ())));
                 text = text.replace ("%FILTER_RES%", toHexFloat (filter.getResonance ()));
 
@@ -172,7 +176,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
                 text = text.replace ("%FENV_SUSTAIN%", toHexFloat (cutoffEnvelope.getSustainLevel ()));
                 text = text.replace ("%FENV_RELEASE%", toTime (cutoffEnvelope.getReleaseTime ()));
 
-                double attackSlope = (cutoffEnvelope.getAttackSlope () + 1.0) / 2.0;
+                final double attackSlope = (cutoffEnvelope.getAttackSlope () + 1.0) / 2.0;
                 text = text.replace ("%FENV_ATTACK_SLOPE%", toHexFloat (attackSlope));
                 text = text.replace ("%FENV_DECAY_SLOPE%", toHexFloat ((cutoffEnvelope.getDecaySlope () + 1.0) / 2.0));
                 text = text.replace ("%FENV_RELEASE_SLOPE%", toHexFloat ((cutoffEnvelope.getReleaseSlope () + 1.0) / 2.0));
@@ -236,9 +240,8 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
      * @param multisampleSource The multi-sample
      * @param size The size of all DB files without their headers
      * @return The XML structure
-     * @throws IOException Could not create the metadata
      */
-    private Optional<String> createZmapDocument (final IMultisampleSource multisampleSource, final long size) throws IOException
+    private Optional<String> createZmapDocument (final IMultisampleSource multisampleSource, final long size)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -248,7 +251,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
         final Element rootElement = document.createElement ("InstrumentMultisample");
         document.appendChild (rootElement);
-        rootElement.setAttribute ("ATTRIB_VALUE_DATA", createMetadata (multisampleSource.getMetadata ()) + "Size=" + size + ";");
+        rootElement.setAttribute (ATTRIB_VALUE_DATA_TAG, createMetadata (multisampleSource.getMetadata ()) + "Size=" + size + ";");
 
         // Add all sample zones
         for (final ISampleZone sampleZone: multisampleSource.getAllSampleZones (false))
@@ -290,7 +293,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
         final String description = metadata.getDescription ();
         if (!description.isBlank ())
-            sb.append ("Description=").append (HTMLUtils.unicodeToHTML (description).replace ("\r\n", "&#13;").replace ("\r", "&#13;").replace ("\n", "&#13;")).append (';');
+            sb.append ("Description=").append (HTMLUtils.unicodeToHTML (description).replace ("\r\n", HTML_RETURN).replace ("\r", HTML_RETURN).replace ("\n", HTML_RETURN)).append (';');
 
         return sb.toString ();
     }
@@ -342,7 +345,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
         final Element rootElement = document.createElement ("HitBundle");
         document.appendChild (rootElement);
         rootElement.setAttribute ("BundleKind", Integer.toString (sampleZone.getKeyRoot ()));
-        rootElement.setAttribute ("Level", "3f800000");
+        rootElement.setAttribute ("Level", DEFAULT_3F800000);
 
         return document;
     }
@@ -350,7 +353,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Adds 1 sample zone or multiple in case of round-robin to a layer hit stack document.
-     * 
+     *
      * @param sampleZones The round-robin sample zones
      * @return The document
      * @throws IOException Could not create the document
@@ -365,10 +368,10 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
         final Element rootElement = document.createElement ("LayerHitStack");
         document.appendChild (rootElement);
-        rootElement.setAttribute ("Level", "3f800000");
+        rootElement.setAttribute ("Level", DEFAULT_3F800000);
 
         final Element hitVelocityElement = XMLUtils.addElement (document, rootElement, "HitVelocity");
-        hitVelocityElement.setAttribute ("Level", "3f800000");
+        hitVelocityElement.setAttribute ("Level", DEFAULT_3F800000);
         // No idea about this value but the sample is not found if it is set to the minimum velocity
         hitVelocityElement.setAttribute ("Minimum", "0");
         hitVelocityElement.setAttribute ("Maximum", Integer.toString (sampleZones.get (0).getVelocityHigh ()));
@@ -380,8 +383,8 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             sampleWaveformElement.setAttribute ("RoundRobinSequenceNum", roundRobinIndex);
             sampleWaveformElement.setAttribute ("BaseNote", Integer.toString (sampleZone.getKeyRoot ()));
             sampleWaveformElement.setAttribute ("AudioFilePath", this.createSampleFilename (sampleZone, -1, ".wav"));
-            sampleWaveformElement.setAttribute ("Level", "3f800000");
-            sampleWaveformElement.setAttribute ("A440", "3f800000");
+            sampleWaveformElement.setAttribute ("Level", DEFAULT_3F800000);
+            sampleWaveformElement.setAttribute ("A440", DEFAULT_3F800000);
         }
 
         return document;
@@ -398,9 +401,9 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
         final Element rootElement = document.createElement ("SampledInstrument");
         document.appendChild (rootElement);
-        rootElement.setAttribute ("ATTRIB_VALUE_DATA", "");
+        rootElement.setAttribute (ATTRIB_VALUE_DATA_TAG, "");
         rootElement.setAttribute ("PitchedInstr", sampleZone.getKeyTracking () == 0 ? "0" : "1");
-        rootElement.setAttribute ("Level", "3f800000");
+        rootElement.setAttribute ("Level", DEFAULT_3F800000);
 
         return document;
     }
@@ -461,7 +464,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Converts dB gain (-INF to +24dB) to linear amplitude. 0 dB = 1.0 (unity gain).
-     * 
+     *
      * @param db The dB value
      * @return The relative value
      */

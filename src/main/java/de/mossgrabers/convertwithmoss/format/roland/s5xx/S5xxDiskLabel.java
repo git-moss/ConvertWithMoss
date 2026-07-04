@@ -21,7 +21,7 @@ package de.mossgrabers.convertwithmoss.format.roland.s5xx;
 public class S5xxDiskLabel
 {
     /** The number of label rows. */
-    public static final int ROWS          = 5;
+    public static final int NUM_ROWS      = 5;
 
     /** Characters per row. */
     public static final int CHARS_PER_ROW = 12;
@@ -31,34 +31,34 @@ public class S5xxDiskLabel
 
     /**
      * Constructor.
-     * 
+     *
      * @param rows The label rows
      */
     public S5xxDiskLabel (final String [] rows)
     {
-        if (rows.length != ROWS)
-            throw new IllegalArgumentException ("DiskLabel requires exactly " + ROWS + " rows");
+        if (rows.length != NUM_ROWS)
+            throw new IllegalArgumentException ("DiskLabel requires exactly " + NUM_ROWS + " rows");
         this.rows = rows.clone ();
     }
 
 
     /**
      * Returns the label row at the given 0-based index.
-     * 
+     *
      * @param rowIndex The index of the row (0 = row 1, 4 = row 5)
      * @return The text of the row
      */
     public String getRow (final int rowIndex)
     {
-        if (rowIndex < 0 || rowIndex >= ROWS)
-            throw new IndexOutOfBoundsException ("Row index must be 0–" + (ROWS - 1));
+        if (rowIndex < 0 || rowIndex >= NUM_ROWS)
+            throw new IndexOutOfBoundsException ("Row index must be 0–" + (NUM_ROWS - 1));
         return this.rows[rowIndex];
     }
 
 
     /**
      * Returns a defensive copy of all five rows.
-     * 
+     *
      * @return The rows
      */
     public String [] getRows ()
@@ -69,7 +69,7 @@ public class S5xxDiskLabel
 
     /**
      * All rows joined with {@code '\n'}.
-     * 
+     *
      * @return The flattened text
      */
     public String getFullText ()

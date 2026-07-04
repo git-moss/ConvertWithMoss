@@ -166,7 +166,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
                 final DefaultAudioMetadata sliceMetadata = new DefaultAudioMetadata (channels, PolyendTrackerConstants.SAMPLE_RATE, PolyendTrackerConstants.BIT_RESOLUTION, sliceFrames);
 
                 final ISampleZone zone = new DefaultSampleZone (name + " " + (i + 1), new InMemorySampleData (sliceMetadata, sliceData));
-                final int note = Math.clamp (PolyendTrackerConstants.DEFAULT_ROOT_NOTE + i, 0, 127);
+                final int note = Math.clamp (PolyendTrackerConstants.DEFAULT_ROOT_NOTE + (long) i, 0, 127);
                 zone.setKeyRoot (note);
                 zone.setKeyLow (note);
                 zone.setKeyHigh (note);
@@ -267,7 +267,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         final double hertz = PolyendTrackerValueConverter.normalizedCutoffToHertz (cutoff);
 
         // A filter parked wide open is sonically transparent - treat it as no filter
-        if ((filterType == FilterType.HIGH_PASS && hertz <= TRANSPARENT_HIGH_PASS_MAX_HERTZ) || (filterType == FilterType.LOW_PASS && hertz >= TRANSPARENT_LOW_PASS_MIN_HERTZ))
+        if (filterType == FilterType.HIGH_PASS && hertz <= TRANSPARENT_HIGH_PASS_MAX_HERTZ || filterType == FilterType.LOW_PASS && hertz >= TRANSPARENT_LOW_PASS_MIN_HERTZ)
             return null;
 
         final double resonance = PolyendTrackerValueConverter.rawResonanceToModel (buffer.getFloat (PolyendTrackerConstants.OFF_RESONANCE));

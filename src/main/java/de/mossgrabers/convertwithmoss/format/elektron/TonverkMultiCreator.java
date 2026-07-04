@@ -26,9 +26,9 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.file.wav.WaveRiffChunkId;
-import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiFile.ElektronKeyZone;
-import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiFile.ElektronSampleSlot;
-import de.mossgrabers.convertwithmoss.format.elektron.ElektronMultiFile.ElektronVelocityLayer;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -38,7 +38,7 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreatorUI>
+public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorUI>
 {
     /**
      * The factory default velocity. The Tonverk rejects the whole preset file if a velocity layer
@@ -74,9 +74,9 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
      *
      * @param notifier The notifier
      */
-    public ElektronMultiCreator (final INotifier notifier)
+    public TonverkMultiCreator (final INotifier notifier)
     {
-        super ("Elektron Tonverk", "Emulti", notifier, new ElektronMultiCreatorUI ("Emulti"));
+        super ("Elektron Tonverk Multisample", "Emulti", notifier, new TonverkMultiCreatorUI ("Emulti"));
     }
 
 
@@ -112,7 +112,7 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
 
         // Create the preset file - must be done after the samples were written since trimming
         // does update the zone/loop positions!
-        final ElektronMultiFile elektronMulti = createPreset (multisampleSource);
+        final TonverkMultiFile elektronMulti = createPreset (multisampleSource);
         final String presetFile = presetName + ".elmulti";
         this.notifier.log ("IDS_NOTIFY_STORING", presetFile);
         elektronMulti.write (new File (presetFolder, presetFile).toPath ());
@@ -167,7 +167,7 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
      * @param multiSampleSource The multi-sample source
      * @throws IOException Could not read the audio metadata of a sample
      */
-    private static void prepareZones (final String presetName, final IMultisampleSource multiSampleSource) throws IOException
+    static void prepareZones (final String presetName, final IMultisampleSource multiSampleSource) throws IOException
     {
         for (final Entry<Integer, TreeMap<Integer, List<ISampleZone>>> velocityLayerMapEntry: multiSampleSource.getOrderedSampleZones (false).entrySet ())
         {
@@ -179,7 +179,7 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
                 for (int roundRobinIndex = 0; roundRobinIndex < sampleZones.size (); roundRobinIndex++)
                 {
                     final ISampleZone zone = sampleZones.get (roundRobinIndex);
-                    zone.setName (ElektronMultiFile.createSampleName (presetName, velocityLayerIndex, keyRoot, roundRobinIndex));
+                    zone.setName (TonverkMultiFile.createSampleName (presetName, velocityLayerIndex, keyRoot, roundRobinIndex));
 
                     final ISampleData sampleData = zone.getSampleData ();
                     if (sampleData == null)
@@ -199,14 +199,14 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
     }
 
 
-    private static ElektronMultiFile createPreset (final IMultisampleSource multiSampleSource)
+    static TonverkMultiFile createPreset (final IMultisampleSource multiSampleSource)
     {
-        final ElektronMultiFile elektronMulti = new ElektronMultiFile ();
+        final TonverkMultiFile elektronMulti = new TonverkMultiFile ();
         elektronMulti.name = multiSampleSource.getName ();
 
         for (final Entry<Integer, TreeMap<Integer, List<ISampleZone>>> velocityLayerMapEntry: multiSampleSource.getOrderedSampleZones (false).entrySet ())
         {
-            final ElektronKeyZone keyZone = new ElektronKeyZone ();
+            final TonverkKeyZone keyZone = new TonverkKeyZone ();
             elektronMulti.keyZones.add (keyZone);
 
             final int keyRoot = Math.clamp (velocityLayerMapEntry.getKey ().intValue (), 0, 127);
@@ -217,7 +217,7 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
 
             for (final Entry<Integer, List<ISampleZone>> sampleZonesEntry: velocityLayerMapEntry.getValue ().entrySet ())
             {
-                final ElektronVelocityLayer velocityLayer = new ElektronVelocityLayer ();
+                final TonverkVelocityLayer velocityLayer = new TonverkVelocityLayer ();
                 keyZone.velocityLayers.add (velocityLayer);
 
                 // The Tonverk rejects a velocity of exactly 0.0, use the factory default instead
@@ -226,7 +226,7 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
 
                 for (final ISampleZone sampleZone: sampleZonesEntry.getValue ())
                 {
-                    final ElektronSampleSlot sampleSlot = new ElektronSampleSlot ();
+                    final TonverkSampleSlot sampleSlot = new TonverkSampleSlot ();
                     velocityLayer.sampleSlots.add (sampleSlot);
 
                     // Must be identical to the file name created in writeSamples!
@@ -245,9 +245,10 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
                         final int crossfade = sampleLoop.getCrossfadeInSamples ();
                         if (crossfade > 0)
                             sampleSlot.loopCrossfade = Integer.valueOf (crossfade);
-                        // Continue to loop in the release phase which is the default behavior of
-                        // all source formats
-                        sampleSlot.keepLoopingOnRelease = Boolean.TRUE;
+                        // Keep looping during release unless this is a sustain loop (loop until
+                        // release); continuous looping is the default for source formats without
+                        // the distinction
+                        sampleSlot.keepLoopingOnRelease = Boolean.valueOf (!sampleLoop.isLoopUntilRelease ());
                     }
 
                     if (tuningIsSame)
@@ -267,7 +268,7 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
     }
 
 
-    private static boolean hasLoop (final ISampleZone zone)
+    static boolean hasLoop (final ISampleZone zone)
     {
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
@@ -287,7 +288,7 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
      * @param multisampleSource The multi-sample source
      * @throws IOException Could not retrieve the current sample rate
      */
-    private static void recalculateForResample (final IMultisampleSource multisampleSource) throws IOException
+    static void recalculateForResample (final IMultisampleSource multisampleSource) throws IOException
     {
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
@@ -341,7 +342,7 @@ public class ElektronMultiCreator extends AbstractWavCreator<ElektronMultiCreato
      *
      * @param zone The zone
      */
-    private static void clampLoops (final ISampleZone zone)
+    static void clampLoops (final ISampleZone zone)
     {
         final int lastIndex = zone.getStop () - 1;
         if (lastIndex < 0)

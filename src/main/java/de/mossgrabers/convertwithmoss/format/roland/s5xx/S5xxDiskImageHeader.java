@@ -24,7 +24,7 @@ public class S5xxDiskImageHeader
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read the header
      */
@@ -51,7 +51,7 @@ public class S5xxDiskImageHeader
 
     /**
      * Resolved sampler model.
-     * 
+     *
      * @return The type of the sampler
      */
     public S5xxSamplerType getSamplerType ()
@@ -62,7 +62,7 @@ public class S5xxDiskImageHeader
 
     /**
      * Get the OS/version string from bytes 32–61, trimmed of trailing NUL/spaces.
-     * 
+     *
      * @return The OS version
      */
     public String getOsVersionString ()
@@ -73,7 +73,7 @@ public class S5xxDiskImageHeader
 
     /**
      * Get the Media-type flag from bytes 256–265, trimmed.
-     * 
+     *
      * @return The media flag
      */
     public String getMediaTypeFlag ()
@@ -85,7 +85,7 @@ public class S5xxDiskImageHeader
     /**
      * Returns {@code true} when the media-type flag equals {@code "Instrument"}, indicating this is
      * a CD-ROM container (LAND type).
-     * 
+     *
      * @return True if it is a CD-ROM
      */
     public boolean isCdRom ()

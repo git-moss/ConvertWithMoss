@@ -31,6 +31,30 @@ public interface ISampleLoop
 
 
     /**
+     * Should the loop stop when the note enters the release phase of its amplitude envelope? If
+     * <code>true</code>, the loop is left at note-off and the remainder of the sample after the
+     * loop end is played out - a sustain or 'loop until release' loop (e.g. SoundFont sample mode
+     * 3, SFZ <code>loop_sustain</code>, Renoise <code>LoopRelease</code>=true, Kontakt 'until
+     * release'). If <code>false</code> (the default), the same loop keeps cycling during the
+     * release - a 'loop continuous' loop (e.g. SoundFont sample mode 1, SFZ
+     * <code>loop_continuous</code>). This describes the behavior of this very loop on release, not
+     * a separate release-phase loop region.
+     *
+     * @return True if the loop stops at note-off and the remainder is played out (sustain loop)
+     */
+    boolean isLoopUntilRelease ();
+
+
+    /**
+     * Set whether the loop stops when the note enters the release phase of its amplitude envelope.
+     *
+     * @param loopUntilRelease True for a sustain / 'until release' loop, false for a continuous
+     *            loop
+     */
+    void setLoopUntilRelease (boolean loopUntilRelease);
+
+
+    /**
      * Get the start of the loop.
      *
      * @return The start of the loop
@@ -75,7 +99,7 @@ public interface ISampleLoop
     /**
      * Get the loop tuning. Useful with very short loops such as single-cycle waveforms, which can
      * be slightly out of tune compared to the complete waveform from which they were cut.
-     * 
+     *
      * @return The tuning positive or negative semi-tones, which means that 0.01 represents 1 cent
      *         (1 semi-tone is 100 cent), relative to the zone tuning. 0 = no offset.
      */
@@ -84,7 +108,7 @@ public interface ISampleLoop
 
     /**
      * Set the loop tuning.
-     * 
+     *
      * @param tuning The tuning positive or negative semi-tones, which means that 0.01 represents 1
      *            cent (1 semi-tone is 100 cent), relative to the zone tuning. 0 = no offset.
      */

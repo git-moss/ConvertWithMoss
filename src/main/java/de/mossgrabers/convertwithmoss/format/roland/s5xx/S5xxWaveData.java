@@ -31,7 +31,7 @@ public class S5xxWaveData
      */
     public S5xxWaveData (final InputStream input) throws IOException
     {
-        input.read (this.data);
+        input.readNBytes (this.data, 0, this.data.length);
     }
 
 

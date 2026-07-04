@@ -82,7 +82,7 @@ public class AkaiMPC2000Sound
 
     /**
      * Constructor.
-     * 
+     *
      * @param inputStream The input stream from which to read the file
      * @throws IOException Could not read the SND file
      */
@@ -113,7 +113,7 @@ public class AkaiMPC2000Sound
             throw new IOException (Functions.getMessage ("IDS_MPC2000_INVALID_SND_FILE", "not a MPC2000/MPC3000 SND file"));
 
         // Sample name (16 bytes)
-        byte [] nameBytes = new byte [16];
+        final byte [] nameBytes = new byte [16];
         buffer.get (nameBytes);
         this.name = new String (nameBytes).trim ();
 

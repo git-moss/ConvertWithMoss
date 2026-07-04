@@ -116,7 +116,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
         this.sourceFolder = sourceFolder;
 
         final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
-        final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, sourceFile, metadataConfig, monolithSamples);
+        final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, monolithSamples);
         if (presetAccessor.isEmpty ())
             return null;
 
@@ -175,7 +175,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
     {
         this.sourceFolder = sourceFolder;
         final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
-        final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, sourceFile, metadataConfig, monolithSamples);
+        final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, monolithSamples);
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         if (presetAccessor.isPresent ())
         {
@@ -191,13 +191,11 @@ public class Kontakt5Format extends AbstractKontaktFormat
      * Reads from an NI container, which hopefully contains a NKI preset.
      *
      * @param niContainerItem The NI container item to read from
-     * @param sourceFile The source file to convert
-     * @param metadataConfig Default metadata
      * @param monolithSamples If the NKI is inside a monolith, these are the sample files
      * @return Access to the read Kontakt program-/multi-data
      * @throws IOException Could not read the container
      */
-    private Optional<KontaktPresetAccessor> readKontaktPreset (final NIContainerItem niContainerItem, final File sourceFile, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples) throws IOException
+    private Optional<KontaktPresetAccessor> readKontaktPreset (final NIContainerItem niContainerItem, final Map<Long, ISampleZone> monolithSamples) throws IOException
     {
         final boolean isMonolith = monolithSamples != null;
 
@@ -269,7 +267,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
             final List<String> attributes = soundinfo.getAttributes ();
             final IMetadata metadata = source.getMetadata ();
             metadata.setKeywords (attributes.toArray (new String [attributes.size ()]));
-            String creator = metadata.getCreator ();
+            final String creator = metadata.getCreator ();
             if (creator == null || creator.isBlank ())
             {
                 final String author = soundinfo.getAuthor ();

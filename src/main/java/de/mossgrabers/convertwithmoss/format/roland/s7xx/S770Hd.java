@@ -7,7 +7,6 @@ package de.mossgrabers.convertwithmoss.format.roland.s7xx;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import de.mossgrabers.tools.ui.Functions;
@@ -30,31 +29,33 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class S770Hd implements IS770Image
 {
-    private static final long         SIZE_RESERVED           = 0x600L;
-    private static final long         SIZE_PROGRAM_TEXT       = 0x80000L;
-    private static final long         SIZE_FAT                = 0x20000L;
+    private static final String         ENTRIES                 = " entries]\n";
+
+    private static final long           SIZE_RESERVED           = 0x600L;
+    private static final long           SIZE_PROGRAM_TEXT       = 0x80000L;
+    private static final long           SIZE_FAT                = 0x20000L;
 
     /** Number of volume entries on a Roland S-770 disk. */
-    public static final int           NUM_VOLUME_ENTRIES      = 128;
+    public static final int             NUM_VOLUME_ENTRIES      = 128;
     /** Number of performance entries on a Roland S-770 disk. */
-    public static final int           NUM_PERFORMANCE_ENTRIES = 512;
+    public static final int             NUM_PERFORMANCE_ENTRIES = 512;
     /** Number of patch entries on a Roland S-770 disk. */
-    public static final int           NUM_PATCH_ENTRIES       = 1024;
+    public static final int             NUM_PATCH_ENTRIES       = 1024;
     /** Number of partial entries on a Roland S-770 disk. */
-    public static final int           NUM_PARTIAL_ENTRIES     = 4096;
+    public static final int             NUM_PARTIAL_ENTRIES     = 4096;
     /** Number of sample entries on a Roland S-770 disk. */
-    public static final int           NUM_SAMPLE_ENTRIES      = 8192;
+    public static final int             NUM_SAMPLE_ENTRIES      = 8192;
 
-    private static final int          SAMPLE_BLOCK_SIZE       = 0x2400;
+    private static final int            SAMPLE_BLOCK_SIZE       = 0x2400;
 
-    private final S770Header          header;
-    private final S770HdDirectoryArea directoryArea;
+    private final S770Header            header;
+    private final S770HdDirectoryArea   directoryArea;
 
-    private List<S770Volume>          volumes;
-    private List<S770Performance>     performances;
-    private List<S770Patch>           patches;
-    private List<S770Partial>         partials;
-    private List<S770Sample>          samples;
+    private final List<S770Volume>      volumes                 = new ArrayList<> (NUM_VOLUME_ENTRIES);
+    private final List<S770Performance> performances            = new ArrayList<> (NUM_PERFORMANCE_ENTRIES);
+    private final List<S770Patch>       patches                 = new ArrayList<> (NUM_PATCH_ENTRIES);
+    private final List<S770Partial>     partials                = new ArrayList<> (NUM_PARTIAL_ENTRIES);
+    private final List<S770Sample>      samples                 = new ArrayList<> (NUM_SAMPLE_ENTRIES);
 
 
     /**
@@ -117,51 +118,41 @@ public class S770Hd implements IS770Image
     private void readParameterArea (final InputStream input) throws IOException
     {
         // Volume entries
-        final List<S770Volume> volumes = new ArrayList<> (NUM_VOLUME_ENTRIES);
         for (int i = 0; i < NUM_VOLUME_ENTRIES; i++)
-            volumes.add (new S770Volume (input));
-        this.volumes = Collections.unmodifiableList (volumes);
+            this.volumes.add (new S770Volume (input));
 
         // Performance entries
-        final List<S770Performance> perfs = new ArrayList<> (NUM_PERFORMANCE_ENTRIES);
         final int numPerformances = this.header.getNumPerformances ();
         for (int i = 0; i < NUM_PERFORMANCE_ENTRIES; i++)
         {
             final S770Performance performance = new S770Performance (input, false);
             if (i < numPerformances)
-                perfs.add (performance);
+                this.performances.add (performance);
         }
-        this.performances = Collections.unmodifiableList (perfs);
 
-        final List<S770Patch> patches = new ArrayList<> (NUM_PATCH_ENTRIES);
         final int numPatches = this.header.getNumPatches ();
         for (int i = 0; i < NUM_PATCH_ENTRIES; i++)
         {
             final S770Patch patch = new S770Patch (input, false);
             if (i < numPatches)
-                patches.add (patch);
+                this.patches.add (patch);
         }
-        this.patches = Collections.unmodifiableList (patches);
 
-        final List<S770Partial> partials = new ArrayList<> (NUM_PARTIAL_ENTRIES);
         final int numPartials = this.header.getNumPartials ();
         for (int i = 0; i < NUM_PARTIAL_ENTRIES; i++)
         {
             final S770Partial partial = new S770Partial (input);
             if (i < numPartials)
-                partials.add (partial);
+                this.partials.add (partial);
         }
-        this.partials = Collections.unmodifiableList (partials);
 
-        final List<S770Sample> samples = new ArrayList<> (NUM_SAMPLE_ENTRIES);
         final int numSamples = this.header.getNumSamples ();
         for (int i = 0; i < NUM_SAMPLE_ENTRIES; i++)
         {
             final S770Sample sample = new S770Sample (input);
             if (i < numSamples)
-                samples.add (sample);
+                this.samples.add (sample);
         }
-        this.samples = Collections.unmodifiableList (samples);
 
         // Wave data starts at 0x3B6000, currently we are at 0x2B5800
         input.skipNBytes (0x100800);
@@ -243,23 +234,23 @@ public class S770Hd implements IS770Image
         final StringBuilder sb = new StringBuilder ();
         sb.append ("S770ParameterArea [\n  volumeEntries=" + this.volumes.size () + " entries\n  performanceEntries=" + this.performances.size () + " entries\n  patchEntries=" + this.patches.size () + " entries\n  partialEntries=" + this.partials.size () + " entries\n  sampleEntries=" + this.samples.size () + " entries\n]");
 
-        sb.append ("\nS770PerformanceEntries [").append (this.performances.size ()).append (" entries]\n");
+        sb.append ("\nS770PerformanceEntries [").append (this.performances.size ()).append (ENTRIES);
         for (int i = 0; i < this.performances.size (); i++)
             sb.append (" [").append (i).append ("] ").append (this.performances.get (i)).append ('\n');
 
-        sb.append ("\nS770VolumeEntries [").append (this.volumes.size ()).append (" entries]\n");
+        sb.append ("\nS770VolumeEntries [").append (this.volumes.size ()).append (ENTRIES);
         for (int i = 0; i < this.volumes.size (); i++)
             sb.append ("  [").append (i).append ("] ").append (this.volumes.get (i)).append ('\n');
 
-        sb.append ("\nS770PatchEntries [").append (this.patches.size ()).append (" entries]\n");
+        sb.append ("\nS770PatchEntries [").append (this.patches.size ()).append (ENTRIES);
         for (int i = 0; i < this.patches.size (); i++)
             sb.append ("  [").append (i).append ("] ").append (this.patches.get (i)).append ('\n');
 
-        sb.append ("\nS770PartialEntries [").append (this.partials.size ()).append (" entries]\n");
+        sb.append ("\nS770PartialEntries [").append (this.partials.size ()).append (ENTRIES);
         for (int i = 0; i < this.partials.size (); i++)
             sb.append ("  [").append (i).append ("] ").append (this.partials.get (i)).append ('\n');
 
-        sb.append ("\nS770SampleEntries [").append (this.samples.size ()).append (" entries]\n");
+        sb.append ("\nS770SampleEntries [").append (this.samples.size ()).append (ENTRIES);
         for (int i = 0; i < this.samples.size (); i++)
             sb.append ("  [").append (i).append ("] ").append (this.samples.get (i)).append ('\n');
 

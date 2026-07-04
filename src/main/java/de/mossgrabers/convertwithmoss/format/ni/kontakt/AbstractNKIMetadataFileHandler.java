@@ -389,12 +389,13 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private static String addLoop (final ISampleLoop loop, final String loopTemplate, final int loopIndex)
+    private String addLoop (final ISampleLoop loop, final String loopTemplate, final int loopIndex)
     {
         String loopContent = loopTemplate.replace ("%LOOP_INDEX%", Integer.toString (loopIndex));
 
         loopContent = loopContent.replace ("%LOOP_START%", Integer.toString (loop.getStart ()));
         loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getLength ()));
+        loopContent = loopContent.replace ("%LOOP_MODE%", loop.isLoopUntilRelease () ? this.tags.untilReleaseValue () : this.tags.untilEndValue ());
         loopContent = loopContent.replace ("%LOOP_ALTERNATING%", loop.getType () == LoopType.ALTERNATING ? "yes" : "no");
         loopContent = loopContent.replace ("%LOOP_TUNING%", Float.toString ((float) Math.pow (2.0, loop.getTuning () / 12.0)));
         return loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
@@ -578,7 +579,7 @@ public abstract class AbstractNKIMetadataFileHandler
                         metadata.setCategory (iconName);
                 }
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 // Ignore
             }
@@ -783,7 +784,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ());
         }
-        catch (final UnsupportedAudioFileException | IOException ex)
+        catch (final UnsupportedAudioFileException | IOException _)
         {
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ());
         }
@@ -992,7 +993,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 xFadeLength = AbstractNKIMetadataFileHandler.getInt (loopParams, this.tags.xfadeLengthParam ());
                 alternatingLoop = AbstractNKIMetadataFileHandler.getString (loopParams, this.tags.alternatingLoopParam ());
             }
-            catch (final ValueNotAvailableException e)
+            catch (final ValueNotAvailableException _)
             {
                 return;
             }
@@ -1011,6 +1012,9 @@ public abstract class AbstractNKIMetadataFileHandler
             loop.setTuning (12.0 * (Math.log (loopTuning) / Math.log (2.0)));
             loop.setCrossfadeInSamples (xFadeLength);
             loop.setType (loopType);
+            // 'until_release' loops while the key is held and then plays the remainder of the
+            // sample on release (sustain loop); 'until_end' loops continuously
+            loop.setLoopUntilRelease (loopMode.equals (this.tags.untilReleaseValue ()));
             sampleMetadata.addLoop (loop);
         }
     }
@@ -1349,7 +1353,7 @@ public abstract class AbstractNKIMetadataFileHandler
             }
             return modulator;
         }
-        catch (final ValueNotAvailableException e)
+        catch (final ValueNotAvailableException _)
         {
             return null;
         }
