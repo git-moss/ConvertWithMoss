@@ -15,11 +15,12 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
  */
 public class DefaultSampleLoop implements ISampleLoop
 {
-    private LoopType loopType  = LoopType.FORWARDS;
-    private int      loopStart = -1;
-    private int      loopEnd   = -1;
-    private double   tuning    = 0;
-    private double   crossfade = 0;
+    private LoopType loopType         = LoopType.FORWARDS;
+    private int      loopStart        = -1;
+    private int      loopEnd          = -1;
+    private double   tuning           = 0;
+    private double   crossfade        = 0;
+    private boolean  loopUntilRelease = false;
 
 
     /** {@inheritDoc} */
@@ -35,6 +36,22 @@ public class DefaultSampleLoop implements ISampleLoop
     public void setType (final LoopType type)
     {
         this.loopType = type;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isLoopUntilRelease ()
+    {
+        return this.loopUntilRelease;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setLoopUntilRelease (final boolean loopUntilRelease)
+    {
+        this.loopUntilRelease = loopUntilRelease;
     }
 
 
