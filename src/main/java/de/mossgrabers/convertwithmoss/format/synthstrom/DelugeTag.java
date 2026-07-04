@@ -160,6 +160,8 @@ public class DelugeTag
     public static final String AMOUNT                       = "amount";
     /** The patch source velocity. */
     public static final String SOURCE_VELOCITY              = "velocity";
+    /** The patch source note (used for filter keyboard tracking). */
+    public static final String SOURCE_NOTE                  = "note";
 
     // Kit tags / attributes
     /** The container of all drum sounds of a kit. */
