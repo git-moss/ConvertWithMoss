@@ -266,7 +266,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 else
                 {
                     final ISampleLoop loop = loops.get (0);
-                    sb.append (loop.getType () == LoopType.FORWARDS ? 1 : 2).append ('\t');
+                    sb.append (loop.getType () == LoopType.ALTERNATING ? 2 : 1).append ('\t');
                     sb.append (formatMapDouble (loop.getStart () / numSampleFrames)).append ('\t');
                     sb.append (formatMapDouble (loop.getEnd () / numSampleFrames)).append ('\t');
                 }

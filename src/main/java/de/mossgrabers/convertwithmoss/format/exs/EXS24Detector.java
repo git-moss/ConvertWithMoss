@@ -30,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
@@ -168,6 +169,9 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             if (exs24Zone.loopOn)
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
+                if (exs24Zone.loopDirection > 0)
+                    loop.setType (exs24Zone.loopDirection == 1 ? LoopType.BACKWARDS : LoopType.ALTERNATING);
+                loop.setLoopUntilRelease (exs24Zone.loopPlayToEndOnRelease);
                 loop.setStart (exs24Zone.loopStart);
                 loop.setEnd (exs24Zone.loopEnd - 1);
                 if (exs24Zone.loopCrossfade != 0)

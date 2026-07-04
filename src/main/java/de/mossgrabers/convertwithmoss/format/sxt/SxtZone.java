@@ -463,42 +463,16 @@ class SxtZone
         zone.setBendUp (this.pitchWheelRange * 100);
         zone.setBendDown (-this.pitchWheelRange * 100);
 
-        // Set loop
-        boolean hasLoop = true;
-        boolean isAlternating = false;
-        switch (this.playMode)
-        {
-            // Forward
-            case 0:
-                hasLoop = false;
-                break;
-            // Forward loop
-            case 1:
-                // Already set-up
-                break;
-            // Fwd-bwd loop
-            case 2:
-                isAlternating = true;
-                break;
-            // Fwd-sus loop
-            case 3:
-                break;
-            // Backwards
-            case 4:
-                hasLoop = false;
-                zone.setReversed (true);
-                break;
-            // Unknown
-            default:
-                break;
-        }
-        if (hasLoop)
+        // Backwards
+        if (this.playMode == 4)
+            zone.setReversed (true);
+        else if (this.playMode > 0)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
+            loop.setType (this.playMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
+            loop.setLoopUntilRelease (this.playMode == 3);
             loop.setStart ((int) this.sampleLoopStart);
             loop.setEnd ((int) this.sampleLoopEnd);
-            if (isAlternating)
-                loop.setType (LoopType.ALTERNATING);
         }
 
         if (this.alternateMode > 0)
@@ -654,7 +628,10 @@ class SxtZone
         else
         {
             final ISampleLoop loop = loops.get (0);
-            this.playMode = loop.getType () == LoopType.ALTERNATING ? 2 : 1;
+            if (loop.isLoopUntilRelease ())
+                this.playMode = 3;
+            else
+                this.playMode = loop.getType () == LoopType.ALTERNATING ? 2 : 1;
             this.sampleLoopStart = loop.getStart ();
             this.sampleLoopEnd = loop.getEnd ();
         }

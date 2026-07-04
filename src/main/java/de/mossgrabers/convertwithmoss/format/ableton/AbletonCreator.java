@@ -311,6 +311,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         if (loops.isEmpty ())
         {
             zoneContent = zoneContent.replace ("%LOOP_MODE%", "0");
+            zoneContent = zoneContent.replace ("%SAMPLE_RELEASE_LOOP%", "3");
             zoneContent = zoneContent.replace ("%LOOP_START%", "0");
             zoneContent = zoneContent.replace ("%LOOP_END%", "0");
             zoneContent = zoneContent.replace ("%LOOP_CROSSFADE%", "0");
@@ -320,6 +321,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         {
             final ISampleLoop loop = loops.get (0);
             zoneContent = zoneContent.replace ("%LOOP_MODE%", loop.getType () == LoopType.ALTERNATING ? "2" : "1");
+            zoneContent = zoneContent.replace ("%SAMPLE_RELEASE_LOOP%", loop.isLoopUntilRelease () ? "0" : "3");
             zoneContent = zoneContent.replace ("%LOOP_START%", Integer.toString (loop.getStart ()));
             zoneContent = zoneContent.replace ("%LOOP_END%", Integer.toString (loop.getEnd ()));
             zoneContent = zoneContent.replace ("%LOOP_CROSSFADE%", Integer.toString (loop.getCrossfadeInSamples ()));

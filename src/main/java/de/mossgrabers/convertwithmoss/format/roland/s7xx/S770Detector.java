@@ -266,6 +266,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final ISampleLoop sampleLoop = new DefaultSampleLoop ();
             sampleLoop.setType (LOOP_MODES[loopMode]);
+            sampleLoop.setLoopUntilRelease (loopMode == 1);
             sampleLoop.setStart ((int) sample.getSustainLoopStart ().getAddress ());
             sampleLoop.setCrossfadeInSamples (sample.getSustainLoopStart ().getFine () + sample.getSustainLoopEnd ().getFine ());
             sampleLoop.setEnd ((int) sample.getSustainLoopEnd ().getAddress ());

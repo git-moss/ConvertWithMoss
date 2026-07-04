@@ -8,7 +8,7 @@
 * New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
 * New: Improved user interface for long lists of formats.
-* New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - SoundFont 2, SFZ, Renoise, NI Kontakt and Elektron Tonverk/Multi (thanks to Douglas Carmichael).
+* New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
 * New: Added several new tags for category detection.
 * New: Added an opt-in *Snap loops to zero-crossings* processing option.
 * Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
@@ -18,6 +18,8 @@
   * New: Relabelled "Elektron Tonverk Multisample" to not confuse it with the new "Elektron Tonverk Preset".
   * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
   * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
+* EXS24
+  * Fixed: Loop type was not applied.
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
@@ -27,6 +29,7 @@
 * MPC
   * Fixed: Program in XTY file was not read.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+  * Fixed: Sample Loop mode 2 was not set to alternating but backwards.
   * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
   * Fixed: A very short but non-zero envelope attack, decay or release (below the ~0.06 second device minimum) collapsed to parameter value 0, i.e. an instant stage, which still clicked on note-on and note-off for samples that do not start or end at a zero crossing. Non-zero times are now clamped up to the shortest audible value instead of to instant, while a genuine zero stays an instant stage (verified on Iridium hardware).
