@@ -32,12 +32,13 @@ public interface ISampleLoop
 
     /**
      * Should the loop stop when the note enters the release phase of its amplitude envelope? If
-     * <code>true</code>, the loop is left at note-off and the remainder of the sample after the loop
-     * end is played out - a sustain or 'loop until release' loop (e.g. SoundFont sample mode 3, SFZ
-     * <code>loop_sustain</code>, Renoise <code>LoopRelease</code>=true, Kontakt 'until release'). If
-     * <code>false</code> (the default), the same loop keeps cycling during the release - a 'loop
-     * continuous' loop (e.g. SoundFont sample mode 1, SFZ <code>loop_continuous</code>). This
-     * describes the behavior of this very loop on release, not a separate release-phase loop region.
+     * <code>true</code>, the loop is left at note-off and the remainder of the sample after the
+     * loop end is played out - a sustain or 'loop until release' loop (e.g. SoundFont sample mode
+     * 3, SFZ <code>loop_sustain</code>, Renoise <code>LoopRelease</code>=true, Kontakt 'until
+     * release'). If <code>false</code> (the default), the same loop keeps cycling during the
+     * release - a 'loop continuous' loop (e.g. SoundFont sample mode 1, SFZ
+     * <code>loop_continuous</code>). This describes the behavior of this very loop on release, not
+     * a separate release-phase loop region.
      *
      * @return True if the loop stops at note-off and the remainder is played out (sustain loop)
      */
@@ -47,7 +48,8 @@ public interface ISampleLoop
     /**
      * Set whether the loop stops when the note enters the release phase of its amplitude envelope.
      *
-     * @param loopUntilRelease True for a sustain / 'until release' loop, false for a continuous loop
+     * @param loopUntilRelease True for a sustain / 'until release' loop, false for a continuous
+     *            loop
      */
     void setLoopUntilRelease (boolean loopUntilRelease);
 

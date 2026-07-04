@@ -395,8 +395,6 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);
-            // 'loop_sustain' loops until the key is released and then plays the remainder of the
-            // sample; 'loop_continuous' keeps looping
             addAttribute (buffer, SfzOpcode.LOOP_MODE, sampleLoop.isLoopUntilRelease () ? "loop_sustain" : "loop_continuous", false);
             final String type = LOOP_TYPE_MAP.get (sampleLoop.getType ());
             // No need to write the default value

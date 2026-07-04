@@ -8,7 +8,7 @@
 * New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
 * New: Improved user interface for long lists of formats.
-* New: The sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) is now preserved between the formats that encode it - SoundFont 2 (sample mode 1/3), SFZ (loop_continuous/loop_sustain), Renoise (LoopRelease), NI Kontakt (read) and Elektron Tonverk/Multi (keep-looping-on-release) - instead of always converting to a continuous loop (thanks to Douglas Carmichael).
+* New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - SoundFont 2, SFZ, Renoise, NI Kontakt and Elektron Tonverk/Multi (thanks to Douglas Carmichael).
 * New: Added several new tags for category detection.
 * New: Added an opt-in *Snap loops to zero-crossings* processing option.
 * Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).

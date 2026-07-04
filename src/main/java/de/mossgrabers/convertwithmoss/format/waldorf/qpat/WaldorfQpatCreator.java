@@ -471,8 +471,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static void createEnvelope (final List<WaldorfQpatParameter> parameters, final IEnvelope envelope, final String prefix, final String slopePrefix, final boolean flattenSustain)
     {
         final boolean isPitch = prefix.startsWith ("Free");
-        // Only the amplitude envelope gates the VCA, so only it can click when a stage is instant; a
-        // short filter or pitch envelope stage is left unchanged.
+        // Only the amplitude envelope gates the VCA, so only it can click when a stage is instant;
+        // a short filter or pitch envelope stage is left unchanged.
         final boolean isAmplitude = "AmpEnv".equals (prefix);
 
         if (isPitch && envelope.getStartLevel () != 0)
@@ -503,8 +503,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         parameters.add (new WaldorfQpatParameter (prefix + "Release", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (releaseTime)), (float) convertFromTime (releaseTime)));
 
         // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is
-        // folded
-        // into the zone gain instead (see computeFlatAmpEnvelopeLevel)
+        // folded into the zone gain instead (see computeFlatAmpEnvelopeLevel)
         double sustainLevel = envelope.getSustainLevel ();
         if (sustainLevel == -1)
             sustainLevel = isPitch ? 0 : 1;
@@ -626,10 +625,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /**
      * The device plays an envelope stage with parameter value 0 as instant. For the amplitude
      * envelope a non-zero attack or release shorter than the ~0.06 second minimum would otherwise
-     * collapse to instant and click on note-on/off for a sample that does not start or end at a zero
-     * crossing. Clamp such a time up to the shortest audible length (0.07 seconds, verified on
-     * Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the VCA, so
-     * a short filter or pitch envelope stage is left unchanged.
+     * collapse to instant and click on note-on/off for a sample that does not start or end at a
+     * zero crossing. Clamp such a time up to the shortest audible length (0.07 seconds, verified on
+     * Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the VCA,
+     * so a short filter or pitch envelope stage is left unchanged.
      *
      * @param isAmplitude True if this is the amplitude (VCA) envelope
      * @param seconds The envelope stage time in seconds
