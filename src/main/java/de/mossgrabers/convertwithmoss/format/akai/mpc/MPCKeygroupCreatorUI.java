@@ -123,7 +123,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
                 }
             }
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             notifier.logError ("IDS_CLI_VALUE_MUST_BE_INTEGER", MPC_LAYER_LIMIT_USE_8);
             return false;

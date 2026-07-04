@@ -19,8 +19,8 @@ import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVe
 
 /**
  * Reads and writes Elektron Tonverk preset files (*.tvpst). In contrast to the elmulti/eldrum
- * mapping files, a preset is a full sound: it adds a flat <code>[parameters]</code> block (envelopes,
- * filter, LFOs, FX, arpeggiator, ...) and embeds the sample mapping as a nested
+ * mapping files, a preset is a full sound: it adds a flat <code>[parameters]</code> block
+ * (envelopes, filter, LFOs, FX, arpeggiator, ...) and embeds the sample mapping as a nested
  * <code>*_mapping_slot</code> table. The file is a small sub-set of TOML (single-quoted scalar
  * values, arrays of tables for the key-zones).
  *
@@ -32,13 +32,13 @@ public class TonverkPresetFile
     public enum Machine
     {
         /** One-Shot machine: a single sample mapped across the whole keyboard. */
-        ONESHOT ("gen_oneshot"),
+        ONESHOT("gen_oneshot"),
         /** Multi machine: a multi-sample mapped to key- and velocity-ranges. */
-        MULTI ("gen_multi"),
+        MULTI("gen_multi"),
         /** Drum machine: a kit of up to several drum voices. */
-        DRUM ("gen_drum"),
+        DRUM("gen_drum"),
         /** Unknown/unsupported machine. */
-        UNKNOWN ("");
+        UNKNOWN("");
 
 
         private final String parameterPrefix;
@@ -83,23 +83,23 @@ public class TonverkPresetFile
 
 
     /** Format version of the preset (the top-level 'version'). */
-    public int                         version            = 2;
+    public int                        version            = 2;
     /** The preset category (e.g. 'KEYS', 'DRUMS'). */
-    public String                      category           = "";
+    public String                     category           = "";
     /** The preset tags. */
-    public final List<String>          tags               = new ArrayList<> ();
+    public final List<String>         tags               = new ArrayList<> ();
     /** All entries of the flat '[parameters]' block, in file order, values without quotes. */
-    public final Map<String, String>   parameters         = new LinkedHashMap<> ();
+    public final Map<String, String>  parameters         = new LinkedHashMap<> ();
     /** The machine derived from the 'gen_machine' parameter (set after {@link #parse(Path)}). */
-    public Machine                     machine            = Machine.UNKNOWN;
+    public Machine                    machine            = Machine.UNKNOWN;
     /** The display name stored in the mapping slot. */
-    public String                      mappingSlotName    = "";
+    public String                     mappingSlotName    = "";
     /** The version of the mapping slot. */
-    public int                         mappingSlotVersion = 0;
+    public int                        mappingSlotVersion = 0;
     /** The key-zones of the mapping slot (Multi and Drum machines). */
     public final List<TonverkKeyZone> keyZones           = new ArrayList<> ();
     /** Errors which occurred during parsing. */
-    public final List<String>          errors             = new ArrayList<> ();
+    public final List<String>         errors             = new ArrayList<> ();
 
 
     /**
@@ -210,7 +210,6 @@ public class TonverkPresetFile
             {
                 final List<String> items = new ArrayList<> ();
                 if (rawValue.equals ("["))
-                {
                     while (i + 1 < lines.size ())
                     {
                         final String arrayLine = lines.get (++i).trim ();
@@ -220,7 +219,6 @@ public class TonverkPresetFile
                         if (!item.isEmpty ())
                             items.add (item);
                     }
-                }
                 else
                 {
                     String inline = rawValue.substring (1);
@@ -373,7 +371,7 @@ public class TonverkPresetFile
         {
             return Double.parseDouble (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -396,7 +394,7 @@ public class TonverkPresetFile
         {
             return (int) Math.round (Double.parseDouble (value));
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -448,7 +446,7 @@ public class TonverkPresetFile
         {
             return (int) Math.round (Double.parseDouble (value.trim ()));
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             this.errors.add ("Not an integer: " + value);
             return defaultValue;
@@ -462,7 +460,7 @@ public class TonverkPresetFile
         {
             return Double.parseDouble (value.trim ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             this.errors.add ("Not a number: " + value);
             return defaultValue;
@@ -484,15 +482,26 @@ public class TonverkPresetFile
     private static String stripQuotes (final String value)
     {
         final String trimmed = value.trim ();
-        if (trimmed.length () >= 2 && trimmed.startsWith ("'") && trimmed.endsWith ("'"))
+        if (trimmed.length () >= 2 && (trimmed.startsWith ("\"") && trimmed.endsWith ("\"") || trimmed.startsWith ("'") && trimmed.endsWith ("'")))
             return trimmed.substring (1, trimmed.length () - 1);
         return trimmed;
     }
 
 
+    /**
+     * Quotes a string value. Uses single quotes except when the value contains a single quote, in
+     * that case double quotes are used and contained double quotes are escaped (single-quoted TOML
+     * scalars cannot contain a single quote, which the Tonverk rejects).
+     *
+     * @param value The value to quote
+     * @return The quoted value
+     */
     private static String quote (final String value)
     {
-        return "'" + (value == null ? "" : value) + "'";
+        final String text = value == null ? "" : value;
+        if (!text.contains ("'"))
+            return "'" + text + "'";
+        return '"' + text.replace ("\"", "\\\"") + '"';
     }
 
 

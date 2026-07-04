@@ -561,7 +561,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
             return zone;
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Can never happen
             return null;

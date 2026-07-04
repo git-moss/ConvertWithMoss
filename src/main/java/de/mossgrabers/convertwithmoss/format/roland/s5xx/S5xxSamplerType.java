@@ -6,7 +6,7 @@ package de.mossgrabers.convertwithmoss.format.roland.s5xx;
 
 /**
  * Identifies the Roland sampler model from the 4-byte ASCII field at disk-image offset 4.
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public enum S5xxSamplerType
@@ -37,7 +37,7 @@ public enum S5xxSamplerType
 
     /**
      * Constructor.
-     * 
+     *
      * @param id The ID of the type
      * @param description The description
      */
@@ -50,7 +50,7 @@ public enum S5xxSamplerType
 
     /**
      * The 4-byte ASCII identifier stored at offset 4.
-     * 
+     *
      * @return The ID
      */
     public String getId ()
@@ -61,7 +61,7 @@ public enum S5xxSamplerType
 
     /**
      * Human-readable model description.
-     * 
+     *
      * @return The description
      */
     public String getDescription ()
@@ -72,7 +72,7 @@ public enum S5xxSamplerType
 
     /**
      * Resolves from the raw 4-character string; returns {@link #UNKNOWN} on no match.
-     * 
+     *
      * @param id The ID of the sampler type
      * @return The instance
      */
@@ -88,7 +88,7 @@ public enum S5xxSamplerType
     /**
      * S-50, S-51, S500 family: 512-byte patch blocks, 8 patches (P1–P8), and the output-jack field
      * is suppressed in display.
-     * 
+     *
      * @return True if it from the S50 series
      */
     public boolean isS50 ()
@@ -99,7 +99,7 @@ public enum S5xxSamplerType
 
     /**
      * Whether the output-jack field should be shown (false for S-50).
-     * 
+     *
      * @return True to show the output jack
      */
     public boolean showOutputJack ()
@@ -110,7 +110,7 @@ public enum S5xxSamplerType
 
     /**
      * Patch block size: 512 bytes for S-50, 256 bytes for all others.
-     * 
+     *
      * @return The size of a block on the disk
      */
     public int patchBlockSize ()
@@ -121,7 +121,7 @@ public enum S5xxSamplerType
 
     /**
      * Number of patches the original tool reads: 8 for S-50 family, 16 for all others.
-     * 
+     *
      * @return The number of patches of the format
      */
     public int patchCount ()

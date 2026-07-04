@@ -578,7 +578,7 @@ public abstract class AbstractNKIMetadataFileHandler
                         metadata.setCategory (iconName);
                 }
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 // Ignore
             }
@@ -783,7 +783,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ());
         }
-        catch (final UnsupportedAudioFileException | IOException ex)
+        catch (final UnsupportedAudioFileException | IOException _)
         {
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ());
         }
@@ -992,7 +992,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 xFadeLength = AbstractNKIMetadataFileHandler.getInt (loopParams, this.tags.xfadeLengthParam ());
                 alternatingLoop = AbstractNKIMetadataFileHandler.getString (loopParams, this.tags.alternatingLoopParam ());
             }
-            catch (final ValueNotAvailableException e)
+            catch (final ValueNotAvailableException _)
             {
                 return;
             }
@@ -1352,7 +1352,7 @@ public abstract class AbstractNKIMetadataFileHandler
             }
             return modulator;
         }
-        catch (final ValueNotAvailableException e)
+        catch (final ValueNotAvailableException _)
         {
             return null;
         }

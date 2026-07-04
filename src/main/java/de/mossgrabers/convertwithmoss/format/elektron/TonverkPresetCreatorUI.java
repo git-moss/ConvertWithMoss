@@ -40,14 +40,14 @@ public class TonverkPresetCreatorUI extends WavChunkSettingsUI
     }
 
 
-    private static final String  OUTPUT_ENGINE     = "OutputEngine";
-    private static final String  RESAMPLE_TO_24_48 = "ResampleTo2448";
+    private static final String OUTPUT_ENGINE     = "OutputEngine";
+    private static final String RESAMPLE_TO_24_48 = "ResampleTo2448";
 
-    private ComboBox<String>     outputEngineBox;
-    private CheckBox             resampleTo2448CheckBox;
+    private ComboBox<String>    outputEngineBox;
+    private CheckBox            resampleTo2448CheckBox;
 
-    private OutputEngine         outputEngine      = OutputEngine.MULTI;
-    private boolean              resampleTo2448;
+    private OutputEngine        outputEngine      = OutputEngine.MULTI;
+    private boolean             resampleTo2448;
 
 
     /**

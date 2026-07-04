@@ -225,12 +225,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
             return "Unnamed";
 
         // Avoid reserved Windows filenames
-        String upper = sanitized.toUpperCase ();
+        final String upper = sanitized.toUpperCase ();
         if (upper.matches ("CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]"))
             sanitized = "_" + sanitized;
 
         // Limit length
-        int MAX_LENGTH = 255;
+        final int MAX_LENGTH = 255;
         if (sanitized.length () > MAX_LENGTH)
             sanitized = sanitized.substring (0, MAX_LENGTH);
 
@@ -940,7 +940,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Overwrite to implement other modifications on the wavFile.
-     * 
+     *
      * @param multisampleSource The multi-sample source
      * @param zone The zone from which to take the data to store into the chunks
      * @param wavFile The WAV file to modify

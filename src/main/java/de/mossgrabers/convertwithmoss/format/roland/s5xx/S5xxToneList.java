@@ -24,7 +24,7 @@ public class S5xxToneList
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read
      */
@@ -60,7 +60,7 @@ public class S5xxToneList
 
     /**
      * Get the original sub-tone.
-     * 
+     *
      * @return The original sub-tone, if any.
      */
     public int getOrgSubTone ()
@@ -71,7 +71,7 @@ public class S5xxToneList
 
     /**
      * Get the root key.
-     * 
+     *
      * @return The root key
      */
     public int getRootKey ()

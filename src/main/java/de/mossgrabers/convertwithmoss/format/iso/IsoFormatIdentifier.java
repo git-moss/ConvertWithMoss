@@ -58,6 +58,15 @@ public class IsoFormatIdentifier
 
 
     /**
+     * Constructor.
+     */
+    protected IsoFormatIdentifier ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Identify the format of an ISO file.
      *
      * @param sourceFile The file to identify
@@ -69,7 +78,7 @@ public class IsoFormatIdentifier
         {
             return IsoFormatIdentifier.identifyIso (in.readNBytes (IsoFormatIdentifier.MINIMUM_NUMBER_OF_REQUIRED_BYTES));
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             return IsoFormat.UNKNOWN;
         }
@@ -100,7 +109,7 @@ public class IsoFormatIdentifier
                 return IsoFormat.ROLAND_S5XX;
             }
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Ignore
         }

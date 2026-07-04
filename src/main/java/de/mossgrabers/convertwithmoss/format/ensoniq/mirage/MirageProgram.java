@@ -262,7 +262,7 @@ public class MirageProgram
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The input from which to read the program parameters
      * @throws IOException Could not read the program parameters
      */

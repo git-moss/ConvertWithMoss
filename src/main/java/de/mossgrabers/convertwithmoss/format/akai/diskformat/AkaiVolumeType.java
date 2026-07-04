@@ -40,7 +40,7 @@ public enum AkaiVolumeType
 
     /**
      * Constructor.
-     * 
+     *
      * @param typeId The type ID
      * @param name The readable name
      */
@@ -53,7 +53,7 @@ public enum AkaiVolumeType
 
     /**
      * Get the readable name.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -64,7 +64,7 @@ public enum AkaiVolumeType
 
     /**
      * Get the type enumeration value from the type ID.
-     * 
+     *
      * @param typeId The type ID
      * @return The volume type, never null
      */

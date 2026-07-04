@@ -17,56 +17,56 @@ import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiImage;
 public class AkaiS1000Keygroup
 {
     /** ID for a key-group structure. */
-    private static final int            AKAI_KEYGROUP_ID       = 2;
+    private static final int                 AKAI_KEYGROUP_ID       = 2;
 
     // 24..127
-    private final byte                  lowKey;
+    private final byte                       lowKey;
     // 24..127
-    private final byte                  highKey;
+    private final byte                       highKey;
     // -128..127 (-50..+50 cents)
-    private final byte                  tuneCents;
+    private final byte                       tuneCents;
     // -50..50
-    private final byte                  tuneSemitones;
+    private final byte                       tuneSemitones;
     // 0..99
-    private final byte                  filter;
+    private final byte                       filter;
     // 0..24 semi-tone/octave
     @SuppressWarnings("unused")
-    private final byte                  keyToFilter;
+    private final byte                       keyToFilter;
     // -50..50
-    private final byte                  velocityToFilter;
+    private final byte                       velocityToFilter;
     // -50..50
     @SuppressWarnings("unused")
-    private final byte                  pressureToFilter;
+    private final byte                       pressureToFilter;
     // -50..50
-    private final byte                  envelope2ToFilter;
+    private final byte                       envelope2ToFilter;
 
-    private final AkaiS1000Envelope     amplitudeEnvelope;
-    private final AkaiS1000Envelope     auxEnvelope;
+    private final AkaiS1000Envelope          amplitudeEnvelope;
+    private final AkaiS1000Envelope          auxEnvelope;
 
     // -50..50
     @SuppressWarnings("unused")
-    private final byte                  velocityToEnvelope2ToFilter;
+    private final byte                       velocityToEnvelope2ToFilter;
     // -50..50
-    private final byte                  envelope2ToPitch;
+    private final byte                       envelope2ToPitch;
     @SuppressWarnings("unused")
-    private final boolean               velocityZoneCrossfade;
+    private final boolean                    velocityZoneCrossfade;
     @SuppressWarnings("unused")
-    private final int                   velocityZoneUsed;
+    private final int                        velocityZoneUsed;
     private final AkaiS1000KeygroupSample [] samples;
 
     // -50..50
-    private final byte                  beatDetune;
+    private final byte                       beatDetune;
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
-    private final boolean               holdAttackUntilLoop;
+    private final boolean                    holdAttackUntilLoop;
     // Sample 1-4 key tracking : 0=TRACK 1=FIXED
-    private final boolean []            sampleKeyTracking      = new boolean [4];
+    private final boolean []                 sampleKeyTracking      = new boolean [4];
     // Sample 1-4 AUX out offset 0..7
-    private final byte []               sampleAuxOutOffset     = new byte [4];
+    private final byte []                    sampleAuxOutOffset     = new byte [4];
     // -9999..9999 (16-bit signed)
-    private final short []              velocityToSampleStart  = new short [4];
+    private final short []                   velocityToSampleStart  = new short [4];
     // -50..50
-    private final byte []               velocityToVolumeOffset = new byte [4];
+    private final byte []                    velocityToVolumeOffset = new byte [4];
 
 
     /**

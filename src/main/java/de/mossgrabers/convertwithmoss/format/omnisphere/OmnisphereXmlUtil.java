@@ -22,12 +22,21 @@ import org.w3c.dom.NodeList;
  */
 public class OmnisphereXmlUtil
 {
-    private final static String XML_HEADER = "<?xml version=\"1.0\"  encoding=\"ISO-8859-1\"  standalone=\"no\"?>\n<!DOCTYPE s1 SYSTEM \"sbk:/style/dtd/document.dtd\">\n";
+    private static final String XML_HEADER = "<?xml version=\"1.0\"  encoding=\"ISO-8859-1\"  standalone=\"no\"?>\n<!DOCTYPE s1 SYSTEM \"sbk:/style/dtd/document.dtd\">\n";
+
+
+    /**
+     * Constructor.
+     */
+    protected OmnisphereXmlUtil ()
+    {
+        // Intentionally empty
+    }
 
 
     /**
      * Creates the "XML" code.
-     * 
+     *
      * @param document The document for which to create the code
      * @param isDirectoryDocument True if it is the main DB directory, which omits the header,
      *            spacing and closing tags
@@ -123,7 +132,7 @@ public class OmnisphereXmlUtil
         {
             final Node child = children.item (i);
             final short nodeType = child.getNodeType ();
-            if ((nodeType == Node.ELEMENT_NODE) || (nodeType == Node.TEXT_NODE && !child.getTextContent ().isBlank ()))
+            if (nodeType == Node.ELEMENT_NODE || nodeType == Node.TEXT_NODE && !child.getTextContent ().isBlank ())
                 return true;
         }
         return false;

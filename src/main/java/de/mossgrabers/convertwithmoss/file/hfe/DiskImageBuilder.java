@@ -10,11 +10,20 @@ import java.util.List;
 
 /**
  * Builds a raw IMG disk image from sectors.
- * 
+ *
  * @author Jürgen Moßgraber
  */
 public class DiskImageBuilder
 {
+    /**
+     * Constructor.
+     */
+    private DiskImageBuilder ()
+    {
+        // Intentionally empty
+    }
+
+
     /**
      * Build IMG file data from sectors (1-based) with specified geometry.
      *
@@ -55,16 +64,14 @@ public class DiskImageBuilder
             final int lba = calculateLBA (sector.getCylinder (), sector.getHead (), sector.getSectorNumber (), numHeads, sectorsPerTrack, sectorIsZeroBased);
             final int offset = lba * bytesPerSector;
             if (offset + bytesPerSector <= image.length && sector.getData ().length == bytesPerSector)
-            {
                 try
                 {
                     System.arraycopy (sector.getData (), 0, image, offset, bytesPerSector);
                 }
-                catch (ArrayIndexOutOfBoundsException ex)
+                catch (final ArrayIndexOutOfBoundsException ex)
                 {
                     ex.printStackTrace ();
                 }
-            }
         }
 
         return image;
@@ -74,7 +81,7 @@ public class DiskImageBuilder
     /**
      * Creates and empty image of the given byte size and fills it with standard empty sector
      * pattern.
-     * 
+     *
      * @param imageSize The size of the image in bytes
      * @return The created image
      */
@@ -90,7 +97,7 @@ public class DiskImageBuilder
     /**
      * Calculate Logical Block Address from CHS (Cylinder/Head/Sector). Note: Sector numbers
      * typically start at 1, not 0.
-     * 
+     *
      * @param cylinder The cylinder
      * @param head The head
      * @param sector The sector

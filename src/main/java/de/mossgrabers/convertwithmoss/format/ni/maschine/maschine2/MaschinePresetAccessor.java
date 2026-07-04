@@ -185,7 +185,7 @@ public class MaschinePresetAccessor
             // characters; 3 more bytes (01 01 00)
             final ByteArrayInputStream sampleInfoIn = new ByteArrayInputStream (parameterArrayRaw.get (offsets.offsetFirstZone + zoneOffset));
 
-            if (!checkSample (sampleInfoIn, sampleIndex))
+            if (!this.checkSample (sampleInfoIn, sampleIndex))
             {
                 if (filePaths.isEmpty ())
                     return Optional.empty ();

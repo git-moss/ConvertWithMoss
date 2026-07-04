@@ -27,6 +27,15 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 public class LayerSplitter
 {
     /**
+     * Constructor.
+     */
+    protected LayerSplitter ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Splits the given groups into non-overlapping layers so that no two zones in the same layer
      * cover the same key/velocity range. Original IGroup objects are reused when possible; new
      * DefaultGroup instances are created only when a group must be split across layers.
@@ -108,9 +117,7 @@ public class LayerSplitter
         for (final ISampleZone sampleZone: sampleZones)
             velocityLayers.computeIfAbsent (createKey (sampleZone), _ -> new ArrayList<> ()).add (sampleZone);
         for (final List<ISampleZone> velocityLayer: velocityLayers.values ())
-            Collections.sort (velocityLayer, (final ISampleZone sz1, final ISampleZone sz2) -> {
-                return Integer.compare (sz1.getKeyLow (), sz2.getKeyLow ());
-            });
+            Collections.sort (velocityLayer, (final ISampleZone sz1, final ISampleZone sz2) -> Integer.compare (sz1.getKeyLow (), sz2.getKeyLow ()));
         return velocityLayers;
     }
 

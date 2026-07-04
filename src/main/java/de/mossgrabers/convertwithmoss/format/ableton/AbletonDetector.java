@@ -233,7 +233,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final String relativePathType = getValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH_TYPE);
             type = Integer.parseInt (relativePathType);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             throw new IOException (Functions.getMessage (ERR_MISSING_TAG, AbletonTag.TAG_RELATIVE_PATH_TYPE));
         }
@@ -465,7 +465,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
             return filter;
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // No filter configured
             return null;
@@ -576,7 +576,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                     }
                 }
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Ignore missing elements
         }
@@ -656,7 +656,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             return Double.parseDouble (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -670,7 +670,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             return Integer.parseInt (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }

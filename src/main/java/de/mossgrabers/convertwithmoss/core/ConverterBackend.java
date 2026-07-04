@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
+import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.algorithm.MultiSampleReducer;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
@@ -156,7 +157,6 @@ public class ConverterBackend
             new EXS24Detector (notifier),
             new KontaktDetector (notifier),
             new MaschineDetector (notifier),
-            new OmnisphereDetector (notifier),
             new PolyendTrackerDetector (notifier),
             new RenoiseDetector (notifier),
             new DelugeDetector (notifier),
@@ -166,6 +166,7 @@ public class ConverterBackend
             new SampleFileDetector (notifier),
             new SfzDetector (notifier),
             new Sf2Detector (notifier),
+            new OmnisphereDetector (notifier),
             new TALSamplerDetector (notifier),
             new WaldorfQpatDetector (notifier),
             new YamahaYsfcDetector (notifier)
@@ -189,7 +190,6 @@ public class ConverterBackend
             new EXS24Creator (notifier),
             new KontaktCreator (notifier),
             new MaschineCreator (notifier),
-            new OmnisphereCreator (notifier),
             new PolyendTrackerCreator (notifier),
             new RenoiseCreator (notifier),
             new DelugeCreator (notifier),
@@ -197,6 +197,7 @@ public class ConverterBackend
             new WavCreator (notifier),
             new SfzCreator (notifier),
             new Sf2Creator (notifier),
+            new OmnisphereCreator (notifier),
             new TALSamplerCreator (notifier),
             new WaldorfQpatCreator (notifier),
             new YamahaYsfcCreator (notifier)
@@ -392,20 +393,20 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            ////////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Loop cross-fade
 
             if (this.detectionSettings.loopCrossfades > 0)
             {
                 this.notifier.log ("IDS_PROCESSING_LOOP_CROSSFADE_LOG");
-                final double crossfadeFactor = Math.clamp (this.detectionSettings.loopCrossfades - 1, 0, 100) / 100.0;
+                final double crossfadeFactor = Math.clamp (this.detectionSettings.loopCrossfades - 1L, 0, 100) / 100.0;
                 for (final IGroup group: multisampleSource.getGroups ())
                     for (final ISampleZone zone: group.getSampleZones ())
                         for (final ISampleLoop loop: zone.getLoops ())
                             loop.setCrossfade (crossfadeFactor);
             }
 
-            ///////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -422,7 +423,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            ///////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)
@@ -438,7 +439,7 @@ public class ConverterBackend
             }
             multisampleSource.setGroups (groups);
 
-            ///////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Audio processing
 
             final List<ISampleZone> sampleZones = new ArrayList<> ();
@@ -459,6 +460,15 @@ public class ConverterBackend
                 this.notifier.log ("IDS_PROCESSING_NORMALIZING");
             this.notifier.log ("IDS_NOTIFY_LINE_FEED");
             AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.alwaysResample, this.detectionSettings.enableNormalize);
+
+            // -----------------------------------------------------------
+            // Snap forward loop boundaries to zero-crossings to remove loop clicks
+
+            if (this.detectionSettings.snapLoopsToZero)
+            {
+                final int snapped = LoopZeroSnapper.snap (sampleZones);
+                this.notifier.log ("IDS_PROCESSING_SNAP_LOOPS", Integer.toString (snapped));
+            }
         }
         catch (final IOException | UnsupportedAudioFileException ex)
         {

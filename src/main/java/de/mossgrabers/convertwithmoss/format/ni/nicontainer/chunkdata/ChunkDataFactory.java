@@ -65,7 +65,7 @@ public class ChunkDataFactory
         {
             return clazz.getConstructor ().newInstance ();
         }
-        catch (final InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException ex)
+        catch (final InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException _)
         {
             return null;
         }

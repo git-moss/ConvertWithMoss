@@ -2,21 +2,36 @@
 
 ## 19.0.0 (unreleased)
 
-* New: Improved user interface for long lists of formats.
-* New: Added support for the Elektron Tonverk preset (TVPST) format - read (One-Shot, Multi and Drum machines, including amplitude and filter envelopes) and write (Multi or Drum machine) (thanks to Douglas Carmichael).
-* New: The sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) is now preserved between the formats that encode it - SoundFont 2 (sample mode 1/3), SFZ (loop_continuous/loop_sustain), Renoise (LoopRelease), NI Kontakt (read) and Elektron Tonverk/Multi (keep-looping-on-release) - instead of always converting to a continuous loop (thanks to Douglas Carmichael).
 * New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
+* New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
+* New: Improved user interface for long lists of formats.
+* New: The sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) is now preserved between the formats that encode it - SoundFont 2 (sample mode 1/3), SFZ (loop_continuous/loop_sustain), Renoise (LoopRelease), NI Kontakt (read) and Elektron Tonverk/Multi (keep-looping-on-release) - instead of always converting to a continuous loop (thanks to Douglas Carmichael).
 * New: Added several new tags for category detection.
+* New: Added an opt-in *Snap loops to zero-crossings* processing option.
+* Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
+* Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
+* Fixed: Fixed some potential NullPointerExceptions.
+* Elektron Tonverk Multisample (thanks to Douglas Carmichael)
+  * New: Relabelled "Elektron Tonverk Multisample" to not confuse it with the new "Elektron Tonverk Preset".
+  * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
+  * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
   * Fixed: Implemented workaround for converting 32-bit FLAC files (might not always work).
+* Maschine 1
+  * Fixed: File version number was always written as 0.
+* MPC
+  * Fixed: Program in XTY file was not read.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+  * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
+  * Fixed: A very short but non-zero envelope attack, decay or release (below the ~0.06 second device minimum) collapsed to parameter value 0, i.e. an instant stage, which still clicked on note-on and note-off for samples that do not start or end at a zero crossing. Non-zero times are now clamped up to the shortest audible value instead of to instant, while a genuine zero stays an instant stage (verified on Iridium hardware).
   * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
+  * Fixed: A sample zone without an explicit start/end (e.g. converted from a format that stores only loop points) was written with a sample start and end of -1; the whole sample is now used.
 
 ## 18.1.1
 

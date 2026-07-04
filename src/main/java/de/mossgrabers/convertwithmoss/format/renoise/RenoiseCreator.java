@@ -403,7 +403,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
             data = encodeToFlac (renderSource);
             extension = ".flac";
         }
-        catch (final IOException | RuntimeException ex)
+        catch (final IOException | RuntimeException _)
         {
             this.notifier.logError ("IDS_RENOISE_FLAC_FALLBACK", zone.getName ());
             data = AudioFileUtils.convertToWavData (renderSource, DESTINATION_AUDIO_FORMAT);

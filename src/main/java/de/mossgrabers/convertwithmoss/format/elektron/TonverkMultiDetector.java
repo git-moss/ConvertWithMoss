@@ -20,6 +20,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -43,7 +44,7 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public TonverkMultiDetector (final INotifier notifier)
     {
-        super ("Elektron Multi", "Elektron", notifier, new MetadataSettingsUI ("Elektron"), ".elmulti", ".eldrum");
+        super ("Elektron Tonverk Multisample", "Elektron", notifier, new MetadataSettingsUI ("Elektron"), ".elmulti", ".eldrum");
     }
 
 
@@ -117,20 +118,25 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
             sampleZone.setKeyRoot (zone.pitch);
             sampleZone.setTuning (zone.pitch - zone.keyCenter);
 
-            if (sampleSlot.trimStart != null)
-                sampleZone.setStart (sampleSlot.trimStart.intValue ());
-            if (sampleSlot.trimEnd != null)
-                sampleZone.setStop (sampleSlot.trimEnd.intValue ());
+            // A slot without explicit trim points plays the whole sample; default to the full range
+            // (0 .. number-of-frames) rather than leaving the model default of -1, which
+            // destinations
+            // such as the Waldorf QPAT would otherwise write out verbatim.
+            final int frames = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+            sampleZone.setStart (sampleSlot.trimStart != null && sampleSlot.trimStart.intValue () >= 0 ? sampleSlot.trimStart.intValue () : 0);
+            sampleZone.setStop (sampleSlot.trimEnd != null && sampleSlot.trimEnd.intValue () >= 0 ? sampleSlot.trimEnd.intValue () : frames);
 
             if ("Forward".equals (sampleSlot.loopMode))
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
-                if (sampleSlot.loopStart != null)
+                loop.setType (LoopType.FORWARDS);
+                if (sampleSlot.loopStart != null && sampleSlot.loopStart.intValue () >= 0)
                     loop.setStart (sampleSlot.loopStart.intValue ());
-                if (sampleSlot.loopEnd != null)
+                if (sampleSlot.loopEnd != null && sampleSlot.loopEnd.intValue () >= 0)
                     loop.setEnd (sampleSlot.loopEnd.intValue ());
-                if (sampleSlot.loopCrossfade != null)
+                if (sampleSlot.loopCrossfade != null && sampleSlot.loopCrossfade.intValue () >= 0)
                     loop.setCrossfadeInSamples (sampleSlot.loopCrossfade.intValue ());
+                sampleZone.getLoops ().add (loop);
             }
 
             sampleZones.add (sampleZone);

@@ -63,7 +63,6 @@ public class CompareKontaktPrograms
         catch (final IOException ex)
         {
             ex.printStackTrace ();
-            return;
         }
     }
 

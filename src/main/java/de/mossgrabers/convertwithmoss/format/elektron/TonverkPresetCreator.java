@@ -36,17 +36,22 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveRiffChunkId;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
-import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetCreatorUI.OutputEngine;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetFile.Machine;
 import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * Creator for Elektron Tonverk preset files (*.tvpst). A preset bundles a description file and the
- * related (relatively referenced) samples in one folder. The full <code>[parameters]</code> block is
- * created from a neutral factory template (FX bypassed, LFOs/arpeggiator/modulation neutralized); the
- * amplitude envelope, the filter and its envelope, gain and panning are written from the model. The
- * output engine (Multi or Drum) can be selected; the Drum machine always has eight voices.
+ * Creator for Elektron Tonverk preset files (*.tvpst). The Tonverk lists presets only as flat
+ * <code>*.tvpst</code> files in <code>User/Presets</code> and resolves their samples by an absolute
+ * device path; therefore this creator mirrors the device's SD-card layout below the chosen output
+ * folder: the preset is written to <code>User/Presets/&lt;name&gt;.tvpst</code> and its samples to
+ * <code>User/Multi-sampled Instruments/&lt;name&gt;/</code>, each referenced as
+ * <code>/mnt/sdcard/User/Multi-sampled Instruments/&lt;name&gt;/&lt;sample&gt;.wav</code>. The
+ * whole <code>User</code> folder can then be copied straight onto the device. The full
+ * <code>[parameters]</code> block is created from a neutral factory template (FX bypassed,
+ * LFOs/arpeggiator/modulation neutralized); the amplitude envelope, the filter and its envelope,
+ * gain and panning are written from the model. The output engine (Multi or Drum) can be selected;
+ * the Drum machine always has eight voices.
  *
  * @author Jürgen Moßgraber
  */
@@ -61,6 +66,13 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     private static final int                    DEFAULT_DRUM_ROOT      = 60;
     private static final String                 MULTI_TEMPLATE         = "/de/mossgrabers/convertwithmoss/templates/tonverk/multi-template.tvpst";
     private static final String                 DRUM_TEMPLATE          = "/de/mossgrabers/convertwithmoss/templates/tonverk/drum-template.tvpst";
+
+    /** The absolute device folder under which a preset references its samples. */
+    private static final String                 DEVICE_SAMPLE_FOLDER   = "/mnt/sdcard/User/Multi-sampled Instruments/";
+    /** Sub-path (below the chosen output folder) holding the flat *.tvpst presets. */
+    private static final String                 PRESETS_SUBPATH        = "User" + File.separator + "Presets";
+    /** Sub-path (below the chosen output folder) holding the per-preset sample folders. */
+    private static final String                 INSTRUMENTS_SUBPATH    = "User" + File.separator + "Multi-sampled Instruments";
 
     private static final DestinationAudioFormat OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -92,14 +104,26 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         final boolean resample = this.settingsConfiguration.resampleTo2448 ();
         final boolean drum = this.isDrumOutput (multisampleSource);
 
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File presetFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
-        if (!presetFolder.mkdir ())
+        // Mirror the device's SD-card layout: the flat preset goes into 'User/Presets', the samples
+        // into 'User/Multi-sampled Instruments/<preset>'. Both sub-trees accumulate across presets
+        // when a whole library is converted.
+        final File presetsFolder = new File (destinationFolder, PRESETS_SUBPATH);
+        if (!presetsFolder.isDirectory () && !presetsFolder.mkdirs ())
         {
-            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", presetFolder.getAbsolutePath ());
+            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", presetsFolder.getAbsolutePath ());
             return;
         }
-        final String presetName = presetFolder.getName ();
+
+        final File presetFile = this.createUniqueFilename (presetsFolder, createSafeFilename (multisampleSource.getName ()), "tvpst");
+        final String presetFileName = presetFile.getName ();
+        final String presetName = presetFileName.substring (0, presetFileName.length () - ".tvpst".length ());
+
+        final File sampleFolder = new File (new File (destinationFolder, INSTRUMENTS_SUBPATH), presetName);
+        if (!sampleFolder.isDirectory () && !sampleFolder.mkdirs ())
+        {
+            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", sampleFolder.getAbsolutePath ());
+            return;
+        }
 
         multisampleSource.setGroups (this.combineSplitStereo (multisampleSource));
 
@@ -111,19 +135,50 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         if (resample)
             TonverkMultiCreator.recalculateForResample (multisampleSource);
 
-        // The samples are physically trimmed to the zone start/stop and referenced relatively
-        this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT, true);
+        // The samples are physically trimmed to the zone start/stop and stored in the instrument
+        // folder; they are referenced from the preset by their absolute device path (see below)
+        this.writeSamples (sampleFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT, true);
 
         // The preset must be created after the samples were written since trimming updates the
         // zone/loop positions
-        final TonverkPresetFile preset = drum ? this.buildDrumPreset (multisampleSource, presetName) : this.buildMultiPreset (multisampleSource);
+        final TonverkPresetFile preset = drum ? this.buildDrumPreset (multisampleSource, presetName) : buildMultiPreset (multisampleSource);
         applyMetadata (preset, multisampleSource);
 
-        final String presetFileName = presetName + ".tvpst";
+        // The Tonverk only resolves a preset's samples through an absolute '/mnt/sdcard/...' path
+        // a bare file name (as used by the elmulti format) is not found
+        referenceSamplesAbsolutely (preset, presetName);
+
         this.notifier.log ("IDS_NOTIFY_STORING", presetFileName);
-        preset.write (new File (presetFolder, presetFileName).toPath ());
+        preset.write (presetFile.toPath ());
 
         this.progress.notifyDone ();
+    }
+
+
+    /**
+     * Rewrites every sample reference of the preset to its absolute device path under
+     * <code>User/Multi-sampled Instruments/&lt;preset&gt;</code>. The mapping builders store a bare
+     * file name (correct for the elmulti format, whose description file sits next to its samples);
+     * a *.tvpst preset, however, is a flat file in <code>User/Presets</code> and the Tonverk only
+     * finds its samples through such an absolute <code>/mnt/sdcard/...</code> path.
+     *
+     * @param preset The preset whose sample slots are updated in place
+     * @param presetName The preset name which is also the instrument sub-folder name
+     */
+    private static void referenceSamplesAbsolutely (final TonverkPresetFile preset, final String presetName)
+    {
+        final String deviceFolder = DEVICE_SAMPLE_FOLDER + presetName + "/";
+        for (final TonverkKeyZone keyZone: preset.keyZones)
+            for (final TonverkVelocityLayer velocityLayer: keyZone.velocityLayers)
+                for (final TonverkSampleSlot sampleSlot: velocityLayer.sampleSlots)
+                {
+                    final String sample = sampleSlot.sample;
+                    if (sample == null || sample.isBlank ())
+                        continue;
+                    // Keep only the file name in case a path was already set
+                    final int slash = Math.max (sample.lastIndexOf ('/'), sample.lastIndexOf ('\\'));
+                    sampleSlot.sample = deviceFolder + (slash >= 0 ? sample.substring (slash + 1) : sample);
+                }
     }
 
 
@@ -159,7 +214,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     }
 
 
-    private TonverkPresetFile buildMultiPreset (final IMultisampleSource multisampleSource) throws IOException
+    private static TonverkPresetFile buildMultiPreset (final IMultisampleSource multisampleSource) throws IOException
     {
         final TonverkPresetFile preset = loadTemplate (MULTI_TEMPLATE);
         preset.machine = Machine.MULTI;

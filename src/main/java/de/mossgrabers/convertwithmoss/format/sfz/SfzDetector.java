@@ -55,7 +55,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
     private static final Pattern                 HEADER_PATTERN    = Pattern.compile ("<([a-z]+)>([^<]*)", Pattern.DOTALL);
     private static final Pattern                 ATTRIBUTE_PATTERN = Pattern.compile ("(\\b\\w+)=(.*?(?=\\s\\w+=|//|$))", Pattern.DOTALL);
     private static final Map<String, FilterType> FILTER_TYPE_MAP   = new HashMap<> ();
-    private static final Map<String, LoopType>   LOOP_TYPE_MAP     = new HashMap<> (3);
+    private static final Map<String, LoopType>   LOOP_TYPE_MAP     = HashMap.newHashMap (3);
 
     static
     {
@@ -412,7 +412,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (end >= 0)
             sampleMetadata.setStop (end);
 
-        ///////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Key range
 
         final int key = this.getKeyValue (SfzOpcode.KEY);
@@ -454,7 +454,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (pitchKeyCenter >= 0)
             sampleMetadata.setKeyRoot (pitchKeyCenter);
 
-        ///////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Velocity
 
         // Lower bounds including cross-fade
@@ -483,12 +483,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (highVel >= 0)
             sampleMetadata.setVelocityHigh (highVel);
 
-        ///////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Sample Loop
 
         this.parseLoop (sampleMetadata);
 
-        ///////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Tune
 
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
@@ -524,12 +524,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         pitchEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY_SHAPE, 0) / 10.0);
         pitchEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE_SHAPE, 0) / 10.0);
 
-        ///////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Volume
 
         this.parseVolume (sampleMetadata);
 
-        ///////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         this.parseFilter (sampleMetadata);
@@ -563,7 +563,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             if (poles <= 0)
                 poles = 2;
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             poles = 2;
         }
@@ -821,7 +821,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         {
             return Integer.parseInt (value.get ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -860,7 +860,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         {
             return Double.parseDouble (value.get ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }

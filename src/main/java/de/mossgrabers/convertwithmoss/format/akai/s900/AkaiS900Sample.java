@@ -31,7 +31,7 @@ public class AkaiS900Sample
 
     private final byte [] sampleData;
 
-    private final int           compression;
+    private final int     compression;
 
 
     /**
@@ -47,21 +47,21 @@ public class AkaiS900Sample
 
         this.name = StreamUtils.readAscii (input, 10).trim ();
         // Padding
-        input.skip (6);
+        input.skipNBytes (6);
         this.sampleLength = StreamUtils.readUnsigned32 (input, false);
         this.sampleRate = StreamUtils.readUnsigned16 (input, false);
         this.nominalPitch = StreamUtils.readUnsigned16 (input, false);
         this.loudness = StreamUtils.readUnsigned16 (input, false);
         this.playbackMode = (char) input.read ();
-        input.skip (1);
+        input.skipNBytes (1);
         this.end = StreamUtils.readUnsigned32 (input, false);
         this.start = StreamUtils.readUnsigned32 (input, false);
         this.loopLength = StreamUtils.readUnsigned32 (input, false);
-        input.skip (2);
+        input.skipNBytes (2);
         this.type = input.read ();
         this.direction = input.read ();
         // Unknown content in 11-13
-        input.skip (16);
+        input.skipNBytes (16);
         this.sampleData = input.readAllBytes ();
     }
 

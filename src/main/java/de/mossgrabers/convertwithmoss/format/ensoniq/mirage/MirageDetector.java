@@ -175,7 +175,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Check if the filename contains a pattern lime Name1-Name2-Name3. If yes, these individual
      * names are returned. If not, 3 names are generated.
-     * 
+     *
      * @param programName The basic program name
      * @return The 3 sound names
      */

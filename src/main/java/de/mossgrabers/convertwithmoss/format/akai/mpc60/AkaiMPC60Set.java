@@ -26,12 +26,12 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AkaiMPC60Set
 {
-    private List<AkaiMPC60Pad> pads = new ArrayList<> ();
+    private final List<AkaiMPC60Pad> pads = new ArrayList<> ();
 
 
     /**
      * Constructor.
-     * 
+     *
      * @param fileContent The content of the SET file
      * @throws IOException Could not read the file
      */
@@ -88,7 +88,7 @@ public class AkaiMPC60Set
 
     /**
      * Get all pads.
-     * 
+     *
      * @return The pads
      */
     public List<AkaiMPC60Pad> getPads ()
@@ -117,7 +117,7 @@ public class AkaiMPC60Set
         // END?
         // Value can be outside of sample range (lower than start and larger than end)
         @SuppressWarnings("unused")
-        int pos1 = StreamUtils.readUnsigned24 (input, false);
+        final int pos1 = StreamUtils.readUnsigned24 (input, false);
         input.skipNBytes (1); // Padding
 
         pad.playStartInFrames = StreamUtils.readUnsigned24 (input, false);
@@ -134,9 +134,9 @@ public class AkaiMPC60Set
 
         // Found 1 occurrence of "200" in both values all others are "0"
         @SuppressWarnings("unused")
-        int rare1 = input.read ();
+        final int rare1 = input.read ();
         @SuppressWarnings("unused")
-        int rare2 = input.read ();
+        final int rare2 = input.read ();
 
         // 0..4000 ~500 -> always smaller than unknownShort1!
         @SuppressWarnings("unused")
@@ -208,7 +208,7 @@ public class AkaiMPC60Set
 
     /**
      * Converts 3 bytes of 12-bit samples into 4 bytes of 16-bit samples.
-     * 
+     *
      * @param input The 12-bit sample stream
      * @return The unpacked 16-bit samples
      * @throws IOException Could not read from the stream
@@ -218,23 +218,23 @@ public class AkaiMPC60Set
         final int length = input.available ();
         final short [] sampleData = new short [length / 3 * 2 + 3];
         int outIndex = 0;
-        while ((input.available ()) >= 3)
+        while (input.available () >= 3)
         {
             final int b0 = input.read () & 0xFF;
             final int b1 = input.read () & 0xFF;
             final int b2 = input.read () & 0xFF;
 
             // Extract two 12-bit samples
-            sampleData[outIndex++] = swapBytes ((short) (b0 | ((b2 & 0x0F) << 8)));
-            sampleData[outIndex++] = swapBytes ((short) (b1 | ((b2 & 0xF0) << 4)));
+            sampleData[outIndex++] = swapBytes ((short) (b0 | (b2 & 0x0F) << 8));
+            sampleData[outIndex++] = swapBytes ((short) (b1 | (b2 & 0xF0) << 4));
         }
 
         return sampleData;
     }
 
 
-    private static short swapBytes (short value)
+    private static short swapBytes (final short value)
     {
-        return (short) (((value & 0xFF) << 8) | ((value >> 8) & 0xFF));
+        return (short) ((value & 0xFF) << 8 | value >> 8 & 0xFF);
     }
 }

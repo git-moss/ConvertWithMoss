@@ -4,11 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.dls;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -66,9 +63,9 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         if (this.waitForDelivery ())
             return Collections.emptyList ();
 
-        try (final InputStream in = new BufferedInputStream (new FileInputStream (file)))
+        try
         {
-            return this.readDlsFile (file, in);
+            return this.readDlsFile (file);
         }
         catch (final Exception ex)
         {
@@ -82,12 +79,11 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
      * Load the DLS file.
      *
      * @param file The DLS file
-     * @param in The input stream to read from
      * @return The parsed multi-sample source
      * @throws IOException Could not read from the file
      * @throws ParseException Could not parse the file
      */
-    private List<IMultisampleSource> readDlsFile (final File file, final InputStream in) throws IOException, ParseException
+    private List<IMultisampleSource> readDlsFile (final File file) throws IOException, ParseException
     {
         final DlsFile dlsFile = new DlsFile (file);
 
@@ -120,9 +116,8 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
      * @param instrument The DLS instrument
      * @param waveSampleData The wave samples
      * @return The multi-sample source
-     * @throws IOException Could not create a multi-sample
      */
-    private Optional<IMultisampleSource> createMultisample (final File sourceFile, final DlsFile dlsFile, final DlsInstrument instrument, final List<WavFileSampleData> waveSampleData) throws IOException
+    private Optional<IMultisampleSource> createMultisample (final File sourceFile, final DlsFile dlsFile, final DlsInstrument instrument, final List<WavFileSampleData> waveSampleData)
     {
         final String name = FileUtils.getNameWithoutType (sourceFile);
         final File parentFile = sourceFile.getParentFile ();
@@ -140,13 +135,7 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             if (zone == null)
                 continue;
             final Integer layerIndex = Integer.valueOf (dlsRegion.getLayer ());
-            IGroup group = groupsMap.get (layerIndex);
-            if (group == null)
-            {
-                group = new DefaultGroup ("Layer " + layerIndex);
-                groupsMap.put (layerIndex, group);
-            }
-
+            final IGroup group = groupsMap.computeIfAbsent (layerIndex, index -> new DefaultGroup ("Layer " + index));
             group.addSampleZone (zone);
         }
 
