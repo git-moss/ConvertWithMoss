@@ -40,7 +40,7 @@
 						<ReleaseLoop>
 							<Start Value="0" />
 							<End Value="%SAMPLE_END%" />
-							<Mode Value="3" />
+							<Mode Value="%SAMPLE_RELEASE_LOOP%" />
 							<Crossfade Value="0" />
 							<Detune Value="0" />
 						</ReleaseLoop>

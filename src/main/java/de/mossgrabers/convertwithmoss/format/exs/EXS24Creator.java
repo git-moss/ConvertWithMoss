@@ -25,6 +25,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -129,6 +130,13 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 if (exs24Zone.loopOn)
                 {
                     final ISampleLoop loop = loops.get (0);
+                    switch (loop.getType ())
+                    {
+                        // LoopType.FORWARDS
+                        default -> exs24Zone.loopDirection = 0;
+                        case LoopType.BACKWARDS -> exs24Zone.loopDirection = 1;
+                        case LoopType.ALTERNATING -> exs24Zone.loopDirection = 2;
+                    }
                     exs24Zone.loopStart = loop.getStart ();
                     exs24Zone.loopEnd = loop.getEnd () + 1;
                     final double crossfade = loop.getCrossfade ();

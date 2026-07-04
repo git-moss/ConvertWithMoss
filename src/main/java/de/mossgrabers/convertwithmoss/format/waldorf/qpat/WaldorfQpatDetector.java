@@ -583,7 +583,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
             zone.getLoops ().add (loop);
-            loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.BACKWARDS);
+            loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
 
             // LoopStart
             if (params.length > 11)
