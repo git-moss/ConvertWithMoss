@@ -47,7 +47,7 @@ The following multi-sample formats are supported:
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
 * [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
-* [Elektron Tonverk](#elektron-tonverk)
+* [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
 * [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)

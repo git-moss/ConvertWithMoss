@@ -157,7 +157,6 @@ public class ConverterBackend
             new EXS24Detector (notifier),
             new KontaktDetector (notifier),
             new MaschineDetector (notifier),
-            new OmnisphereDetector (notifier),
             new PolyendTrackerDetector (notifier),
             new RenoiseDetector (notifier),
             new DelugeDetector (notifier),
@@ -167,6 +166,7 @@ public class ConverterBackend
             new SampleFileDetector (notifier),
             new SfzDetector (notifier),
             new Sf2Detector (notifier),
+            new OmnisphereDetector (notifier),
             new TALSamplerDetector (notifier),
             new WaldorfQpatDetector (notifier),
             new YamahaYsfcDetector (notifier)
@@ -190,7 +190,6 @@ public class ConverterBackend
             new EXS24Creator (notifier),
             new KontaktCreator (notifier),
             new MaschineCreator (notifier),
-            new OmnisphereCreator (notifier),
             new PolyendTrackerCreator (notifier),
             new RenoiseCreator (notifier),
             new DelugeCreator (notifier),
@@ -198,6 +197,7 @@ public class ConverterBackend
             new WavCreator (notifier),
             new SfzCreator (notifier),
             new Sf2Creator (notifier),
+            new OmnisphereCreator (notifier),
             new TALSamplerCreator (notifier),
             new WaldorfQpatCreator (notifier),
             new YamahaYsfcCreator (notifier)

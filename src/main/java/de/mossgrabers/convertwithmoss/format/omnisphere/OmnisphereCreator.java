@@ -83,7 +83,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
      */
     public OmnisphereCreator (final INotifier notifier)
     {
-        super ("Omnisphere 3", "Omnisphere", notifier, EmptySettingsUI.INSTANCE);
+        super ("Spectrasonics Omnisphere 3", "Omnisphere", notifier, EmptySettingsUI.INSTANCE);
     }
 
 
