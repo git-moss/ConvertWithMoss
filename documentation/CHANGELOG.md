@@ -14,6 +14,7 @@
 * Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
 * Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
 * Fixed: Fixed some potential NullPointerExceptions.
+* Fixed: Waldorf Quantum/Iridium: a preset created from a single sample played at a fixed pitch instead of following the keyboard, because the Particle oscillator was not switched to its "Normal" sample mode (thanks to Douglas Carmichael).
 * Elektron Tonverk Multisample (thanks to Douglas Carmichael)
   * New: Relabelled "Elektron Tonverk Multisample" to not confuse it with the new "Elektron Tonverk Preset".
   * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
