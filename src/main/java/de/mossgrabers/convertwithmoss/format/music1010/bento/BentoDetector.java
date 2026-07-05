@@ -25,12 +25,10 @@ import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -222,13 +220,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (pathPrefix == null || pathPrefix.isBlank () || "Track 1".equals (pathPrefix))
             pathPrefix = defaultName;
 
-        final File pathPrefixFile = new File (pathPrefix);
-        final String name = pathPrefixFile.getName ();
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
-
         final IGroup group = new DefaultGroup ("Group");
-        multisampleSource.setGroups (Collections.singletonList (group));
 
         // 0 is Off, 1-16
         final int midiChannel = XMLUtils.getIntegerAttribute (trackParamsElement, Music1010Tag.ATTR_MIDI_INPUT_CHANNEL, 1) - 1;
@@ -262,12 +254,10 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
                 this.parseSampleData (group, paramsElement, basePath, filename, ampEnvAttack, ampEnvDecay, ampEnvSustain, ampEnvRelease, defaultLoop, isReversed);
         }
 
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, new File (pathPrefix).getName (), Collections.singletonList (group));
         parseEffects (instParamsElement, multisampleSource);
         readVelocityModulators (instElement, group);
 
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
         return Optional.of (new DefaultInstrumentSource (multisampleSource, midiChannel));
     }
 

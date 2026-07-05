@@ -21,7 +21,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkmPart;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -91,52 +90,47 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
             if (logVersion)
                 this.notifier.log ("IDS_AKP_VERSION", akpFile.isS5000Series () ? "S5000/S6000" : "Z4/Z8");
 
-            final IMultisampleSource multisampleSource = akpFile.createMultisampleSource (this.sourceFolder, this.settingsConfiguration);
+            final IGroup group = akpFile.createGroup (this.settingsConfiguration);
+            final String name = FileUtils.getNameWithoutType (file);
+            final IMultisampleSource multisampleSource = this.createMultisampleSource (file, name.endsWith ("-") ? name.substring (0, name.length () - 1) : name, Collections.singletonList (group));
 
             // Check and set wave file sample data
             boolean hasError = false;
-            for (final IGroup group: multisampleSource.getGroups ())
-                for (final ISampleZone sampleZone: group.getSampleZones ())
+            for (final ISampleZone sampleZone: group.getSampleZones ())
+            {
+                final String n = sampleZone.getName ();
+                File sampleFile = new File (file.getParentFile (), n + ".wav");
+                if (!sampleFile.exists ())
                 {
-                    final String n = sampleZone.getName ();
-                    File sampleFile = new File (file.getParentFile (), n + ".wav");
-                    if (!sampleFile.exists ())
-                    {
-                        // Workaround for several samples seem to have 1 space before the note name
-                        // but are stored with 2 or more spaces
-                        final String n2 = n.replaceFirst ("\\s{2,}(?=\\S*$)", " ");
-                        final File sampleFile2 = new File (file.getParentFile (), n2 + ".wav");
-                        if (sampleFile2.exists ())
-                            sampleFile = sampleFile2;
-                    }
-
-                    if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                    {
-                        final WavFileSampleData sampleData = new WavFileSampleData (sampleFile);
-                        sampleZone.setSampleData (sampleData);
-                        // If there is a loop required, read it from the sample chunk
-                        final boolean addLoops = !sampleZone.getLoops ().isEmpty ();
-                        sampleZone.getLoops ().clear ();
-                        sampleData.addZoneData (sampleZone, true, addLoops);
-
-                        // Several programs have set C3 as root and use pitch instead which leads to
-                        // very bad sounding conversion results. Therefore, move the root key
-                        // instead
-                        final double tuning = sampleZone.getTuning ();
-                        sampleZone.setTuning (tuning % 100);
-                        sampleZone.setKeyRoot (sampleZone.getKeyRoot () - (int) Math.round (tuning / 100));
-                    }
-                    else
-                        hasError = true;
+                    // Workaround for several samples seem to have 1 space before the note name
+                    // but are stored with 2 or more spaces
+                    final String n2 = n.replaceFirst ("\\s{2,}(?=\\S*$)", " ");
+                    final File sampleFile2 = new File (file.getParentFile (), n2 + ".wav");
+                    if (sampleFile2.exists ())
+                        sampleFile = sampleFile2;
                 }
+
+                if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
+                {
+                    final WavFileSampleData sampleData = new WavFileSampleData (sampleFile);
+                    sampleZone.setSampleData (sampleData);
+                    // If there is a loop required, read it from the sample chunk
+                    final boolean addLoops = !sampleZone.getLoops ().isEmpty ();
+                    sampleZone.getLoops ().clear ();
+                    sampleData.addZoneData (sampleZone, true, addLoops);
+
+                    // Several programs have set C3 as root and use pitch instead which leads to
+                    // very bad sounding conversion results. Therefore, move the root key
+                    // instead
+                    final double tuning = sampleZone.getTuning ();
+                    sampleZone.setTuning (tuning % 100);
+                    sampleZone.setKeyRoot (sampleZone.getKeyRoot () - (int) Math.round (tuning / 100));
+                }
+                else
+                    hasError = true;
+            }
             if (hasError)
                 return Collections.emptyList ();
-
-            // Improve name
-            String name = multisampleSource.getName ();
-            if (name.endsWith ("-"))
-                name = name.substring (0, name.length () - 1);
-            multisampleSource.setName (TagDetector.toCamelCase (name));
 
             return Collections.singletonList (multisampleSource);
         }

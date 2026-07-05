@@ -15,7 +15,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -148,7 +147,8 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
                     final MirageProgram mirageProgramLower = mirageLayerLower.programs.get (programIndex);
                     final MirageProgram mirageProgramUpper = mirageLayerUpper.programs.get (programIndex);
                     final String multiSampleName = programNames[layerIndex / 2] + " Program " + (programIndex + 1);
-                    multiSampleSources.add (this.createMultiSample (sourceFile, parts, multiSampleName, mirageProgramLower, mirageLayerLower.waveSamples, sampleDataLower, mirageProgramUpper, mirageLayerUpper.waveSamples, sampleDataUpper));
+                    final List<IGroup> groups = createSampleZones (multiSampleName, mirageProgramLower, mirageLayerLower.waveSamples, sampleDataLower, mirageProgramUpper, mirageLayerUpper.waveSamples, sampleDataUpper);
+                    multiSampleSources.add (this.createMultisampleSource (sourceFile, parts, multiSampleName, groups));
                 }
             }
 
@@ -189,34 +189,6 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
         for (int i = 0; i < programNames.length; i++)
             programNames[i] = programName + " Sound " + (i + 1);
         return programNames;
-    }
-
-
-    /**
-     * Convert a lower and upper program into a multi-sample source.
-     *
-     * @param sourceFile The source file
-     * @param parts The folder parts for metadata lookup
-     * @param mirageProgramLower The lower program
-     * @param waveSamplesLower The lower wave-samples
-     * @param sampleDataLower The 8 lower wave-samples
-     * @param mirageProgramUpper The upper program
-     * @param waveSamplesUpper The upper wave-samples
-     * @param sampleDataUpper The 8 upper wave-samples
-     * @param multiSampleName The name of the multi-sample
-     * @return The converted multi-sample source
-     */
-    private IMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final String multiSampleName, final MirageProgram mirageProgramLower, final List<MirageWaveSample> waveSamplesLower, final List<ISampleData> sampleDataLower, final MirageProgram mirageProgramUpper, final List<MirageWaveSample> waveSamplesUpper, final List<ISampleData> sampleDataUpper)
-    {
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName);
-        multisampleSource.setGroups (createSampleZones (multiSampleName, mirageProgramLower, waveSamplesLower, sampleDataLower, mirageProgramUpper, waveSamplesUpper, sampleDataUpper));
-
-        // Detect metadata
-        final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
-        tokens[tokens.length - 1] = multiSampleName;
-        multisampleSource.getMetadata ().detectMetadata (this.settingsConfiguration, tokens);
-
-        return multisampleSource;
     }
 
 

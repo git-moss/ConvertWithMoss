@@ -20,13 +20,11 @@ import org.xml.sax.SAXParseException;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -37,7 +35,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -190,17 +187,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        final String presetName = FileUtils.getNameWithoutType (file);
-        final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : presetName;
-        final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, n);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, presetName);
-
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (metadata, this.getFirstSample (groups), parts);
-        this.updateCreationDateTime (metadata, file);
-
-        multisampleSource.setGroups (groups);
-        return Collections.singletonList (multisampleSource);
+        return Collections.singletonList (this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), groups));
     }
 
 
