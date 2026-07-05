@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -308,10 +309,12 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.addTextElement (document, defaultParams, DelugeTag.OSC_A_VOLUME, DelugeValues.formatHex (DelugeValues.PARAM_MAX));
         XMLUtils.addTextElement (document, defaultParams, DelugeTag.OSC_B_VOLUME, DelugeValues.formatHex (DelugeValues.PARAM_MIN));
 
-        writeFilter (document, defaultParams, firstZone.getFilter ().orElse (null));
+        // ------------------------------------
+        // Amplifier
 
         final Element envelope1 = XMLUtils.addElement (document, defaultParams, DelugeTag.ENVELOPE1);
-        final IEnvelope ampEnvelope = firstZone.getAmplitudeEnvelopeModulator ().getSource ();
+        final IEnvelopeModulator amplitudeEnvelopeModulator = firstZone.getAmplitudeEnvelopeModulator ();
+        final IEnvelope ampEnvelope = amplitudeEnvelopeModulator.getSource ();
         XMLUtils.addTextElement (document, envelope1, DelugeTag.ATTACK, DelugeValues.formatHex (DelugeValues.attackTimeToParam (ampEnvelope.getAttackTime ())));
         XMLUtils.addTextElement (document, envelope1, DelugeTag.DECAY, DelugeValues.formatHex (envelopeDecay (ampEnvelope)));
         XMLUtils.addTextElement (document, envelope1, DelugeTag.SUSTAIN, DelugeValues.formatHex (envelopeSustain (ampEnvelope)));
@@ -320,10 +323,14 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         // Make the sound velocity sensitive (matches the firmware's default for sample based
         // sounds)
         final Element patchCables = XMLUtils.addElement (document, defaultParams, DelugeTag.PATCH_CABLES);
-        final Element patchCable = XMLUtils.addElement (document, patchCables, DelugeTag.PATCH_CABLE);
-        XMLUtils.addTextElement (document, patchCable, DelugeTag.SOURCE, DelugeTag.SOURCE_VELOCITY);
-        XMLUtils.addTextElement (document, patchCable, DelugeTag.DESTINATION, DelugeTag.DESTINATION_VOLUME);
-        XMLUtils.addTextElement (document, patchCable, DelugeTag.AMOUNT, DelugeValues.formatHex (DelugeValues.PATCH_CABLE_FULL));
+
+        final int ampModAmount = (int) DelugeValues.modulationDepthToPatchAmount (amplitudeEnvelopeModulator.getDepth ());
+        createPatchCable (document, patchCables, DelugeTag.SOURCE_VELOCITY, DelugeTag.DESTINATION_VOLUME, ampModAmount);
+
+        // ------------------------------------
+        // Filter
+
+        writeFilter (document, defaultParams, firstZone.getFilter (), patchCables);
     }
 
 
@@ -333,20 +340,42 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
      *
      * @param document The XML document
      * @param defaultParams The default parameters element
-     * @param filter The filter or null
+     * @param filterOpt The filter if set
+     * @param patchCables The patch cables element to add modulations to
      */
-    private static void writeFilter (final Document document, final Element defaultParams, final IFilter filter)
+    private static void writeFilter (final Document document, final Element defaultParams, final Optional<IFilter> filterOpt, final Element patchCables)
     {
         int lpfFrequency = DelugeValues.PARAM_MAX;
         int lpfResonance = DelugeValues.PARAM_MIN;
         int hpfFrequency = DelugeValues.PARAM_MIN;
         int hpfResonance = DelugeValues.PARAM_MIN;
 
-        if (filter != null)
+        if (filterOpt.isPresent ())
         {
+            final IFilter filter = filterOpt.get ();
+
+            final FilterType type = filter.getType ();
+            final boolean isHighPass = type == FilterType.HIGH_PASS;
+            if (type == FilterType.LOW_PASS || isHighPass)
+            {
+                final int cutoffModAmount = (int) DelugeValues.modulationDepthToPatchAmount (filter.getCutoffKeyTracking ());
+                createPatchCable (document, patchCables, DelugeTag.SOURCE_NOTE, isHighPass ? DelugeTag.HPF_FREQUENCY : DelugeTag.LPF_FREQUENCY, cutoffModAmount);
+            }
+
+            final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+            final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();
+            final Element envelope2 = XMLUtils.addElement (document, defaultParams, DelugeTag.ENVELOPE2);
+            XMLUtils.addTextElement (document, envelope2, DelugeTag.ATTACK, DelugeValues.formatHex (DelugeValues.attackTimeToParam (cutoffEnvelope.getAttackTime ())));
+            XMLUtils.addTextElement (document, envelope2, DelugeTag.DECAY, DelugeValues.formatHex (envelopeDecay (cutoffEnvelope)));
+            XMLUtils.addTextElement (document, envelope2, DelugeTag.SUSTAIN, DelugeValues.formatHex (envelopeSustain (cutoffEnvelope)));
+            XMLUtils.addTextElement (document, envelope2, DelugeTag.RELEASE, DelugeValues.formatHex (DelugeValues.releaseTimeToParam (cutoffEnvelope.getReleaseTime ())));
+
+            final int cutoffModAmount = (int) DelugeValues.modulationDepthToPatchAmount (cutoffEnvelopeModulator.getDepth ());
+            createPatchCable (document, patchCables, DelugeTag.ENVELOPE2, isHighPass ? DelugeTag.HPF_FREQUENCY : DelugeTag.LPF_FREQUENCY, cutoffModAmount);
+
             final int frequency = DelugeValues.cutoffToParam (filter.getCutoff ());
             final int resonance = DelugeValues.levelToParam (filter.getResonance ());
-            if (filter.getType () == FilterType.HIGH_PASS)
+            if (isHighPass)
             {
                 hpfFrequency = frequency;
                 hpfResonance = resonance;
@@ -362,6 +391,15 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.addTextElement (document, defaultParams, DelugeTag.LPF_RESONANCE, DelugeValues.formatHex (lpfResonance));
         XMLUtils.addTextElement (document, defaultParams, DelugeTag.HPF_FREQUENCY, DelugeValues.formatHex (hpfFrequency));
         XMLUtils.addTextElement (document, defaultParams, DelugeTag.HPF_RESONANCE, DelugeValues.formatHex (hpfResonance));
+    }
+
+
+    private static void createPatchCable (final Document document, final Element patchCables, final String source, final String destination, final int amount)
+    {
+        final Element patchCable = XMLUtils.addElement (document, patchCables, DelugeTag.PATCH_CABLE);
+        XMLUtils.addTextElement (document, patchCable, DelugeTag.SOURCE, source);
+        XMLUtils.addTextElement (document, patchCable, DelugeTag.DESTINATION, destination);
+        XMLUtils.addTextElement (document, patchCable, DelugeTag.AMOUNT, DelugeValues.formatHex (amount));
     }
 
 
