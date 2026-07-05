@@ -71,6 +71,8 @@ public class MPCKeygroupTag
     public static final String INSTRUMENT_FILTER_ENV_AMOUNT         = "FilterEnvAmt";
     /** The cutoff velocity amount of the instrument element. */
     public static final String INSTRUMENT_VELOCITY_TO_FILTER_AMOUNT = "VelocityToFilter";
+    /** The cutoff key tracking of the instrument element. */
+    public static final String INSTRUMENT_FILTER_KEYTRACK           = "FilterKeytrack";
 
     /** The filter attack element of the instrument element. */
     public static final String INSTRUMENT_FILTER_ATTACK             = "FilterAttack";

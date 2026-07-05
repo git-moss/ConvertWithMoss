@@ -30,7 +30,6 @@ public class AkaiS1000Keygroup
     // 0..99
     private final byte                       filter;
     // 0..24 semi-tone/octave
-    @SuppressWarnings("unused")
     private final byte                       keyToFilter;
     // -50..50
     private final byte                       velocityToFilter;
@@ -189,6 +188,17 @@ public class AkaiS1000Keygroup
     public byte getFilter ()
     {
         return this.filter;
+    }
+
+
+    /**
+     * Get the filter key tracking.
+     * 
+     * @return The key-tracking in the range of [0..24] semi-tones
+     */
+    public byte getKeyToFilter ()
+    {
+        return this.keyToFilter;
     }
 
 

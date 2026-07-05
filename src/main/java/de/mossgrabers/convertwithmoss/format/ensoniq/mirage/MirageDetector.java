@@ -282,7 +282,11 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
 
             // Not sure about the filter values, therefore, prevent totally closed filter
             if (cutoffEnvelopeModulator.getDepth () != 0 || filter.getCutoff () > 8000)
+            {
+                filter.setCutoffKeyTracking (program.filterKybdTracking / 4.0);
+
                 osc1SampleZone.setFilter (filter);
+            }
 
             // Ignore since results do not work...
             // final double mixVelocity = program.mixVelocitySensitivity / 124.0;

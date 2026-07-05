@@ -462,8 +462,19 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
             // Read the velocity modulation
             final Element modByVelocityElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_MOD_BY_VELOCITY);
-            final double modDepth = getDoubleValueAttribute (modByVelocityElement, AbletonTag.TAG_MANUAL, 0);
-            filter.getCutoffVelocityModulator ().setDepth (modDepth);
+            if (modByVelocityElement != null)
+            {
+                final double modDepth = getDoubleValueAttribute (modByVelocityElement, AbletonTag.TAG_MANUAL, 0);
+                filter.getCutoffVelocityModulator ().setDepth (modDepth);
+            }
+
+            // Read the pitch (key) modulation
+            final Element modByPitchElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_MOD_BY_PITCH);
+            if (modByPitchElement != null)
+            {
+                final double modPitchDepth = getDoubleValueAttribute (modByPitchElement, AbletonTag.TAG_MANUAL, 1);
+                filter.setCutoffKeyTracking (modPitchDepth);
+            }
 
             return filter;
         }

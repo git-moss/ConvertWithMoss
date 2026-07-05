@@ -334,6 +334,9 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
             final double filterCutoffVelocityAmount = filter.getCutoffVelocityModulator ().getDepth ();
             if (filterCutoffVelocityAmount > 0)
                 XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_VELOCITY_TO_FILTER_AMOUNT, formatDouble (filterCutoffVelocityAmount, 2));
+
+            final double filterKeyTracking = filter.getCutoffKeyTracking ();
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_KEYTRACK, formatDouble (filterKeyTracking, 2));
         }
 
         // -----------------------------------------------------------

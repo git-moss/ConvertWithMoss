@@ -588,7 +588,7 @@
 						</Envelope>
 						<ModByPitch>
 							<LomId Value="0" />
-							<Manual Value="0" />
+							<Manual Value="%FILTER_KEY_MOD%" />
 							<MidiControllerRange>
 								<Min Value="0" />
 								<Max Value="1" />

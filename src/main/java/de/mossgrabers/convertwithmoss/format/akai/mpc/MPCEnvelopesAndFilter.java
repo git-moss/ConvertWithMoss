@@ -93,6 +93,8 @@ public class MPCEnvelopesAndFilter
             final double filterCutoffVelocityAmount = valueNode.get ("filterVelocity").asDouble ();
             if (filterCutoffVelocityAmount > 0)
                 this.filter.getCutoffVelocityModulator ().setDepth (filterCutoffVelocityAmount);
+
+            this.filter.setCutoffKeyTracking (valueNode.get ("filterKeytrack").asDouble ());
         }
     }
 

@@ -702,9 +702,11 @@ public abstract class AbstractNKIMetadataFileHandler
         group.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
         final IFilter filter = this.readFilter (groupElement);
-        final Map<String, IEnvelopeModulator> groupModulators = this.readGroupModulators (groupElement);
+
+        final Map<String, IEnvelopeModulator> groupModulators = this.readGroupIntModulators (groupElement);
         final int pitchBend = this.readGroupPitchBend (groupElement);
         final double ampVelocityMod = this.readGroupAmplitudeVelocityModulator (groupElement);
+
         group.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
         final List<ISampleZone> zones = this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter);
@@ -1244,7 +1246,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param groupElement The group element
      * @return The found envelopes
      */
-    private Map<String, IEnvelopeModulator> readGroupModulators (final Element groupElement)
+    private Map<String, IEnvelopeModulator> readGroupIntModulators (final Element groupElement)
     {
         final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.intModulatorsElement ());
         if (modulatorsElement == null)
@@ -1586,6 +1588,39 @@ public abstract class AbstractNKIMetadataFileHandler
         return Double.parseDouble (intensity);
     }
 
+    // TODO - create separate readers for K1 and K2; K2 has multiple Targets (instead of 1
+    // destination)
+    // private List<ExternalModulation> readExtModulators (final Element groupElement)
+    // {
+    // final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement,
+    // this.tags.extModulatorsElement ());
+    // if (modulatorsElement == null)
+    // return Collections.emptyList ();
+    //
+    // final List<ExternalModulation> extModulators = new ArrayList<> ();
+    // for (final Element modulator: XMLUtils.getChildElementsByName (modulatorsElement,
+    // this.tags.extModulatorElement ()))
+    // {
+    // final Map<String, String> modulatorParams = this.readValueMap (modulator);
+    // if (modulatorParams == null)
+    // continue;
+    // final String source = modulatorParams.get (this.tags.sourceParam ());
+    // final String destination = modulatorParams.get (this.tags.destParam ());
+    // if (source == null)
+    // continue;
+    //
+    // if (!source.equals (this.tags.velocityValue ()))
+    // return ampVelocityMod;
+    //
+    // final String intensity = this.readAmplitudeVelocityIntensity (modulator);
+    // if (intensity == null)
+    // return ampVelocityMod;
+    //
+    // }
+    //
+    // return extModulators;
+    // }
+
 
     /**
      * Finds a group's zone elements.
@@ -1651,5 +1686,15 @@ public abstract class AbstractNKIMetadataFileHandler
         if (reader.read (folder) != length)
             error (encodedSampleFileName);
         return new String (folder);
+    }
+
+
+    private static class ExternalModulation
+    {
+        String  source;
+        String  target;
+        double  intensity;
+        boolean bypass;
+        double  delay;
     }
 }
