@@ -99,23 +99,22 @@ public class YamahaYsfcEntry
             if (version > 402 && version < 410 || version >= 500)
                 this.entryID = (int) StreamUtils.readUnsigned32 (contentStream, true);
 
+            // Additional unknown bytes for Montage M
+            // 0F - 0 0 0 0 0 0 - 28 AA
+            // FF - 0 0 0 0 0 0 - 28 F7
+            // 05 - 0 0 0 0 0 0 - 28 AA
+            // 03 - 0 0 0 0 0 0 - 28 AA
+            @SuppressWarnings("unused")
+            byte [] unknown = null;
             if (version >= 410 && version < 500)
-            {
-                // Additional unknown bytes for Montage M
-                // 0F - 0 0 0 0 0 0 - 28 AA
-                // FF - 0 0 0 0 0 0 - 28 F7
-                // 05 - 0 0 0 0 0 0 - 28 AA
-                // 03 - 0 0 0 0 0 0 - 28 AA
-                @SuppressWarnings("unused")
-                final byte [] unknown = contentStream.readNBytes (9);
-            }
+                unknown = contentStream.readNBytes (9);
         }
 
-        this.itemName = StreamUtils.readNullTerminatedASCII (contentStream);
+        this.itemName = StreamUtils.readAsciiNullTerminated (contentStream);
 
         if (contentStream.available () > 0)
         {
-            this.itemTitle = StreamUtils.readNullTerminatedASCII (contentStream);
+            this.itemTitle = StreamUtils.readAsciiNullTerminated (contentStream);
 
             // 32-bit program numbers of non-preset waveforms - only used by the performance
             this.additionalData = contentStream.readAllBytes ();
@@ -157,9 +156,7 @@ public class YamahaYsfcEntry
         StreamUtils.writeUnsigned32 (contentStream, this.contentNumber, true);
 
         if (version <= 102)
-        {
             StreamUtils.padBytes (contentStream, version <= 101 ? 1 : 2);
-        }
         else if (version >= 400)
         {
             // Flags - type specific
@@ -181,8 +178,8 @@ public class YamahaYsfcEntry
             }
         }
 
-        StreamUtils.writeNullTerminatedASCII (contentStream, this.itemName);
-        StreamUtils.writeNullTerminatedASCII (contentStream, this.itemTitle);
+        StreamUtils.writeAsciiNullTerminated (contentStream, this.itemName);
+        StreamUtils.writeAsciiNullTerminated (contentStream, this.itemTitle);
 
         // Optional additional data - type specific, only used by EPFM
         contentStream.write (this.additionalData);

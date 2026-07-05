@@ -24,6 +24,38 @@ public class MathUtils
 
 
     /**
+     * Test a bit in an integer.
+     *
+     * @param value The value to test
+     * @param bitIndex The index of the bit to test
+     * @return True if the bit is set
+     */
+    public static boolean isBitSet (final int value, final int bitIndex)
+    {
+        return (value & (1 << bitIndex)) != 0;
+    }
+
+
+    /**
+     * Clears all bits from bitIndex (inclusive) up to bit 7 (MSB).
+     *
+     * @param value The input byte as an integer
+     * @param bitIndex The bit position to start clearing from (0–7), 8 simply returns the value
+     * @return The clipped byte
+     */
+    public static int clearBitsFrom (final int value, final int bitIndex)
+    {
+        if (bitIndex == 8)
+            return value;
+        if (bitIndex < 0 || bitIndex > 7)
+            throw new IllegalArgumentException ("bitIndex must be in range 0–7");
+
+        final int mask = (1 << bitIndex) - 1;
+        return value & mask;
+    }
+
+
+    /**
      * Converts a signed integer into a two complement short value.
      *
      * @param value The signed integer
@@ -82,6 +114,34 @@ public class MathUtils
         if (dBValue >= 0.0)
             return 1.0;
         return Math.pow (10, dBValue / 20);
+    }
+
+
+    /**
+     * Adds two decibel (dB) values representing amplitudes (e.g., digital audio levels) using
+     * logarithmic summation. This method converts the values implicitly to linear amplitude, sums
+     * them, and converts the result back to dB. It uses a numerically stable formulation that
+     * avoids precision loss when the difference between the two inputs is large (e.g., near the
+     * noise floor such as −96 dB).
+     *
+     * Mathematical form: result = max + 20 * log10(1 + 10^((min − max)/20))
+     *
+     * Advantages over naive implementation: - avoids overflow/underflow - improves precision for
+     * large level differences - faster than converting both values to linear scale separately
+     *
+     * NOTE: This method assumes amplitude-domain dB values (20·log10 scaling), not power-domain
+     * values (10·log10 scaling).
+     *
+     * @param db1 first amplitude level in dB
+     * @param db2 second amplitude level in dB
+     * @return summed amplitude level in dB
+     */
+    public static double addDbValues (final double db1, final double db2)
+    {
+        final double max = Math.max (db1, db2);
+        final double min = Math.min (db1, db2);
+        final double diff = min - max;
+        return max + 20.0 * Math.log10 (1.0 + Math.pow (10.0, diff / 20.0));
     }
 
 
@@ -173,6 +233,21 @@ public class MathUtils
     public static double denormalize (final double value, final double minimum, final double maximum)
     {
         return Math.clamp (value * maximum, minimum, maximum);
+    }
+
+
+    /**
+     * Translates a value in the range of [0..1] to the linear range [minimum..maximum]. Ensures
+     * that the given value is in the range [0..1].
+     *
+     * @param value The value to translate
+     * @param minimum The minimum of the range
+     * @param maximum The maximum of the range
+     * @return The translated value
+     */
+    public static double denormalizeValue (final double value, final double minimum, final double maximum)
+    {
+        return minimum + Math.clamp (value, 0, 1) * (maximum - minimum);
     }
 
 
@@ -334,5 +409,29 @@ public class MathUtils
         if (value < 0)
             return Math.clamp (-Math.round (value * negativeMinimum), negativeMinimum, 0);
         return Math.clamp (Math.round (value * positiveMaximum), 0, positiveMaximum);
+    }
+
+
+    /**
+     * Decode two complement.
+     *
+     * @param value The value to decode
+     * @return The decoded value
+     */
+    public static int decodeTwosComplement (final int value)
+    {
+        return (value & 0x80) != 0 ? value - 256 : value;
+    }
+
+
+    /**
+     * Encode two complement.
+     *
+     * @param value The value to encode
+     * @return The encoded value
+     */
+    public static int encodeTwosComplement (final int value)
+    {
+        return value < 0 ? value + 256 : value;
     }
 }

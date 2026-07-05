@@ -6,8 +6,6 @@ package de.mossgrabers.convertwithmoss.core;
 
 import java.io.File;
 
-import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
-
 
 /**
  * Several settings for the detection process.
@@ -17,43 +15,47 @@ import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
 public class DetectSettings
 {
     /** The folder where to start the detection process. */
-    public File          sourceFolder;
+    public File    sourceFolder;
     /** Where to write the result to. */
-    public File          outputFolder;
-    /** If renaming is required. */
-    public CSVRenameFile csvRenameFile;
+    public File    outputFolder;
     /** The name to use in case that a library will be created. */
-    public String        libraryName;
+    public String  libraryName;
     /** True, if all files should be returned at once. */
-    public boolean       wantsMultipleFiles;
+    public boolean wantsMultipleFiles;
     /** True, if the source folder structure should be replicated in the output folder. */
-    public boolean       createFolderStructure;
+    public boolean createFolderStructure;
 
     // Parameters for Processing
 
     /** Enable overall processing. */
-    public boolean       enableProcessing;
+    public boolean enableProcessing;
     /** Enable normalizing samples. */
-    public boolean       enableNormalize;
+    public boolean enableNormalize;
     /** Enable making all samples mono. */
-    public boolean       enableMakeMono;
+    public boolean enableMakeMono;
     /** Enable to trim sample start and end. */
-    public boolean       enableTrimSample;
+    public boolean enableTrimSample;
     /** The maximum number of samples to limit to. */
-    public int           maxNumberOfSamples;
-    /** The bit depth to reduce to. */
-    public int           reduceBitDepth  = -1;
-    /** The frequency to reduce to. */
-    public int           reduceFrequency = -1;
+    public int     maxNumberOfSamples;
+    /** The bit depth to reduce to. 0 is off. */
+    public int     reduceBitDepth  = 0;
+    /** The frequency to reduce to. 0 is off. */
+    public int     reduceFrequency = 0;
+    /** Does up-sampling as well. */
+    public boolean alwaysResample  = false;
+    /** The fixed loop cross-fade. 0 is off. */
+    public int     loopCrossfades  = 0;
+    /** Snap forward loop boundaries to the nearest zero-crossing to avoid loop clicks. */
+    public boolean snapLoopsToZero = false;
 
 
     /**
      * Check if processing is enabled and at least one processing option is enabled as well.
-     * 
+     *
      * @return True if processing is necessary
      */
     public boolean needsProcessing ()
     {
-        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize);
+        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize || this.loopCrossfades > 0 || this.snapLoopsToZero);
     }
 }

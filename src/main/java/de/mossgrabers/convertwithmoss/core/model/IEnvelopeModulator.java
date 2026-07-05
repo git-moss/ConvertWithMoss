@@ -9,8 +9,8 @@ package de.mossgrabers.convertwithmoss.core.model;
  * follow:
  * <ul>
  * <li>Amplitude: 0..1
- * <li>Filter: -12000..12000 cent
- * <li>Pitch: -48000..48000 cent
+ * <li>Filter: -12000..12000 Hertz
+ * <li>Pitch: -4800..4800 cent
  * </ul>
  *
  * @author Jürgen Moßgraber

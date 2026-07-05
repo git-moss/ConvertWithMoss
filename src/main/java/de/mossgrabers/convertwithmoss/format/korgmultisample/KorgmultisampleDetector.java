@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
@@ -83,7 +84,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         final byte [] headerTag = in.readNBytes (4);
         StreamUtils.checkTag (KorgmultisampleConstants.TAG_KORG, headerTag);
 
-        /////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Read all 3 chunks and check first chunk
 
         final List<byte []> chunks = parseChunks (in);
@@ -93,16 +94,16 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         if (Arrays.compare (KorgmultisampleConstants.HEADER_CHUNK, chunks.get (0)) != 0)
             throw new IOException (Functions.getMessage ("IDS_WS_NO_MULTISAMPLE_HEADER"));
 
-        /////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Read the 2nd chunk
 
         final InputStream secondIn = new ByteArrayInputStream (chunks.get (1));
         checkAscii (secondIn);
-        final String singleItemTag = StreamUtils.readWith1ByteLengthAscii (secondIn);
+        final String singleItemTag = StreamUtils.readAsciiWith1ByteLength (secondIn);
         StreamUtils.checkTag (KorgmultisampleConstants.TAG_SINGLE_ITEM, singleItemTag);
         // Ignore single item header
         secondIn.skipNBytes (1);
-        final String sampleBuilderTag = StreamUtils.readWith1ByteLengthAscii (secondIn);
+        final String sampleBuilderTag = StreamUtils.readAsciiWith1ByteLength (secondIn);
         StreamUtils.checkTag (KorgmultisampleConstants.TAG_SAMPLE_BUILDER, sampleBuilderTag);
 
         // The version number, not always present and not needed
@@ -115,17 +116,17 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
             switch (chunk2ID)
             {
                 case KorgmultisampleConstants.ID_VERSION:
-                    StreamUtils.readWith1ByteLengthAscii (secondIn);
+                    StreamUtils.readAsciiWith1ByteLength (secondIn);
                     break;
                 case KorgmultisampleConstants.ID_TIME:
                     // Time of storage - the seconds from 1.1.1970
                     creationDateTime = new Date (StreamUtils.fromBytesLE (secondIn.readNBytes (8)) * 1000L);
                     break;
                 case KorgmultisampleConstants.ID_APPLICATION:
-                    application = StreamUtils.readWith1ByteLengthAscii (secondIn);
+                    application = StreamUtils.readAsciiWith1ByteLength (secondIn);
                     break;
                 case KorgmultisampleConstants.ID_APPLICATION_VERSION:
-                    applicationVersion = StreamUtils.readWith1ByteLengthAscii (secondIn);
+                    applicationVersion = StreamUtils.readAsciiWith1ByteLength (secondIn);
                     break;
                 default:
                     throw new IOException (Functions.getMessage ("IDS_WS_UNKNOWN_CHUNK2_ID", Integer.toString (chunk2ID)));
@@ -164,13 +165,13 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
     {
         checkAscii (in);
 
-        final String name = StreamUtils.readWith1ByteLengthAscii (in);
+        final String name = StreamUtils.readAsciiWith1ByteLength (in);
 
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
         final List<IGroup> groups = new ArrayList<> ();
         // There is only one group (no velocity zones)
-        final DefaultGroup group = new DefaultGroup ("Layer");
+        final IGroup group = new DefaultGroup ("Layer");
         groups.add (group);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
@@ -181,15 +182,15 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
             switch (id)
             {
                 case KorgmultisampleConstants.ID_AUTHOR:
-                    metadata.setCreator (StreamUtils.readWith1ByteLengthAscii (in));
+                    metadata.setCreator (StreamUtils.readAsciiWith1ByteLength (in));
                     break;
 
                 case KorgmultisampleConstants.ID_CATEGORY:
-                    metadata.setCategory (StreamUtils.readWith1ByteLengthAscii (in));
+                    metadata.setCategory (StreamUtils.readAsciiWith1ByteLength (in));
                     break;
 
                 case KorgmultisampleConstants.ID_COMMENT:
-                    metadata.setDescription (StreamUtils.readWith1ByteLengthAscii (in));
+                    metadata.setDescription (StreamUtils.readAsciiWith1ByteLength (in));
                     break;
 
                 case KorgmultisampleConstants.ID_SAMPLE:
@@ -233,8 +234,14 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         in.readNBytes (2);
 
         checkAscii (in);
-        final String sampleFileName = StreamUtils.readWith1ByteLengthAscii (in);
-        final File sampleFile = this.createCanonicalFile (parentPath, sampleFileName);
+        final String sampleFileName = StreamUtils.readAsciiWith1ByteLength (in);
+        File sampleFile = this.createCanonicalFile (parentPath, sampleFileName);
+        // Try the local directory, if absolute filename could not be found
+        if (!sampleFile.exists ())
+            sampleFile = new File (parentPath, sampleFile.getName ());
+        if (!sampleFile.exists ())
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_FILE_NOT_FOUND", sampleFile.getName ()));
+
         final ISampleData sampleData = new WavFileSampleData (sampleFile);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
@@ -247,7 +254,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
 
 
     /**
-     * Parses the data related to the samples' playback configuration.
+     * Parses the data related to the samples' play-back configuration.
      *
      * @param zone The sample metadata in which to stored the data
      * @param in The input stream to read from
@@ -261,6 +268,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         int lastID = 0;
         int r = rest;
         int loopStart = 0;
+        float loopTuning = 0;
         boolean oneShot = false;
 
         while (r > 0)
@@ -296,8 +304,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
                     break;
                 case KorgmultisampleConstants.ID_LOOP_TUNE:
                     r -= 4;
-                    // Not used
-                    in.readNBytes (4);
+                    loopTuning = StreamUtils.readFloatLE (in);
                     break;
                 case KorgmultisampleConstants.ID_ONE_SHOT:
                     r -= 1;
@@ -318,9 +325,10 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
 
         if (!oneShot)
         {
-            final DefaultSampleLoop loop = new DefaultSampleLoop ();
+            final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
             loop.setEnd (zone.getStop ());
+            loop.setTuning (loopTuning / 100.0);
             zone.addLoop (loop);
         }
 

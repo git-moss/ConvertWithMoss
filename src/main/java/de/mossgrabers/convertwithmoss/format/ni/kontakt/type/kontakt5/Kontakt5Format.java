@@ -116,18 +116,18 @@ public class Kontakt5Format extends AbstractKontaktFormat
         this.sourceFolder = sourceFolder;
 
         final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
-        final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, sourceFile, metadataConfig, monolithSamples);
+        final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, monolithSamples);
         if (presetAccessor.isEmpty ())
             return null;
 
         final List<Pair<IMultisampleSource, Program>> sources = this.convertPrograms (presetAccessor.get (), niContainerItem, sourceFile, metadataConfig, monolithSamples);
-        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
         return readMultiConfiguration (presetAccessor.get (), sources, performanceSource) ? performanceSource : null;
     }
 
 
-    private static boolean readMultiConfiguration (final KontaktPresetAccessor presetAccessor, final List<Pair<IMultisampleSource, Program>> sources, final DefaultPerformanceSource performanceSource)
+    private static boolean readMultiConfiguration (final KontaktPresetAccessor presetAccessor, final List<Pair<IMultisampleSource, Program>> sources, final IPerformanceSource performanceSource)
     {
         final MultiConfiguration multiConfiguration = presetAccessor.getMultiConfiguration ();
         if (multiConfiguration == null)
@@ -140,7 +140,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
             final IMultisampleSource multisampleSource = source.getKey ();
             final Program program = source.getValue ();
             final int midiChannel = i < multiInstruments.size () ? multiInstruments.get (program.getSlotIndex ()).getMidiChannel () - 1 : 0;
-            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
+            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
             instrumentSource.setClipKeyLow (program.getClipKeyLow ());
             instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
             performanceSource.addInstrument (instrumentSource);
@@ -175,7 +175,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
     {
         this.sourceFolder = sourceFolder;
         final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
-        final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, sourceFile, metadataConfig, monolithSamples);
+        final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, monolithSamples);
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         if (presetAccessor.isPresent ())
         {
@@ -191,13 +191,11 @@ public class Kontakt5Format extends AbstractKontaktFormat
      * Reads from an NI container, which hopefully contains a NKI preset.
      *
      * @param niContainerItem The NI container item to read from
-     * @param sourceFile The source file to convert
-     * @param metadataConfig Default metadata
      * @param monolithSamples If the NKI is inside a monolith, these are the sample files
      * @return Access to the read Kontakt program-/multi-data
      * @throws IOException Could not read the container
      */
-    private Optional<KontaktPresetAccessor> readKontaktPreset (final NIContainerItem niContainerItem, final File sourceFile, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples) throws IOException
+    private Optional<KontaktPresetAccessor> readKontaktPreset (final NIContainerItem niContainerItem, final Map<Long, ISampleZone> monolithSamples) throws IOException
     {
         final boolean isMonolith = monolithSamples != null;
 
@@ -269,7 +267,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
             final List<String> attributes = soundinfo.getAttributes ();
             final IMetadata metadata = source.getMetadata ();
             metadata.setKeywords (attributes.toArray (new String [attributes.size ()]));
-            if (metadata.getCreator () == null)
+            final String creator = metadata.getCreator ();
+            if (creator == null || creator.isBlank ())
             {
                 final String author = soundinfo.getAuthor ();
                 if (author != null && !author.isBlank ())
@@ -309,8 +308,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
         for (final Program program: programs)
         {
             final String programName = program.getName ();
-            final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + programName;
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null);
             this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName

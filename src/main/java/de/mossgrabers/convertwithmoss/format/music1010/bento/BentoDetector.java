@@ -109,7 +109,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
     protected List<IPerformanceSource> readPerformanceFile (final File file)
     {
         if (this.waitForDelivery () || !"project.xml".equals (file.getName ()))
-            return null;
+            return Collections.emptyList ();
         // Step out of the Projects folder; Patches folder is expected on that level!
         final String basePath = file.getParentFile ().getParentFile ().getParent ();
         final IPerformanceSource processPresetFile = this.processPresetFile (file, basePath);
@@ -128,7 +128,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
-            final String content = StreamUtils.readUTF8 (in);
+            final String content = StreamUtils.readUtf8 (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseXMLFile (file, basePath, document);
         }
@@ -154,14 +154,14 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return null;
         }
 
         final Element sessionElement = XMLUtils.getChildElementByName (top, Music1010Tag.SESSION);
         if (sessionElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Session tag");
             return null;
         }
         final String versionAttribute = sessionElement.getAttribute (Music1010Tag.ATTR_VERSION);
@@ -175,7 +175,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (trackElements.isEmpty ())
             return null;
 
-        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         // Use the parent folders name since all presets are called preset.xml
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile.getParentFile ()));
 
@@ -225,8 +225,8 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         final File pathPrefixFile = new File (pathPrefix);
         final String name = pathPrefixFile.getName ();
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
         final IGroup group = new DefaultGroup ("Group");
         multisampleSource.setGroups (Collections.singletonList (group));
 
@@ -253,7 +253,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             final Element paramsElement = XMLUtils.getChildElementByName (assetElement, Music1010Tag.PARAMS);
             if (paramsElement == null)
             {
-                this.notifier.logError (ERR_BAD_METADATA_FILE);
+                this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Params tag");
                 return Optional.empty ();
             }
 
@@ -349,7 +349,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             return;
         }
 
-        final DefaultSampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
+        final ISampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
 
         // No trigger
         // No start - set from Sample chunk in addMetadata below
@@ -371,7 +371,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        ////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Play-range & Loops
 
         sampleZone.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0));
@@ -396,7 +396,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
 
         sampleZone.setReversed (isReversed);
 
-        ////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();

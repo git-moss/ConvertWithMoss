@@ -133,7 +133,11 @@ public class EXS24File
                     // No idea what that is but it is 4 bytes long and they are always 0
                     break;
 
-                case EXS24Block.TYPE_BPLIST:
+                case EXS24Block.TYPE_BPLIST_SAMPLER_LAYOUT:
+                    // A BPLIST with the layout configuration of Sampler
+                    break;
+
+                case EXS24Block.TYPE_BPLIST_MACOS_PLIST:
                     // This contains a MacOS PLIST structure in byte format with file information
                     // about the sample files (could be read with dd.plist library)
                     break;

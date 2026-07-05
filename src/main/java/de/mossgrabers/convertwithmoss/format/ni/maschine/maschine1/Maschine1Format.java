@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -85,7 +86,7 @@ public class Maschine1Format implements IMaschineFormat
     private static final String                   V1_DATA_TAG             = "data";
     private static final Set<String>              NO_CLOSING_TAG          = new HashSet<> ();
     private static final Map<Integer, FilterType> FILTER_TYPES            = new HashMap<> ();
-    private static final Map<FilterType, Integer> INV_FILTER_TYPES        = new HashMap<> ();
+    private static final Map<FilterType, Integer> INV_FILTER_TYPES        = new EnumMap<> (FilterType.class);
 
     static
     {
@@ -103,11 +104,11 @@ public class Maschine1Format implements IMaschineFormat
     }
 
     private final INotifier                   notifier;
-    private long                              version;
+    // Found 400, 401 and 411
+    private long                              version                     = 400;
     private DataSection                       topSection                  = new DataSection ();
 
     private final Map<Integer, DataParameter> globalParametersVriTags     = new TreeMap<> ();
-    private boolean                           isBigEndian;
     private DataSection                       zoneDataSection             = null;
     private List<DataTag>                     zoneParametersTopDataTags   = null;
     private DataSection                       presetDataSection           = null;
@@ -147,7 +148,8 @@ public class Maschine1Format implements IMaschineFormat
         // Create the multi-sample with 1 group
         final String name = FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
+
         final IGroup group = new DefaultGroup ();
         multisampleSource.setGroups (Collections.singletonList (group));
 
@@ -191,15 +193,15 @@ public class Maschine1Format implements IMaschineFormat
     @Override
     public void writeSound (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int version) throws IOException
     {
+        // version == 1
+
         if (!this.readSoundData (new ByteArrayInputStream (MASCHINE_TEMPLATE_V1)))
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_COULD_NOT_READ_TEMPLATE"));
 
         this.updateMetadata (multisampleSource);
 
         // There are no groups, therefore, collect all sample zones
-        final List<ISampleZone> sampleZones = new ArrayList<> ();
-        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
-            sampleZones.addAll (group.getSampleZones ());
+        final List<ISampleZone> sampleZones = multisampleSource.getAllSampleZones (true);
         this.updateZones (sampleZones, safeSampleFolderName);
 
         this.updateGlobalParameters (multisampleSource, sampleZones.get (0));
@@ -207,9 +209,9 @@ public class Maschine1Format implements IMaschineFormat
         this.updateParameterSections ();
 
         // Write the header
-        StreamUtils.writeASCII (out, START_TAG_LITTLE_ENDIAN, START_TAG_LITTLE_ENDIAN.length ());
+        StreamUtils.writeAscii (out, START_TAG_LITTLE_ENDIAN, START_TAG_LITTLE_ENDIAN.length ());
         StreamUtils.writeUnsigned32 (out, 2, false);
-        StreamUtils.writeASCII (out, V1_SOUND_TAG, V1_SOUND_TAG.length ());
+        StreamUtils.writeAscii (out, V1_SOUND_TAG, V1_SOUND_TAG.length ());
         StreamUtils.padBytes (out, 11, 0);
 
         // So far we can only reflect it
@@ -228,29 +230,29 @@ public class Maschine1Format implements IMaschineFormat
      */
     private boolean readSoundData (final InputStream inputStream) throws IOException
     {
-        final String startTag = StreamUtils.readASCII (inputStream, 4);
-        this.isBigEndian = !Maschine1Format.START_TAG_LITTLE_ENDIAN.equals (startTag);
-        if (this.isBigEndian && !Maschine1Format.START_TAG_BIG_ENDIAN.equals (startTag))
+        final String startTag = StreamUtils.readAscii (inputStream, 4);
+        final boolean isBigEndian = !Maschine1Format.START_TAG_LITTLE_ENDIAN.equals (startTag);
+        if (isBigEndian && !Maschine1Format.START_TAG_BIG_ENDIAN.equals (startTag))
         {
             this.notifier.logError ("IDS_NI_MASCHINE_NOT_A_V1_FILE");
             return false;
         }
 
-        final long version = StreamUtils.readUnsigned32 (inputStream, this.isBigEndian);
-        if (version != 2)
+        final long fileVersion = StreamUtils.readUnsigned32 (inputStream, isBigEndian);
+        if (fileVersion != 2)
         {
-            this.notifier.logError ("IDS_NI_MASCHINE_V1_UNSUPPORTED_VERSION", Long.toString (version));
+            this.notifier.logError ("IDS_NI_MASCHINE_V1_UNSUPPORTED_VERSION", Long.toString (fileVersion));
             return false;
         }
 
-        if (!V1_SOUND_TAG.equals (StreamUtils.readASCII (inputStream, 48).trim ()))
+        if (!V1_SOUND_TAG.equals (StreamUtils.readAscii (inputStream, 48).trim ()))
         {
             this.notifier.logError ("IDS_NI_MASCHINE_NOT_A_V1_FILE");
             return false;
         }
 
-        this.version = StreamUtils.readUnsigned32 (inputStream, this.isBigEndian);
-        this.topSection = this.readDataSections (inputStream, this.isBigEndian);
+        this.version = StreamUtils.readUnsigned32 (inputStream, isBigEndian);
+        this.topSection = this.readDataSections (inputStream, isBigEndian);
 
         final DataSection metaDataSection = getData (this.topSection.children, "gtr ", "info");
         if (metaDataSection != null && metaDataSection.data != null)
@@ -260,7 +262,7 @@ public class Maschine1Format implements IMaschineFormat
         this.zoneDataSection = findDataSection (this.topSection, "gznc");
         if (this.zoneDataSection == null || this.zoneDataSection.data == null)
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
-        this.zoneParametersTopDataTags = readDataSectionParameters (new ByteArrayInputStream (this.zoneDataSection.data), this.isBigEndian);
+        this.zoneParametersTopDataTags = readDataSectionParameters (new ByteArrayInputStream (this.zoneDataSection.data), isBigEndian);
         if (this.zoneParametersTopDataTags == null)
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
 
@@ -268,14 +270,19 @@ public class Maschine1Format implements IMaschineFormat
         this.presetDataSection = getData (this.zoneDataSection.parent.children, "gemo", "prst");
         if (this.presetDataSection == null || this.presetDataSection.data == null)
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
-        this.presetParametersTopDataTags = readDataSectionParameters (new ByteArrayInputStream (this.presetDataSection.data), this.isBigEndian);
+        this.presetParametersTopDataTags = readDataSectionParameters (new ByteArrayInputStream (this.presetDataSection.data), isBigEndian);
         final DataTag paramsTag = getDataTag (this.presetParametersTopDataTags, "dfp ", "pac ");
+        if (paramsTag == null)
+            return true;
         this.globalParametersVriTags.clear ();
         for (final DataTag childTag: paramsTag.children)
         {
             final DataTag vriTag = getDataTag (childTag, "par ", "osid", "vr  ", "vri ");
-            final int paramIndex = vriTag.parameter.name.getBytes ()[3];
-            this.globalParametersVriTags.put (Integer.valueOf (paramIndex), vriTag.parameter);
+            if (vriTag != null)
+            {
+                final int paramIndex = vriTag.parameter.name.getBytes ()[3];
+                this.globalParametersVriTags.put (Integer.valueOf (paramIndex), vriTag.parameter);
+            }
         }
 
         return true;
@@ -466,10 +473,10 @@ public class Maschine1Format implements IMaschineFormat
         try
         {
             // Note: There is a prefix of 03 00 00 00 00 which is removed by the trim!
-            final String xml = StreamUtils.readUTF8 (new ByteArrayInputStream (metaData)).trim ();
+            final String xml = StreamUtils.readUtf8 (new ByteArrayInputStream (metaData)).trim ();
             return new SoundinfoDocument (xml);
         }
-        catch (final SAXException | IOException ex)
+        catch (final SAXException | IOException _)
         {
             // Ignore
             return null;
@@ -482,7 +489,7 @@ public class Maschine1Format implements IMaschineFormat
      *
      * @param multisampleSource The multi-sample
      */
-    private void applyMetadata (final DefaultMultisampleSource multisampleSource)
+    private void applyMetadata (final IMultisampleSource multisampleSource)
     {
         if (this.soundinfoDocument == null)
             return;
@@ -512,17 +519,23 @@ public class Maschine1Format implements IMaschineFormat
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
 
         final DataTag crpTag = getDataTag (gslParameterTag, "gsl ", "dfp ", "prc ");
+        if (crpTag == null)
+            return Collections.emptyMap ();
         for (final DataTag childTag: crpTag.children)
         {
             final DataTag vriTag = getDataTag (childTag, "prp ", "vr  ", "vri ");
-            params.put (vriTag.parameter.name, vriTag.parameter);
+            if (vriTag != null)
+                params.put (vriTag.parameter.name, vriTag.parameter);
         }
 
         final DataTag prcTag2 = getDataTag (dfpParameterTag, "dfp ", "prc ");
+        if (prcTag2 == null)
+            return Collections.emptyMap ();
         for (final DataTag childTag: prcTag2.children)
         {
             final DataTag vriTag = getDataTag (childTag, "prp ", "vr  ", "vri ");
-            params.put (vriTag.parameter.name, vriTag.parameter);
+            if (vriTag != null)
+                params.put (vriTag.parameter.name, vriTag.parameter);
         }
         return params;
     }
@@ -541,7 +554,7 @@ public class Maschine1Format implements IMaschineFormat
         DataSection currentSection = this.topSection;
         while (in.available () >= 16)
         {
-            final String id = StreamUtils.readASCII (in, 4, !isBigEndian);
+            final String id = StreamUtils.readAscii (in, 4, !isBigEndian);
             if (!V1_DATA_TAG.equals (id))
                 throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
 
@@ -573,9 +586,9 @@ public class Maschine1Format implements IMaschineFormat
             throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
 
         final DataSection section = new DataSection ();
-        section.name = StreamUtils.readASCII (in, 4, !isBigEndian);
+        section.name = StreamUtils.readAscii (in, 4, !isBigEndian);
         // Always 'none'
-        StreamUtils.readASCII (in, 4, !isBigEndian);
+        StreamUtils.readAscii (in, 4, !isBigEndian);
         final int size1 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         final int size2 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         if (size1 != size2 || size1 < 0 || size1 > in.available ())
@@ -712,10 +725,10 @@ public class Maschine1Format implements IMaschineFormat
 
         while (in.available () >= 4)
         {
-            final String tag1 = StreamUtils.readASCII (in, 4, !isBigEndian);
+            final String tag1 = StreamUtils.readAscii (in, 4, !isBigEndian);
             if (StringUtils.isLowerCase (tag1))
             {
-                final String tag2 = StreamUtils.readASCII (in, 4, !isBigEndian);
+                final String tag2 = StreamUtils.readAscii (in, 4, !isBigEndian);
                 if (tag1.equals (tag2))
                 {
                     // Version 0-3 for GZN
@@ -737,7 +750,7 @@ public class Maschine1Format implements IMaschineFormat
                         throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
 
                     // This is a parameter
-                    final String tag3 = StreamUtils.readASCII (in, 4, !isBigEndian);
+                    final String tag3 = StreamUtils.readAscii (in, 4, !isBigEndian);
                     if (!"vt  ".equals (tag3))
                         throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
 
@@ -789,7 +802,7 @@ public class Maschine1Format implements IMaschineFormat
         {
             // UTF-16LE string
             case 0:
-                parameter.textValue = StreamUtils.readWithLengthUTF16 (in, isBigEndian);
+                parameter.textValue = StreamUtils.readUtf16WithLength (in, isBigEndian);
                 break;
 
             // float32
@@ -834,6 +847,8 @@ public class Maschine1Format implements IMaschineFormat
         final String xmlCode = this.soundinfoDocument.createDocument (multisampleSource.getName ());
 
         final DataSection metaDataSection = getData (this.topSection.children, "gtr ", "info");
+        if (metaDataSection == null)
+            throw new IOException ("Metadata section not found.");
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         out.write (new byte []
         {
@@ -866,20 +881,20 @@ public class Maschine1Format implements IMaschineFormat
             this.zoneParametersTopDataTags.add (newZoneTag);
 
             // User Library
-            findParameterByName (newZoneTag, "bsca").integerValue = 3;
-            findParameterByName (newZoneTag, "bsid").textValue = safeSampleFolderName;
-            findParameterByName (newZoneTag, "bsur").textValue = "";
+            setParameterInteger (newZoneTag, "bsca", 3);
+            setParameterText (newZoneTag, "bsid", safeSampleFolderName);
+            setParameterText (newZoneTag, "bsur", "");
 
             final String samplePath = zone.getName () + ".wav";
-            findParameterByName (newZoneTag, "rlur").textValue = samplePath;
+            setParameterText (newZoneTag, "rlur", samplePath);
 
             final int sampleLength = zone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
-            findParameterByName (newZoneTag, "zsst").integerValue = zone.getStart ();
-            findParameterByName (newZoneTag, "zsed").integerValue = zone.getStop () - sampleLength;
+            setParameterInteger (newZoneTag, "zsst", Math.max (0, zone.getStart ()));
+            setParameterInteger (newZoneTag, "zsed", Math.clamp (zone.getStop (), 0, sampleLength) - sampleLength);
 
             final List<ISampleLoop> loops = zone.getLoops ();
             final boolean hasLoop = !loops.isEmpty ();
-            findParameterByName (newZoneTag, "zslm").integerValue = hasLoop ? 2 : 0;
+            setParameterInteger (newZoneTag, "zslm", hasLoop ? 2 : 0);
             int loopStart = zone.getStart ();
             int loopEnd = 0;
             int crossfadeInSamples = 0;
@@ -891,19 +906,19 @@ public class Maschine1Format implements IMaschineFormat
                 crossfadeInSamples = loop.getCrossfadeInSamples ();
             }
 
-            findParameterByName (newZoneTag, "zsls").integerValue = loopStart;
-            findParameterByName (newZoneTag, "zsle").integerValue = loopEnd;
-            findParameterByName (newZoneTag, "zslx").integerValue = crossfadeInSamples;
+            setParameterInteger (newZoneTag, "zsls", loopStart);
+            setParameterInteger (newZoneTag, "zsle", loopEnd);
+            setParameterInteger (newZoneTag, "zslx", crossfadeInSamples);
 
-            findParameterByName (newZoneTag, "zrky").integerValue = zone.getKeyRoot ();
-            findParameterByName (newZoneTag, "zlky").integerValue = zone.getKeyLow ();
-            findParameterByName (newZoneTag, "zhky").integerValue = zone.getKeyHigh ();
-            findParameterByName (newZoneTag, "zlvl").integerValue = zone.getVelocityLow ();
-            findParameterByName (newZoneTag, "zhvl").integerValue = zone.getVelocityHigh ();
+            setParameterInteger (newZoneTag, "zrky", zone.getKeyRoot ());
+            setParameterInteger (newZoneTag, "zlky", zone.getKeyLow ());
+            setParameterInteger (newZoneTag, "zhky", zone.getKeyHigh ());
+            setParameterInteger (newZoneTag, "zlvl", zone.getVelocityLow ());
+            setParameterInteger (newZoneTag, "zhvl", zone.getVelocityHigh ());
 
-            findParameterByName (newZoneTag, "zvol").floatValue = MaschinePresetAccessor.dbToInput (zone.getGain ());
-            findParameterByName (newZoneTag, "zpan").floatValue = (float) zone.getPanning ();
-            findParameterByName (newZoneTag, "ztun").floatValue = (float) pitchToTune (zone.getTuning ());
+            setParameterFloat (newZoneTag, "zvol", MaschinePresetAccessor.dbToInput (zone.getGain ()));
+            setParameterFloat (newZoneTag, "zpan", (float) zone.getPanning ());
+            setParameterFloat (newZoneTag, "ztun", (float) pitchToTune (zone.getTuning ()));
         }
     }
 
@@ -1027,7 +1042,7 @@ public class Maschine1Format implements IMaschineFormat
             writeDataHeader (out, child.name, size);
             out.write (child.data);
             if (!isXML)
-                StreamUtils.writeASCII (out, child.name.toUpperCase (), 4, true);
+                StreamUtils.writeAscii (out, child.name.toUpperCase (), 4, true);
             this.writeDataSections (out, child.children);
             writeClosingDataSection (out, child);
         }
@@ -1036,10 +1051,10 @@ public class Maschine1Format implements IMaschineFormat
 
     private static void writeDataHeader (final OutputStream out, final String sectionName, final int size) throws IOException
     {
-        StreamUtils.writeASCII (out, V1_DATA_TAG, 4, true);
+        StreamUtils.writeAscii (out, V1_DATA_TAG, 4, true);
         StreamUtils.writeUnsigned32 (out, 2, false);
-        StreamUtils.writeASCII (out, sectionName, 4, true);
-        StreamUtils.writeASCII (out, "none", 4, true);
+        StreamUtils.writeAscii (out, sectionName, 4, true);
+        StreamUtils.writeAscii (out, "none", 4, true);
         StreamUtils.writeUnsigned32 (out, size, false);
         StreamUtils.writeUnsigned32 (out, size, false);
     }
@@ -1070,8 +1085,8 @@ public class Maschine1Format implements IMaschineFormat
         {
             final DataTag child = childTags.get (i);
 
-            StreamUtils.writeASCII (out, child.name, 4, true);
-            StreamUtils.writeASCII (out, child.name, 4, true);
+            StreamUtils.writeAscii (out, child.name, 4, true);
+            StreamUtils.writeAscii (out, child.name, 4, true);
 
             // Version depends on the main version
             int subVersion = 0;
@@ -1091,7 +1106,7 @@ public class Maschine1Format implements IMaschineFormat
                 this.writeChildTags (out, child.children);
 
             if (!NO_CLOSING_TAG.contains (child.name))
-                StreamUtils.writeASCII (out, child.name.toUpperCase (), 4, true);
+                StreamUtils.writeAscii (out, child.name.toUpperCase (), 4, true);
         }
     }
 
@@ -1105,9 +1120,9 @@ public class Maschine1Format implements IMaschineFormat
      */
     private static void writeParameter (final OutputStream out, final DataParameter parameter) throws IOException
     {
-        StreamUtils.writeASCII (out, parameter.name, 4, true);
-        StreamUtils.writeASCII (out, "vt  ", 4, true);
-        StreamUtils.writeASCII (out, "vt  ", 4, true);
+        StreamUtils.writeAscii (out, parameter.name, 4, true);
+        StreamUtils.writeAscii (out, "vt  ", 4, true);
+        StreamUtils.writeAscii (out, "vt  ", 4, true);
         StreamUtils.writeUnsigned32 (out, 0, false);
         out.write (1);
 
@@ -1117,7 +1132,7 @@ public class Maschine1Format implements IMaschineFormat
         {
             // UTF-16LE string
             case 0:
-                StreamUtils.writeWithLengthUTF16 (out, parameter.textValue);
+                StreamUtils.writeUtf16WithLength (out, parameter.textValue);
                 break;
 
             // float32
@@ -1235,6 +1250,30 @@ public class Maschine1Format implements IMaschineFormat
         q.floatValue = p.floatValue;
         q.textValue = p.textValue;
         return q;
+    }
+
+
+    private static void setParameterInteger (final DataTag dataTag, final String name, final int value)
+    {
+        final DataParameter param = findParameterByName (dataTag, name);
+        if (param != null)
+            param.integerValue = value;
+    }
+
+
+    private static void setParameterFloat (final DataTag dataTag, final String name, final float value)
+    {
+        final DataParameter param = findParameterByName (dataTag, name);
+        if (param != null)
+            param.floatValue = value;
+    }
+
+
+    private static void setParameterText (final DataTag dataTag, final String name, final String value)
+    {
+        final DataParameter param = findParameterByName (dataTag, name);
+        if (param != null)
+            param.textValue = value;
     }
 
 

@@ -27,8 +27,10 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
@@ -130,7 +132,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         final String name = FileUtils.getNameWithoutType (sourceFile);
         final File parentFile = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final Map<Integer, IGroup> groupsMap = new TreeMap<> ();
         final Map<IGroup, EXS24Group> groupMapping = new HashMap<> ();
@@ -166,7 +168,10 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
 
             if (exs24Zone.loopOn)
             {
-                final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                final ISampleLoop loop = new DefaultSampleLoop ();
+                if (exs24Zone.loopDirection > 0)
+                    loop.setType (exs24Zone.loopDirection == 1 ? LoopType.BACKWARDS : LoopType.ALTERNATING);
+                loop.setLoopUntilRelease (exs24Zone.loopPlayToEndOnRelease);
                 loop.setStart (exs24Zone.loopStart);
                 loop.setEnd (exs24Zone.loopEnd - 1);
                 if (exs24Zone.loopCrossfade != 0)
@@ -175,6 +180,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
                     final EXS24Sample exs24Sample = exs24Samples.get (exs24Zone.sampleIndex);
                     loop.setCrossfadeInSeconds (exs24Zone.loopCrossfade / 1000.0, exs24Sample.sampleRate);
                 }
+                loop.setTuning (exs24Zone.loopTune / 100.0);
                 zone.getLoops ().add (loop);
             }
             // Add group data from exs24Groups
@@ -382,8 +388,9 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
 
     private static boolean limitByGroupAttributes (final EXS24Group exs24Group, final ISampleZone zone)
     {
+        // Note: volume values can be added since the zone volume is relative!
         if (exs24Group.volume != 0)
-            zone.setGain (zone.getGain () + exs24Group.volume);
+            zone.setGain (exs24Group.volume + zone.getGain ());
         if (exs24Group.pan != 0)
             zone.setPanning (zone.getPanning () + exs24Group.pan);
 

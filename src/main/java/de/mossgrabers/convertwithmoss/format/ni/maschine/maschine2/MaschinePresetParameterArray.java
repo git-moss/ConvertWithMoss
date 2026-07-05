@@ -48,7 +48,7 @@ public class MaschinePresetParameterArray
                 throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Wrong data size"));
 
             inputStream.skipNBytes (1);
-            final String magic = StreamUtils.readWith1ByteLengthAscii (inputStream);
+            final String magic = StreamUtils.readAsciiWith1ByteLength (inputStream);
             if (!BOOST_ARCHIVE_MAGIC.equals (magic))
                 throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Magic boost bytes not found."));
 
@@ -76,7 +76,7 @@ public class MaschinePresetParameterArray
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream (); final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream ())
         {
             arrayOutputStream.write (1);
-            StreamUtils.writeWith1ByteLengthAscii (arrayOutputStream, BOOST_ARCHIVE_MAGIC);
+            StreamUtils.writeAsciiWith1ByteLength (arrayOutputStream, BOOST_ARCHIVE_MAGIC);
             writeIntegers (arrayOutputStream, this.version);
             arrayOutputStream.write (new byte []
             {
@@ -183,7 +183,7 @@ public class MaschinePresetParameterArray
                     final int length = StreamUtils.readVariableLengthNumberLE (in);
                     if (length < 0)
                         throw new IOException ("Negative string length.");
-                    params.add (StreamUtils.readASCII (in, length));
+                    params.add (StreamUtils.readAscii (in, length));
                     break;
                 default:
                     throw new IOException ("Unknown parameter type.");

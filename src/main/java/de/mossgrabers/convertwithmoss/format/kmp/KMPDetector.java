@@ -34,14 +34,12 @@ public class KMPDetector extends AbstractDetector<KMPDetectorUI>
 {
     private static final String [] KSC_ENDINGS =
     {
-        ".ksc",
-        ".KSC"
+        ".ksc"
     };
 
     private static final String [] KMP_ENDINGS =
     {
-        ".kmp",
-        ".KMP"
+        ".kmp"
     };
 
 
@@ -195,7 +193,7 @@ public class KMPDetector extends AbstractDetector<KMPDetectorUI>
 
         final String name = kmpFile.getName ();
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, name, sourceFile.getName ());
+        final IMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, name);
 
         // Use guessing on the filename...
         source.getMetadata ().detectMetadata (this.settingsConfiguration, parts);

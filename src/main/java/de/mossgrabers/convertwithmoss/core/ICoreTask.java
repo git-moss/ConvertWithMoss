@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.core;
 
+import java.util.Set;
+
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 
 
@@ -41,6 +43,14 @@ public interface ICoreTask<T extends ICoreTaskSettings>
 
 
     /**
+     * Set the settings.
+     *
+     * @param settings The settings
+     */
+    void setSettings (T settings);
+
+
+    /**
      * Shutdown the task. Execute necessary cleanup.
      */
     void shutdown ();
@@ -58,4 +68,12 @@ public interface ICoreTask<T extends ICoreTaskSettings>
      * @return True if cancelled
      */
     boolean isCancelled ();
+
+
+    /**
+     * Get the file endings which are detected or written by this task.
+     *
+     * @return The file endings
+     */
+    Set<String> getFileEndings ();
 }

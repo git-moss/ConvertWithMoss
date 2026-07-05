@@ -19,7 +19,6 @@ import java.util.TreeSet;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
@@ -28,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
 
@@ -99,7 +99,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
     {
         if (detectSettings.reduceBitDepth <= 0 || detectSettings.reduceBitDepth == 16)
             return true;
-        this.notifier.log ("IDS_PROCESSING_REDUCE_BITE_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16");
+        this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH_NOT_SUPPORTED", Integer.toString (detectSettings.reduceBitDepth), "16");
         return false;
     }
 
@@ -116,7 +116,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
     {
         try (final OutputStream out = new FileOutputStream (multiFile))
         {
-            StreamUtils.writeASCII (out, "DEXBPRST", 8);
+            StreamUtils.writeAscii (out, "DEXBPRST", 8);
 
             // Version
             StreamUtils.writeSigned32 (out, 1, false);
@@ -128,7 +128,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
             StreamUtils.writeSigned32 (out, 0x14, false);
 
             final String name = StringUtils.rightPadSpaces (StringUtils.optimizeName (StringUtils.fixASCII (multisampleSource.getName ()), 16), 16);
-            StreamUtils.writeASCII (out, name, 16);
+            StreamUtils.writeAscii (out, name, 16);
 
             // Unknown
             StreamUtils.writeSigned32 (out, 0, false);
@@ -184,7 +184,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
 
             // Weird workaround for the issue that the string contains 0xFF after the null byte
             final ByteArrayOutputStream byteOut = new ByteArrayOutputStream ();
-            StreamUtils.writeASCII (byteOut, safeSampleFolderName, 21);
+            StreamUtils.writeAscii (byteOut, safeSampleFolderName, 21);
             final byte [] byteArray = byteOut.toByteArray ();
             boolean makeFF = false;
             for (int i = 0; i < byteArray.length; i++)

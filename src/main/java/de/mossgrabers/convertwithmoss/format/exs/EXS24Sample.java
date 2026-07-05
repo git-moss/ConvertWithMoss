@@ -68,16 +68,16 @@ class EXS24Sample extends EXS24Object
 
         in.skipNBytes (4);
 
-        this.type = StreamUtils.readASCII (in, 4);
+        this.type = StreamUtils.readAscii (in, 4);
         this.size = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         this.isCompressed = StreamUtils.readUnsigned32 (in, isBigEndian) > 0;
 
         in.skipNBytes (40);
 
-        this.filePath = StringUtils.removeCharactersAfterZero (StreamUtils.readASCII (in, 256));
+        this.filePath = StringUtils.removeCharactersAfterZero (StreamUtils.readAscii (in, 256));
 
         // If not present the name from the header is used!
-        this.fileName = in.available () > 0 ? StringUtils.removeCharactersAfterZero (StreamUtils.readASCII (in, 256)) : this.name;
+        this.fileName = in.available () > 0 ? StringUtils.removeCharactersAfterZero (StreamUtils.readAscii (in, 256)) : this.name;
     }
 
 
@@ -92,11 +92,11 @@ class EXS24Sample extends EXS24Object
         StreamUtils.writeUnsigned32 (out, this.channels, isBigEndian);
         StreamUtils.writeUnsigned32 (out, this.channels2, isBigEndian);
         StreamUtils.padBytes (out, 4);
-        StreamUtils.writeASCII (out, this.type, 4);
+        StreamUtils.writeAscii (out, this.type, 4);
         StreamUtils.writeUnsigned32 (out, this.size, isBigEndian);
         StreamUtils.writeUnsigned32 (out, this.isCompressed ? 1 : 0, isBigEndian);
         StreamUtils.padBytes (out, 40);
-        StreamUtils.writeASCII (out, this.filePath, 256);
-        StreamUtils.writeASCII (out, this.fileName, 256);
+        StreamUtils.writeAscii (out, this.filePath, 256);
+        StreamUtils.writeAscii (out, this.fileName, 256);
     }
 }

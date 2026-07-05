@@ -44,7 +44,7 @@ public class MaschineDetector extends AbstractDetector<MaschineDetectorUI>
      */
     public MaschineDetector (final INotifier notifier)
     {
-        super ("Maschine Sound", "Maschine", notifier, new MaschineDetectorUI ());
+        super ("NI Maschine", "Maschine", notifier, new MaschineDetectorUI ());
     }
 
 
@@ -88,7 +88,7 @@ public class MaschineDetector extends AbstractDetector<MaschineDetectorUI>
      */
     private IMaschineFormat detectFormat (final RandomAccessFile fileAccess) throws IOException
     {
-        final String startTag = StreamUtils.readASCII (fileAccess, 4);
+        final String startTag = StreamUtils.readAscii (fileAccess, 4);
         fileAccess.seek (0);
         if (Maschine1Format.START_TAG_LITTLE_ENDIAN.equals (startTag) || Maschine1Format.START_TAG_BIG_ENDIAN.equals (startTag))
             return new Maschine1Format (this.notifier);
@@ -97,7 +97,7 @@ public class MaschineDetector extends AbstractDetector<MaschineDetectorUI>
 
         // Is this Maschine 2+ container format?
         fileAccess.seek (12);
-        final String id = StreamUtils.readASCII (fileAccess, 4);
+        final String id = StreamUtils.readAscii (fileAccess, 4);
         fileAccess.seek (0);
         if ("hsin".equals (id))
             return new Maschine2Format (this.notifier);

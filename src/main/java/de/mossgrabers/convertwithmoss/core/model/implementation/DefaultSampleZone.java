@@ -45,8 +45,8 @@ public class DefaultSampleZone implements ISampleZone
     protected double             panning                    = 0;
     protected double             tune                       = 0;
     protected double             keyTracking                = 1.0;
-    protected int                bendUp                     = 0;
-    protected int                bendDown                   = 0;
+    protected int                bendUp                     = 200;
+    protected int                bendDown                   = -200;
     protected boolean            isReversed                 = false;
     protected IModulator         amplitudeVelocityModulator = new DefaultModulator (1);
     protected IEnvelopeModulator amplitudeEnvelopeModulator = new DefaultEnvelopeModulator (1);
@@ -72,7 +72,8 @@ public class DefaultSampleZone implements ISampleZone
 
 
     /**
-     * Constructor. Copies all metadata from the given source zone.
+     * Constructor. Copies all metadata except the sample data from the given source zone. Warning:
+     * the filter and loops are only assigned not cloned!
      *
      * @param zone The zone from which to copy the metadata
      */

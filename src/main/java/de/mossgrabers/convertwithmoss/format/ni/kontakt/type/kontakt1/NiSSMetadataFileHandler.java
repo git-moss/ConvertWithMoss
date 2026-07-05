@@ -10,8 +10,8 @@ import java.util.Map;
 
 import org.w3c.dom.Element;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.AbstractNKIMetadataFileHandler;
@@ -53,7 +53,7 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected void readInstrumentParameters (final DefaultInstrumentSource instrumentSource, final Map<String, String> programParameters)
+    protected void readInstrumentParameters (final IInstrumentSource instrumentSource, final Map<String, String> programParameters)
     {
         final String midiChannel = programParameters.get ("midiChannel");
         if (midiChannel != null)
@@ -88,7 +88,7 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
                 {
                     return attribute == null ? 0 : Double.parseDouble (attribute);
                 }
-                catch (final NumberFormatException ex)
+                catch (final NumberFormatException _)
                 {
                     return 0;
                 }

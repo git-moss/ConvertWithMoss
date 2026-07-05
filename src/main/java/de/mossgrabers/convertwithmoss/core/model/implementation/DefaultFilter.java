@@ -22,6 +22,7 @@ public class DefaultFilter implements IFilter
     protected double             cutoff;
     protected double             resonance;
     protected int                envelopeDepth;
+    protected double             cutoffKeyTracking       = 0;
     protected IEnvelopeModulator cutoffEnvelopeModulator = new DefaultEnvelopeModulator (0);
     protected IModulator         cutoffVelocityModulator = new DefaultModulator (0);
 
@@ -93,6 +94,22 @@ public class DefaultFilter implements IFilter
 
     /** {@inheritDoc} */
     @Override
+    public double getCutoffKeyTracking ()
+    {
+        return this.cutoffKeyTracking;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setCutoffKeyTracking (final double keyTracking)
+    {
+        this.cutoffKeyTracking = keyTracking;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int hashCode ()
     {
         final int prime = 31;
@@ -103,6 +120,8 @@ public class DefaultFilter implements IFilter
         result = prime * result + (this.cutoffVelocityModulator == null ? 0 : this.cutoffVelocityModulator.hashCode ());
         result = prime * result + (this.cutoffEnvelopeModulator == null ? 0 : this.cutoffEnvelopeModulator.hashCode ());
         result = prime * result + this.envelopeDepth;
+        temp = Double.doubleToLongBits (this.cutoffKeyTracking);
+        result = prime * result + (int) (temp ^ temp >>> 32);
         result = prime * result + this.poles;
         temp = Double.doubleToLongBits (this.resonance);
         result = prime * result + (int) (temp ^ temp >>> 32);
@@ -136,7 +155,7 @@ public class DefaultFilter implements IFilter
         }
         else if (!this.cutoffEnvelopeModulator.equals (other.cutoffEnvelopeModulator))
             return false;
-        if (this.envelopeDepth != other.envelopeDepth || this.poles != other.poles || Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance))
+        if (this.envelopeDepth != other.envelopeDepth || this.poles != other.poles || Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance) || (Double.doubleToLongBits (this.cutoffKeyTracking) != Double.doubleToLongBits (other.cutoffKeyTracking)))
             return false;
         return this.type == other.type;
     }

@@ -15,6 +15,7 @@ module de.mossgrabers.convertwithmoss
     requires com.github.trilarion.sound;
     requires info.picocli;
     requires com.fasterxml.jackson.databind;
+    requires javafx.base;
 
 
     exports de.mossgrabers.convertwithmoss.ui;
@@ -40,5 +41,6 @@ module de.mossgrabers.convertwithmoss
     opens de.mossgrabers.convertwithmoss.templates.adv;
     opens de.mossgrabers.convertwithmoss.templates.dspreset;
     opens de.mossgrabers.convertwithmoss.templates.maschine;
+    opens de.mossgrabers.convertwithmoss.templates.prt_omn;
     opens de.mossgrabers.convertwithmoss.templates.ysfc;
 }

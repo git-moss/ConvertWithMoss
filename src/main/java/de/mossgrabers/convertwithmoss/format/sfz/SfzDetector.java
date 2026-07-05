@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -30,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -38,6 +38,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
@@ -54,7 +55,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
     private static final Pattern                 HEADER_PATTERN    = Pattern.compile ("<([a-z]+)>([^<]*)", Pattern.DOTALL);
     private static final Pattern                 ATTRIBUTE_PATTERN = Pattern.compile ("(\\b\\w+)=(.*?(?=\\s\\w+=|//|$))", Pattern.DOTALL);
     private static final Map<String, FilterType> FILTER_TYPE_MAP   = new HashMap<> ();
-    private static final Map<String, LoopType>   LOOP_TYPE_MAP     = new HashMap<> (3);
+    private static final Map<String, LoopType>   LOOP_TYPE_MAP     = HashMap.newHashMap (3);
 
     static
     {
@@ -208,10 +209,6 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (this.settingsConfiguration.logUnsupportedOpcodes ())
             this.printUnsupportedOpcodes (this.diffOpcodes ());
 
-        String name = FileUtils.getNameWithoutType (sourceFile);
-        final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-
         final List<IGroup> groups = this.parseGroups (sourceFile.getParentFile (), result);
         if (groups.isEmpty ())
         {
@@ -219,11 +216,14 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             return Collections.emptyList ();
         }
 
+        String name = FileUtils.getNameWithoutType (sourceFile);
         final Optional<String> globalName = this.getAttribute (SfzOpcode.GLOBAL_LABEL);
         if (globalName.isPresent ())
             name = globalName.get ();
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.createMetadata (metadata, this.getFirstSample (groups), parts);
@@ -412,7 +412,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (end >= 0)
             sampleMetadata.setStop (end);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Key range
 
         final int key = this.getKeyValue (SfzOpcode.KEY);
@@ -454,7 +454,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (pitchKeyCenter >= 0)
             sampleMetadata.setKeyRoot (pitchKeyCenter);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Velocity
 
         // Lower bounds including cross-fade
@@ -483,12 +483,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (highVel >= 0)
             sampleMetadata.setVelocityHigh (highVel);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Sample Loop
 
         this.parseLoop (sampleMetadata);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Tune
 
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
@@ -524,12 +524,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         pitchEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY_SHAPE, 0) / 10.0);
         pitchEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE_SHAPE, 0) / 10.0);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Volume
 
         this.parseVolume (sampleMetadata);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         this.parseFilter (sampleMetadata);
@@ -563,7 +563,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             if (poles <= 0)
                 poles = 2;
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             poles = 2;
         }
@@ -609,7 +609,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
      */
     private void parseLoop (final ISampleZone sampleMetadata)
     {
-        final DefaultSampleLoop loop = new DefaultSampleLoop ();
+        final ISampleLoop loop = new DefaultSampleLoop ();
 
         final Optional<String> loopMode = this.getAttribute (SfzOpcode.LOOP_MODE);
         if (loopMode.isPresent ())
@@ -621,6 +621,9 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
                     return;
 
                 case "loop_continuous", "loop_sustain":
+                    // 'loop_sustain' loops until the key is released and then plays the remainder
+                    // of the sample; 'loop_continuous' keeps looping
+                    loop.setLoopUntilRelease ("loop_sustain".equals (loopMode.get ()));
                     final Optional<String> loopType = this.getAttribute (SfzOpcode.LOOP_TYPE);
                     if (loopType.isPresent ())
                     {
@@ -648,6 +651,9 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             {
                 this.notifier.logError (ex);
             }
+
+        final double loopTuning = this.getDoubleValue (SfzOpcode.LOOP_TUNE, 0);
+        loop.setTuning (loopTuning / 100.0);
 
         // The loop might not have valid start and end set, in that case they will be read from the
         // WAV file
@@ -815,7 +821,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         {
             return Integer.parseInt (value.get ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -854,7 +860,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         {
             return Double.parseDouble (value.get ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }

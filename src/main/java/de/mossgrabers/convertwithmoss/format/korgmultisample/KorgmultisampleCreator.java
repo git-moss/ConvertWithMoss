@@ -187,11 +187,19 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
         final List<ISampleLoop> loops = zone.getLoops ();
         if (!loops.isEmpty ())
         {
-            final int loopStart = loops.get (0).getStart ();
+            final ISampleLoop sampleLoop = loops.get (0);
+            final int loopStart = sampleLoop.getStart ();
             if (loopStart > 0)
             {
                 sampleOutput.write (KorgmultisampleConstants.ID_LOOP_START);
                 StreamUtils.write7bitNumberLSB (sampleOutput, loopStart);
+            }
+
+            final double tuning = sampleLoop.getTuning ();
+            if (tuning != 0)
+            {
+                sampleOutput.write (KorgmultisampleConstants.ID_LOOP_TUNE);
+                StreamUtils.writeFloatLE (sampleOutput, Math.round (tuning * 100.0));
             }
         }
 
@@ -201,8 +209,6 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
             sampleOutput.write (KorgmultisampleConstants.ID_END);
             StreamUtils.write7bitNumberLSB (sampleOutput, end);
         }
-
-        // No loop tune support - ID_LOOP_TUNE
 
         if (loops.isEmpty ())
         {

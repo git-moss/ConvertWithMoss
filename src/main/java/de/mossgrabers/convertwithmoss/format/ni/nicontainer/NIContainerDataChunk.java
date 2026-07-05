@@ -45,7 +45,7 @@ public class NIContainerDataChunk
 
         final ByteArrayInputStream bin = new ByteArrayInputStream (chunkStackBlock);
 
-        this.domainID = StreamUtils.readASCII (bin, 4);
+        this.domainID = StreamUtils.readAscii (bin, 4);
         this.chunkTypeID = (int) StreamUtils.readUnsigned32 (bin, false);
         this.version = (int) StreamUtils.readUnsigned32 (bin, false);
         if (this.version != 1)
@@ -80,7 +80,7 @@ public class NIContainerDataChunk
     {
         final ByteArrayOutputStream bout = new ByteArrayOutputStream ();
 
-        StreamUtils.writeASCII (bout, this.domainID, 4);
+        StreamUtils.writeAscii (bout, this.domainID, 4);
         StreamUtils.writeUnsigned32 (bout, this.chunkTypeID, false);
         StreamUtils.writeUnsigned32 (bout, this.version, false);
 

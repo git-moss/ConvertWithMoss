@@ -122,7 +122,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         boolean isMulti = true;
         while (isMulti)
         {
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, file));
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
 
             final long version = readHeader (in, multisampleSource);
 
@@ -379,6 +379,10 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         if (filterVeloAmountParameter != null)
             filter.getCutoffVelocityModulator ().setDepth (filterVeloAmountParameter.value * 2.0 - 1.0);
 
+        final WaldorfQpatParameter filterKeyTrackParameter = parameters.get ("Filter1Keytrack");
+        if (filterKeyTrackParameter != null)
+            filter.setCutoffKeyTracking (filterKeyTrackParameter.value * 2.0 - 1.0);
+
         final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
         final WaldorfQpatParameter filterEnvAmountParameter = parameters.get ("Filter1EnvAmount");
         if (filterEnvAmountParameter != null)
@@ -459,14 +463,14 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
         final long version = StreamUtils.readUnsigned32 (in, false);
 
-        final String name = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
-        final String author = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
-        final String bank = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+        final String name = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+        final String author = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+        final String bank = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
 
         final List<String> categories = new ArrayList<> ();
         for (int i = 0; i < 4; i++)
         {
-            final String category = StreamUtils.readASCII (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
+            final String category = StreamUtils.readAscii (in, WaldorfQpatConstants.MAX_STRING_LENGTH).trim ();
             if (!category.isBlank ())
                 categories.add (category);
         }
@@ -583,7 +587,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
             zone.getLoops ().add (loop);
-            loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.BACKWARDS);
+            loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
 
             // LoopStart
             if (params.length > 11)

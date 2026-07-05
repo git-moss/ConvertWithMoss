@@ -1,0 +1,471 @@
+<AmberPart>
+<SynthEngine>
+<ARP ArpMode="8"  ArpClock="4"  ArpLen="3f800000"  ArpSwing="0"  ArpVelMix="3f090cee"  ArpHum="0"  ArpHumVel="0"  ArpHumTightDown="3f800000"  ArpOct="0"  ArpOnOff="0"  ArpPhase="0"  ArpFeelGrooveOnOff="3f800000"  ArpSnapToGridOnOff="3f800000"  ArpSpd="3f000000"  ArpPly="0"  ArpReset="0"  ArpSpan="3da3d70a"  ArpSnpGrvty="3f800000"  ArpGrooveName="">
+<ARPSEQ2 TEMPO="42f00000"  TICKSPERQUARTER="1200"  TIMESIGNUM="4"  TIMESIGDENOM="4" >
+<SLICESEQSTEP BEGIN="0"  END="300"  CH="-1"  SLICEINDEX="60"  VEL="127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="300"  END="600"  CH="-1"  SLICEINDEX="60"  VEL="62"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="600"  END="900"  CH="-1"  SLICEINDEX="60"  VEL="92"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="900"  END="1200"  CH="-1"  SLICEINDEX="60"  VEL="24"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="1200"  END="1500"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="1500"  END="1500"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="1800"  END="2100"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="2100"  END="2400"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="2400"  END="2700"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="2700"  END="3000"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="3000"  END="3300"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="3300"  END="3600"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="3600"  END="3900"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="3900"  END="4200"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="4200"  END="4200"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="4500"  END="4800"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="4800"  END="5100"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="5100"  END="5400"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="5400"  END="5700"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="5700"  END="6000"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="6000"  END="6300"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="6300"  END="6300"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="6600"  END="6900"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="6900"  END="7200"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="7200"  END="7500"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="7500"  END="7800"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="7800"  END="8100"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="8100"  END="8400"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="8400"  END="8700"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="8700"  END="9000"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="9000"  END="9300"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="9300"  END="9600"  CH="-1"  SLICEINDEX="60"  VEL="381127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ <SLICESEQSTEP BEGIN="1200"  END="0"  CH="-1"  SLICEINDEX="-2"  VEL="127"  STRSP="3f000000" >
+</SLICESEQSTEP>
+ </ARPSEQ2>
+ <ARPFEELSEQ TEMPO="42f00000"  TICKSPERQUARTER="4192"  TIMESIGNUM="4"  TIMESIGDENOM="4" >
+</ARPFEELSEQ>
+ </ARP>
+ <SYNTHENG Vers="302"  gptnlo="3f000000"  gptnmid="3f000000"  gptnhi="3f000000"  gplmtr="0"  br0="3f400000"  b40="0"  br1="3f400000"  b41="0"  br2="3f400000"  b42="0"  br3="3f400000"  b43="0"  br4="3f400000"  b44="0"  br5="3f400000"  b45="0"  br6="3f400000"  b46="0"  br7="3f400000"  b47="0"  qon="0"  qmode="0"  qfade="0"  susmd="0"  repkill="0"  dmplt="0"  tscl="3d75c28f"  lLFOP="999"  lMEnvP="777"  share="1"  ppvs="3f000000"  ppcp="3f000000"  poly="3e3851ec"  pbcut="41a80000"  pbup="%PITCHBEND_UP%"  pbdn="%PITCHBEND_DOWN%"  vcx="3f000000"  vcy="3f000000"  vcg="3f000000"  vcb="3f000000"  legm="0"  useLeg="0"  legInt="3ca3d70a"  legFad="0"  snrtrg="3f800000"  pleg="0"  glcr="2"  atbndmd="0"  atbndsms="11"  hrgain="1"  gain="3f189353"  mffrq="3f800000"  mfmd="0"  mfq="0"  dsia="0"  dsib="0"  dsabxf="0"  vis1="0"  vis2="3f800000"  vis3="3f000000"  vis4="3f000000"  vis5="3f000000"  vis6="3f000000"  scnDpth="3f800000"  scnMix="0"  scnSel="0"  portV2="3de9b684"  scnMA="0"  scnMC="0"  orbSt="0"  orbInAmnt="3f000000"  orbInSt="0"  SceneComponent0="3f800000"  SceneComponent1="3f800000"  SceneComponent2="3f800000"  SceneComponent3="3f800000"  irsendaux="0"  pauxrl="3f800000"  bypass="0"  tunpath="" origLibName="" origPatchName="" Custom_0="0"  Custom_1="0"  Custom_2="0"  Custom_3="0"  Custom_4="0"  Custom_5="0"  Custom_6="0"  Custom_7="0"  Custom_8="0"  Custom_9="0"  Custom_10="0"  Custom_11="0"  Custom_12="0"  Custom_13="0"  Custom_14="0"  Custom_15="0"  Custom_16="0"  Custom_17="0"  Custom_18="0"  Custom_19="0"  Custom_20="0"  Custom_21="0"  Custom_22="0"  Custom_23="0"  Custom_24="0"  Custom_25="0"  Custom_26="0"  Custom_27="0"  Custom_28="0"  Custom_29="0"  Custom_30="0"  Custom_31="0"  Custom_32="0"  Custom_33="0"  Custom_34="0"  Custom_35="0"  Custom_36="0"  Custom_37="0"  Custom_38="0"  Custom_39="0"  Custom_40="0"  Custom_41="0"  Custom_42="0"  Custom_43="0"  Custom_44="0"  Custom_45="0"  Custom_46="0"  Custom_47="0"  Custom_48="0"  Custom_49="0"  Custom_50="0"  Custom_51="0"  Custom_52="0"  Custom_53="0"  Custom_54="0"  Custom_55="0"  Custom_56="0"  Custom_57="0"  Custom_58="0"  Custom_59="0"  Custom_60="0"  Custom_61="0"  Custom_62="0"  Custom_63="0"  Custom_64="0"  Custom_65="0"  Custom_66="0"  Custom_67="0"  Custom_68="0"  Custom_69="0"  Custom_70="0"  Custom_71="0"  Custom_72="0"  Custom_73="0"  Custom_74="0"  Custom_75="0"  Custom_76="0"  Custom_77="0"  Custom_78="0"  Custom_79="0"  Custom_80="0"  Custom_81="0"  Custom_82="0"  Custom_83="0"  Custom_84="0"  Custom_85="0"  Custom_86="0"  Custom_87="0"  Custom_88="0"  Custom_89="0"  Custom_90="0"  Custom_91="0"  Custom_92="0"  Custom_93="0"  Custom_94="0"  Custom_95="0"  Custom_96="0"  Custom_97="0"  Custom_98="0"  Custom_99="0"  Custom_100="0"  Custom_101="0"  Custom_102="0"  Custom_103="0"  Custom_104="0"  Custom_105="0"  Custom_106="0"  Custom_107="0"  Custom_108="0"  Custom_109="0"  Custom_110="0"  Custom_111="0"  Custom_112="0"  Custom_113="0"  Custom_114="0"  Custom_115="0"  Custom_116="0"  Custom_117="0"  Custom_118="0"  Custom_119="0"  Custom_120="0"  Custom_121="0"  Custom_122="0"  Custom_123="0"  Custom_124="0"  Custom_125="0"  Custom_126="0"  Custom_127="0"  csch="0"  CPSc_0="0"  CPSc_1="0"  CPSc_2="0"  CPSc_3="0"  CPSc_4="0"  CPSc_5="0"  CPSc_6="0"  CPSc_7="0" >
+<ENTRYDESCR name="%PRESET_NAME%" library="User" ATTRIB_VALUE_DATA="%PRESET_METADATA%">
+</ENTRYDESCR>
+ <MOD_MATRIX source0="%PITCH_MOD_SOURCE%" target0="%PITCH_MOD_TARGET%" defV0="%PITCH_MOD_AMOUNT%"  lo0="0"  hi0="%PITCH_MOD_INTENSITY%"  mute0="0"  damp0="0"  all0="0"  source1="off" target1="off" defV1="3f800000"  lo1="0"  hi1="3f000000"  mute1="0"  damp1="0"  all1="0"  source2="off" target2="off" defV2="3f800000"  lo2="0"  hi2="3f000000"  mute2="0"  damp2="0"  all2="0"  source3="off" target3="off" defV3="3f800000"  lo3="0"  hi3="3f000000"  mute3="0"  damp3="0"  all3="0"  source4="off" target4="off" defV4="3f800000"  lo4="0"  hi4="3f000000"  mute4="0"  damp4="0"  all4="0"  source5="off" target5="off" defV5="3f800000"  lo5="0"  hi5="3f000000"  mute5="0"  damp5="0"  all5="0"  source6="off" target6="off" defV6="3f800000"  lo6="0"  hi6="3f000000"  mute6="0"  damp6="0"  all6="0"  source7="off" target7="off" defV7="3f800000"  lo7="0"  hi7="3f000000"  mute7="0"  damp7="0"  all7="0"  source8="off" target8="off" defV8="3f800000"  lo8="0"  hi8="3f000000"  mute8="0"  damp8="0"  all8="0"  source9="off" target9="off" defV9="3f800000"  lo9="0"  hi9="3f000000"  mute9="0"  damp9="0"  all9="0"  source10="off" target10="off" defV10="3f800000"  lo10="0"  hi10="3f000000"  mute10="0"  damp10="0"  all10="0"  source11="off" target11="off" defV11="3f800000"  lo11="0"  hi11="3f000000"  mute11="0"  damp11="0"  all11="0"  source12="off" target12="off" defV12="3f800000"  lo12="0"  hi12="3f000000"  mute12="0"  damp12="0"  all12="0"  source13="off" target13="off" defV13="3f800000"  lo13="0"  hi13="3f000000"  mute13="0"  damp13="0"  all13="0"  source14="off" target14="off" defV14="3f800000"  lo14="0"  hi14="3f000000"  mute14="0"  damp14="0"  all14="0"  source15="off" target15="off" defV15="3f800000"  lo15="0"  hi15="3f000000"  mute15="0"  damp15="0"  all15="0"  source16="off" target16="off" defV16="3f800000"  lo16="0"  hi16="3f000000"  mute16="0"  damp16="0"  all16="0"  source17="off" target17="off" defV17="3f800000"  lo17="0"  hi17="3f000000"  mute17="0"  damp17="0"  all17="0"  source18="off" target18="off" defV18="3f800000"  lo18="0"  hi18="3f000000"  mute18="0"  damp18="0"  all18="0"  source19="off" target19="off" defV19="3f800000"  lo19="0"  hi19="3f000000"  mute19="0"  damp19="0"  all19="0"  source20="off" target20="off" defV20="3f800000"  lo20="0"  hi20="3f000000"  mute20="0"  damp20="0"  all20="0"  source21="off" target21="off" defV21="3f800000"  lo21="0"  hi21="3f000000"  mute21="0"  damp21="0"  all21="0"  source22="off" target22="off" defV22="3f800000"  lo22="0"  hi22="3f000000"  mute22="0"  damp22="0"  all22="0"  source23="off" target23="off" defV23="3f800000"  lo23="0"  hi23="3f000000"  mute23="0"  damp23="0"  all23="0"  source24="off" target24="off" defV24="3f800000"  lo24="0"  hi24="3f000000"  mute24="0"  damp24="0"  all24="0"  source25="off" target25="off" defV25="3f800000"  lo25="0"  hi25="3f000000"  mute25="0"  damp25="0"  all25="0"  source26="off" target26="off" defV26="3f800000"  lo26="0"  hi26="3f000000"  mute26="0"  damp26="0"  all26="0"  source27="off" target27="off" defV27="3f800000"  lo27="0"  hi27="3f000000"  mute27="0"  damp27="0"  all27="0"  source28="off" target28="off" defV28="3f800000"  lo28="0"  hi28="3f000000"  mute28="0"  damp28="0"  all28="0"  source29="off" target29="off" defV29="3f800000"  lo29="0"  hi29="3f000000"  mute29="0"  damp29="0"  all29="0"  source30="off" target30="off" defV30="3f800000"  lo30="0"  hi30="3f000000"  mute30="0"  damp30="0"  all30="0"  source31="off" target31="off" defV31="3f800000"  lo31="0"  hi31="3f000000"  mute31="0"  damp31="0"  all31="0"  source32="off" target32="off" defV32="3f800000"  lo32="0"  hi32="3f000000"  mute32="0"  damp32="0"  all32="0"  source33="off" target33="off" defV33="3f800000"  lo33="0"  hi33="3f000000"  mute33="0"  damp33="0"  all33="0"  source34="off" target34="off" defV34="3f800000"  lo34="0"  hi34="3f000000"  mute34="0"  damp34="0"  all34="0"  source35="off" target35="off" defV35="3f800000"  lo35="0"  hi35="3f000000"  mute35="0"  damp35="0"  all35="0"  source36="off" target36="off" defV36="3f800000"  lo36="0"  hi36="3f000000"  mute36="0"  damp36="0"  all36="0"  source37="off" target37="off" defV37="3f800000"  lo37="0"  hi37="3f000000"  mute37="0"  damp37="0"  all37="0"  source38="off" target38="off" defV38="3f800000"  lo38="0"  hi38="3f000000"  mute38="0"  damp38="0"  all38="0"  source39="off" target39="off" defV39="3f800000"  lo39="0"  hi39="3f000000"  mute39="0"  damp39="0"  all39="0"  source40="off" target40="off" defV40="3f800000"  lo40="0"  hi40="3f000000"  mute40="0"  damp40="0"  all40="0"  source41="off" target41="off" defV41="3f800000"  lo41="0"  hi41="3f000000"  mute41="0"  damp41="0"  all41="0"  source42="off" target42="off" defV42="3f800000"  lo42="0"  hi42="3f000000"  mute42="0"  damp42="0"  all42="0"  source43="off" target43="off" defV43="3f800000"  lo43="0"  hi43="3f000000"  mute43="0"  damp43="0"  all43="0"  source44="off" target44="off" defV44="3f800000"  lo44="0"  hi44="3f000000"  mute44="0"  damp44="0"  all44="0"  source45="off" target45="off" defV45="3f800000"  lo45="0"  hi45="3f000000"  mute45="0"  damp45="0"  all45="0"  source46="off" target46="off" defV46="3f800000"  lo46="0"  hi46="3f000000"  mute46="0"  damp46="0"  all46="0"  source47="off" target47="off" defV47="3f800000"  lo47="0"  hi47="3f000000"  mute47="0"  damp47="0"  all47="0" >
+</MOD_MATRIX>
+ <VOICE pauxl="0"  pauxipof="3f800000" >
+<FILTER act="%FILTER_IS_ACTIVE%"  para="0"  bal="3f000000"  freq="%FILTER_FREQ%"  sprd="3f000000"  res="%FILTER_RES%"  key="0"  keyinv="0"  keymp="3d23d70a"  envdpth="%FENV_DEPTH%"  envdpthinv="0"  strtn="0"  rskytrck="3ca3d70a"  act1="3f800000"  type1="3f5c28f6"  freq1="3f000000"  res1="3f000000"  pan1="3f000000"  act2="0"  type2="0"  freq2="3f000000"  res2="3f000000"  pan2="3f000000"  gnpre="3f400000"  gnpst="3f400000"  eqPost="0"  NameStr="Classic LPF 4-pole">
+<EQ12 Active="0"  P0="3f000000"  P1="3f000000"  P2="3f000000"  P3="3f000000"  P4="3f000000"  P5="3f000000"  P6="3f000000"  P7="3f000000"  P8="3f000000"  P9="3f000000"  P10="3f000000"  P11="3f000000"  P12="3f000000"  P13="3e81cd85"  P14="0" >
+</EQ12>
+ <EQ2 Active="0"  P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0" >
+</EQ2>
+ <DIST Active="0"  P0="3f800000"  P1="3f31eb85"  P2="0"  P3="3f800000"  P4="3dcccccd"  P5="3f45f92c"  P6="0"  P7="3f800000"  P8="0"  P9="0"  P10="3e0a3d71"  P11="3f50a3d7"  P12="0"  P13="0"  P14="0" >
+</DIST>
+ </FILTER>
+ <WAVESHAPER act="0"  type="0"  pos="0"  dpth="3d888889"  gain="3f000000"  mix="3f800000"  tone="0"  bc="0"  srrdc="0"  mgrfy1="0"  mgrfy2="0"  name="0"  NameStr="untitled">
+</WAVESHAPER>
+ <DFS on="0"  parl="0"  mixA="3f000000"  freqA="3ec00000"  panA="3eb33333"  keyA="3f800000"  invA="0"  mixB="3f000000"  freqB="3f3fffff"  panB="3f266666"  keyB="3f800000"  invB="0" >
+</DFS>
+ <OSC type="3f7db1d9"  kind="4"  tune="3f000000"  tuneFine="3f000000"  fineScl="1"  pdepth="0"  pwidth="0"  oct="3d23d70a"  semi="3ef5c28f"  level="3f400000"  pan="3f000000"  port="0"  portAct="0"  tps="0"  flTempl="0"  flSpd="3f000000"  flLoop="3f800000"  modint="3e801e33"  moddepth="3f800000"  fm="0"  fmkt="3f800000"  fmwf="0"  fmscl="0"  fmpd="0"  fmpw="0"  fmhs="0"  AMmodint="3f400f1a"  AMmoddepth="3f800000"  am="0"  amkt="3f800000"  amwf="0"  amscl="3d23d70a"  ampd="0"  ampw="0"  amhs="0"  ampos="0"  gran="3f400000"  ngrains="3e4d4fde"  grain3="3e19999a"  grain4="3e420c4a"  grain5="0"  grain6="3f000000"  granSprd="3f800000"  granPDir="0"  granPAccum="0"  granMix="3f800000"  granExp="3e800000"  granTrg="0"  eiFrLoc="0"  granularMix="3f800000"  granPos="0"  granV1="0"  odrft="0"  hrdsnc="0"  reptch="%KEY_TRACKING%"  spha="0"  sana="0"  atrm="3f800000"  ampgn="3f400000"  ampgns="0"  sses="3d23d70a"  ssesy="3ca3d70a"  grnOn="0"  hrmOn="0"  unsOn="0"  grnLv="3f400000"  hrmLv="3f400000"  unsLv="3f400000"  csshdamp="0" >
+<HARM Act1="3f800000"  lvl1="3f400000"  pan1="3f000000"  tun1="3f028f5c"  smi1="3f3851ec"  shp1="3f000000"  symm1="3f000000"  syn1="3f000000"  wfm1="0"  Act2="3f800000"  lvl2="3f400000"  pan2="3f333333"  tun2="3f03d70a"  smi2="3f1eb852"  shp2="3f000000"  symm2="3f000000"  syn2="3f000000"  wfm2="0"  Act3="3f800000"  lvl3="3f400000"  pan3="3f000000"  tun3="3efdb22d"  smi3="3e75c28f"  shp3="3f000000"  symm3="3f000000"  syn3="3f000000"  wfm3="0"  Act4="3f800000"  lvl4="3f400000"  pan4="3e99999a"  tun4="3efae148"  smi4="3ef5c28f"  shp4="3f000000"  symm4="3f000000"  syn4="3f000000"  wfm4="0"  ph="3f800000"  mod="0"  mix="3f000000" >
+</HARM>
+ <UNI umix="3f800000"  ucnt="0"  udpth="3dcd5aa7"  uwdth="3f800000"  udprg="0"  uoct="3d23d70a"  uvps="0"  udrft="3d0f5c29"  uanalg="3e19999a" >
+</UNI>
+ <WAVES wf0="~BundleArchives/1 - Classic Waveforms/Sawtooth/JP-8 Saw/Jupiter 8 Saw.stmwf" wf1="~BundleArchives/1 - Classic Waveforms/Sawtooth/JP-8 Saw/Jupiter 8 Square.stmwf">
+</WAVES>
+ <FMWAVES>
+</FMWAVES>
+ <AMWAVES>
+</AMWAVES>
+ </OSC>
+ <FENV c="3"  pan="0"  zoom="3eee9863" >
+<p l="0"  t="0"  s="14"  c="%FENV_ATTACK_SLOPE%" >
+</p>
+ <p l="3f800000"  t="%FENV_ATTACK_SEC%"  s="18"  c="%FENV_DECAY_SLOPE%" >
+</p>
+ <p l="%FENV_SUSTAIN%"  t="%FENV_DECAY_SEC%"  s="18"  c="%FENV_RELEASE_SLOPE%" >
+</p>
+ <p l="0"  t="%FENV_RELEASE_SEC%"  s="18"  c="3e793cdd" >
+</p>
+ </FENV>
+ <FENVPARAMS a="0"  h="0"  d="0"  r="0"  attk="%FENV_ATTACK%"  hold="%FENV_HOLD%"  decy="%FENV_DECAY%"  sust="%FENV_SUSTAIN%"  rels="%FENV_RELEASE%"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3f800000"  velsens="%FENV_VEL_SENS%"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="0"  chsTrg="0"  atchs="0" >
+</FENVPARAMS>
+ <AENV c="3"  pan="0"  zoom="3eb43a26" >
+<p l="0"  t="0"  s="14"  c="%AMP_ATTACK_SLOPE%" >
+</p>
+ <p l="3f800000"  t="%AMP_ATTACK_SEC%"  s="18"  c="%AMP_DECAY_SLOPE%" >
+</p>
+ <p l="%AMP_SUSTAIN%"  t="%AMP_DECAY_SEC%"  s="18"  c="%AMP_RELEASE_SLOPE%" >
+</p>
+ <p l="0"  t="%AMP_RELEASE_SEC%"  s="18"  c="3e793cdd" >
+</p>
+ </AENV>
+ <AENVPARAMS onOff="3f800000"  a="0"  h="0"  d="0"  r="0"  attk="%AMP_ATTACK%"  hold="%AMP_HOLD%"  decy="%AMP_DECAY%"  sust="%AMP_SUSTAIN%"  rels="%AMP_RELEASE%"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3f800000"  velsens="%AMP_VEL_SENS%"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="0"  chsTrg="0"  atchs="0" >
+</AENVPARAMS>
+ <EFFRACK>
+<EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3ca3d70a"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3e9d89ce"  MixLock="0" >
+</EFFMODULE>
+ </EFFRACK>
+ </VOICE>
+ <VOICE pauxl="0"  pauxipof="3f800000" >
+<FILTER act="0"  para="0"  bal="3f000000"  freq="3deb851f"  sprd="3f000000"  res="0"  key="0"  keyinv="0"  keymp="3d23d70a"  envdpth="3f800000"  envdpthinv="0"  strtn="0"  rskytrck="3ca3d70a"  act1="3f800000"  type1="3f5c28f6"  freq1="3f000000"  res1="3f000000"  pan1="3f000000"  act2="0"  type2="0"  freq2="3f000000"  res2="3f000000"  pan2="3f000000"  gnpre="3f400000"  gnpst="3f400000"  eqPost="0"  NameStr="Classic LPF 4-pole">
+<EQ12 Active="0"  P0="3f000000"  P1="3f000000"  P2="3f000000"  P3="3f000000"  P4="3f000000"  P5="3f000000"  P6="3f000000"  P7="3f000000"  P8="3f000000"  P9="3f000000"  P10="3f000000"  P11="3f000000"  P12="3f000000"  P13="3e81cd85"  P14="0" >
+</EQ12>
+ <EQ2 Active="0"  P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0" >
+</EQ2>
+ <DIST Active="0"  P0="3f800000"  P1="3f31eb85"  P2="0"  P3="3f800000"  P4="3dcccccd"  P5="3f45f92c"  P6="0"  P7="3f800000"  P8="0"  P9="0"  P10="3e0a3d71"  P11="3f50a3d7"  P12="0"  P13="0"  P14="0" >
+</DIST>
+ </FILTER>
+ <WAVESHAPER act="0"  type="0"  pos="0"  dpth="3d888889"  gain="3f000000"  mix="3f800000"  tone="0"  bc="0"  srrdc="0"  mgrfy1="0"  mgrfy2="0"  name="0"  NameStr="untitled">
+</WAVESHAPER>
+ <DFS on="0"  parl="0"  mixA="3f000000"  freqA="3ec00000"  panA="3eb33333"  keyA="3f800000"  invA="0"  mixB="3f000000"  freqB="3f3fffff"  panB="3f266666"  keyB="3f800000"  invB="0" >
+</DFS>
+ <OSC type="3f7da4be"  kind="0"  tune="3f000000"  tuneFine="3f000000"  fineScl="1"  pdepth="0"  pwidth="0"  oct="3d23d70a"  semi="3ef5c28f"  level="3f400000"  pan="3f000000"  port="0"  portAct="0"  tps="0"  flTempl="0"  flSpd="3f000000"  flLoop="3f800000"  modint="3e801e33"  moddepth="3f800000"  fm="0"  fmkt="3f800000"  fmwf="0"  fmscl="0"  fmpd="0"  fmpw="0"  fmhs="0"  AMmodint="3f400f1a"  AMmoddepth="3f800000"  am="0"  amkt="3f800000"  amwf="0"  amscl="3d23d70a"  ampd="0"  ampw="0"  amhs="0"  ampos="0"  gran="3f400000"  ngrains="3e4d4fde"  grain3="3e19999a"  grain4="3e420c4a"  grain5="0"  grain6="3f000000"  granSprd="3f800000"  granPDir="0"  granPAccum="0"  granMix="3f800000"  granExp="3e800000"  granTrg="0"  eiFrLoc="0"  granularMix="3f800000"  granPos="0"  granV1="0"  odrft="0"  hrdsnc="0"  reptch="3f800000"  spha="0"  sana="0"  atrm="3f800000"  ampgn="3f400000"  ampgns="0"  sses="3d23d70a"  ssesy="3ca3d70a"  grnOn="0"  hrmOn="0"  unsOn="0"  grnLv="3f400000"  hrmLv="3f400000"  unsLv="3f400000"  csshdamp="0" >
+<HARM Act1="3f800000"  lvl1="3f400000"  pan1="3f000000"  tun1="3f028f5c"  smi1="3f3851ec"  shp1="3f000000"  symm1="3f000000"  syn1="3f000000"  wfm1="0"  Act2="3f800000"  lvl2="3f400000"  pan2="3f333333"  tun2="3f03d70a"  smi2="3f1eb852"  shp2="3f000000"  symm2="3f000000"  syn2="3f000000"  wfm2="0"  Act3="3f800000"  lvl3="3f400000"  pan3="3f000000"  tun3="3efdb22d"  smi3="3e75c28f"  shp3="3f000000"  symm3="3f000000"  syn3="3f000000"  wfm3="0"  Act4="3f800000"  lvl4="3f400000"  pan4="3e99999a"  tun4="3efae148"  smi4="3ef5c28f"  shp4="3f000000"  symm4="3f000000"  syn4="3f000000"  wfm4="0"  ph="3f800000"  mod="0"  mix="3f000000" >
+</HARM>
+ <UNI umix="3f800000"  ucnt="0"  udpth="3dcd5aa7"  uwdth="3f800000"  udprg="0"  uoct="3d23d70a"  uvps="0"  udrft="3d4dc386"  uanalg="3f06fb58" >
+</UNI>
+ <WAVES wf0="~BundleArchives/1 - Classic Waveforms/Sawtooth/Moog Modular Saw/Moog Modular Saw.stmwf" wf1="~BundleArchives/1 - Classic Waveforms/Sawtooth/Moog Modular Saw/Moog Modular Square.stmwf">
+</WAVES>
+ <FMWAVES>
+</FMWAVES>
+ <AMWAVES>
+</AMWAVES>
+ </OSC>
+ <FENV c="3"  pan="0"  zoom="3eee9863" >
+<p l="0"  t="0"  s="14"  c="3ee44e92" >
+</p>
+ <p l="3f800000"  t="3aaa7e00"  s="18"  c="3eccd7fa" >
+</p>
+ <p l="3de739d0"  t="3d001480"  s="18"  c="3eb02410" >
+</p>
+ <p l="0"  t="3d4520d0"  s="18"  c="3e793cdd" >
+</p>
+ </FENV>
+ <FENVPARAMS a="0"  h="0"  d="0"  r="0"  attk="3da529ad"  hold="3ec63190"  decy="3ec63190"  sust="3de739d0"  rels="3e94a52b"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3f800000"  velsens="3f800000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="0"  chsTrg="0"  atchs="0" >
+</FENVPARAMS>
+ <AENV c="3"  pan="0"  zoom="3eb43a26" >
+<p l="0"  t="0"  s="14"  c="3ef12ffa" >
+</p>
+ <p l="3f800000"  t="0"  s="18"  c="3ecce871" >
+</p>
+ <p l="3f800000"  t="3c811860"  s="18"  c="3ec3762e" >
+</p>
+ <p l="0"  t="3c85a240"  s="18"  c="3e793cdd" >
+</p>
+ </AENV>
+ <AENVPARAMS onOff="0"  a="0"  h="0"  d="0"  r="0"  attk="0"  hold="3e8fb823"  decy="3e8fb823"  sust="3f800000"  rels="3d5794a3"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3f800000"  velsens="3f000000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="0"  chsTrg="0"  atchs="0" >
+</AENVPARAMS>
+ <EFFRACK>
+<EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3ca3d70a"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3e9d89ce"  MixLock="0" >
+</EFFMODULE>
+ </EFFRACK>
+ </VOICE>
+ <VOICE pauxl="0"  pauxipof="3f800000" >
+<FILTER act="0"  para="0"  bal="3f000000"  freq="3deb851f"  sprd="3f000000"  res="0"  key="0"  keyinv="0"  keymp="3d23d70a"  envdpth="3f800000"  envdpthinv="0"  strtn="0"  rskytrck="3ca3d70a"  act1="3f800000"  type1="3f5c28f6"  freq1="3f000000"  res1="3f000000"  pan1="3f000000"  act2="0"  type2="0"  freq2="3f000000"  res2="3f000000"  pan2="3f000000"  gnpre="3f400000"  gnpst="3f400000"  eqPost="0"  NameStr="Classic LPF 4-pole">
+<EQ12 Active="0"  P0="3f000000"  P1="3f000000"  P2="3f000000"  P3="3f000000"  P4="3f000000"  P5="3f000000"  P6="3f000000"  P7="3f000000"  P8="3f000000"  P9="3f000000"  P10="3f000000"  P11="3f000000"  P12="3f000000"  P13="3e81cd85"  P14="0" >
+</EQ12>
+ <EQ2 Active="0"  P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0" >
+</EQ2>
+ <DIST Active="0"  P0="3f800000"  P1="3f31eb85"  P2="0"  P3="3f800000"  P4="3dcccccd"  P5="3f45f92c"  P6="0"  P7="3f800000"  P8="0"  P9="0"  P10="3e0a3d71"  P11="3f50a3d7"  P12="0"  P13="0"  P14="0" >
+</DIST>
+ </FILTER>
+ <WAVESHAPER act="0"  type="0"  pos="0"  dpth="3d888889"  gain="3f000000"  mix="3f800000"  tone="0"  bc="0"  srrdc="0"  mgrfy1="0"  mgrfy2="0"  name="0"  NameStr="untitled">
+</WAVESHAPER>
+ <DFS on="0"  parl="0"  mixA="3f000000"  freqA="3ec00000"  panA="3eb33333"  keyA="3f800000"  invA="0"  mixB="3f000000"  freqB="3f3fffff"  panB="3f266666"  keyB="3f800000"  invB="0" >
+</DFS>
+ <OSC type="3f7da4be"  kind="0"  tune="3f000000"  tuneFine="3f000000"  fineScl="1"  pdepth="0"  pwidth="0"  oct="3d23d70a"  semi="3f3851ec"  level="3f400000"  pan="3f000000"  port="0"  portAct="0"  tps="0"  flTempl="0"  flSpd="3f000000"  flLoop="3f800000"  modint="3e801e33"  moddepth="3f800000"  fm="0"  fmkt="3f800000"  fmwf="0"  fmscl="0"  fmpd="0"  fmpw="0"  fmhs="0"  AMmodint="3f400f1a"  AMmoddepth="3f800000"  am="0"  amkt="3f800000"  amwf="0"  amscl="3d23d70a"  ampd="0"  ampw="0"  amhs="0"  ampos="0"  gran="3f400000"  ngrains="3e4d4fde"  grain3="3e19999a"  grain4="3e420c4a"  grain5="0"  grain6="3f000000"  granSprd="3f800000"  granPDir="0"  granPAccum="0"  granMix="3f800000"  granExp="3e800000"  granTrg="0"  eiFrLoc="0"  granularMix="3f800000"  granPos="0"  granV1="0"  odrft="0"  hrdsnc="0"  reptch="3f800000"  spha="0"  sana="0"  atrm="3f800000"  ampgn="3f400000"  ampgns="0"  sses="3d23d70a"  ssesy="3ca3d70a"  grnOn="0"  hrmOn="0"  unsOn="0"  grnLv="3f400000"  hrmLv="3f400000"  unsLv="3f400000"  csshdamp="0" >
+<HARM Act1="3f800000"  lvl1="3f400000"  pan1="3f000000"  tun1="3f028f5c"  smi1="3f3851ec"  shp1="3f000000"  symm1="3f000000"  syn1="3f000000"  wfm1="0"  Act2="3f800000"  lvl2="3f400000"  pan2="3f333333"  tun2="3f03d70a"  smi2="3f1eb852"  shp2="3f000000"  symm2="3f000000"  syn2="3f000000"  wfm2="0"  Act3="3f800000"  lvl3="3f400000"  pan3="3f000000"  tun3="3efdb22d"  smi3="3e75c28f"  shp3="3f000000"  symm3="3f000000"  syn3="3f000000"  wfm3="0"  Act4="3f800000"  lvl4="3f400000"  pan4="3e99999a"  tun4="3efae148"  smi4="3ef5c28f"  shp4="3f000000"  symm4="3f000000"  syn4="3f000000"  wfm4="0"  ph="3f800000"  mod="0"  mix="3f000000" >
+</HARM>
+ <UNI umix="3f800000"  ucnt="0"  udpth="3dcd5aa7"  uwdth="3f800000"  udprg="0"  uoct="3d23d70a"  uvps="0"  udrft="3d4dc386"  uanalg="3f06fb58" >
+</UNI>
+ <WAVES wf0="~BundleArchives/1 - Classic Waveforms/Sub Osc/Juno 60 Sub/Juno 60 Sub.stmwf" wf1="~BundleArchives/1 - Classic Waveforms/Sub Osc/Juno 60 Sub/Juno 60 SubSaw.stmwf" wf2="~BundleArchives/1 - Classic Waveforms/Sub Osc/Juno 60 Sub/Juno 60 SubSquare.stmwf">
+</WAVES>
+ <FMWAVES>
+</FMWAVES>
+ <AMWAVES>
+</AMWAVES>
+ </OSC>
+ <FENV c="3"  pan="0"  zoom="3eee9863" >
+<p l="0"  t="0"  s="14"  c="3ee44e92" >
+</p>
+ <p l="3f800000"  t="3aaa7e00"  s="18"  c="3eccd7fa" >
+</p>
+ <p l="3de739d0"  t="3d001480"  s="18"  c="3eb02410" >
+</p>
+ <p l="0"  t="3d4520d0"  s="18"  c="3e793cdd" >
+</p>
+ </FENV>
+ <FENVPARAMS a="0"  h="0"  d="0"  r="0"  attk="3da529ad"  hold="3ec63190"  decy="3ec63190"  sust="3de739d0"  rels="3e94a52b"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3f800000"  velsens="3f800000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="0"  chsTrg="0"  atchs="0" >
+</FENVPARAMS>
+ <AENV c="3"  pan="0"  zoom="3eb43a26" >
+<p l="0"  t="0"  s="14"  c="3ef12ffa" >
+</p>
+ <p l="3f800000"  t="0"  s="18"  c="3ecce871" >
+</p>
+ <p l="3f800000"  t="3c811860"  s="18"  c="3ec3762e" >
+</p>
+ <p l="0"  t="3c85a240"  s="18"  c="3e793cdd" >
+</p>
+ </AENV>
+ <AENVPARAMS onOff="0"  a="0"  h="0"  d="0"  r="0"  attk="0"  hold="3e8fb823"  decy="3e8fb823"  sust="3f800000"  rels="3d5794a3"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3f800000"  velsens="3f000000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="0"  chsTrg="0"  atchs="0" >
+</AENVPARAMS>
+ <EFFRACK>
+<EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3ca3d70a"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3e9d89ce"  MixLock="0" >
+</EFFMODULE>
+ </EFFRACK>
+ </VOICE>
+ <VOICE pauxl="0"  pauxipof="3f800000" >
+<FILTER act="0"  para="0"  bal="3f000000"  freq="3deb851f"  sprd="3f000000"  res="0"  key="0"  keyinv="0"  keymp="3d23d70a"  envdpth="3f800000"  envdpthinv="0"  strtn="0"  rskytrck="3ca3d70a"  act1="3f800000"  type1="3f5c28f6"  freq1="3f000000"  res1="3f000000"  pan1="3f000000"  act2="0"  type2="0"  freq2="3f000000"  res2="3f000000"  pan2="3f000000"  gnpre="3f400000"  gnpst="3f400000"  eqPost="0"  NameStr="Classic LPF 4-pole">
+<EQ12 Active="0"  P0="3f000000"  P1="3f000000"  P2="3f000000"  P3="3f000000"  P4="3f000000"  P5="3f000000"  P6="3f000000"  P7="3f000000"  P8="3f000000"  P9="3f000000"  P10="3f000000"  P11="3f000000"  P12="3f000000"  P13="3e81cd85"  P14="0" >
+</EQ12>
+ <EQ2 Active="0"  P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0" >
+</EQ2>
+ <DIST Active="0"  P0="3f800000"  P1="3f31eb85"  P2="0"  P3="3f800000"  P4="3dcccccd"  P5="3f45f92c"  P6="0"  P7="3f800000"  P8="0"  P9="0"  P10="3e0a3d71"  P11="3f50a3d7"  P12="0"  P13="0"  P14="0" >
+</DIST>
+ </FILTER>
+ <WAVESHAPER act="0"  type="0"  pos="0"  dpth="3d888889"  gain="3f000000"  mix="3f800000"  tone="0"  bc="0"  srrdc="0"  mgrfy1="0"  mgrfy2="0"  name="0"  NameStr="untitled">
+</WAVESHAPER>
+ <DFS on="0"  parl="0"  mixA="3f000000"  freqA="3ec00000"  panA="3eb33333"  keyA="3f800000"  invA="0"  mixB="3f000000"  freqB="3f3fffff"  panB="3f266666"  keyB="3f800000"  invB="0" >
+</DFS>
+ <OSC type="3d23d70a"  kind="0"  tune="3f000000"  tuneFine="3f000000"  fineScl="1"  pdepth="0"  pwidth="0"  oct="3d23d70a"  semi="3ef5c28f"  level="3ee4bbf8"  pan="3f000000"  port="0"  portAct="0"  tps="0"  flTempl="0"  flSpd="3f000000"  flLoop="3f800000"  modint="3e801e33"  moddepth="3f800000"  fm="0"  fmkt="3f800000"  fmwf="0"  fmscl="0"  fmpd="0"  fmpw="0"  fmhs="0"  AMmodint="3f400f1a"  AMmoddepth="3f800000"  am="0"  amkt="3f800000"  amwf="0"  amscl="3d23d70a"  ampd="0"  ampw="0"  amhs="0"  ampos="0"  gran="3f400000"  ngrains="3e4d4fde"  grain3="3e19999a"  grain4="3e420c4a"  grain5="0"  grain6="3f000000"  granSprd="3f800000"  granPDir="0"  granPAccum="0"  granMix="3f800000"  granExp="3e800000"  granTrg="0"  eiFrLoc="0"  granularMix="3f800000"  granPos="0"  granV1="0"  odrft="0"  hrdsnc="0"  reptch="3f800000"  spha="0"  sana="0"  atrm="3f800000"  ampgn="3f400000"  ampgns="0"  sses="3d23d70a"  ssesy="3ca3d70a"  grnOn="0"  hrmOn="0"  unsOn="0"  grnLv="3f400000"  hrmLv="3f400000"  unsLv="3f400000"  csshdamp="0" >
+<HARM Act1="3f800000"  lvl1="3f400000"  pan1="3f000000"  tun1="3f028f5c"  smi1="3f3851ec"  shp1="3f000000"  symm1="3f000000"  syn1="3f000000"  wfm1="0"  Act2="3f800000"  lvl2="3f400000"  pan2="3f333333"  tun2="3f03d70a"  smi2="3f1eb852"  shp2="3f000000"  symm2="3f000000"  syn2="3f000000"  wfm2="0"  Act3="3f800000"  lvl3="3f400000"  pan3="3f000000"  tun3="3efdb22d"  smi3="3e75c28f"  shp3="3f000000"  symm3="3f000000"  syn3="3f000000"  wfm3="0"  Act4="3f800000"  lvl4="3f400000"  pan4="3e99999a"  tun4="3efae148"  smi4="3ef5c28f"  shp4="3f000000"  symm4="3f000000"  syn4="3f000000"  wfm4="0"  ph="3f800000"  mod="0"  mix="3f000000" >
+</HARM>
+ <UNI umix="3f800000"  ucnt="0"  udpth="3dcd5aa7"  uwdth="3f800000"  udprg="0"  uoct="3d23d70a"  uvps="0"  udrft="3d4dc386"  uanalg="3f06fb58" >
+</UNI>
+ <WAVES>
+</WAVES>
+ <FMWAVES>
+</FMWAVES>
+ <AMWAVES>
+</AMWAVES>
+ </OSC>
+ <FENV c="3"  pan="0"  zoom="3eee9863" >
+<p l="0"  t="0"  s="14"  c="3ee44e92" >
+</p>
+ <p l="3f800000"  t="3aaa7e00"  s="18"  c="3eccd7fa" >
+</p>
+ <p l="3de739d0"  t="3d001480"  s="18"  c="3eb02410" >
+</p>
+ <p l="0"  t="3d4520d0"  s="18"  c="3e793cdd" >
+</p>
+ </FENV>
+ <FENVPARAMS a="0"  h="0"  d="0"  r="0"  attk="3da529ad"  hold="3ec63190"  decy="3ec63190"  sust="3de739d0"  rels="3e94a52b"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3f800000"  velsens="3f800000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="0"  chsTrg="0"  atchs="0" >
+</FENVPARAMS>
+ <AENV c="3"  pan="0"  zoom="3eb43a26" >
+<p l="0"  t="0"  s="14"  c="3ef12ffa" >
+</p>
+ <p l="3f800000"  t="0"  s="18"  c="3ecce871" >
+</p>
+ <p l="3f800000"  t="3c811860"  s="18"  c="3ec3762e" >
+</p>
+ <p l="0"  t="3c85a240"  s="18"  c="3e793cdd" >
+</p>
+ </AENV>
+ <AENVPARAMS onOff="0"  a="0"  h="0"  d="0"  r="0"  attk="0"  hold="3e8fb823"  decy="3e8fb823"  sust="3f800000"  rels="3d5794a3"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3f800000"  velsens="3f000000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="0"  chsTrg="0"  atchs="0" >
+</AENVPARAMS>
+ <EFFRACK>
+<EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3ca3d70a"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3e9d89ce"  MixLock="0" >
+</EFFMODULE>
+ </EFFRACK>
+ </VOICE>
+ <MULTISAMPLE Layer0Vol="3f400000"  Layer0Act="3f800000"  Layer0Mt="0"  Layer0Fl="0"  Layer1Vol="3f400000"  Layer1Act="3f800000"  Layer1Mt="0"  Layer1Fl="0"  Layer2Vol="3f400000"  Layer2Act="3f800000"  Layer2Mt="0"  Layer2Fl="0"  Layer3Vol="3f400000"  Layer3Act="3f800000"  Layer3Mt="0"  Layer3Fl="0"  relVol="3f400000"  pedLvl="3f400000"  pedFX="3f800000"  srxfade="3f000000"  relRule="3ca3d70a"  timbre="3f000000"  tbmd="3ca3d70a"  enssnrl="0"  reptchrel="3f800000"  ssrevpb="0"  mogrify="0"  ssthinEn="3f800000" >
+<ThinRule ThinP="0"  ThinV="0"  ThinRR="100"  ThinRelRR="1"  ThinL="0"  ThinVelRange="0" >
+</ThinRule>
+ <MS_IM_0 name="%SOUND_SOURCE%" library="User">
+</MS_IM_0>
+ </MULTISAMPLE>
+ <MULTISAMPLE Layer0Vol="3f400000"  Layer0Act="3f800000"  Layer0Mt="0"  Layer0Fl="0"  Layer1Vol="3f400000"  Layer1Act="3f800000"  Layer1Mt="0"  Layer1Fl="0"  Layer2Vol="3f400000"  Layer2Act="3f800000"  Layer2Mt="0"  Layer2Fl="0"  Layer3Vol="3f400000"  Layer3Act="3f800000"  Layer3Mt="0"  Layer3Fl="0"  relVol="3f400000"  pedLvl="3f400000"  pedFX="3f800000"  srxfade="3f000000"  relRule="3ca3d70a"  timbre="3f000000"  tbmd="3ca3d70a"  enssnrl="0"  reptchrel="3f800000"  ssrevpb="0"  mogrify="0"  ssthinEn="3f800000" >
+</MULTISAMPLE>
+ <MULTISAMPLE Layer0Vol="3f400000"  Layer0Act="3f800000"  Layer0Mt="0"  Layer0Fl="0"  Layer1Vol="3f400000"  Layer1Act="3f800000"  Layer1Mt="0"  Layer1Fl="0"  Layer2Vol="3f400000"  Layer2Act="3f800000"  Layer2Mt="0"  Layer2Fl="0"  Layer3Vol="3f400000"  Layer3Act="3f800000"  Layer3Mt="0"  Layer3Fl="0"  relVol="3f400000"  pedLvl="3f400000"  pedFX="3f800000"  srxfade="3f000000"  relRule="3ca3d70a"  timbre="3f000000"  tbmd="3ca3d70a"  enssnrl="0"  reptchrel="3f800000"  ssrevpb="0"  mogrify="0"  ssthinEn="3f800000" >
+</MULTISAMPLE>
+ <MULTISAMPLE Layer0Vol="3f400000"  Layer0Act="3f800000"  Layer0Mt="0"  Layer0Fl="0"  Layer1Vol="3f400000"  Layer1Act="3f800000"  Layer1Mt="0"  Layer1Fl="0"  Layer2Vol="3f400000"  Layer2Act="3f800000"  Layer2Mt="0"  Layer2Fl="0"  Layer3Vol="3f400000"  Layer3Act="3f800000"  Layer3Mt="0"  Layer3Fl="0"  relVol="3f400000"  pedLvl="3f400000"  pedFX="3f800000"  srxfade="3f000000"  relRule="3ca3d70a"  timbre="3f000000"  tbmd="3ca3d70a"  enssnrl="0"  reptchrel="3f800000"  ssrevpb="0"  mogrify="0"  ssthinEn="3f800000" >
+</MULTISAMPLE>
+ <EFFRACK>
+<EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3f800000"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="3c03126f"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ </EFFRACK>
+ <AUXEFFRACK>
+<EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ <EFFMODULE Type="No Effect" P0="0"  P1="0"  P2="0"  P3="0"  P4="0"  P5="0"  P6="0"  P7="0"  P8="0"  P9="0"  P10="0"  P11="0"  P12="0"  P13="0"  P14="0"  Active="0"  MixLock="0" >
+</EFFMODULE>
+ </AUXEFFRACK>
+ <LFO_SET>
+<LFO type="0"  center="3f000000"  swing="3f800000"  rate="3e3851ea"  rndtr="3f800000"  randrg="0"  randrev="3f800000"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="3f800000"  phase="0"  unidir="3f800000" >
+</LFO>
+ <LFO type="0"  center="3f000000"  swing="3f800000"  rate="3e28f5c3"  rndtr="3f800000"  randrg="0"  randrev="3f800000"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="3f800000"  phase="0"  unidir="3f800000" >
+</LFO>
+ <LFO type="0"  center="3f000000"  swing="3f800000"  rate="3e333333"  rndtr="3f800000"  randrg="0"  randrev="3f800000"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="3f800000"  phase="0"  unidir="3f800000" >
+</LFO>
+ <LFO type="0"  center="3f000000"  swing="3f800000"  rate="3e23d70a"  rndtr="3f800000"  randrg="0"  randrev="3f800000"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="3f800000"  phase="0"  unidir="3f800000" >
+</LFO>
+ <LFO type="0"  center="3f000000"  swing="3f800000"  rate="3e23d70a"  rndtr="3f800000"  randrg="0"  randrev="3f800000"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="3f800000"  phase="0"  unidir="3f800000" >
+</LFO>
+ <LFO type="0"  center="3f000000"  swing="3f800000"  rate="3e23d70a"  rndtr="3f800000"  randrg="0"  randrev="3f800000"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="3f800000"  phase="0"  unidir="3f800000" >
+</LFO>
+ <LFO type="0"  center="3f000000"  swing="3f800000"  rate="3e23d70a"  rndtr="3f800000"  randrg="0"  randrev="3f800000"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="3f800000"  phase="0"  unidir="3f800000" >
+</LFO>
+ <LFO type="0"  center="3f000000"  swing="3f800000"  rate="3e23d70a"  rndtr="3f800000"  randrg="0"  randrev="3f800000"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="3f800000"  phase="0"  unidir="3f800000" >
+</LFO>
+ <LFO type="0"  center="3f000000"  swing="0"  rate="3eedab9f"  rndtr="0"  randrg="0"  randrev="0"  pulsemix="0"  pulserate="0"  scale="0"  sync="0"  resettr="0"  envdpth="0"  bpolar="0"  phase="0"  unidir="0" >
+</LFO>
+ </LFO_SET>
+ <VOICEMIXER qzLEv0z1="0"  qzLRv0z1="0"  qzRRv0z1="3f800000"  qzREv0z1="3f800000"  qzLEv1z1="0"  qzLRv1z1="0"  qzRRv1z1="3f800000"  qzREv1z1="3f800000"  qzLEv2z1="0"  qzLRv2z1="0"  qzRRv2z1="3f800000"  qzREv2z1="3f800000"  qzLEv3z1="0"  qzLRv3z1="0"  qzRRv3z1="3f800000"  qzREv3z1="3f800000"  qzLEv0z2="0"  qzLRv0z2="0"  qzRRv0z2="0"  qzREv0z2="0"  qzLEv1z2="0"  qzLRv1z2="0"  qzRRv1z2="0"  qzREv1z2="0"  qzLEv2z2="0"  qzLRv2z2="0"  qzRRv2z2="0"  qzREv2z2="0"  qzLEv3z2="0"  qzLRv3z2="0"  qzRRv3z2="0"  qzREv3z2="0"  qzLEv0z3="0"  qzLRv0z3="0"  qzRRv0z3="0"  qzREv0z3="0"  qzLEv1z3="0"  qzLRv1z3="0"  qzRRv1z3="0"  qzREv1z3="0"  qzLEv2z3="0"  qzLRv2z3="0"  qzRRv2z3="0"  qzREv2z3="0"  qzLEv3z3="0"  qzLRv3z3="0"  qzRRv3z3="0"  qzREv3z3="0"  qzLEv0z4="0"  qzLRv0z4="0"  qzRRv0z4="0"  qzREv0z4="0"  qzLEv1z4="0"  qzLRv1z4="0"  qzRRv1z4="0"  qzREv1z4="0"  qzLEv2z4="0"  qzLRv2z4="0"  qzRRv2z4="0"  qzREv2z4="0"  qzLEv3z4="0"  qzLRv3z4="0"  qzRRv3z4="0"  qzREv3z4="0" >
+</VOICEMIXER>
+ <MODENV c="3"  pan="0"  zoom="3ed3f8a1" >
+<p l="0"  t="0"  s="18"  c="%MOD_ATTACK_SLOPE%" >
+</p>
+ <p l="3f800000"  t="%MOD_ATTACK_SEC%"  s="18"  c="%MOD_DECAY_SLOPE%" >
+</p>
+ <p l="%MOD_SUSTAIN%"  t="%MOD_DECAY_SEC%"  s="18"  c="%MOD_RELEASE_SLOPE%" >
+</p>
+ <p l="0"  t="%MOD_RELEASE_SEC%"  s="18"  c="3e793cdd" >
+</p>
+ </MODENV>
+ <MODENV c="3"  pan="0"  zoom="3ed3f8a1" >
+<p l="0"  t="0"  s="18"  c="3ee44e92" >
+</p>
+ <p l="3f800000"  t="0"  s="18"  c="3e9ca7cc" >
+</p>
+ <p l="0"  t="3ca3d700"  s="18"  c="3eb02410" >
+</p>
+ <p l="0"  t="3cf5c280"  s="11"  c="3f800000" >
+</p>
+ </MODENV>
+ <MODENV c="3"  pan="0"  zoom="3ed3f8a1" >
+<p l="0"  t="0"  s="18"  c="3ee44e92" >
+</p>
+ <p l="3f800000"  t="0"  s="18"  c="3e9ca7cc" >
+</p>
+ <p l="0"  t="3ca3d700"  s="18"  c="3eb02410" >
+</p>
+ <p l="0"  t="3cf5c280"  s="11"  c="3f800000" >
+</p>
+ </MODENV>
+ <MODENV c="3"  pan="0"  zoom="3ed3f8a1" >
+<p l="0"  t="0"  s="18"  c="3ee44e92" >
+</p>
+ <p l="3f800000"  t="0"  s="18"  c="3e9ca7cc" >
+</p>
+ <p l="0"  t="3ca3d700"  s="18"  c="3eb02410" >
+</p>
+ <p l="0"  t="3cf5c280"  s="11"  c="3f800000" >
+</p>
+ </MODENV>
+ <MODENV c="8"  pan="0"  zoom="0" >
+<p l="3f800000"  t="0"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3c23d70a"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3ca3d70a"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3cf5c28f"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3d23d70a"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3d4ccccc"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3d75c28f"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3d8f5c29"  s="0"  c="3f800000" >
+</p>
+ <p l="0"  t="3da3d70a"  s="0"  c="3f800000" >
+</p>
+ </MODENV>
+ <MODENV c="8"  pan="0"  zoom="0" >
+<p l="3f800000"  t="0"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3c23d70a"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3ca3d70a"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3cf5c28f"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3d23d70a"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3d4ccccc"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3d75c28f"  s="0"  c="3f800000" >
+</p>
+ <p l="3f800000"  t="3d8f5c29"  s="0"  c="3f800000" >
+</p>
+ <p l="0"  t="3da3d70a"  s="0"  c="3f800000" >
+</p>
+ </MODENV>
+ <MODENVPARAMS a="0"  h="0"  d="0"  r="0"  attk="%MOD_ATTACK%"  hold="%MOD_HOLD%"  decy="%MOD_DECAY%"  sust="%MOD_SUSTAIN%"  rels="%MOD_RELEASE%"  smp="0"  lp="0"  sync="0"  spd="3f000000"  trgMd="3ca3d70a"  velsens="3f800000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="3f800000"  chsTrg="0"  atchs="0" >
+</MODENVPARAMS>
+ <MOD_ENV2_2 a="0"  h="0"  d="0"  r="0"  attk="0"  hold="3ea1e896"  decy="3ea1e896"  sust="0"  rels="3e64f927"  smp="0"  lp="3f800000"  sync="3f800000"  spd="3f000000"  trgMd="3ca3d70a"  velsens="3f800000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="3f800000"  chsTrg="0"  atchs="0" >
+</MOD_ENV2_2>
+ <MOD_ENV2_2 a="0"  h="0"  d="0"  r="0"  attk="0"  hold="3ea1e896"  decy="3ea1e896"  sust="0"  rels="3e64f927"  smp="0"  lp="3f800000"  sync="3f800000"  spd="3f000000"  trgMd="3ca3d70a"  velsens="3f800000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="3f800000"  chsTrg="0"  atchs="0" >
+</MOD_ENV2_2>
+ <MOD_ENV2_2 a="0"  h="0"  d="0"  r="0"  attk="0"  hold="3ea1e896"  decy="3ea1e896"  sust="0"  rels="3e64f927"  smp="0"  lp="3f800000"  sync="3f800000"  spd="3f000000"  trgMd="3ca3d70a"  velsens="3f800000"  mglvls="3f000000"  mgcrvs="3f000000"  dpt="3f800000"  chsTrg="0"  atchs="0" >
+</MOD_ENV2_2>
+ <MOD_ENV2_2 a="0"  h="0"  d="0"  r="0"  attk="3e64f92e"  hold="3e64f92e"  decy="3e64f92f"  sust="3f800000"  rels="3e64f92d"  smp="0"  lp="0"  sync="b8b8b9b9"  spd="3f000000"  trgMd="b8b8b8b8"  velsens="b8b8b9b9"  mglvls="0"  mgcrvs="0"  dpt="0"  chsTrg="0"  atchs="0" >
+</MOD_ENV2_2>
+ <MOD_ENV2_2 a="0"  h="0"  d="0"  r="0"  attk="3e64f92e"  hold="3e64f92e"  decy="3e64f92f"  sust="3f800000"  rels="3e64f92d"  smp="0"  lp="b6b6b7b7"  sync="b3b3b3b3"  spd="3f000000"  trgMd="b4b5b5b5"  velsens="b3b3b3b3"  mglvls="0"  mgcrvs="0"  dpt="b4b4b4b4"  chsTrg="0"  atchs="0" >
+</MOD_ENV2_2>
+ <CustomData2>
+</CustomData2>
+ </SYNTHENG>
+ </SynthEngine>
+ </AmberPart>
+ 

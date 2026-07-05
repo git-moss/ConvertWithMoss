@@ -283,8 +283,6 @@ public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
         StreamUtils.writeUnsigned32 (out, 1, true);
         writeString (out, sampleFileName);
 
-        // out.write (0);
-
         // Write the database path as invalid
         writeVersion (out, SxtChunkConstants.VERSION_1_2_0);
         out.write (0);

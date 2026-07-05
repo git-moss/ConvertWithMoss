@@ -29,7 +29,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
-import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -39,7 +38,7 @@ import de.mossgrabers.tools.ui.Functions;
  *
  * @author Jürgen Moßgraber
  */
-public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
+public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
 {
     private static final String                  TEMPLATE_FOLDER = "de/mossgrabers/convertwithmoss/templates/adv/";
 
@@ -60,7 +59,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
      */
     public AbletonCreator (final INotifier notifier)
     {
-        super ("Ableton Sampler", "Ableton", notifier, new WavChunkSettingsUI ("Ableton"));
+        super ("Ableton Sampler", "Ableton", notifier, new AbletonCreatorUI ());
     }
 
 
@@ -91,13 +90,13 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
         for (final File sampleFile: this.writeSamples (sampleFolder, multisampleSource))
             writtenSamples.put (sampleFile.getName (), sampleFile);
 
-        final Optional<String> metadata = this.createMetadata (multiFile.getName (), multisampleSource, writtenSamples);
-        if (metadata.isEmpty ())
+        final Optional<String> xmlCode = this.createXMLDocument (multiFile.getName (), multisampleSource, writtenSamples);
+        if (xmlCode.isEmpty ())
             return;
 
         try (final GZIPOutputStream gos = new GZIPOutputStream (new FileOutputStream (multiFile)))
         {
-            gos.write (metadata.get ().getBytes (StandardCharsets.UTF_8));
+            gos.write (xmlCode.get ().getBytes (StandardCharsets.UTF_8));
         }
 
         this.progress.notifyDone ();
@@ -112,7 +111,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param writtenSamples The already stored samples
      * @return The XML structure
      */
-    private Optional<String> createMetadata (final String filename, final IMultisampleSource multisampleSource, final Map<String, File> writtenSamples)
+    private Optional<String> createXMLDocument (final String filename, final IMultisampleSource multisampleSource, final Map<String, File> writtenSamples)
     {
         try
         {
@@ -121,7 +120,8 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final String multiSamplePartTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ADV-MultiSamplePart-Template.xml");
             final String multisampleParts = addGroups (groups, multiSamplePartTemplate, createSafeFilename (multisampleSource.getName ()), writtenSamples);
 
-            String text = Functions.textFileFor (TEMPLATE_FOLDER + "ADV-Template.xml");
+            final boolean isVersion12 = this.settingsConfiguration.getAbletonVersion () == 12;
+            String text = Functions.textFileFor (TEMPLATE_FOLDER + (isVersion12 ? "ADV12-Template.xml" : "ADV11-Template.xml"));
 
             int pitchBend = 2;
             if (!groups.isEmpty ())
@@ -181,6 +181,8 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
             text = text.replace ("%PRESET_NAME%", multisampleSource.getName ().replace ('.', '_'));
             text = text.replace ("%FILE_NAME%", filename);
             text = text.replace ("%MULTI_SAMPLE_PARTS%", multisampleParts);
+            if (isVersion12)
+                text = text.replace ("%ROUND_ROBIN%", this.checkRoundRobin (multisampleSource) ? "true" : "false");
             text = text.replace ("%PITCHBEND_RANGE%", Integer.toString (pitchBend));
             text = addFilter (multisampleSource.getGlobalFilter (), text);
             return Optional.of (text);
@@ -299,7 +301,7 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
             cents += 100;
         }
 
-        zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (Math.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - semitones, 0, 127)));
+        zoneContent = zoneContent.replace ("%ROOT_KEY%", Integer.toString (Math.clamp (limitToDefault (zone.getKeyRoot (), keyLow) - (long) semitones, 0, 127)));
         zoneContent = zoneContent.replace ("%DETUNE%", Integer.toString (cents));
         zoneContent = zoneContent.replace ("%TUNE_SCALE%", Integer.toString ((int) Math.round (zone.getKeyTracking () * 100)));
         zoneContent = zoneContent.replace ("%PANORAMA%", formatDouble (zone.getPanning ()));
@@ -309,20 +311,35 @@ public class AbletonCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (loops.isEmpty ())
         {
             zoneContent = zoneContent.replace ("%LOOP_MODE%", "0");
+            zoneContent = zoneContent.replace ("%SAMPLE_RELEASE_LOOP%", "3");
             zoneContent = zoneContent.replace ("%LOOP_START%", "0");
             zoneContent = zoneContent.replace ("%LOOP_END%", "0");
             zoneContent = zoneContent.replace ("%LOOP_CROSSFADE%", "0");
+            zoneContent = zoneContent.replace ("%LOOP_DETUNE%", "0");
         }
         else
         {
             final ISampleLoop loop = loops.get (0);
             zoneContent = zoneContent.replace ("%LOOP_MODE%", loop.getType () == LoopType.ALTERNATING ? "2" : "1");
+            zoneContent = zoneContent.replace ("%SAMPLE_RELEASE_LOOP%", loop.isLoopUntilRelease () ? "0" : "3");
             zoneContent = zoneContent.replace ("%LOOP_START%", Integer.toString (loop.getStart ()));
             zoneContent = zoneContent.replace ("%LOOP_END%", Integer.toString (loop.getEnd ()));
             zoneContent = zoneContent.replace ("%LOOP_CROSSFADE%", Integer.toString (loop.getCrossfadeInSamples ()));
+            zoneContent = zoneContent.replace ("%LOOP_DETUNE%", Integer.toString ((int) Math.round (loop.getTuning () * 100.0)));
         }
 
         return zoneContent;
+    }
+
+
+    private boolean checkRoundRobin (final IMultisampleSource multisampleSource)
+    {
+        if (!multisampleSource.hasRoundRobin ())
+            return false;
+        final boolean fullRoundRobin = multisampleSource.isFullRoundRobin ();
+        if (fullRoundRobin)
+            this.notifier.logError ("IDS_ADV_ROUND_ROBIN_GROUPS_DO_NOT_MATCH");
+        return fullRoundRobin;
     }
 
 

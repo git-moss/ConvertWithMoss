@@ -19,7 +19,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
  */
 public class DefaultGroup implements IGroup
 {
-    private List<ISampleZone> samples     = new ArrayList<> ();
+    private List<ISampleZone> sampleZones = new ArrayList<> ();
     private String            name;
     protected TriggerType     triggerType = TriggerType.ATTACK;
 
@@ -51,7 +51,7 @@ public class DefaultGroup implements IGroup
      */
     public DefaultGroup (final List<ISampleZone> samples)
     {
-        this.samples = samples;
+        this.sampleZones = samples;
     }
 
 
@@ -75,23 +75,23 @@ public class DefaultGroup implements IGroup
     @Override
     public List<ISampleZone> getSampleZones ()
     {
-        return this.samples;
+        return this.sampleZones;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void setSampleZones (final List<ISampleZone> samples)
+    public void setSampleZones (final List<ISampleZone> sampleZones)
     {
-        this.samples = samples;
+        this.sampleZones = sampleZones;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public void addSampleZone (final ISampleZone sample)
+    public void addSampleZone (final ISampleZone sampleZone)
     {
-        this.samples.add (sample);
+        this.sampleZones.add (sampleZone);
     }
 
 

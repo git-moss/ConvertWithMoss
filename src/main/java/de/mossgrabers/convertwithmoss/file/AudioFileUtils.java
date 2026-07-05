@@ -234,7 +234,7 @@ public final class AudioFileUtils
      *
      * @param sampleData The input sample data
      * @param destinationFormat The destination WAV format configuration
-     * @return The data of the output file
+     * @return The WAV data of the output file
      * @throws IOException Could not read or write
      */
     public static byte [] convertToWavData (final ISampleData sampleData, final DestinationAudioFormat destinationFormat) throws IOException
@@ -252,7 +252,7 @@ public final class AudioFileUtils
      *
      * @param inputData The data of the input file
      * @param destinationFormat The destination WAV format configuration
-     * @return The data of the output file
+     * @return The WAV data of the output file
      * @throws IOException Could not read or write
      */
     private static byte [] convertToWav (final byte [] inputData, final DestinationAudioFormat destinationFormat) throws IOException
@@ -310,7 +310,9 @@ public final class AudioFileUtils
             outputBuffer.putShort ((short) (floatValue * Short.MAX_VALUE));
         }
 
-        return new AudioInputStream (new ByteArrayInputStream (outputBuffer.array ()), destinationAudioFormat, inputStream.getFrameLength ());
+        final byte [] outputData = outputBuffer.array ();
+        final long frameLength = outputData.length / destinationAudioFormat.getFrameSize ();
+        return new AudioInputStream (new ByteArrayInputStream (outputBuffer.array ()), destinationAudioFormat, frameLength);
     }
 
 
@@ -358,25 +360,32 @@ public final class AudioFileUtils
      */
     public static void decompressToWav (final InputStream inputStream, final OutputStream outputStream) throws IOException
     {
+        // AudioSystem.getAudioInputStream requires a stream which supports mark/reset to probe the
+        // audio format. A raw ZIP entry stream does not, so wrap it if necessary.
+        final InputStream markableStream = inputStream.markSupported () ? inputStream : new BufferedInputStream (inputStream);
+
         // The conversion needs to be a 2 step process to get the length of the data
-        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputStream))
+        try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (markableStream))
         {
             final AudioFormat sourceFormat = audioInputStream.getFormat ();
             final int channels = sourceFormat.getChannels ();
             int sampleSizeInBits = sourceFormat.getSampleSizeInBits ();
             if (sampleSizeInBits < 0)
                 sampleSizeInBits = 16;
+
             final AudioFormat convertFormat = new AudioFormat (sourceFormat.getSampleRate (), sampleSizeInBits, channels, true, false);
 
-            // Step 1 - First convert to raw sample data
-            final byte [] audioDataBytes;
-            try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (convertFormat, audioInputStream))
-            {
-                audioDataBytes = convertedAudioInputStream.readAllBytes ();
-            }
+            // 2-step approach to prevent conversion not supported for a specific reader/writer
+            // format combination
 
-            // Step 2 - Convert from raw data to WAV format
-            final int numFrames = audioDataBytes.length / (convertFormat.getFrameSize () * channels);
+            // Step 1 - First convert to raw sample data
+            final byte [] audioDataBytes = readAudioData (audioInputStream, convertFormat);
+
+            // Step 2 - Convert from raw data to WAV format. Note: getFrameSize() already accounts
+            // for all channels (bytes-per-sample * channels), so it must not be multiplied by the
+            // channel count again - doing so halved the frame count for stereo samples and
+            // truncated them to half their length.
+            final int numFrames = audioDataBytes.length / convertFormat.getFrameSize ();
             final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream (audioDataBytes);
             try (final AudioInputStream wavAudioInputStream = new AudioInputStream (byteArrayInputStream, convertFormat, numFrames))
             {
@@ -386,6 +395,21 @@ public final class AudioFileUtils
         catch (final UnsupportedAudioFileException ex)
         {
             throw new IOException (ex);
+        }
+    }
+
+
+    private static byte [] readAudioData (final AudioInputStream audioInputStream, final AudioFormat convertFormat) throws IOException
+    {
+        try (final AudioInputStream convertedAudioInputStream = AudioSystem.getAudioInputStream (convertFormat, audioInputStream))
+        {
+            return convertedAudioInputStream.readAllBytes ();
+        }
+        catch (final IllegalArgumentException _)
+        {
+            // Fallback for, e.g., 32-bit FLAC: many FLAC SPIs provide already-decoded PCM bytes
+            // during direct reading, even if the format tag still indicates FLAC.
+            return audioInputStream.readAllBytes ();
         }
     }
 
@@ -432,7 +456,7 @@ public final class AudioFileUtils
     {
         File f = msSourceFolder;
         final List<String> pathNames = new ArrayList<> ();
-        while (!f.equals (sourceFolder))
+        while (f != null && !f.equals (sourceFolder))
         {
             pathNames.add (f.getName ());
             f = f.getParentFile ();

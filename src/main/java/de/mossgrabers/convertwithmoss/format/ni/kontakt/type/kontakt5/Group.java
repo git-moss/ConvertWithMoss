@@ -54,7 +54,7 @@ public class Group
 
         final ByteArrayInputStream in = new ByteArrayInputStream (groupChunk.getPublicData ());
 
-        this.name = StreamUtils.readWithLengthUTF16 (in);
+        this.name = StreamUtils.readUtf16WithLength (in);
         this.volume = StreamUtils.readFloatLE (in);
         this.pan = StreamUtils.readFloatLE (in);
         this.tune = StreamUtils.readFloatLE (in);
@@ -118,7 +118,7 @@ public class Group
                     internalModulator.read (childChunk);
                     this.internalModulators.add (internalModulator);
                 }
-                catch (final RuntimeException | IOException ex)
+                catch (final RuntimeException | IOException _)
                 {
                     // TODO Improve reading InternalModulator
                     // Ignore unknown formats (a user reported for v8.1) but don't crash
@@ -139,7 +139,7 @@ public class Group
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
-        StreamUtils.writeWithLengthUTF16 (out, this.name);
+        StreamUtils.writeUtf16WithLength (out, this.name);
         StreamUtils.writeFloatLE (out, this.volume);
         StreamUtils.writeFloatLE (out, this.pan);
         StreamUtils.writeFloatLE (out, this.tune);

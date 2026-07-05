@@ -50,7 +50,7 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public KontaktDetector (final INotifier notifier)
     {
-        super ("Kontakt NKI/NKM", "Nki", notifier, new MetadataSettingsUI ("Nki"));
+        super ("NI Kontakt", "Nki", notifier, new MetadataSettingsUI ("Nki"));
     }
 
 
@@ -98,7 +98,7 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
     protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
-            return null;
+            return Collections.emptyList ();
 
         try (final RandomAccessFile fileAccess = new RandomAccessFile (sourceFile, "r"))
         {
@@ -115,7 +115,7 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
         {
             this.notifier.logError (ex, false);
         }
-        return null;
+        return Collections.emptyList ();
     }
 
 
@@ -133,7 +133,7 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
 
         // Is this Kontakt 5+ container format?
         fileAccess.seek (12);
-        final String id = StreamUtils.readASCII (fileAccess, 4);
+        final String id = StreamUtils.readAscii (fileAccess, 4);
         if ("hsin".equals (id))
         {
             fileAccess.seek (0);

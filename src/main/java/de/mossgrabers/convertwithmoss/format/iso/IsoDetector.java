@@ -5,23 +5,16 @@
 package de.mossgrabers.convertwithmoss.format.iso;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiDiskImage;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiPartition;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiProgram;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiProgramConverter;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiSample;
-import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiVolume;
+import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
+import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
+import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
+import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
 
 
 /**
@@ -29,8 +22,13 @@ import de.mossgrabers.convertwithmoss.format.akai.s1000s3000.AkaiVolume;
  *
  * @author Jürgen Moßgraber
  */
-public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
+public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
 {
+    private final EnsoniqEpsAsrDetector ensoniqDetector;
+    private final S5xxDetector          rolandS5xxDetector;
+    private final S770Detector          rolandS7xxDetector;
+
+
     /**
      * Constructor.
      *
@@ -38,7 +36,11 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public IsoDetector (final INotifier notifier)
     {
-        super ("ISO file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso");
+        super ("ISO/IMG file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso", ".img", ".out", ".sdk");
+
+        this.ensoniqDetector = new EnsoniqEpsAsrDetector (notifier);
+        this.rolandS5xxDetector = new S5xxDetector (notifier);
+        this.rolandS7xxDetector = new S770Detector (notifier);
     }
 
 
@@ -46,74 +48,42 @@ public class IsoDetector extends AbstractDetector<MetadataSettingsUI>
     @Override
     protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
-        final IsoFormat isoFormat = identifyIso (sourceFile);
+        final IsoFormat isoFormat = IsoFormatIdentifier.identifyIso (sourceFile);
         switch (isoFormat)
         {
+            case AKAI_MPC2000:
+            case AKAI_MPC2000XL:
+                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                return AkaiMPC2000Detector.processAkaiMPC2000Disk (sourceFile, this.sourceFolder, this.notifier, this.settingsConfiguration);
+
             case AKAI_S1000_S1100:
             case AKAI_S3000:
                 this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
-                return this.processAkaiS1000OrS3000 (sourceFile, isoFormat == IsoFormat.AKAI_S3000);
+                return this.processAkaiS1000Disk (sourceFile);
 
-            case ROLAND_S550_W30_DJ70:
+            case ENSONIQ:
+                this.ensoniqDetector.setSourceFolder (this.sourceFolder);
+                this.ensoniqDetector.setSettings (this.settingsConfiguration);
+                return this.ensoniqDetector.readPresetFile (sourceFile);
+
+            case ISO_9660:
+                this.notifier.logError ("IDS_ISO_UNSUPPORTED_9660");
+                return Collections.emptyList ();
+
+            case ROLAND_S5XX:
+                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                this.rolandS5xxDetector.setSourceFolder (this.sourceFolder);
+                return this.rolandS5xxDetector.readPresetFile (sourceFile);
+
             case ROLAND_S7XX:
+                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                this.rolandS7xxDetector.setSourceFolder (this.sourceFolder);
+                return this.rolandS7xxDetector.readPresetFile (sourceFile);
+
             case UNKNOWN:
             default:
                 this.notifier.logError ("IDS_ISO_UNSUPPORTED_FORMAT", IsoFormat.getName (isoFormat));
                 return Collections.emptyList ();
-        }
-    }
-
-
-    /**
-     * Process an ISO file which was detected as Akai S1000 format.
-     * 
-     * @param sourceFile The ISO file to process
-     * @param isS3000 True if it is a S3000 series image otherwise S1000 series
-     * @return The converted multi-samples
-     */
-    private List<IMultisampleSource> processAkaiS1000OrS3000 (final File sourceFile, final boolean isS3000)
-    {
-        final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
-        final AkaiProgramConverter converter = new AkaiProgramConverter (this.notifier, this.settingsConfiguration);
-
-        try (final AkaiDiskImage disk = new AkaiDiskImage (sourceFile, isS3000))
-        {
-            final int partitionCount = disk.getPartitionCount ();
-
-            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, sourceFile.getName ());
-            for (int partitionIndex = 0; partitionIndex < partitionCount; partitionIndex++)
-            {
-                final AkaiPartition partition = disk.getPartition (partitionIndex);
-                this.notifier.log ("IDS_ISO_PROCESSING_PARTITION", partition.getName ());
-
-                for (final AkaiVolume volume: partition.getVolumes ())
-                {
-                    final List<AkaiSample> samples = volume.getSamples ();
-                    for (final AkaiProgram program: volume.getPrograms ())
-                        multiSampleSources.add (converter.createMultiSample (sourceFile, parts, samples, program, volume.getName ()));
-                }
-            }
-
-            this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-        }
-        catch (final IOException ex)
-        {
-            this.notifier.logError ("IDS_ISO_COULD_NOT_PROCESS", ex);
-        }
-
-        return multiSampleSources;
-    }
-
-
-    private static IsoFormat identifyIso (final File sourceFile)
-    {
-        try (final FileInputStream in = new FileInputStream (sourceFile))
-        {
-            return IsoFormatIdentifier.identifyIso (in.readNBytes (IsoFormatIdentifier.MINIMUM_NUMBER_OF_REQUIRED_BYTES));
-        }
-        catch (final IOException ex)
-        {
-            return IsoFormat.UNKNOWN;
         }
     }
 }

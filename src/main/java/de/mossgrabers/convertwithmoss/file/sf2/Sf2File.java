@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -82,7 +81,7 @@ public class Sf2File extends AbstractRIFFFile
      */
     public Sf2File (final File sf2File) throws IOException, ParseException
     {
-        super (Sf2RiffChunkId.SFBK_ID);
+        super (Sf2RiffChunkId.SFBK_ID, true);
 
         try (final FileInputStream stream = new FileInputStream (sf2File))
         {
@@ -96,53 +95,10 @@ public class Sf2File extends AbstractRIFFFile
      */
     public Sf2File ()
     {
-        super (Sf2RiffChunkId.SFBK_ID);
+        super (Sf2RiffChunkId.SFBK_ID, true);
 
-        this.infoChunk = new InfoChunk ();
         this.dataChunk = new Sf2DataChunk ();
         this.presetDataChunk = new Sf2PresetDataChunk ();
-    }
-
-
-    /**
-     * Get the creation date as a date object.
-     *
-     * @return The date object
-     */
-    public Date getParsedCreationDate ()
-    {
-        if (this.infoChunk != null)
-            return this.infoChunk.getCreationDate ();
-        return new Date ();
-    }
-
-
-    /**
-     * Get the names of any sound designers or engineers responsible for the SoundFont compatible
-     * bank (optional).
-     *
-     * @return The names, empty string if not present
-     */
-    public String getSoundDesigner ()
-    {
-        if (this.infoChunk == null)
-            return "";
-        final String result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IENG, InfoRiffChunkId.INFO_IART, InfoRiffChunkId.INFO_ITCH, InfoRiffChunkId.INFO_ISTR, InfoRiffChunkId.INFO_STAR);
-        return result == null ? "" : result.trim ();
-    }
-
-
-    /**
-     * Get keywords.
-     *
-     * @return The keywords, empty string if not present
-     */
-    public String getKeywords ()
-    {
-        if (this.infoChunk == null)
-            return "";
-        final String result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IKEY);
-        return result == null ? "" : result.trim ();
     }
 
 
@@ -230,7 +186,7 @@ public class Sf2File extends AbstractRIFFFile
     {
         final int id = chunk.getId ().getFourCC ();
 
-        ////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Data chunk sub-chunks
 
         if (id == Sf2RiffChunkId.SMPL_ID.getFourCC () || id == Sf2RiffChunkId.SM24_ID.getFourCC ())
@@ -239,7 +195,7 @@ public class Sf2File extends AbstractRIFFFile
             return;
         }
 
-        ////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Preset, Instrument, and Sample Header chunks
 
         if (id == Sf2RiffChunkId.PHDR_ID.getFourCC ())
@@ -361,10 +317,10 @@ public class Sf2File extends AbstractRIFFFile
                 for (int zoneCounter = 0; zoneCounter < numberOfZones; zoneCounter++)
                 {
                     final int offset = (firstZoneIndex + zoneCounter) * LENGTH_PBAG;
-                    final int generatorIndex = chunk.getTwoBytesAsInt (offset);
-                    final int modulatorIndex = chunk.getTwoBytesAsInt (offset + 2);
-                    final int nextGeneratorIndex = chunk.getTwoBytesAsInt (offset + LENGTH_PBAG);
-                    final int nextModulatorIndex = chunk.getTwoBytesAsInt (offset + LENGTH_PBAG + 2);
+                    final int generatorIndex = chunk.getTwoBytesAsUnsignedInt (offset);
+                    final int modulatorIndex = chunk.getTwoBytesAsUnsignedInt (offset + 2);
+                    final int nextGeneratorIndex = chunk.getTwoBytesAsUnsignedInt (offset + LENGTH_PBAG);
+                    final int nextModulatorIndex = chunk.getTwoBytesAsUnsignedInt (offset + LENGTH_PBAG + 2);
                     preset.addZone (new Sf2PresetZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
                 }
             }
@@ -412,11 +368,11 @@ public class Sf2File extends AbstractRIFFFile
         for (int index = 0; index < numberOfModulators; index++)
         {
             final int offset = (firstModulator + index) * LENGTH_PMOD;
-            final int sourceModulator = chunk.getTwoBytesAsInt (offset);
-            final int destinationGenerator = chunk.getTwoBytesAsInt (offset + 2);
-            final int modAmount = chunk.getTwoBytesAsInt (offset + 4);
-            final int amountSourceOperand = chunk.getTwoBytesAsInt (offset + 6);
-            final int transformOperand = chunk.getTwoBytesAsInt (offset + 8);
+            final int sourceModulator = chunk.getTwoBytesAsUnsignedInt (offset);
+            final int destinationGenerator = chunk.getTwoBytesAsUnsignedInt (offset + 2);
+            final int modAmount = chunk.getTwoBytesAsUnsignedInt (offset + 4);
+            final int amountSourceOperand = chunk.getTwoBytesAsUnsignedInt (offset + 6);
+            final int transformOperand = chunk.getTwoBytesAsUnsignedInt (offset + 8);
             zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
         }
     }
@@ -458,8 +414,8 @@ public class Sf2File extends AbstractRIFFFile
         for (int index = 0; index < numberOfGenerators; index++)
         {
             final int offset = (firstGenerator + index) * LENGTH_PGEN;
-            final int generator = chunk.getTwoBytesAsInt (offset);
-            final int value = chunk.getTwoBytesAsInt (offset + 2);
+            final int generator = chunk.getTwoBytesAsUnsignedInt (offset);
+            final int value = chunk.getTwoBytesAsUnsignedInt (offset + 2);
             zone.addGenerator (generator, value);
         }
 
@@ -531,10 +487,10 @@ public class Sf2File extends AbstractRIFFFile
                 for (int zoneCounter = 0; zoneCounter < numberOfZones; zoneCounter++)
                 {
                     final int offset = (firstZoneIndex + zoneCounter) * LENGTH_IBAG;
-                    final int generatorIndex = chunk.getTwoBytesAsInt (offset);
-                    final int modulatorIndex = chunk.getTwoBytesAsInt (offset + 2);
-                    final int nextGeneratorIndex = chunk.getTwoBytesAsInt (offset + LENGTH_IBAG);
-                    final int nextModulatorIndex = chunk.getTwoBytesAsInt (offset + LENGTH_IBAG + 2);
+                    final int generatorIndex = chunk.getTwoBytesAsUnsignedInt (offset);
+                    final int modulatorIndex = chunk.getTwoBytesAsUnsignedInt (offset + 2);
+                    final int nextGeneratorIndex = chunk.getTwoBytesAsUnsignedInt (offset + LENGTH_IBAG);
+                    final int nextModulatorIndex = chunk.getTwoBytesAsUnsignedInt (offset + LENGTH_IBAG + 2);
                     instrument.addZone (new Sf2InstrumentZone (generatorIndex, nextGeneratorIndex - generatorIndex, modulatorIndex, nextModulatorIndex - modulatorIndex));
                 }
             }
@@ -583,11 +539,11 @@ public class Sf2File extends AbstractRIFFFile
         for (int index = 0; index < numberOfModulators; index++)
         {
             final int offset = (firstModulator + index) * LENGTH_IMOD;
-            final int sourceModulator = chunk.getTwoBytesAsInt (offset);
-            final int destinationGenerator = chunk.getTwoBytesAsInt (offset + 2);
-            final int modAmount = chunk.getTwoBytesAsInt (offset + 4);
-            final int amountSourceOperand = chunk.getTwoBytesAsInt (offset + 6);
-            final int transformOperand = chunk.getTwoBytesAsInt (offset + 8);
+            final int sourceModulator = chunk.getTwoBytesAsUnsignedInt (offset);
+            final int destinationGenerator = chunk.getTwoBytesAsUnsignedInt (offset + 2);
+            final int modAmount = chunk.getTwoBytesAsUnsignedInt (offset + 4);
+            final int amountSourceOperand = chunk.getTwoBytesAsUnsignedInt (offset + 6);
+            final int transformOperand = chunk.getTwoBytesAsUnsignedInt (offset + 8);
             zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
         }
     }
@@ -630,8 +586,8 @@ public class Sf2File extends AbstractRIFFFile
         for (int index = 0; index < numberOfGenerators; index++)
         {
             final int offset = (firstGenerator + index) * LENGTH_IGEN;
-            final int generator = chunk.getTwoBytesAsInt (offset);
-            final int value = chunk.getTwoBytesAsInt (offset + 2);
+            final int generator = chunk.getTwoBytesAsUnsignedInt (offset);
+            final int value = chunk.getTwoBytesAsUnsignedInt (offset + 2);
             zone.addGenerator (generator, value);
         }
 
@@ -787,7 +743,7 @@ public class Sf2File extends AbstractRIFFFile
 
                 for (int zoneIndex = 0; zoneIndex < sf2Preset.getZoneCount (); zoneIndex++)
                 {
-                    //////////////////////////////////////////////////////////////
+                    // -----------------------------------------------------------
                     // Preset data
 
                     final Sf2PresetZone presetZone = sf2Preset.getZone (zoneIndex);
@@ -813,7 +769,7 @@ public class Sf2File extends AbstractRIFFFile
                     presetGeneratorIndex += presetZone.getNumberOfGenerators ();
                     presetModulatorIndex += presetZone.getNumberOfModulators ();
 
-                    //////////////////////////////////////////////////////////////
+                    // -----------------------------------------------------------
                     // Instrument data
 
                     final Sf2Instrument instrument = presetZone.getInstrument ();
@@ -942,5 +898,14 @@ public class Sf2File extends AbstractRIFFFile
             this.chunkStack.add (this.dataChunk);
         if (this.presetDataChunk != null)
             this.chunkStack.add (this.presetDataChunk);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void checkTopChunk (final int type) throws ParseException
+    {
+        if (Sf2RiffChunkId.SFBK_ID.getFourCC () != type)
+            throw new ParseException ("Top chunk must be 'sfbk' but is '" + RiffChunkId.toASCII (type) + "'");
     }
 }

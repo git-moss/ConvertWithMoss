@@ -192,7 +192,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
         if (sampleLoop.playMode == AiffLoop.NO_LOOPING || markerChunk == null)
             return;
 
-        final DefaultSampleLoop loop = new DefaultSampleLoop ();
+        final ISampleLoop loop = new DefaultSampleLoop ();
         switch (sampleLoop.playMode)
         {
             default:
@@ -224,17 +224,19 @@ public class AiffFileSampleData extends AbstractFileSampleData
      */
     public AiffFile getAiffFile () throws IOException
     {
-        if (this.aiffFile == null)
-            if (this.zipFile == null)
-                this.aiffFile = new AiffFile (this.sampleFile);
-            else
+        if (this.aiffFile != null)
+            return this.aiffFile;
+
+        if (this.zipFile == null)
+            this.aiffFile = new AiffFile (this.sampleFile);
+        else
+        {
+            this.aiffFile = new AiffFile ();
+            try (final ZipFile zf = new ZipFile (this.zipFile); final InputStream in = zf.getInputStream (this.getHarmonizedZipEntry (zf)))
             {
-                this.aiffFile = new AiffFile ();
-                try (final ZipFile zf = new ZipFile (this.zipFile); final InputStream in = zf.getInputStream (this.getHarmonizedZipEntry (zf)))
-                {
-                    this.aiffFile.read (in);
-                }
+                this.aiffFile.read (in);
             }
+        }
 
         return this.aiffFile;
     }
@@ -249,7 +251,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
         {
             aifFile = this.getAiffFile ();
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             return;
         }

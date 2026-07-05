@@ -52,15 +52,24 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 public class MultiSampleReducer
 {
     /**
+     * Constructor.
+     */
+    protected MultiSampleReducer ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Reduces the number of samples in the groups to a maximum number.
-     * 
+     *
      * @param groups The groups from which to reduce
      * @param maxSamples The maximum number of samples
      * @return The number of reduced samples
      */
     public static int reduce (final List<IGroup> groups, final int maxSamples)
     {
-        int initialTotalZones = totalZones (groups);
+        final int initialTotalZones = totalZones (groups);
         if (initialTotalZones <= maxSamples)
             return initialTotalZones;
 
@@ -206,7 +215,7 @@ public class MultiSampleReducer
 
         final int width = keyHigh - keyLow + 1;
         final int height = velHigh - velLow + 1;
-        final double area = width * height;
+        final double area = width * (double) height;
 
         final double velocityCenter = (velLow + velHigh) / 2.0;
         final double velocityPenalty = Math.abs (velocityCenter - 100);

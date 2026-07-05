@@ -103,7 +103,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
     protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery () || !"preset.xml".equals (sourceFile.getName ()))
-            return null;
+            return Collections.emptyList ();
         final IPerformanceSource processPresetFile = this.processPresetFile (sourceFile);
         return processPresetFile == null ? Collections.emptyList () : Collections.singletonList (processPresetFile);
     }
@@ -120,7 +120,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         try (final FileInputStream in = new FileInputStream (file))
         {
             // There is a null byte at the end of the file which gets dropped by trim
-            final String content = StreamUtils.readUTF8 (in).trim ();
+            final String content = StreamUtils.readUtf8 (in).trim ();
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (file, file.getParent (), document);
         }
@@ -146,14 +146,14 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return null;
         }
 
         final Element sessionElement = XMLUtils.getChildElementByName (top, Music1010Tag.SESSION);
         if (sessionElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Session tag");
             return null;
         }
 
@@ -163,7 +163,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final List<Element> assetElements = new ArrayList<> ();
         filterCells (cellElements, multisampleElements, sampleElements, assetElements);
 
-        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         // Use the parent folders name since all presets are called preset.xml
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile.getParentFile ()));
         if (multisampleElements.isEmpty ())
@@ -188,7 +188,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final String name = parentFile.getName ();
         final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
 
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name);
         final IGroup group = new DefaultGroup ("Group");
         multisampleSource.setGroups (Collections.singletonList (group));
 
@@ -260,7 +260,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setVelocityLow (1);
         sampleZone.setVelocityHigh (127);
 
-        /////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Loops
 
         if (!isOneShot)
@@ -277,7 +277,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        /////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
@@ -302,7 +302,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final String name = pathPrefixFile.getName ();
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
         final IGroup group = new DefaultGroup ("Group");
         multisampleSource.setGroups (Collections.singletonList (group));
 
@@ -427,11 +427,11 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final Element paramsElement = XMLUtils.getChildElementByName (assetElement, Music1010Tag.PARAMS);
         if (paramsElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Params tag");
             return prevFolder;
         }
 
-        final DefaultSampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
+        final ISampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
 
         // No trigger
         // No start - set from Sample chunk in addMetadata below
@@ -453,7 +453,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        /////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Loops
 
         try
@@ -465,7 +465,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
         }
 
-        /////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Volume envelope
 
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();

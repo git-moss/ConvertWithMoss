@@ -49,10 +49,10 @@ public class SoundinfoChunkData extends AbstractChunkData
         this.versionPatch = (int) StreamUtils.readUnsigned32 (in, false);
         this.soundInfoVersionText = this.versionMajor + "." + this.versionMinor + "." + this.versionPatch;
 
-        this.name = StreamUtils.readWithLengthUTF16 (in);
-        this.author = StreamUtils.readWithLengthUTF16 (in);
-        this.vendor = StreamUtils.readWithLengthUTF16 (in);
-        this.description = StreamUtils.readWithLengthUTF16 (in);
+        this.name = StreamUtils.readUtf16WithLength (in);
+        this.author = StreamUtils.readUtf16WithLength (in);
+        this.vendor = StreamUtils.readUtf16WithLength (in);
+        this.description = StreamUtils.readUtf16WithLength (in);
 
         // Always 0
         StreamUtils.readUnsigned32 (in, false);
@@ -70,12 +70,12 @@ public class SoundinfoChunkData extends AbstractChunkData
 
         final int numberOfTags = (int) StreamUtils.readUnsigned32 (in, false);
         for (int i = 0; i < numberOfTags; i++)
-            this.tags.add (StreamUtils.readWithLengthUTF16 (in));
+            this.tags.add (StreamUtils.readUtf16WithLength (in));
 
         final int numberOfAttributes = (int) StreamUtils.readUnsigned32 (in, false);
         for (int i = 0; i < numberOfAttributes; i++)
         {
-            final String value = StreamUtils.readWithLengthUTF16 (in);
+            final String value = StreamUtils.readUtf16WithLength (in);
             if (!"KontaktInstrument".equals (value))
                 this.attributes.add (value);
         }
@@ -86,8 +86,8 @@ public class SoundinfoChunkData extends AbstractChunkData
         final int numberOfProperties = (int) StreamUtils.readUnsigned32 (in, false);
         for (int i = 0; i < numberOfProperties; i++)
         {
-            final String key = StreamUtils.readWithLengthUTF16 (in);
-            final String value = StreamUtils.readWithLengthUTF16 (in);
+            final String key = StreamUtils.readUtf16WithLength (in);
+            final String value = StreamUtils.readUtf16WithLength (in);
             this.properties.put (key, value);
         }
     }
@@ -103,10 +103,10 @@ public class SoundinfoChunkData extends AbstractChunkData
         StreamUtils.writeUnsigned32 (out, this.versionMinor, false);
         StreamUtils.writeUnsigned32 (out, this.versionPatch, false);
 
-        StreamUtils.writeWithLengthUTF16 (out, this.name);
-        StreamUtils.writeWithLengthUTF16 (out, this.author);
-        StreamUtils.writeWithLengthUTF16 (out, this.vendor);
-        StreamUtils.writeWithLengthUTF16 (out, this.description);
+        StreamUtils.writeUtf16WithLength (out, this.name);
+        StreamUtils.writeUtf16WithLength (out, this.author);
+        StreamUtils.writeUtf16WithLength (out, this.vendor);
+        StreamUtils.writeUtf16WithLength (out, this.description);
 
         // Always 0
         StreamUtils.writeUnsigned32 (out, 0, false);
@@ -124,11 +124,11 @@ public class SoundinfoChunkData extends AbstractChunkData
 
         StreamUtils.writeUnsigned32 (out, this.tags.size (), false);
         for (final String element: this.tags)
-            StreamUtils.writeWithLengthUTF16 (out, element);
+            StreamUtils.writeUtf16WithLength (out, element);
 
         StreamUtils.writeUnsigned32 (out, this.attributes.size (), false);
         for (final String element: this.attributes)
-            StreamUtils.writeWithLengthUTF16 (out, element);
+            StreamUtils.writeUtf16WithLength (out, element);
 
         // Always 0
         StreamUtils.writeUnsigned32 (out, 0, false);
@@ -136,8 +136,8 @@ public class SoundinfoChunkData extends AbstractChunkData
         StreamUtils.writeUnsigned32 (out, this.properties.size (), false);
         for (final Map.Entry<String, String> e: this.properties.entrySet ())
         {
-            StreamUtils.writeWithLengthUTF16 (out, e.getKey ());
-            StreamUtils.writeWithLengthUTF16 (out, e.getValue ());
+            StreamUtils.writeUtf16WithLength (out, e.getKey ());
+            StreamUtils.writeUtf16WithLength (out, e.getValue ());
         }
     }
 

@@ -16,10 +16,10 @@ import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -48,7 +48,7 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
@@ -130,7 +130,7 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
         {
             this.outputFormat = Integer.parseInt (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             notifier.logError ("IDS_NI_MASCHINE_ONLY_V1_NOT_SUPPORTED");
             return false;

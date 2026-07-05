@@ -175,7 +175,7 @@ public class YsfcFile
      */
     private void read (final InputStream inputStream) throws IOException
     {
-        final String headerTag = StreamUtils.readASCII (inputStream, 16);
+        final String headerTag = StreamUtils.readAscii (inputStream, 16);
         try
         {
             StreamUtils.checkTag (YAMAHA_YSFC, headerTag.trim ());
@@ -228,8 +228,8 @@ public class YsfcFile
         final List<YamahaYsfcChunk> orderedChunks = this.sortAndUpdateChunks ();
         final int catalogSize = orderedChunks.size () * 8;
 
-        StreamUtils.writeASCII (outputStream, YAMAHA_YSFC, 16);
-        StreamUtils.writeASCII (outputStream, this.versionStr, 16);
+        StreamUtils.writeAscii (outputStream, YAMAHA_YSFC, 16);
+        StreamUtils.writeAscii (outputStream, this.versionStr, 16);
         StreamUtils.writeUnsigned32 (outputStream, catalogSize, true);
 
         StreamUtils.padBytes (outputStream, 12, 0xFF);
@@ -269,7 +269,7 @@ public class YsfcFile
         int offset = startOfChunks;
         for (final YamahaYsfcChunk chunk: orderedChunks)
         {
-            StreamUtils.writeASCII (out, chunk.getChunkID (), 4);
+            StreamUtils.writeAscii (out, chunk.getChunkID (), 4);
             StreamUtils.writeUnsigned32 (out, offset, true);
             offset += 8 + chunk.getChunkLength (this.version);
         }
@@ -320,7 +320,7 @@ public class YsfcFile
         {
             return Integer.parseInt ("" + versionStr.charAt (0) + versionStr.charAt (2) + versionStr.charAt (4));
         }
-        catch (final NumberFormatException | IndexOutOfBoundsException ex)
+        catch (final NumberFormatException | IndexOutOfBoundsException _)
         {
             return 100;
         }
@@ -375,6 +375,19 @@ public class YsfcFile
             orderedChunks.add (dpfm);
         orderedChunks.add (dwfm);
         orderedChunks.add (dwim);
+
+        // Add unused dummy chunks
+        orderedChunks.add (new YamahaYsfcChunk ("EARP"));
+        orderedChunks.add (new YamahaYsfcChunk ("DARP"));
+        orderedChunks.add (new YamahaYsfcChunk ("ESOM"));
+        orderedChunks.add (new YamahaYsfcChunk ("ESPG"));
+        orderedChunks.add (new YamahaYsfcChunk ("DSOM"));
+        orderedChunks.add (new YamahaYsfcChunk ("DSPG"));
+        orderedChunks.add (new YamahaYsfcChunk ("ECRV"));
+        orderedChunks.add (new YamahaYsfcChunk ("DCRV"));
+        orderedChunks.add (new YamahaYsfcChunk ("ELST"));
+        orderedChunks.add (new YamahaYsfcChunk ("DLST"));
+
         return orderedChunks;
     }
 

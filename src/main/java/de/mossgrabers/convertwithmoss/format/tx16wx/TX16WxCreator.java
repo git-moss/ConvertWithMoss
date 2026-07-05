@@ -48,155 +48,173 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
-    private static final Map<String, String>     CATEGORY_ICONS = new HashMap<> ();
-    private static final Map<LoopType, String>   LOOP_MODES     = new EnumMap<> (LoopType.class);
-    private static final Map<FilterType, String> FILTER_TYPES   = new EnumMap<> (FilterType.class);
-    private static final Map<Integer, String>    FILTER_SLOPES  = new HashMap<> ();
+    private static final String                  IDS_NOTIFY_STORING    = "IDS_NOTIFY_STORING";
+
+    private static final String                  ICON_CLARINET         = "clarinet";
+    private static final String                  ICON_ELECTRONIC_MUSIC = "electronic-music";
+    private static final String                  ICON_FLUTE            = "flute";
+    private static final String                  ICON_GUITAR           = "guitar";
+    private static final String                  ICON_MICROPHONE       = "microphone";
+    private static final String                  ICON_TRUMPET          = "trumpet";
+    private static final String                  ICON_VIOLIN           = "violin";
+    private static final String                  ICON_BALALAIKA        = "balalaika";
+    private static final String                  ICON_PIANO            = "piano";
+    private static final String                  ICON_MARACAS          = "maracas";
+    private static final String                  ICON_ACCORDION        = "accordion";
+    private static final String                  ICON_DRUM_SET         = "drum-set";
+    private static final String                  ICON_CYMBALS          = "cymbals";
+    private static final String                  ICON_BASS_DRUM        = "bass-drum";
+    private static final String                  ICON_XYLOPHONE        = "xylophone";
+
+    private static final Map<String, String>     CATEGORY_ICONS        = new HashMap<> ();
+    private static final Map<LoopType, String>   LOOP_MODES            = new EnumMap<> (LoopType.class);
+    private static final Map<FilterType, String> FILTER_TYPES          = new EnumMap<> (FilterType.class);
+    private static final Map<Integer, String>    FILTER_SLOPES         = new HashMap<> ();
     static
     {
-        CATEGORY_ICONS.put ("brass", "trumpet");
+        CATEGORY_ICONS.put ("brass", ICON_TRUMPET);
         CATEGORY_ICONS.put ("bugle", "bugle");
         CATEGORY_ICONS.put ("cornet", "cornet");
         CATEGORY_ICONS.put ("horn", "french-horn");
         CATEGORY_ICONS.put ("trombone", "trombone");
-        CATEGORY_ICONS.put ("trumpet", "trumpet");
+        CATEGORY_ICONS.put (ICON_TRUMPET, ICON_TRUMPET);
         CATEGORY_ICONS.put ("tuba", "tuba");
 
-        CATEGORY_ICONS.put ("chromatic percussion", "xylophone");
-        CATEGORY_ICONS.put ("marimba", "xylophone");
-        CATEGORY_ICONS.put ("xylophone", "xylophone");
-        CATEGORY_ICONS.put ("vibraphone", "xylophone");
-        CATEGORY_ICONS.put ("glockenspiel", "xylophone");
-        CATEGORY_ICONS.put ("celesta", "xylophone");
-        CATEGORY_ICONS.put ("mallet", "xylophone");
-        CATEGORY_ICONS.put ("kalimba", "xylophone");
+        CATEGORY_ICONS.put ("chromatic percussion", ICON_XYLOPHONE);
+        CATEGORY_ICONS.put ("marimba", ICON_XYLOPHONE);
+        CATEGORY_ICONS.put (ICON_XYLOPHONE, ICON_XYLOPHONE);
+        CATEGORY_ICONS.put ("vibraphone", ICON_XYLOPHONE);
+        CATEGORY_ICONS.put ("glockenspiel", ICON_XYLOPHONE);
+        CATEGORY_ICONS.put ("celesta", ICON_XYLOPHONE);
+        CATEGORY_ICONS.put ("mallet", ICON_XYLOPHONE);
+        CATEGORY_ICONS.put ("kalimba", ICON_XYLOPHONE);
 
-        CATEGORY_ICONS.put ("kick", "bass-drum");
-        CATEGORY_ICONS.put ("bass-drum", "bass-drum");
-        CATEGORY_ICONS.put ("bassdrum", "bass-drum");
-        CATEGORY_ICONS.put ("BD", "bass-drum");
-        CATEGORY_ICONS.put ("cymbal", "cymbals");
-        CATEGORY_ICONS.put ("gong", "cymbals");
-        CATEGORY_ICONS.put ("ride", "cymbals");
-        CATEGORY_ICONS.put ("hi-hat", "cymbals");
-        CATEGORY_ICONS.put ("hihat", "cymbals");
-        CATEGORY_ICONS.put ("hh", "cymbals");
-        CATEGORY_ICONS.put ("hats", "cymbals");
+        CATEGORY_ICONS.put ("kick", ICON_BASS_DRUM);
+        CATEGORY_ICONS.put (ICON_BASS_DRUM, ICON_BASS_DRUM);
+        CATEGORY_ICONS.put ("bassdrum", ICON_BASS_DRUM);
+        CATEGORY_ICONS.put ("BD", ICON_BASS_DRUM);
+        CATEGORY_ICONS.put ("cymbal", ICON_CYMBALS);
+        CATEGORY_ICONS.put ("gong", ICON_CYMBALS);
+        CATEGORY_ICONS.put ("ride", ICON_CYMBALS);
+        CATEGORY_ICONS.put ("hi-hat", ICON_CYMBALS);
+        CATEGORY_ICONS.put ("hihat", ICON_CYMBALS);
+        CATEGORY_ICONS.put ("hh", ICON_CYMBALS);
+        CATEGORY_ICONS.put ("hats", ICON_CYMBALS);
 
-        CATEGORY_ICONS.put ("drum-Set", "drum-set");
-        CATEGORY_ICONS.put ("drumset", "drum-set");
-        CATEGORY_ICONS.put ("kit", "drum-set");
-        CATEGORY_ICONS.put ("808", "drum-set");
-        CATEGORY_ICONS.put ("909", "drum-set");
-        CATEGORY_ICONS.put ("acoustic drum", "drum-set");
+        CATEGORY_ICONS.put ("drum-Set", ICON_DRUM_SET);
+        CATEGORY_ICONS.put ("drumset", ICON_DRUM_SET);
+        CATEGORY_ICONS.put ("kit", ICON_DRUM_SET);
+        CATEGORY_ICONS.put ("808", ICON_DRUM_SET);
+        CATEGORY_ICONS.put ("909", ICON_DRUM_SET);
+        CATEGORY_ICONS.put ("acoustic drum", ICON_DRUM_SET);
         CATEGORY_ICONS.put ("snare", "side-drum");
         CATEGORY_ICONS.put ("tom", "side-drum");
         CATEGORY_ICONS.put ("timpani", "timpani");
 
-        CATEGORY_ICONS.put ("guitar", "guitar");
-        CATEGORY_ICONS.put ("rajao", "guitar");
-        CATEGORY_ICONS.put ("banjo", "guitar");
+        CATEGORY_ICONS.put (ICON_GUITAR, ICON_GUITAR);
+        CATEGORY_ICONS.put ("rajao", ICON_GUITAR);
+        CATEGORY_ICONS.put ("banjo", ICON_GUITAR);
 
-        CATEGORY_ICONS.put ("organ", "accordion");
-        CATEGORY_ICONS.put ("tonewheel", "accordion");
-        CATEGORY_ICONS.put ("accordion", "accordion");
-        CATEGORY_ICONS.put ("hammond", "accordion");
-        CATEGORY_ICONS.put ("farfisa", "accordion");
-        CATEGORY_ICONS.put ("gospel", "accordion");
-        CATEGORY_ICONS.put ("b3", "accordion");
-        CATEGORY_ICONS.put ("c3", "accordion");
+        CATEGORY_ICONS.put ("organ", ICON_ACCORDION);
+        CATEGORY_ICONS.put ("tonewheel", ICON_ACCORDION);
+        CATEGORY_ICONS.put (ICON_ACCORDION, ICON_ACCORDION);
+        CATEGORY_ICONS.put ("hammond", ICON_ACCORDION);
+        CATEGORY_ICONS.put ("farfisa", ICON_ACCORDION);
+        CATEGORY_ICONS.put ("gospel", ICON_ACCORDION);
+        CATEGORY_ICONS.put ("b3", ICON_ACCORDION);
+        CATEGORY_ICONS.put ("c3", ICON_ACCORDION);
 
-        CATEGORY_ICONS.put ("percussion", "maracas");
-        CATEGORY_ICONS.put ("tambourine", "maracas");
-        CATEGORY_ICONS.put ("woodblock", "maracas");
-        CATEGORY_ICONS.put ("triangle", "maracas");
-        CATEGORY_ICONS.put ("cowbell", "maracas");
-        CATEGORY_ICONS.put ("timbale", "maracas");
-        CATEGORY_ICONS.put ("maracas", "maracas");
-        CATEGORY_ICONS.put ("djembe", "maracas");
-        CATEGORY_ICONS.put ("shaker", "maracas");
-        CATEGORY_ICONS.put ("agogo", "maracas");
-        CATEGORY_ICONS.put ("bongo", "maracas");
-        CATEGORY_ICONS.put ("chimes", "maracas");
-        CATEGORY_ICONS.put ("conga", "maracas");
-        CATEGORY_ICONS.put ("cuica", "maracas");
-        CATEGORY_ICONS.put ("tabla", "maracas");
+        CATEGORY_ICONS.put ("percussion", ICON_MARACAS);
+        CATEGORY_ICONS.put ("tambourine", ICON_MARACAS);
+        CATEGORY_ICONS.put ("woodblock", ICON_MARACAS);
+        CATEGORY_ICONS.put ("triangle", ICON_MARACAS);
+        CATEGORY_ICONS.put ("cowbell", ICON_MARACAS);
+        CATEGORY_ICONS.put ("timbale", ICON_MARACAS);
+        CATEGORY_ICONS.put (ICON_MARACAS, ICON_MARACAS);
+        CATEGORY_ICONS.put ("djembe", ICON_MARACAS);
+        CATEGORY_ICONS.put ("shaker", ICON_MARACAS);
+        CATEGORY_ICONS.put ("agogo", ICON_MARACAS);
+        CATEGORY_ICONS.put ("bongo", ICON_MARACAS);
+        CATEGORY_ICONS.put ("chimes", ICON_MARACAS);
+        CATEGORY_ICONS.put ("conga", ICON_MARACAS);
+        CATEGORY_ICONS.put ("cuica", ICON_MARACAS);
+        CATEGORY_ICONS.put ("tabla", ICON_MARACAS);
 
-        CATEGORY_ICONS.put ("piano", "piano");
-        CATEGORY_ICONS.put ("grand", "piano");
-        CATEGORY_ICONS.put ("electric piano", "piano");
-        CATEGORY_ICONS.put ("e-piano", "piano");
-        CATEGORY_ICONS.put ("upright", "piano");
-        CATEGORY_ICONS.put ("digital Piano", "piano");
-        CATEGORY_ICONS.put ("klavier", "piano");
-        CATEGORY_ICONS.put ("clav", "piano");
-        CATEGORY_ICONS.put ("suitcase", "piano");
-        CATEGORY_ICONS.put ("whirly", "piano");
-        CATEGORY_ICONS.put ("wurlitz", "piano");
-        CATEGORY_ICONS.put ("mark I", "piano");
-        CATEGORY_ICONS.put ("rhodes", "piano");
-        CATEGORY_ICONS.put ("ep", "piano");
+        CATEGORY_ICONS.put (ICON_PIANO, ICON_PIANO);
+        CATEGORY_ICONS.put ("grand", ICON_PIANO);
+        CATEGORY_ICONS.put ("electric piano", ICON_PIANO);
+        CATEGORY_ICONS.put ("e-piano", ICON_PIANO);
+        CATEGORY_ICONS.put ("upright", ICON_PIANO);
+        CATEGORY_ICONS.put ("digital Piano", ICON_PIANO);
+        CATEGORY_ICONS.put ("klavier", ICON_PIANO);
+        CATEGORY_ICONS.put ("clav", ICON_PIANO);
+        CATEGORY_ICONS.put ("suitcase", ICON_PIANO);
+        CATEGORY_ICONS.put ("whirly", ICON_PIANO);
+        CATEGORY_ICONS.put ("wurlitz", ICON_PIANO);
+        CATEGORY_ICONS.put ("mark I", ICON_PIANO);
+        CATEGORY_ICONS.put ("rhodes", ICON_PIANO);
+        CATEGORY_ICONS.put ("ep", ICON_PIANO);
 
         CATEGORY_ICONS.put ("church", "pipe-organ");
 
-        CATEGORY_ICONS.put ("pluck", "balalaika");
-        CATEGORY_ICONS.put ("balalaika", "balalaika");
-        CATEGORY_ICONS.put ("Dulcimer", "balalaika");
-        CATEGORY_ICONS.put ("Mandolin", "balalaika");
-        CATEGORY_ICONS.put ("Sitar", "balalaika");
-        CATEGORY_ICONS.put ("Koto", "balalaika");
-        CATEGORY_ICONS.put ("Oud", "balalaika");
+        CATEGORY_ICONS.put ("pluck", ICON_BALALAIKA);
+        CATEGORY_ICONS.put (ICON_BALALAIKA, ICON_BALALAIKA);
+        CATEGORY_ICONS.put ("Dulcimer", ICON_BALALAIKA);
+        CATEGORY_ICONS.put ("Mandolin", ICON_BALALAIKA);
+        CATEGORY_ICONS.put ("Sitar", ICON_BALALAIKA);
+        CATEGORY_ICONS.put ("Koto", ICON_BALALAIKA);
+        CATEGORY_ICONS.put ("Oud", ICON_BALALAIKA);
         CATEGORY_ICONS.put ("harp", "harp");
         CATEGORY_ICONS.put ("lyre", "lyre");
 
-        CATEGORY_ICONS.put ("strings", "violin");
-        CATEGORY_ICONS.put ("string", "violin");
-        CATEGORY_ICONS.put ("viola", "violin");
-        CATEGORY_ICONS.put ("violin", "violin");
-        CATEGORY_ICONS.put ("cello", "violin");
-        CATEGORY_ICONS.put ("double Bass", "violin");
-        CATEGORY_ICONS.put ("pizzicato", "violin");
-        CATEGORY_ICONS.put ("arco", "violin");
-        CATEGORY_ICONS.put ("str.", "violin");
-        CATEGORY_ICONS.put ("fiddle", "violin");
-        CATEGORY_ICONS.put ("bowed", "violin");
-        CATEGORY_ICONS.put ("score", "violin");
+        CATEGORY_ICONS.put ("strings", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("string", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("viola", ICON_VIOLIN);
+        CATEGORY_ICONS.put (ICON_VIOLIN, ICON_VIOLIN);
+        CATEGORY_ICONS.put ("cello", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("double Bass", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("pizzicato", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("arco", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("str.", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("fiddle", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("bowed", ICON_VIOLIN);
+        CATEGORY_ICONS.put ("score", ICON_VIOLIN);
 
-        CATEGORY_ICONS.put ("synth", "electronic-music");
-        CATEGORY_ICONS.put ("electronic-music", "electronic-music");
-        CATEGORY_ICONS.put ("sequence", "electronic-music");
-        CATEGORY_ICONS.put ("sweep", "electronic-music");
-        CATEGORY_ICONS.put ("swell", "electronic-music");
-        CATEGORY_ICONS.put ("mini", "electronic-music");
-        CATEGORY_ICONS.put ("moog", "electronic-music");
-        CATEGORY_ICONS.put ("syn", "electronic-music");
-        CATEGORY_ICONS.put ("dj", "electronic-music");
+        CATEGORY_ICONS.put ("synth", ICON_ELECTRONIC_MUSIC);
+        CATEGORY_ICONS.put (ICON_ELECTRONIC_MUSIC, ICON_ELECTRONIC_MUSIC);
+        CATEGORY_ICONS.put ("sequence", ICON_ELECTRONIC_MUSIC);
+        CATEGORY_ICONS.put ("sweep", ICON_ELECTRONIC_MUSIC);
+        CATEGORY_ICONS.put ("swell", ICON_ELECTRONIC_MUSIC);
+        CATEGORY_ICONS.put ("mini", ICON_ELECTRONIC_MUSIC);
+        CATEGORY_ICONS.put ("moog", ICON_ELECTRONIC_MUSIC);
+        CATEGORY_ICONS.put ("syn", ICON_ELECTRONIC_MUSIC);
+        CATEGORY_ICONS.put ("dj", ICON_ELECTRONIC_MUSIC);
 
-        CATEGORY_ICONS.put ("vocal", "microphone");
-        CATEGORY_ICONS.put ("choir", "microphone");
-        CATEGORY_ICONS.put ("vox", "microphone");
-        CATEGORY_ICONS.put ("voice", "microphone");
-        CATEGORY_ICONS.put ("vocode", "microphone");
-        CATEGORY_ICONS.put ("choral", "microphone");
-        CATEGORY_ICONS.put ("gregorian", "microphone");
-        CATEGORY_ICONS.put ("ahh", "microphone");
-        CATEGORY_ICONS.put ("whisper", "microphone");
-        CATEGORY_ICONS.put ("shout", "microphone");
-        CATEGORY_ICONS.put ("sing", "microphone");
-        CATEGORY_ICONS.put ("microphone", "microphone");
+        CATEGORY_ICONS.put ("vocal", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("choir", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("vox", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("voice", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("vocode", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("choral", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("gregorian", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("ahh", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("whisper", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("shout", ICON_MICROPHONE);
+        CATEGORY_ICONS.put ("sing", ICON_MICROPHONE);
+        CATEGORY_ICONS.put (ICON_MICROPHONE, ICON_MICROPHONE);
 
-        CATEGORY_ICONS.put ("clarinet", "clarinet");
-        CATEGORY_ICONS.put ("klarinette", "clarinet");
-        CATEGORY_ICONS.put ("oboe", "clarinet");
-        CATEGORY_ICONS.put ("bassoon", "clarinet");
-        CATEGORY_ICONS.put ("Musette", "clarinet");
-        CATEGORY_ICONS.put ("Woodwind", "clarinet");
-        CATEGORY_ICONS.put ("flute", "flute");
-        CATEGORY_ICONS.put ("didgeridoo", "flute");
-        CATEGORY_ICONS.put ("Whistle", "flute");
-        CATEGORY_ICONS.put ("Recorder", "flute");
-        CATEGORY_ICONS.put ("bag pipe", "flute");
-        CATEGORY_ICONS.put ("bagpipe", "flute");
+        CATEGORY_ICONS.put (ICON_CLARINET, ICON_CLARINET);
+        CATEGORY_ICONS.put ("klarinette", ICON_CLARINET);
+        CATEGORY_ICONS.put ("oboe", ICON_CLARINET);
+        CATEGORY_ICONS.put ("bassoon", ICON_CLARINET);
+        CATEGORY_ICONS.put ("Musette", ICON_CLARINET);
+        CATEGORY_ICONS.put ("Woodwind", ICON_CLARINET);
+        CATEGORY_ICONS.put (ICON_FLUTE, ICON_FLUTE);
+        CATEGORY_ICONS.put ("didgeridoo", ICON_FLUTE);
+        CATEGORY_ICONS.put ("Whistle", ICON_FLUTE);
+        CATEGORY_ICONS.put ("Recorder", ICON_FLUTE);
+        CATEGORY_ICONS.put ("bag pipe", ICON_FLUTE);
+        CATEGORY_ICONS.put ("bagpipe", ICON_FLUTE);
         CATEGORY_ICONS.put ("harmonica", "harmonica");
         CATEGORY_ICONS.put ("piccolo", "piccolo");
         CATEGORY_ICONS.put ("sax", "saxophone");
@@ -253,7 +271,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "txperf");
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
         final List<File> programFiles = new ArrayList<> ();
         final List<IInstrumentSource> acceptedInstrumentSources = new ArrayList<> ();
@@ -271,7 +289,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (xmlCode.isEmpty ())
             return;
 
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
         {
             writer.write (xmlCode.get ());
@@ -292,7 +310,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             return null;
 
         final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "txprog");
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());
 
@@ -332,9 +350,8 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param folderName The name to use for the sample folder
      * @param instrumentSource The instrument source
      * @return The XML structure
-     * @throws IOException Could not create the metadata
      */
-    private Optional<String> createPresetDocument (final String folderName, final IInstrumentSource instrumentSource) throws IOException
+    private Optional<String> createPresetDocument (final String folderName, final IInstrumentSource instrumentSource)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -414,9 +431,8 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
      *            programs
      * @param programFiles The files of the programs
      * @return The XML structure
-     * @throws IOException Could not create the metadata
      */
-    private Optional<String> createPerformanceDocument (final IPerformanceSource performanceSource, final List<IInstrumentSource> acceptedInstrumentSources, final List<File> programFiles) throws IOException
+    private Optional<String> createPerformanceDocument (final IPerformanceSource performanceSource, final List<IInstrumentSource> acceptedInstrumentSources, final List<File> programFiles)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -440,17 +456,6 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final int midiChannel = acceptedInstrumentSources.get (i).getMidiChannel () + 1;
             slotElement.setAttribute (TX16WxTag.MIDI_CHANNEL, midiChannel == 0 ? "Omni" : Integer.toString (midiChannel));
             slotElement.setAttribute (TX16WxTag.OUTPUT, "Out 1");
-
-            // final Element volumeElement = XMLUtils.addElement (document, slotElement,
-            // TX16WxTag.VOLUME);
-            // volumeElement.setAttribute (TX16WxTag.VALUE, "0 dB");
-            // final Element panElement = XMLUtils.addElement (document, slotElement,
-            // TX16WxTag.PANNING);
-            // panElement.setAttribute (TX16WxTag.VALUE, "0%");
-            // final Element transposeElement = XMLUtils.addElement (document, slotElement,
-            // TX16WxTag.TRANSPOSE);
-            // transposeElement.setAttribute (TX16WxTag.VALUE, "0");
-
         }
 
         return this.createXMLString (document);
@@ -517,7 +522,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         // No key tracking
 
-        /////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Key & Velocity attributes
 
         final Element boundsElement = XMLUtils.addElement (document, regionElement, TX16WxTag.BOUNDS);
@@ -576,7 +581,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             // The whole group can be delayed which is basically the same as the amplitude delay
             soundshapeElement.setAttribute (TX16WxTag.GROUP_DELAY, formatTime (amplitudeEnvelope.getDelayTime ()));
 
-            //////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Amplitude
 
             final double sustain = amplitudeEnvelope.getSustainLevel ();
@@ -601,7 +606,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             pitchbend = pitchbend <= 0 ? 200 : pitchbend;
             addModulationEntry (document, modulationElement, "Pitchbend", "Pitch", pitchbend + "Ct");
 
-            //////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Filter
 
             final Optional<IFilter> optFilter = zone.getFilter ();
@@ -645,7 +650,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     addModulationEntry (document, modulationElement, "Vel", "Filter 1 Freq", (int) Math.round (filterVelocityDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
 
-            //////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Pitch
 
             final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();

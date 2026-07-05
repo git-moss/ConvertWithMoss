@@ -72,7 +72,7 @@ public class WavSampleFileType implements SampleFileType
                 if (sampleFileData instanceof final WavFileSampleData sd && sd.getWaveFile ().getInstrumentChunk () == null)
                     return false;
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 return false;
             }

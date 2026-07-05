@@ -38,7 +38,7 @@ public class Sf2Instrument extends AbstractGroupedZones<Sf2InstrumentZone>
         while (pos < 20 && data[offset + pos] != 0)
             pos++;
         this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
-        this.firstZoneIndex = chunk.getTwoBytesAsInt (offset + 20);
+        this.firstZoneIndex = chunk.getTwoBytesAsUnsignedInt (offset + 20);
     }
 
 
@@ -50,7 +50,7 @@ public class Sf2Instrument extends AbstractGroupedZones<Sf2InstrumentZone>
      */
     public void writeHeader (final ByteArrayOutputStream out) throws IOException
     {
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 20);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (this.name), 20);
         StreamUtils.writeUnsigned16 (out, this.firstZoneIndex, false);
     }
 
@@ -64,7 +64,7 @@ public class Sf2Instrument extends AbstractGroupedZones<Sf2InstrumentZone>
      */
     public static void writeLastHeader (final ByteArrayOutputStream out, final int lastZoneIndex) throws IOException
     {
-        StreamUtils.writeASCII (out, "EOI", 20);
+        StreamUtils.writeAscii (out, "EOI", 20);
         StreamUtils.writeUnsigned16 (out, lastZoneIndex, false);
     }
 

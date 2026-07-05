@@ -89,7 +89,7 @@ public abstract class AbstractListChunk extends RawRIFFChunk
             this.writeData (out);
             this.setData (out.toByteArray ());
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Should never happen
             return new byte [0];

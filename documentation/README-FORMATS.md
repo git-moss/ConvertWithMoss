@@ -35,25 +35,38 @@ The following multi-sample formats are supported:
 * [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
 * [Ableton Sampler](#ableton-sampler)
 * [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000) - read only
-* [Akai MPC Keygroups/Drum](#akai-mpc-keygroups--drum)
-* [Akai MPC Project/Track](#akai-mpc-projecttrack)
-* [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
 * [Akai MESA](#akai-mesa) - read only
+* [Akai MPC Modern](#akai-mpc-modern)
+* [Akai MPC60](#akai-mpc60) - read only
+* [Akai MPC500/MPC1000/MPC2500](#akai-mpc500mpc1000mpc2500) - read only
+* [Akai MPC2000/MPC2000XL/MPC3000](#akai-mpc2000mpc2000xlmpc3000) - read only
+* [Akai S900/S950 image](#akai-s900s950-series-disk-image) - read only
+* [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
 * [Bitwig Multisample](#bitwig-multisample)
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
+* [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
+* [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
+* [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
+* [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
-* [Fairlight CMI 3](#kontakt-nkinkm)
-* [Kontakt NKI/NKM](#kontakt-nkinkm)
+* [Fairlight CMI 3](#fairlight-cmi-3)
+* [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
 * [Logic EXS24](#logic-exs24)
+* [Native Instruments Kontakt](#native-instruments-kontakt)
 * [Native Instruments Maschine](#native-instruments-maschine)
+* [Polyend Tracker](#polyend-tracker)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+* [Roland S-50 Series](#roland-s-50-series) - read only
+* [Roland S-770 Series](#roland-s-770-series) - read only
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
+* [Spectrasonics Omnisphere 3](#spectrasonics-omnisphere-3)
+* [Synthstrom Deluge](#synthstrom-deluge)
 * [TAL Sampler](#tal-sampler)
 * [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
@@ -107,11 +120,23 @@ ConvertWithMoss can extract Sampler and Simpler presets from ADV files as well a
 
 ADV files and their samples need to be placed in the Ableton user library in the correct folders to allow Ableton to open it. Therefore, ConvertWithMoss creates the necessary folder structure which can be simply copied to the user library. If the source has sub-folders the global option *Create folder structure* should be deactivated otherwise it can be quite tedious to collect all the results files with their additional Ableton sub-folder structure.
 
+### Destination Options
+
+* Option to set the *Ableton Version*. Setting it to *12* will add additional Round-Robin information (but cannot be loaded in Ableton 11).
+
 ## Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
 
 This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume and key-range.
 AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library. 
 Only reading of the AKP/AKM formats is supported.
+
+## Akai S900/S950 series disk image
+
+The Akai S900 is a 12-bit sampler, with a variable sample rate from 7.5 kHz through to 40 kHz. Up to 32 samples can be created and stored to disk along with any edit settings. An expanded version, the Akai S950, was released in 1988 alongside the higher end S1000. The S950 soon followed the S900 and offered increased memory and sampling rates. The sample rate was now variable from 7.5 to 48kHz and it could hold up to 99 samples in memory. Memory could be expanded from 750KB to 2.25MB. Unlike the S1000 series, the S900 series allows a sample to loop alternating forwards and backwards.
+
+**Help needed:**
+* I am missing the info about the different velocity modulation settings. If you own one of these machines it would be great if you could provide me some examples with different velocity settings (keeping all other parameters identical).
+* Furthermore, if you have a HFE file with valid data I would like to take a look.
 
 ## Akai S1000/S3000 series disk image
 
@@ -123,14 +148,16 @@ The CD format used with the S1000/S3000 series was a proprietary Akai CD-ROM str
 
 The Akai MESA S3P format is a computer-side representation of Akai S-series program data used by the original MESA (Mac/PC Multi-Editor and Sample Accelerator) librarian/editor software for the [S-3000](#akai-s1000s3000-series-disk-image) family. In practice the .S3P extension contains a classic S3000-style Program (instrument) encoded in a format akin to MIDI SysEx dumps, with the sample waveforms stored externally as accompanying WAV files on a computer. Internally the Program’s structure—keygroups, sample references, mapping, filters and loop parameters—is essentially the same as an Akai S-series Program on disk; MESA simply encapsulates the Akai program data in its own file container for editing and transfer.
 
-## Akai MPC Keygroups / Drum
+## Akai MPC Modern
+
+### Keygroups / Drum
 
 A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV). Both keygroup and drum types are supported.
 
-Restrictions are:
+### Akai MPC Project/Track - read only
 
-* A round robin keygroup can only contain up to 4/8 layers (groups). An error is displayed in this case but the file is converted anyway.
-* Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
+A track file (*.xty) is a MPC v3 specific file that saves all settings, samples, macros, FX and MIDI data associated with a track. A track consists of two elements; the track file itself and a trackData folder containing the samples used within the track (ending with '_\[TrackData\]'). If the track contains a keygroup it is extracted as a multi-sample source.
+A project file (*.xpj) contains all track and project settings. All tracks which contain a keygroup are extracted as a multi-sample source.
 
 ### Source Options
 
@@ -140,14 +167,33 @@ Restrictions are:
 
 * Limit layers to: MPC Firmware 3.4 increased the number of possible layers in a keygroup to 8. This option allows you to choose between 4 (for older firmware revisions) or 8.
 
-## Akai MPC Project/Track
+### Destination Restrictions
 
-A track file (*.xty) is a MPC v3 specific file that saves all settings, samples, macros, FX and MIDI data associated with a track. A track consists of two elements; the track file itself and a trackData folder containing the samples used within the track (ending with '_\[TrackData\]'). If the track contains a keygroup it is extracted as a multi-sample source.
-A project file (*.xpj) contains all track and project settings. All tracks which contain a keygroup are extracted as a multi-sample source.
+* A round robin keygroup can only contain up to 4/8 layers (groups). An error is displayed in this case but the file is converted anyway.
+* Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
 
-### Source Options
+## Akai MPC60
 
-* Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
+Reads Akai MPC60 Set files (*.SET). Such files are monoliths containing the samples as well. This format stores 32 'pads'. Each pad is assigned to 1 MIDI note but they must not and the default is that they are off. Therefore, the pads are simply mapped to MIDI keys in ascending order starting with MIDI note 36.   
+A pad can reference another pad for a velocity split.
+
+The sampling rate is fixed to 40kHz which is quite uncommon and some programs might not be able to play it back.
+
+Floppy disk backups (ending with *.IMG or *.HFE) in MPC60 format can be read as well.
+
+**Several parameters are still unknown. Currently, mainly the samples and names are converted. Please get in touch if you have a MPC60 and can spend some time in analysis by storing different parameter settings.**
+
+## Akai MPC500/MPC1000/MPC2500
+
+Reads Akai MPC500/MPC1000/MPC2500 programs (*.PGM) which reference WAV files. This format stores 64 'pads'. Each pad is assigned to 1 MIDI note and can contain up to four samples with different velocity settings.
+
+**I am missing the info about the filter envelope. If you own one of these machines it would be great if you could provide me some examples with different filter envelope settings (keeping all other parameters identical).**
+
+## Akai MPC2000/MPC2000XL/MPC3000
+
+Reads Akai MPC2000/MPC2000XL/MPC3000 programs (*.PGM). This format stores 64 'pads'. Each pad is assigned to 1 MIDI note and can contain up to three samples with 2 velocity splits. All PGM files can only reference SND's in the same folder as the PGM.
+
+CD-Rom/Harddisk backups (ending with *.ISO, *.IMG or *.HFE) in MPC2000 and MPC2000XL format can be read as well.
 
 ## Bitwig Multisample
 
@@ -207,6 +253,80 @@ Bliss is a multi-platform (Windows, MacOS & Linux) sampler by discoDSP (https://
 It provides support for multi-samples and a bank system (containing up to 128 patches).
 Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipped) with a XML description file and all samples. The samples are stored in FLAC format (16/24 bit). The full format specification is available here: https://github.com/reales/bliss-format.
 
+## Downloadable Sounds (DLS)
+
+The DLS format (*.dls) is a standardized file format developed for storing and distributing collections of digital musical instrument sounds, enabling their use in software synthesizers and hardware devices compatible with the MIDI protocol. It encapsulates audio samples, instrument definitions, articulations, and performance parameters into a single file. Developed in the 1990s initially by the Interactive Audio Special Interest Group (IASIG) and later standardized by the MIDI Manufacturers Association (MMA), with the first formal specification released in 1999.
+There is no write support.
+
+## Elektron Tonverk
+
+The Elektron Tonverk is a dedicated hardware sampler that marks an important milestone for Elektron as its first instrument to support multi-samples. This allows users to map multiple sampled sounds across keys or velocity ranges, creating more expressive and realistic instruments than single-sample playback alone.
+
+ConvertWithMoss supports two Elektron Tonverk formats: the basic multi-sample mapping files (*.elmulti / *.eldrum) and the full preset (*.tvpst).
+
+### Multi-Sample Mapping (.elmulti / .eldrum)
+
+The elmulti format is very basic and limited. It only supports the basic multi-sample layout and does not contain any synthesizer parameters like envelopes or filter settings.
+Furthermore, even this basic setup has some limitations:
+
+* There are no key ranges, the Tonverk always plays the sample with the closest root note. This can lead to different key-ranges than in the source multi-sample.
+* Velocity layers are fixed to the key-ranges (like on the modern Akai MPCs).
+* Duplicated velocity layers always result in round-robin of these samples (they do not sound at the same time).
+* Only 1 Pitch per key zone can be set which means you cannot tune individual samples.
+
+#### Destination Options
+
+* Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
+
+### Preset (.tvpst)
+
+In contrast to the mapping files, a Tonverk preset is a full sound that also contains the synthesizer parameters. All three generator machines are read:
+
+* **Multi**: a multi-sample mapped to key- and velocity-ranges.
+* **One-Shot**: a single sample mapped across the whole keyboard.
+* **Drum**: a kit of eight drum voices, each on its own key with its own settings.
+
+The amplitude envelope (AHD or ADSR), the multi-mode filter together with its envelope, the sample loops, gain and panning are converted. The remaining, synthesizer-specific parameters (arpeggiator, effects, global LFOs and the modulation matrix) have no equivalent in the multi-sample model and are therefore not converted.
+
+When writing, the samples are stored next to the preset and referenced by their relative file name, so the preset can be copied anywhere onto the SD card. The full parameter block is created from a neutral factory template (effects bypassed, LFOs, arpeggiator and modulation neutralized) and only the converted parameters above are filled in from the source.
+
+Note: the Tonverk stores envelope times and the filter cut-off frequency as normalized values using internal, non-published curves. ConvertWithMoss uses documented approximations for these. A Tonverk-to-Tonverk conversion is therefore loss-less, while a conversion to or from a unit-based format (such as Waldorf Quantum/Iridium or the Synthstrom Deluge) is a close approximation.
+
+#### Destination Options
+
+* Output Engine: Selects which machine to write. *Multi-Sample* and *Drum Kit* force that machine; *Auto (from source)* writes a Drum machine when the source looks like a drum kit (a percussion category or up to eight single-key zones) and a Multi machine otherwise.
+* Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
+
+## Ensoniq EPS/EPS16+/ASR-10
+
+The Ensoniq EPS, Ensoniq EPS16+, and Ensoniq ASR-10 were influential hardware samplers from the late 1980s and 1990s, known for their distinctive sound, practical workflow, and integrated sequencing features. The EPS made professional sampling more accessible, while the EPS16+ added effects processing and stereo audio routing. The ASR-10 extended the series with greater processing power, improved editing, and expanded performance capabilities.
+
+The file format is more or less identical on the 3 models with the additions of the added parameters of the later models (all files can be exchanged between the models). However, there are plenty of different storage formats which contain the actual instrument files:
+
+* HFE, GKH, EDE, EDA: These formats contain the data of a full diskette with some additional metadata.
+* IMG: The raw data of a diskette without any addition information.
+* ISO: FAT file system which can contain many EPS/ASR files.
+* EFE: This format contains exactly 1 EPS/ASR file with additional metadata.
+
+ConvertWithMoss can read them all but writing is not supported.
+
+## Ensoniq Mirage
+
+The Ensoniq Mirage, introduced in 1984, was a groundbreaking 8-bit digital sampler that democratized sampling technology for musicians. Priced at around $1,695, it was one of the first affordable samplers on the market—a fraction of the cost of competitors like the Fairlight CMI or E-mu Emulator. The Mirage featured 8-voice polyphony, a small 2-digit LED display, and used 3.5" floppy disks for storing samples and sounds. Despite its limited memory (just 128KB) and lo-fi character, it became hugely popular in the mid-1980s and found its way onto countless recordings across pop, hip-hop, and electronic music.The Mirage was available in both keyboard (DSK-1, DSK-8) and rack-mount (DSM-1) versions.
+
+Its open architecture was fairly unusual for hardware of that era and gave the Mirage an active user community of developers and enthusiasts who continued to push the instrument's boundaries well beyond what Ensoniq originally intended which led to several alternative operating systems. One of them is Triton Soundprocess, it uses its own filesystem which is not supported (if someone has any knowledge about it, please get in touch).
+
+This disk format is proprietary with a complex layout. Each disk contains 3 sounds. Each sound consists of a lower and upper layer. Each layer can have up to 8 samples. Each layer has 4 programs with different parameter settings. The programs of the lower and upper layer can be selected differently which gives 4x4=16 different configurations! To make things confusing these sounds are interleaved with OS and sequence data on the disk. ConvertWithMoss can read such disk files (*.hfe, *.img or *.edm).
+
+### Issues and Workarounds
+
+1. Since the format does not provide any naming, the name of the files are used. If a file contains exactly 2 dashes the name is split into 3 parts and they are used for the 3 sounds. E.g. label a file like 'Name1-Name2-Name3.img' to get a proper names for the multi-samples.
+2. To keep things manageable only the matching programs are exported (e.g. Program 1 from the lower layer with Program 1 from the upper layer). This means each disk will result to 3x4=12 multi-samples.
+3. Another issue is that the format does not store the root note of the samples. The pitch is only determined by the sample-rate and the tuning. The current sample-rate is extracted from the disk as well but in theory it could be totally wrong.
+4. The filter cutoff value is not fully understood. Therefore, settings which produce no sound are ignored and noi filter is set in such a case.
+5. There can be some very short loop lengths (like 256 samples) which might cause a playback issue with some multi-sample players.
+6. It uses quite uncommon sample rate which might cause a playback issue with some multi-sample players.
+
 ## Expert Sleepers disting EX
 
 The disting EX is a multi-function Eurorack module which provides many different algorithms. On of them is the SD Multisample algorithm which is an eight voice polyphonic, three part multi-timbral, sample playback instrument, playing WAV files from the MicroSD card. It can have up to 3 input CV/gate pairs, or can be played via MIDI or I2C. It supports both velocity switches and round robins per sample.
@@ -225,11 +345,68 @@ Note that this will not work with IIx or earlier voices despite the same VC exte
 
 Filter parameters are currently not supported, but then, as a variable clock DAC sampler, the original hardware had no interpolation anyway.
 
-## Kontakt NKI/NKM
+## ISO/IMG Files
+
+Searches for files ending with *.ISO or *.IMG. Currently, the following formats can be handled:
+
+* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
+* [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
+* [Roland S-50 series](#roland-s-50-series)
+* [Roland S-770 series](#roland-s-770-series)
+
+## Korg KSC/KMP/KSF
+
+The KSC/KMP/KSF format (*.KSC, *.KMP, *.KSF) was first introduced in the Korg Trinity workstation (1995) and since then supported in many Korg workstations and entertainment keyboards up to the latest Korg Nautilus (2020). The following devices are known to support the format:
+
+* Trinity
+* Triton
+* OASYS
+* M3
+* Kronos
+* KROSS (only for pads)
+* PA1X/PA800/PA2X/PA3X/PA4X
+* Nautilus
+
+The format is documented in detail (more or less) in the appendix of the respective parameter guides. A multi-sample is distributed across 4 types of files which makes the handling a bit tricky:
+
+* KSF: One KSF file contains one single mono sample. Even if the KSF files can store stereo files, they do not work. Therefore, they need to be split into 2 KSF files. The format only supports uncompressed 8 or 16 bit samples up to 48kHz. Files in other formats are automatically converted.
+* KMP: The KMP format contains 1 layer of a multi-sample, which means there are only key splits but no groups and no velocity settings. The file references several KSF files which contain the sample data for each key region.
+* KSC: A KSC contains a list of KMP files (and sometimes other files) which allows to load them in one go. It contains no other additional information.
+* PCG: This contains a full program which combines several KMPs into a complete multi-sample (stereo positioning and velocity layers). Since these are different for each workstation and not publicly documented, they are currently not supported.
+
+### PA series
+
+The .PCM format belongs to the KORG Family of PA Models. It is used in combination with a KMP file which has a different format as the KMP/KSF combination. **These formats are not supported.** 
+
+### Source Options
+
+* Use KSC files as the input: By default ConvertWithMoss searches for KPM files. If enabled, KSC files are searched and the KMP files referenced in a KSC file are loaded (if found). Furthermore, it tries to combine stereo-split files into stereo files by the prefixes of the KMP names and the long names stored in the KSF files (they normally end with -L for the left and -R for the right channel).
+
+### Destination Options
+
+* Enable the +12dB option: Increases the volume of each sample by +12dB. Use for low volume samples.
+* Set sample volume to +99: If enabled, sets all sample volumes to +99. Use for very low volume samples.
+
+## Korg wavestate/modwave
+
+The korgmultisample format is currently used by the Korg wavestate and modwave keyboards as well as their VST plugin siblings. Files in that format (*.korgmultisample) can be opened with the Korg Sample Builder software and transferred to the keyboard.
+
+Since the format is pretty simple all data stored in the file is available for the conversion.
+
+Since the format supports only one group of a multi-sample, multiple destination files are created for each group available in the source. If there is more than one group in the source the name of the created file has the velocity range of the group added. Using that information a multi-sample with up to 4 groups can be created as a Performance in the device.
+
+## Logic EXS24
+
+The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digital audio workstation. It is primarily used for storing and playback of sampled instruments and sounds within Logic Pro. The format allows for comprehensive mapping and editing of samples, as well as providing various modulation and performance options.
+
+The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. *The number of folders can be configured*.
+
+## Native Instruments Kontakt
 
 Kontakt is a sampler from Native Instruments which uses a plethora of file formats which all are sadly proprietary and therefore no documentation is publicly available. Nevertheless, several people analyzed the format and by now sufficient information is available to provide the support as the source.
 
-However, the format changed many times across the different Kontakt versions. So far, the following formats are known and supported as a source:
+However, the format changed many times across the different Kontakt versions. So far, the following formats (NKI/NKM) are known and supported as a source:
 
 | Kontakt Version |
 | :-------------- |
@@ -253,50 +430,6 @@ If selected as a source and 'Performance' is selected as the destination type, o
 
 * Output Format: Currently, only the Kontakt 1 format is supported which sadly does not contain any metadata information.
 
-## Korg KSC/KMP/KSF
-
-The KSC/KMP/KSF format (*.KSC, *.KMP, *.KSF) was first introduced in the Korg Trinity workstation (1995) and since then supported in many Korg workstations and entertainment keyboards up to the latest Korg Nautilus (2020). The following devices are known to support the format:
-
-* Trinity
-* Triton
-* OASYS
-* M3
-* Kronos
-* KROSS (only for pads)
-* PA1X/PA800/PA2X/PA3X/PA4X
-* Nautilus
-
-The format is documented in detail (more or less) in the appendix of the respective parameter guides. A multi-sample is distributed across 4 types of files which makes the handling a bit tricky:
-
-* KSF: One KSF file contains one single mono sample. Even if the KSF files can store stereo files, they do not work. Therefore, they need to be split into 2 KSF files. The format only supports uncompressed 8 or 16 bit samples up to 48kHz. Files in other formats are automatically converted.
-* KMP: The KMP format contains 1 layer of a multi-sample, which means there are only key splits but no groups and no velocity settings. The file references several KSF files which contain the sample data for each key region.
-* KSC: A KSC contains a list of KMP files (and sometimes other files) which allows to load them in one go. It contains no other additional information.
-* PCG: This contains a full program which combines several KMPs into a complete multi-sample (stereo positioning and velocity layers). Since these are different for each workstation and not publicly documented, they are currently not supported.
-
-### Source Options
-
-* Use KSC files as the input: By default ConvertWithMoss searches for KPM files. If enabled, KSC files are searched and the KMP files referenced in a KSC file are loaded (if found). Furthermore, it tries to combine stereo-split files into stereo files by the prefixes of the KMP names and the long names stored in the KSF files (they normally end with -L for the left and -R for the right channel).
-
-### Destination Options
-
-* Write group KMPs: Writes a KMP for each group in the source multi-sample. This option will be ignored for split stereo source files.
-* Enable the +12dB option: Increases the volume of each sample by +12dB. Use for low volume samples.
-* Set sample volume to +99: If enabled, sets all sample volumes to +99. Use for very low volume samples.
-
-## Korg wavestate/modwave
-
-The korgmultisample format is currently used by the Korg wavestate and modwave keyboards as well as their VST plugin siblings. Files in that format (*.korgmultisample) can be opened with the Korg Sample Builder software and transferred to the keyboard.
-
-Since the format is pretty simple all data stored in the file is available for the conversion.
-
-Since the format supports only one group of a multi-sample, multiple destination files are created for each group available in the source. If there is more than one group in the source the name of the created file has the velocity range of the group added. Using that information a multi-sample with up to 4 groups can be created as a Performance in the device.
-
-## Logic EXS24
-
-The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digital audio workstation. It is primarily used for storing and playback of sampled instruments and sounds within Logic Pro. The format allows for comprehensive mapping and editing of samples, as well as providing various modulation and performance options.
-
-The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. *The number of folders can be configured*.
-
 ## Native Instruments Maschine
 
 ### MSND
@@ -319,11 +452,54 @@ Note that Maschine contains an auto-sampler with which you can sample plugins or
 
 * Output Format: Select the Maschine output format. Selecting **Maschine 1** will create a MSND file, otherwise a MXSND file is created.
 
+## Polyend Tracker
+
+The Polyend Tracker (and the Tracker Mini / Tracker+) is a standalone hardware sampler, sequencer and tracker. Its instrument format (file ending *pti*) is a single binary file which holds exactly one 16-bit / 44.1kHz PCM sample (mono or stereo) together with the instrument parameters. Both reading and writing are supported.
+
+When reading, the play mode, the playback start/end and loop points, the loop mode (forward / backward / ping-pong), the filter (low-, high- and band-pass with cutoff, resonance and the cutoff envelope), the amplitude and pitch envelopes as well as the volume, panning and tuning are converted. Instruments in one of the slice play modes are split into one sample zone per slice; each slice is trimmed to its own audio and mapped chromatically to a single key starting at MIDI note 60 (middle C).
+
+When writing, the play mode (one-shot or one of the loop modes), the start/end and loop points, the filter, the amplitude/cutoff/pitch envelopes as well as the volume, panning and tuning are stored. The audio is converted to 16-bit / 44.1kHz; mono or stereo is preserved.
+
+### Limitations
+
+* A Polyend Tracker instrument holds only a single sample. When converting a multi-sample, the zone whose key range covers MIDI note 60 (middle C) is stored - otherwise the first zone - and all other zones are ignored (a note is logged).
+* The wavetable and granular play modes are read as a plain one-shot sample. The wavetable/granular specific parameters, the LFOs and the delay/reverb sends and overdrive are not converted.
+* The playback start/end, loop and slice positions are stored proportionally to the sample length (0 to 65535). Loop points can therefore differ by a tiny fraction of the sample length after a round-trip.
+* The filter cutoff frequency mapping is an approximation since the Tracker's normalized cutoff to frequency curve is internal and not part of the format.
+* This format has **not** been verified on physical Polyend Tracker hardware. It was validated against the official *tracker-lib* reference implementation and round-trip conversions.
+
 ## Propellerhead Reason NN-XT
 
 The Propellerhead Reason NN-XT is a software sampler that is included in the Reason software package. Reason is a digital audio workstation (DAW) software developed by Propellerhead Software. It allows users to load and play back sampled sounds, such as instruments or drum hits. The file ending is *sxt*.
 
 There are metadata fields for creator and a creator URL.
+
+## Renoise
+
+Renoise is a tracker-based digital audio workstation. Its instrument format (file ending *xrni*) is a ZIP archive which contains an *Instrument.xml* description file and all samples (in FLAC format) in a *SampleData* folder. Both reading and writing are supported. Files saved by Renoise 3.0 up to 3.5 (document version 24 - 34) can be read; created files use document version 33 (Renoise 3.3) so they load in newer Renoise versions as well as in the Renoise Redux plug-in.
+
+The converter maps the key and velocity ranges, root note, tuning (transpose + fine-tune), volume, panning and the loop (off / forward / backward / ping-pong). The amplitude envelope is stored as the AHDSR volume modulation device. A per-sample filter (low-pass, high-pass, band-pass and band-stop) is stored as the native sampler filter inside the modulation set together with its cutoff, resonance and an optional cutoff envelope; a pitch envelope is stored as well. The instrument comment is used as the description metadata. Samples whose velocity ranges are identical are combined into one velocity layer (group); if the keyzone overlapping mode is set to *Cycle* or *Random*, overlapping samples are treated as round-robin.
+
+Renoise has no loop cross-fade parameter, so by default loops are written exactly as they are (faithful). If the loop cross-fade processing option is enabled, the cross-fade is baked into the sample audio so that looped samples wrap seamlessly - this is useful for source formats whose loops contain a discontinuity (e.g. some SoundFonts).
+
+The following limitations apply:
+
+* Renoise uses a 10 octave keyboard (notes 0 to 119), so notes above B-9 are clamped when writing.
+* The filter cutoff frequency mapping is an approximation since Renoise's normalized cutoff to frequency curve is internal and not part of the format.
+* There are no dedicated category, author or keyword fields in the format; only the name and a free-text comment are available.
+* Samples stored as 32-bit FLAC inside a source instrument cannot be transcoded (a limitation of the bundled FLAC decoder) and are skipped with an error.
+
+## Roland S-50 Series
+
+The Roland S-50 series (S-50, S-330, S-550, W-30), introduced in the mid-1980s, represented a significant development in digital sampling technology. Based on 12-bit pulse-code modulation (PCM) sampling, the system combined waveform acquisition, editing, and keyboard performance capabilities within a single instrument. The series was notable for its integration of video-based graphical editing, enabling detailed visualization and manipulation of sampled waveforms.
+
+The format of the S-50 is slightly different to the one used on the other models. All of them store 12-bit samples with 15/30kHz sample rate. It is a good idea to up-sample them (with the Processing feature) to e.g. 16-bit/44.1kHz to prevent compatibility issues. Only reading is supported.
+
+## Roland S-770 Series
+
+The Roland S-770 series comprises a family of digital PCM samplers introduced between 1989 and 1995, including the S-750, S-770, S-760, DJ-70, DJ-70 MkII, and SP-700. These instruments share a common sampling architecture based on high-resolution PCM playback, digital resonant Time Variant Filters (TVFs), and sophisticated modulation and envelope generators. The flagship S-770 expanded the platform with advanced multisampling capabilities, internal digital signal processing, and video-based graphical editing, while the later S-760 provided similar functionality in a more compact and cost-effective form. The DJ-70 and SP-700 adapted the technology for performance-oriented and phrase-sampling applications.
+
+Only reading is supported. But it supports both HD/CD-Rom and diskette image files. Also files that span multiple diskettes are supported (all disk files need to be in the same folder).
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
@@ -392,6 +568,70 @@ There are metadata fields for creator and some description specified in the form
 ### Destination Options
 
 * Re-sample 24-bit to 16-bit: If enabled, 24-bit source samples are converted to 16-bit files. Use this prevent issues with certain software which can only handle 16-bit samples.
+
+## Spectrasonics Omnisphere 3
+
+Spectrasonics Omnisphere 3 is a software synthesizer designed for music production, sound design, and film scoring. It combines sample-based sounds with multiple synthesis methods and includes a large library of presets, effects, and modulation tools.
+Its user interface supports the import of single samples but not multi-samples. But ConvertWithMoss can create multi-samples as well. Factory files have a slightly different format and are not supported.
+
+Several file types are relevant:
+
+* .db: these files contain one or more samples.
+* .zmap: these files contain the basic multi-sample layout and reference one or more db files.
+* .prt_omn: these files represent one preset which reference one to four zmap files.
+
+The db files need to be in the same folder as the zmap file. The presets need to be in the Omnisphere patches folder under User.
+
+First locate the Omnisphere STEAM folder on your computer. On Windows it is normally:
+
+> `C:\ProgramData\Spectrasonics\STEAM`
+
+The db and zmap files are stored in:
+
+> `<STEAM_FOLDER>\Omnisphere\Settings Library\Patches\User`
+
+The preset files are stored in:
+
+> `<STEAM_FOLDER>\Omnisphere\Soundsources\User`
+
+You can create sub-folders in these folders as well.
+
+### Reading preset files
+
+When reading preset files the related db and zmap files must be in the sub-folder `Soundsources\User` which is either in the same directory as the zmap file or in an up-wards directory.
+
+### Writing preset files
+
+ConvertWithMoss creates a sub-folder for each source multi-sample. This folder contains all db files as well as the zmap and prt_omn files. Copy the whole folder to
+
+> `<STEAM_FOLDER>\Omnisphere\Soundsources\User`
+
+then move the prt_omn file to 
+
+> `<STEAM_FOLDER>\Omnisphere\Settings Library\Patches\User`
+
+**Note 1**: You can create a sub-folder with the name of a category, e.g. "Vox Humana" and put it there.
+**Note 2**: When opening Omnisphere both the presets and soundsources need to be rescanned! If only the presets are scanned an error shows up that the soundsource cannot be located!
+
+## Synthstrom Deluge
+
+The Synthstrom Audible Deluge is a standalone hardware synthesizer, sampler and sequencer. Its sounds are stored as XML files (file ending *xml*) on the SD-card; a *sound* holds a (multi-)sample based synth voice and a *kit* holds a set of drums. The samples themselves are referenced by a path which is relative to the SD-card root (e.g. *SAMPLES/My Patch/C3.wav*). Both reading and writing are supported.
+
+The Deluge has gone through several firmware generations which changed how the XML is written: the official firmware (up to v4) stores the parameters as child elements while the community firmware additionally writes them as attributes. When reading, **both** variants - and both *sound* and *kit* files - are understood, so patches authored on either firmware are translated without losing information. The sample mapping (key ranges), the original root note (from the *transpose* / *cents* offset, or the fixed root note of a drum), the sample playback start/end and loop points, the loop mode (one-shot or loop), the reversed flag, the low- and high-pass filter (with the various filter modes), the amplitude and filter envelopes, and the filter keyboard-tracking, filter velocity and velocity-to-volume modulations are converted.
+
+When writing, a multi-sample is stored as a *sound* patch with a single sample oscillator whose zones are written as a *sampleRanges* list. The file is written in the **element-based form of the official v4 firmware** (`firmwareVersion="4.1.0-alpha"`), so it loads on both the official v4 firmware and on the community firmware - no community-only features are used. The output mirrors the Deluge SD-card layout: the patch is written to a *SYNTHS* sub-folder and its samples to *SAMPLES/&lt;name&gt;/* next to it, and the *fileName* references are written relative to that card root.
+
+The Deluge has no loop cross-fade parameter of its own, so - exactly like the Renoise format - a loop cross-fade is baked into the looped sample audio. This happens automatically (there is no extra option) whenever a forward loop has a cross-fade: set one with the *Set fixed loop-crossfade* processing option, or it is taken from the source. This removes clicks at the loop point of samples whose loop was not designed to be click-free without a cross-fade (many auto-sampled instruments rely on the host applying a cross-fade at play time). With no cross-fade set, the loop is written exactly as it is.
+
+### Destination Options
+
+* Options to write/update [WAV Chunk Information](#wav-chunk-information).
+
+### Limitations
+
+* A Deluge *sound* has a single sample oscillator with one sample per key, therefore only one velocity layer is written. If a source contains several velocity layers, the loudest zone of each key is kept and the others are ignored.
+* The amplitude envelope attack, decay and release times are converted using the Deluge's internal rate tables (attack about 0.7 ms .. 3 s, decay/release about 6 ms .. 6 s); times outside that range are clamped. The filter cut-off / resonance are stored as the Deluge's internal 32-bit parameter values and are a musically faithful approximation rather than an exact match.
+* Effects and device-specific modulation are not converted. The Deluge's reverb, delay, chorus / mod-FX, distortion, EQ, sidechain/compressor and arpeggiator are outside the multi-sample model, and modulation sources such as the LFOs are not carried because their parameters (rate ranges, shapes, sync, destinations) differ from one sampler to the next and have no portable representation. A patch that relies on them - for example a pad whose long tail comes from reverb and delay rather than a long amplitude release - therefore sounds drier or shorter after conversion, even though its oscillator, envelopes and filter are translated faithfully.
 
 ## TAL Sampler
 

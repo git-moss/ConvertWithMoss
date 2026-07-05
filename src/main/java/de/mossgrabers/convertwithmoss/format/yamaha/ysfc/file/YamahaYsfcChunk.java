@@ -76,13 +76,15 @@ public class YamahaYsfcChunk
      */
     public void read (final InputStream in, final int version) throws IOException
     {
-        this.chunkID = StreamUtils.readASCII (in, 4);
+        this.chunkID = StreamUtils.readAscii (in, 4);
+        System.out.println ("\n" + this.chunkID);
+
         this.chunkLength = (int) StreamUtils.readUnsigned32 (in, true);
         this.numItemsInChunk = (int) StreamUtils.readUnsigned32 (in, true);
 
         for (int i = 0; i < this.numItemsInChunk; i++)
         {
-            final String magic = StreamUtils.readASCII (in, 4);
+            final String magic = StreamUtils.readAscii (in, 4);
             switch (magic)
             {
                 case MAGIC_ENTRY:
@@ -111,21 +113,21 @@ public class YamahaYsfcChunk
     {
         this.updateChunkLength (version);
 
-        StreamUtils.writeASCII (out, this.chunkID, 4);
+        StreamUtils.writeAscii (out, this.chunkID, 4);
         StreamUtils.writeUnsigned32 (out, this.chunkLength, true);
         StreamUtils.writeUnsigned32 (out, this.numItemsInChunk, true);
 
         if (this.entryListEntries.isEmpty ())
             for (final byte [] dataArray: this.dataArrays)
             {
-                StreamUtils.writeASCII (out, MAGIC_DATA, 4);
+                StreamUtils.writeAscii (out, MAGIC_DATA, 4);
                 StreamUtils.writeUnsigned32 (out, dataArray.length, true);
                 out.write (dataArray);
             }
         else
             for (final YamahaYsfcEntry entryListChunk: this.entryListEntries)
             {
-                StreamUtils.writeASCII (out, MAGIC_ENTRY, 4);
+                StreamUtils.writeAscii (out, MAGIC_ENTRY, 4);
                 entryListChunk.write (out, version);
             }
     }

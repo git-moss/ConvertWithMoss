@@ -13,10 +13,10 @@ import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -37,7 +37,7 @@ public class YamahaYsfcCreatorUI implements ICoreTaskSettings
         OUTPUT_FORMAT_BY_NAME.put ("X8U", Integer.valueOf (2));
         OUTPUT_FORMAT_BY_NAME.put ("X8L", Integer.valueOf (3));
         // IMPROVE MOXF - Activate when MOXF writing is fixed
-        // OUTPUT_FORMAT_BY_NAME.put ("X6W", Integer.valueOf (4));
+        // OUTPUT_FORMAT_BY_NAME.put ("X6W", Integer.valueOf (4))
     }
 
     private ToggleGroup outputFormatToggleGroup;
@@ -49,7 +49,7 @@ public class YamahaYsfcCreatorUI implements ICoreTaskSettings
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 

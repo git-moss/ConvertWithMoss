@@ -96,7 +96,8 @@ public enum InfoRiffChunkId implements RiffChunkId
     INFO_TVER("Version", "TVER"),
     INFO_IWMU("Watermark URL", "IWMU"),
     INFO_IWRI("Written By", "IWRI"),
-    INFO_YEAR("Year", "YEAR");
+    INFO_YEAR("Year", "YEAR"),
+    INFO_ID3("ID3", "ID3 ");
 
 
     private final int    fourCC;

@@ -20,6 +20,9 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class YamahaYsfcKeybank implements IStreamable
 {
+    /** 1 LSB = 1.171875 cent */
+    private static final double        CENT_STEP          = 1.171875;
+
     private final YamahaYsfcFileFormat version;
 
     private int                        keyRangeLower;
@@ -196,7 +199,7 @@ public class YamahaYsfcKeybank implements IStreamable
         out.write (this.channels);
 
         // Loop Tune - always 2 for Montage, 0 for MOXF
-        out.write (0x00);
+        out.write (isVersion1 ? 0x00 : this.loopTune);
         // Play Form, always 2
         out.write (isVersion1 ? 0x00 : 0x02);
         // 16-bit linear - Montage: 16-bit: 0x05, MOXF - 16-bit: 0x0, 8-bit: 0x02
@@ -264,7 +267,7 @@ public class YamahaYsfcKeybank implements IStreamable
         StreamUtils.padBytes (out, 2, 0x00);
 
         // Size of all channels - only stereo samples with both mono of same length are supported
-        StreamUtils.writeUnsigned32 (out, this.channels * this.sampleLength, true);
+        StreamUtils.writeUnsigned32 (out, this.channels * (long) this.sampleLength, true);
 
         // Padding
         StreamUtils.padBytes (out, 4, 0x00);
@@ -669,17 +672,6 @@ public class YamahaYsfcKeybank implements IStreamable
 
 
     /**
-     * Get the loop tuning.
-     *
-     * @return The loop tuning
-     */
-    public int getLoopTune ()
-    {
-        return this.loopTune;
-    }
-
-
-    /**
      * Set the number of channels.
      *
      * @param channels The number of channels, 1 = Mono, 2 = Stereo
@@ -709,5 +701,79 @@ public class YamahaYsfcKeybank implements IStreamable
     public void setLoopMode (final int loopMode)
     {
         this.loopMode = loopMode;
+    }
+
+
+    /**
+     * Get the loop tuning.
+     *
+     * @return The loop tuning in cents
+     */
+    public double getLoopTune ()
+    {
+        return raw7BitToCent (this.loopTune);
+    }
+
+
+    /**
+     * Set the loop tuning.
+     *
+     * @param loopTune The loop tuning in cents
+     */
+    public void setLoopTune (final double loopTune)
+    {
+        this.loopTune = centToRaw7Bit (loopTune);
+    }
+
+
+    /**
+     * Converts a raw 7-bit value (0-127) into cents.
+     *
+     * 7-bit two's complement mapping: 0..63 -> 0..63 64..127 -> -64..-1
+     *
+     * Examples: 0 -> 0.0 cent 63 -> +73.828125 cent 64 -> -75.0 cent 127 -> -1.171875 cent
+     *
+     * @param raw unsigned 7-bit value (0-127)
+     * @return cent value
+     */
+    public static double raw7BitToCent (final int raw)
+    {
+        if (raw < 0 || raw > 127)
+            throw new IllegalArgumentException ("7-bit value must be in range 0-127");
+
+        int signed;
+
+        // Convert unsigned 7-bit -> signed 7-bit two's complement
+        if (raw < 64)
+            signed = raw;
+        else
+            signed = raw - 128;
+
+        return signed * CENT_STEP;
+    }
+
+
+    /**
+     * Converts a cent value back into a raw 7-bit value (0-127).
+     *
+     * Valid cent range: -75.0 .. +73.828125
+     *
+     * The result is rounded to the nearest representable step.
+     *
+     * Examples: 0.0 -> 0 73.828125 -> 63 -75.0 -> 64 -1.171875 -> 127
+     *
+     * @param cent cent value
+     * @return raw 7-bit value (0-127)
+     */
+    public static int centToRaw7Bit (final double cent)
+    {
+        final int signed = (int) Math.round (cent / CENT_STEP);
+        if (signed < -64 || signed > 63)
+            throw new IllegalArgumentException ("Cent value out of range");
+
+        // Convert signed -> unsigned 7-bit two's complement
+        if (signed >= 0)
+            return signed;
+        return signed + 128;
     }
 }

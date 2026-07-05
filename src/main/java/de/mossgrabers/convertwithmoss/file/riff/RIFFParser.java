@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.stream.ImageInputStream;
 
@@ -35,15 +36,15 @@ public class RIFFParser
     private RIFFVisitor                     visitor;
 
     /** List of data chunks the visitor is interested in. */
-    private final HashSet<RawRIFFChunk>     dataChunks          = new HashSet<> ();
+    private final Set<RawRIFFChunk>         dataChunks          = new HashSet<> ();
     /** List of property chunks the visitor is interested in. */
-    private HashSet<RawRIFFChunk>           propertyChunks;
+    private Set<RawRIFFChunk>               propertyChunks;
     /** List of collection chunks the visitor is interested in. */
-    private HashSet<RawRIFFChunk>           collectionChunks;
+    private Set<RawRIFFChunk>               collectionChunks;
     /** List of stop chunks the visitor is interested in. */
-    private final HashSet<Integer>          stopChunkTypes      = new HashSet<> ();
+    private final Set<Integer>              stopChunkTypes      = new HashSet<> ();
     /** List of group chunks the visitor is interested in. */
-    private final HashSet<RawRIFFChunk>     groupChunks         = new HashSet<> ();
+    private final Set<RawRIFFChunk>         groupChunks         = new HashSet<> ();
 
     /** Reference to the input stream. */
     private RIFFPrimitivesInputStream       in;
@@ -155,7 +156,7 @@ public class RIFFParser
 
         if (id == CommonRiffChunkId.RIFF_ID.getFourCC ())
         {
-            this.parseFORM (null);
+            this.parseFORM (null, true);
             return;
         }
 
@@ -185,14 +186,18 @@ public class RIFFParser
      * Parses a FORM group.
      *
      * @param props The property chunks
+     * @param isTopForm If the form is a root chunk
      * @throws ParseException Indicates a parsing error
      * @throws IOException Could not read data from the stream
      */
-    private void parseFORM (final Map<Integer, RawRIFFChunk> props) throws ParseException, IOException
+    private void parseFORM (final Map<Integer, RawRIFFChunk> props, final boolean isTopForm) throws ParseException, IOException
     {
         long size = this.in.readUDWORD ();
         final long offset = this.getPosition ();
         final int type = this.in.readFourCC ();
+        if (isTopForm)
+            this.visitor.checkTopChunk (type);
+
         if (!isGroupType (type))
             throw new ParseException ("Invalid FORM Type: \"" + RiffChunkId.toASCII (type) + "\"");
 
@@ -213,9 +218,9 @@ public class RIFFParser
                 this.visitor.enterGroup (chunk);
         }
 
+        final long finish = offset + size;
         try
         {
-            final long finish = offset + size;
             while (this.getPosition () < finish)
             {
                 final long idscan = this.getPosition ();
@@ -229,7 +234,7 @@ public class RIFFParser
                 }
 
                 if (id == CommonRiffChunkId.RIFF_ID.getFourCC ())
-                    this.parseFORM (props);
+                    this.parseFORM (props, false);
                 else if (id == CommonRiffChunkId.LIST_ID.getFourCC ())
                     this.parseLIST (props);
                 else if (isLocalChunkID (id))
@@ -249,9 +254,12 @@ public class RIFFParser
                 this.in.align ();
             }
         }
-        catch (final EOFException e)
+        catch (final EOFException _)
         {
-            chunk.setParserMessage ("Unexpected EOF after " + NumberFormat.getInstance ().format (this.getPosition () - offset) + " bytes");
+            final NumberFormat numberInstance = NumberFormat.getInstance ();
+            chunk.setParserMessage ("Unexpected EOF after " + numberInstance.format (this.getPosition () - offset) + " bytes. Expected " + numberInstance.format (finish) + " bytes");
+            if (!this.ignoreChunkErrors)
+                throw new IOException (chunk.getParserMessage ());
         }
         finally
         {
@@ -637,7 +645,7 @@ public class RIFFParser
             {
                 sb.append (" near ").append (this.iin.getStreamPosition ()).append (" 0x").append (Long.toHexString (this.iin.getStreamPosition ()));
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 sb.append (", no further information available.");
             }

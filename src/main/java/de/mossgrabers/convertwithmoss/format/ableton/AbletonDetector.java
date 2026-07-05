@@ -26,6 +26,7 @@ import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.algorithm.ZoneSplitter;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -38,6 +39,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -88,7 +90,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     {
         try (final InputStream in = new GZIPInputStream (new FileInputStream (file)))
         {
-            final String multiSampleFileContent = StreamUtils.readUTF8 (in);
+            final String multiSampleFileContent = StreamUtils.readUtf8 (in);
             return this.readMetadataFile (file, multiSampleFileContent);
         }
         catch (final IOException ex)
@@ -184,7 +186,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         final String name = FileUtils.getNameWithoutType (sourceFile);
 
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
         final IMetadata metadata = multisampleSource.getMetadata ();
         parseMetadata (deviceElement, metadata, creator);
 
@@ -231,7 +233,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final String relativePathType = getValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH_TYPE);
             type = Integer.parseInt (relativePathType);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             throw new IOException (Functions.getMessage (ERR_MISSING_TAG, AbletonTag.TAG_RELATIVE_PATH_TYPE));
         }
@@ -268,7 +270,6 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         final Element samplePartsElement = getRequiredElement (mapElement, AbletonTag.TAG_SAMPLE_PARTS);
 
         final IGroup group = new DefaultGroup ("Group #1");
-        multisampleSource.setGroups (Collections.singletonList (group));
 
         for (final Element multiSamplePartElement: XMLUtils.getChildElementsByName (samplePartsElement, AbletonTag.TAG_MULTI_SAMPLE_PART, false))
         {
@@ -286,6 +287,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 group.addSampleZone (zone);
             }
         }
+
+        // Round-robin support
+        multisampleSource.setGroups (getBooleanValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_ENABLE) ? applyRoundRobin (mapElement, group) : Collections.singletonList (group));
 
         final IFilter filter = readFilter (deviceElement);
         if (filter != null)
@@ -339,19 +343,22 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setReversed (reverseElement != null && "true".equals (getValueAttribute (reverseElement, AbletonTag.TAG_MANUAL)));
 
         final Element sustainLoopElement = XMLUtils.getChildElementByName (multiSamplePartElement, AbletonTag.TAG_SUSTAIN_LOOP);
-        if (sustainLoopElement != null)
-        {
-            final int loopMode = getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_MODE, 0);
-            if (loopMode > 0)
-            {
-                final ISampleLoop loop = new DefaultSampleLoop ();
-                loop.setStart (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_START, 0));
-                loop.setEnd (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_END, zone.getStop ()));
-                loop.setCrossfadeInSamples (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_CROSSFADE, 0));
-                loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
-                zone.getLoops ().add (loop);
-            }
-        }
+        if (sustainLoopElement == null)
+            return;
+        final int loopMode = getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_MODE, 0);
+        if (loopMode <= 0)
+            return;
+        final ISampleLoop loop = new DefaultSampleLoop ();
+        loop.setStart (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_START, 0));
+        loop.setEnd (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_END, zone.getStop ()));
+        loop.setCrossfadeInSamples (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_CROSSFADE, 0));
+        loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
+        loop.setTuning (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
+        zone.getLoops ().add (loop);
+
+        final Element releaseLoopElement = XMLUtils.getChildElementByName (multiSamplePartElement, AbletonTag.TAG_RELEASE_LOOP);
+        // 3 = Off
+        loop.setLoopUntilRelease (releaseLoopElement != null && getIntegerValueAttribute (releaseLoopElement, AbletonTag.TAG_LOOP_MODE, 0) < 3);
     }
 
 
@@ -415,7 +422,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final Element resElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_RESONANCE);
             final double resonance = getDoubleValueAttribute (resElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY) / 1.25;
 
-            final DefaultFilter filter = new DefaultFilter (type, poles, cutoff, resonance);
+            final IFilter filter = new DefaultFilter (type, poles, cutoff, resonance);
 
             // Read the envelope
             final Element envelopeElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_ENVELOPE);
@@ -460,7 +467,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
             return filter;
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // No filter configured
             return null;
@@ -571,9 +578,42 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                     }
                 }
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Ignore missing elements
+        }
+    }
+
+
+    private static List<IGroup> applyRoundRobin (final Element mapElement, final IGroup group)
+    {
+        // "0" = forward, "1" = backwards, "2" = other, "3" = random
+        final int roundRobinDirection = getIntegerValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_MODE, 0);
+        final List<List<ISampleZone>> splitZones = ZoneSplitter.splitZonesStableOrder (group.getSampleZones ());
+        final List<IGroup> groups = new ArrayList<> ();
+        for (int i = 0; i < splitZones.size (); i++)
+        {
+            final List<ISampleZone> sampleZones = splitZones.get (i);
+            for (final ISampleZone sampleZone: sampleZones)
+                sampleZone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+
+            if (roundRobinDirection < 2)
+                setRoundRobinSequence (sampleZones, roundRobinDirection == 0);
+            final IGroup layerGroup = new DefaultGroup ("Group #" + (i + 1));
+            layerGroup.setSampleZones (sampleZones);
+            groups.add (layerGroup);
+        }
+        return groups;
+    }
+
+
+    private static void setRoundRobinSequence (final List<ISampleZone> sampleZones, final boolean forwards)
+    {
+        int pos = forwards ? 1 : sampleZones.size ();
+        for (final ISampleZone sampleZone: sampleZones)
+        {
+            sampleZone.setSequencePosition (pos);
+            pos += forwards ? 1 : -1;
         }
     }
 
@@ -618,7 +658,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             return Double.parseDouble (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -632,7 +672,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             return Integer.parseInt (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }

@@ -138,7 +138,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getCompressionCode ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (0x00);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (0x00);
     }
 
 
@@ -162,7 +162,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getNumberOfChannels ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (0x02);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (0x02);
     }
 
 
@@ -186,7 +186,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getSampleRate ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x04);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x04);
     }
 
 
@@ -207,14 +207,14 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
     /**
      * This value indicates how many bytes of wave data must be streamed to a D/A converter per
      * second in order to play the wave file. This information is useful when determining if data
-     * can be streamed from the source fast enough to keep up with playback. This value can be
+     * can be streamed from the source fast enough to keep up with play-back. This value can be
      * easily calculated with the formula: AvgBytesPerSec = SampleRate * BlockAlign * Channels
      *
      * @return The four bytes converted to an integer
      */
     public int getAverageBytesPerSecond ()
     {
-        return this.rawRiffChunk.getFourBytesAsInt (0x08);
+        return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x08);
     }
 
 
@@ -239,7 +239,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
      */
     public int getBlockAlign ()
     {
-        return this.rawRiffChunk.getTwoBytesAsInt (0x0C);
+        return this.rawRiffChunk.getTwoBytesAsUnsignedInt (0x0C);
     }
 
 
@@ -252,7 +252,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
     {
         final int bitsPerSample = this.getSignificantBitsPerSample ();
         final int numberOfChannels = this.getNumberOfChannels ();
-        final int blockAlign = bitsPerSample / 8 * numberOfChannels;
+        final int blockAlign = (bitsPerSample + 7) / 8 * numberOfChannels; // ceiling division
         this.rawRiffChunk.setIntAsTwoBytes (0x0C, blockAlign);
 
         this.updateAverageBytesPerSecond ();
@@ -271,7 +271,7 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
     public int getSignificantBitsPerSample ()
     {
         if (0x0E < this.rawRiffChunk.getData ().length)
-            return this.rawRiffChunk.getTwoBytesAsInt (0x0E);
+            return this.rawRiffChunk.getTwoBytesAsUnsignedInt (0x0E);
         return 0;
     }
 
@@ -318,14 +318,16 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
 
 
     /**
-     * Calculate the number of bytes which are used for one sample depending on the significant bite
+     * Calculate the number of bytes which are used for one sample depending on the significant bits
      * per sample and the number of channels.
      *
      * @return The number of bytes
      */
     public int calculateBytesPerSample ()
     {
-        return this.getNumberOfChannels () * this.getSignificantBitsPerSample () / 8;
+        final int bitsPerSample = this.getSignificantBitsPerSample ();
+        final int bytesPerSample = (bitsPerSample + 7) / 8; // ceiling division
+        return this.getNumberOfChannels () * bytesPerSample;
     }
 
 

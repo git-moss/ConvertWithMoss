@@ -1,0 +1,378 @@
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019-2026
+// Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
+
+package de.mossgrabers.convertwithmoss.format.elektron;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+
+/**
+ * Reads/write Elektron elmulti files. Also reads eldrum files. Velocity layers can only be assigned
+ * to key ranges and not freely configured.
+ *
+ * @author Jürgen Moßgraber
+ */
+public class TonverkMultiFile
+{
+    private static final Pattern      KV         = Pattern.compile ("^([A-Za-z0-9-]+)\\s*=\\s*(.+)$");
+    private static final String []    NOTE_NAMES =
+    {
+        "c",
+        "c#",
+        "d",
+        "d#",
+        "e",
+        "f",
+        "f#",
+        "g",
+        "g#",
+        "a",
+        "a#",
+        "b"
+    };
+
+    /** Format version. */
+    public int                        version    = 0;
+    /** Instrument display name. */
+    public String                     name;
+    /** The key-zones. */
+    public final List<TonverkKeyZone> keyZones   = new ArrayList<> ();
+    /** Errors happening during the parsing. */
+    public final List<String>         errors     = new ArrayList<> ();
+
+
+    /** A key zone. */
+    public static class TonverkKeyZone
+    {
+        /** MIDI note number (0-127). Defines the root note for this zone. */
+        public int                              pitch;
+        /** Pitch center for transposition. Usually equals pitch as float. */
+        public double                           keyCenter;
+        /** Each key zone contains one or more velocity layers. */
+        public final List<TonverkVelocityLayer> velocityLayers = new ArrayList<> ();
+    }
+
+
+    /** A velocity layer. */
+    public static class TonverkVelocityLayer
+    {
+        /**
+         * Velocity threshold. Sample plays when input velocity >= this value. 0.0 - 1.0 (= MIDI
+         * velocity / 127.0).
+         */
+        public double                        velocity;
+        /**
+         * Round-robin play-back strategy. 'Forward'. Applied if multiple sample slots are assigned
+         * to a velocity layer.
+         */
+        public String                        strategy    = "Forward";
+        /** Each velocity layer contains one or more sample slots. */
+        public final List<TonverkSampleSlot> sampleSlots = new ArrayList<> ();
+    }
+
+
+    /**
+     * A sample slot. Multiple sample slots under the same velocity layer create round-robin
+     * variations.
+     */
+    public static class TonverkSampleSlot
+    {
+        /** Filename (relative path, same directory). */
+        public String  sample;
+        /** Loop behavior: 'Forward' / 'Off' (No looping (one-shot), default if omitted)). */
+        public String  loopMode;
+        /** Loop start point in samples. */
+        public Integer loopStart;
+        /** Loop end point in samples. */
+        public Integer loopEnd;
+        /** Loop cross-fade length in samples */
+        public Integer loopCrossfade;
+        /**
+         * Continue looping after key release. If omitted, the Tonverk stops looping on key release
+         * (sustain loop).
+         */
+        public Boolean keepLoopingOnRelease = Boolean.FALSE;
+        /** Sample start position within WAV file (for single-file multi-sample). */
+        public Integer trimStart;
+        /** Sample end position within WAV file (for single-file multi-sample). */
+        public Integer trimEnd;
+    }
+
+
+    /**
+     * Creates a sample file name including the '.wav' file ending.
+     *
+     * @param instrumentName The instrument name to add to the sample name
+     * @param velocityLayer The velocity layer index to add to the sample name
+     * @param midiNote The MIDI note to add to the sample name
+     * @return The formatted sample file name
+     */
+    public static String createSampleFileName (final String instrumentName, final int velocityLayer, final int midiNote)
+    {
+        return createSampleName (instrumentName, velocityLayer, midiNote, 0) + ".wav";
+    }
+
+
+    /**
+     * Creates a sample name (without the file ending) following the Elektron factory naming
+     * convention: 'instrumentName-VVV-NNN-note' with an additional '-rrN' suffix for round-robin
+     * samples.
+     *
+     * @param instrumentName The instrument name to add to the sample name
+     * @param velocityLayer The velocity layer index to add to the sample name
+     * @param midiNote The MIDI note to add to the sample name
+     * @param roundRobinIndex The index of the sample in a round-robin chain, no suffix is added for
+     *            values less than 1
+     * @return The formatted sample name
+     */
+    public static String createSampleName (final String instrumentName, final int velocityLayer, final int midiNote, final int roundRobinIndex)
+    {
+        if (midiNote < 0 || midiNote > 127)
+            throw new IllegalArgumentException ("midiNote out of range");
+        if (velocityLayer < 0)
+            throw new IllegalArgumentException ("velocityLayer must be >= 0");
+        final int note = midiNote % 12;
+        final int octave = midiNote / 12 - 2;
+        final String name = String.format ("%s-%03d-%03d-%s%d", instrumentName, Integer.valueOf (velocityLayer), Integer.valueOf (midiNote), NOTE_NAMES[note], Integer.valueOf (octave));
+        return roundRobinIndex > 0 ? name + "-rr" + roundRobinIndex : name;
+    }
+
+
+    /**
+     * Parses an Elektron Multi file.
+     *
+     * @param path The path to the file to parse
+     * @throws IOException Could not read/parse the file
+     */
+    public void parse (final Path path) throws IOException
+    {
+        this.errors.clear ();
+
+        TonverkKeyZone currentZone = null;
+        TonverkVelocityLayer currentLayer = null;
+        TonverkSampleSlot currentSlot = null;
+
+        for (final String raw: Files.readAllLines (path))
+        {
+            final String line = raw.trim ();
+            if (line.isEmpty () || line.startsWith ("#"))
+                continue;
+
+            if (line.equals ("[[key-zones]]"))
+            {
+                currentZone = new TonverkKeyZone ();
+                this.keyZones.add (currentZone);
+                currentLayer = null;
+                currentSlot = null;
+                continue;
+            }
+
+            if (line.equals ("[[key-zones.velocity-layers]]"))
+            {
+                if (currentZone == null)
+                    throw new IllegalStateException ("velocity-layer without key-zone");
+
+                currentLayer = new TonverkVelocityLayer ();
+                currentZone.velocityLayers.add (currentLayer);
+                currentSlot = null;
+                continue;
+            }
+
+            if (line.equals ("[[key-zones.velocity-layers.sample-slots]]"))
+            {
+                if (currentLayer == null)
+                    throw new IllegalStateException ("sample-slot without velocity-layer");
+                currentSlot = new TonverkSampleSlot ();
+                currentLayer.sampleSlots.add (currentSlot);
+                continue;
+            }
+
+            final Matcher m = KV.matcher (line);
+            if (!m.matches ())
+                throw new IllegalArgumentException ("Invalid line: " + line);
+            final String key = m.group (1);
+            final String value = stripQuotes (m.group (2).trim ());
+
+            if (currentSlot != null)
+                this.assignSampleSlot (currentSlot, key, value);
+            else if (currentLayer != null)
+                this.assignVelocityLayer (currentLayer, key, value);
+            else if (currentZone != null)
+                this.assignKeyZone (currentZone, key, value);
+            else
+                this.assignRoot (this, key, value);
+        }
+    }
+
+
+    /**
+     * Writes an Elektron Multi file.
+     *
+     * @param path The path to write to
+     * @throws IOException Could not write the file
+     */
+    public void write (final Path path) throws IOException
+    {
+        final List<String> out = new ArrayList<> ();
+        out.add ("# ELEKTRON MULTI-SAMPLE MAPPING FORMAT");
+        out.add ("version = " + this.version);
+        out.add ("name = " + quote (this.name));
+
+        for (final TonverkKeyZone keyZone: this.keyZones)
+        {
+            out.add ("");
+            out.add ("[[key-zones]]");
+            out.add ("pitch = " + keyZone.pitch);
+            out.add ("key-center = " + formatNumber (keyZone.keyCenter));
+
+            for (final TonverkVelocityLayer velocityLayer: keyZone.velocityLayers)
+            {
+                out.add ("");
+                out.add ("[[key-zones.velocity-layers]]");
+                out.add ("velocity = " + formatNumber (velocityLayer.velocity));
+                if (velocityLayer.strategy != null)
+                    out.add ("strategy = " + quote (velocityLayer.strategy));
+
+                for (final TonverkSampleSlot sampleSlot: velocityLayer.sampleSlots)
+                {
+                    out.add ("");
+                    out.add ("[[key-zones.velocity-layers.sample-slots]]");
+                    out.add ("sample = " + quote (sampleSlot.sample));
+                    if (sampleSlot.trimStart != null && sampleSlot.trimStart.intValue () >= 0)
+                        out.add ("trim-start = " + sampleSlot.trimStart);
+                    if (sampleSlot.trimEnd != null && sampleSlot.trimEnd.intValue () >= 0)
+                        out.add ("trim-end = " + sampleSlot.trimEnd);
+                    if (sampleSlot.loopMode != null)
+                        out.add ("loop-mode = " + quote (sampleSlot.loopMode));
+                    if ("Forward".equals (sampleSlot.loopMode))
+                    {
+                        if (sampleSlot.loopStart != null && sampleSlot.loopStart.intValue () >= 0)
+                            out.add ("loop-start = " + sampleSlot.loopStart);
+                        if (sampleSlot.loopEnd != null && sampleSlot.loopEnd.intValue () >= 0)
+                            out.add ("loop-end = " + sampleSlot.loopEnd);
+                        if (sampleSlot.loopCrossfade != null && sampleSlot.loopCrossfade.intValue () >= 0)
+                            out.add ("loop-crossfade = " + sampleSlot.loopCrossfade);
+                        if (sampleSlot.keepLoopingOnRelease != null && sampleSlot.keepLoopingOnRelease.booleanValue ())
+                            out.add ("keep-looping-on-release = true");
+                    }
+                }
+            }
+        }
+        Files.write (path, out);
+    }
+
+
+    private void assignRoot (final TonverkMultiFile multi, final String tag, final String value)
+    {
+        switch (tag)
+        {
+            case "version" -> multi.version = Integer.parseInt (value);
+            case "name" -> multi.name = value;
+            default -> this.errors.add ("Unknown root tag: " + tag);
+        }
+    }
+
+
+    private void assignKeyZone (final TonverkKeyZone keyZone, final String tag, final String value)
+    {
+        switch (tag)
+        {
+            case "pitch" -> keyZone.pitch = Integer.parseInt (value);
+            case "key-center" -> keyZone.keyCenter = Double.parseDouble (value);
+            default -> this.errors.add ("Unknown key-zone tag: " + tag);
+        }
+    }
+
+
+    private void assignVelocityLayer (final TonverkVelocityLayer velocityLayer, final String tag, final String value)
+    {
+        switch (tag)
+        {
+            case "velocity" -> velocityLayer.velocity = Double.parseDouble (value);
+            case "strategy" -> velocityLayer.strategy = value;
+            default -> this.errors.add ("Unknown velocity-layer tag: " + tag);
+        }
+    }
+
+
+    private void assignSampleSlot (final TonverkSampleSlot sampleSlot, final String tag, final String value)
+    {
+        switch (tag)
+        {
+            case "sample" -> sampleSlot.sample = value;
+            case "loop-mode" -> sampleSlot.loopMode = value;
+            case "loop-start" -> sampleSlot.loopStart = Integer.valueOf (value);
+            case "loop-end" -> sampleSlot.loopEnd = Integer.valueOf (value);
+            case "loop-crossfade" -> sampleSlot.loopCrossfade = Integer.valueOf (value);
+            case "keep-looping-on-release" -> sampleSlot.keepLoopingOnRelease = Boolean.valueOf (value);
+            case "trim-start" -> sampleSlot.trimStart = Integer.valueOf (value);
+            case "trim-end" -> sampleSlot.trimEnd = Integer.valueOf (value);
+            default -> this.errors.add ("Unknown sample-slot tag: " + tag);
+        }
+    }
+
+
+    private static String stripQuotes (final String s)
+    {
+        if (s.startsWith ("\"") && s.endsWith ("\"") || s.startsWith ("'") && s.endsWith ("'"))
+            return s.substring (1, s.length () - 1);
+        return s;
+    }
+
+
+    /**
+     * Quotes a string value. Uses single quotes except when the value contains a single quote, in
+     * that case double quotes are used and contained double quotes are escaped.
+     *
+     * @param value The value to quote
+     * @return The quoted value
+     */
+    private static String quote (final String value)
+    {
+        final String text = value == null ? "" : value;
+        if (!text.contains ("'"))
+            return "'" + text + "'";
+        return '"' + text.replace ("\"", "\\\"") + '"';
+    }
+
+
+    /**
+     * Formats a floating point number like the Tonverk factory files: integral values get one
+     * decimal place (e.g. '60.0'), all others a maximum of 8 significant digits (e.g.
+     * '0.49411765').
+     *
+     * @param value The value to format
+     * @return The formatted value
+     */
+    private static String formatNumber (final double value)
+    {
+        if (value == Math.rint (value) && Math.abs (value) < 1e15)
+            return String.format (Locale.US, "%.1f", Double.valueOf (value));
+
+        String text = String.format (Locale.US, "%.8g", Double.valueOf (value));
+        if (text.indexOf ('e') < 0 && text.indexOf ('E') < 0 && text.indexOf ('.') >= 0)
+        {
+            // Remove trailing zeros but keep at least one decimal digit
+            text = text.replaceAll ("0+$", "");
+            if (text.endsWith ("."))
+                text += "0";
+        }
+        return text;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString ()
+    {
+        return "TonverkMultiFile{name='" + this.name + "', version=" + this.version + ", keyZones=" + this.keyZones.size () + "}";
+    }
+}

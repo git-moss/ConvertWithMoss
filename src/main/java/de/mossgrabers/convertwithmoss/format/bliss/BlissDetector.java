@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
@@ -166,7 +167,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     {
         if (!BlissTag.PROGRAM.equals (programElement.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return Optional.empty ();
         }
 
@@ -184,7 +185,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         final int version = XMLUtils.getIntegerAttribute (programElement, "version", -1);
         if (version < 0)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Negative version attribute");
             return Optional.empty ();
         }
         this.notifier.log ("IDS_BLISS_DETECTED_PROGRAM", name, formatVersion (version));
@@ -192,13 +193,13 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         final Element zonesElement = XMLUtils.getChildElementByName (programElement, BlissTag.ZONES);
         if (zonesElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Zones tag");
             return Optional.empty ();
         }
 
         // Create multi-sample
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
         this.updateCreationDateTime (metadata, sourceFile);
@@ -232,7 +233,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private void parseZone (final File zipFile, final IGroup group, final Element zoneElement, final int programIndex, final int zoneIndex)
     {
-        final DefaultSampleZone zone = this.initZone (zipFile, zoneElement, programIndex, zoneIndex);
+        final ISampleZone zone = this.initZone (zipFile, zoneElement, programIndex, zoneIndex);
         if (zone == null)
             return;
 
@@ -364,7 +365,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         final String originalFilename = zoneElement.getAttribute ("name");
         if (originalFilename == null || originalFilename.isBlank ())
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing name attribute");
             return null;
         }
 

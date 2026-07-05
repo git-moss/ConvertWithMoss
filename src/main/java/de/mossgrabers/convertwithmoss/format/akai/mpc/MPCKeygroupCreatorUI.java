@@ -16,9 +16,9 @@ import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -47,7 +47,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
@@ -123,7 +123,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
                 }
             }
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             notifier.logError ("IDS_CLI_VALUE_MUST_BE_INTEGER", MPC_LAYER_LIMIT_USE_8);
             return false;

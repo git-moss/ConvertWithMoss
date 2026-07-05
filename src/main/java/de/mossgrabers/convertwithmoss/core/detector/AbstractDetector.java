@@ -75,7 +75,6 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     protected Consumer<IMultisampleSource>    multisampleSourceConsumer;
     protected Consumer<IPerformanceSource>    performanceSourceConsumer;
     protected File                            sourceFolder;
-    protected String []                       fileEndings;
     protected boolean                         detectPerformances;
 
     protected final Map<String, Set<String>>  unsupportedElements                 = new HashMap<> ();
@@ -95,9 +94,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected AbstractDetector (final String name, final String prefix, final INotifier notifier, final T userInterface, final String... fileEndings)
     {
-        super (name, prefix, notifier, userInterface);
-
-        this.fileEndings = fileEndings;
+        super (name, prefix, notifier, userInterface, fileEndings);
     }
 
 
@@ -120,13 +117,13 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
 
     /**
-     * Overwrite in case that file endings need to be set dynamically.
+     * Set the source folder.
      *
-     * @param detectPerformances If true, performances are detected otherwise presets
+     * @param sourceFolder The sourceFolder to set
      */
-    protected void configureFileEndings (final boolean detectPerformances)
+    public void setSourceFolder (final File sourceFolder)
     {
-        // Intentionally empty
+        this.sourceFolder = sourceFolder;
     }
 
 
@@ -282,11 +279,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         {
             this.detect (this.sourceFolder);
         }
-        catch (final RuntimeException ex)
-        {
-            this.notifier.logError (ex);
-        }
-        catch (final OutOfMemoryError err)
+        catch (final RuntimeException | OutOfMemoryError err)
         {
             this.notifier.logError (err);
         }
@@ -305,7 +298,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         {
             Thread.sleep (10);
         }
-        catch (final InterruptedException ex)
+        catch (final InterruptedException _)
         {
             if (this.isCancelled ())
                 return true;
@@ -324,7 +317,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected File [] listFiles (final File folder, final String... endings)
     {
-        return folder.listFiles ( (parent, name) -> {
+        return folder.listFiles ((parent, name) -> {
 
             if (this.isCancelled ())
                 return false;
@@ -471,21 +464,6 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
             return string;
         }
-    }
-
-
-    /**
-     * Translates a value in the range of [0..1] to the range [minimum..maximum]. Ensures that the
-     * given value is in the range [0..1].
-     *
-     * @param value The value to translate
-     * @param minimum The minimum of the range
-     * @param maximum The maximum of the range
-     * @return The translated value
-     */
-    protected static double denormalizeValue (final double value, final double minimum, final double maximum)
-    {
-        return minimum + Math.clamp (value, 0, 1) * (maximum - minimum);
     }
 
 
@@ -658,7 +636,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             final long modifiedTimeMillis = modifiedTime.toMillis ();
             metadata.setCreationDateTime (new Date (creationTimeMillis < modifiedTimeMillis ? creationTimeMillis : modifiedTimeMillis));
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             metadata.setCreationDateTime (new Date ());
         }
@@ -835,7 +813,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     }
 
 
-    private static File findFileRecursively (final File folder, final String fileName)
+    protected static File findFileRecursively (final File folder, final String fileName)
     {
         File sampleFile = new File (folder, fileName);
         if (sampleFile.exists ())

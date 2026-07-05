@@ -92,6 +92,7 @@ public class ExternalModulator
      * @param chunk The chunk from which to read the bank data
      * @throws IOException Could not read the bank
      */
+    @SuppressWarnings("unused")
     public void read (final KontaktPresetChunk chunk) throws IOException
     {
         final int id = chunk.getId ();
@@ -100,25 +101,20 @@ public class ExternalModulator
 
         final InputStream in = new ByteArrayInputStream (chunk.getPublicData ());
 
-        @SuppressWarnings("unused")
         final int u1 = in.read (); // Always 0x01 ?
-        @SuppressWarnings("unused")
         final int u2 = in.read (); // Always 0x02 ?
-        @SuppressWarnings("unused")
         final int u3 = in.read (); // Always 0x01 ?
         // System.out.println ("U1-U3: " + u1 + ":" + u2 + ":" + u3);
 
         this.destType = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Dest Type: " + this.destType);
 
-        @SuppressWarnings("unused")
         final long unknown2 = StreamUtils.readUnsigned32 (in, false); // 01 00 00 00
         // System.out.println ("Unknown 2: " + unknown2);
 
         try
         {
-            @SuppressWarnings("unused")
-            final String destinationDesc = StreamUtils.readWith4ByteLengthAscii (in);
+            final String destinationDesc = StreamUtils.readAsciiWith4ByteLength (in);
             // System.out.println ("Destination Desc:" + destinationDesc);
         }
         catch (final IOException _)
@@ -130,15 +126,11 @@ public class ExternalModulator
         this.intensity = StreamUtils.readFloatLE (in);
         // System.out.println ("Intensity: " + intensity);
 
-        @SuppressWarnings("unused")
         final int a = in.read (); // 0xFF ?
-        @SuppressWarnings("unused")
         final int b = in.read (); // 0xFF ?
-        @SuppressWarnings("unused")
         final int c = in.read (); // 0x14 ?
         // System.out.println ("A-C: " + a + ":" + b + ":" + c);
 
-        @SuppressWarnings("unused")
         final int unknown3 = StreamUtils.readUnsigned16 (in, false);
         // System.out.println ("Unknown 3: " + unknown3);
 
@@ -147,7 +139,7 @@ public class ExternalModulator
         final String modDescription;
         try
         {
-            modDescription = StreamUtils.readWith4ByteLengthAscii (in);
+            modDescription = StreamUtils.readAsciiWith4ByteLength (in);
             // System.out.println ("Mod. Description: " + modDescription);
         }
         catch (final IOException _)
@@ -156,22 +148,17 @@ public class ExternalModulator
             return;
         }
 
+        int unknown4 = 0;
         // TODO not correct
         if (!modDescription.isEmpty ())
-        {
-            @SuppressWarnings("unused")
-            final int unknown4 = in.read ();
-            // System.out.println ("Unknown 4: " + unknown4);
-        }
+            unknown4 = in.read ();
 
-        @SuppressWarnings("unused")
         final long unknown5 = StreamUtils.readUnsigned16 (in, false);
         // System.out.println ("Unknown 5: " + unknown5);
 
         try
         {
-            @SuppressWarnings("unused")
-            final String description = StreamUtils.readWith4ByteLengthAscii (in);
+            final String description = StreamUtils.readAsciiWith4ByteLength (in);
             // System.out.println ("Description: " + description);
         }
         catch (final IOException _)
@@ -180,22 +167,18 @@ public class ExternalModulator
             return;
         }
 
-        @SuppressWarnings("unused")
         final long unknown6 = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Unknown 6: " + unknown6);
 
         this.sourceType = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Source Type: " + this.sourceType);
 
-        @SuppressWarnings("unused")
         final long unknown8 = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Unknown 8: " + unknown8);
 
-        @SuppressWarnings("unused")
         final long arraySlot = StreamUtils.readUnsigned32 (in, false);
         // System.out.println ("Array Slot: " + arraySlot);
 
-        @SuppressWarnings("unused")
         final byte [] padding = in.readNBytes (7);
 
         // System.out.println ("-----------------------");

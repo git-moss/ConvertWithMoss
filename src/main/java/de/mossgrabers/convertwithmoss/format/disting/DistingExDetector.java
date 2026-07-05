@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
@@ -35,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -103,7 +103,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
 
         final File parentFile = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final int [] parameters = readParameters (in);
 
@@ -144,7 +144,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
         if (presetVersion != 0x14)
             this.notifier.logError ("IDS_DEX_UNKNOWN_PRESET_VERSION", Integer.toString (presetVersion));
 
-        final String name = StreamUtils.readASCII (in, 16).trim ();
+        final String name = StreamUtils.readAscii (in, 16).trim ();
 
         // Unknown
         StreamUtils.readSigned32 (in, false);
@@ -313,10 +313,10 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static File [] getWavFiles (final File parentPath, final InputStream in) throws IOException
     {
-        final String subPath = StreamUtils.readNullTerminatedASCIIMax (in, 21).trim ();
+        final String subPath = StreamUtils.readAsciiNullTerminatedMax (in, 21).trim ();
         final File sampleFolder = new File (parentPath, subPath);
         if (!sampleFolder.exists ())
             throw new IOException (Functions.getMessage ("IDS_DEX_NO_SAMPLE_FOLDER", sampleFolder.getCanonicalPath ()));
-        return sampleFolder.listFiles ( (parent, name) -> new File (parent, name).isFile () && name.toLowerCase (Locale.US).endsWith (".wav"));
+        return sampleFolder.listFiles ((parent, name) -> new File (parent, name).isFile () && name.toLowerCase (Locale.US).endsWith (".wav"));
     }
 }

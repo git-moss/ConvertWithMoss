@@ -1,5 +1,145 @@
 # Changes
 
+## 19.0.0 (unreleased)
+
+* New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
+* New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
+* New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
+* New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
+* New: Added support for the Downloadable Sound format (DLS) - read only.
+* New: Improved user interface for long lists of formats.
+* New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
+* New: Added several new tags for category detection.
+* New: Added an opt-in *Snap loops to zero-crossings* processing option.
+* Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
+* Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
+* Fixed: Fixed some potential NullPointerExceptions.
+* Elektron Tonverk Multisample (thanks to Douglas Carmichael)
+  * New: Relabelled "Elektron Tonverk Multisample" to not confuse it with the new "Elektron Tonverk Preset".
+  * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
+  * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
+* EXS24
+  * Fixed: Loop type was not applied.
+* FLAC/OGG
+  * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
+  * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
+  * Fixed: Implemented workaround for converting 32-bit FLAC files (might not always work).
+* Maschine 1
+  * Fixed: File version number was always written as 0.
+* MPC
+  * Fixed: Program in XTY file was not read.
+* Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+  * New: The filter cutoff keyboard-tracking is now written (Filter1Keytrack), so e.g. a converted Synthstrom Deluge patch keeps its brightness across the keyboard range instead of sounding dark in the upper octaves.
+  * Fixed: Sample Loop mode 2 was not set to alternating but backwards.
+  * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).
+  * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
+  * Fixed: A very short but non-zero envelope attack, decay or release (below the ~0.06 second device minimum) collapsed to parameter value 0, i.e. an instant stage, which still clicked on note-on and note-off for samples that do not start or end at a zero crossing. Non-zero times are now clamped up to the shortest audible value instead of to instant, while a genuine zero stays an instant stage (verified on Iridium hardware).
+  * Fixed: A patch with more than one sample map (a multi-oscillator sample-based patch) wrote every map's resource offset as 0, so on the device maps 2 and 3 were read overlapping map 1 and their samples could not be located - the device showed the "Find Sample Map" screen. Each map's offset is now written as the running total of the preceding maps' lengths (verified on Iridium hardware).
+  * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
+  * Fixed: A sample zone without an explicit start/end (e.g. converted from a format that stores only loop points) was written with a sample start and end of -1; the whole sample is now used.
+
+## 18.1.1
+
+* New: If the source does not contain pitch bend values, the default is now 2 semi-tones (instead of 0).
+* Ableton
+  * Fixed: Created files could not be opened if the source file did not contain a loop.
+* Akai MPC
+  * Fixed: Root note was not read from WAV file when missing in XML.
+* Ensoniq EPS/EPS16+/ASR-10
+  * Fixed: Samples had appended silence which doubled the length of the sample.
+* Omnisphere 3
+  * Fixed: Pitch-bend was scaled wrong.
+
+## 18.1.0
+
+* New: Added CLI parameters ProcessAlwaysResample and ProcessLoopCrossfade.
+* New: Added processing option to set a fixed loop cross-fade.
+* New: Redesign of processing dialog.
+* Elektron Tonverk (thanks to Douglas Carmichael)
+  * New: Sample chunks are only written when a loop is present and instrument/broadcast audio chunks are off by default since the Tonverk WAV parser is strict (factory files only contain 'fmt ', 'data' and 'smpl' chunks).
+  * Fixed: The preset file is now written with the correct '.elmulti' extension (was '.emulti') which the Tonverk requires.
+  * Fixed: Samples are now physically trimmed to the zone start/end instead of writing 'trim-start'/'trim-end' which the Tonverk only supports for single-file multi-samples and rejected the preset otherwise.
+  * Fixed: Loop positions written to the preset file were not updated for re-sampling and trimming. Loops are also clamped into the sample boundaries and short single-cycle loops keep their exact length when re-sampling to prevent pitch drift.
+  * Fixed: A velocity layer with velocity 0.0 made the Tonverk reject the whole preset and import the WAV files as loose samples. The factory default velocity is used instead.
+  * Fixed: The key-center was written with an inverted tuning direction.
+  * Fixed: Sample file references in the preset file could differ from the written WAV file names if a zone name contained characters which needed to be replaced. Samples are now named following the Elektron factory convention 'Name-VVV-NNN-note.wav'.
+  * Fixed: 'keep-looping-on-release' is now written for looped samples (the Tonverk otherwise stops looping on key release).
+  * Fixed: Preset names containing a single quote produced an invalid preset file.
+* Ensoniq EPS/EPS16+/ASR-10
+  * New: Added a 'P' in front of the Patch-number for better readability.
+  * Fixed: EFE files which use "Instrument" instead of "Instr" as the file type identifier could not be loaded.
+* Omnisphere 3
+  * Fixed: Samples with a delayed play-back start were not written (empty db-file). 
+
+## 18.0.0
+
+* Added support for Elektron Tonverk elmulti.
+* Added support for Omnisphere 3.
+* Added support for reading Roland S-50, S-330, S-550, W-30.
+* Added support for reading Roland S-750, S-770, S-760, DJ-70, DJ-70 MkII, and SP-700.
+* Added support for loop tuning: Ableton ADV/ADG, EXS24, Korgmultisample, Kontakt, SFZ, YSFC (partially).
+* New: Processing can now up-sample as well (option: 'Always re-sample').
+* New: Removed renaming feature.
+* New: Made settings and processing dialogs non-resizable.
+* Fixed: Processing did not work when Normalize was not enabled.
+* Fixed: Processing did not work for 12-bit samples.
+* 1010music samplers
+  * New: If there are overlapping sample zones which so far cannot be handled by the 1010music samplers, the overlapping ones are removed to create limited but working output files.
+* Akai MPC
+  * New: Combined "Akai MPC Keygroup" and "Akai MPC Project/Track" detectors to "Akai MPC Modern".
+  * New: Added support to read JSON based .xpm files.
+* Akai S1000/S3000
+  * Fixed: Loops were not imported.
+* ISO File
+  * New: Added detection of Ensoniq EPS/ASR ISOs.
+  * New: Added detection of Roland images.
+* Kontakt 4
+  * Fixed: Added some workarounds for malformed umlauts in author field.
+* Korgmultisample
+  * Fixed: Sample files are now already checked for existence during scanning the sources. If the sample file is not found, it is searched in the same folder as the korgmultisample file.
+* NI
+  * New: Renamed "Kontakt NKI" to "NI Kontakt".
+  * New: Renamed "Maschine Sound" to "NI Maschine".
+* SFZ
+  * New: Improved layout of metadata header with long description texts.
+* WAV
+  * Fixed: When writing WAV files the padding byte was counted as content.
+  * Fixed: When writing WAV files preserve the chunks 'meta', 'atem' and 'ID3 '.
+  * Fixed: Don't overwrite WAV samples multiple times if they already exist
+  * Fixed: Failed resolution conversions are now logged properly.
+  * Fixed: Conversion from 32-bit float to 16-bit PCM did not always work.
+
+## 17.1.0
+
+* Added support for reading Ensoniq Mirage disks (*.hfe, *.img, *.edm).
+* Added support for reading Ensoniq EPS/EPS16+/ASR-10 disks (*.hfe, *.img, *.gkh, *.ede, *.eda, *.efe).
+* Ableton Sampler
+  * New: Read/write of round-robin setting (requires Ableton 12).
+  * New: Add a creator option to either write files for Ableton 11 or Ableton 12.
+  * New: Constant Power XF is set now to true (instead of linear crossfade).
+  * Fixed: Transposition was off by 1 octave when writing.
+* EXS24
+  * Fixed: Group volume was not decoded correctly.
+* Yamaha YSFC
+  * Fixed: Samples need to be fixed to 44.1kHz (includes up-sampling).
+
+## 17.0.0
+
+* Added support for reading Akai MPC60 programs.
+* Added support for reading Akai MPC500/MPC1000/MPC2500 programs.
+* Added support for reading Akai MPC2000/MPC2000XL/MPC3000 programs.
+* Added support for reading Akai S900/S950 programs.
+* Added specific entry for Akai S1000/S3000 (and not only generic ISO). Searches for IMG files as well.
+* New: Source formats show their file endings with a tooltip.
+* ISO File
+  * New: Added support for MPC2000 format.
+  * New: Shows an info text if it is a plain ISO 9660 file which can be accessed with OS functionality.  
+* Korg KMP
+  * Fixed: Velocity layers need to be stored in separate KMP files.
+* Yamaha YSFC
+  * Fixed: Libraries are now limited to a max. of 128 performances.
+  * Fixed: The performance names are now limited to 20 characters.
+
 ## 16.5.1
 
 * Fixed: Processing: Sample reduction did not always work and improved logging.
@@ -123,7 +263,7 @@
 * Korg KSF
   * Fixed: Reading: The play-back end is now set to the length of the sample to prevent issues with output formats which require the end (e.g. Korg wavestate).
   * Fixed: The KSF loop end is exclusive and therefore was off by 1.
-* Soundfont 2 (thanks @douglas-carmichael)
+* Soundfont 2 (thanks to Douglas Carmichael)
   * New: Added option to resample 24bit to 16bit.
   * Fixed: Always writes a global chunk.
 

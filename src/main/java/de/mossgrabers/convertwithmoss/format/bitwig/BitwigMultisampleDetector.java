@@ -26,6 +26,8 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -123,7 +125,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
 
         if (!BitwigMultisampleTag.MULTISAMPLE.equals (top.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return Collections.emptyList ();
         }
 
@@ -139,7 +141,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
 
         final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, multiSampleFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name);
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.parseMetadata (top, metadata);
         this.updateCreationDateTime (metadata, multiSampleFile);
@@ -148,26 +150,15 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
         final Map<Integer, IGroup> indexedGroups = new TreeMap<> ();
         int groupCounter = 0;
         for (final Element groupElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.GROUP))
-        {
-            this.checkAttributes (BitwigMultisampleTag.GROUP, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.GROUP));
+            groupCounter = this.createGroup (BitwigMultisampleTag.GROUP, indexedGroups, groupCounter, groupElement);
 
-            final String k = groupElement.getAttribute ("name");
-            final String groupName = k.isBlank () ? "Group " + (groupCounter + 1) : k;
-            indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
-            groupCounter++;
-        }
         // Additional group for potentially un-grouped samples
         indexedGroups.put (Integer.valueOf (-1), new DefaultGroup ());
 
         // Parse (deprecated) layer tag
         for (final Element layerElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.LAYER))
         {
-            this.checkAttributes (BitwigMultisampleTag.LAYER, layerElement.getAttributes (), BitwigMultisampleTag.getAttributes (BitwigMultisampleTag.LAYER));
-
-            final String k = layerElement.getAttribute ("name");
-            final String groupName = k == null || k.isBlank () ? "Group " + (groupCounter + 1) : k;
-            indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
-            groupCounter++;
+            groupCounter = this.createGroup (BitwigMultisampleTag.LAYER, indexedGroups, groupCounter, layerElement);
 
             // Parse all samples of the layer
             for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, BitwigMultisampleTag.SAMPLE, false))
@@ -184,6 +175,17 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
         this.printUnsupportedAttributes ();
 
         return Collections.singletonList (multisampleSource);
+    }
+
+
+    private int createGroup (final String tagName, final Map<Integer, IGroup> indexedGroups, final int groupCounter, final Element groupElement)
+    {
+        this.checkAttributes (tagName, groupElement.getAttributes (), BitwigMultisampleTag.getAttributes (tagName));
+
+        final String k = groupElement.getAttribute ("name");
+        final String groupName = k == null || k.isBlank () ? "Group " + (groupCounter + 1) : k;
+        indexedGroups.put (Integer.valueOf (groupCounter), new DefaultGroup (groupName));
+        return groupCounter + 1;
     }
 
 
@@ -253,7 +255,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
         final String filename = sampleElement.getAttribute ("file");
         if (filename == null || filename.isBlank ())
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing file attribute");
             return;
         }
 
@@ -268,7 +270,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
             this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
             return;
         }
-        final DefaultSampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (file), sampleData);
+        final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (file), sampleData);
 
         zone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-start", -1)));
         zone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, "sample-stop", -1)));
@@ -320,7 +322,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
             final String attribute = loopElement.getAttribute ("mode");
             if (attribute != null && !"off".equalsIgnoreCase (attribute))
             {
-                final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                final ISampleLoop loop = new DefaultSampleLoop ();
                 switch (attribute)
                 {
                     default:

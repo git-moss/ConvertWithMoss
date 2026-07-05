@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
@@ -43,6 +43,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -195,7 +196,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                     return waveforms;
                 }
 
-                return this.createMultisamplesFromPerformances (waveforms, epfmChunk, dpfmChunk, file.getName (), format, ysfcFile.getVersion ());
+                return this.createMultisamplesFromPerformances (waveforms, epfmChunk, dpfmChunk, format, ysfcFile.getVersion ());
             }
         }
         catch (final IOException ex)
@@ -236,7 +237,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                     return Collections.emptyList ();
                 }
 
-                return this.createPerformancesFromPerformances (waveforms, epfmChunk, dpfmChunk, sourceFile.getName (), format, ysfcFile.getVersion ());
+                return this.createPerformancesFromPerformances (waveforms, epfmChunk, dpfmChunk, format, ysfcFile.getVersion ());
             }
         }
         catch (final IOException ex)
@@ -253,13 +254,12 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
      * @param waveforms The already read waveform data, each waveform is a IMultisampleSource
      * @param epfmChunk The performance entry chunk
      * @param dpfmChunk The performance data chunk
-     * @param filename The name of the library file
      * @param format The version of the format
      * @param version The specific version of the format
      * @return The multi-sample(s)
      * @throws IOException Could not read the multi-sample
      */
-    private List<IPerformanceSource> createPerformancesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final String filename, final YamahaYsfcFileFormat format, final int version) throws IOException
+    private List<IPerformanceSource> createPerformancesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
         // Waveforms list is not empty and all of them contain metadata which was detected from the
         // library filename
@@ -278,13 +278,13 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             final String performanceName = performance.getName ();
             this.notifier.log ("IDS_YSFC_ANALYZING_PERFORMANCE", performanceName);
 
-            final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+            final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
             performanceSource.setName (performanceName);
 
             final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
             for (int p = 0; p < parts.size (); p++)
             {
-                final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (globalSourceFile, globalSubPath, performanceName, filename + " : " + performanceName);
+                final IMultisampleSource multisampleSource = new DefaultMultisampleSource (globalSourceFile, globalSubPath, performanceName);
 
                 fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
 
@@ -308,7 +308,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                         continue;
                     final List<IGroup> waveGroups = waveform.getGroups ();
                     if (waveGroups.isEmpty ())
-                        return null;
+                        return Collections.emptyList ();
 
                     for (final ISampleZone waveformSampleZone: waveGroups.get (0).getSampleZones ())
                     {
@@ -331,7 +331,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                 if (!group.getSampleZones ().isEmpty ())
                 {
                     multisampleSource.setGroups (Collections.singletonList (group));
-                    final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, -1);
+                    final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, -1);
                     instrumentSource.setName (multisampleSource.getName ());
                     instrumentSource.setClipKeyLow (part.getNoteLimitLow ());
                     instrumentSource.setClipKeyHigh (part.getNoteLimitHigh ());
@@ -351,13 +351,12 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
      * @param waveforms The already read waveform data, each waveform is a IMultisampleSource
      * @param epfmChunk The performance entry chunk
      * @param dpfmChunk The performance data chunk
-     * @param filename The name of the library file
      * @param format The version of the format
      * @param version The specific version of the format
      * @return The multi-sample(s)
      * @throws IOException Could not read the multi-sample
      */
-    private List<IMultisampleSource> createMultisamplesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final String filename, final YamahaYsfcFileFormat format, final int version) throws IOException
+    private List<IMultisampleSource> createMultisamplesFromPerformances (final List<IMultisampleSource> waveforms, final YamahaYsfcChunk epfmChunk, final YamahaYsfcChunk dpfmChunk, final YamahaYsfcFileFormat format, final int version) throws IOException
     {
         // Waveforms list is not empty and all of them contain metadata which was detected from the
         // library filename
@@ -373,7 +372,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             final YamahaYsfcPerformance performance = new YamahaYsfcPerformance (new ByteArrayInputStream (performanceData), format, version);
             final String performanceName = performance.getName ();
             this.notifier.log ("IDS_YSFC_ANALYZING_PERFORMANCE", performanceName);
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (globalMultisample.getSourceFile (), globalMultisample.getSubPath (), performanceName, filename + " : " + performanceName);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (globalMultisample.getSourceFile (), globalMultisample.getSubPath (), performanceName);
             fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
 
             final List<IGroup> groups = new ArrayList<> ();
@@ -400,7 +399,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                         continue;
                     final List<IGroup> waveGroups = waveform.getGroups ();
                     if (waveGroups.isEmpty ())
-                        return null;
+                        return Collections.emptyList ();
 
                     for (final ISampleZone waveformSampleZone: waveGroups.get (0).getSampleZones ())
                     {
@@ -493,7 +492,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
 
     private static IGroup createSampleZones (final List<YamahaYsfcKeybank> keyBanks, final List<YamahaYsfcWaveData> waveDataItems, final String name, final YamahaYsfcFileFormat version) throws IOException
     {
-        final DefaultGroup group = new DefaultGroup ("Layer");
+        final IGroup group = new DefaultGroup ("Layer");
 
         int keybankIndex = 0;
         int waveDataIndex = 0;
@@ -557,8 +556,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         final File sourceFile = ysfcFile.getSourceFile ();
         final File folder = sourceFile.getParentFile ();
         final String [] parts = AudioFileUtils.createPathParts (folder, this.sourceFolder, name);
-        final String mappingName = AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile) + " : " + name;
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, mappingName);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         metadata.detectMetadata (this.settingsConfiguration, parts);

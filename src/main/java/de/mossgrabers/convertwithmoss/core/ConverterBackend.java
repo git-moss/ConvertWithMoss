@@ -16,21 +16,27 @@ import java.util.function.Consumer;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
+import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.algorithm.MultiSampleReducer;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.akai.akp.AkpDetector;
-import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupCreator;
-import de.mossgrabers.convertwithmoss.format.akai.mpc.xpm.MPCKeygroupDetector;
-import de.mossgrabers.convertwithmoss.format.akai.mpc.xty.XtyDetector;
-import de.mossgrabers.convertwithmoss.format.akai.s3p.AkaiS3pDetector;
+import de.mossgrabers.convertwithmoss.format.akai.mesa.AkaiMesaDetector;
+import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCKeygroupCreator;
+import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCModernDetector;
+import de.mossgrabers.convertwithmoss.format.akai.mpc1000.AkaiMPC1000Detector;
+import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
+import de.mossgrabers.convertwithmoss.format.akai.mpc60.AkaiMPC60Detector;
+import de.mossgrabers.convertwithmoss.format.akai.s1000.AkaiS1000Detector;
+import de.mossgrabers.convertwithmoss.format.akai.s900.AkaiS900Detector;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.bliss.BlissCreator;
@@ -39,6 +45,13 @@ import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExDetector;
+import de.mossgrabers.convertwithmoss.format.dls.DlsDetector;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiCreator;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiDetector;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetCreator;
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetDetector;
+import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
+import de.mossgrabers.convertwithmoss.format.ensoniq.mirage.MirageDetector;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Creator;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Detector;
 import de.mossgrabers.convertwithmoss.format.iso.IsoDetector;
@@ -55,6 +68,14 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktCreator;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.KontaktDetector;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineCreator;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.MaschineDetector;
+import de.mossgrabers.convertwithmoss.format.omnisphere.OmnisphereCreator;
+import de.mossgrabers.convertwithmoss.format.omnisphere.OmnisphereDetector;
+import de.mossgrabers.convertwithmoss.format.polyend.PolyendTrackerCreator;
+import de.mossgrabers.convertwithmoss.format.polyend.PolyendTrackerDetector;
+import de.mossgrabers.convertwithmoss.format.renoise.RenoiseCreator;
+import de.mossgrabers.convertwithmoss.format.renoise.RenoiseDetector;
+import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
+import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -62,6 +83,8 @@ import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
 import de.mossgrabers.convertwithmoss.format.sxt.SxtCreator;
 import de.mossgrabers.convertwithmoss.format.sxt.SxtDetector;
+import de.mossgrabers.convertwithmoss.format.synthstrom.DelugeCreator;
+import de.mossgrabers.convertwithmoss.format.synthstrom.DelugeDetector;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxCreator;
@@ -112,25 +135,40 @@ public class ConverterBackend
             new Music1010Detector (notifier),
             new AbletonDetector (notifier),
             new AkpDetector (notifier),
-            new MPCKeygroupDetector (notifier),
-            new XtyDetector (notifier),
-            new AkaiS3pDetector (notifier),
+            new AkaiMesaDetector (notifier),
+            new AkaiMPC60Detector (notifier),
+            new AkaiMPC1000Detector (notifier),
+            new AkaiMPC2000Detector (notifier),
+            new MPCModernDetector (notifier),
+            new AkaiS900Detector (notifier),
+            new AkaiS1000Detector (notifier),
             new BitwigMultisampleDetector (notifier),
             new BlissDetector (notifier),
             new TX16WxDetector (notifier),
             new DecentSamplerDetector (notifier),
+            new DlsDetector (notifier),
             new DistingExDetector (notifier),
+            new TonverkMultiDetector (notifier),
+            new TonverkPresetDetector (notifier),
+            new EnsoniqEpsAsrDetector (notifier),
+            new MirageDetector (notifier),
             new VCDetector (notifier),
             new IsoDetector (notifier),
-            new KontaktDetector (notifier),
             new KMPDetector (notifier),
             new KorgmultisampleDetector (notifier),
             new EXS24Detector (notifier),
+            new KontaktDetector (notifier),
             new MaschineDetector (notifier),
+            new PolyendTrackerDetector (notifier),
+            new RenoiseDetector (notifier),
+            new S5xxDetector (notifier),
+            new S770Detector (notifier),
             new SxtDetector (notifier),
             new SampleFileDetector (notifier),
             new SfzDetector (notifier),
             new Sf2Detector (notifier),
+            new OmnisphereDetector (notifier),
+            new DelugeDetector (notifier),
             new TALSamplerDetector (notifier),
             new WaldorfQpatDetector (notifier),
             new YamahaYsfcDetector (notifier)
@@ -147,15 +185,21 @@ public class ConverterBackend
             new TX16WxCreator (notifier),
             new DecentSamplerCreator (notifier),
             new DistingExCreator (notifier),
-            new KontaktCreator (notifier),
+            new TonverkMultiCreator (notifier),
+            new TonverkPresetCreator (notifier),
             new KMPCreator (notifier),
             new KorgmultisampleCreator (notifier),
             new EXS24Creator (notifier),
+            new KontaktCreator (notifier),
             new MaschineCreator (notifier),
+            new PolyendTrackerCreator (notifier),
+            new RenoiseCreator (notifier),
             new SxtCreator (notifier),
             new WavCreator (notifier),
             new SfzCreator (notifier),
             new Sf2Creator (notifier),
+            new OmnisphereCreator (notifier),
+            new DelugeCreator (notifier),
             new TALSamplerCreator (notifier),
             new WaldorfQpatCreator (notifier),
             new YamahaYsfcCreator (notifier)
@@ -205,7 +249,10 @@ public class ConverterBackend
         this.collectedPerformanceSources.clear ();
 
         this.notifier.log ("TITLE");
-        this.notifier.log ("IDS_NOTIFY_DETECTING", detector.getName (), creator.getName ());
+        if (this.onlyAnalyse)
+            this.notifier.log ("IDS_NOTIFY_DETECTING_NO_CONVERSION", detector.getName ());
+        else
+            this.notifier.log ("IDS_NOTIFY_DETECTING", detector.getName (), creator.getName ());
         this.creator.clearCancelled ();
         this.detector.detect (detectionSettings.sourceFolder, new MultisampleSourceConsumer (), new PerformanceSourceConsumer (), detectPerformances);
     }
@@ -262,15 +309,13 @@ public class ConverterBackend
         {
             if (!this.onlyAnalyse)
                 this.collectedPresetSources.add (multisampleSource);
-            this.notifier.log ("IDS_NOTIFY_COLLECTING", multisampleSource.getMappingName ());
+            this.notifier.log ("IDS_NOTIFY_COLLECTING", multisampleSource.getName ());
             return;
         }
 
-        this.notifier.log ("IDS_NOTIFY_MAPPING", multisampleSource.getMappingName ());
-
         if (this.onlyAnalyse)
         {
-            this.notifier.log ("IDS_NOTIFY_OK");
+            this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", multisampleSource.getName ());
             return;
         }
 
@@ -336,7 +381,6 @@ public class ConverterBackend
     {
         ensureSafeSampleFileNames (multisampleSource);
         this.processSamples (multisampleSource);
-        this.applyRenaming (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
     }
 
@@ -351,7 +395,20 @@ public class ConverterBackend
         {
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
-            ////////////////////////////////////////////////////////////////////////////////////////////////
+            // -----------------------------------------------------------
+            // Loop cross-fade
+
+            if (this.detectionSettings.loopCrossfades > 0)
+            {
+                this.notifier.log ("IDS_PROCESSING_LOOP_CROSSFADE_LOG");
+                final double crossfadeFactor = Math.clamp (this.detectionSettings.loopCrossfades - 1L, 0, 100) / 100.0;
+                for (final IGroup group: multisampleSource.getGroups ())
+                    for (final ISampleZone zone: group.getSampleZones ())
+                        for (final ISampleLoop loop: zone.getLoops ())
+                            loop.setCrossfade (crossfadeFactor);
+            }
+
+            // -----------------------------------------------------------
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
@@ -368,7 +425,7 @@ public class ConverterBackend
                     this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
             }
 
-            ////////////////////////////////////////////////////////////////////////////////////////////////
+            // -----------------------------------------------------------
             // Reduce the number of samples if necessary
 
             if (hasMaximumNumberOfSamples && MultiSampleReducer.reduce (groups, this.detectionSettings.maxNumberOfSamples) > 0)
@@ -384,6 +441,9 @@ public class ConverterBackend
             }
             multisampleSource.setGroups (groups);
 
+            // -----------------------------------------------------------
+            // Audio processing
+
             final List<ISampleZone> sampleZones = new ArrayList<> ();
             for (final IGroup group: groups)
                 sampleZones.addAll (group.getSampleZones ());
@@ -396,10 +456,21 @@ public class ConverterBackend
                 this.notifier.log ("IDS_PROCESSING_REDUCE_BIT_DEPTH_TO", Integer.toString (this.detectionSettings.reduceBitDepth));
             if (this.detectionSettings.reduceFrequency > 0)
                 this.notifier.log ("IDS_PROCESSING_REDUCE_FREQUENCY_TO", Integer.toString (this.detectionSettings.reduceFrequency));
+            if (this.detectionSettings.alwaysResample)
+                this.notifier.log ("IDS_PROCESSING_ALWAYS_RESAMPLE");
             if (this.detectionSettings.enableNormalize)
                 this.notifier.log ("IDS_PROCESSING_NORMALIZING");
             this.notifier.log ("IDS_NOTIFY_LINE_FEED");
-            AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.enableNormalize);
+            AudioSampleReducer.reduceSamples (sampleZones, this.detectionSettings.enableMakeMono, this.detectionSettings.enableTrimSample, this.detectionSettings.reduceBitDepth, this.detectionSettings.reduceFrequency, this.detectionSettings.alwaysResample, this.detectionSettings.enableNormalize);
+
+            // -----------------------------------------------------------
+            // Snap forward loop boundaries to zero-crossings to remove loop clicks
+
+            if (this.detectionSettings.snapLoopsToZero)
+            {
+                final int snapped = LoopZeroSnapper.snap (sampleZones);
+                this.notifier.log ("IDS_PROCESSING_SNAP_LOOPS", Integer.toString (snapped));
+            }
         }
         catch (final IOException | UnsupportedAudioFileException ex)
         {
@@ -443,28 +514,6 @@ public class ConverterBackend
             }
         if (wasSet)
             this.notifier.log ("IDS_NOTIFY_APPLY_DEFAULT_ENVELOPE", category.isBlank () ? "Unknown" : category);
-    }
-
-
-    /**
-     * Applies the renaming of a IMultisampleSource according to the renaming table.
-     *
-     * @param multisampleSource the multi-sample source to be renamed.
-     */
-    private void applyRenaming (final IMultisampleSource multisampleSource)
-    {
-        if (this.detectionSettings.csvRenameFile == null || this.detectionSettings.csvRenameFile.isEmpty ())
-            return;
-
-        final String sourceName = multisampleSource.getName ();
-        final String targetName = this.detectionSettings.csvRenameFile.getMapping (sourceName);
-        if (targetName != null)
-        {
-            this.notifier.log ("IDS_NOTIFY_RENAMING_SOURCE_TO", sourceName, targetName);
-            multisampleSource.setName (targetName);
-        }
-        else
-            this.notifier.log ("IDS_NOTIFY_RENAMING_NOT_DEFINED", sourceName);
     }
 
 

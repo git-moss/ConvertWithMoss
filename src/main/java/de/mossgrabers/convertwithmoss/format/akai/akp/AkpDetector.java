@@ -105,7 +105,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
                         // Workaround for several samples seem to have 1 space before the note name
                         // but are stored with 2 or more spaces
                         final String n2 = n.replaceFirst ("\\s{2,}(?=\\S*$)", " ");
-                        File sampleFile2 = new File (file.getParentFile (), n2 + ".wav");
+                        final File sampleFile2 = new File (file.getParentFile (), n2 + ".wav");
                         if (sampleFile2.exists ())
                             sampleFile = sampleFile2;
                     }
@@ -160,7 +160,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
             final AkmFile akmFile = new AkmFile (file);
             this.notifier.log ("IDS_AKM_VERSION", akmFile.getVersion (), akmFile.isS5000Series () ? "S5000/S6000" : "Z4/Z8");
 
-            final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+            final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
             performanceSource.setName (FileUtils.getNameWithoutType (file));
 
             for (final AkmPart part: akmFile.getParts ())

@@ -119,8 +119,11 @@ public class DefaultMetadata implements IMetadata
     @Override
     public void detectMetadata (final IMetadataConfig config, final String [] parts, final String category)
     {
-        this.setCreator (TagDetector.detect (parts, config.getCreatorTags (), config.getCreatorName ()));
-        this.setCategory (category == null || category.isBlank () ? TagDetector.detectCategory (parts) : category);
-        this.setKeywords (TagDetector.detectKeywords (parts));
+        if (this.creator.isBlank ())
+            this.setCreator (TagDetector.detect (parts, config.getCreatorTags (), config.getCreatorName ()));
+        if (this.category.isBlank () || TagDetector.CATEGORY_UNKNOWN.equals (this.category))
+            this.setCategory (category == null || category.isBlank () ? TagDetector.detectCategory (parts) : category);
+        if (this.keywords.length == 0)
+            this.setKeywords (TagDetector.detectKeywords (parts));
     }
 }

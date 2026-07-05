@@ -463,48 +463,22 @@ class SxtZone
         zone.setBendUp (this.pitchWheelRange * 100);
         zone.setBendDown (-this.pitchWheelRange * 100);
 
-        // Set loop
-        boolean hasLoop = true;
-        boolean isAlternating = false;
-        switch (this.playMode)
-        {
-            // Forward
-            case 0:
-                hasLoop = false;
-                break;
-            // Forward loop
-            case 1:
-                // Already set-up
-                break;
-            // Fwd-bwd loop
-            case 2:
-                isAlternating = true;
-                break;
-            // Fwd-sus loop
-            case 3:
-                break;
-            // Backwards
-            case 4:
-                hasLoop = false;
-                zone.setReversed (true);
-                break;
-            // Unknown
-            default:
-                break;
-        }
-        if (hasLoop)
+        // Backwards
+        if (this.playMode == 4)
+            zone.setReversed (true);
+        else if (this.playMode > 0)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
+            loop.setType (this.playMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
+            loop.setLoopUntilRelease (this.playMode == 3);
             loop.setStart ((int) this.sampleLoopStart);
             loop.setEnd ((int) this.sampleLoopEnd);
-            if (isAlternating)
-                loop.setType (LoopType.ALTERNATING);
         }
 
         if (this.alternateMode > 0)
             zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
 
-        //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Pitch
 
         if (this.modEnvToPitch > 0)
@@ -523,12 +497,12 @@ class SxtZone
             modEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.modEnvRelease));
         }
 
-        //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         if (this.filterIsOn > 0)
         {
-            final double freqHz = 440 * Math.pow (2, (this.filterFreq - 6900) / 1200);
+            final double freqHz = 440 * Math.pow (2, (this.filterFreq - 6900) / 1200.0);
 
             FilterType type;
             int poles = 2;
@@ -590,7 +564,7 @@ class SxtZone
                 filter.getCutoffVelocityModulator ().setDepth (this.velocityToFilterFreq / 1000.0);
         }
 
-        //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Amplitude
 
         if (this.velocityToAmpGain != 0)
@@ -609,7 +583,7 @@ class SxtZone
         ampEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.ampEnvRelease));
 
         // Set gain and panning
-        zone.setGain (20 * Math.log10 (Math.pow ((this.ampEnvGain + 1440) / 1440, 3)));
+        zone.setGain (20 * Math.log10 (Math.pow ((this.ampEnvGain + 1440) / 1440.0, 3)));
         zone.setPanning (this.pan / 1000.0);
     }
 
@@ -628,7 +602,7 @@ class SxtZone
         this.velocityRangeEnd = Math.clamp (AbstractCreator.limitToDefault (zone.getVelocityHigh (), 127), 1, 127);
         this.velocityFadeIn = zone.getVelocityCrossfadeLow ();
         final int velocityCrossfadeHigh = zone.getVelocityCrossfadeHigh ();
-        this.velocityFadeOut = velocityCrossfadeHigh == 0 ? 0x80 : Math.clamp (127 - velocityCrossfadeHigh, 1, 127);
+        this.velocityFadeOut = velocityCrossfadeHigh == 0 ? 0x80 : Math.clamp (127L - velocityCrossfadeHigh, 1, 127);
         this.rootKey = AbstractCreator.limitToDefault (zone.getKeyRoot (), this.keyRangeStart);
         this.sampleStart = zone.getStart ();
         this.sampleEnd = zone.getStop ();
@@ -643,7 +617,7 @@ class SxtZone
 
         this.pitchWheelRange = Math.clamp (Math.abs (Math.round (zone.getBendUp () / 100.0)), 0, 24);
 
-        //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Loop
 
         final List<ISampleLoop> loops = zone.getLoops ();
@@ -654,7 +628,10 @@ class SxtZone
         else
         {
             final ISampleLoop loop = loops.get (0);
-            this.playMode = loop.getType () == LoopType.ALTERNATING ? 2 : 1;
+            if (loop.isLoopUntilRelease ())
+                this.playMode = 3;
+            else
+                this.playMode = loop.getType () == LoopType.ALTERNATING ? 2 : 1;
             this.sampleLoopStart = loop.getStart ();
             this.sampleLoopEnd = loop.getEnd ();
         }
@@ -662,7 +639,7 @@ class SxtZone
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
             this.alternateMode = 1;
 
-        //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Pitch
 
         final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
@@ -695,7 +672,7 @@ class SxtZone
             this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getReleaseTime ());
         }
 
-        //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         final Optional<IFilter> optFilter = zone.getFilter ();
@@ -769,7 +746,7 @@ class SxtZone
                 this.velocityToFilterFreq = (int) Math.round (cutoffVelocityAmount * 1000.0);
         }
 
-        //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Amplitude
 
         final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
@@ -804,7 +781,7 @@ class SxtZone
         // Set gain and panning
         final double dBValue = zone.getGain ();
         final double gainRatio = Math.pow (10, dBValue / 20);
-        this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3) * 1440 - 1440);
+        this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3.0) * 1440.0 - 1440);
 
         this.pan = (int) (zone.getPanning () * 1000.0);
     }

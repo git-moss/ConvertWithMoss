@@ -27,7 +27,6 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
@@ -48,6 +47,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataWithSearchHeightSettingsUI;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.FileUtils;
@@ -69,7 +69,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
     private static final Map<String, LoopType>   LOOP_MODES            = new HashMap<> ();
     private static final Map<String, FilterType> FILTER_TYPES          = new HashMap<> ();
-    private static final Map<String, Integer>    FILTER_SLOPES         = new HashMap<> ();
+    private static final Map<String, Integer>    FILTER_POLES          = new HashMap<> ();
     static
     {
         LOOP_MODES.put ("Forward", LoopType.FORWARDS);
@@ -81,9 +81,9 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         FILTER_TYPES.put ("BandPass", FilterType.BAND_PASS);
         FILTER_TYPES.put ("Notch", FilterType.BAND_REJECTION);
 
-        FILTER_SLOPES.put ("24dB", Integer.valueOf (4));
-        FILTER_SLOPES.put ("12dB", Integer.valueOf (2));
-        FILTER_SLOPES.put ("6dB", Integer.valueOf (1));
+        FILTER_POLES.put ("24dB", Integer.valueOf (4));
+        FILTER_POLES.put ("12dB", Integer.valueOf (2));
+        FILTER_POLES.put ("6dB", Integer.valueOf (1));
     }
 
 
@@ -133,7 +133,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
         try (final FileInputStream in = new FileInputStream (sourceFile))
         {
-            final String content = StreamUtils.readUTF8 (in);
+            final String content = StreamUtils.readUtf8 (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parsePresetFile (sourceFile, sourceFile.getParent (), document);
         }
@@ -154,7 +154,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
         try (final FileInputStream in = new FileInputStream (sourceFile))
         {
-            final String content = StreamUtils.readUTF8 (in);
+            final String content = StreamUtils.readUtf8 (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parsePerformanceFile (sourceFile, sourceFile.getParent (), document);
         }
@@ -180,11 +180,11 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final Element topElement = document.getDocumentElement ();
         if (!TX16WxTag.PERFORMANCE.equals (topElement.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Uknown Root");
             return Collections.emptyList ();
         }
 
-        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
 
         File previousFolder = null;
@@ -194,7 +194,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             final String programPath = slotElement.getAttribute (TX16WxTag.PROGRAM);
             if (programPath == null || programPath.isBlank ())
             {
-                this.notifier.logError (ERR_BAD_METADATA_FILE);
+                this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Program tag");
                 continue;
             }
 
@@ -241,7 +241,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final Element topElement = document.getDocumentElement ();
         if (!TX16WxTag.PROGRAM.equals (topElement.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Program tag");
             return null;
         }
 
@@ -255,7 +255,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final String category = topElement.getAttribute (TX16WxTag.PROGRAM_ICON);
         this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, category);
@@ -296,7 +296,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             String sampleName = waveElement.getAttribute (TX16WxTag.PATH);
             if (sampleName == null || sampleName.isBlank ())
             {
-                this.notifier.logError (ERR_BAD_METADATA_FILE);
+                this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Path attribute");
                 continue;
             }
 
@@ -366,7 +366,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         {
             final String k = groupElement.getAttribute (TX16WxTag.NAME);
             final String groupName = k == null || k.isBlank () ? "Group " + groupCounter : k;
-            final DefaultGroup group = new DefaultGroup (groupName);
+            final IGroup group = new DefaultGroup (groupName);
 
             final Optional<IFilter> optFilter = this.parseGroup (group, groupElement, sampleMap, soundShapeElementMap);
             if (optFilter.isPresent () && filter.isEmpty ())
@@ -387,7 +387,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
      * @param soundShapeElementMap The sound shape elements mapped to their ID
      * @return The filter, if any
      */
-    private Optional<IFilter> parseGroup (final DefaultGroup group, final Element groupElement, final Map<String, ISampleZone> sampleMap, final Map<String, Element> soundShapeElementMap)
+    private Optional<IFilter> parseGroup (final IGroup group, final Element groupElement, final Map<String, ISampleZone> sampleMap, final Map<String, Element> soundShapeElementMap)
     {
         final double groupVolumeOffset = this.parseVolume (groupElement, TX16WxTag.VOLUME);
         final double groupPanningOffset = parsePercentage (groupElement, TX16WxTag.PANNING);
@@ -614,12 +614,12 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final String slopeValue = filterElement.getAttribute (TX16WxTag.FILTER_SLOPE);
         if (slopeValue != null && !slopeValue.isBlank ())
         {
-            final Integer poleValue = FILTER_SLOPES.get (slopeValue);
+            final Integer poleValue = FILTER_POLES.get (slopeValue);
             if (poleValue != null)
                 poles = poleValue.intValue ();
         }
 
-        final DefaultFilter filter = new DefaultFilter (filterType, poles, frequency, resonance);
+        final IFilter filter = new DefaultFilter (filterType, poles, frequency, resonance);
         parseFilterModulation (filter, soundShapeElement, modulators);
         return Optional.of (filter);
     }
@@ -651,7 +651,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             {
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                 cutoffModulator.setDepth (amount);
-                final Optional<IEnvelope> envelope = parseEnvelope (soundShapeElement, modulator.isSource ("ENV1") ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
+                final Optional<IEnvelope> envelope = parseFilterEnvelope (soundShapeElement, modulator.isSource ("ENV1") ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
                 if (envelope.isPresent ())
                     cutoffModulator.setSource (envelope.get ());
             }
@@ -692,7 +692,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
     }
 
 
-    private static Optional<IEnvelope> parseEnvelope (final Element parentElement, final String envelopeTag)
+    private static Optional<IEnvelope> parseFilterEnvelope (final Element parentElement, final String envelopeTag)
     {
         final Element envElement = XMLUtils.getChildElementByName (parentElement, envelopeTag);
         if (envElement == null)

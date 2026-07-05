@@ -15,9 +15,8 @@ import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.Pane;
 
 
 /**
@@ -53,17 +52,17 @@ public class Sf2DetectorUI extends MetadataSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public Node getEditPane ()
+    public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Options
 
         panel.createSeparator ("@IDS_SF2_OPTIONS");
         this.logUnsupportedAttributesCheckBox = panel.createCheckBox ("@IDS_SF2_LOG_UNSUPPORTED_ATTRIBUTES");
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Naming
 
         final TitledSeparator separator = panel.createSeparator ("@IDS_SF2_NAMING");
@@ -72,16 +71,12 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         this.addFileNameCheckBox = panel.createCheckBox ("@IDS_SF2_NAMING_ADD_FILE_NAME");
         this.addProgramNumberCheckBox = panel.createCheckBox ("@IDS_SF2_NAMING_ADD_PROGRAM_NUMBER");
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Metadata
 
         this.addTo (panel);
         this.getSeparator ().getStyleClass ().add ("titled-separator-pane");
-
-        final ScrollPane scrollPane = new ScrollPane (panel.getPane ());
-        scrollPane.fitToWidthProperty ().set (true);
-        scrollPane.fitToHeightProperty ().set (true);
-        return scrollPane;
+        return panel.getPane ();
     }
 
 

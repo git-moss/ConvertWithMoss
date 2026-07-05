@@ -19,7 +19,6 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
-import de.mossgrabers.convertwithmoss.file.CSVRenameFile;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
 import picocli.CommandLine;
@@ -100,7 +99,6 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-f", "--flat").paramLabel ("FLAT").description ("If present, the folder structure is not recreated in the output folder.").build ());
             spec.addOption (OptionSpec.builder ("-l", "--library").paramLabel ("LIBRARY").type (String.class).description ("Name for the library. Set to create a library.").build ());
             spec.addOption (OptionSpec.builder ("-p").paramLabel ("KEY=VALUE").description ("Key-value pairs in the form -pkey1=value1,key2=value2,...").required (false).arity ("0..*").type (Map.class).auxiliaryTypes (String.class, String.class).defaultValue (null).build ());
-            spec.addOption (OptionSpec.builder ("-r", "--rename").paramLabel ("RENAME").type (File.class).description ("Configuration file for automatic file renaming.").build ());
 
             // Processing parameters
             spec.addOption (OptionSpec.builder ("-Ze", "--ProcessEnable").paramLabel ("PROCESS_ENABLE").type (Boolean.class).description ("Enables processing if set to true.").build ());
@@ -110,6 +108,9 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-Zx", "--ProcessMaxSamples").paramLabel ("PROCESS_MAX_SAMPLES").type (Integer.class).description ("Reduces the number of all samples to this maximum number, if processing is enabled.").build ());
             spec.addOption (OptionSpec.builder ("-Zb", "--ProcessBitDepth").paramLabel ("PROCESS_BIT_DEPTH").type (Integer.class).description ("Reduces the bit-depth of all samples to this maximum value, if processing is enabled. Valid numbers are: 8, 16 and 24").build ());
             spec.addOption (OptionSpec.builder ("-Zf", "--ProcessFrequency").paramLabel ("PROCESS_FREQUENCY").type (Integer.class).description ("Reduces the sample-rate of all samples to this maximum value, if processing is enabled. Valid numbers are: 48000, 44100, 32000, 31250, 30000, 28000, 27000, 24000, 22050, 16000, 12000, 11025 and 8000").build ());
+            spec.addOption (OptionSpec.builder ("-Za", "--ProcessAlwaysResample").paramLabel ("PROCESS_ALWAYS_RESAMPLE").type (Boolean.class).description ("Does as well up-sampling to the set sample frequency and bit depth, if enabled.").build ());
+            spec.addOption (OptionSpec.builder ("-Zl", "--ProcessLoopCrossfade").paramLabel ("PROCESS_LOOP_CROSSFADE").type (Integer.class).description ("Sets a fixed loop crossfade as a percentage. Valid values are 0-100.").build ());
+            spec.addOption (OptionSpec.builder ("-Zs", "--ProcessSnapLoops").paramLabel ("PROCESS_SNAP_LOOPS").type (Boolean.class).description ("Snaps forward loop boundaries to the nearest zero-crossing to remove loop clicks, if processing is enabled.").build ());
 
             spec.addPositional (PositionalParamSpec.builder ().paramLabel ("SOURCE_FOLDER").type (File.class).description ("The source folder to process.").required (true).build ());
             spec.addPositional (PositionalParamSpec.builder ().paramLabel ("DESTINATION_FOLDER").type (File.class).description ("The destination folder to write to.").required (true).build ());
@@ -190,16 +191,16 @@ public class CLIBackend implements INotifier
             }
             detectSettings.reduceFrequency = frequency.intValue ();
         }
+        detectSettings.alwaysResample = parseResult.matchedOptionValue ("Za", Boolean.FALSE).booleanValue ();
+        detectSettings.loopCrossfades = parseResult.matchedOptionValue ("Zl", Integer.valueOf (-1)).intValue () + 1;
+        detectSettings.snapLoopsToZero = parseResult.matchedOptionValue ("Zs", Boolean.FALSE).booleanValue ();
 
         // Renaming option & folder check
-        final File renamingCSVFile = parseResult.matchedOptionValue ('r', null);
         detectSettings.sourceFolder = parseResult.matchedPositionalValue (0, null);
         detectSettings.outputFolder = parseResult.matchedPositionalValue (1, null);
-        detectSettings.csvRenameFile = null;
         try
         {
             verifyFolders (detectSettings.sourceFolder, detectSettings.outputFolder);
-            detectSettings.csvRenameFile = verifyRenameFile (renamingCSVFile);
         }
         catch (final IllegalArgumentException ex)
         {
@@ -221,7 +222,7 @@ public class CLIBackend implements INotifier
             {
                 Thread.sleep (10);
             }
-            catch (final InterruptedException ex)
+            catch (final InterruptedException _)
             {
                 Thread.currentThread ().interrupt ();
             }
@@ -345,29 +346,5 @@ public class CLIBackend implements INotifier
             throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", destinationFolder.getAbsolutePath ()));
         if (!destinationFolder.isDirectory ())
             throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_FOLDER_DESTINATION_NOT_A_FOLDER", destinationFolder.getAbsolutePath ()));
-    }
-
-
-    /**
-     * Set and check folder for existence.
-     *
-     * @param renamingCSVFile The renaming file
-     * @return The parsed rename file
-     */
-    private static CSVRenameFile verifyRenameFile (final File renamingCSVFile)
-    {
-        if (renamingCSVFile == null)
-            return null;
-
-        final CSVRenameFile csvRenameFile = new CSVRenameFile ();
-
-        if (!renamingCSVFile.exists ())
-            throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_RENAMING_CSV_DOES_NOT_EXIST", renamingCSVFile.getAbsolutePath ()));
-
-        if (!renamingCSVFile.canRead ())
-            throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_RENAMING_CSV_NOT_READABLE", renamingCSVFile.getAbsolutePath ()));
-
-        csvRenameFile.setRenameFile (renamingCSVFile);
-        return csvRenameFile;
     }
 }

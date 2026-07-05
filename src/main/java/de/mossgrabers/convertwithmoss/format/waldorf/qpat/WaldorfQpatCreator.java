@@ -46,7 +46,6 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final String                                SLOPE_EXP              = "Exp";
     private static final String                                SLOPE_EXP_ALT          = "Exp alt";
 
-    private static final String                                FORMAT_SECONDS         = "%.2f secs";
     private static final int                                   PRESET_VERSION         = 14;
     private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER  = new WaldorfQpatResourceHeader ();
 
@@ -115,8 +114,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<IGroup> groups, final String relativeSamplePath) throws IOException
     {
-        final List<WaldorfQpatParameter> parameters = createParameters (groups);
-        final List<String> sampleMaps = createSampleMaps (groups, relativeSamplePath);
+        // A zero-attack/zero-decay amplitude envelope that sustains below full level makes the
+        // device pop at the start of each note: it snaps to the 100% attack peak and then instantly
+        // drops to the sustain level. Such an envelope is meant to be flat, so write a full sustain
+        // and fold the sustain level into the zone gain instead.
+        final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
+        final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0);
+        final List<String> sampleMaps = createSampleMaps (groups, relativeSamplePath, ampGainFold);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
@@ -125,14 +129,25 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             StreamUtils.writeUnsigned16 (out, parameters.size (), false);
             StreamUtils.padBytes (out, 2);
 
-            // Write up to 3 sample maps (groups have already been reduced to a max. of 3) ...
+            // Write up to 3 sample maps (groups have already been reduced to a max. of 3). Each
+            // map's
+            // offset is relative to the start of the concatenated resource data written further
+            // down,
+            // so it must accumulate the lengths of the preceding maps. Without this, maps 2 and 3
+            // keep
+            // the default offset 0 and are read overlapping map 1, so the device cannot locate
+            // their
+            // samples and shows the "Find Sample Map" screen for multi-oscillator patches.
+            int resourceOffset = 0;
             for (int i = 0; i < sampleMaps.size (); i++)
             {
-                final String sampleMap = sampleMaps.get (i);
+                final byte [] sampleMapBytes = sampleMaps.get (i).getBytes ();
                 final WaldorfQpatResourceHeader resourceHeader = new WaldorfQpatResourceHeader ();
                 resourceHeader.type = TYPE_LOOKUP.get (Integer.valueOf (i));
-                resourceHeader.length = sampleMap.getBytes ().length;
+                resourceHeader.offset = resourceOffset;
+                resourceHeader.length = sampleMapBytes.length;
                 resourceHeader.write (out);
+                resourceOffset += sampleMapBytes.length;
             }
             // .... and pad with empty resources
             for (int i = 0; i < WaldorfQpatConstants.MAX_RESOURCES - sampleMaps.size (); i++)
@@ -160,15 +175,50 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
+     * Determines the amplitude gain to fold into the zone gains when the amplitude envelope must be
+     * flattened. When the envelope has (effectively) no attack and no decay but sustains below full
+     * level, the device snaps to the 100% attack peak and then instantly drops to the sustain level
+     * at the start of each note, which is audible as a click/pop. Such an envelope is meant to be
+     * flat at the sustain level, so it is written with a full sustain (see createEnvelope) and the
+     * sustain level is applied to the zone gain instead.
+     *
+     * @param groups The groups
+     * @return The gain factor to fold into the zone gains [0..1], or 1.0 if no flattening is needed
+     */
+    private static double computeFlatAmpEnvelopeLevel (final List<IGroup> groups)
+    {
+        if (groups.isEmpty () || groups.get (0).getSampleZones ().isEmpty ())
+            return 1.0;
+
+        final IEnvelope envelope = groups.get (0).getSampleZones ().get (0).getAmplitudeEnvelopeModulator ().getSource ();
+        if (envelope == null)
+            return 1.0;
+
+        // The minimum representable envelope time is 0.06 seconds; anything at or below that is
+        // written as an instant stage (see convertFromTime).
+        final double attackTime = envelope.getAttackTime ();
+        final double decayTime = Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ());
+        double sustainLevel = envelope.getSustainLevel ();
+        if (sustainLevel == -1)
+            sustainLevel = 1;
+        if (attackTime <= 0.06 && decayTime <= 0.06 && sustainLevel > 0 && sustainLevel < 1)
+            return sustainLevel;
+        return 1.0;
+    }
+
+
+    /**
      * Create a sample map for each group. A sample map is a text file which describes a basic
      * multi-sample configuration.
      *
      * @param groups The groups
      * @param relativeSamplePath The relative path to the samples
+     * @param gainFactor A linear gain factor applied to every zone (used to fold a flattened
+     *            amplitude envelope's sustain level into the gain)
      * @return The sample maps
      * @throws IOException Could not read the necessary audio metadata of a sample
      */
-    private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath) throws IOException
+    private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath, final double gainFactor) throws IOException
     {
         final List<String> sampleMaps = new ArrayList<> ();
 
@@ -184,9 +234,15 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 final ISampleData sampleData = zone.getSampleData ();
                 final double numSampleFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
 
-                // Sample Path - '4:' refers to the USB drive. This is required to trigger the
-                // copying of the samples to the internal memory
-                sb.append ("\"4:").append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
+                // Sample path, written relative to the preset (no leading drive number). The device
+                // resolves it against the folder the preset itself was loaded from, so it locates
+                // the samples on whatever drive the preset sits on. A leading drive number was
+                // written here before (an absolute path such as "4:samples/..."), but the device
+                // then prepends its own drive again when you use "Export -> With Samples",
+                // producing an invalid, doubled path (e.g. "3:2:samples/...") so the samples could
+                // not be backed up. A relative path both loads and exports/backs up cleanly
+                // (confirmed on Iridium OS 4).
+                sb.append ('"').append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!
@@ -197,7 +253,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
                 // Gain
                 final double v = Math.clamp (zone.getGain (), Double.NEGATIVE_INFINITY, 20);
-                sb.append (formatMapDouble (Math.pow (10, v / 20))).append ('\t');
+                sb.append (formatMapDouble (Math.pow (10, v / 20) * gainFactor)).append ('\t');
 
                 // FromVelo / ToVelo
                 sb.append (zone.getVelocityLow ()).append ('\t').append (zone.getVelocityHigh ()).append ('\t');
@@ -205,18 +261,22 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // Pan - CURRENTLY IGNORED
                 sb.append (formatMapDouble ((zone.getPanning () + 1.0) / 2.0)).append ('\t');
 
-                // Start / End
-                sb.append (formatMapDouble (zone.getStart () / numSampleFrames)).append ('\t');
-                sb.append (formatMapDouble (zone.getStop () / numSampleFrames)).append ('\t');
+                // Start / End - a zone whose start/stop was never set keeps the model default of
+                // -1, which would otherwise be written as a negative position (the device then
+                // shows a sample start/end of -1). Treat an unset start/stop as the full sample.
+                final double startFrame = zone.getStart () < 0 ? 0 : zone.getStart ();
+                final double stopFrame = zone.getStop () <= 0 ? numSampleFrames : zone.getStop ();
+                sb.append (formatMapDouble (startFrame / numSampleFrames)).append ('\t');
+                sb.append (formatMapDouble (stopFrame / numSampleFrames)).append ('\t');
 
                 // Loop mode, start, stop
                 final List<ISampleLoop> loops = zone.getLoops ();
                 if (loops.isEmpty ())
-                    sb.append ("0\t0\t").append (formatMapDouble (zone.getStop () / numSampleFrames)).append ('\t');
+                    sb.append ("0\t0\t").append (formatMapDouble (stopFrame / numSampleFrames)).append ('\t');
                 else
                 {
                     final ISampleLoop loop = loops.get (0);
-                    sb.append (loop.getType () == LoopType.FORWARDS ? 1 : 2).append ('\t');
+                    sb.append (loop.getType () == LoopType.ALTERNATING ? 2 : 1).append ('\t');
                     sb.append (formatMapDouble (loop.getStart () / numSampleFrames)).append ('\t');
                     sb.append (formatMapDouble (loop.getEnd () / numSampleFrames)).append ('\t');
                 }
@@ -268,7 +328,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
 
-    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups)
+    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope)
     {
         final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
 
@@ -292,12 +352,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24.0f));
 
             // Osc1Keytrack: [0..1] ~ [-200..200] - already set in the sample maps
-            final double keyTracking = 100.0;
-            final String keyTrackingStr = "+" + String.format (Locale.US, "%.2f", Double.valueOf (keyTracking)) + " %";
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Keytrack", keyTrackingStr, (float) ((keyTracking + 200.0) / 400.0)));
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Keytrack", "+100.0", 0.75f));
 
             // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB] - already set in the sample maps
-            final String volumeStr = "+" + String.format (Locale.US, "%.3f dB", Double.valueOf (0));
+            final String volumeStr = "+" + StringUtils.formatDouble (0, 3, " dB");
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Vol", volumeStr, (float) convertFromDecibels (0)));
 
             // Osc1Pan: [0..1] ~ [L..R] - already set in the sample maps
@@ -311,11 +369,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
                 final IEnvelopeModulator amplitudeEnvelopeModulator = firstZone.getAmplitudeEnvelopeModulator ();
                 final IEnvelope envelope = amplitudeEnvelopeModulator.getSource ();
-                createEnvelope (parameters, envelope, "AmpEnv", "AmpEnv");
+                createEnvelope (parameters, envelope, "AmpEnv", "AmpEnv", flattenAmpEnvelope);
 
                 // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
                 final double ampVeloAmount = amplitudeEnvelopeModulator.getDepth ();
-                parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", String.format (Locale.US, "%.2f", Double.valueOf (ampVeloAmount * 100.0)) + " %", (float) ((ampVeloAmount + 1.0) / 2.0)));
+                parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", StringUtils.formatPercent (ampVeloAmount, 2), (float) ((ampVeloAmount + 1.0) / 2.0)));
             }
         }
 
@@ -342,11 +400,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         // MatrixAmount1 - Can only pitch -24..24 semi-tones (instead of -48..48)
         depth = Math.clamp (depth, -0.5, 0.5) * 2;
-        final String depthStr = String.format (Locale.US, "%.2f", Double.valueOf (depth * 100.0)) + " %";
+        final String depthStr = StringUtils.formatPercent (depth, 2);
         parameters.add (new WaldorfQpatParameter ("MatrixAmount" + oscIndex, depthStr, (float) ((depth + 1.0) / 2.0)));
 
         final String prefix = "FreeEnv" + oscIndex;
-        createEnvelope (parameters, pitchEnvelopeModulator.getSource (), prefix, prefix);
+        createEnvelope (parameters, pitchEnvelopeModulator.getSource (), prefix, prefix, false);
     }
 
 
@@ -398,62 +456,71 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         // Filter1CutOff: [0.00] "8.1758 Hz" ... [1.00] "19912.2 Hz"
         final double cutoff = Math.log (filter.getCutoff () / 8.1758) / (Math.log (2) * 11.25);
-        parameters.add (new WaldorfQpatParameter ("Filter1CutOff", String.format (Locale.US, "%.4f Hz", Double.valueOf (cutoff)), (float) cutoff));
+        parameters.add (new WaldorfQpatParameter ("Filter1CutOff", StringUtils.formatDouble (cutoff, 4, " Hz"), (float) cutoff));
 
         // Filter1Reso: [0.00] "0.00 %" ... [1.00] "100.00 %"
         final double resonance = filter.getResonance ();
-        parameters.add (new WaldorfQpatParameter ("Filter1Reso", String.format (Locale.US, "%.2f", Double.valueOf (resonance * 100.0)) + " %", (float) resonance));
+        parameters.add (new WaldorfQpatParameter ("Filter1Reso", StringUtils.formatPercent (resonance, 2), (float) resonance));
 
         // Filter1EnvAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
         final double filterVeloAmount = filter.getCutoffVelocityModulator ().getDepth ();
-        parameters.add (new WaldorfQpatParameter ("Filter1VeloAmount", String.format (Locale.US, "%.2f", Double.valueOf (filterVeloAmount * 100.0)) + " %", (float) ((filterVeloAmount + 1.0) / 2.0)));
+        parameters.add (new WaldorfQpatParameter ("Filter1VeloAmount", StringUtils.formatPercent (filterVeloAmount, 2), (float) ((filterVeloAmount + 1.0) / 2.0)));
 
         final IEnvelopeModulator modulator = filter.getCutoffEnvelopeModulator ();
         final double filterEnvAmount = modulator.getDepth ();
-        parameters.add (new WaldorfQpatParameter ("Filter1EnvAmount", String.format (Locale.US, "%.2f", Double.valueOf (filterEnvAmount * 100.0)) + " %", (float) ((filterEnvAmount + 1.0) / 2.0)));
+        parameters.add (new WaldorfQpatParameter ("Filter1EnvAmount", StringUtils.formatPercent (filterEnvAmount, 2), (float) ((filterEnvAmount + 1.0) / 2.0)));
 
-        final IEnvelope envelope = modulator.getSource ();
+        // Filter1Keytrack: [0.00] "-100.00 %" ... [0.50] "0.00 %" ... [1.00] "+100.00 %". Both
+        // filters track so the patch stays bright across the keyboard.
+        final double keyTracking = filter.getCutoffKeyTracking ();
+        parameters.add (new WaldorfQpatParameter ("Filter1Keytrack", StringUtils.formatPercent (keyTracking, 2), (float) Math.clamp ((keyTracking + 1.0) / 2.0, 0, 1)));
 
-        createEnvelope (parameters, envelope, "Filter1Env", "Filter1");
+        createEnvelope (parameters, modulator.getSource (), "Filter1Env", "Filter1", false);
     }
 
 
-    private static void createEnvelope (final List<WaldorfQpatParameter> parameters, final IEnvelope envelope, final String prefix, final String slopePrefix)
+    private static void createEnvelope (final List<WaldorfQpatParameter> parameters, final IEnvelope envelope, final String prefix, final String slopePrefix, final boolean flattenSustain)
     {
         final boolean isPitch = prefix.startsWith ("Free");
+        // Only the amplitude envelope gates the VCA, so only it can click when a stage is instant;
+        // a short filter or pitch envelope stage is left unchanged.
+        final boolean isAmplitude = "AmpEnv".equals (prefix);
 
         if (isPitch && envelope.getStartLevel () != 0)
         {
             // xxxEnvDelay
-            parameters.add (new WaldorfQpatParameter (prefix + "Delay", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (0)), 0));
+            parameters.add (new WaldorfQpatParameter (prefix + "Delay", formatSeconds (0), 0));
             // xxxEnvAttack
-            parameters.add (new WaldorfQpatParameter (prefix + "Attack", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (0)), 0));
+            parameters.add (new WaldorfQpatParameter (prefix + "Attack", formatSeconds (0), 0));
             // xxxEnvDecay
             final double decayTime = Math.clamp (envelope.getAttackTime (), 0, 60);
-            parameters.add (new WaldorfQpatParameter (prefix + "Decay", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (decayTime)), (float) convertFromTime (decayTime)));
+            parameters.add (new WaldorfQpatParameter (prefix + "Decay", formatSeconds (decayTime), (float) convertFromTime (decayTime)));
         }
         else
         {
             // xxxEnvDelay
             final double delayTime = Math.clamp (envelope.getDelayTime (), 0, 2);
-            parameters.add (new WaldorfQpatParameter (prefix + "Delay", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (delayTime)), (float) convertFromDelayTime (delayTime)));
+            parameters.add (new WaldorfQpatParameter (prefix + "Delay", formatSeconds (delayTime), (float) convertFromDelayTime (delayTime)));
             // xxxEnvAttack
-            final double attackTime = Math.clamp (envelope.getAttackTime (), 0, 60);
-            parameters.add (new WaldorfQpatParameter (prefix + "Attack", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (attackTime)), (float) convertFromTime (attackTime)));
+            final double attackTime = declickAmpTime (isAmplitude, Math.clamp (envelope.getAttackTime (), 0, 60));
+            parameters.add (new WaldorfQpatParameter (prefix + "Attack", formatSeconds (attackTime), (float) convertFromTime (attackTime)));
             // xxxEnvDecay
             final double decayTime = Math.clamp (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()), 0, 60);
-            parameters.add (new WaldorfQpatParameter (prefix + "Decay", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (decayTime)), (float) convertFromTime (decayTime)));
+            parameters.add (new WaldorfQpatParameter (prefix + "Decay", formatSeconds (decayTime), (float) convertFromTime (decayTime)));
         }
 
         // xxxEnvRelease
-        final double releaseTime = Math.clamp (envelope.getReleaseTime (), 0, 60);
-        parameters.add (new WaldorfQpatParameter (prefix + "Release", String.format (Locale.US, FORMAT_SECONDS, Double.valueOf (releaseTime)), (float) convertFromTime (releaseTime)));
+        final double releaseTime = declickAmpTime (isAmplitude, Math.clamp (envelope.getReleaseTime (), 0, 60));
+        parameters.add (new WaldorfQpatParameter (prefix + "Release", formatSeconds (releaseTime), (float) convertFromTime (releaseTime)));
 
-        // xxxEnvSustain
+        // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is
+        // folded into the zone gain instead (see computeFlatAmpEnvelopeLevel)
         double sustainLevel = envelope.getSustainLevel ();
         if (sustainLevel == -1)
             sustainLevel = isPitch ? 0 : 1;
-        parameters.add (new WaldorfQpatParameter (prefix + "Sustain", String.format (Locale.US, "%.2f", Double.valueOf (sustainLevel * 100.0)) + " %", (float) sustainLevel));
+        if (flattenSustain)
+            sustainLevel = 1;
+        parameters.add (new WaldorfQpatParameter (prefix + "Sustain", StringUtils.formatPercent (sustainLevel, 2), (float) sustainLevel));
 
         if (isPitch && envelope.getStartLevel () != 0)
         {
@@ -538,9 +605,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     {
         StreamUtils.writeUnsigned32 (out, WaldorfQpatConstants.MAGIC, false);
         StreamUtils.writeUnsigned32 (out, PRESET_VERSION, false);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (name), WaldorfQpatConstants.MAX_STRING_LENGTH);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (metadata.getCreator ()), WaldorfQpatConstants.MAX_STRING_LENGTH);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (metadata.getDescription ()).replace ('\r', ' ').replace ('\n', ' '), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (name), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (metadata.getCreator ()), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (metadata.getDescription ()).replace ('\r', ' ').replace ('\n', ' '), WaldorfQpatConstants.MAX_STRING_LENGTH);
 
         final List<String> categories = new ArrayList<> ();
         categories.add (metadata.getCategory ());
@@ -548,7 +615,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         while (categories.size () < 4)
             categories.add ("");
         for (int i = 0; i < 4; i++)
-            StreamUtils.writeASCII (out, StringUtils.fixASCII (categories.get (i)), WaldorfQpatConstants.MAX_STRING_LENGTH);
+            StreamUtils.writeAscii (out, StringUtils.fixASCII (categories.get (i)), WaldorfQpatConstants.MAX_STRING_LENGTH);
     }
 
 
@@ -566,14 +633,44 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
 
+    /**
+     * The device plays an envelope stage with parameter value 0 as instant. For the amplitude
+     * envelope a non-zero attack or release shorter than the ~0.06 second minimum would otherwise
+     * collapse to instant and click on note-on/off for a sample that does not start or end at a
+     * zero crossing. Clamp such a time up to the shortest audible length (0.07 seconds, verified on
+     * Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the VCA,
+     * so a short filter or pitch envelope stage is left unchanged.
+     *
+     * @param isAmplitude True if this is the amplitude (VCA) envelope
+     * @param seconds The envelope stage time in seconds
+     * @return The de-clicked time in seconds
+     */
+    private static double declickAmpTime (final boolean isAmplitude, final double seconds)
+    {
+        return isAmplitude && seconds > 0 ? Math.max (seconds, 0.07) : seconds;
+    }
+
+
     private static double convertFromTime (final double y)
     {
-        return Math.log (y / 0.06) / Math.log (1000);
+        // The minimum representable time is 0.06 seconds (parameter value 0). Anything at or below
+        // that - including a zero attack/decay/release - maps to 0. Without this guard the
+        // logarithm returns negative values, and exactly 0 yields negative infinity, which would be
+        // written as a corrupt float and produce e.g. a click at the start of every note.
+        if (y <= 0.06)
+            return 0;
+        return Math.clamp (Math.log (y / 0.06) / Math.log (1000), 0, 1);
     }
 
 
     private static String formatMapDouble (final double value)
     {
         return String.format (Locale.US, "%.8f", Double.valueOf (value));
+    }
+
+
+    private static String formatSeconds (final double seconds)
+    {
+        return String.format (Locale.US, "%.2f secs", Double.valueOf (seconds));
     }
 }

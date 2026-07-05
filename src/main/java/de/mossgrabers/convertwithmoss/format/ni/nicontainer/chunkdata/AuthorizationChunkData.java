@@ -47,7 +47,7 @@ public class AuthorizationChunkData extends AbstractChunkData
             final long numPIDs = StreamUtils.readUnsigned32 (in, false);
             for (long i = 0; i < numPIDs; i++)
             {
-                final String pid = StreamUtils.readWithLengthUTF16 (in);
+                final String pid = StreamUtils.readUtf16WithLength (in);
                 if (pid != null && !pid.isBlank ())
                     this.serialNumberPIDs.add (pid);
             }

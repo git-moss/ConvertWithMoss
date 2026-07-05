@@ -16,7 +16,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
@@ -30,6 +30,15 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 public class AudioSampleReducer
 {
     /**
+     * Constructor. Private due to helper class.
+     */
+    private AudioSampleReducer ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Reduces the size of audio samples based on the provided parameters
      *
      * @param sampleZones The sample zones to reduce
@@ -37,67 +46,97 @@ public class AudioSampleReducer
      * @param enableTrimSample True if samples should be trimmed
      * @param reduceBitDepth Maximum bit-depth to reduce to, negative to ignore
      * @param reduceFrequency Maximum sample rate to reduce to, negative to ignore
+     * @param alwaysResample If true, do up-sample as well
      * @param enableNormalize True to normalize all samples (across all samples)
      * @throws IOException Could not read a sample
      * @throws UnsupportedAudioFileException Can't happen since only WAV files are supported
      */
-    public static void reduceSamples (final List<ISampleZone> sampleZones, final boolean enableMakeMono, final boolean enableTrimSample, final int reduceBitDepth, final int reduceFrequency, final boolean enableNormalize) throws IOException, UnsupportedAudioFileException
+    public static void reduceSamples (final List<ISampleZone> sampleZones, final boolean enableMakeMono, final boolean enableTrimSample, final int reduceBitDepth, final int reduceFrequency, final boolean alwaysResample, final boolean enableNormalize) throws IOException, UnsupportedAudioFileException
     {
         final List<byte []> sampleCache = loadSampleData (sampleZones);
+
+        final int size = sampleCache.size ();
+        final int [] sourceSampleRates = new int [size];
+
         final List<byte []> newSampleCache = new ArrayList<> ();
-        for (int i = 0; i < sampleCache.size (); i++)
+        for (int i = 0; i < size; i++)
         {
             byte [] data = sampleCache.get (i);
             final ISampleZone sampleZone = sampleZones.get (i);
+            final IAudioMetadata audioMetadata = sampleZone.getSampleData ().getAudioMetadata ();
+            sourceSampleRates[i] = audioMetadata.getSampleRate ();
 
             // Trim start/end
             if (enableTrimSample)
-            {
-                final int start = sampleZone.getStart ();
-                int end = sampleZone.getStop ();
-                final List<ISampleLoop> loops = sampleZone.getLoops ();
-                if (!loops.isEmpty ())
-                {
-                    final int loopEnd = loops.get (0).getEnd ();
-                    if (loopEnd < end)
-                        end = loopEnd;
-                }
-                data = trimSample (data, start, end);
-                sampleZone.setStart (0);
-                sampleZone.setStop (end - start);
-            }
+                data = trimSample (data, sampleZone);
 
             // Make mono if it is not already mono
-            if (enableMakeMono && !sampleZone.getSampleData ().getAudioMetadata ().isMono ())
+            if (enableMakeMono && !audioMetadata.isMono ())
                 data = convertToMono (data);
 
             // Reduce bit depth & sample rate if needed
             if (reduceBitDepth > 0 || reduceFrequency > 0)
-                data = resample (data, reduceBitDepth, reduceFrequency);
+                data = resample (data, reduceBitDepth, reduceFrequency, alwaysResample);
 
             newSampleCache.add (data);
         }
 
-        // Find max amplitude if normalization is enabled
-        if (!enableNormalize)
-            return;
-        double maxAmplitude = 0;
-        for (final byte [] data: newSampleCache)
-            maxAmplitude = Math.max (maxAmplitude, findMaxAmplitude (data));
-        // Normalize if needed
-        if (maxAmplitude > 0)
+        if (enableNormalize)
+            normalizeSample (newSampleCache);
+
+        adjustPositions (sampleZones, sourceSampleRates, newSampleCache);
+    }
+
+
+    private static void adjustPositions (final List<ISampleZone> sampleZones, final int [] sourceSampleRates, final List<byte []> newSampleCache) throws IOException
+    {
+        for (int i = 0; i < newSampleCache.size (); i++)
         {
-            for (int i = 0; i < newSampleCache.size (); i++)
+            final WavFileSampleData sampleData = new WavFileSampleData (new ByteArrayInputStream (newSampleCache.get (i)));
+            final ISampleZone sampleZone = sampleZones.get (i);
+            sampleZone.setSampleData (sampleData);
+
+            // Adjust all positions if sample rate did change!
+
+            final int newSampleRate = sampleData.getAudioMetadata ().getSampleRate ();
+            if (sourceSampleRates[i] == newSampleRate)
+                continue;
+
+            final double sampleRateRatio = newSampleRate / (double) sourceSampleRates[i];
+            final int start = sampleZone.getStart ();
+            if (start > 0)
+                sampleZone.setStart ((int) Math.round (start * sampleRateRatio));
+            final int stop = sampleZone.getStop ();
+            if (stop > 0)
+                sampleZone.setStop ((int) Math.round (stop * sampleRateRatio));
+
+            for (final ISampleLoop loop: sampleZone.getLoops ())
             {
-                final byte [] data = normalize (newSampleCache.get (i), maxAmplitude);
-                final ISampleData sampleData = new WavFileSampleData (new ByteArrayInputStream (data));
-                sampleZones.get (i).setSampleData (sampleData);
+                final int loopStart = loop.getStart ();
+                if (loopStart > 0)
+                    loop.setStart ((int) Math.round (loopStart * sampleRateRatio));
+                final int loopEnd = loop.getEnd ();
+                if (loopEnd > 0)
+                    loop.setEnd ((int) Math.round (loopEnd * sampleRateRatio));
             }
         }
     }
 
 
-    private static byte [] resample (final byte [] wavData, final int reduceBitDepth, final int reduceFrequency) throws IOException, UnsupportedAudioFileException
+    private static void normalizeSample (final List<byte []> newSampleCache) throws IOException, UnsupportedAudioFileException
+    {
+        // Find max amplitude
+        double maxAmplitude = 0;
+        for (final byte [] data: newSampleCache)
+            maxAmplitude = Math.max (maxAmplitude, findMaxAmplitude (data));
+        // Normalize if needed
+        if (maxAmplitude > 0)
+            for (int i = 0; i < newSampleCache.size (); i++)
+                newSampleCache.set (i, normalize (newSampleCache.get (i), maxAmplitude));
+    }
+
+
+    private static byte [] resample (final byte [] wavData, final int reduceBitDepth, final int reduceFrequency, final boolean alwaysResample) throws IOException, UnsupportedAudioFileException
     {
         final boolean shouldResampleBitDepth = reduceBitDepth > 0;
         final boolean shouldResampleFrequency = reduceFrequency > 0;
@@ -109,15 +148,32 @@ public class AudioSampleReducer
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
             final AudioFormat format = ais.getFormat ();
-            needsBitDepthResampling = shouldResampleBitDepth && format.getSampleSizeInBits () > reduceBitDepth;
-            needsFrequencyResampling = shouldResampleFrequency && format.getSampleRate () > reduceFrequency;
+            needsBitDepthResampling = shouldResampleBitDepth && (alwaysResample || format.getSampleSizeInBits () > reduceBitDepth);
+            needsFrequencyResampling = shouldResampleFrequency && (alwaysResample || format.getSampleRate () > reduceFrequency);
         }
         byte [] data = wavData;
-        if (needsFrequencyResampling)
-            data = resampleFrequency (data, reduceFrequency);
         if (needsBitDepthResampling)
-            data = reduceBitDepth (data, reduceBitDepth);
+            data = reduceBitDepth (data, reduceBitDepth, alwaysResample);
+        if (needsFrequencyResampling)
+            data = resampleFrequency (data, reduceFrequency, alwaysResample);
         return data;
+    }
+
+
+    private static byte [] trimSample (final byte [] data, final ISampleZone sampleZone) throws IOException, UnsupportedAudioFileException
+    {
+        final int start = sampleZone.getStart ();
+        int end = sampleZone.getStop ();
+        final List<ISampleLoop> loops = sampleZone.getLoops ();
+        if (!loops.isEmpty ())
+        {
+            final int loopEnd = loops.get (0).getEnd ();
+            if (loopEnd < end)
+                end = loopEnd;
+        }
+        sampleZone.setStart (0);
+        sampleZone.setStop (end - start);
+        return trimSampleData (data, start, end);
     }
 
 
@@ -131,7 +187,7 @@ public class AudioSampleReducer
      * @throws IOException Could not read the sample
      * @throws UnsupportedAudioFileException Could not parse the WAV file
      */
-    private static byte [] trimSample (final byte [] wavData, final int startFrame, final int stopFrame) throws IOException, UnsupportedAudioFileException
+    private static byte [] trimSampleData (final byte [] wavData, final int startFrame, final int stopFrame) throws IOException, UnsupportedAudioFileException
     {
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
@@ -208,23 +264,24 @@ public class AudioSampleReducer
      *
      * @param wavData The WAV data structure
      * @param targetBits The maximum bit-depth
+     * @param alwaysResample If true, do up-sample as well
      * @return The updated sample as a WAV audio structure
      * @throws IOException Could not read the sample
      * @throws UnsupportedAudioFileException Could not parse the WAV file
      */
-    private static byte [] reduceBitDepth (final byte [] wavData, final int targetBits) throws IOException, UnsupportedAudioFileException
+    private static byte [] reduceBitDepth (final byte [] wavData, final int targetBits, final boolean alwaysResample) throws IOException, UnsupportedAudioFileException
     {
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
             final AudioFormat sourceFormat = ais.getFormat ();
             final int sourceBits = sourceFormat.getSampleSizeInBits ();
-            if (sourceBits <= targetBits)
+            if (sourceBits == targetBits || sourceBits < targetBits && !alwaysResample)
                 return wavData;
 
             final byte [] sourceData = ais.readAllBytes ();
 
             final int channels = sourceFormat.getChannels ();
-            final int sourceBytesPerSample = sourceBits / 8;
+            final int sourceBytesPerSample = (sourceBits + 7) / 8; // Support e.g. 12-bit
             // Note: this works only for bit-depths which are aligned to 8! But other sizes don't
             // safe any space since they need to be aligned to 8 as well!
             final int targetBytesPerSample = targetBits / 8;
@@ -243,7 +300,7 @@ public class AudioSampleReducer
                     final int targetOffset = frame * targetFrameSize + ch * targetBytesPerSample;
 
                     final int sample = readSample (sourceData, sourceOffset, sourceBits, bigEndian);
-                    final int reduced = sample >> shiftBits;
+                    final int reduced = shiftBits <= 0 ? sample : sample >> shiftBits;
                     writeSample (targetData, targetOffset, reduced, targetBits, bigEndian);
                 }
 
@@ -258,17 +315,18 @@ public class AudioSampleReducer
      *
      * @param wavData The WAV data structure
      * @param targetRate The maximum sample rate
+     * @param alwaysResample If true, do up-sample as well
      * @return The updated sample as a WAV audio structure
      * @throws IOException Could not read the sample
      * @throws UnsupportedAudioFileException Could not parse the WAV file
      */
-    private static byte [] resampleFrequency (final byte [] wavData, final int targetRate) throws IOException, UnsupportedAudioFileException
+    private static byte [] resampleFrequency (final byte [] wavData, final int targetRate, final boolean alwaysResample) throws IOException, UnsupportedAudioFileException
     {
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
             final AudioFormat sourceFormat = ais.getFormat ();
             final float sourceRate = sourceFormat.getSampleRate ();
-            if (sourceRate <= targetRate)
+            if (sourceRate == targetRate || sourceRate < targetRate && !alwaysResample)
                 return wavData;
 
             final byte [] sourceData = ais.readAllBytes ();
@@ -276,10 +334,10 @@ public class AudioSampleReducer
             final double ratio = targetRate / sourceRate;
             final int channels = sourceFormat.getChannels ();
             final int sampleSizeInBits = sourceFormat.getSampleSizeInBits ();
-            final int bytesPerSample = sampleSizeInBits / 8;
+            final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
             final int frameSize = channels * bytesPerSample;
             final int sourceFrames = sourceData.length / frameSize;
-            final int targetFrames = (int) (sourceFrames * ratio);
+            final int targetFrames = (int) Math.round (sourceFrames * ratio);
 
             final byte [] targetData = new byte [targetFrames * frameSize];
             final boolean bigEndian = sourceFormat.isBigEndian ();
@@ -287,7 +345,9 @@ public class AudioSampleReducer
             for (int targetFrame = 0; targetFrame < targetFrames; targetFrame++)
             {
                 final double sourcePos = targetFrame / ratio;
-                final int sourceFrame1 = (int) sourcePos;
+                // Can theoretically equal sourceFrames on the last iteration due to floating-point
+                // rounding
+                final int sourceFrame1 = Math.min ((int) sourcePos, sourceFrames - 1);
                 final int sourceFrame2 = Math.min (sourceFrame1 + 1, sourceFrames - 1);
                 final double frac = sourcePos - sourceFrame1;
 
@@ -328,7 +388,7 @@ public class AudioSampleReducer
             final byte [] data = ais.readAllBytes ();
 
             final int sampleSizeInBits = format.getSampleSizeInBits ();
-            final int bytesPerSample = sampleSizeInBits / 8;
+            final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
             final int numSamples = data.length / bytesPerSample;
             final boolean bigEndian = format.isBigEndian ();
 
@@ -363,7 +423,7 @@ public class AudioSampleReducer
             final AudioFormat format = ais.getFormat ();
             final byte [] data = ais.readAllBytes ();
             final int sampleSizeInBits = format.getSampleSizeInBits ();
-            final int bytesPerSample = sampleSizeInBits / 8;
+            final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
             final int numSamples = data.length / bytesPerSample;
             final boolean bigEndian = format.isBigEndian ();
 
@@ -379,8 +439,7 @@ public class AudioSampleReducer
                 final int offset = i * bytesPerSample;
                 final int sample = readSample (data, offset, sampleSizeInBits, bigEndian);
                 int scaled = (int) Math.round (sample * scale);
-                // Clamp to valid range
-                scaled = Math.max (-maxValue - 1, Math.min (maxValue, scaled));
+                scaled = Math.clamp (scaled, -maxValue - 1, maxValue);
                 writeSample (normalized, offset, scaled, sampleSizeInBits, bigEndian);
             }
 
@@ -394,8 +453,10 @@ public class AudioSampleReducer
         // Missing handling of 32 bit float values
 
         int sample = 0;
-        final int bytesPerSample = sampleSizeInBits / 8;
+        final int bytesPerSample = (sampleSizeInBits + 7) / 8;
+        final int containerBits = bytesPerSample * 8;
 
+        // Read full container
         if (bigEndian)
             for (int i = 0; i < bytesPerSample; i++)
                 sample = sample << 8 | data[offset + i] & 0xFF;
@@ -403,12 +464,26 @@ public class AudioSampleReducer
             for (int i = bytesPerSample - 1; i >= 0; i--)
                 sample = sample << 8 | data[offset + i] & 0xFF;
 
-        // Sign extend if necessary
+        // WAV PCM non-byte-aligned samples are left-justified
+        final int paddingBits = containerBits - sampleSizeInBits;
+
+        if (paddingBits > 0)
+            sample >>= paddingBits;
+
+        // Mask to valid sample width
+        if (sampleSizeInBits < 32)
+        {
+            final int mask = (1 << sampleSizeInBits) - 1;
+            sample &= mask;
+        }
+
+        // Sign extend
         if (sampleSizeInBits < 32)
         {
             final int signBit = 1 << sampleSizeInBits - 1;
+
             if ((sample & signBit) != 0)
-                sample |= -1 << sampleSizeInBits;
+                sample |= ~((1 << sampleSizeInBits) - 1);
         }
 
         return sample;
@@ -417,9 +492,25 @@ public class AudioSampleReducer
 
     private static void writeSample (final byte [] data, final int offset, final int sample, final int sampleSizeInBits, final boolean bigEndian)
     {
-        final int bytesPerSample = sampleSizeInBits / 8;
+        final int bytesPerSample = (sampleSizeInBits + 7) / 8;
+        final int containerBits = bytesPerSample * 8;
 
+        // Keep only valid sample bits
         int newSample = sample;
+
+        if (sampleSizeInBits < 32)
+        {
+            final int mask = (1 << sampleSizeInBits) - 1;
+            newSample &= mask;
+        }
+
+        // WAV PCM non-byte-aligned samples are left-justified
+        final int paddingBits = containerBits - sampleSizeInBits;
+
+        if (paddingBits > 0)
+            newSample <<= paddingBits;
+
+        // Write container
         if (bigEndian)
             for (int i = bytesPerSample - 1; i >= 0; i--)
             {

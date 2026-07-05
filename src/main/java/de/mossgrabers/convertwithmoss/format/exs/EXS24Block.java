@@ -24,24 +24,26 @@ import de.mossgrabers.tools.ui.Functions;
 class EXS24Block
 {
     /** An instrument block. */
-    public static final int          TYPE_INSTRUMENT           = 0x00;
+    public static final int          TYPE_INSTRUMENT            = 0x00;
     /** A zone block. */
-    public static final int          TYPE_ZONE                 = 0x01;
+    public static final int          TYPE_ZONE                  = 0x01;
     /** A group block. */
-    public static final int          TYPE_GROUP                = 0x02;
+    public static final int          TYPE_GROUP                 = 0x02;
     /** A sample block. */
-    public static final int          TYPE_SAMPLE               = 0x03;
+    public static final int          TYPE_SAMPLE                = 0x03;
     /** A parameters block. */
-    public static final int          TYPE_PARAMS               = 0x04;
+    public static final int          TYPE_PARAMS                = 0x04;
     /** An unknown block. */
-    public static final int          TYPE_UNKNOWN              = 0x08;
-    /** Another unknown block. */
-    public static final int          TYPE_BPLIST               = 0x0B;
+    public static final int          TYPE_UNKNOWN               = 0x08;
+    /** A BPLIST with the layout configuration of Sampler. */
+    public static final int          TYPE_BPLIST_SAMPLER_LAYOUT = 0x0A;
+    /** Contains a MacOS PLIST structure in byte format with information about the sample files. */
+    public static final int          TYPE_BPLIST_MACOS_PLIST    = 0x0B;
 
-    private static final String      BIG_ENDIAN_MAGIC          = "SOBT";
-    private static final String      LITTLE_ENDIAN_MAGIC       = "TBOS";
-    private static final Set<String> BIG_ENDIAN_MAGIC_BYTES    = new HashSet<> (2);
-    private static final Set<String> LITTLE_ENDIAN_MAGIC_BYTES = new HashSet<> (2);
+    private static final String      BIG_ENDIAN_MAGIC           = "SOBT";
+    private static final String      LITTLE_ENDIAN_MAGIC        = "TBOS";
+    private static final Set<String> BIG_ENDIAN_MAGIC_BYTES     = HashSet.newHashSet (2);
+    private static final Set<String> LITTLE_ENDIAN_MAGIC_BYTES  = HashSet.newHashSet (2);
     static
     {
         Collections.addAll (BIG_ENDIAN_MAGIC_BYTES, "SOBT", "SOBJ");
@@ -106,11 +108,11 @@ class EXS24Block
         // Flags -> Found: 03 (on a group), 64 (instrument), 2, 3, 2147483650 (zone), 2 (sample)
         StreamUtils.readUnsigned32 (in, this.isBigEndian);
 
-        final String magic = StreamUtils.readASCII (in, 4);
+        final String magic = StreamUtils.readAscii (in, 4);
         if (!(this.isBigEndian ? BIG_ENDIAN_MAGIC_BYTES : LITTLE_ENDIAN_MAGIC_BYTES).contains (magic))
             throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_MAGIC", magic));
 
-        this.name = StringUtils.removeCharactersAfterZero (StreamUtils.readASCII (in, 64));
+        this.name = StringUtils.removeCharactersAfterZero (StreamUtils.readAscii (in, 64));
 
         this.content = in.readNBytes (size);
     }
@@ -132,8 +134,8 @@ class EXS24Block
         StreamUtils.writeUnsigned32 (out, this.content.length, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, this.index, this.isBigEndian);
         StreamUtils.writeUnsigned32 (out, 0, this.isBigEndian);
-        StreamUtils.writeASCII (out, this.isBigEndian ? BIG_ENDIAN_MAGIC : LITTLE_ENDIAN_MAGIC, 4);
-        StreamUtils.writeASCII (out, StringUtils.fixASCII (this.name), 64);
+        StreamUtils.writeAscii (out, this.isBigEndian ? BIG_ENDIAN_MAGIC : LITTLE_ENDIAN_MAGIC, 4);
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (this.name), 64);
         out.write (this.content);
     }
 }

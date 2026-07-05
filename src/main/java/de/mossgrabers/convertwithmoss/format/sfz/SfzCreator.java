@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.sfz;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -51,6 +52,11 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             /////////////////////////////////////////////////////////////////////////////
             ////
             """;
+    private static final String                    SFZ_FOOTER      = """
+            ////
+            /////////////////////////////////////////////////////////////////////////////
+
+            """;
     private static final String                    COMMENT_PREFIX  = "//// ";
 
     private static final Map<FilterType, String>   FILTER_TYPE_MAP = new EnumMap<> (FilterType.class);
@@ -64,18 +70,18 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         FILTER_TYPE_MAP.put (FilterType.BAND_PASS, "bpf");
         FILTER_TYPE_MAP.put (FilterType.BAND_REJECTION, "brf");
 
-        final Set<Integer> BPF_POLES = new HashSet<> ();
-        Collections.addAll (BPF_POLES, Integer.valueOf (1), Integer.valueOf (2));
-        FILTER_POLES.put ("bpf", BPF_POLES);
-        final Set<Integer> BRF_POLES = new HashSet<> ();
-        Collections.addAll (BRF_POLES, Integer.valueOf (1), Integer.valueOf (2));
-        FILTER_POLES.put ("brf", BRF_POLES);
-        final Set<Integer> HPF_POLES = new HashSet<> ();
-        Collections.addAll (HPF_POLES, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
-        FILTER_POLES.put ("hpf", HPF_POLES);
-        final Set<Integer> LPF_POLES = new HashSet<> ();
-        Collections.addAll (LPF_POLES, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
-        FILTER_POLES.put ("lpf", LPF_POLES);
+        final Set<Integer> bpfPoles = new HashSet<> ();
+        Collections.addAll (bpfPoles, Integer.valueOf (1), Integer.valueOf (2));
+        FILTER_POLES.put ("bpf", bpfPoles);
+        final Set<Integer> brfPoles = new HashSet<> ();
+        Collections.addAll (brfPoles, Integer.valueOf (1), Integer.valueOf (2));
+        FILTER_POLES.put ("brf", brfPoles);
+        final Set<Integer> hpfPoles = new HashSet<> ();
+        Collections.addAll (hpfPoles, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
+        FILTER_POLES.put ("hpf", hpfPoles);
+        final Set<Integer> lpfPoles = new HashSet<> ();
+        Collections.addAll (lpfPoles, Integer.valueOf (1), Integer.valueOf (2), Integer.valueOf (4), Integer.valueOf (6));
+        FILTER_POLES.put ("lpf", lpfPoles);
 
         LOOP_TYPE_MAP.put (LoopType.FORWARDS, "forward");
         LOOP_TYPE_MAP.put (LoopType.BACKWARDS, "backward");
@@ -155,8 +161,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             sb.append (COMMENT_PREFIX).append ("Category: ").append (category).append (LINE_FEED);
         final String description = metadata.getDescription ();
         if (description != null && !description.isBlank ())
-            sb.append (COMMENT_PREFIX).append (description.replace ("\n", "\n" + COMMENT_PREFIX)).append (LINE_FEED);
-        sb.append (LINE_FEED);
+            sb.append (formatWithCommentPrefix (description));
+        sb.append (SFZ_FOOTER);
 
         // Set the name
         final String name = multisampleSource.getName ();
@@ -249,7 +255,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN && isNotRoundRobinGroup)
             addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Key range
 
         final int keyRoot = zone.getKeyRoot ();
@@ -282,7 +288,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
         }
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Velocity
 
         final int velocityLow = zone.getVelocityLow ();
@@ -306,7 +312,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
         }
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Start, end, tune, volume
 
         final int start = zone.getStart ();
@@ -326,7 +332,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         createVolume (buffer, zone, ampEnvParameterLevel);
 
-        ////////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Pitch Bend / Envelope
 
         final int bendUp = zone.getBendUp ();
@@ -363,12 +369,12 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                 buffer.append (envelopeStr).append (LINE_FEED);
         }
 
-        // //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Sample Loop
 
         this.createLoops (buffer, zone);
 
-        // //////////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         createFilter (buffer, zone);
@@ -389,8 +395,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);
-            // SFZ currently only supports forward looping
-            addAttribute (buffer, SfzOpcode.LOOP_MODE, "loop_continuous", false);
+            addAttribute (buffer, SfzOpcode.LOOP_MODE, sampleLoop.isLoopUntilRelease () ? "loop_sustain" : "loop_continuous", false);
             final String type = LOOP_TYPE_MAP.get (sampleLoop.getType ());
             // No need to write the default value
             if (!"forward".equals (type))
@@ -410,7 +415,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                     {
                         loopLengthInSeconds = loopLength / (double) zone.getSampleData ().getAudioMetadata ().getSampleRate ();
                         final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
-                        buffer.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (crossfadeInSeconds);
+                        buffer.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (formatAsFloat (crossfadeInSeconds));
                     }
                     catch (final IOException ex)
                     {
@@ -418,6 +423,10 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                     }
                 }
             }
+
+            final double tuning = sampleLoop.getTuning ();
+            if (tuning != 0)
+                buffer.append (' ').append (SfzOpcode.LOOP_TUNE).append ('=').append (formatAsFloat (Math.round (tuning * 100.0)));
         }
         buffer.append (LINE_FEED);
     }
@@ -551,7 +560,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             return;
         if (!sb.isEmpty ())
             sb.append (' ');
-        sb.append (opcode).append ('=').append (Math.clamp (value, 0.0, 100.0));
+        sb.append (opcode).append ('=').append (formatAsFloat (Math.clamp (value, 0.0, 100.0)));
     }
 
 
@@ -561,7 +570,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             return;
         if (!sb.isEmpty ())
             sb.append (' ');
-        sb.append (opcode).append ('=').append (Math.clamp (value * 100.0, 0.0, 100.0));
+        sb.append (opcode).append ('=').append (formatAsFloat (Math.clamp (value * 100.0, 0.0, 100.0)));
     }
 
 
@@ -571,6 +580,37 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             return;
         if (!sb.isEmpty ())
             sb.append (' ');
-        sb.append (opcode).append ('=').append (Math.clamp (value * 10.0, -10.0, 10.0));
+        sb.append (opcode).append ('=').append (formatAsFloat (Math.clamp (value * 10.0, -10.0, 10.0)));
+    }
+
+
+    private static String formatWithCommentPrefix (final String input)
+    {
+        final int LINE_LIMIT = 70;
+        final String [] words = input.split ("\\s+");
+        final StringBuilder result = new StringBuilder ();
+        StringBuilder currentLine = new StringBuilder ();
+
+        for (final String word: words)
+            if (currentLine.isEmpty ())
+                currentLine.append (word);
+            else if (currentLine.length () + 1 + word.length () <= LINE_LIMIT)
+                currentLine.append (" ").append (word);
+            else
+            {
+                result.append (COMMENT_PREFIX).append (currentLine).append ("\n");
+                currentLine = new StringBuilder (word);
+            }
+
+        if (!currentLine.isEmpty ())
+            result.append (COMMENT_PREFIX).append (currentLine).append ("\n");
+
+        return result.toString ();
+    }
+
+
+    private static String formatAsFloat (final double value)
+    {
+        return new BigDecimal (Float.toString ((float) value)).stripTrailingZeros ().toPlainString ();
     }
 }

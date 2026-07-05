@@ -230,7 +230,7 @@ public class KMPFile
             zone.setGain ((Math.clamp (in.readByte (), -99, 99) / 99.0 + 1) / 3.0);
 
             // Panning - unused in KMP itself, 64 is center
-            in.read ();
+            in.readByte ();
 
             // Filter Cutoff - unused in KMP itself
             in.readByte ();
@@ -252,7 +252,7 @@ public class KMPFile
                         final int internalIndex = Integer.parseInt (sampleFilename.substring (SAMPLE_INTERNAL.length ()));
                         throw new IOException (Functions.getMessage ("IDS_KMP_ERR_INTERNAL_SAMPLE", Integer.toString (internalIndex)));
                     }
-                    catch (final NumberFormatException ex)
+                    catch (final NumberFormatException _)
                     {
                         // All good, not a reference to internal sample memory
                     }
@@ -449,7 +449,7 @@ public class KMPFile
                 if (i > 0 && i % 80 == 0)
                     this.notifier.log ("IDS_NOTIFY_LINE_FEED");
             }
-            catch (final ParseException | CompressionNotSupportedException ex)
+            catch (final CompressionNotSupportedException ex)
             {
                 throw new IOException (ex);
             }

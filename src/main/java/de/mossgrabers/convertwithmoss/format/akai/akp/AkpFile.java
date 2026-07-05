@@ -58,7 +58,7 @@ public class AkpFile extends AbstractRIFFFile
     private final AkpModulations    modsChunk     = new AkpModulations ();
     private final AkpTuning         tuningChunk   = new AkpTuning ();
     private final List<AkpKeygroup> keygroups     = new ArrayList<> ();
-    private final File              akpFile;
+    private final File              akpSourceFile;
     private boolean                 isS5000Series;
 
 
@@ -71,9 +71,9 @@ public class AkpFile extends AbstractRIFFFile
      */
     public AkpFile (final File akpFile) throws IOException, ParseException
     {
-        super (AkpRiffChunkId.APRG_ID);
+        super (AkpRiffChunkId.APRG_ID, true);
 
-        this.akpFile = akpFile;
+        this.akpSourceFile = akpFile;
 
         try (final FileInputStream stream = new FileInputStream (akpFile))
         {
@@ -87,9 +87,9 @@ public class AkpFile extends AbstractRIFFFile
      */
     public AkpFile ()
     {
-        super (AkpRiffChunkId.APRG_ID);
+        super (AkpRiffChunkId.APRG_ID, true);
 
-        this.akpFile = null;
+        this.akpSourceFile = null;
     }
 
 
@@ -129,10 +129,10 @@ public class AkpFile extends AbstractRIFFFile
      */
     public IMultisampleSource createMultisampleSource (final File sourceFolder, final IMetadataConfig metadataSettings)
     {
-        final File parentFile = this.akpFile.getParentFile ();
-        final String name = FileUtils.getNameWithoutType (this.akpFile);
+        final File parentFile = this.akpSourceFile.getParentFile ();
+        final String name = FileUtils.getNameWithoutType (this.akpSourceFile);
         final String [] parts = AudioFileUtils.createPathParts (parentFile, sourceFolder, name);
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (this.akpFile, parts, name, AudioFileUtils.subtractPaths (sourceFolder, this.akpFile));
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (this.akpSourceFile, parts, name);
 
         final IGroup group = new DefaultGroup ();
         multisampleSource.setGroups (Collections.singletonList (group));
@@ -234,9 +234,15 @@ public class AkpFile extends AbstractRIFFFile
     @Override
     protected void fillChunkStack ()
     {
-        if (!this.chunkStack.isEmpty ())
-            return;
-
         // Not used since writing is not supported
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void checkTopChunk (final int type) throws ParseException
+    {
+        if (AkpRiffChunkId.APRG_ID.getFourCC () != type)
+            throw new ParseException ("Top chunk must be 'AMUL' but is '" + RiffChunkId.toASCII (type) + "'");
     }
 }

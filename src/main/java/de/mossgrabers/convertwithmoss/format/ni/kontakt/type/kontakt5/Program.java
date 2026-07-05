@@ -181,7 +181,7 @@ public class Program
     {
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
-        this.name = StreamUtils.readWithLengthUTF16 (in);
+        this.name = StreamUtils.readUtf16WithLength (in);
 
         this.sizeOfAllSamples = StreamUtils.readDouble (in, false);
 
@@ -208,9 +208,9 @@ public class Program
         this.groupSolo = in.read () > 0;
 
         this.setInstrumentIconName (KontaktIcon.getName ((int) StreamUtils.readUnsigned32 (in, false)));
-        this.instrumentCredits = StreamUtils.readWithLengthUTF16 (in);
-        this.setInstrumentAuthor (StreamUtils.readWithLengthUTF16 (in));
-        this.setInstrumentURL (StreamUtils.readWithLengthUTF16 (in));
+        this.instrumentCredits = StreamUtils.readUtf16WithLength (in);
+        this.setInstrumentAuthor (fixKontakt4Umlauts (StreamUtils.readUtf16WithLength (in)));
+        this.setInstrumentURL (StreamUtils.readUtf16WithLength (in));
         if (this.getInstrumentURL ().isBlank () || NULL_ENTRY.equals (this.getInstrumentURL ()))
             this.setInstrumentURL (null);
 
@@ -234,7 +234,7 @@ public class Program
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
-        StreamUtils.writeWithLengthUTF16 (out, this.name);
+        StreamUtils.writeUtf16WithLength (out, this.name);
 
         // The size of all samples
         this.sizeOfAllSamples = 0;
@@ -263,9 +263,9 @@ public class Program
 
         StreamUtils.writeUnsigned32 (out, KontaktIcon.getID (this.getInstrumentIconName ()), false);
 
-        StreamUtils.writeWithLengthUTF16 (out, this.instrumentCredits);
-        StreamUtils.writeWithLengthUTF16 (out, this.getInstrumentAuthor ());
-        StreamUtils.writeWithLengthUTF16 (out, this.getInstrumentURL () == null ? NULL_ENTRY : this.getInstrumentURL ());
+        StreamUtils.writeUtf16WithLength (out, this.instrumentCredits);
+        StreamUtils.writeUtf16WithLength (out, this.getInstrumentAuthor ());
+        StreamUtils.writeUtf16WithLength (out, this.getInstrumentURL () == null ? NULL_ENTRY : this.getInstrumentURL ());
 
         StreamUtils.writeUnsigned16 (out, this.instrumentCategory1, false);
         StreamUtils.writeUnsigned16 (out, this.instrumentCategory2, false);
@@ -358,6 +358,8 @@ public class Program
     private void writeZoneList (final KontaktPresetChunk programPresetChunk) throws IOException
     {
         final KontaktPresetChunk zoneListChunk = findChunk (programPresetChunk.getChildren (), KontaktPresetChunkID.ZONE_LIST);
+        if (zoneListChunk == null)
+            throw new IOException ("Zone List Chunk not found.");
 
         final List<KontaktPresetChunk> zoneChunks = new ArrayList<> ();
 
@@ -548,6 +550,7 @@ public class Program
         // loop.setType (zoneLoop.isAlternating () > 0 ? LoopType.ALTERNATING : LoopType.FORWARDS);
         // loop.setStart (zoneLoop.getLoopStart ());
         // loop.setEnd (zoneLoop.getLoopStart () + zoneLoop.getLoopLength ());
+        // loop.setTuning (Math.pow (2.0, zoneLoop.getLoopTuning () / 12.0));
         // loop.setCrossfadeInSamples (zoneLoop.getCrossfadeLength ());
         // zone.addLoop (loop);
         // }
@@ -743,5 +746,18 @@ public class Program
     public int getSlotIndex ()
     {
         return this.slotIndex;
+    }
+
+
+    private static String fixKontakt4Umlauts (final String text)
+    {
+        final int length = text.length ();
+        final StringBuilder sb = new StringBuilder (length);
+        for (int i = 0; i < length; i++)
+        {
+            final char c = text.charAt (i);
+            sb.append (c == '\ufffc' ? 'ü' : c);
+        }
+        return sb.toString ();
     }
 }

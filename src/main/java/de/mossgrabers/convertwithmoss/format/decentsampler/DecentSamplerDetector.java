@@ -27,7 +27,6 @@ import org.xml.sax.SAXParseException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -36,6 +35,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -44,6 +44,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.FileUtils;
@@ -171,7 +172,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         try (final InputStream in = zipFile.getInputStream (entry))
         {
-            final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
+            final String content = fixInvalidXML (StreamUtils.readUtf8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (presetFile), file, parent, true, document);
         }
@@ -206,7 +207,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
-            final String content = fixInvalidXML (StreamUtils.readUTF8 (in));
+            final String content = fixInvalidXML (StreamUtils.readUtf8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (file), file, file.getParent (), false, document);
         }
@@ -238,7 +239,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final Element topElement = document.getDocumentElement ();
         if (!DecentSamplerTag.DECENTSAMPLER.equals (topElement.getNodeName ()))
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
             return Collections.emptyList ();
         }
 
@@ -248,7 +249,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final Element groupsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.GROUPS);
         if (groupsElement == null)
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Groups tag");
             return Collections.emptyList ();
         }
         this.currentGroupsElement = groupsElement;
@@ -259,8 +260,8 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : presetName;
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, presetName);
 
-        final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, presetName, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
         final IMetadata metadata = multisampleSource.getMetadata ();
         this.createMetadata (metadata, this.getFirstSample (groups), parts);
         this.updateCreationDateTime (metadata, sourceFile);
@@ -279,7 +280,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      * @param topElement The top element
      * @param multisampleSource The multi-sample to fill
      */
-    private static void parseEffects (final Element topElement, final DefaultMultisampleSource multisampleSource)
+    private static void parseEffects (final Element topElement, final IMultisampleSource multisampleSource)
     {
         final Optional<IFilter> optFilter = parseFilterEffect (topElement, topElement);
         if (optFilter.isPresent ())
@@ -357,7 +358,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
             final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
             final String groupName = k == null || k.isBlank () ? "Group " + groupCounter : k;
-            final DefaultGroup group = new DefaultGroup (groupName);
+            final IGroup group = new DefaultGroup (groupName);
 
             final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
             final int groupPanningOffset = XMLUtils.getIntegerAttribute (groupElement, DecentSamplerTag.PANNING, 0);
@@ -389,7 +390,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      * @param tuningOffset The tuning offset
      * @param trigger The trigger value
      */
-    private void parseGroup (final Element topElement, final DefaultGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
+    private void parseGroup (final Element topElement, final IGroup group, final Element groupElement, final String basePath, final File libraryFile, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
     {
         final double ampVelocityDepth = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.AMP_VELOCITY_TRACK, 1);
 
@@ -408,7 +409,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             if (optSampleZone.isEmpty ())
                 continue;
 
-            final DefaultSampleZone sampleZone = optSampleZone.get ();
+            final ISampleZone sampleZone = optSampleZone.get ();
             this.convertSampleZone (sampleElement, sampleZone, groupVolumeOffset, groupPanningOffset, tuningOffset, trigger);
             this.convertVolumeEnvelope (sampleZone.getAmplitudeEnvelopeModulator ().getSource ());
             sampleZone.getAmplitudeVelocityModulator ().setDepth (ampVelocityDepth);
@@ -439,7 +440,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     }
 
 
-    private void convertSampleZone (final Element sampleElement, final DefaultSampleZone sampleZone, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
+    private void convertSampleZone (final Element sampleElement, final ISampleZone sampleZone, final double groupVolumeOffset, final double groupPanningOffset, final double tuningOffset, final String trigger)
     {
         String triggerAttribute = sampleElement.getAttribute (DecentSamplerTag.TRIGGER);
         if (triggerAttribute == null || triggerAttribute.isBlank ())
@@ -449,7 +450,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             {
                 sampleZone.setTrigger (TriggerType.valueOf (triggerAttribute.toUpperCase (Locale.ENGLISH)));
             }
-            catch (final IllegalArgumentException ex)
+            catch (final IllegalArgumentException _)
             {
                 this.notifier.logError ("IDS_DS_UNKNOWN_TRIGGER", triggerAttribute);
             }
@@ -475,7 +476,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         if (velHigh > 0)
             sampleZone.setVelocityHigh (velHigh);
 
-        /////////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Loops
 
         final int loopStart = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_START, -1));
@@ -534,8 +535,8 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final String sampleName = sampleElement.getAttribute (DecentSamplerTag.PATH);
         if (sampleName == null || sampleName.isBlank ())
         {
-            this.notifier.logError (ERR_BAD_METADATA_FILE);
-            Optional.empty ();
+            this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Path attribute");
+            return Optional.empty ();
         }
 
         final File sampleFile = new File (basePath, sampleName);
@@ -635,7 +636,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         {
             return Double.parseDouble (value.get ());
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }

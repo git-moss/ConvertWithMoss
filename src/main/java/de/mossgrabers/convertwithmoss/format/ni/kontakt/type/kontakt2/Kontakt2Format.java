@@ -60,7 +60,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
 {
     private final K2MetadataFileHandler handler;
     private final KontaktPresetAccessor programAccessor = new KontaktPresetAccessor ();
-    private final DefaultMetadata       metadata        = new DefaultMetadata ();
+    private final IMetadata             metadata        = new DefaultMetadata ();
 
 
     /**
@@ -194,7 +194,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
         if (multiConfiguration == null)
             return null;
 
-        final DefaultPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
         final List<MultiInstrument> multiInstruments = multiConfiguration.getMultiInstruments ();
         for (int i = 0; i < sources.size (); i++)
@@ -202,7 +202,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
             final Pair<IMultisampleSource, Program> source = sources.get (i);
             final Program program = source.getValue ();
             final int midiChannel = i < multiInstruments.size () ? multiInstruments.get (program.getSlotIndex ()).getMidiChannel () - 1 : 0;
-            final DefaultInstrumentSource instrumentSource = new DefaultInstrumentSource (source.getKey (), midiChannel);
+            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (source.getKey (), midiChannel);
             instrumentSource.setClipKeyLow (program.getClipKeyLow ());
             instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
             performanceSource.addInstrument (instrumentSource);
@@ -231,8 +231,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
         for (final Program program: programs)
         {
             final String programName = program.getName ();
-            final String mappingName = AudioFileUtils.subtractPaths (sourceFolder, sourceFile) + " : " + programName;
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null, mappingName);
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null);
             this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName

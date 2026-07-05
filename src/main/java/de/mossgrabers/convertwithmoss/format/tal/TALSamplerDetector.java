@@ -28,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -123,14 +124,14 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
         if (!TALSamplerTag.ROOT.equals (top.getNodeName ()))
         {
-            this.notifier.logError (IDS_NOTIFY_ERR_BAD_METADATA_FILE);
+            this.notifier.logError (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Unknown Root");
             return Collections.emptyList ();
         }
 
         final Element programsElement = XMLUtils.getChildElementByName (top, TALSamplerTag.PROGRAMS);
         if (programsElement == null)
         {
-            this.notifier.logError (IDS_NOTIFY_ERR_BAD_METADATA_FILE);
+            this.notifier.logError (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Missing Programs tag");
             return Collections.emptyList ();
         }
 
@@ -145,8 +146,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             }
             final File parentFolder = sourceFile.getParentFile ();
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, name);
-
-            final DefaultMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name, AudioFileUtils.subtractPaths (this.sourceFolder, sourceFile));
+            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
             // Parse all groups
             final List<IGroup> groups = new ArrayList<> (4);
@@ -248,7 +248,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ENABLED, 0) == 1)
         {
-            final DefaultSampleLoop loop = new DefaultSampleLoop ();
+            final ISampleLoop loop = new DefaultSampleLoop ();
             if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ALTERNATE, 0) == 1)
                 loop.setType (LoopType.ALTERNATING);
             loop.setStart (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_START, -1));
@@ -261,13 +261,13 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static Optional<IFilter> parseModulationAttributes (final Element programElement, final DefaultMultisampleSource multisampleSource) throws IOException
+    private static Optional<IFilter> parseModulationAttributes (final Element programElement, final IMultisampleSource multisampleSource) throws IOException
     {
         final List<TALSamplerModulator> modulators = parseModulators (programElement);
 
         final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (multisampleSource.getGroups ());
 
-        //////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Amplitude
 
         final double ampAttack = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, 0, maxEnvelopeTime, 0);
@@ -284,7 +284,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 break;
             }
 
-        //////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Filter
 
         // We only have a global filter, therefore take only values from the 1st layer
@@ -324,7 +324,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        //////////////////////////////////////////////////
+        // -----------------------------------------------------------
         // Pitch
 
         // Pitch-bend
@@ -394,7 +394,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     private static double getEnvelopeAttribute (final Element element, final String attribute, final double minimum, final double maximum, final double defaultValue)
     {
         final double value = XMLUtils.getDoubleAttribute (element, attribute, defaultValue);
-        return denormalizeValue (value, minimum, maximum);
+        return MathUtils.denormalizeValue (value, minimum, maximum);
     }
 
 

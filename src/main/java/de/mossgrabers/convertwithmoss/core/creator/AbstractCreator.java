@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -77,7 +78,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     protected final ProgressLogger                progress;
     private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
-    private boolean [] []                         layerCheckMatrix                   = new boolean [128] [128];
+    private final boolean [] []                   layerCheckMatrix                   = new boolean [128] [128];
 
 
     /**
@@ -203,7 +204,37 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     public static String createSafeFilename (final String filename)
     {
-        return filename.replaceAll ("[\\\\/:*?\"<>|&\\.']", "_").trim ();
+        if (filename == null)
+            return "Unnamed";
+
+        // Normalize UNICODE (optional but recommended)
+        String sanitized = Normalizer.normalize (filename, Normalizer.Form.NFKC);
+
+        // Remove control characters
+        sanitized = sanitized.replaceAll ("[\\p{Cntrl}]", "");
+
+        // Replace invalid filename characters
+        // Windows forbidden: \ / : * ? " < > |
+        // Also remove Unix path separator /
+        sanitized = sanitized.replaceAll ("[\\\\/:*?\"<>|&\\.']", "_");
+
+        // Remove leading/trailing spaces and dots (Windows issue)
+        sanitized = sanitized.replaceAll ("^[ .]+", "");
+        sanitized = sanitized.replaceAll ("[ .]+$", "");
+        if (sanitized.isBlank ())
+            return "Unnamed";
+
+        // Avoid reserved Windows filenames
+        final String upper = sanitized.toUpperCase ();
+        if (upper.matches ("CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]"))
+            sanitized = "_" + sanitized;
+
+        // Limit length
+        final int MAX_LENGTH = 255;
+        if (sanitized.length () > MAX_LENGTH)
+            sanitized = sanitized.substring (0, MAX_LENGTH);
+
+        return sanitized;
     }
 
 
@@ -472,22 +503,30 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected static void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate, final boolean onlyIfLarger) throws IOException
     {
         for (final IGroup group: multisampleSource.getGroups ())
-            for (final ISampleZone zone: group.getSampleZones ())
+            for (final ISampleZone sampleZone: group.getSampleZones ())
             {
-                final ISampleData sampleData = zone.getSampleData ();
+                final ISampleData sampleData = sampleZone.getSampleData ();
                 if (sampleData == null)
                     continue;
                 final int sampleRate = sampleData.getAudioMetadata ().getSampleRate ();
                 if (onlyIfLarger && sampleRate <= newSampleRate)
                     continue;
                 final double sampleRateRatio = newSampleRate / (double) sampleRate;
-                zone.setStart ((int) Math.round (zone.getStart () * sampleRateRatio));
-                zone.setStop ((int) Math.round (zone.getStop () * sampleRateRatio));
+                final int start = sampleZone.getStart ();
+                if (start > 0)
+                    sampleZone.setStart ((int) Math.round (start * sampleRateRatio));
+                final int stop = sampleZone.getStop ();
+                if (stop > 0)
+                    sampleZone.setStop ((int) Math.round (stop * sampleRateRatio));
 
-                for (final ISampleLoop loop: zone.getLoops ())
+                for (final ISampleLoop loop: sampleZone.getLoops ())
                 {
-                    loop.setStart ((int) Math.round (loop.getStart () * sampleRateRatio));
-                    loop.setEnd ((int) Math.round (loop.getEnd () * sampleRateRatio));
+                    final int loopStart = loop.getStart ();
+                    if (loopStart > 0)
+                        loop.setStart ((int) Math.round (loopStart * sampleRateRatio));
+                    final int loopEnd = loop.getEnd ();
+                    if (loopEnd > 0)
+                        loop.setEnd ((int) Math.round (loopEnd * sampleRateRatio));
                 }
             }
     }
@@ -683,7 +722,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final IMultisampleSource multiSampleSource, final int zoneIndex, final ISampleZone zone, final String path) throws IOException
     {
-        final String name = checkSampleName (alreadyStored, zoneIndex, zone, path);
+        final String name = this.checkSampleName (alreadyStored, zoneIndex, zone, path);
         if (name == null)
             return;
 
@@ -720,14 +759,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         final Set<String> alreadyStored = new HashSet<> ();
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.progress.notifyProgress ();
                 this.storeSamplefile (alreadyStored, zipOutputStream, multisampleSource, zoneIndex, zone, relativeFolderName);
                 zoneIndex++;
             }
-        }
     }
 
 
@@ -817,6 +854,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 final ISampleZone zone = sampleZones.get (zoneIndex);
 
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
+                if (writtenFiles.contains (file))
+                    continue;
                 try (final FileOutputStream fos = new FileOutputStream (file))
                 {
                     this.progress.notifyProgress ();
@@ -839,7 +878,13 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 }
                 catch (final NoSuchFileException | FileNotFoundException ex)
                 {
+                    this.progress.notifyFailed ();
                     this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+                }
+                catch (final IOException ex)
+                {
+                    this.progress.notifyFailed ();
+                    this.notifier.logError ("IDS_WAV_WRITE_ERROR", ex);
                 }
             }
         }
@@ -850,7 +895,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Check if the sample file needs to be rewritten.
-     * 
+     *
      * @param destinationFormat The expected destination format for the sample
      * @return True if the file needs to be written again
      */
@@ -863,6 +908,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Writes the sample of the given zone and updates/adds their instrument and sample chunks.
+     * Overwrite to implement other output formats than WAV.
      *
      * @param multisampleSource The multi-sample source
      * @param zone The zone from which to take the data to store into the chunks
@@ -873,7 +919,35 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
-        // Overwrite to implement rewriting
+        final ISampleData sampleData = zone.getSampleData ();
+        if (sampleData == null)
+            return;
+
+        // Convert resolution
+        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
+        if (wavFile.getDataChunk () == null)
+            throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
+
+        // Trim sample from zone start to end
+        if (trim)
+            trimStartToEnd (wavFile, zone);
+
+        this.additionalProcessing (multisampleSource, zone, wavFile);
+
+        wavFile.write (outputStream);
+    }
+
+
+    /**
+     * Overwrite to implement other modifications on the wavFile.
+     *
+     * @param multisampleSource The multi-sample source
+     * @param zone The zone from which to take the data to store into the chunks
+     * @param wavFile The WAV file to modify
+     */
+    protected void additionalProcessing (final IMultisampleSource multisampleSource, final ISampleZone zone, final WaveFile wavFile)
+    {
+        // Overwrite to implement other modifications on the wavFile
     }
 
 
@@ -890,14 +964,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         final Set<String> alreadyStored = new HashSet<> ();
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
-        {
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.progress.notifyProgress ();
                 this.zipSamplefile (alreadyStored, zipOutputStream, zoneIndex, zone, multisampleSource.getMetadata ().getCreationDateTime (), relativeFolderName);
                 zoneIndex++;
             }
-        }
     }
 
 
@@ -930,7 +1002,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final int zoneIndex, final ISampleZone zone, final Date dateTime, final String path) throws IOException
     {
-        final String name = checkSampleName (alreadyStored, zoneIndex, zone, path);
+        final String name = this.checkSampleName (alreadyStored, zoneIndex, zone, path);
         if (name == null)
             return;
 
@@ -1027,7 +1099,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected String checkSampleName (final Set<String> alreadyStored, final int zoneIndex, final ISampleZone zone, final String path)
     {
-        String filename = createFileName (zoneIndex, zone);
+        String filename = this.createFileName (zoneIndex, zone);
         if (path != null)
             filename = path + FORWARD_SLASH + filename;
         if (alreadyStored.contains (filename))
@@ -1039,7 +1111,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Create the name of the sample (with the ending).
-     * 
+     *
      * @param zoneIndex The index of the zone
      * @param zone The zone for which to create the full name
      * @return The full sample name
@@ -1051,31 +1123,28 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
-     * Check if there are layered samples and display a warning.
-     * 
+     * Check if there are overlapping sample zones.
+     *
      * @param groups The groups of the multi-sample
+     * @return True if there are overlapping sample zones
      */
-    protected void checkDuplicateRanges (final List<IGroup> groups)
+    protected boolean checkOverlappingRanges (final List<IGroup> groups)
     {
         // Clear the matrix
         for (int i = 0; i < 128; i++)
             Arrays.fill (this.layerCheckMatrix[i], false);
+
         // Mark the covered ranges
         for (final IGroup group: groups)
-        {
             for (final ISampleZone zone: group.getSampleZones ())
-            {
                 for (int k = zone.getKeyLow (); k <= zone.getKeyHigh (); k++)
                     for (int v = zone.getVelocityLow (); v <= zone.getVelocityHigh (); v++)
                     {
                         if (this.layerCheckMatrix[k][v])
-                        {
-                            this.notifier.logError ("IDS_ERR_SOURCE_CONTAINS_LAYERS");
-                            return;
-                        }
+                            return true;
                         this.layerCheckMatrix[k][v] = true;
                     }
-            }
-        }
+
+        return false;
     }
 }

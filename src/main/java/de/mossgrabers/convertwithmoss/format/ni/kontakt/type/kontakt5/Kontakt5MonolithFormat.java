@@ -134,7 +134,7 @@ public class Kontakt5MonolithFormat extends AbstractKontaktFormat
      */
     private long readHeader (final InputStream inputStream) throws IOException
     {
-        final String magic = StreamUtils.readASCII (inputStream, 16);
+        final String magic = StreamUtils.readAscii (inputStream, 16);
         if (!Magic.FILE_CONTAINER_HEADER.equals (magic))
             throw new IOException (this.noFileContainerError);
 
@@ -163,7 +163,7 @@ public class Kontakt5MonolithFormat extends AbstractKontaktFormat
      */
     private Map<Long, MonolithFile> readTableOfContents (final InputStream inputStream, final long fileCount) throws IOException
     {
-        final String magicTOC = StreamUtils.readASCII (inputStream, 16);
+        final String magicTOC = StreamUtils.readAscii (inputStream, 16);
         if (!Magic.FILE_CONTAINER_TABLE_OF_CONTENTS.equals (magicTOC))
             throw new IOException (this.noFileContainerError);
 
@@ -201,7 +201,7 @@ public class Kontakt5MonolithFormat extends AbstractKontaktFormat
         // Unknown
         inputStream.skipNBytes (16);
 
-        final String endMagicTOC = StreamUtils.readASCII (inputStream, 16);
+        final String endMagicTOC = StreamUtils.readAscii (inputStream, 16);
         if (!Magic.FILE_CONTAINER_TABLE_OF_CONTENTS.equals (endMagicTOC))
             throw new IOException (this.noFileContainerError);
 

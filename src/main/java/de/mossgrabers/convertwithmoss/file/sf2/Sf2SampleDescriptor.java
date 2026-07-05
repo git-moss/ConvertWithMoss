@@ -86,19 +86,19 @@ public class Sf2SampleDescriptor
             pos++;
         this.name = new String (data, offset, pos, StandardCharsets.US_ASCII).trim ();
 
-        this.start = chunk.getFourBytesAsInt (offset + 20);
-        this.end = chunk.getFourBytesAsInt (offset + 24);
-        this.startLoop = chunk.getFourBytesAsInt (offset + 28);
-        this.endLoop = chunk.getFourBytesAsInt (offset + 32);
+        this.start = chunk.getFourBytesAsUnsignedInt (offset + 20);
+        this.end = chunk.getFourBytesAsUnsignedInt (offset + 24);
+        this.startLoop = chunk.getFourBytesAsUnsignedInt (offset + 28);
+        this.endLoop = chunk.getFourBytesAsUnsignedInt (offset + 32);
 
-        this.sampleRate = chunk.getFourBytesAsInt (offset + 36);
+        this.sampleRate = chunk.getFourBytesAsUnsignedInt (offset + 36);
 
         this.originalPitch = chunk.getByteAsUnsignedInt (offset + 40);
         this.pitchCorrection = chunk.getByteAsSignedInt (offset + 41);
 
         this.sampleLink = chunk.getByteAsUnsignedInt (offset + 42);
 
-        this.sampleType = chunk.getTwoBytesAsInt (offset + 44);
+        this.sampleType = chunk.getTwoBytesAsUnsignedInt (offset + 44);
         if (this.sampleType >= LINKED)
             throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_UNSUPPORTED_SAMPLE_TYPE"));
     }
@@ -112,7 +112,7 @@ public class Sf2SampleDescriptor
      */
     public void writeHeader (final ByteArrayOutputStream out) throws IOException
     {
-        StreamUtils.writeASCII (out, StringUtils.optimizeName (StringUtils.fixASCII (this.name), 20), 20);
+        StreamUtils.writeAscii (out, StringUtils.optimizeName (StringUtils.fixASCII (this.name), 20), 20);
         StreamUtils.writeUnsigned32 (out, this.start, false);
         StreamUtils.writeUnsigned32 (out, this.end, false);
         StreamUtils.writeUnsigned32 (out, this.startLoop, false);
@@ -133,7 +133,7 @@ public class Sf2SampleDescriptor
      */
     public static void writeLastHeader (final ByteArrayOutputStream out) throws IOException
     {
-        StreamUtils.writeASCII (out, "EOS", 20);
+        StreamUtils.writeAscii (out, "EOS", 20);
         StreamUtils.writeUnsigned32 (out, 0, false);
         StreamUtils.writeUnsigned32 (out, 0, false);
         StreamUtils.writeUnsigned32 (out, 0, false);

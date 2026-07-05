@@ -22,7 +22,6 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import de.mossgrabers.convertwithmoss.core.NoteParser;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -30,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.MultisampleException;
 import de.mossgrabers.convertwithmoss.exception.NoteNotDetectedException;
@@ -445,7 +445,7 @@ public class KeyMapping
                 final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (filename)), si);
                 groups.computeIfAbsent (id, _ -> new ArrayList<> ()).add (zone);
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 throw new MultisampleException (Functions.getMessage ("IDS_WAV_NO_VEL_GROUP_DETECTED", filename));
             }
@@ -642,7 +642,7 @@ public class KeyMapping
         {
             return createNoteMap (zones);
         }
-        catch (final NoteNotDetectedException ex)
+        catch (final NoteNotDetectedException _)
         {
             // Second try to parse the note from the filename in different variations
             try

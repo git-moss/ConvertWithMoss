@@ -34,7 +34,7 @@ public interface IGroup
 
 
     /**
-     * Get the event that triggers the playback of the sample.
+     * Get the event that triggers the play-back of the sample.
      *
      * @return The trigger type
      */
@@ -42,7 +42,7 @@ public interface IGroup
 
 
     /**
-     * Set the event that triggers the playback of the sample.
+     * Set the event that triggers the play-back of the sample.
      *
      * @param trigger The trigger type
      */
@@ -60,17 +60,17 @@ public interface IGroup
     /**
      * Set the description of the sample zones which belong to the group.
      *
-     * @param zones The sample zones
+     * @param sampleZones The sample zones
      */
-    void setSampleZones (List<ISampleZone> zones);
+    void setSampleZones (List<ISampleZone> sampleZones);
 
 
     /**
      * Add a sample zone.
      *
-     * @param sample The sample description
+     * @param sampleZone The sample zone description
      */
-    void addSampleZone (ISampleZone sample);
+    void addSampleZone (ISampleZone sampleZone);
 
 
     /**
@@ -78,7 +78,8 @@ public interface IGroup
      * sequence position, it is considered that round-robin happens on a group-level. This means
      * e.g. 3 groups are played round-robin.
      *
-     * @return True if round-robin happens on a group-level
+     * @return True if round-robin happens on a group-level otherwise round-robin happens inside the
+     *         group
      */
     default boolean isGroupRoundRobin ()
     {
@@ -97,5 +98,67 @@ public interface IGroup
                 return false;
         }
         return true;
+    }
+
+
+    /**
+     * If all zones in this group are set to play round-robin and have different sequence positions,
+     * it is considered that round-robin happens inside the group (and not on a group-level).
+     *
+     * @return True if round-robin happens on a zone-level and all zones are set to play round-robin
+     */
+    default boolean isZoneRoundRobin ()
+    {
+        final List<ISampleZone> sampleZones = this.getSampleZones ();
+        if (sampleZones.isEmpty ())
+            return false;
+
+        int sequencePosition = -1;
+        for (final ISampleZone zone: sampleZones)
+        {
+            if (zone.getPlayLogic () != PlayLogic.ROUND_ROBIN)
+                return false;
+            if (sequencePosition == -1)
+                sequencePosition = zone.getSequencePosition ();
+            else if (sequencePosition == zone.getSequencePosition ())
+                return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * If all zones in this group are set to play round-robin.
+     *
+     * @return True if all sample zones have round-robin enabled
+     */
+    default boolean isFullRoundRobin ()
+    {
+        final List<ISampleZone> sampleZones = this.getSampleZones ();
+        if (sampleZones.isEmpty ())
+            return false;
+
+        for (final ISampleZone zone: sampleZones)
+            if (zone.getPlayLogic () != PlayLogic.ROUND_ROBIN)
+                return false;
+        return true;
+    }
+
+
+    /**
+     * If at least one zones in this group is set to play round-robin.
+     *
+     * @return True if at least one sample zone has round-robin enabled
+     */
+    default boolean hasRoundRobin ()
+    {
+        final List<ISampleZone> sampleZones = this.getSampleZones ();
+        if (sampleZones.isEmpty ())
+            return false;
+
+        for (final ISampleZone zone: sampleZones)
+            if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                return true;
+        return false;
     }
 }
