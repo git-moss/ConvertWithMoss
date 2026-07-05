@@ -29,7 +29,7 @@
 * MPC
   * Fixed: Program in XTY file was not read.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
-  * New: The filter cutoff keyboard-tracking is now written (Filter1Keytrack/Filter2Keytrack), so e.g. a converted Synthstrom Deluge patch keeps its brightness across the keyboard range instead of sounding dark in the upper octaves.
+  * New: The filter cutoff keyboard-tracking is now written (Filter1Keytrack), so e.g. a converted Synthstrom Deluge patch keeps its brightness across the keyboard range instead of sounding dark in the upper octaves.
   * Fixed: Sample Loop mode 2 was not set to alternating but backwards.
   * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.

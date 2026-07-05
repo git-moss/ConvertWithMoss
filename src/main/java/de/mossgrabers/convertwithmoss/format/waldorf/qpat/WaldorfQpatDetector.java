@@ -379,6 +379,10 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         if (filterVeloAmountParameter != null)
             filter.getCutoffVelocityModulator ().setDepth (filterVeloAmountParameter.value * 2.0 - 1.0);
 
+        final WaldorfQpatParameter filterKeyTrackParameter = parameters.get ("Filter1Keytrack");
+        if (filterKeyTrackParameter != null)
+            filter.setCutoffKeyTracking (filterKeyTrackParameter.value * 2.0 - 1.0);
+
         final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
         final WaldorfQpatParameter filterEnvAmountParameter = parameters.get ("Filter1EnvAmount");
         if (filterEnvAmountParameter != null)

@@ -129,10 +129,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             StreamUtils.writeUnsigned16 (out, parameters.size (), false);
             StreamUtils.padBytes (out, 2);
 
-            // Write up to 3 sample maps (groups have already been reduced to a max. of 3). Each map's
-            // offset is relative to the start of the concatenated resource data written further down,
-            // so it must accumulate the lengths of the preceding maps. Without this, maps 2 and 3 keep
-            // the default offset 0 and are read overlapping map 1, so the device cannot locate their
+            // Write up to 3 sample maps (groups have already been reduced to a max. of 3). Each
+            // map's
+            // offset is relative to the start of the concatenated resource data written further
+            // down,
+            // so it must accumulate the lengths of the preceding maps. Without this, maps 2 and 3
+            // keep
+            // the default offset 0 and are read overlapping map 1, so the device cannot locate
+            // their
             // samples and shows the "Find Sample Map" screen for multi-oscillator patches.
             int resourceOffset = 0;
             for (int i = 0; i < sampleMaps.size (); i++)
@@ -348,7 +352,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24.0f));
 
             // Osc1Keytrack: [0..1] ~ [-200..200] - already set in the sample maps
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Keytrack", "+100.0", 0.75));
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Keytrack", "+100.0", 0.75f));
 
             // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB] - already set in the sample maps
             final String volumeStr = "+" + StringUtils.formatDouble (0, 3, " dB");
@@ -469,8 +473,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // Filter1Keytrack: [0.00] "-100.00 %" ... [0.50] "0.00 %" ... [1.00] "+100.00 %". Both
         // filters track so the patch stays bright across the keyboard.
         final double keyTracking = filter.getCutoffKeyTracking ();
-        final float keyTrackingValue = (float) Math.clamp ((keyTracking + 1.0) / 2.0, 0, 1);
-        parameters.add (new WaldorfQpatParameter ("Filter1Keytrack", StringUtils.formatPercent (keyTracking, 2), keyTrackingValue));
+        parameters.add (new WaldorfQpatParameter ("Filter1Keytrack", StringUtils.formatPercent (keyTracking, 2), (float) Math.clamp ((keyTracking + 1.0) / 2.0, 0, 1)));
 
         createEnvelope (parameters, modulator.getSource (), "Filter1Env", "Filter1", false);
     }

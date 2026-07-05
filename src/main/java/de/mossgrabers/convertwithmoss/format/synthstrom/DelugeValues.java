@@ -426,6 +426,18 @@ public final class DelugeValues
 
 
     /**
+     * Inverse of patchAmountToModulationDepth.
+     * 
+     * @param modDepth The modulation depth in the range of [-1..1]
+     * @return The patch-cable amount
+     */
+    public static long modulationDepthToPatchAmount (final double modDepth)
+    {
+        return (long) Math.clamp (modDepth * PATCH_CABLE_FULL, -PATCH_CABLE_FULL, PATCH_CABLE_FULL);
+    }
+
+
+    /**
      * Calculate the root note of a sample from the Deluge transpose and cents values.
      *
      * @param transpose The transpose value in semitones
