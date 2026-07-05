@@ -129,14 +129,21 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             StreamUtils.writeUnsigned16 (out, parameters.size (), false);
             StreamUtils.padBytes (out, 2);
 
-            // Write up to 3 sample maps (groups have already been reduced to a max. of 3) ...
+            // Write up to 3 sample maps (groups have already been reduced to a max. of 3). Each map's
+            // offset is relative to the start of the concatenated resource data written further down,
+            // so it must accumulate the lengths of the preceding maps. Without this, maps 2 and 3 keep
+            // the default offset 0 and are read overlapping map 1, so the device cannot locate their
+            // samples and shows the "Find Sample Map" screen for multi-oscillator patches.
+            int resourceOffset = 0;
             for (int i = 0; i < sampleMaps.size (); i++)
             {
-                final String sampleMap = sampleMaps.get (i);
+                final byte [] sampleMapBytes = sampleMaps.get (i).getBytes ();
                 final WaldorfQpatResourceHeader resourceHeader = new WaldorfQpatResourceHeader ();
                 resourceHeader.type = TYPE_LOOKUP.get (Integer.valueOf (i));
-                resourceHeader.length = sampleMap.getBytes ().length;
+                resourceHeader.offset = resourceOffset;
+                resourceHeader.length = sampleMapBytes.length;
                 resourceHeader.write (out);
+                resourceOffset += sampleMapBytes.length;
             }
             // .... and pad with empty resources
             for (int i = 0; i < WaldorfQpatConstants.MAX_RESOURCES - sampleMaps.size (); i++)
