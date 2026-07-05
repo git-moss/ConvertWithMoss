@@ -70,9 +70,9 @@ public interface IFilter
 
 
     /**
-     * Get the keyboard tracking amount applied to the filter cutoff. A value of 0 means no tracking,
-     * 1 means the cutoff follows the played note one-to-one (one semitone per semitone, +100%) and
-     * -1 means inverse tracking (-100%).
+     * Get the keyboard tracking amount applied to the filter cutoff. A value of 0 means no
+     * tracking, 1 means the cutoff follows the played note one-to-one (one semi-tone per semi-tone,
+     * +100%) and -1 means inverse tracking (-100%).
      *
      * @return The key-tracking amount in the range of [-1..1]
      */
