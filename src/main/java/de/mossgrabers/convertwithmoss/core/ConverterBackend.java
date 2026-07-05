@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.bliss.BlissCreator;
 import de.mossgrabers.convertwithmoss.format.bliss.BlissDetector;
+import de.mossgrabers.convertwithmoss.format.cmi3.FairlightCmi3Detector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
@@ -59,7 +60,6 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
-import de.mossgrabers.convertwithmoss.format.cmi3.VCDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.bento.BentoCreator;
 import de.mossgrabers.convertwithmoss.format.music1010.bento.BentoDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.blackbox.Music1010Creator;
@@ -152,7 +152,7 @@ public class ConverterBackend
             new TonverkPresetDetector (notifier),
             new EnsoniqEpsAsrDetector (notifier),
             new MirageDetector (notifier),
-            new VCDetector (notifier),
+            new FairlightCmi3Detector (notifier),
             new IsoDetector (notifier),
             new KMPDetector (notifier),
             new KorgmultisampleDetector (notifier),

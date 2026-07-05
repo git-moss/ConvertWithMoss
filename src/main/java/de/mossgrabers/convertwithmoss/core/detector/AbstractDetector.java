@@ -467,6 +467,29 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     }
 
 
+    protected IMultisampleSource createMultisampleSource (final File sourceFile, final String multisampleSourceName, final List<IGroup> groups)
+    {
+        final String n = this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings && metadataSettings.isPreferFolderName () ? this.sourceFolder.getName () : multisampleSourceName;
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
+        return createMultisampleSource (sourceFile, parts, multisampleSourceName, groups);
+    }
+
+
+    protected IMultisampleSource createMultisampleSource (final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups)
+    {
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multisampleSourceName);
+        multisampleSource.setGroups (groups);
+
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
+        tokens[tokens.length - 1] = multisampleSourceName;
+        this.createMetadata (metadata, this.getFirstSample (groups), tokens);
+        this.updateCreationDateTime (metadata, sourceFile);
+
+        return multisampleSource;
+    }
+
+
     /**
      * Check the type of the source sample for compatibility and handle them accordingly. This
      * method supports WAV, AIF, AIFF, OGG and FLAC files.

@@ -15,14 +15,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
 import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
@@ -35,7 +32,6 @@ import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpOutput;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpProgram;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpRiffChunkId;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpTuning;
-import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -58,7 +54,6 @@ public class AkpFile extends AbstractRIFFFile
     private final AkpModulations    modsChunk     = new AkpModulations ();
     private final AkpTuning         tuningChunk   = new AkpTuning ();
     private final List<AkpKeygroup> keygroups     = new ArrayList<> ();
-    private final File              akpSourceFile;
     private boolean                 isS5000Series;
 
 
@@ -73,8 +68,6 @@ public class AkpFile extends AbstractRIFFFile
     {
         super (AkpRiffChunkId.APRG_ID, true);
 
-        this.akpSourceFile = akpFile;
-
         try (final FileInputStream stream = new FileInputStream (akpFile))
         {
             this.read (stream);
@@ -88,8 +81,6 @@ public class AkpFile extends AbstractRIFFFile
     public AkpFile ()
     {
         super (AkpRiffChunkId.APRG_ID, true);
-
-        this.akpSourceFile = null;
     }
 
 
@@ -121,30 +112,19 @@ public class AkpFile extends AbstractRIFFFile
 
 
     /**
-     * Create a multi-sample source from the read AKP file.
+     * Create a group with all samples zones from the read AKP file.
      *
-     * @param sourceFolder The starting source folder
      * @param metadataSettings The metadata settings for detection
      * @return The multi-sample source
      */
-    public IMultisampleSource createMultisampleSource (final File sourceFolder, final IMetadataConfig metadataSettings)
+    public IGroup createGroup (final IMetadataConfig metadataSettings)
     {
-        final File parentFile = this.akpSourceFile.getParentFile ();
-        final String name = FileUtils.getNameWithoutType (this.akpSourceFile);
-        final String [] parts = AudioFileUtils.createPathParts (parentFile, sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (this.akpSourceFile, parts, name);
-
         final IGroup group = new DefaultGroup ();
-        multisampleSource.setGroups (Collections.singletonList (group));
-
         for (final AkpKeygroup keygroup: this.keygroups)
             for (final ISampleZone sampleZone: keygroup.createSampleZones (this.modsChunk, this.tuningChunk, this.outputChunk))
                 group.addSampleZone (sampleZone);
         fixPanning (group);
-
-        multisampleSource.getMetadata ().detectMetadata (metadataSettings, parts);
-
-        return multisampleSource;
+        return group;
     }
 
 

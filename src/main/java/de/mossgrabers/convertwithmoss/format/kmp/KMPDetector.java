@@ -16,12 +16,10 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.ZoneChannels;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.StringUtils;
 
 
@@ -191,14 +189,7 @@ public class KMPDetector extends AbstractDetector<KMPDetectorUI>
             return Optional.empty ();
         }
 
-        final String name = kmpFile.getName ();
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final IMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, name);
-
-        // Use guessing on the filename...
-        source.getMetadata ().detectMetadata (this.settingsConfiguration, parts);
-        source.setGroups (Collections.singletonList (group));
-        return Optional.of (source);
+        return Optional.of (this.createMultisampleSource (sourceFile, kmpFile.getName (), Collections.singletonList (group)));
     }
 
 
