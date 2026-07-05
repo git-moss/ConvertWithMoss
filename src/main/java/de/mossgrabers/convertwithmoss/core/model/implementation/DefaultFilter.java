@@ -155,9 +155,7 @@ public class DefaultFilter implements IFilter
         }
         else if (!this.cutoffEnvelopeModulator.equals (other.cutoffEnvelopeModulator))
             return false;
-        if (this.envelopeDepth != other.envelopeDepth || this.poles != other.poles || Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance))
-            return false;
-        if (Double.doubleToLongBits (this.cutoffKeyTracking) != Double.doubleToLongBits (other.cutoffKeyTracking))
+        if (this.envelopeDepth != other.envelopeDepth || this.poles != other.poles || Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance) || (Double.doubleToLongBits (this.cutoffKeyTracking) != Double.doubleToLongBits (other.cutoffKeyTracking)))
             return false;
         return this.type == other.type;
     }

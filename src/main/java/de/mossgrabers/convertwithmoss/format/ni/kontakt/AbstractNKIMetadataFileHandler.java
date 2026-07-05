@@ -328,7 +328,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 for (int loopIndex = 0; loopIndex < loops.size (); loopIndex++)
                 {
                     final ISampleLoop loop = loops.get (loopIndex);
-                    final String loopContent = addLoop (loop, loopTemplate, loopIndex);
+                    final String loopContent = this.addLoop (loop, loopTemplate, loopIndex);
                     if (loopIndex > 0)
                         loopsContent.append ("\r\n");
                     loopsContent.append (loopContent);
