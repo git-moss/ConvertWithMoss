@@ -382,6 +382,11 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         cutoffModulator.setDepth (1.0);
         cutoffModulator.setSource (globalFilterEnvelope);
+
+        // TODO All MOD1_* to MOD11_* need to be checked, also for velocity modulation
+        @SuppressWarnings("unused")
+        final Integer keyTracking = parameters.get (EXS24Parameters.FILTER1_KEYTRACK);
+
         multisampleSource.setGlobalFilter (filter);
     }
 

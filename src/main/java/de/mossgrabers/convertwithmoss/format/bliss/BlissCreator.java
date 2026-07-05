@@ -337,9 +337,9 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
                     setDoubleValueAttribute (document, zoneElement, "mod_env_dest2amt", cutoffDepth / 2.0 + 0.5);
                 }
                 XMLUtils.setDoubleAttribute (zoneElement, "flt1_vel_trk", filter.getCutoffVelocityModulator ().getDepth (), 2);
+                XMLUtils.setDoubleAttribute (zoneElement, "flt1_kbd_trk", filter.getCutoffKeyTracking (), 2);
             }
         }
-
     }
 
 

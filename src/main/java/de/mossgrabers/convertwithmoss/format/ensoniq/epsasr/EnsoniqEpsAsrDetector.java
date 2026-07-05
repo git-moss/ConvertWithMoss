@@ -394,6 +394,9 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 // Pressure
                 if (waveSample.getFilter1ModulationSource () == 13)
                     filter.getCutoffVelocityModulator ().setDepth (waveSample.getFilter1ModulationAmount () / 127.0);
+
+                filter.setCutoffKeyTracking (waveSample.getFilter1EnvelopeAmount () / 127.0);
+
                 sampleZone.setFilter (filter);
 
                 final int start = waveSample.getSampleStart ();

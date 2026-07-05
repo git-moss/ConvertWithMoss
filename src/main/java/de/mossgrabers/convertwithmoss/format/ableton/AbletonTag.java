@@ -145,6 +145,8 @@ public class AbletonTag
     public static final String TAG_AMOUNT                  = "Amount";
     /** The modulate by velocity tag. */
     public static final String TAG_MOD_BY_VELOCITY         = "ModByVelocity";
+    /** The modulate by pitch tag. */
+    public static final String TAG_MOD_BY_PITCH            = "ModByPitch";
 
     /** The Auxiliary Envelope tag. */
     public static final String TAG_SIMPLER_AUX_ENVELOPE    = "SimplerAuxEnvelope";

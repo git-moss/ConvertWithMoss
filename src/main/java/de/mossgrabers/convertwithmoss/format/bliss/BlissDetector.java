@@ -340,6 +340,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
                     cutoffEnvelopeMod.setDepth ((cutoffEnvelopeModulator.getDepth () - 0.5) * (cutoffAmount - 0.5) * 4.0);
                 }
                 filter.getCutoffVelocityModulator ().setDepth (XMLUtils.getDoubleAttribute (zoneElement, "flt1_vel_trk", 0));
+                filter.setCutoffKeyTracking (XMLUtils.getDoubleAttribute (zoneElement, "flt1_kbd_trk", 0));
 
                 zone.setFilter (filter);
             }

@@ -178,6 +178,9 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         final Integer filterPoles = FILTER_POLES.get (Integer.valueOf (filterMode));
         final double cutoff = MathUtils.denormalizeFrequency (filterCutoff / 100.0, IFilter.MAX_FREQUENCY);
 
+        // -36..36 - +12 is the default and this tracks the filter octave for octave
+        final double filterKeyTracking = Math.clamp (this.getValue (0x118) / 12.0, -1, 1);
+
         int zonePosition = 0x11E;
         for (int i = 0; i < 4; i++)
         {
@@ -218,6 +221,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
                     final IFilter filter = new DefaultFilter (filterType, filterPoles.intValue (), cutoff, res);
                     sampleZone.setFilter (filter);
 
+                    filter.setCutoffKeyTracking (filterKeyTracking);
                     final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
                     cutoffEnvelopeModulator.setDepth (filterEnvDepth / 100.0);
                     final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();

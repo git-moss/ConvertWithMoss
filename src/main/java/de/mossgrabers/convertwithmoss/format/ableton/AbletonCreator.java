@@ -233,6 +233,10 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         final double depth = filter.getCutoffVelocityModulator ().getDepth ();
         text = text.replace ("%FILTER_VELOCITY_MOD%", formatDouble (depth));
 
+        // Filter cutoff key modulation
+        final double keyModDepth = filter.getCutoffKeyTracking ();
+        text = text.replace ("%FILTER_KEY_MOD%", formatDouble (keyModDepth));
+
         return text;
     }
 

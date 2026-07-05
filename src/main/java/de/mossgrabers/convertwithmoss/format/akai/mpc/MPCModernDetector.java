@@ -389,6 +389,8 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         if (filterCutoffVelocityAmount > 0)
             filter.getCutoffVelocityModulator ().setDepth (filterCutoffVelocityAmount);
 
+        filter.setCutoffKeyTracking (XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_KEYTRACK, 0));
+
         return filter;
     }
 

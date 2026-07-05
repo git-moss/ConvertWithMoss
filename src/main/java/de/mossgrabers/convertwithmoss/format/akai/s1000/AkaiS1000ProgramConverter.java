@@ -114,15 +114,17 @@ public class AkaiS1000ProgramConverter
             // Filter
             final int filterCutoff = keygroup.getFilter ();
             final double cutoffModulation = keygroup.getEnvelope2ToFilter () / 50.0;
-            final double velocityToFilter = keygroup.getVelocityToFilter () / 50.0;
             IFilter filter = null;
             if (filterCutoff < 99 || cutoffModulation != 0)
             {
                 final double cutoff = filterCutoff / 99.0 * IFilter.MAX_FREQUENCY;
                 filter = new DefaultFilter (FilterType.LOW_PASS, 3, cutoff, 0);
-                filter.getCutoffEnvelopeModulator ().setSource (auxEnvelope);
-                filter.getCutoffEnvelopeModulator ().setDepth (cutoffModulation);
-                filter.getCutoffVelocityModulator ().setDepth (velocityToFilter);
+                final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+                cutoffEnvelopeModulator.setSource (auxEnvelope);
+                cutoffEnvelopeModulator.setDepth (cutoffModulation);
+
+                filter.getCutoffVelocityModulator ().setDepth (keygroup.getVelocityToFilter () / 50.0);
+                filter.setCutoffKeyTracking (Math.clamp (keygroup.getKeyToFilter () / 12.0, 0, 1));
             }
 
             // Pitch modulation
