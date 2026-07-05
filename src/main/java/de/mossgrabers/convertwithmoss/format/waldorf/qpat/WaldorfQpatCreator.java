@@ -343,6 +343,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // Particle
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Type", "Particle", 2.0f));
 
+            // Osc1ParticleSampleMode: [2] "Normal" selects normal, key-tracked sample playback.
+            // Without it the oscillator defaults to a mode that plays a single sample at a fixed
+            // pitch, so a sample mapped across the keyboard does not follow the played note.
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "ParticleSampleMode", "Normal", 2.0f));
+
             // Osc1CoarsePitch / Osc1FinePitch: already set in the sample maps!
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "CoarsePitch", "+0 semi", 24.0f));
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "FinePitch", "+0.0 cents", 0.5f));
