@@ -7,6 +7,7 @@
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
+* New: Added support for the Fairlight CMI 3 - read only.
 * New: Improved user interface for long lists of formats.
 * New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
 * New: Added several new tags for category detection.
@@ -29,6 +30,8 @@
   * Fixed: File version number was always written as 0.
 * MPC
   * Fixed: Program in XTY file was not read.
+* Omnisphere
+  * Fixed: Reading an Omnisphere preset with multiple sample voice elements did only return the samples of the last voice.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
   * New: The filter cutoff keyboard-tracking is now written (Filter1Keytrack), so e.g. a converted Synthstrom Deluge patch keeps its brightness across the keyboard range instead of sounding dark in the upper octaves.
   * Fixed: Sample Loop mode 2 was not set to alternating but backwards.

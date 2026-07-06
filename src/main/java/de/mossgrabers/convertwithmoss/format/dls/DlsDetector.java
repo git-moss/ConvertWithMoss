@@ -16,7 +16,6 @@ import java.util.TreeMap;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -119,11 +118,6 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private Optional<IMultisampleSource> createMultisample (final File sourceFile, final DlsFile dlsFile, final DlsInstrument instrument, final List<WavFileSampleData> waveSampleData)
     {
-        final String name = FileUtils.getNameWithoutType (sourceFile);
-        final File parentFile = sourceFile.getParentFile ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, instrument.getName ());
-
         final Map<Integer, IGroup> groupsMap = new TreeMap<> ();
 
         for (final DlsRegion dlsRegion: instrument.getRegions ())
@@ -139,10 +133,11 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             group.addSampleZone (zone);
         }
 
-        multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
-
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.fillMetadata (dlsFile, parts, metadata, name, instrument);
+        final String name = FileUtils.getNameWithoutType (sourceFile);
+        final File parentFile = sourceFile.getParentFile ();
+        final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, instrument.getName (), new ArrayList<> (groupsMap.values ()));
+        this.fillMetadata (dlsFile, parts, multisampleSource.getMetadata (), name, instrument);
         return Optional.of (multisampleSource);
     }
 

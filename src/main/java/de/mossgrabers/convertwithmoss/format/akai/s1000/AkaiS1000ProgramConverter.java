@@ -4,13 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
-import java.io.File;
-import java.util.Collections;
 import java.util.List;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -26,7 +22,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
-import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 
 
@@ -37,42 +32,30 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
  */
 public class AkaiS1000ProgramConverter
 {
-    private final INotifier       notifier;
-    private final IMetadataConfig configuration;
+    private final INotifier notifier;
 
 
     /**
      * Constructor.
      *
      * @param notifier Where to report errors
-     * @param configuration Configuration for metadata lookup
      */
-    public AkaiS1000ProgramConverter (final INotifier notifier, final IMetadataConfig configuration)
+    public AkaiS1000ProgramConverter (final INotifier notifier)
     {
         this.notifier = notifier;
-        this.configuration = configuration;
     }
 
 
     /**
-     * Convert a program to a multi-sample source.
-     *
-     * @param sourceFile The source file
-     * @param parts The folder parts for metadata lookup
-     * @param samples THe referenced samples
+     * Convert a program to a multi-sample group.
+     * 
      * @param program The program to convert
-     * @param volumeName The name to prefix, might be null or empty
-     * @return The converted multi-sample source
+     * @param samples THe referenced samples
+     * @return The converted multi-sample group
      */
-    public IMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final List<AkaiS1000Sample> samples, final AkaiS1000Program program, final String volumeName)
+    public IGroup createGroup (final AkaiS1000Program program, final List<AkaiS1000Sample> samples)
     {
-        String programName = program.getName ();
-        if (volumeName != null && !volumeName.isBlank ())
-            programName = volumeName.trim () + " " + programName;
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
-
         final IGroup group = new DefaultGroup ();
-        multisampleSource.setGroups (Collections.singletonList (group));
         this.createSampleZones (group, program.getKeygroups (), samples);
 
         // Set global values
@@ -87,12 +70,7 @@ public class AkaiS1000ProgramConverter
             zone.getAmplitudeVelocityModulator ().setDepth (velocityToVolume);
         }
 
-        // Detect metadata
-        final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
-        tokens[tokens.length - 1] = programName;
-        multisampleSource.getMetadata ().detectMetadata (this.configuration, tokens);
-
-        return multisampleSource;
+        return group;
     }
 
 

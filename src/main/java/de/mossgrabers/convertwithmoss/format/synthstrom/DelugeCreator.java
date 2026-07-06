@@ -182,7 +182,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         for (final ISampleZone zone: zones)
             group.addSampleZone (zone);
 
-        final DefaultMultisampleSource source = new DefaultMultisampleSource ();
+        final IMultisampleSource source = new DefaultMultisampleSource ();
         source.setGroups (Collections.singletonList (group));
 
         final IMetadata sourceMetadata = multisampleSource.getMetadata ();

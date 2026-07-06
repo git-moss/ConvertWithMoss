@@ -4,7 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.mpc2000;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,10 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -28,7 +25,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 
 
 /**
@@ -38,49 +34,29 @@ import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
  */
 public class AkaMPC2000ProgramConverter
 {
-    private final INotifier       notifier;
-    private final IMetadataConfig configuration;
+    private final INotifier notifier;
 
 
     /**
      * Constructor.
      *
      * @param notifier Where to report errors
-     * @param configuration Configuration for metadata lookup
      */
-    public AkaMPC2000ProgramConverter (final INotifier notifier, final IMetadataConfig configuration)
+    public AkaMPC2000ProgramConverter (final INotifier notifier)
     {
         this.notifier = notifier;
-        this.configuration = configuration;
     }
 
 
     /**
-     * Convert a program to a multi-sample source.
+     * Convert a program to a multi-sample groups.
      *
-     * @param sourceFile The source file
-     * @param parts The folder parts for metadata lookup
      * @param samples THe referenced samples
      * @param program The program to convert
-     * @param programName The name of the program
      * @return The converted multi-sample source
      * @throws IOException Could not read the metadata
      */
-    public IMultisampleSource createMultiSample (final File sourceFile, final String [] parts, final AkaiMPC2000Program program, final Map<String, ISampleData> samples, final String programName) throws IOException
-    {
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
-        multisampleSource.setGroups (this.createSampleZones (program, samples));
-
-        // Detect metadata
-        final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
-        tokens[tokens.length - 1] = programName;
-        multisampleSource.getMetadata ().detectMetadata (this.configuration, tokens);
-
-        return multisampleSource;
-    }
-
-
-    private List<IGroup> createSampleZones (final AkaiMPC2000Program program, final Map<String, ISampleData> samples) throws IOException
+    public List<IGroup> createSampleZones (final AkaiMPC2000Program program, final Map<String, ISampleData> samples) throws IOException
     {
         final IGroup velocityGroup1 = new DefaultGroup ("VelLayer 1");
         final IGroup velocityGroup2 = new DefaultGroup ("VelLayer 2");

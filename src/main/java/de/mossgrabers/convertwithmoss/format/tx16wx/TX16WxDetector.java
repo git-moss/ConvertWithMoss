@@ -30,7 +30,6 @@ import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -48,7 +47,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataWithSearchHeightSettingsUI;
 import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -252,15 +250,11 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         String name = topElement.getAttribute (TX16WxTag.NAME);
         if (name == null || name.isBlank ())
             name = FileUtils.getNameWithoutType (sourceFile);
-        final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
 
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
-
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groups);
         final String category = topElement.getAttribute (TX16WxTag.PROGRAM_ICON);
-        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (groups), parts, category);
-
-        multisampleSource.setGroups (groups);
+        if (category != null && !category.isBlank ())
+            multisampleSource.getMetadata ().setCategory (category);
 
         // Note: groups must be already set!
         if (filter.isPresent ())

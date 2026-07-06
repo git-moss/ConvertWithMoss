@@ -13,6 +13,7 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -57,9 +58,9 @@ public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
 
             final AkaiS1000ProgramConverter converter = new AkaiS1000ProgramConverter (this.notifier, this.settingsConfiguration);
             final File parentFolder = sourceFile.getParentFile ();
-            final List<AkaiS1000Sample> samples = this.detectSamples (parentFolder, program);
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, sourceFile.getName ());
-            return Collections.singletonList (converter.createMultiSample (sourceFile, parts, samples, program, ""));
+            final IGroup group = converter.createGroup (program, this.detectSamples (parentFolder, program));
+            return Collections.singletonList (this.createMultisampleSource (sourceFile, parts, program.getName (), Collections.singletonList (group)));
         }
         catch (final IOException ex)
         {

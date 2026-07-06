@@ -15,7 +15,6 @@ import java.util.Optional;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -28,7 +27,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.akai.s900.AkaiS900Keygroup.KeygroupLayer;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
@@ -63,23 +61,13 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final AkaiS900DiskImage image = new AkaiS900DiskImage (sourceFile);
             final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
-            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, sourceFile.getName ());
             for (final AkaiS900Program program: image.getPrograms ())
             {
                 final String programName = program.getName ();
-                final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
                 final IGroup group = new DefaultGroup ();
-                multisampleSource.setGroups (Collections.singletonList (group));
                 this.createSampleZones (group, program, image.getSamples ());
-
-                // Detect metadata
-                final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
-                tokens[tokens.length - 1] = programName;
-                multisampleSource.getMetadata ().detectMetadata (this.settingsConfiguration, tokens);
-
-                multiSampleSources.add (multisampleSource);
+                multiSampleSources.add (this.createMultisampleSource (sourceFile, programName, Collections.singletonList (group)));
             }
-
             return multiSampleSources;
         }
         catch (final IOException ex)

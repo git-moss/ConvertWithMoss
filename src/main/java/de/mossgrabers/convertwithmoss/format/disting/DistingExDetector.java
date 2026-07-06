@@ -23,12 +23,10 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -36,7 +34,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -72,7 +69,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
 
         try (final InputStream in = new BufferedInputStream (new FileInputStream (file)))
         {
-            return this.parseFile (in, file);
+            return Collections.singletonList (this.parseFile (in, file));
         }
         catch (final IOException ex)
         {
@@ -95,28 +92,12 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
      * @throws FormatException Error in the format of the file
      * @throws IOException Could not read from the file
      */
-    private List<IMultisampleSource> parseFile (final InputStream in, final File sourceFile) throws FormatException, IOException
+    private IMultisampleSource parseFile (final InputStream in, final File sourceFile) throws FormatException, IOException
     {
-        String name = this.readHeader (in);
-        if (name.isBlank ())
-            name = FileUtils.getNameWithoutType (sourceFile);
-
-        final File parentFile = sourceFile.getParentFile ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
-
-        final int [] parameters = readParameters (in);
-
-        final List<IGroup> groups = this.readSamples (parentFile, in);
-        multisampleSource.setGroups (groups);
-
-        applyParameters (groups, parameters);
-
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (metadata, this.getFirstSample (groups), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
-
-        return Collections.singletonList (multisampleSource);
+        final String name = this.readHeader (in);
+        final List<IGroup> groups = this.readSamples (sourceFile.getParentFile (), in);
+        applyParameters (groups, readParameters (in));
+        return this.createMultisampleSource (sourceFile, name.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : name, groups);
     }
 
 

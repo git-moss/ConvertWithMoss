@@ -231,6 +231,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
         for (final Program program: programs)
         {
             final String programName = program.getName ();
+
             final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null);
             this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {

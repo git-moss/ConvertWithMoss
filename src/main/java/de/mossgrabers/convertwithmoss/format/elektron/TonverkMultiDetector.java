@@ -7,7 +7,6 @@ package de.mossgrabers.convertwithmoss.format.elektron;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,6 @@ import java.util.TreeMap;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -24,7 +22,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
@@ -63,8 +60,7 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
             for (final String error: elektronMultiFile.errors)
                 this.notifier.logText (error);
 
-            final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, file.getName ());
-            return Collections.singletonList (this.convertMultiFile (file, elektronMultiFile, parts));
+            return Collections.singletonList (this.convertMultiFile (file, elektronMultiFile));
         }
         catch (final IOException ex)
         {
@@ -74,11 +70,8 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private IMultisampleSource convertMultiFile (final File sourceFile, final TonverkMultiFile elektronMultiFile, final String [] parts) throws IOException
+    private IMultisampleSource convertMultiFile (final File sourceFile, final TonverkMultiFile elektronMultiFile) throws IOException
     {
-        final String multiSampleName = elektronMultiFile.name;
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multiSampleName);
-
         // Create all sample zones and store them by their root note and velocity low value. From
         // these the key-/velocity ranges need to be calculated in the next step
         final TreeMap<Integer, TreeMap<Integer, List<ISampleZone>>> orderedKeyRanges = new TreeMap<> ();
@@ -96,15 +89,7 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
         // Now calculate the key-/velocity ranges
         calculateRanges (orderedKeyRanges);
 
-        // Collapse the maps into groups
-        multisampleSource.setGroups (collapseToGroups (orderedKeyRanges));
-
-        // Detect metadata
-        final String [] tokens = Arrays.copyOf (parts, parts.length + 1);
-        tokens[tokens.length - 1] = multiSampleName;
-        multisampleSource.getMetadata ().detectMetadata (this.settingsConfiguration, tokens);
-
-        return multisampleSource;
+        return this.createMultisampleSource (sourceFile, elektronMultiFile.name, collapseToGroups (orderedKeyRanges));
     }
 
 

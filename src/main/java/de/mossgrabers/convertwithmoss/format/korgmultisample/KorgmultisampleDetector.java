@@ -19,7 +19,6 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -30,7 +29,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -155,24 +153,22 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
      * Parse the korgmultisample file.
      *
      * @param in The input stream to read from
-     * @param file The source file
+     * @param sourceFile The source file
      * @param creationDateTime The creation date and time
      * @return The parsed multi-sample source
      * @throws FormatException Error in the format of the file
      * @throws IOException Could not read from the file
      */
-    private List<IMultisampleSource> parseMultisample (final InputStream in, final File file, final Date creationDateTime) throws FormatException, IOException
+    private List<IMultisampleSource> parseMultisample (final InputStream in, final File sourceFile, final Date creationDateTime) throws FormatException, IOException
     {
         checkAscii (in);
 
-        final String name = StreamUtils.readAsciiWith1ByteLength (in);
-
-        final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
-        final List<IGroup> groups = new ArrayList<> ();
         // There is only one group (no velocity zones)
         final IGroup group = new DefaultGroup ("Layer");
-        groups.add (group);
+        String name = StreamUtils.readAsciiWith1ByteLength (in);
+        if (name == null || name.isBlank () || "Empty".equals (name))
+            name = FileUtils.getNameWithoutType (sourceFile);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, Collections.singletonList (group));
 
         final IMetadata metadata = multisampleSource.getMetadata ();
         metadata.setCreationDateTime (creationDateTime);
@@ -194,7 +190,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
                     break;
 
                 case KorgmultisampleConstants.ID_SAMPLE:
-                    group.addSampleZone (this.readSample (in, file.getParentFile ()));
+                    group.addSampleZone (this.readSample (in, sourceFile.getParentFile ()));
                     break;
 
                 case KorgmultisampleConstants.ID_UUID:
@@ -206,11 +202,6 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
                     throw new FormatException (Integer.toHexString (id));
             }
 
-        final String n = multisampleSource.getName ();
-        if (n == null || n.isBlank () || "Empty".equals (n))
-            multisampleSource.setName (FileUtils.getNameWithoutType (file));
-
-        multisampleSource.setGroups (groups);
         return Collections.singletonList (multisampleSource);
     }
 

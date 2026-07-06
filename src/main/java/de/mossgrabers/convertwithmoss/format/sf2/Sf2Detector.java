@@ -15,7 +15,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -97,24 +96,11 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         // -1 since the last one only signals the end of the presets list
         for (int i = 0; i < presets.size () - 1; i++)
         {
-            final Sf2Preset preset = presets.get (i);
-
-            String presetName = preset.getName ();
-
-            // Little workaround for not set names...
-            if ("NewInstr".equals (presetName))
-                presetName = parts[0];
-            if (this.settingsConfiguration.addFileName () || this.settingsConfiguration.addProgramNumber ())
-                presetName = this.addPrefixes (presetName, preset.getProgramNumber (), FileUtils.getNameWithoutType (sourceFile));
-
-            final IMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName);
-            final IMetadata metadata = source.getMetadata ();
-            this.fillMetadata (sf2File, parts, metadata);
-
             final GeneratorHierarchy generators = new GeneratorHierarchy ();
 
             // Create the groups
             final List<IGroup> groups = new ArrayList<> ();
+            final Sf2Preset preset = presets.get (i);
             for (int presetZoneIndex = 0; presetZoneIndex < preset.getZoneCount (); presetZoneIndex++)
             {
                 final Sf2PresetZone presetZone = preset.getZone (presetZoneIndex);
@@ -148,9 +134,14 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             if (this.settingsConfiguration.logUnsupportedAttributes ())
                 this.printUnsupportedGenerators (generators.diffGenerators ());
 
-            source.setGroups (this.combineToStereo (groups));
-
-            multisamples.add (source);
+            String presetName = preset.getName ();
+            if ("NewInstr".equals (presetName))
+                presetName = parts[0];
+            if (this.settingsConfiguration.addFileName () || this.settingsConfiguration.addProgramNumber ())
+                presetName = this.addPrefixes (presetName, preset.getProgramNumber (), FileUtils.getNameWithoutType (sourceFile));
+            final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, presetName, this.combineToStereo (groups));
+            this.fillMetadata (sf2File, parts, multisampleSource.getMetadata ());
+            multisamples.add (multisampleSource);
         }
 
         return multisamples;

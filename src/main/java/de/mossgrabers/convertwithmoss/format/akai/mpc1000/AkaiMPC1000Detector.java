@@ -17,7 +17,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -30,7 +29,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 
@@ -75,19 +73,9 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final AkaiMPC1000Program program = new AkaiMPC1000Program (input);
             final String programName = FileUtils.getNameWithoutType (sourceFile).trim ();
-            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, programName);
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
-
             final IGroup group = new DefaultGroup ();
-            multisampleSource.setGroups (Collections.singletonList (group));
             this.createSampleZones (group, program, sourceFile.getParentFile ());
-
-            // Detect metadata
-            final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
-            tokens[tokens.length - 1] = programName;
-            multisampleSource.getMetadata ().detectMetadata (this.settingsConfiguration, tokens);
-
-            return Collections.singletonList (multisampleSource);
+            return Collections.singletonList (this.createMultisampleSource (sourceFile, programName, Collections.singletonList (group)));
         }
         catch (final IOException ex)
         {

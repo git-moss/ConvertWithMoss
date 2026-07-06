@@ -19,13 +19,10 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
-import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -39,7 +36,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.SampleSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvaSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvfSection;
@@ -176,14 +172,11 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
     private IMultisampleSource readPatch (final File sourceFile, final S770Patch patch, final String patchName, final String metadataDescription, final IS770Image image)
     {
-        final File parentFile = sourceFile.getParentFile ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, patchName);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, patchName);
-
         final List<IGroup> groups = new ArrayList<> ();
         for (int i = 0; i < 4; i++)
             groups.add (new DefaultGroup ("Layer " + (i + 1)));
-        multisampleSource.setGroups (groups);
+
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, patchName, groups);
 
         final List<S770Partial> partials = image.getPartials ();
         final List<S770Sample> samples = image.getSamples ();
@@ -241,11 +234,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                     sampleZone.setTuning (sampleZone.getTuning () + octaveShift);
                 }
 
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        metadata.setDescription (metadataDescription);
-        this.createMetadata (metadata, (IFileBasedSampleData) null, parts);
-        this.updateCreationDateTime (metadata, sourceFile);
-
+        multisampleSource.getMetadata ().setDescription (metadataDescription);
         return multisampleSource;
     }
 

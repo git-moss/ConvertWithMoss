@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -464,6 +465,14 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
             return string;
         }
+    }
+
+
+    protected IMultisampleSource createMultisampleSource (final File sourceFile, final String multisampleSourceName)
+    {
+        final String n = this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings && metadataSettings.isPreferFolderName () ? this.sourceFolder.getName () : multisampleSourceName;
+        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
+        return createMultisampleSource (sourceFile, parts, multisampleSourceName, Collections.emptyList ());
     }
 
 
