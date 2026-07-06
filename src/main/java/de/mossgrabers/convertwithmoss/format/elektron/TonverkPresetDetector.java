@@ -15,7 +15,6 @@ import java.util.TreeMap;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -29,11 +28,11 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetFile.Machine;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -94,10 +93,6 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
     private IMultisampleSource convertPreset (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
-        final String presetName = nameWithoutEnding (sourceFile);
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, sourceFile.getName ());
-        final IMultisampleSource source = new DefaultMultisampleSource (sourceFile, parts, presetName);
-
         final List<IGroup> groups;
         switch (preset.machine)
         {
@@ -118,19 +113,16 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
         if (groups.isEmpty ())
             return null;
-        source.setGroups (groups);
 
-        // Metadata: derive from path/name first, then override with the explicit category and tags
-        final IMetadata metadata = source.getMetadata ();
-        final String [] tokens = Arrays.copyOf (parts, parts.length + 1);
-        tokens[tokens.length - 1] = presetName;
-        metadata.detectMetadata (this.settingsConfiguration, tokens);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile), groups);
+
+        final IMetadata metadata = multisampleSource.getMetadata ();
         if (preset.category != null && !preset.category.isBlank ())
             metadata.setCategory (preset.category);
         if (!preset.tags.isEmpty ())
             metadata.setKeywords (preset.tags.toArray (new String [preset.tags.size ()]));
 
-        return source;
+        return multisampleSource;
     }
 
 
@@ -464,13 +456,5 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         if (morph < 2.0 / 3.0)
             return FilterType.BAND_PASS;
         return FilterType.HIGH_PASS;
-    }
-
-
-    private static String nameWithoutEnding (final File file)
-    {
-        final String name = file.getName ();
-        final int dotIndex = name.lastIndexOf ('.');
-        return dotIndex > 0 ? name.substring (0, dotIndex) : name;
     }
 }

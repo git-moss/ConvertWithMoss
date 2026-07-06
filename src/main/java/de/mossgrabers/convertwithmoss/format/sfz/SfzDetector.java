@@ -23,12 +23,10 @@ import java.util.regex.Pattern;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -39,7 +37,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
@@ -216,21 +213,8 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             return Collections.emptyList ();
         }
 
-        String name = FileUtils.getNameWithoutType (sourceFile);
         final Optional<String> globalName = this.getAttribute (SfzOpcode.GLOBAL_LABEL);
-        if (globalName.isPresent ())
-            name = globalName.get ();
-
-        final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
-
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (metadata, this.getFirstSample (groups), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
-
-        multisampleSource.setGroups (groups);
-        return Collections.singletonList (multisampleSource);
+        return Collections.singletonList (this.createMultisampleSource (sourceFile, globalName.isPresent () ? globalName.get () : FileUtils.getNameWithoutType (sourceFile), groups));
     }
 
 

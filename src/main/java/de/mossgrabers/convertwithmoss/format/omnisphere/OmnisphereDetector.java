@@ -190,12 +190,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         if (multisampleElements.size () != 4)
             throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_BAD_METADATA_FILE, "Unsound document."));
 
-        // Create the multi-sample
-
-        final String multiSampleName = FileUtils.getNameWithoutType (presetFile.getName ());
-        final File parentFolder = presetFile.getParentFile ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, multiSampleName);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (presetFile, parts, multiSampleName);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (presetFile, FileUtils.getNameWithoutType (presetFile));
 
         // 5000.0 = 100 * 100 / 2
         final int pitchBendUp = (int) Math.round (parseFloatAttribute (synthEngElement, "pbup", 0.04f) * 5000.0);
@@ -210,6 +205,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         if (modMatrixElement != null && "ModEnv1".equals (modMatrixElement.getAttribute ("source0")) && "A tune".equals (modMatrixElement.getAttribute ("target0")) && parseFloatAttribute (modMatrixElement, "hi0", 0) > 0)
             pitchEnvelopeAmount = (float) (parseFloatAttribute (modMatrixElement, "defV0", 0.5f) * 2.0 - 1.0);
 
+        final List<IGroup> allGroups = new ArrayList<> ();
         for (int i = 0; i < 4; i++)
             if (voiceElements.get (i) instanceof final Element voiceElement && multisampleElements.get (i) instanceof final String soundSourceName)
             {
@@ -227,11 +223,12 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                 if (msSource.isPresent ())
                 {
                     final List<IGroup> groups = new ArrayList<> (msSource.get ().getNonEmptyGroups (false));
-                    multisampleSource.setGroups (groups);
                     applyParameters (groups, voiceElement, pitchBendUp, pitchBendDown, hasTracking.get (i).booleanValue (), pitchEnvelopeAmount, modEnvElement, modEnvParamsElement);
+                    allGroups.addAll (groups);
                 }
             }
 
+        multisampleSource.setGroups (allGroups);
         return Collections.singletonList (multisampleSource);
     }
 

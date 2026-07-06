@@ -7,11 +7,13 @@ package de.mossgrabers.convertwithmoss.format.iso;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDiskImage;
@@ -78,7 +80,14 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
                     {
                         final List<AkaiS1000Sample> samples = s1000Volume.getSamples ();
                         for (final AkaiS1000Program program: s1000Volume.getPrograms ())
-                            multiSampleSources.add (converter.createMultiSample (sourceFile, parts, samples, program, s1000Volume.getName ()));
+                        {
+                            String programName = program.getName ();
+                            final String volumeName = s1000Volume.getName ();
+                            if (volumeName != null && !volumeName.isBlank ())
+                                programName = volumeName.trim () + " " + programName;
+                            final IGroup group = converter.createGroup (program, samples);
+                            multiSampleSources.add (this.createMultisampleSource (sourceFile, parts, programName, Collections.singletonList (group)));
+                        }
                     }
             }
 

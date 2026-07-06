@@ -18,7 +18,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -263,9 +262,6 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private List<IMultisampleSource> createMultiSample (final File sourceFile, final String [] parts, final String multiSampleName, final EnsoniqInstrument instrument)
     {
-        // Detect metadata
-        final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
-        tokens[tokens.length - 1] = multiSampleName;
         final List<IGroup> sampleGroups = this.createSampleZones (multiSampleName, instrument);
 
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
@@ -281,8 +277,6 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
             lastPatch = patch;
 
-            final String name = TagDetector.toCamelCase (multiSampleName) + " P" + (i + 1);
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
             final List<IGroup> patchGroups = new ArrayList<> ();
             for (int p = 0; p < numLayers; p++)
                 if (MathUtils.isBitSet (patch, p))
@@ -290,10 +284,10 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
             if (patchGroups.isEmpty ())
                 continue;
 
-            multisampleSource.setGroups (patchGroups);
+            final String name = TagDetector.toCamelCase (multiSampleName) + " P" + (i + 1);
+            final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, name, patchGroups);
             if (multisampleSource.getNonEmptyGroups (true).isEmpty ())
                 continue;
-            multisampleSource.getMetadata ().detectMetadata (this.settingsConfiguration, tokens);
             multiSampleSources.add (multisampleSource);
         }
 

@@ -22,12 +22,10 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -35,7 +33,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -144,12 +141,10 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_NO_NAME");
                 continue;
             }
-            final File parentFolder = sourceFile.getParentFile ();
-            final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, name);
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
             // Parse all groups
             final List<IGroup> groups = new ArrayList<> (4);
+            final File parentFolder = sourceFile.getParentFile ();
             for (int groupCounter = 0; groupCounter < 4; groupCounter++)
                 // Group is disabled?
                 if (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PROGRAM_LAYER_ON + TALSamplerConstants.LAYERS[groupCounter], 0) > 0)
@@ -170,11 +165,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                     }
                 }
 
-            final IMetadata metadata = multisampleSource.getMetadata ();
-            this.createMetadata (metadata, this.getFirstSample (groups), parts);
-            this.updateCreationDateTime (metadata, sourceFile);
-            multisampleSource.setGroups (groups);
-
+            final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groups);
             final Optional<IFilter> optFilter = parseModulationAttributes (programElement, multisampleSource);
             if (optFilter.isPresent ())
                 multisampleSource.setGlobalFilter (optFilter.get ());

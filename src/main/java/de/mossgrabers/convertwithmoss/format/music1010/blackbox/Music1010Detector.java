@@ -25,12 +25,10 @@ import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -182,15 +180,10 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private IInstrumentSource parseAggregatedMultisample (final File multiSampleFile, final List<Element> sampleElements, final String basePath)
+    private IInstrumentSource parseAggregatedMultisample (final File sourceFile, final List<Element> sampleElements, final String basePath)
     {
-        final File parentFile = multiSampleFile.getParentFile ();
-        final String name = parentFile.getName ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
-
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name);
         final IGroup group = new DefaultGroup ("Group");
-        multisampleSource.setGroups (Collections.singletonList (group));
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, sourceFile.getParentFile ().getName (), Collections.singletonList (group));
 
         for (final Element sampleElement: sampleElements)
         {
@@ -298,13 +291,9 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         if (pathPrefix == null || pathPrefix.isBlank ())
             return Optional.empty ();
 
-        final File pathPrefixFile = new File (pathPrefix);
-        final String name = pathPrefixFile.getName ();
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
+        final String name = new File (pathPrefix).getName ();
         final IGroup group = new DefaultGroup ("Group");
-        multisampleSource.setGroups (Collections.singletonList (group));
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, Collections.singletonList (group));
 
         final Element paramsElement = XMLUtils.getChildElementByName (sampleElement, Music1010Tag.PARAMS);
         int midiChannel = -1;
@@ -336,9 +325,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         readVelocityModulators (sampleElement, group);
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
+
         return Optional.of (new DefaultInstrumentSource (multisampleSource, midiChannel));
     }
 

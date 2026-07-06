@@ -26,11 +26,9 @@ import org.xml.sax.SAXException;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -44,7 +42,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
@@ -143,14 +140,6 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        String name = XMLUtils.getChildElementContent (top, RenoiseTag.NAME);
-        if (name == null || name.isBlank ())
-            name = FileUtils.getNameWithoutType (sourceFile);
-
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
-        final IMetadata metadata = multisampleSource.getMetadata ();
-
         final Element sampleGenerator = XMLUtils.getChildElementByName (top, RenoiseTag.SAMPLE_GENERATOR);
         if (sampleGenerator == null)
         {
@@ -184,14 +173,14 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        multisampleSource.setGroups (groupByVelocity (zones, roundRobin));
+        String name = XMLUtils.getChildElementContent (top, RenoiseTag.NAME);
+        if (name == null || name.isBlank ())
+            name = FileUtils.getNameWithoutType (sourceFile);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groupByVelocity (zones, roundRobin));
 
-        // Detect metadata from the file path and read the comments
-        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
         final String comments = readComments (top);
         if (comments != null && !comments.isBlank ())
-            metadata.setDescription (comments);
-        this.updateCreationDateTime (metadata, sourceFile);
+            multisampleSource.getMetadata ().setDescription (comments);
 
         this.printUnsupportedElements ();
         this.printUnsupportedAttributes ();

@@ -129,11 +129,9 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
             final AkaiMPC2000Program program = new AkaiMPC2000Program (input);
             final String programName = FileUtils.getNameWithoutType (sourceFile).trim ();
             final File parentFolder = sourceFile.getParentFile ();
-            final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, programName);
-
             final Map<String, ISampleData> samples = this.detectSamples (parentFolder, program.getSampleNames ());
-            final AkaMPC2000ProgramConverter converter = new AkaMPC2000ProgramConverter (this.notifier, this.settingsConfiguration);
-            return Collections.singletonList (converter.createMultiSample (sourceFile, parts, program, samples, programName));
+            final AkaMPC2000ProgramConverter converter = new AkaMPC2000ProgramConverter (this.notifier);
+            return Collections.singletonList (this.createMultisampleSource (sourceFile, programName, converter.createSampleZones (program, samples)));
         }
         catch (final IOException ex)
         {
@@ -194,12 +192,12 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
      * @param configuration The metadata configuration
      * @return The detected multi-sample sources
      */
-    public static List<IMultisampleSource> processAkaiMPC2000Disk (final File sourceFile, final File sourceFolder, final INotifier notifier, final IMetadataConfig configuration)
+    public List<IMultisampleSource> processAkaiMPC2000Disk (final File sourceFile, final File sourceFolder, final INotifier notifier, final IMetadataConfig configuration)
     {
         try
         {
             final byte [] diskImageData = Files.readAllBytes (sourceFile.toPath ());
-            return processAkaiMPC2000Disk (diskImageData, sourceFolder, sourceFile, notifier, configuration);
+            return this.processAkaiMPC2000Disk (diskImageData, sourceFolder, sourceFile, notifier, configuration);
         }
         catch (final IOException ex)
         {
@@ -219,7 +217,7 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
      * @param configuration The metadata configuration
      * @return The detected multi-sample sources
      */
-    public static List<IMultisampleSource> processAkaiMPC2000Disk (final byte [] diskImageData, final File sourceFolder, final File sourceFile, final INotifier notifier, final IMetadataConfig configuration)
+    public List<IMultisampleSource> processAkaiMPC2000Disk (final byte [] diskImageData, final File sourceFolder, final File sourceFile, final INotifier notifier, final IMetadataConfig configuration)
     {
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
         try
@@ -256,10 +254,10 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
                 }
             }
 
-            final AkaMPC2000ProgramConverter converter = new AkaMPC2000ProgramConverter (notifier, configuration);
+            final AkaMPC2000ProgramConverter converter = new AkaMPC2000ProgramConverter (notifier);
             final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, sourceFile.getName ());
             for (final AkaiMPC2000Program program: programs)
-                multiSampleSources.add (converter.createMultiSample (sourceFile, parts, program, samples, program.getProgramName ()));
+                multiSampleSources.add (this.createMultisampleSource (sourceFile, parts, program.getProgramName (), converter.createSampleZones (program, samples)));
 
             notifier.log ("IDS_NOTIFY_LINE_FEED");
         }

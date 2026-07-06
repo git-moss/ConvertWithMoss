@@ -16,8 +16,10 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
@@ -46,42 +48,42 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     /** All parsed properties of a single CMI3 sub-voice. */
     private static class SubVoice
     {
-        int                  idA             = 0;
-        int                  idB             = 0;
-        int                  bitRate         = 16;
-        int                  sizeA           = 0;
-        int                  sizeB           = 0;
-        int                  sampleRate      = 44100;
-        String               name            = "";
-        int                  tune            = 0;
-        int                  wordA           = 0;
-        int                  wordB           = 0;
-        int                  startA          = 0;
-        int                  startB          = 0;
-        int                  endA            = 0;
-        int                  endB            = 0;
-        int                  loopStartA      = 0;
-        int                  loopStartB      = 0;
-        int                  loopEndA        = 0;
-        int                  loopEndB        = 0;
-        boolean              interleaved     = false;
-        boolean              loop            = false;
-        boolean              releaseLoop     = false;
-        double               attackFast      = 0.0;
-        double               attackSlow      = 0.0;
-        double               hold            = 0.0;
-        double               decay           = 0.0;
-        double               sustain         = 0.0;
-        double               amp             = 0.0;
-        double               releaseFast     = 0.0;
-        double               releaseSlow     = 0.0;
-        boolean              attackExtended  = false;
-        boolean              releaseExtended = false;
+        int                idA             = 0;
+        int                idB             = 0;
+        int                bitRate         = 16;
+        int                sizeA           = 0;
+        int                sizeB           = 0;
+        int                sampleRate      = 44100;
+        String             name            = "";
+        int                tune            = 0;
+        int                wordA           = 0;
+        int                wordB           = 0;
+        int                startA          = 0;
+        int                startB          = 0;
+        int                endA            = 0;
+        int                endB            = 0;
+        int                loopStartA      = 0;
+        int                loopStartB      = 0;
+        int                loopEndA        = 0;
+        int                loopEndB        = 0;
+        boolean            interleaved     = false;
+        boolean            loop            = false;
+        boolean            releaseLoop     = false;
+        double             attackFast      = 0.0;
+        double             attackSlow      = 0.0;
+        double             hold            = 0.0;
+        double             decay           = 0.0;
+        double             sustain         = 0.0;
+        double             amp             = 0.0;
+        double             releaseFast     = 0.0;
+        double             releaseSlow     = 0.0;
+        boolean            attackExtended  = false;
+        boolean            releaseExtended = false;
 
-        DefaultAudioMetadata audioMetadata;
-        InMemorySampleData   sampleData;
-        DefaultAudioMetadata audioMetadataR;
-        InMemorySampleData   sampleDataR;
+        IAudioMetadata     audioMetadata;
+        InMemorySampleData sampleData;
+        IAudioMetadata     audioMetadataR;
+        InMemorySampleData sampleDataR;
     }
 
 
@@ -142,13 +144,13 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         final SubVoice [] subVoices = new SubVoice [numSubVoices];
         for (int i = 0; i < numSubVoices; i++)
         {
-            subVoices[i] = this.parseSubVoice (inBytes, i, zoneOffsets.get (i).intValue (), channels, FileUtils.getNameWithoutType (sourceFile));
+            subVoices[i] = parseSubVoice (inBytes, i, zoneOffsets.get (i).intValue (), channels, FileUtils.getNameWithoutType (sourceFile));
             buildSubVoiceSampleData (inBytes, subVoices, i, channels, zoneOffsets);
         }
 
         // Create sample zones from the 128-key mapping table
         final IGroup group = new DefaultGroup ("CMI3");
-        this.buildSampleZones (inBytes, mappingOffset, numSubVoices, subvoiceIDs, subVoices, channels, voiceTune, group);
+        buildSampleZones (inBytes, mappingOffset, numSubVoices, subvoiceIDs, subVoices, channels, voiceTune, group);
 
         return this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile), Collections.singletonList (group));
     }
@@ -217,7 +219,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param baseName The prefix name
      * @return The sub-voice
      */
-    private SubVoice parseSubVoice (final byte [] data, final int index, final int zoneOffset, final int channels, final String baseName)
+    private static SubVoice parseSubVoice (final byte [] data, final int index, final int zoneOffset, final int channels, final String baseName)
     {
         final SubVoice sv = new SubVoice ();
 
@@ -234,7 +236,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         sv.name = parseName (data, zoneOffset + 42, baseName, index);
-        this.parseSubVoiceFunctions (sv, data, zoneOffset + 256);
+        parseSubVoiceFunctions (sv, data, zoneOffset + 256);
 
         // Interleaved stereo: both channels share the same word, start, end, and loop region
         if (channels == 2 && sv.wordA == sv.wordB && sv.startA == sv.startB && sv.endA == sv.endB && sv.loopStartA == sv.loopStartB && sv.loopEndA == sv.loopEndB)
@@ -278,7 +280,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param data The data to read from
      * @param startPos The start of the sub-voice data
      */
-    private void parseSubVoiceFunctions (final SubVoice subVoice, final byte [] data, final int startPos)
+    private static void parseSubVoiceFunctions (final SubVoice subVoice, final byte [] data, final int startPos)
     {
         int pos = startPos;
         while (Byte.toUnsignedInt (data[pos + 1]) > 2 && data[pos + 1] != 11)
@@ -289,7 +291,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
             switch (data[cp])
             {
                 case 9:
-                    this.parseEnvelopeParam (subVoice, data, cp);
+                    parseEnvelopeParam (subVoice, data, cp);
                     break;
                 case 13:
                     subVoice.wordA = data[cp + 3];
@@ -320,7 +322,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param data The data to read from
      * @param offset The offset to the envelope data
      */
-    private void parseEnvelopeParam (final SubVoice subVoice, final byte [] data, final int offset)
+    private static void parseEnvelopeParam (final SubVoice subVoice, final byte [] data, final int offset)
     {
         final int rawValue = readBE16 (data, offset + 4);
         switch (data[offset + 2])
@@ -335,10 +337,10 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
                 subVoice.decay = toSignedNormalized (rawValue, 2048);
                 break;
             case 8:
-                subVoice.sustain = this.levelConvert (rawValue);
+                subVoice.sustain = levelConvert (rawValue);
                 break;
             case 9:
-                subVoice.amp = this.levelConvertDB (rawValue);
+                subVoice.amp = levelConvertDB (rawValue);
                 break;
             case 10:
                 subVoice.releaseFast = toSignedNormalized (rawValue, 2048);
@@ -452,6 +454,11 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Computes the right-channel sample position for a separate (non-interleaved) stereo sub-voice.
+     * 
+     * @param subVoices The sub-voices
+     * @param subVoice The sub-voice
+     * @param zoneOffsets The offsets
+     * @return The right position
      */
     private static int findSeparateRightPos (final SubVoice [] subVoices, final SubVoice subVoice, final List<Integer> zoneOffsets)
     {
@@ -467,7 +474,14 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    /** Interleaves two mono 16-bit PCM buffers into a stereo buffer (L0 R0 L1 R1 …). */
+    /**
+     * Interleaves two mono 16-bit PCM buffers into a stereo buffer (L0 R0 L1 R1 …).
+     * 
+     * @param left The data of the left sample
+     * @param right The data of the right sample
+     * @param sizeA The size of 1 channel
+     * @return The interleaved stereo data
+     */
     private static byte [] interleaveChannels (final byte [] left, final byte [] right, final int sizeA)
     {
         final byte [] out = new byte [sizeA * 2];
@@ -482,7 +496,12 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    /** Applies the appropriate byte-order correction in-place based on bit depth. */
+    /**
+     * Applies the appropriate byte-order correction in-place based on bit depth.
+     * 
+     * @param data The data to flip
+     * @param bitRate The bit-rate
+     */
     private static void applyByteOrder (final byte [] data, final int bitRate)
     {
         if (bitRate == 16)
@@ -494,14 +513,19 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Builds {@link DefaultSampleZone} objects for all 128 keys from the mapping table.
-     *
-     * <p>
-     * Fix: the unsigned comparison {@code mappingID > numSubVoices} replaces the original signed
-     * {@code mappingInfo[key] > numSubVoices}, which mis-classified high-byte IDs.
+     * 
+     * @param data The data
+     * @param mappingOffset The mapping offset
+     * @param numSubVoices The number of sub-voices
+     * @param subvoiceIDs The IDs of the sub-voices
+     * @param subVoices All sub-voice objects
+     * @param channels The number of channels
+     * @param voiceTune The voice tuning
+     * @param group The group where to add the created sample zones
      */
-    private void buildSampleZones (final byte [] inBytes, final int mappingOffset, final int numSubVoices, final List<Integer> subvoiceIDs, final SubVoice [] subVoices, final int channels, final int voiceTune, final IGroup group)
+    private static void buildSampleZones (final byte [] data, final int mappingOffset, final int numSubVoices, final List<Integer> subvoiceIDs, final SubVoice [] subVoices, final int channels, final int voiceTune, final IGroup group)
     {
-        final byte [] mapping = Arrays.copyOfRange (inBytes, mappingOffset, mappingOffset + 128);
+        final byte [] mapping = Arrays.copyOfRange (data, mappingOffset, mappingOffset + 128);
         int prevMappingID = -1;
 
         for (int key = 0; key < 128; key++)
@@ -509,14 +533,14 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
             final int mappingID = Byte.toUnsignedInt (mapping[key]);
 
             // Skip: unmapped keys (0), out-of-range IDs, repeated span, or unregistered IDs
-            if (mappingID == 0 || mappingID > numSubVoices || mappingID == prevMappingID || !subvoiceIDs.contains (mappingID))
+            if (mappingID == 0 || mappingID > numSubVoices || mappingID == prevMappingID || !subvoiceIDs.contains (Integer.valueOf (mappingID)))
                 continue;
 
-            final int svIndex = subvoiceIDs.indexOf (mappingID);
+            final int svIndex = subvoiceIDs.indexOf (Integer.valueOf (mappingID));
             final SubVoice sv = subVoices[svIndex];
             final int keyHigh = findKeyHigh (mapping, key);
 
-            final DefaultSampleZone zone = this.buildZone (sv, key, keyHigh, voiceTune, false);
+            final ISampleZone zone = buildZone (sv, key, keyHigh, voiceTune, false);
             zone.setSampleData (sv.sampleData);
 
             if (channels == 2 && !sv.interleaved)
@@ -524,7 +548,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
                 zone.setName (sv.name + "_L");
                 zone.setPanning (-1);
 
-                final DefaultSampleZone zoneR = this.buildZone (sv, key, keyHigh, voiceTune, true);
+                final ISampleZone zoneR = buildZone (sv, key, keyHigh, voiceTune, true);
                 zoneR.setName (sv.name + "_R");
                 zoneR.setPanning (1);
                 zoneR.setSampleData (sv.sampleDataR);
@@ -538,66 +562,71 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Constructs a fully configured {@link DefaultSampleZone} for a subvoice.
+     * Constructs a fully configured {@link ISampleZone} for a sub-voice.
      *
-     * @param sv source subvoice data
-     * @param keyLow lowest MIDI key of the zone
-     * @param keyHigh highest MIDI key of the zone
-     * @param voiceTune global voice tune offset
+     * @param subVoice Source sub-voice data
+     * @param keyLow Lowest MIDI key of the zone
+     * @param keyHigh Highest MIDI key of the zone
+     * @param voiceTune Global voice tune offset
      * @param useB {@code true} to use channel-B loop points (right-channel zone)
+     * @return The created sample zone
      */
-    private DefaultSampleZone buildZone (final SubVoice sv, final int keyLow, final int keyHigh, final int voiceTune, final boolean useB)
+    private static ISampleZone buildZone (final SubVoice subVoice, final int keyLow, final int keyHigh, final int voiceTune, final boolean useB)
     {
-        final DefaultSampleZone zone = new DefaultSampleZone ();
-        zone.setKeyLow (keyLow);
-        zone.setKeyHigh (keyHigh);
-        zone.setName (sv.name);
-        zone.setGain (sv.amp);
+        final ISampleZone zone = new DefaultSampleZone (subVoice.name, keyLow, keyHigh);
+        zone.setGain (subVoice.amp);
 
-        if (sv.tune == -1)
+        if (subVoice.tune == -1)
         {
             zone.setKeyTracking (0);
             zone.setKeyRoot (useB ? 60 : 65);
         }
         else
         {
-            final double pitch = this.pitchConvert (sv.tune, voiceTune, sv.sampleRate);
+            final double pitch = pitchConvert (subVoice.tune, voiceTune, subVoice.sampleRate);
             final int root = (int) Math.round (pitch);
             zone.setKeyTracking (1);
             zone.setKeyRoot (root < 0 ? root + 128 : root);
             zone.setTuning ((pitch - root) / -1.0);
         }
 
-        if (sv.loop)
+        if (subVoice.loop)
         {
             final DefaultSampleLoop loop = new DefaultSampleLoop ();
-            loop.setStart (useB ? sv.loopStartB : sv.loopStartA);
-            loop.setEnd (useB ? sv.loopEndB : sv.loopEndA);
+            loop.setStart (useB ? subVoice.loopStartB : subVoice.loopStartA);
+            loop.setEnd (useB ? subVoice.loopEndB : subVoice.loopEndA);
+            loop.setLoopUntilRelease (subVoice.releaseLoop);
             zone.addLoop (loop);
         }
 
-        applyEnvelope (zone, sv);
+        applyEnvelope (zone, subVoice);
         return zone;
     }
 
 
-    /** Writes amplitude envelope parameters onto a zone, selecting fast or slow segments. */
-    private static void applyEnvelope (final DefaultSampleZone zone, final SubVoice sv)
+    /**
+     * Writes amplitude envelope parameters onto a zone, selecting fast or slow segments.
+     * 
+     * @param zone The sample zone
+     * @param subVoice The sub-voice
+     */
+    private static void applyEnvelope (final ISampleZone zone, final SubVoice subVoice)
     {
         final IEnvelope env = zone.getAmplitudeEnvelopeModulator ().getSource ();
-        env.setAttackTime (sv.attackExtended ? sv.attackSlow : sv.attackFast);
-        env.setHoldTime (sv.hold);
-        env.setDecayTime (sv.decay);
-        env.setSustainLevel (sv.sustain);
-        env.setReleaseTime (sv.releaseExtended ? sv.releaseSlow : sv.releaseFast);
+        env.setAttackTime (subVoice.attackExtended ? subVoice.attackSlow : subVoice.attackFast);
+        env.setHoldTime (subVoice.hold);
+        env.setDecayTime (subVoice.decay);
+        env.setSustainLevel (subVoice.sustain);
+        env.setReleaseTime (subVoice.releaseExtended ? subVoice.releaseSlow : subVoice.releaseFast);
     }
 
 
     /**
      * Returns the highest key index that shares the same mapping ID as {@code keyLow}.
-     *
-     * <p>
-     * Fix: now correctly returns 127 when the same ID covers all keys to the end of the range.
+     * 
+     * @param mapping The mapping data
+     * @param keyLow The lower key
+     * @return The high key
      */
     private static int findKeyHigh (final byte [] mapping, final int keyLow)
     {
@@ -610,8 +639,12 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Converts a raw unsigned 16-bit value to a signed, normalised double. Values above 32767 are
+     * Converts a raw unsigned 16-bit value to a signed, normalized double. Values above 32767 are
      * treated as negative (two's-complement wrap).
+     * 
+     * @param rawValue The raw value
+     * @param divisor The divisor
+     * @return The normalized value
      */
     private static double toSignedNormalized (final int rawValue, final double divisor)
     {
@@ -622,7 +655,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private double pitchConvert (final int inV, final int gV, final int srV)
+    private static double pitchConvert (final int inV, final int gV, final int srV)
     {
         int outV = inV;
         if (outV >= 16384)
@@ -635,7 +668,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private double levelConvert (final int inV)
+    private static double levelConvert (final int inV)
     {
         if (inV == 0)
             return 1;
@@ -646,7 +679,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private double levelConvertDB (final int inV)
+    private static double levelConvertDB (final int inV)
     {
         double outV = inV;
         if (outV >= 32768)
@@ -655,28 +688,50 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    /** Reads a big-endian unsigned 32-bit integer from {@code data[offset..offset+3]}. */
+    /**
+     * Reads a big-endian unsigned 32-bit integer from {@code data[offset..offset+3]}.
+     * 
+     * @param data The data
+     * @param offset The offset to read from
+     * @return The read value
+     */
     private static int readBE32 (final byte [] data, final int offset)
     {
         return Byte.toUnsignedInt (data[offset]) * 16_777_216 + Byte.toUnsignedInt (data[offset + 1]) * 65_536 + Byte.toUnsignedInt (data[offset + 2]) * 256 + Byte.toUnsignedInt (data[offset + 3]);
     }
 
 
-    /** Reads a big-endian unsigned 16-bit integer from {@code data[offset..offset+1]}. */
+    /**
+     * Reads a big-endian unsigned 16-bit integer from {@code data[offset..offset+1]}.
+     * 
+     * @param data The data
+     * @param offset The offset to read from
+     * @return The read value
+     */
     private static int readBE16 (final byte [] data, final int offset)
     {
         return Byte.toUnsignedInt (data[offset]) * 256 + Byte.toUnsignedInt (data[offset + 1]);
     }
 
 
-    /** Reads a big-endian unsigned 24-bit integer from {@code data[offset..offset+2]}. */
+    /**
+     * Reads a big-endian unsigned 24-bit integer from {@code data[offset..offset+2]}.
+     * 
+     * @param data The data
+     * @param offset The offset to read from
+     * @return The read value
+     */
     private static int readBE24 (final byte [] data, final int offset)
     {
         return Byte.toUnsignedInt (data[offset]) * 65_536 + Byte.toUnsignedInt (data[offset + 1]) * 256 + Byte.toUnsignedInt (data[offset + 2]);
     }
 
 
-    /** Swaps adjacent byte pairs in-place (big-endian ↔ little-endian for 16-bit samples). */
+    /**
+     * Swaps adjacent byte pairs in-place (big-endian ↔ little-endian for 16-bit samples).
+     * 
+     * @param data The data
+     */
     private static void flipBytes (final byte [] data)
     {
         for (int i = 0; i < data.length; i += 2)
@@ -688,7 +743,11 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    /** Flips the sign bit of every other byte in-place (8-bit unsigned ↔ signed conversion). */
+    /**
+     * Flips the sign bit of every other byte in-place (8-bit unsigned ↔ signed conversion).
+     * 
+     * @param data The data
+     */
     private static void flipBits (final byte [] data)
     {
         for (int i = 0; i < data.length; i += 2)

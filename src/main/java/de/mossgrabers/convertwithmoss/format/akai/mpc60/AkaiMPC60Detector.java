@@ -15,7 +15,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -25,7 +24,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.hfe.DiskImageBuilder;
 import de.mossgrabers.convertwithmoss.file.hfe.HfeFile;
 import de.mossgrabers.convertwithmoss.file.hfe.HfeFile.HfeVersion;
@@ -161,22 +159,10 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
 
     private List<IMultisampleSource> readSetFile (final File sourceFile, final byte [] fileContent)
     {
-        final String programName = FileUtils.getNameWithoutType (sourceFile).trim ();
-        final File parentFolder = sourceFile.getParentFile ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, programName);
-
         try
         {
             final AkaiMPC60Set setFile = new AkaiMPC60Set (fileContent);
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, programName);
-            multisampleSource.setGroups (createSampleZones (setFile));
-
-            // Detect metadata
-            final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
-            tokens[tokens.length - 1] = programName;
-            multisampleSource.getMetadata ().detectMetadata (this.settingsConfiguration, tokens);
-
-            return Collections.singletonList (multisampleSource);
+            return Collections.singletonList (this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile).trim (), createSampleZones (setFile)));
         }
         catch (final IOException ex)
         {

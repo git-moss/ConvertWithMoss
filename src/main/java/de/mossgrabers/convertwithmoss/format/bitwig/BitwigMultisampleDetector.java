@@ -23,7 +23,6 @@ import org.xml.sax.SAXException;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -34,7 +33,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -115,11 +113,11 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
     /**
      * Process the multi-sample metadata file and the related wave files.
      *
-     * @param multiSampleFile The multi-sample file
+     * @param sourceFile The multi-sample file
      * @param document The metadata XML document
      * @return The parsed multi-sample source
      */
-    private List<IMultisampleSource> parseDescription (final File multiSampleFile, final Document document)
+    private List<IMultisampleSource> parseDescription (final File sourceFile, final Document document)
     {
         final Element top = document.getDocumentElement ();
 
@@ -139,13 +137,6 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
             return Collections.emptyList ();
         }
 
-        final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, name);
-
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (multiSampleFile, parts, name);
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.parseMetadata (top, metadata);
-        this.updateCreationDateTime (metadata, multiSampleFile);
-
         // Parse all groups
         final Map<Integer, IGroup> indexedGroups = new TreeMap<> ();
         int groupCounter = 0;
@@ -162,14 +153,15 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
 
             // Parse all samples of the layer
             for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, BitwigMultisampleTag.SAMPLE, false))
-                this.parseSample (multiSampleFile, indexedGroups, sampleElement);
+                this.parseSample (sourceFile, indexedGroups, sampleElement);
         }
 
         // Parse all top level samples
         for (final Element sampleElement: XMLUtils.getChildElementsByName (top, BitwigMultisampleTag.SAMPLE, false))
-            this.parseSample (multiSampleFile, indexedGroups, sampleElement);
+            this.parseSample (sourceFile, indexedGroups, sampleElement);
 
-        multisampleSource.setGroups (new ArrayList<> (indexedGroups.values ()));
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, new ArrayList<> (indexedGroups.values ()));
+        this.parseMetadata (top, multisampleSource.getMetadata ());
 
         this.printUnsupportedElements ();
         this.printUnsupportedAttributes ();

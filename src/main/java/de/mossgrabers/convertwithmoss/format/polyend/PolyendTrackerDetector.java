@@ -16,12 +16,8 @@ import java.util.List;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
-import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -34,7 +30,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -65,7 +60,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readPresetFile (final File file)
+    protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();
@@ -73,7 +68,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         final byte [] data;
         try
         {
-            data = Files.readAllBytes (file.toPath ());
+            data = Files.readAllBytes (sourceFile.toPath ());
         }
         catch (final IOException ex)
         {
@@ -83,7 +78,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
 
         if (data.length < PolyendTrackerConstants.AUDIO_START + PolyendTrackerConstants.CRC_SIZE || data[0] != 'T' || data[1] != 'I')
         {
-            this.notifier.logError ("IDS_PTI_NOT_AN_INSTRUMENT", file.getName ());
+            this.notifier.logError ("IDS_PTI_NOT_AN_INSTRUMENT", sourceFile.getName ());
             return Collections.emptyList ();
         }
 
@@ -98,32 +93,22 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         final int frames = audioBytes / (channels * 2);
         if (frames <= 0)
         {
-            this.notifier.logError ("IDS_PTI_NO_AUDIO_DATA", file.getName ());
+            this.notifier.logError ("IDS_PTI_NO_AUDIO_DATA", sourceFile.getName ());
             return Collections.emptyList ();
         }
 
         final byte [] interleaved = deinterleaveToWav (data, PolyendTrackerConstants.AUDIO_START, frames, channels);
         final DefaultAudioMetadata audioMetadata = new DefaultAudioMetadata (channels, PolyendTrackerConstants.SAMPLE_RATE, PolyendTrackerConstants.BIT_RESOLUTION, frames);
 
-        final String name = FileUtils.getNameWithoutType (file);
-        final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
-
+        final String name = FileUtils.getNameWithoutType (sourceFile);
         final List<ISampleZone> zones = createZones (buffer, audioMetadata, interleaved, frames, name);
         if (zones.isEmpty ())
         {
-            this.notifier.logError ("IDS_PTI_NO_AUDIO_DATA", file.getName ());
+            this.notifier.logError ("IDS_PTI_NO_AUDIO_DATA", sourceFile.getName ());
             return Collections.emptyList ();
         }
 
-        final IGroup group = new DefaultGroup (zones);
-        multisampleSource.setGroups (new ArrayList<> (Collections.singletonList (group)));
-
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (metadata, (IFileBasedSampleData) null, parts);
-        this.updateCreationDateTime (metadata, file);
-
-        return Collections.singletonList (multisampleSource);
+        return Collections.singletonList (this.createMultisampleSource (sourceFile, name, Collections.singletonList (new DefaultGroup (zones))));
     }
 
 

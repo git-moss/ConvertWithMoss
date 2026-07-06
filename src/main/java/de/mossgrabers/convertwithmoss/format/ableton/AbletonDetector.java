@@ -28,7 +28,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.ZoneSplitter;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -46,7 +45,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
@@ -183,16 +181,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private IMultisampleSource parseSampler (final File sourceFile, final Element deviceElement, final File rootPath, final String creator) throws IOException
     {
-        final String name = FileUtils.getNameWithoutType (sourceFile);
-
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        parseMetadata (deviceElement, metadata, creator);
-
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile));
+        parseMetadata (deviceElement, multisampleSource.getMetadata (), creator);
         this.parseMultiSample (rootPath, multisampleSource, deviceElement);
-        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
         return multisampleSource;
     }
 

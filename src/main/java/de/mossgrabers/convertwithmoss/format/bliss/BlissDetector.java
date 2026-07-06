@@ -25,13 +25,11 @@ import org.xml.sax.SAXException;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -44,7 +42,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
@@ -197,13 +194,6 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             return Optional.empty ();
         }
 
-        // Create multi-sample
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (multisampleSource.getMetadata (), this.getFirstSample (multisampleSource.getGroups ()), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
-
         // 'Only' fake groups in Bliss format to support round-robin inside of groups
         final Map<Integer, IGroup> groupsMap = new TreeMap<> ();
 
@@ -217,8 +207,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             this.parseZone (sourceFile, group, zoneElement, programIndex, i);
         }
 
-        multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
-        return Optional.of (multisampleSource);
+        return Optional.of (this.createMultisampleSource (sourceFile, name, new ArrayList<> (groupsMap.values ())));
     }
 
 

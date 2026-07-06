@@ -15,10 +15,8 @@ import java.util.Set;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -78,7 +76,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IMultisampleSource> readPresetFile (final File folder)
+    protected List<IMultisampleSource> readPresetFile (final File folderWithSamples)
     {
         final List<IMultisampleSource> sources = new ArrayList<> ();
         final ProgressLogger progress = new ProgressLogger (this.notifier);
@@ -86,7 +84,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
         {
             this.fileEndings = sampleFileType.getFileEndings ();
 
-            final File [] files = this.listFiles (folder, this.fileEndings);
+            final File [] files = this.listFiles (folderWithSamples, this.fileEndings);
             if (files.length == 0)
                 continue;
 
@@ -107,14 +105,14 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 }
                 catch (final IOException ex)
                 {
-                    this.notifier.logError ("IDS_NOTIFY_SKIPPED", folder.getAbsolutePath (), file.getAbsolutePath (), ex.getMessage ());
+                    this.notifier.logError ("IDS_NOTIFY_SKIPPED", folderWithSamples.getAbsolutePath (), file.getAbsolutePath (), ex.getMessage ());
                     return Collections.emptyList ();
                 }
             }
 
             progress.notifyNewline ();
 
-            sources.addAll (this.createMultisample (sampleFileType, folder, sampleData));
+            sources.addAll (this.createMultisample (sampleFileType, folderWithSamples, sampleData));
         }
 
         return sources;
@@ -125,11 +123,11 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
      * Detect metadata, order samples and finally create the multi-sample.
      *
      * @param sampleFileType The sample file type
-     * @param folder The folder which contains the sample files
+     * @param folderWithSamples The folder which contains the sample files
      * @param sampleData The detected sample files
      * @return The multi-sample
      */
-    private List<IMultisampleSource> createMultisample (final SampleFileType sampleFileType, final File folder, final List<IFileBasedSampleData> sampleData)
+    private List<IMultisampleSource> createMultisample (final SampleFileType sampleFileType, final File folderWithSamples, final List<IFileBasedSampleData> sampleData)
     {
         if (sampleData.isEmpty ())
             return Collections.emptyList ();
@@ -154,14 +152,14 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 }
                 name = KeyMapping.findCommonPrefix (filenames);
                 if (name.isBlank ())
-                    name = folder.getName ();
+                    name = folderWithSamples.getName ();
             }
             else
             {
                 final KeyMapping keyMapping = new KeyMapping (new ArrayList<> (sampleData), this.settingsConfiguration.isAscending (), this.settingsConfiguration.getCrossfadeNotes (), this.settingsConfiguration.getCrossfadeVelocities (), this.settingsConfiguration.getGroupPatterns (), this.settingsConfiguration.getMonoSplitPatterns ());
                 if (this.settingsConfiguration.isPreferFolderName ())
                 {
-                    name = cleanupName (folder.getName (), this.settingsConfiguration.getPostfixTexts ());
+                    name = cleanupName (folderWithSamples.getName (), this.settingsConfiguration.getPostfixTexts ());
                     if (name.isBlank ())
                         name = keyMapping.getName ();
                 }
@@ -175,15 +173,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 this.notifier.logError ("IDS_NOTIFY_NO_NAME");
                 name = FileUtils.getNameWithoutType (sampleData.get (0).getFilename ());
             }
-
             name = cleanupName (name, this.settingsConfiguration.getPostfixTexts ());
-
-            final String [] parts = this.createParts (folder, name);
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (folder, parts, name);
-            final IMetadata metadata = multisampleSource.getMetadata ();
-            this.createMetadata (metadata, sampleData, parts);
-            this.updateCreationDateTime (metadata, new File (sampleData.get (0).getFilename ()));
-            multisampleSource.setGroups (groups);
 
             for (final IGroup group: groups)
                 for (final ISampleZone zone: group.getSampleZones ())
@@ -199,7 +189,8 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
             if (this.waitForDelivery ())
                 return Collections.emptyList ();
 
-            return Collections.singletonList (multisampleSource);
+            final String [] parts = this.createParts (folderWithSamples, name);
+            return Collections.singletonList (this.createMultisampleSource (folderWithSamples, parts, name, groups));
         }
         catch (final IOException | MultisampleException | CombinationNotPossibleException ex)
         {

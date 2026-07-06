@@ -19,7 +19,6 @@ import java.util.Map;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -28,7 +27,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataWithSearchHeightSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.FormatException;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
 import de.mossgrabers.convertwithmoss.file.iff.IffFile;
@@ -64,7 +62,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
 
         try (final InputStream in = new BufferedInputStream (new FileInputStream (file)))
         {
-            return this.parseFile (in, file);
+            return Collections.singletonList (this.parseFile (in, file));
         }
         catch (final IOException ex)
         {
@@ -87,17 +85,14 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
      * @throws FormatException Error in the format of the file
      * @throws IOException Could not read from the file
      */
-    private List<IMultisampleSource> parseFile (final InputStream in, final File sourceFile) throws FormatException, IOException
+    private IMultisampleSource parseFile (final InputStream in, final File sourceFile) throws FormatException, IOException
     {
         final IffChunk iffChunk = IffFile.readChunk (in);
         StreamUtils.checkTag (SxtChunkConstants.PATCH, iffChunk.getId ());
 
-        final File parentFile = sourceFile.getParentFile ();
-        final String name = FileUtils.getNameWithoutType (sourceFile);
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile));
 
-        final IMetadata metadata = multisampleSource.getMetadata ();
+        final File parentFile = sourceFile.getParentFile ();
         try (final InputStream chunkStream = iffChunk.streamData ())
         {
             File previousFolder = null;
@@ -130,7 +125,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
                             break;
 
                         case SxtChunkConstants.AUTHOR:
-                            parseAuthor (metadata, childChunkStream);
+                            parseAuthor (multisampleSource.getMetadata (), childChunkStream);
                             break;
 
                         case SxtChunkConstants.PARAMETERS:
@@ -149,9 +144,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
             }
         }
 
-        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
-        return Collections.singletonList (multisampleSource);
+        return multisampleSource;
     }
 
 

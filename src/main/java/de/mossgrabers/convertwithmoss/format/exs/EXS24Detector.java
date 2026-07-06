@@ -21,12 +21,10 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -38,7 +36,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataWithSearchHeightSettingsUI;
-import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 
@@ -129,14 +126,10 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
      */
     private Optional<IMultisampleSource> createMultisample (final File sourceFile, final EXS24File exs24File) throws IOException
     {
-        final String name = FileUtils.getNameWithoutType (sourceFile);
-        final File parentFile = sourceFile.getParentFile ();
-        final String [] parts = AudioFileUtils.createPathParts (parentFile, this.sourceFolder, name);
-        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
-
         final Map<Integer, IGroup> groupsMap = new TreeMap<> ();
         final Map<IGroup, EXS24Group> groupMapping = new HashMap<> ();
 
+        final File parentFile = sourceFile.getParentFile ();
         File previousFolder = null;
         final List<EXS24Sample> exs24Samples = exs24File.getSamples ();
         final Map<Integer, EXS24Group> exs24Groups = exs24File.getGroups ();
@@ -197,11 +190,8 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             }
         }
 
-        multisampleSource.setGroups (new ArrayList<> (groupsMap.values ()));
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile), new ArrayList<> (groupsMap.values ()));
         applyGlobalParameters (multisampleSource, exs24File.getParameters ());
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (metadata, this.getFirstSample (multisampleSource.getGroups ()), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
         return Optional.of (multisampleSource);
     }
 
