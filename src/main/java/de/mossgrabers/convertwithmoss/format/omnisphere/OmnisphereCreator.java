@@ -124,8 +124,8 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
             final ISampleZone firstSampleZone = multisampleSource.getAllSampleZones (true).get (0);
 
-            text = text.replace ("%PRESET_NAME%", multisampleSource.getName ());
-            text = text.replace ("%PRESET_METADATA%", createMetadata (multisampleSource.getMetadata ()) + ";Osc Type=Sample Only;Soundsource=" + filename + ";");
+            text = text.replace ("%PRESET_NAME%", XMLUtils.escapeAttribute (multisampleSource.getName ()));
+            text = text.replace ("%PRESET_METADATA%", XMLUtils.escapeAttribute (createMetadata (multisampleSource.getMetadata ()) + ";Osc Type=Sample Only;Soundsource=" + filename + ";"));
             text = text.replace ("%PITCHBEND_UP%", toHexFloat (Math.abs (firstSampleZone.getBendUp ()) / 5000.0));
             text = text.replace ("%PITCHBEND_DOWN%", toHexFloat (Math.abs (firstSampleZone.getBendDown ()) / 5000.0));
             text = text.replace ("%SOUND_SOURCE%", filename);
