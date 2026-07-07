@@ -45,6 +45,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
+import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
@@ -215,7 +216,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                 if (this.waitForDelivery ())
                     break;
 
-                this.updateCreationDateTime (multisample.getMetadata (), file);
+                updateCreationDateTime (multisample.getMetadata (), file);
                 this.multisampleSourceConsumer.accept (multisample);
             }
         }
@@ -239,7 +240,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                 if (this.waitForDelivery ())
                     break;
 
-                this.updateCreationDateTime (performance.getMetadata (), file);
+                updateCreationDateTime (performance.getMetadata (), file);
                 this.performanceSourceConsumer.accept (performance);
             }
         }
@@ -470,9 +471,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     protected IMultisampleSource createMultisampleSource (final File sourceFile, final String multisampleSourceName)
     {
-        final String n = this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings && metadataSettings.isPreferFolderName () ? this.sourceFolder.getName () : multisampleSourceName;
-        final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-        return createMultisampleSource (sourceFile, parts, multisampleSourceName, Collections.emptyList ());
+        return this.createMultisampleSource (sourceFile, multisampleSourceName, Collections.emptyList ());
     }
 
 
@@ -480,11 +479,17 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     {
         final String n = this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings && metadataSettings.isPreferFolderName () ? this.sourceFolder.getName () : multisampleSourceName;
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-        return createMultisampleSource (sourceFile, parts, multisampleSourceName, groups);
+        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups);
     }
 
 
     protected IMultisampleSource createMultisampleSource (final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups)
+    {
+        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups);
+    }
+
+
+    protected static IMultisampleSource createMultisampleSource (final IMetadataConfig configuration, final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups)
     {
         final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multisampleSourceName);
         multisampleSource.setGroups (groups);
@@ -492,8 +497,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         final IMetadata metadata = multisampleSource.getMetadata ();
         final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
         tokens[tokens.length - 1] = multisampleSourceName;
-        this.createMetadata (metadata, this.getFirstSample (groups), tokens);
-        this.updateCreationDateTime (metadata, sourceFile);
+        createMetadata (configuration, metadata, getFirstSample (groups), tokens);
+        updateCreationDateTime (metadata, sourceFile);
 
         return multisampleSource;
     }
@@ -604,13 +609,14 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * Guess metadata from the sample names and folder. Also check for the Broadcast Audio Extension
      * chunk in the first sample WAV.
      *
+     * @param configuration The metadata settings
      * @param metadata The metadata object to fill
      * @param sampleData The wave file data
      * @param parts The already processed parts of the file name
      */
-    protected void createMetadata (final IMetadata metadata, final List<IFileBasedSampleData> sampleData, final String [] parts)
+    protected void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final List<IFileBasedSampleData> sampleData, final String [] parts)
     {
-        this.createMetadata (metadata, sampleData == null || sampleData.isEmpty () ? null : sampleData.get (0), parts);
+        createMetadata (configuration, metadata, sampleData == null || sampleData.isEmpty () ? null : sampleData.get (0), parts);
     }
 
 
@@ -618,13 +624,14 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * Guess metadata from the sample names and folder. Also check for the Broadcast Audio Extension
      * chunk in the sample WAV.
      *
+     * @param configuration The metadata settings
      * @param metadata The metadata object to fill
      * @param sampleData The sample file data
      * @param parts The already processed parts of the file name
      */
-    protected void createMetadata (final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts)
+    protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts)
     {
-        this.createMetadata (metadata, sampleData, parts, null);
+        createMetadata (configuration, metadata, sampleData, parts, null);
     }
 
 
@@ -632,19 +639,18 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * Guess metadata from the sample names and folder. Also check for the Broadcast Audio Extension
      * chunk in the sample WAV.
      *
+     * @param configuration The metadata settings
      * @param metadata The metadata object to fill
      * @param sampleData The wave file data
      * @param parts The already processed parts of the file name
      * @param category If the category is not null, it is assigned and not detected
      */
-    protected void createMetadata (final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts, final String category)
+    protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts, final String category)
     {
-        if (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings)
-        {
-            metadata.detectMetadata (metadataSettings, parts, category);
-            if (sampleData != null)
-                sampleData.updateMetadata (metadata);
-        }
+        if (configuration != null)
+            metadata.detectMetadata (configuration, parts, category);
+        if (sampleData != null)
+            sampleData.updateMetadata (metadata);
     }
 
 
@@ -654,7 +660,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param metadata The metadata to update
      * @param sourceFile The source file from which to get the creation date/time
      */
-    protected void updateCreationDateTime (final IMetadata metadata, final File sourceFile)
+    protected static void updateCreationDateTime (final IMetadata metadata, final File sourceFile)
     {
         if (metadata.getCreationDateTime () != null)
             return;
@@ -681,7 +687,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param groups The groups
      * @return The WAV file or null if it does not exist
      */
-    protected WavFileSampleData getFirstSample (final List<IGroup> groups)
+    protected static WavFileSampleData getFirstSample (final List<IGroup> groups)
     {
         WavFileSampleData sampleFile = null;
         if (!groups.isEmpty ())

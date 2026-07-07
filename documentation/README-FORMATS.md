@@ -339,11 +339,11 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 
 ## Fairlight CMI 3
 
-We've all heard stories about and uses of the Fairlight CMI IIx and earlier. The Series III was one of the first 16-bit samplers, second only to the Synclavier. Extensive reverse engineering effort of the self-contained voice format was applied to make it available as a source format, but unfortunately, current constraints combined with the strict third party user community makes it unfeasible to use as a destination format at this time.
+The Fairlight CMI (**C**omputer **M**usical **I**nstrument) Series III, introduced in 1985, was an advanced digital synthesizer, sampler, and music workstation, often described as an "orchestra in a box." It featured 16-bit sampling with rates up to 100 kHz (mono) / 50 kHz (stereo), for the time extensive memory (14-64MB), and sophisticated sequencing systems like CAPS (**C**omposer, **A**rranger, **P**erformer **S**equencer). This model improved upon its predecessors with better sound quality, MIDI compatibility, and user-friendly editing tools.
 
-Note that this will not work with IIx or earlier voices despite the same VC extension used.
+Voice Files (*.VC) store individual instrument subvoices (samples) and synthesis data. The file is split into headers/control parameters followed by raw linear 8-bit audio samples (or 16-bit for Series III). Fairlight CMI IIx used variable rates from 2.1 kHz to 32 kHz (default 14.08 kHz). Series III expanded up to 100 kHz at 16 bits. Early CMI memory was limited (e.g., 16KB per channel).
 
-Filter parameters are currently not supported, but then, as a variable clock DAC sampler, the original hardware had no interpolation anyway.
+Note that this will not work with IIx or earlier versions despite the same VC file extension was used. Only reading is supported.
 
 ## ISO/IMG Files
 

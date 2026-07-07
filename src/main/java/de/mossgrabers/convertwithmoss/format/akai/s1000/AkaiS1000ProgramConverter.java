@@ -48,7 +48,7 @@ public class AkaiS1000ProgramConverter
 
     /**
      * Convert a program to a multi-sample group.
-     * 
+     *
      * @param program The program to convert
      * @param samples THe referenced samples
      * @return The converted multi-sample group

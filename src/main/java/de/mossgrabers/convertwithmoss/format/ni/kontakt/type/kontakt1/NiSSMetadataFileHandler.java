@@ -99,32 +99,6 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected String readPitchBendIntensity (final Element modulator)
-    {
-        if (this.hasNameValuePairs (modulator, this.tags.targetParam (), this.tags.pitchValue ()))
-        {
-            final Map<String, String> targetElementParams = this.readValueMap (modulator);
-            return targetElementParams.get (this.tags.intensityParam ());
-        }
-        return null;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    protected String readAmplitudeVelocityIntensity (final Element modulator)
-    {
-        if (this.hasNameValuePairs (modulator, this.tags.targetParam (), this.tags.volumeValue ()))
-        {
-            final Map<String, String> targetElementParams = this.readValueMap (modulator);
-            return targetElementParams.get (this.tags.intensityParam ());
-        }
-        return null;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     protected void parseRoundRobin (final Element groupElement, final List<ISampleZone> zones)
     {
         // No round robin information in Kontakt 1

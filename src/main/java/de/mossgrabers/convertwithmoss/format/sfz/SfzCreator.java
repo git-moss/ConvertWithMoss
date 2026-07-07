@@ -509,7 +509,10 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (velFilterDepth != 0)
             addAttribute (buffer, SfzOpcode.FIL_VELOCITY_TRACK, Integer.toString ((int) Math.round (velFilterDepth * 9600.0)), false);
 
-        addAttribute (buffer, SfzOpcode.RESONANCE, formatDouble (filter.getResonance () * IFilter.MAX_RESONANCE, 2), true);
+        final double filterKeyTracking = filter.getCutoffKeyTracking ();
+        addAttribute (buffer, SfzOpcode.RESONANCE, formatDouble (filter.getResonance () * IFilter.MAX_RESONANCE, 2), filterKeyTracking <= 0);
+        if (filterKeyTracking > 0)
+            addAttribute (buffer, SfzOpcode.FIL_KEY_TRACK, Integer.toString ((int) Math.round (filter.getCutoffKeyTracking () * 1200.0)), true);
 
         // Envelope modulation
 

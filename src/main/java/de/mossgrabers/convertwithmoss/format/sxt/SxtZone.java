@@ -562,6 +562,9 @@ class SxtZone
 
             if (this.velocityToFilterFreq != 0)
                 filter.getCutoffVelocityModulator ().setDepth (this.velocityToFilterFreq / 1000.0);
+
+            if (this.keyToFreq != 0)
+                filter.setCutoffKeyTracking (Math.clamp (this.keyToFreq / 1200.0, 0, 1));
         }
 
         // -----------------------------------------------------------
@@ -744,6 +747,10 @@ class SxtZone
             final double cutoffVelocityAmount = filter.getCutoffVelocityModulator ().getDepth ();
             if (cutoffVelocityAmount != 0)
                 this.velocityToFilterFreq = (int) Math.round (cutoffVelocityAmount * 1000.0);
+
+            final double cutoffKeyTracking = filter.getCutoffKeyTracking ();
+            if (cutoffKeyTracking > 0)
+                this.keyToFreq = (int) Math.round (cutoffKeyTracking * 1200.0);
         }
 
         // -----------------------------------------------------------

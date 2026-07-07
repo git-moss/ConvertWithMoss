@@ -64,6 +64,7 @@ import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.DecodedPath;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.KontaktIcon;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt2.K2Tag;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -703,13 +704,14 @@ public abstract class AbstractNKIMetadataFileHandler
         final Map<String, String> groupParameters = this.readParameters (groupElement);
         final IFilter filter = this.readFilter (groupElement);
 
-        final Map<String, IEnvelopeModulator> groupModulators = this.readGroupIntModulators (groupElement);
-        final int pitchBend = this.readGroupPitchBend (groupElement);
-        final double ampVelocityMod = this.readGroupAmplitudeVelocityModulator (groupElement);
+        final Map<String, IEnvelopeModulator> groupInternalModulators = this.readGroupInternalModulators (groupElement);
+        final List<ExternalModulation> extModulators = this.readExtModulators (groupElement);
+        final int pitchBend = this.readGroupPitchBend (extModulators);
+        final double ampVelocityMod = this.readGroupAmplitudeVelocityModulator (extModulators);
 
         group.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
-        final List<ISampleZone> zones = this.getSampleMetadataFromZones (programParameters, groupParameters, groupModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter);
+        final List<ISampleZone> zones = this.getSampleMetadataFromZones (programParameters, groupParameters, groupInternalModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter);
         group.setSampleZones (zones);
         this.parseRoundRobin (groupElement, zones);
         return group;
@@ -1246,7 +1248,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param groupElement The group element
      * @return The found envelopes
      */
-    private Map<String, IEnvelopeModulator> readGroupIntModulators (final Element groupElement)
+    private Map<String, IEnvelopeModulator> readGroupInternalModulators (final Element groupElement)
     {
         final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.intModulatorsElement ());
         if (modulatorsElement == null)
@@ -1486,140 +1488,98 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Reads the pitch bend configuration from a group element.
-     *
-     * @param groupElement The group element
+     * Reads the pitch bend configuration from the external modulators of a group element.
+     * 
+     * @param extModulators All external modulators of the group
      * @return The number of semi-tones (up=down)
      */
-    private int readGroupPitchBend (final Element groupElement)
+    private int readGroupPitchBend (final List<ExternalModulation> extModulators)
     {
-        final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.extModulatorsElement ());
-        if (modulatorsElement != null)
-            for (final Element modulator: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.extModulatorElement ()))
-            {
-                final int pitchBend = this.getPitchBendFromModulator (modulator);
-                if (pitchBend >= 0)
-                    return pitchBend;
-            }
+        for (final ExternalModulation extModulator: extModulators)
+        {
+            if (this.tags.pitchBendValue ().equals (extModulator.source) && this.tags.pitchValue ().equals (extModulator.target))
+                return Math.clamp ((int) Math.round (extModulator.intensity * 1200), -9600, 9600);
+        }
         return -1;
-    }
-
-
-    /**
-     * Reads a pitch bend value from a modulator Element.
-     *
-     * @param modulator The modulator Element
-     * @return The pitch bend value. If none could be found, a -1 is returned.
-     */
-    private int getPitchBendFromModulator (final Element modulator)
-    {
-        int pitchBend = -1;
-
-        final Map<String, String> modulatorParams = this.readValueMap (modulator);
-        if (modulatorParams == null || !modulatorParams.containsKey (this.tags.sourceParam ()))
-            return pitchBend;
-
-        final String source = modulatorParams.get (this.tags.sourceParam ());
-
-        if (!source.equals (this.tags.pitchBendValue ()))
-            return pitchBend;
-
-        final String intensity = this.readPitchBendIntensity (modulator);
-
-        if (intensity == null)
-            return pitchBend;
-
-        final double pitchOctaves = Double.parseDouble (intensity);
-        final double pitchCents = pitchOctaves * 1200;
-        pitchBend = (int) Math.round (pitchCents);
-        if (pitchBend < 0)
-            pitchBend = -pitchBend;
-
-        if (pitchBend > 9600)
-            pitchBend = 9600;
-
-        return pitchBend;
     }
 
 
     /**
      * Reads the value by which the amplitude is modulated by the velocity from a group element.
      *
-     * @param groupElement The group element
+     * @param extModulators All external modulators of the group
      * @return The number of modulation (0..1)
      */
-    private double readGroupAmplitudeVelocityModulator (final Element groupElement)
+    private double readGroupAmplitudeVelocityModulator (final List<ExternalModulation> extModulators)
     {
-        final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.extModulatorsElement ());
-        if (modulatorsElement != null)
-            for (final Element modulator: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.extModulatorElement ()))
-            {
-                final double ampVelocityMod = this.getAmplitudeVelocityModulator (modulator);
-                if (ampVelocityMod >= 0)
-                    return ampVelocityMod;
-            }
+        for (final ExternalModulation extModulator: extModulators)
+        {
+            if (this.tags.velocityValue ().equals (extModulator.source) && this.tags.volumeValue ().equals (extModulator.target))
+                return extModulator.intensity;
+        }
         return -1;
     }
 
 
     /**
-     * Reads the value by which the amplitude is modulated by the velocity from a modulator Element.
-     *
-     * @param modulator The modulator Element
-     * @return The pitch bend value. If none could be found, a -1 is returned.
+     * Read all external not bypassed modulators from a group element.
+     * 
+     * @param groupElement The group element to read from
+     * @return The active modulators
      */
-    private double getAmplitudeVelocityModulator (final Element modulator)
+    private List<ExternalModulation> readExtModulators (final Element groupElement)
     {
-        final double ampVelocityMod = -1;
+        final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.extModulatorsElement ());
+        if (modulatorsElement == null)
+            return Collections.emptyList ();
 
-        final Map<String, String> modulatorParams = this.readValueMap (modulator);
-        if (modulatorParams == null || !modulatorParams.containsKey (this.tags.sourceParam ()))
-            return ampVelocityMod;
+        final List<ExternalModulation> extModulators = new ArrayList<> ();
+        for (final Element modulator: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.extModulatorElement ()))
+        {
+            final Map<String, String> modulatorParams = this.readValueMap (modulator);
+            if (modulatorParams == null)
+                continue;
+            final String source = modulatorParams.get (this.tags.sourceParam ());
+            if (source == null)
+                continue;
+            final String target = modulatorParams.get (this.tags.targetParam ());
+            if (target == null)
+            {
+                // V2 has (multiple) targets in sub-elemnts
+                final Element targetsElement = XMLUtils.getChildElementByName (modulator, K2Tag.K2_TARGETS_ELEMENT);
+                if (targetsElement == null)
+                    continue;
+                for (final Element targetElement: XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false))
+                    createExtModulator (extModulators, source, modulatorParams, this.readValueMap (targetElement));
+            }
+            else
+                createExtModulator (extModulators, source, modulatorParams, modulatorParams);
+        }
 
-        final String source = modulatorParams.get (this.tags.sourceParam ());
-
-        if (!source.equals (this.tags.velocityValue ()))
-            return ampVelocityMod;
-
-        final String intensity = this.readAmplitudeVelocityIntensity (modulator);
-        if (intensity == null)
-            return ampVelocityMod;
-
-        return Double.parseDouble (intensity);
+        return extModulators;
     }
 
-    // TODO - create separate readers for K1 and K2; K2 has multiple Targets (instead of 1
-    // destination)
-    // private List<ExternalModulation> readExtModulators (final Element groupElement)
-    // {
-    // final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement,
-    // this.tags.extModulatorsElement ());
-    // if (modulatorsElement == null)
-    // return Collections.emptyList ();
-    //
-    // final List<ExternalModulation> extModulators = new ArrayList<> ();
-    // for (final Element modulator: XMLUtils.getChildElementsByName (modulatorsElement,
-    // this.tags.extModulatorElement ()))
-    // {
-    // final Map<String, String> modulatorParams = this.readValueMap (modulator);
-    // if (modulatorParams == null)
-    // continue;
-    // final String source = modulatorParams.get (this.tags.sourceParam ());
-    // final String destination = modulatorParams.get (this.tags.destParam ());
-    // if (source == null)
-    // continue;
-    //
-    // if (!source.equals (this.tags.velocityValue ()))
-    // return ampVelocityMod;
-    //
-    // final String intensity = this.readAmplitudeVelocityIntensity (modulator);
-    // if (intensity == null)
-    // return ampVelocityMod;
-    //
-    // }
-    //
-    // return extModulators;
-    // }
+
+    private void createExtModulator (List<ExternalModulation> extModulators, String source, Map<String, String> modulatorElementParams, Map<String, String> targetElementParams)
+    {
+        // Ignore bypassed modulators
+        final String bypass = modulatorElementParams.get (this.tags.bypassParam ());
+        if (bypass != null && bypass.equals ("yes"))
+            return;
+
+        final ExternalModulation extModulator = new ExternalModulation ();
+        extModulator.source = source;
+        extModulator.target = targetElementParams.get (this.tags.targetParam ());
+        try
+        {
+            extModulator.intensity = Double.parseDouble (targetElementParams.get (this.tags.intensityParam ()));
+        }
+        catch (final NumberFormatException _)
+        {
+            return;
+        }
+        extModulators.add (extModulator);
+    }
 
 
     /**
@@ -1644,24 +1604,6 @@ public abstract class AbstractNKIMetadataFileHandler
         }
         return matchingZoneElements.toArray (new Element [matchingZoneElements.size ()]);
     }
-
-
-    /**
-     * Reads the pitch bend intensity value from a modulator element.
-     *
-     * @param modulator The modulator element
-     * @return The pitch bend intensity value or null, if intensity couldn't be read.
-     */
-    protected abstract String readPitchBendIntensity (final Element modulator);
-
-
-    /**
-     * Reads the volume intensity value from a modulator element.
-     *
-     * @param modulator The modulator element
-     * @return The volume intensity value or null, if intensity couldn't be read.
-     */
-    protected abstract String readAmplitudeVelocityIntensity (final Element modulator);
 
 
     private static String formatDouble (final double value)
@@ -1691,10 +1633,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
     private static class ExternalModulation
     {
-        String  source;
-        String  target;
-        double  intensity;
-        boolean bypass;
-        double  delay;
+        String source;
+        String target;
+        double intensity;
     }
 }

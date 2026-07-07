@@ -56,11 +56,11 @@ public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
             if (program == null)
                 return Collections.emptyList ();
 
-            final AkaiS1000ProgramConverter converter = new AkaiS1000ProgramConverter (this.notifier, this.settingsConfiguration);
+            final AkaiS1000ProgramConverter converter = new AkaiS1000ProgramConverter (this.notifier);
             final File parentFolder = sourceFile.getParentFile ();
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, sourceFile.getName ());
             final IGroup group = converter.createGroup (program, this.detectSamples (parentFolder, program));
-            return Collections.singletonList (this.createMultisampleSource (sourceFile, parts, program.getName (), Collections.singletonList (group)));
+            return Collections.singletonList (createMultisampleSource (this.settingsConfiguration, sourceFile, parts, program.getName (), Collections.singletonList (group)));
         }
         catch (final IOException ex)
         {

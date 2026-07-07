@@ -583,6 +583,10 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         // Filter velocity modulation
         final int filterVelocity = this.getIntegerValue (SfzOpcode.FIL_VELOCITY_TRACK, 0);
         filter.getCutoffVelocityModulator ().setDepth (filterVelocity / 9600.0);
+
+        final int filterKeyTracking = this.getIntegerValue (SfzOpcode.FIL_KEY_TRACK, 0);
+        if (filterKeyTracking != 0)
+            filter.setCutoffKeyTracking (Math.clamp (filterKeyTracking / 1200, 0, 1));
     }
 
 

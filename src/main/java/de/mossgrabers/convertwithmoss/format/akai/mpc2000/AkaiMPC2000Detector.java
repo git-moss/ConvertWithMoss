@@ -192,12 +192,12 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
      * @param configuration The metadata configuration
      * @return The detected multi-sample sources
      */
-    public List<IMultisampleSource> processAkaiMPC2000Disk (final File sourceFile, final File sourceFolder, final INotifier notifier, final IMetadataConfig configuration)
+    public static List<IMultisampleSource> processAkaiMPC2000Disk (final File sourceFile, final File sourceFolder, final INotifier notifier, final IMetadataConfig configuration)
     {
         try
         {
             final byte [] diskImageData = Files.readAllBytes (sourceFile.toPath ());
-            return this.processAkaiMPC2000Disk (diskImageData, sourceFolder, sourceFile, notifier, configuration);
+            return processAkaiMPC2000Disk (diskImageData, sourceFolder, sourceFile, notifier, configuration);
         }
         catch (final IOException ex)
         {
@@ -217,7 +217,7 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
      * @param configuration The metadata configuration
      * @return The detected multi-sample sources
      */
-    public List<IMultisampleSource> processAkaiMPC2000Disk (final byte [] diskImageData, final File sourceFolder, final File sourceFile, final INotifier notifier, final IMetadataConfig configuration)
+    public static List<IMultisampleSource> processAkaiMPC2000Disk (final byte [] diskImageData, final File sourceFolder, final File sourceFile, final INotifier notifier, final IMetadataConfig configuration)
     {
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
         try
@@ -257,7 +257,7 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
             final AkaMPC2000ProgramConverter converter = new AkaMPC2000ProgramConverter (notifier);
             final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, sourceFile.getName ());
             for (final AkaiMPC2000Program program: programs)
-                multiSampleSources.add (this.createMultisampleSource (sourceFile, parts, program.getProgramName (), converter.createSampleZones (program, samples)));
+                multiSampleSources.add (createMultisampleSource (configuration, sourceFile, parts, program.getProgramName (), converter.createSampleZones (program, samples)));
 
             notifier.log ("IDS_NOTIFY_LINE_FEED");
         }

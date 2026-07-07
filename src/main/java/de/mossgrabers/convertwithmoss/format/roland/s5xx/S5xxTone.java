@@ -98,7 +98,6 @@ public class S5xxTone
     private final int          tvfKeyRateFollow;
     @SuppressWarnings("unused")
     private final int          tvfLevelCurve;
-    @SuppressWarnings("unused")
     private final int          tvfKeyFollow;
     @SuppressWarnings("unused")
     private final int          tvfLfoDepth;
@@ -535,6 +534,17 @@ public class S5xxTone
     public int getTvfResonance ()
     {
         return this.tvfResonance;
+    }
+
+
+    /**
+     * Get the TVF key-follow value.
+     * 
+     * @return The value
+     */
+    public int getTvfKeyFollow ()
+    {
+        return this.tvfKeyFollow;
     }
 
 
