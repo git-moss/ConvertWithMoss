@@ -34,6 +34,8 @@
   * Fixed: Program in XTY file was not read.
 * Omnisphere
   * Fixed: Reading an Omnisphere preset with multiple sample voice elements did only return the samples of the last voice.
+* Synthstrom Deluge (thanks to Douglas Carmichael)
+  * Fixed: Instruments with a long amplitude decay into a silent sustain (e.g. SoundFont 2 pads that fade out over tens of seconds) collapsed to near-silence on the Deluge, whose amplitude decay maxes out at about 5.9 seconds. Such envelopes are now written as a sustained hold at the zone's own level so the sound plays at the intended volume instead of dropping out.
 * TX16W
   * Fixed: First check if the referenced absolute sample file path exists before searching all local folders.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)

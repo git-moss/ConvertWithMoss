@@ -63,8 +63,11 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
-    private static final String SYNTHS_FOLDER  = "SYNTHS";
-    private static final String SAMPLES_FOLDER = "SAMPLES";
+    private static final String SYNTHS_FOLDER            = "SYNTHS";
+    private static final String SAMPLES_FOLDER           = "SAMPLES";
+
+    /** The Deluge's decay/release rate table tops out at about 5.9 seconds. */
+    private static final double MAX_DELUGE_DECAY_SECONDS = 5.9;
 
 
     /**
@@ -317,7 +320,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final IEnvelope ampEnvelope = amplitudeEnvelopeModulator.getSource ();
         XMLUtils.addTextElement (document, envelope1, DelugeTag.ATTACK, DelugeValues.formatHex (DelugeValues.attackTimeToParam (ampEnvelope.getAttackTime ())));
         XMLUtils.addTextElement (document, envelope1, DelugeTag.DECAY, DelugeValues.formatHex (envelopeDecay (ampEnvelope)));
-        XMLUtils.addTextElement (document, envelope1, DelugeTag.SUSTAIN, DelugeValues.formatHex (envelopeSustain (ampEnvelope)));
+        XMLUtils.addTextElement (document, envelope1, DelugeTag.SUSTAIN, DelugeValues.formatHex (amplitudeEnvelopeSustain (ampEnvelope, firstZone.getGain ())));
         XMLUtils.addTextElement (document, envelope1, DelugeTag.RELEASE, DelugeValues.formatHex (DelugeValues.releaseTimeToParam (ampEnvelope.getReleaseTime ())));
 
         // Make the sound velocity sensitive (matches the firmware's default for sample based
@@ -453,6 +456,31 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         final double sustainLevel = envelope.getSustainLevel ();
         return sustainLevel < 0 ? DelugeValues.PARAM_MAX : DelugeValues.levelToParam (sustainLevel);
+    }
+
+
+    /**
+     * Calculate the Deluge sustain parameter for an amplitude envelope. A SoundFont commonly fakes a
+     * slow, sustaining pad with a (near) silent sustain plus a very long decay - e.g. a pad whose
+     * amplitude decays over 44 seconds - relying on that long decay to keep the note up. The Deluge's
+     * decay/release only reaches about 5.9 seconds, so such a note would instead collapse to silence
+     * within a few seconds and sound far too quiet. When the sustain is (near) silent but the decay
+     * is longer than the Deluge can represent, hold the note at the level implied by the zone's
+     * attenuation so it sustains at the source's level instead of dropping out.
+     *
+     * @param envelope The amplitude envelope
+     * @param zoneGainDecibels The zone gain in decibels (the source's attenuation, 0 or negative)
+     * @return The Deluge sustain parameter value
+     */
+    private static int amplitudeEnvelopeSustain (final IEnvelope envelope, final double zoneGainDecibels)
+    {
+        final double sustainLevel = envelope.getSustainLevel ();
+        if (sustainLevel >= 0 && sustainLevel < 0.01 && envelope.getDecayTime () > MAX_DELUGE_DECAY_SECONDS)
+        {
+            final double holdLevel = Math.pow (10.0, Math.min (0.0, zoneGainDecibels) / 20.0);
+            return DelugeValues.levelToParam (holdLevel);
+        }
+        return envelopeSustain (envelope);
     }
 
 
