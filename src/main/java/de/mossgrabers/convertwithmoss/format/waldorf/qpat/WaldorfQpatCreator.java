@@ -92,7 +92,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final List<IGroup> groups = reduceGroups (splitLayers (this.combineSplitStereo (multisampleSource)));
         multisampleSource.setGroups (groups);
 
-        storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath);
+        storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath, this.settingsConfiguration.getAuthor (), this.settingsConfiguration.getBank ());
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeSamplePath);
@@ -116,7 +116,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param relativeSamplePath The relative sample path
      * @throws IOException Could not store the file
      */
-    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<IGroup> groups, final String relativeSamplePath) throws IOException
+    private static void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<IGroup> groups, final String relativeSamplePath, final String author, final String bank) throws IOException
     {
         // A zero-attack/zero-decay amplitude envelope that sustains below full level makes the
         // device pop at the start of each note: it snaps to the 100% attack peak and then instantly
@@ -128,7 +128,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            writeHeader (out, multisampleSource.getMetadata (), multisampleSource.getName ());
+            writeHeader (out, multisampleSource.getMetadata (), multisampleSource.getName (), author, bank);
 
             StreamUtils.writeUnsigned16 (out, parameters.size (), false);
             StreamUtils.padBytes (out, 2);
@@ -704,13 +704,17 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param name The name of the multi-sample
      * @throws IOException Could not write
      */
-    private static void writeHeader (final OutputStream out, final IMetadata metadata, final String name) throws IOException
+    private static void writeHeader (final OutputStream out, final IMetadata metadata, final String name, final String author, final String bank) throws IOException
     {
         StreamUtils.writeUnsigned32 (out, WaldorfQpatConstants.MAGIC, false);
         StreamUtils.writeUnsigned32 (out, PRESET_VERSION, false);
         StreamUtils.writeAscii (out, StringUtils.fixASCII (name), WaldorfQpatConstants.MAX_STRING_LENGTH);
-        StreamUtils.writeAscii (out, StringUtils.fixASCII (metadata.getCreator ()), WaldorfQpatConstants.MAX_STRING_LENGTH);
-        StreamUtils.writeAscii (out, StringUtils.fixASCII (metadata.getDescription ()).replace ('\r', ' ').replace ('\n', ' '), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        // The author (offset 40) and bank (offset 72) fields are shown by the device. Use the
+        // explicit creator settings when provided, otherwise fall back to the source metadata.
+        final String creator = author != null && !author.isBlank () ? author : metadata.getCreator ();
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (creator), WaldorfQpatConstants.MAX_STRING_LENGTH);
+        final String bankValue = bank != null && !bank.isBlank () ? bank : metadata.getDescription ();
+        StreamUtils.writeAscii (out, StringUtils.fixASCII (bankValue).replace ('\r', ' ').replace ('\n', ' '), WaldorfQpatConstants.MAX_STRING_LENGTH);
 
         final List<String> categories = new ArrayList<> ();
         categories.add (metadata.getCategory ());
