@@ -34,6 +34,7 @@
   * Fixed: Program in XTY file was not read.
 * Omnisphere
   * Fixed: Reading an Omnisphere preset with multiple sample voice elements did only return the samples of the last voice.
+  * Fixed: Save formatting of ampersand character when writing.
 * TX16W
   * Fixed: First check if the referenced absolute sample file path exists before searching all local folders.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
