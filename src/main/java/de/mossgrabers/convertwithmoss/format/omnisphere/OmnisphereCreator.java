@@ -155,6 +155,9 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
                 text = text.replace ("%FENV_VEL_SENS%", DEFAULT_3F000000);
                 text = text.replace ("%FENV_DEPTH%", DEFAULT_3F800000);
+
+                text = text.replace ("%FILTER_KEY%", "0");
+                text = text.replace ("%FILTER_KEY_INV%", "0");
             }
             else
             {
@@ -184,6 +187,10 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
                 text = text.replace ("%FENV_VEL_SENS%", toHexFloat (filter.getCutoffVelocityModulator ().getDepth ()));
                 // The range is 0..1 but it seems like 0.5 already opens the filter completely
                 text = text.replace ("%FENV_DEPTH%", toHexFloat (cutoffEnvelopeModulator.getDepth () / 2.0));
+
+                final double cutoffKeyTracking = filter.getCutoffKeyTracking ();
+                text = text.replace ("%FILTER_KEY%", toHexFloat (Math.abs (cutoffKeyTracking)));
+                text = text.replace ("%FILTER_KEY_INV%", toHexFloat (cutoffKeyTracking < 0 ? 1.0 : 0.0));
             }
 
             // Amplitude envelope
