@@ -35,6 +35,8 @@
 * Omnisphere
   * Fixed: Reading an Omnisphere preset with multiple sample voice elements did only return the samples of the last voice.
   * Fixed: Save formatting of ampersand character when writing.
+* SoundFont 2 (thanks to Douglas Carmichael)
+  * Fixed: "Marker" presets that reference no samples (commercial SoundFonts often include one or two named after the vendor or copyright, e.g. "E-mu Systems 2007") were converted into empty instruments. Presets without any samples are now skipped.
 * TX16W
   * Fixed: First check if the referenced absolute sample file path exists before searching all local folders.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
