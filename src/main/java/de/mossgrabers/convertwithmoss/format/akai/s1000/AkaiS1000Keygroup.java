@@ -193,7 +193,7 @@ public class AkaiS1000Keygroup
 
     /**
      * Get the filter key tracking.
-     * 
+     *
      * @return The key-tracking in the range of [0..24] semi-tones
      */
     public byte getKeyToFilter ()

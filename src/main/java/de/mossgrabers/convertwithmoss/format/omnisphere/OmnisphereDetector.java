@@ -391,8 +391,8 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         multisampleSource.setGroups (groups);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
-        this.createMetadata (metadata, this.getFirstSample (groups), parts);
-        this.updateCreationDateTime (metadata, sourceFile);
+        createMetadata (this.settingsConfiguration, metadata, AbstractDetector.getFirstSample (groups), parts);
+        updateCreationDateTime (metadata, sourceFile);
 
         return Optional.of (multisampleSource);
     }

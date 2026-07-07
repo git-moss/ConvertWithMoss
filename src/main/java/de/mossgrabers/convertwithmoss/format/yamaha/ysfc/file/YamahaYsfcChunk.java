@@ -77,7 +77,6 @@ public class YamahaYsfcChunk
     public void read (final InputStream in, final int version) throws IOException
     {
         this.chunkID = StreamUtils.readAscii (in, 4);
-        System.out.println ("\n" + this.chunkID);
 
         this.chunkLength = (int) StreamUtils.readUnsigned32 (in, true);
         this.numItemsInChunk = (int) StreamUtils.readUnsigned32 (in, true);

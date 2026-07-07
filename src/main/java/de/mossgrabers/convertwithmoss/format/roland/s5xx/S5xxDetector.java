@@ -222,6 +222,10 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
         final double depth = tone.getTvfEgDepth () / 127.0;
         cutoffEnvelopeModulator.setDepth (tone.getTvfEgPolarity () == 1 ? -depth : depth);
 
+        final int tvfKeyFollow = tone.getTvfKeyFollow ();
+        if (tvfKeyFollow != 0)
+            filter.setCutoffKeyTracking (Math.clamp (tvfKeyFollow > 0 ? tvfKeyFollow / 63 : tvfKeyFollow / 64, -1, 1));
+
         sampleZone.setFilter (filter);
     }
 

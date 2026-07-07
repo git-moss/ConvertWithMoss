@@ -29,6 +29,7 @@ public class YamahaYsfcPartElement
     private static final double                MINIMUM_ENVELOPE_TIME = 0.2;
 
     private static final Map<Integer, Integer> PITCH_KEY             = new HashMap<> ();
+    private static final Map<Integer, Integer> CUTOFF_KEY_FOLLOW     = new HashMap<> ();
     private static final Map<Integer, Double>  ENVELOPE_TIMES        = new TreeMap<> ();
     static
     {
@@ -160,6 +161,137 @@ public class YamahaYsfcPartElement
         PITCH_KEY.put (Integer.valueOf (125), Integer.valueOf (198));
         PITCH_KEY.put (Integer.valueOf (126), Integer.valueOf (199));
         PITCH_KEY.put (Integer.valueOf (127), Integer.valueOf (200));
+
+        // TODO fix the values
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (0), Integer.valueOf (-200));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (1), Integer.valueOf (-199));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (2), Integer.valueOf (-198));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (3), Integer.valueOf (-197));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (4), Integer.valueOf (-196));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (5), Integer.valueOf (-195));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (6), Integer.valueOf (-194));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (7), Integer.valueOf (-193));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (8), Integer.valueOf (-192));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (9), Integer.valueOf (-191));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (10), Integer.valueOf (-190));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (11), Integer.valueOf (-185));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (12), Integer.valueOf (-180));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (13), Integer.valueOf (-175));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (14), Integer.valueOf (-170));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (15), Integer.valueOf (-165));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (16), Integer.valueOf (-160));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (17), Integer.valueOf (-155));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (18), Integer.valueOf (-150));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (19), Integer.valueOf (-145));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (20), Integer.valueOf (-140));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (21), Integer.valueOf (-135));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (22), Integer.valueOf (-130));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (23), Integer.valueOf (-125));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (24), Integer.valueOf (-120));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (25), Integer.valueOf (-115));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (26), Integer.valueOf (-110));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (27), Integer.valueOf (-105));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (28), Integer.valueOf (-104));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (29), Integer.valueOf (-103));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (30), Integer.valueOf (-102));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (31), Integer.valueOf (-101));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (32), Integer.valueOf (-100));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (33), Integer.valueOf (-99));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (34), Integer.valueOf (-98));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (35), Integer.valueOf (-97));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (36), Integer.valueOf (-96));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (37), Integer.valueOf (-95));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (38), Integer.valueOf (-90));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (39), Integer.valueOf (-85));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (40), Integer.valueOf (-80));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (41), Integer.valueOf (-75));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (42), Integer.valueOf (-70));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (43), Integer.valueOf (-65));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (44), Integer.valueOf (-60));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (45), Integer.valueOf (-55));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (46), Integer.valueOf (-50));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (47), Integer.valueOf (-45));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (48), Integer.valueOf (-40));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (49), Integer.valueOf (-35));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (50), Integer.valueOf (-30));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (51), Integer.valueOf (-25));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (52), Integer.valueOf (-20));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (53), Integer.valueOf (-15));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (54), Integer.valueOf (-10));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (55), Integer.valueOf (-9));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (56), Integer.valueOf (-8));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (57), Integer.valueOf (-7));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (58), Integer.valueOf (-6));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (59), Integer.valueOf (-5));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (60), Integer.valueOf (-4));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (61), Integer.valueOf (-3));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (62), Integer.valueOf (-2));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (63), Integer.valueOf (-1));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (64), Integer.valueOf (0));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (65), Integer.valueOf (1));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (66), Integer.valueOf (2));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (67), Integer.valueOf (3));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (68), Integer.valueOf (4));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (69), Integer.valueOf (5));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (70), Integer.valueOf (6));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (71), Integer.valueOf (7));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (72), Integer.valueOf (8));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (73), Integer.valueOf (9));
+        // 74 == 0
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (74), Integer.valueOf (10));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (75), Integer.valueOf (15));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (76), Integer.valueOf (20));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (77), Integer.valueOf (25));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (78), Integer.valueOf (30));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (79), Integer.valueOf (35));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (80), Integer.valueOf (40));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (81), Integer.valueOf (45));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (82), Integer.valueOf (50));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (83), Integer.valueOf (55));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (84), Integer.valueOf (60));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (85), Integer.valueOf (65));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (86), Integer.valueOf (70));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (87), Integer.valueOf (75));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (88), Integer.valueOf (80));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (89), Integer.valueOf (85));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (90), Integer.valueOf (90));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (91), Integer.valueOf (95));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (92), Integer.valueOf (96));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (93), Integer.valueOf (97));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (94), Integer.valueOf (98));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (95), Integer.valueOf (99));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (96), Integer.valueOf (100));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (97), Integer.valueOf (101));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (98), Integer.valueOf (102));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (99), Integer.valueOf (103));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (100), Integer.valueOf (104));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (101), Integer.valueOf (105));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (102), Integer.valueOf (110));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (103), Integer.valueOf (115));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (104), Integer.valueOf (120));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (105), Integer.valueOf (125));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (106), Integer.valueOf (130));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (107), Integer.valueOf (135));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (108), Integer.valueOf (140));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (109), Integer.valueOf (145));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (110), Integer.valueOf (150));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (111), Integer.valueOf (155));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (112), Integer.valueOf (160));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (113), Integer.valueOf (165));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (114), Integer.valueOf (170));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (115), Integer.valueOf (175));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (116), Integer.valueOf (180));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (117), Integer.valueOf (185));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (118), Integer.valueOf (190));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (119), Integer.valueOf (192));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (120), Integer.valueOf (193));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (121), Integer.valueOf (194));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (122), Integer.valueOf (195));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (123), Integer.valueOf (196));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (124), Integer.valueOf (197));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (125), Integer.valueOf (198));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (126), Integer.valueOf (199));
+        CUTOFF_KEY_FOLLOW.put (Integer.valueOf (127), Integer.valueOf (200));
 
         ENVELOPE_TIMES.put (Integer.valueOf (0), Double.valueOf (MINIMUM_ENVELOPE_TIME));
         ENVELOPE_TIMES.put (Integer.valueOf (1), Double.valueOf (0.21));
@@ -1227,6 +1359,41 @@ public class YamahaYsfcPartElement
     public void setFilterResonance (final int filterResonance)
     {
         this.filterResonance = filterResonance;
+    }
+
+
+    /**
+     * Get the filter cutoff key-follow sensitivity.
+     *
+     * @return The value in the range of 0-127 (-200% – +200%), default: 74
+     */
+    public int getFilterCutoffKeyFollowSensitivity ()
+    {
+        final Integer value = CUTOFF_KEY_FOLLOW.get (Integer.valueOf (this.filterCutoffKeyFollowSensitivity));
+        return value == null ? 0 : value.intValue ();
+    }
+
+
+    /**
+     * Sets the cutoff key-follow sensitivity value.
+     *
+     * @param filterCutoffKeyFollowSensitivity The value in the range of [-200%..200%]
+     */
+    public void setFilterCutoffKeyFollowSensitivity (final int filterCutoffKeyFollowSensitivity)
+    {
+        int diff = -1;
+        int pos = -1;
+        for (final Entry<Integer, Integer> e: CUTOFF_KEY_FOLLOW.entrySet ())
+        {
+            final int newDiff = Math.abs (e.getValue ().intValue () - filterCutoffKeyFollowSensitivity);
+            if (diff < 0 || newDiff < diff)
+            {
+                pos = e.getKey ().intValue ();
+                diff = newDiff;
+            }
+        }
+
+        this.filterCutoffKeyFollowSensitivity = pos == -1 ? 74 : pos;
     }
 
 

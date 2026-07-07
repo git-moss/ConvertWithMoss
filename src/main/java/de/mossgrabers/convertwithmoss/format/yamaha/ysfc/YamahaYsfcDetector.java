@@ -786,5 +786,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         cutoffEnvelope.setHoldLevel (MathUtils.normalizeIntegerRange (element.getFegAttackLevel (), -128, 127, 128));
         cutoffEnvelope.setSustainLevel (MathUtils.normalizeIntegerRange (element.getFegDecay2Level (), -128, 127, 128));
         cutoffEnvelope.setEndLevel (MathUtils.normalizeIntegerRange (element.getFegReleaseLevel (), -128, 127, 128));
+
+        filter.setCutoffKeyTracking (Math.clamp (element.getFilterCutoffKeyFollowSensitivity () / 100.0, -1, 1));
     }
 }

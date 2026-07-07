@@ -589,7 +589,7 @@ public class S770Partial
         /**
          * Get the cutoff key follow.
          *
-         * @return The cutoff key follow
+         * @return The cutoff key follow in the range of [-63..63]
          */
         public int getCutoffKf ()
         {

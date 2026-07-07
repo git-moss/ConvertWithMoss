@@ -538,6 +538,8 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             final Integer filterIndex = polesMap.get (Integer.valueOf (filter.getPoles ()));
             element.setFilterType ((filterIndex == null ? DEFAULT_FILTERS.get (type) : filterIndex).intValue ());
 
+            element.setFilterCutoffKeyFollowSensitivity ((int) Math.clamp (filter.getCutoffKeyTracking () * 100.0, -200, 200));
+
             element.setFilterCutoffFrequency ((int) Math.round (MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY) * 255.0));
             element.setFilterResonance ((int) Math.round (filter.getResonance () * 127.0));
             element.setFegLevelVelocitySensitivity (MathUtils.denormalizeIntegerRange (filter.getCutoffVelocityModulator ().getDepth (), -64, 63, 64));
