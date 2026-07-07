@@ -8,14 +8,16 @@
 * New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
 * New: Added support for the Fairlight CMI 3 - read only (thanks to PythonBlue).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
-* New: Improved user interface for long lists of formats.
-* New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
-* New: Added several new tags for category detection.
-* New: Added an opt-in *Snap loops to zero-crossings* processing option.
-* Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
-* Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
-* Fixed: Fixed some potential NullPointerExceptions.
-* Fixed: Waldorf Quantum/Iridium: a preset created from a single sample played at a fixed pitch instead of following the keyboard, because the Particle oscillator was not switched to its "Normal" sample mode (thanks to Douglas Carmichael).
+* User Interface
+  * New: Improved user interface for long lists of formats.
+  * Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
+* Backend
+  * New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
+  * New: Added support for filter cutoff keyboard-tracking: Ableton Sampler, Akai AKP/AKM, Akai S1000, Bliss, Ensoniq, Omnisphere, SXT, Roland, SFZ, Synthstrom Deluge, TAL Sampler, TX16W, Waldorf, Yamaha YSFC.
+  * New: Added several new tags for category detection.
+  * New: Added an opt-in *Snap loops to zero-crossings* processing option.
+  * Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
+  * Fixed: Fixed some potential NullPointerExceptions.
 * Elektron Tonverk Multisample (thanks to Douglas Carmichael)
   * New: Relabelled "Elektron Tonverk Multisample" to not confuse it with the new "Elektron Tonverk Preset".
   * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
@@ -32,8 +34,9 @@
   * Fixed: Program in XTY file was not read.
 * Omnisphere
   * Fixed: Reading an Omnisphere preset with multiple sample voice elements did only return the samples of the last voice.
+* TX16W
+  * Fixed: First check if the referenced absolute sample file path exists before searching all local folders.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
-  * New: The filter cutoff keyboard-tracking is now written (Filter1Keytrack), so e.g. a converted Synthstrom Deluge patch keeps its brightness across the keyboard range instead of sounding dark in the upper octaves.
   * Fixed: Sample Loop mode 2 was not set to alternating but backwards.
   * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
@@ -41,6 +44,7 @@
   * Fixed: A patch with more than one sample map (a multi-oscillator sample-based patch) wrote every map's resource offset as 0, so on the device maps 2 and 3 were read overlapping map 1 and their samples could not be located - the device showed the "Find Sample Map" screen. Each map's offset is now written as the running total of the preceding maps' lengths (verified on Iridium hardware).
   * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
   * Fixed: A sample zone without an explicit start/end (e.g. converted from a format that stores only loop points) was written with a sample start and end of -1; the whole sample is now used.
+  * Fixed: A preset created from a single sample played at a fixed pitch instead of following the keyboard, because the Particle oscillator was not switched to its "Normal" sample mode (thanks to Douglas Carmichael).
 
 ## 18.1.1
 

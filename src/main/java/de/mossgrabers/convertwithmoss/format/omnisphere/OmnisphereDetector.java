@@ -255,6 +255,10 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             filterEnvelope.setReleaseTime (parseTimeAttribute (filterParamsElement, "rels", 0.0f));
             filterEnvelope.setSustainLevel (parseFloatAttribute (filterParamsElement, "sust", 1.0f));
 
+            final float modByKey = parseFloatAttribute (filterElement, "key", 0);
+            final float modByKeyInv = parseFloatAttribute (filterElement, "keyinv", 0);
+            filter.setCutoffKeyTracking (modByKeyInv > 0 ? -modByKey : modByKey);
+
             filter.getCutoffVelocityModulator ().setDepth (parseFloatAttribute (filterParamsElement, "velsens", 1.0f));
         }
 
@@ -525,7 +529,10 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                     }
                     catch (final IOException ex)
                     {
-                        this.notifier.logError ("IDS_OMNISPHERE_ERR_READING_WAV", wavFileName, ex.getLocalizedMessage ());
+                        String localizedMessage = ex.getLocalizedMessage ();
+                        if (localizedMessage == null || localizedMessage.isBlank ())
+                            localizedMessage = ex.getClass ().getName ();
+                        this.notifier.logError ("IDS_OMNISPHERE_ERR_READING_WAV", wavFileName, localizedMessage);
                     }
 
                     rrSampleZone.setKeyRoot (XMLUtils.getIntegerAttribute (sampleWaveformElement, "BaseNote", 60));
@@ -578,7 +585,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 
     private static float parseHexFloat (final String hex, final float defaultValue)
     {
-        if (hex == null)
+        if (hex == null || hex.isBlank ())
             return defaultValue;
         // Parse hex string as unsigned 32-bit integer and reinterpret bits as float
         final float value = Float.intBitsToFloat ((int) Long.parseLong (hex, 16));

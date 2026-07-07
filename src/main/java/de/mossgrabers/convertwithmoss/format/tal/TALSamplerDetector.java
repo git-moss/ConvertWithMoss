@@ -292,6 +292,8 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 final IFilter filter = new DefaultFilter (baseFilter.getType (), baseFilter.getPoles (), cutoff, resonance);
                 optFilter = Optional.of (filter);
 
+                filter.setCutoffKeyTracking (Math.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_KEYBOARD, 0), -1, 1));
+
                 final double filterModDepth = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, 0);
                 if (filterModDepth > 0)
                 {

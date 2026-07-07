@@ -59,6 +59,7 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSettingsUI>
 {
+    private static final String                  FILE_INDICATOR        = "file:///";
     private static final String                  ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
     private static final String                  ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
 
@@ -297,14 +298,21 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             final ISampleZone sampleZone;
             try
             {
+                // First try the absolute path
                 sampleName = URLDecoder.decode (sampleName, StandardCharsets.UTF_8).replace ("\\", File.separator);
-
-                final int height = this.settingsConfiguration.getDirectorySearchHeight ();
-                final File sampleFile = findSampleFile (this.notifier, parentFile, previousFolder, sampleName, height);
+                if (sampleName.startsWith (FILE_INDICATOR))
+                    sampleName = sampleName.substring (FILE_INDICATOR.length ());
+                File sampleFile = new File (sampleName);
                 if (!sampleFile.exists ())
                 {
-                    this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
-                    continue;
+                    // If not found start searching...
+                    final int height = this.settingsConfiguration.getDirectorySearchHeight ();
+                    sampleFile = findSampleFile (this.notifier, parentFile, previousFolder, sampleName, height);
+                    if (!sampleFile.exists ())
+                    {
+                        this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
+                        continue;
+                    }
                 }
                 previousFolder = sampleFile.getParentFile ();
                 sampleZone = this.createSampleZone (sampleFile);
@@ -637,10 +645,13 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             final Optional<Integer> modAmountAsCent = modulator.getModAmountAsCent ();
             if (modAmountAsCent.isEmpty ())
                 continue;
-            final double amount = Math.clamp (modAmountAsCent.get ().intValue () / (double) IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1);
+            final int modAmount = modAmountAsCent.get ().intValue ();
+            final double amount = Math.clamp (modAmount / (double) IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1);
 
             if (modulator.isSource ("Vel"))
                 filter.getCutoffVelocityModulator ().setDepth (amount);
+            else if (modulator.isSource ("Key"))
+                filter.setCutoffKeyTracking (Math.clamp (modAmount / 1200.0, -1, 1));
             else if (modulator.isSource ("ENV1", "ENV2"))
             {
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();

@@ -282,6 +282,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 programElement.setAttribute (TALSamplerTag.FILTER_LAYER_ON + TALSamplerConstants.LAYERS[i], "1.0");
 
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_MODE, TALSamplerConstants.getFilterValue (filter), 16);
+            XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_KEYBOARD, filter.getCutoffKeyTracking (), 2);
 
             final double cutoff = MathUtils.normalizeCutoff (filter.getCutoff ());
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, cutoff, 4);
