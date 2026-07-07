@@ -11,6 +11,7 @@
 * User Interface
   * New: Improved user interface for long lists of formats.
   * Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
+  * Fixed: Renamed the "Process" button to "Processing" so it reads as the configuration screen it opens (matching the dialog title) rather than an action that starts processing (thanks to Douglas Carmichael).
 * Backend
   * New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
   * New: Added support for filter cutoff keyboard-tracking: Ableton Sampler, Akai AKP/AKM, Akai S1000, Bliss, Ensoniq, Omnisphere, SXT, Roland, SFZ, Synthstrom Deluge, TAL Sampler, TX16W, Waldorf, Yamaha YSFC.
