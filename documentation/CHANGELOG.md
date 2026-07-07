@@ -32,6 +32,8 @@
   * Fixed: Program in XTY file was not read.
 * Omnisphere
   * Fixed: Reading an Omnisphere preset with multiple sample voice elements did only return the samples of the last voice.
+* Synthstrom Deluge (thanks to Douglas Carmichael)
+  * Fixed: Writing into a sub-folder of the card's SYNTHS folder (e.g. `SYNTHS/ORBIT`) created a nested SYNTHS and SAMPLES folder inside it, and because the Deluge resolves sample paths from the card root the samples were then not found. The preset XML is now written directly into the chosen folder and its samples into a matching sub-folder of the card-root SAMPLES folder (e.g. `SAMPLES/ORBIT/<name>`), which the Deluge and the detector resolve. Choosing the card root itself is unchanged.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
   * New: The filter cutoff keyboard-tracking is now written (Filter1Keytrack), so e.g. a converted Synthstrom Deluge patch keeps its brightness across the keyboard range instead of sounding dark in the upper octaves.
   * Fixed: Sample Loop mode 2 was not set to alternating but backwards.
