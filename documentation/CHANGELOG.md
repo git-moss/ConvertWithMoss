@@ -24,6 +24,7 @@
   * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
 * EXS24
   * Fixed: Loop type was not applied.
+  * Fixed: Envelope times were converted from the EXS24 parameter linearly, but the device applies a fourth-power curve, so short times were greatly overstated - and the attack stage additionally skipped even the linear scaling, coming out about 12.7 times too long on top of that. A quick attack (e.g. 7.5 ms) was read as over a second, so plucked and struck instruments faded in too slowly to be heard and appeared silent. Envelope times are now converted with the hardware-calibrated curve seconds = 10 * (parameter / 127)^4, matching Logic to within one percent (thanks to Douglas Carmichael).
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
@@ -34,11 +35,11 @@
   * Fixed: Program in XTY file was not read.
 * Omnisphere
   * Fixed: Reading an Omnisphere preset with multiple sample voice elements did only return the samples of the last voice.
-* Synthstrom Deluge (thanks to Douglas Carmichael)
-  * Fixed: Instruments with a long amplitude decay into a silent sustain (e.g. SoundFont 2 pads that fade out over tens of seconds) collapsed to near-silence on the Deluge, whose amplitude decay maxes out at about 5.9 seconds. Such envelopes are now written as a sustained hold at the zone's own level so the sound plays at the intended volume instead of dropping out.
+  * Fixed: Save formatting of ampersand character when writing.
 * TX16W
   * Fixed: First check if the referenced absolute sample file path exists before searching all local folders.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+  * New: A layered preset - one that stacks several samples on the same note (e.g. a body plus a swell, common in rompler banks) - is now spread across the three oscillators instead of collapsing into one, so the sound keeps its full body. Each set of zones that would sound simultaneously gets its own oscillator (up to three).
   * Fixed: Sample Loop mode 2 was not set to alternating but backwards.
   * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).
   * Fixed: A very short envelope time (at or below 0.06 seconds - in particular a zero attack, decay or release) was written as an out-of-range parameter value; exactly zero produced negative infinity. The corrupt value could cause a click at the start of every note on the device. Such times are now clamped to the shortest representable value.
