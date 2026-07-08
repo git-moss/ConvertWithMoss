@@ -140,6 +140,17 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             if (this.settingsConfiguration.addFileName () || this.settingsConfiguration.addProgramNumber ())
                 presetName = this.addPrefixes (presetName, preset.getProgramNumber (), FileUtils.getNameWithoutType (sourceFile));
             final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, presetName, this.combineToStereo (groups));
+
+            // Skip "empty" presets which reference no samples. Commercial SoundFonts often carry
+            // marker presets named after the vendor or the copyright (e.g. "E-mu Systems 2007")
+            // whose instrument has no zones; without this guard they would be written as empty
+            // instruments.
+            if (multisampleSource.getNonEmptyGroups (false).isEmpty ())
+            {
+                this.notifier.log ("IDS_NOTIFY_SF2_SKIP_EMPTY_PRESET", presetName);
+                continue;
+            }
+
             this.fillMetadata (sf2File, parts, multisampleSource.getMetadata ());
             multisamples.add (multisampleSource);
         }
