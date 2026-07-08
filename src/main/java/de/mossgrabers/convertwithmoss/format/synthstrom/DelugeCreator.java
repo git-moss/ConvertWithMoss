@@ -64,6 +64,7 @@ import de.mossgrabers.tools.XMLUtils;
 public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
     private static final String SYNTHS_FOLDER  = "SYNTHS";
+    private static final String KITS_FOLDER    = "KITS";
     private static final String SAMPLES_FOLDER = "SAMPLES";
 
 
@@ -90,17 +91,41 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         }
         makeUniqueSampleNames (zones);
 
-        // Create the SYNTHS folder and a unique preset file inside it
-        final File synthsFolder = new File (destinationFolder, SYNTHS_FOLDER);
-        safeCreateDirectory (synthsFolder);
-        final File presetFile = this.createUniqueFilename (synthsFolder, createSafeFilename (multisampleSource.getName ()), "xml");
+        // The Deluge resolves sample paths (SAMPLES/...) relative to the SD card root, and presets
+        // live in a SYNTHS (or KITS) folder directly below that root. If the chosen output folder
+        // already is that instrument folder or a sub-folder of it, write the preset there and place
+        // the samples in the card-root SAMPLES folder (the same place the detector reads them from).
+        // Otherwise treat the chosen folder as the card root and create the SYNTHS sub-folder below.
+        final File instrumentFolder = findInstrumentFolder (destinationFolder);
+        final File presetFolder;
+        final File cardRootFolder;
+        String sampleSubPath = "";
+        if (instrumentFolder == null)
+        {
+            presetFolder = new File (destinationFolder, SYNTHS_FOLDER);
+            cardRootFolder = destinationFolder;
+        }
+        else
+        {
+            presetFolder = destinationFolder;
+            cardRootFolder = instrumentFolder.getParentFile ();
+            // Mirror the preset's sub-folder path (below SYNTHS/KITS) into the SAMPLES folder so a
+            // bank written to e.g. SYNTHS/ORBIT keeps its samples grouped under SAMPLES/ORBIT
+            // rather than scattered directly in the SAMPLES root.
+            if (!instrumentFolder.equals (destinationFolder))
+                sampleSubPath = instrumentFolder.toPath ().relativize (destinationFolder.toPath ()).toString ().replace (File.separatorChar, '/') + "/";
+        }
+
+        // Create a unique preset file inside the preset folder
+        safeCreateDirectory (presetFolder);
+        final File presetFile = this.createUniqueFilename (presetFolder, createSafeFilename (multisampleSource.getName ()), "xml");
         final String baseName = FileUtils.getNameWithoutType (presetFile);
         this.notifier.log ("IDS_NOTIFY_STORING", presetFile.getAbsolutePath ());
 
-        final String relativeSampleFolder = SAMPLES_FOLDER + "/" + baseName;
+        final String relativeSampleFolder = SAMPLES_FOLDER + "/" + sampleSubPath + baseName;
 
-        // Write the samples into SAMPLES/<name>/
-        final File sampleFolder = new File (destinationFolder, relativeSampleFolder);
+        // Write the samples into <card root>/SAMPLES/<sub-path>/<name>/
+        final File sampleFolder = new File (cardRootFolder, relativeSampleFolder);
         safeCreateDirectory (sampleFolder);
         this.writeSamples (sampleFolder, createTemporarySource (multisampleSource, zones));
 
@@ -114,6 +139,29 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         }
 
         this.progress.notifyDone ();
+    }
+
+
+    /**
+     * Find the Deluge instrument folder - a folder named <i>SYNTHS</i> or <i>KITS</i> - that the
+     * given output folder is located in, either the folder itself or one of its parents. The SD
+     * card root is the parent of that folder. Returns null if the output folder is not inside such
+     * an instrument folder, in which case the output folder is treated as the card root.
+     *
+     * @param folder The chosen output folder
+     * @return The instrument folder or null
+     */
+    private static File findInstrumentFolder (final File folder)
+    {
+        File current = folder;
+        while (current != null)
+        {
+            final String name = current.getName ();
+            if (SYNTHS_FOLDER.equalsIgnoreCase (name) || KITS_FOLDER.equalsIgnoreCase (name))
+                return current;
+            current = current.getParentFile ();
+        }
+        return null;
     }
 
 
