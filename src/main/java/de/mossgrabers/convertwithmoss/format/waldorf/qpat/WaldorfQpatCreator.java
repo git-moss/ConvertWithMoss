@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -30,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.StringUtils;
 
@@ -85,7 +87,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         final String relativeSamplePath = "samples/" + sampleName;
 
-        final List<IGroup> groups = reduceGroups (this.combineSplitStereo (multisampleSource));
+        final List<IGroup> groups = reduceGroups (splitLayers (this.combineSplitStereo (multisampleSource)));
         multisampleSource.setGroups (groups);
 
         storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath);
@@ -325,6 +327,100 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 groups.removeLast ();
         }
         return groups;
+    }
+
+
+    /**
+     * Split each group whose zones stack (overlap in both key and velocity) into separate layers, so
+     * a layered preset maps to several oscillators instead of collapsing into one. Groups without an
+     * internal overlap are kept unchanged. The largest layer is placed first so it drives the main
+     * oscillator.
+     *
+     * @param groups The groups
+     * @return The groups with stacked layers separated into individual groups
+     */
+    private static List<IGroup> splitLayers (final List<IGroup> groups)
+    {
+        final List<IGroup> result = new ArrayList<> ();
+        for (final IGroup group: groups)
+        {
+            final List<List<ISampleZone>> layers = partitionLayers (group.getSampleZones ());
+            if (layers.size () < 2)
+            {
+                result.add (group);
+                continue;
+            }
+            layers.sort (Comparator.comparingInt ((final List<ISampleZone> layer) -> layer.size ()).reversed ());
+            for (final List<ISampleZone> layer: layers)
+            {
+                final DefaultGroup layerGroup = new DefaultGroup (group.getName ());
+                layerGroup.setTrigger (group.getTrigger ());
+                for (final ISampleZone zone: layer)
+                    layerGroup.addSampleZone (zone);
+                result.add (layerGroup);
+            }
+        }
+        return result;
+    }
+
+
+    /**
+     * Greedily split zones into layers so that within a layer no two zones overlap in both key and
+     * velocity (i.e. never sound at the same time on the same note). The overlap depth equals the
+     * number of layers.
+     *
+     * @param zones The zones of a group
+     * @return The layers of non-overlapping zones
+     */
+    private static List<List<ISampleZone>> partitionLayers (final List<ISampleZone> zones)
+    {
+        final List<ISampleZone> sorted = new ArrayList<> (zones);
+        // Place the widest zones first so a full-range layer does not scatter narrow zones.
+        sorted.sort (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyLow (), 0)).thenComparing (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyHigh (), 127)).reversed ()));
+
+        final List<List<ISampleZone>> layers = new ArrayList<> ();
+        for (final ISampleZone zone: sorted)
+        {
+            List<ISampleZone> target = null;
+            for (final List<ISampleZone> layer: layers)
+            {
+                boolean overlaps = false;
+                for (final ISampleZone other: layer)
+                    if (zonesOverlap (zone, other))
+                    {
+                        overlaps = true;
+                        break;
+                    }
+                if (!overlaps)
+                {
+                    target = layer;
+                    break;
+                }
+            }
+            if (target == null)
+            {
+                target = new ArrayList<> ();
+                layers.add (target);
+            }
+            target.add (zone);
+        }
+        return layers;
+    }
+
+
+    /**
+     * Test if two zones overlap in both their key and their velocity range, i.e. they can sound at
+     * the same time on the same note.
+     *
+     * @param a The first zone
+     * @param b The second zone
+     * @return True if they overlap
+     */
+    private static boolean zonesOverlap (final ISampleZone a, final ISampleZone b)
+    {
+        final boolean keyOverlap = limitToDefault (a.getKeyLow (), 0) <= limitToDefault (b.getKeyHigh (), 127) && limitToDefault (b.getKeyLow (), 0) <= limitToDefault (a.getKeyHigh (), 127);
+        final boolean velocityOverlap = limitToDefault (a.getVelocityLow (), 1) <= limitToDefault (b.getVelocityHigh (), 127) && limitToDefault (b.getVelocityLow (), 1) <= limitToDefault (a.getVelocityHigh (), 127);
+        return keyOverlap && velocityOverlap;
     }
 
 
