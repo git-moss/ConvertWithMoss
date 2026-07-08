@@ -63,7 +63,7 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
     protected List<IMultisampleSource> processAkaiS1000Disk (final File sourceFile)
     {
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
-        final AkaiS1000ProgramConverter converter = new AkaiS1000ProgramConverter (this.notifier, this.settingsConfiguration);
+        final AkaiS1000ProgramConverter converter = new AkaiS1000ProgramConverter (this.notifier);
 
         try (final AkaiDiskImage disk = new AkaiDiskImage (sourceFile))
         {

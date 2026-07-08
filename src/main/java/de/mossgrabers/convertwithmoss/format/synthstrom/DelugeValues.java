@@ -427,7 +427,7 @@ public final class DelugeValues
 
     /**
      * Inverse of patchAmountToModulationDepth.
-     * 
+     *
      * @param modDepth The modulation depth in the range of [-1..1]
      * @return The patch-cable amount
      */

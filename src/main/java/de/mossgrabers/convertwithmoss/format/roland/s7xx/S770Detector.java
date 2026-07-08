@@ -321,6 +321,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
             cutoffEnvelopeModulator.setDepth (tvf.getEnvTvfDepth () / 63.0);
 
             filter.getCutoffVelocityModulator ().setDepth (tvf.getVelocityCurveType () == 0 ? 0 : tvf.getCutoffVelocitySens () / 63.0);
+            filter.setCutoffKeyTracking (Math.clamp (tvf.getCutoffKf () / 63.0, -1, 1));
 
             sampleZone.setFilter (filter);
         }

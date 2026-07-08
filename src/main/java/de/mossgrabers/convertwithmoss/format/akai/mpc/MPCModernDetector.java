@@ -755,7 +755,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : programName;
             final String [] parts = AudioFileUtils.createPathParts (multiSampleFile.getParentFile (), this.sourceFolder, n);
             final IGroup group = new DefaultGroup ();
-            final IMultisampleSource multisampleSource = this.createMultisampleSource (multiSampleFile, parts, programName, Collections.singletonList (group));
+            final IMultisampleSource multisampleSource = createMultisampleSource (this.settingsConfiguration, multiSampleFile, parts, programName, Collections.singletonList (group));
 
             final double programTranspose = programNode.get ("transpose").asDouble ();
 

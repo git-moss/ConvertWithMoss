@@ -648,6 +648,9 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 final double filterVelocityDepth = filter.getCutoffVelocityModulator ().getDepth ();
                 if (filterVelocityDepth != 0)
                     addModulationEntry (document, modulationElement, "Vel", "Filter 1 Freq", (int) Math.round (filterVelocityDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
+                final double cutoffKeyTracking = filter.getCutoffKeyTracking ();
+                if (cutoffKeyTracking != 0)
+                    addModulationEntry (document, modulationElement, "Key", "Filter 1 Freq", (int) Math.round (cutoffKeyTracking * 1200) + "Ct");
             }
 
             // -----------------------------------------------------------
