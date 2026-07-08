@@ -338,13 +338,12 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         final Integer attackCurve = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_CURVE : EXS24Parameters.ENV2_ATK_CURVE);
 
         final IEnvelope envelope = new DefaultEnvelope ();
-        // Maximum time for each step are 10 seconds
-        envelope.setDelayTime (delay == null ? 0 : delay.doubleValue () / 127.0 * 10.0);
-        envelope.setAttackTime (attack == null ? 0 : attack.intValue ());
-        envelope.setHoldTime (hold == null ? 0 : hold.doubleValue () / 127.0 * 10.0);
-        envelope.setDecayTime (decay == null ? 0 : decay.doubleValue () / 127.0 * 10.0);
+        envelope.setDelayTime (envelopeTimeToSeconds (delay));
+        envelope.setAttackTime (envelopeTimeToSeconds (attack));
+        envelope.setHoldTime (envelopeTimeToSeconds (hold));
+        envelope.setDecayTime (envelopeTimeToSeconds (decay));
         envelope.setSustainLevel (sustain == null ? 1.0 : sustain.doubleValue () / 127.0);
-        envelope.setReleaseTime (release == null ? 0 : release.doubleValue () / 127.0 * 10.0);
+        envelope.setReleaseTime (envelopeTimeToSeconds (release));
 
         if (attackCurve != null)
         {
@@ -355,6 +354,27 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         }
 
         return envelope;
+    }
+
+
+    /**
+     * Convert an EXS24 envelope time parameter to seconds. The parameter ranges from 0 to 127 and
+     * maps to a maximum of 10 seconds, but the device applies a fourth-power (not linear) curve, so
+     * low values are far shorter than a linear reading suggests. Calibrated against Logic reference
+     * instruments (parameter 19 = 5 ms, 27 = 20 ms, 53 = 303 ms, 71 = 977 ms, 94 = 3 s, 127 = 10 s),
+     * which fit seconds = 10 * (parameter / 127)^4 to within 1 percent. Reading these times linearly
+     * made e.g. a 7.5 ms attack come out as 1.65 seconds, so the note faded in too slowly to be
+     * heard.
+     *
+     * @param parameter The raw envelope time parameter (0..127), or null when not present
+     * @return The time in seconds
+     */
+    private static double envelopeTimeToSeconds (final Integer parameter)
+    {
+        if (parameter == null)
+            return 0;
+        final double normalized = parameter.doubleValue () / 127.0;
+        return 10.0 * normalized * normalized * normalized * normalized;
     }
 
 
