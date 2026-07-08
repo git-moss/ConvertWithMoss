@@ -24,6 +24,7 @@
   * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
 * EXS24
   * Fixed: Loop type was not applied.
+  * Fixed: Envelope times were converted from the EXS24 parameter linearly, but the device applies a fourth-power curve, so short times were greatly overstated - and the attack stage additionally skipped even the linear scaling, coming out about 12.7 times too long on top of that. A quick attack (e.g. 7.5 ms) was read as over a second, so plucked and struck instruments faded in too slowly to be heard and appeared silent. Envelope times are now converted with the hardware-calibrated curve seconds = 10 * (parameter / 127)^4, matching Logic to within one percent (thanks to Douglas Carmichael).
 * FLAC/OGG
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.

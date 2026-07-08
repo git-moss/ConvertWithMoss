@@ -288,8 +288,12 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
 
     private static int formatEnvTime (final double time)
     {
-        // Maximum time for each step are 10 seconds
-        return time < 0 ? 0 : (int) Math.round (time / 10.0 * 127.0);
+        // The device maps the 0..127 parameter to a maximum of 10 seconds with a fourth-power
+        // curve (see EXS24Detector.envelopeTimeToSeconds), so invert it:
+        // parameter = 127 * (seconds / 10) ^ (1/4).
+        if (time <= 0)
+            return 0;
+        return (int) Math.round (127.0 * Math.pow (Math.min (time, 10.0) / 10.0, 0.25));
     }
 
 
