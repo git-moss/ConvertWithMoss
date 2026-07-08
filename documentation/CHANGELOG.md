@@ -18,6 +18,10 @@
   * New: Added an opt-in *Snap loops to zero-crossings* processing option.
   * Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
   * Fixed: Fixed some potential NullPointerExceptions.
+* 1010music (thanks to Douglas Carmichael)
+  * Fixed: The amplitude decay and release times were written with a different time scale than the one used when reading them back (25 seconds instead of 38 seconds full-scale), so a converted blackbox/Bento preset played its decay and release noticeably shorter than the source. The write scale now matches the read scale.
+* disting EX (thanks to Douglas Carmichael)
+  * Fixed: A misplaced parenthesis in the amplitude decay conversion divided only the decay time (not hold plus decay) by the time constant, so any hold time was effectively dropped from the written decay.
 * Elektron Tonverk Multisample (thanks to Douglas Carmichael)
   * New: Relabelled "Elektron Tonverk Multisample" to not confuse it with the new "Elektron Tonverk Preset".
   * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
@@ -31,6 +35,8 @@
   * Fixed: Implemented workaround for converting 32-bit FLAC files (might not always work).
 * Maschine 1
   * Fixed: File version number was always written as 0.
+* Maschine 2/3 (thanks to Douglas Carmichael)
+  * Fixed: The modulation (filter/pitch) envelope times were converted incorrectly. When reading, the attack and decay were left in milliseconds instead of seconds (a thousand times too long) and the release skipped the time-curve mapping entirely; when writing, the release skipped that mapping as well. The modulation envelope now uses the same conversion as the amplitude envelope.
 * MPC
   * Fixed: Program in XTY file was not read.
 * Omnisphere

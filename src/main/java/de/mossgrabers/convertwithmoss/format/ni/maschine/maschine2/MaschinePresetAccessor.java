@@ -455,7 +455,7 @@ public class MaschinePresetAccessor
             writeFloatValueRow (globalOffset + 148, data, attackMillisToInput ((float) (attackTime * 1000.0)));
             writeFloatValueRow (globalOffset + 156, data, decayAndReleaseMillisToInput ((float) (decayTime * 1000.0)));
             writeFloatValueRow (globalOffset + 160, data, (float) (sustainLevel < 0 ? 1 : sustainLevel));
-            writeFloatValueRow (globalOffset + 164, data, (float) (releaseTime * 1000.0));
+            writeFloatValueRow (globalOffset + 164, data, decayAndReleaseMillisToInput ((float) (releaseTime * 1000.0)));
         }
     }
 
@@ -751,13 +751,13 @@ public class MaschinePresetAccessor
 
         // Modulation envelope
         floatValues = parameterArray.readFloat (offset + (isOldFormat ? 111 : 148), 3);
-        final double modulationAttackTime = mapToAttackMillis (floatValues[0]);
+        final double modulationAttackTime = mapToAttackMillis (floatValues[0]) / 1000.0;
         floatValues = parameterArray.readFloat (offset + (isOldFormat ? 117 : 156), 3);
-        final double modulationDecayTime = mapToDecayAndRelease (floatValues[0]);
+        final double modulationDecayTime = mapToDecayAndRelease (floatValues[0]) / 1000.0;
         floatValues = parameterArray.readFloat (offset + (isOldFormat ? 120 : 160), 3);
         final double modulationSustainLevel = floatValues[0];
         floatValues = parameterArray.readFloat (offset + (isOldFormat ? 123 : 164), 3);
-        final double modulationReleaseTime = floatValues[0];
+        final double modulationReleaseTime = mapToDecayAndRelease (floatValues[0]) / 1000.0;
 
         // Modulation destinations
         floatValues = parameterArray.readFloat (offset + (isOldFormat ? 126 : 168), 3);
