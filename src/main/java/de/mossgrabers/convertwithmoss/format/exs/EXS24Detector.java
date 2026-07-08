@@ -251,6 +251,8 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
 
     private static void applyGlobalParameters (final IMultisampleSource multisampleSource, final EXS24Parameters parameters)
     {
+        readModulationMatrix (parameters);
+
         applyFilterParameters (multisampleSource, parameters);
 
         // Pitch bend up/down
@@ -284,6 +286,44 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
 
                 zone.getAmplitudeVelocityModulator ().setDepth (velocityModulation);
             }
+    }
+
+
+    private static class Modulator
+    {
+        int source;
+        int destination;
+        int lowValue;
+        int highValue;
+    }
+
+
+    private static void readModulationMatrix (final EXS24Parameters parameters)
+    {
+        final List<Modulator> modulators = new ArrayList<> ();
+        for (int i = 0; i < 11; i++)
+        {
+            int offset = i * 6;
+            if (i == 10)
+                offset += 178;
+
+            final Integer modSource = parameters.get (EXS24Parameters.MOD1_SOURCE + offset);
+            final Integer modDestination = parameters.get (EXS24Parameters.MOD1_DESTINATION + offset);
+            if (modSource == null || modDestination == null)
+                continue;
+            final Integer modBypass = parameters.get (EXS24Parameters.MOD1_BYPASS + offset);
+            if (modBypass == null || modBypass.intValue () == 0)
+            {
+                final Modulator modulator = new Modulator ();
+                modulator.source = modSource.intValue ();
+                modulator.destination = modDestination.intValue ();
+                final Integer modValueLow = parameters.get (EXS24Parameters.MOD1_AMOUNT_LOW + offset);
+                final Integer modValueHigh = parameters.get (EXS24Parameters.MOD1_AMOUNT_HIGH + offset);
+                modulator.lowValue = modValueLow == null ? 0 : modValueLow.intValue ();
+                modulator.highValue = modValueHigh == null ? 0 : modValueHigh.intValue ();
+                modulators.add (modulator);
+            }
+        }
     }
 
 
@@ -376,6 +416,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         // TODO All MOD1_* to MOD11_* need to be checked, also for velocity modulation
         @SuppressWarnings("unused")
         final Integer keyTracking = parameters.get (EXS24Parameters.FILTER1_KEYTRACK);
+        IO.println (keyTracking);
 
         multisampleSource.setGlobalFilter (filter);
     }

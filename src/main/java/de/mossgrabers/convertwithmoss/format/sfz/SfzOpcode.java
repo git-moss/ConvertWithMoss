@@ -205,6 +205,8 @@ public class SfzOpcode
     public static final String FIL_RELEASE           = "fil_release";
     /** Filter cutoff velocity tracking. */
     public static final String FIL_VELOCITY_TRACK    = "fil_veltrack";
+    /** Filter cutoff key tracking. */
+    public static final String FIL_KEY_TRACK         = "fil_keytrack";
 
     // -----------------------------------------------------------
     // Pitch opcodes

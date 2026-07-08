@@ -172,7 +172,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Scans the voice-level function block chain starting at offset {@value #FUNC_BLOCK_BASE}.
-     * 
+     *
      * @param data The voice data
      * @return {@code int[2]}: [0] = voiceTune, [1] = key-mapping table offset
      */
@@ -211,7 +211,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Parses the fixed-layout header and function blocks of one sub-voice.
-     * 
+     *
      * @param data The voice data
      * @param index The index of the sub-voice
      * @param zoneOffset The zone offset
@@ -249,7 +249,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Decodes the null-terminated 7-bit name field and appends a zero-padded index suffix. Falls
      * back to {@code baseName_N_NNN} when the name field is empty.
-     * 
+     *
      * @param data The voice data
      * @param offset The offset to the name
      * @param baseName The prefix name
@@ -275,7 +275,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Iterates the sub-voice function block chain and populates the SubVoice fields.
-     * 
+     *
      * @param subVoice The sub-voice to populate
      * @param data The data to read from
      * @param startPos The start of the sub-voice data
@@ -317,7 +317,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Decodes a single type-9 parameter entry and writes it into the SubVoice.
-     * 
+     *
      * @param subVoice The sub-voice to populate
      * @param data The data to read from
      * @param offset The offset to the envelope data
@@ -374,7 +374,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Assembles left and (where applicable) right PCM data for the given sub-voices.
-     * 
+     *
      * @param data The data to read from
      * @param subVoices The sub-voice for which to read the sample data
      * @param index The index of the sub-voice
@@ -416,7 +416,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Finds the sample-data file position for the first sub-voice whose {@code idA} matches.
-     * 
+     *
      * @param subVoices The sub-voices
      * @param idA The ID to look for
      * @param zoneOffsets The offsets
@@ -433,7 +433,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Computes the right-channel sample position for an interleaved stereo sub-voice.
-     * 
+     *
      * @param subVoice The sub-voice
      * @param posL The position of the left sample
      * @param zoneOffsets The offsets
@@ -454,7 +454,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Computes the right-channel sample position for a separate (non-interleaved) stereo sub-voice.
-     * 
+     *
      * @param subVoices The sub-voices
      * @param subVoice The sub-voice
      * @param zoneOffsets The offsets
@@ -476,7 +476,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Interleaves two mono 16-bit PCM buffers into a stereo buffer (L0 R0 L1 R1 …).
-     * 
+     *
      * @param left The data of the left sample
      * @param right The data of the right sample
      * @param sizeA The size of 1 channel
@@ -498,7 +498,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Applies the appropriate byte-order correction in-place based on bit depth.
-     * 
+     *
      * @param data The data to flip
      * @param bitRate The bit-rate
      */
@@ -513,7 +513,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Builds {@link DefaultSampleZone} objects for all 128 keys from the mapping table.
-     * 
+     *
      * @param data The data
      * @param mappingOffset The mapping offset
      * @param numSubVoices The number of sub-voices
@@ -606,7 +606,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Writes amplitude envelope parameters onto a zone, selecting fast or slow segments.
-     * 
+     *
      * @param zone The sample zone
      * @param subVoice The sub-voice
      */
@@ -623,7 +623,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Returns the highest key index that shares the same mapping ID as {@code keyLow}.
-     * 
+     *
      * @param mapping The mapping data
      * @param keyLow The lower key
      * @return The high key
@@ -641,7 +641,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Converts a raw unsigned 16-bit value to a signed, normalized double. Values above 32767 are
      * treated as negative (two's-complement wrap).
-     * 
+     *
      * @param rawValue The raw value
      * @param divisor The divisor
      * @return The normalized value
@@ -690,7 +690,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Reads a big-endian unsigned 32-bit integer from {@code data[offset..offset+3]}.
-     * 
+     *
      * @param data The data
      * @param offset The offset to read from
      * @return The read value
@@ -703,7 +703,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Reads a big-endian unsigned 16-bit integer from {@code data[offset..offset+1]}.
-     * 
+     *
      * @param data The data
      * @param offset The offset to read from
      * @return The read value
@@ -716,7 +716,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Reads a big-endian unsigned 24-bit integer from {@code data[offset..offset+2]}.
-     * 
+     *
      * @param data The data
      * @param offset The offset to read from
      * @return The read value
@@ -729,7 +729,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Swaps adjacent byte pairs in-place (big-endian ↔ little-endian for 16-bit samples).
-     * 
+     *
      * @param data The data
      */
     private static void flipBytes (final byte [] data)
@@ -745,7 +745,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Flips the sign bit of every other byte in-place (8-bit unsigned ↔ signed conversion).
-     * 
+     *
      * @param data The data
      */
     private static void flipBits (final byte [] data)
