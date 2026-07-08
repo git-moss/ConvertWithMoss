@@ -44,6 +44,8 @@
   * Fixed: Save formatting of ampersand character when writing.
 * SoundFont 2 (thanks to Douglas Carmichael)
   * Fixed: "Marker" presets that reference no samples (commercial SoundFonts often include one or two named after the vendor or copyright, e.g. "E-mu Systems 2007") were converted into empty instruments. Presets without any samples are now skipped.
+  * Fixed: The "left and right samples do not match" notices (differing pitch, sample rate or length) are now only shown when the "log unsupported attributes" option is enabled, so a normal conversion of a quirky bank is no longer flooded with warnings.
+  * New: Added a "Keep mismatched stereo samples as mono" source option (off by default). Some SoundFonts - notably commercial E-mu banks - carry unreliable stereo links that flag two unrelated mono samples as a stereo pair; if their left and right halves also differ in length they were welded into a single stereo sample. When the option is enabled a length mismatch keeps the two samples separate as mono (a pitch or sample-rate mismatch always does). It is off by default because some banks contain genuine stereo pairs whose channels differ slightly in length.
 * TX16W
   * Fixed: First check if the referenced absolute sample file path exists before searching all local folders.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)

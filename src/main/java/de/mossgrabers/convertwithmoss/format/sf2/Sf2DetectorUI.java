@@ -29,14 +29,17 @@ public class Sf2DetectorUI extends MetadataSettingsUI
     private static final String SF2_LOG_UNSUPPORTED_ATTRIBUTES = "Sf2LogUnsupportedAttributes";
     private static final String SF2_ADD_FILE_NAME_TAG          = "Sf2AddFileName";
     private static final String SF2_ADD_PROGRAM_NUMBER_TAG     = "Sf2AddProgramNumber";
+    private static final String SF2_KEEP_MISMATCHED_STEREO     = "Sf2KeepMismatchedStereoAsMono";
 
     private CheckBox            logUnsupportedAttributesCheckBox;
     private CheckBox            addFileNameCheckBox;
     private CheckBox            addProgramNumberCheckBox;
+    private CheckBox            keepMismatchedStereoCheckBox;
 
     private boolean             logUnsupportedAttributes;
     private boolean             addFileName;
     private boolean             addProgramNumber;
+    private boolean             keepMismatchedStereo;
 
 
     /**
@@ -61,6 +64,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
 
         panel.createSeparator ("@IDS_SF2_OPTIONS");
         this.logUnsupportedAttributesCheckBox = panel.createCheckBox ("@IDS_SF2_LOG_UNSUPPORTED_ATTRIBUTES");
+        this.keepMismatchedStereoCheckBox = panel.createCheckBox ("@IDS_SF2_KEEP_MISMATCHED_STEREO_AS_MONO");
 
         // -----------------------------------------------------------
         // Naming
@@ -89,6 +93,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         config.setBoolean (SF2_LOG_UNSUPPORTED_ATTRIBUTES, this.logUnsupportedAttributesCheckBox.isSelected ());
         config.setBoolean (SF2_ADD_FILE_NAME_TAG, this.addFileNameCheckBox.isSelected ());
         config.setBoolean (SF2_ADD_PROGRAM_NUMBER_TAG, this.addProgramNumberCheckBox.isSelected ());
+        config.setBoolean (SF2_KEEP_MISMATCHED_STEREO, this.keepMismatchedStereoCheckBox.isSelected ());
     }
 
 
@@ -101,6 +106,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         this.logUnsupportedAttributesCheckBox.setSelected (config.getBoolean (SF2_LOG_UNSUPPORTED_ATTRIBUTES, false));
         this.addFileNameCheckBox.setSelected (config.getBoolean (SF2_ADD_FILE_NAME_TAG, false));
         this.addProgramNumberCheckBox.setSelected (config.getBoolean (SF2_ADD_PROGRAM_NUMBER_TAG, false));
+        this.keepMismatchedStereoCheckBox.setSelected (config.getBoolean (SF2_KEEP_MISMATCHED_STEREO, false));
     }
 
 
@@ -114,6 +120,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         this.logUnsupportedAttributes = this.logUnsupportedAttributesCheckBox.isSelected ();
         this.addFileName = this.addFileNameCheckBox.isSelected ();
         this.addProgramNumber = this.addProgramNumberCheckBox.isSelected ();
+        this.keepMismatchedStereo = this.keepMismatchedStereoCheckBox.isSelected ();
 
         return true;
     }
@@ -135,6 +142,9 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         value = parameters.remove (SF2_ADD_PROGRAM_NUMBER_TAG);
         this.addProgramNumber = "1".equals (value);
 
+        value = parameters.remove (SF2_KEEP_MISMATCHED_STEREO);
+        this.keepMismatchedStereo = "1".equals (value);
+
         return true;
     }
 
@@ -147,6 +157,7 @@ public class Sf2DetectorUI extends MetadataSettingsUI
         parameterNames.add (SF2_LOG_UNSUPPORTED_ATTRIBUTES);
         parameterNames.add (SF2_ADD_FILE_NAME_TAG);
         parameterNames.add (SF2_ADD_PROGRAM_NUMBER_TAG);
+        parameterNames.add (SF2_KEEP_MISMATCHED_STEREO);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
 
@@ -170,6 +181,18 @@ public class Sf2DetectorUI extends MetadataSettingsUI
     public boolean addProgramNumber ()
     {
         return this.addProgramNumber;
+    }
+
+
+    /**
+     * Should stereo-linked samples whose left/right halves differ in length be kept as separate
+     * mono samples instead of being combined into one stereo sample?
+     *
+     * @return True to keep them as separate mono samples
+     */
+    public boolean keepMismatchedStereoAsMono ()
+    {
+        return this.keepMismatchedStereo;
     }
 
 

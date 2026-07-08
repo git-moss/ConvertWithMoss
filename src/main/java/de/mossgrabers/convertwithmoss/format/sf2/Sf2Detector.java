@@ -396,15 +396,25 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         final Sf2SampleDescriptor left = ((Sf2SampleData) leftSampleZone.getSampleData ()).getSample ();
         final Sf2SampleDescriptor right = ((Sf2SampleData) rightSampleZone.getSampleData ()).getSample ();
 
+        // A genuine stereo pair must match in pitch and sample rate. If either differs the two
+        // samples are not really a pair - some SoundFonts (e.g. commercial E-mu banks) carry
+        // unreliable stereo links or flag mono samples as left/right. In that case keep them as
+        // the separate mono samples they actually are instead of welding two unrelated samples
+        // into one stereo sample. A differing length is handled the same way but only when the
+        // 'keep mismatched stereo as mono' option is enabled (off by default), because some banks
+        // contain genuine stereo pairs whose channels differ slightly in length. These source
+        // quirks are only reported when the 'log unsupported attributes' option is enabled.
         if (left.getOriginalPitch () != right.getOriginalPitch () || left.getPitchCorrection () != right.getPitchCorrection ())
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_PITCH", left.getName (), right.getName ());
+            if (this.settingsConfiguration.logUnsupportedAttributes ())
+                this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_PITCH", left.getName (), right.getName ());
             return false;
         }
 
         if (left.getSampleRate () != right.getSampleRate ())
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_RATE", left.getName (), right.getName ());
+            if (this.settingsConfiguration.logUnsupportedAttributes ())
+                this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_RATE", left.getName (), right.getName ());
             return false;
         }
 
@@ -416,11 +426,19 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         if (!leftSampleZone.getLoops ().isEmpty () && (leftStart != rightStart || leftLoopLength != rightLoopLength))
             this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_LOOP_LENGTH", left.getName (), right.getName (), Long.toString (leftStart), Long.toString (leftLoopLength), Long.toString (rightStart), Long.toString (rightLoopLength));
 
-        // Only show the warning if there is no loop
         final long leftLength = left.getEnd () - left.getStart ();
         final long rightLength = right.getEnd () - right.getStart ();
         if (leftLength != rightLength)
-            this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_LENGTH", left.getName (), Long.toString (leftLength), right.getName (), Long.toString (rightLength));
+        {
+            if (this.settingsConfiguration.logUnsupportedAttributes ())
+                this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_SAMPLE_LENGTH", left.getName (), Long.toString (leftLength), right.getName (), Long.toString (rightLength));
+            // Off by default the two samples are still combined into a stereo sample (some banks
+            // contain genuine stereo pairs whose channels differ slightly in length). Only when
+            // the user opts in is a length mismatch treated as "not a real pair" and the samples
+            // are kept as the separate mono samples they actually are.
+            if (this.settingsConfiguration.keepMismatchedStereoAsMono ())
+                return false;
+        }
 
         return true;
     }
