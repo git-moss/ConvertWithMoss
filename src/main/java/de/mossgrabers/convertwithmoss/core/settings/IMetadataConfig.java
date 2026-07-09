@@ -20,6 +20,15 @@ public interface IMetadataConfig
 
 
     /**
+     * Should a category tag at the very start of a name (e.g. 'PAD Solina') declare the category
+     * of the multi-sample?
+     *
+     * @return True if the category should be detected from the name prefix
+     */
+    boolean isCategoryFromNamePrefix ();
+
+
+    /**
      * Get the default creator name to use.
      *
      * @return The default creator

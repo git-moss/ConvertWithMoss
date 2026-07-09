@@ -28,6 +28,7 @@ public class TagDetector
 {
     private static final Map<String, String []> CATEGORIES                    = new HashMap<> ();
     private static final Map<String, String>    CATEGORY_LOOKUP               = new TreeMap<> (new StringLengthComparator ());
+    private static final Map<String, String>    CATEGORY_PREFIX_LOOKUP        = new HashMap<> ();
     private static final Map<String, String>    KEYWORD_LOOKUP                = new TreeMap<> (new StringLengthComparator ());
     private static final List<String>           WORD_DICT                     = new ArrayList<> ();
 
@@ -157,6 +158,7 @@ public class TagDetector
             "Picked Bs",
             CATEGORY_BASS,
             "Fretless",
+            "Reese",
             "Slap",
             "Fingered"
         });
@@ -513,6 +515,27 @@ public class TagDetector
                 CATEGORY_LOOKUP.put (v.toUpperCase (Locale.US), category);
         }
 
+        // A category tag at the very start of a name declares the intended category explicitly
+        // (a wide-spread naming convention in commercial libraries, e.g. 'PAD Solina' or
+        // 'BASS Growler'). All category keywords can be used as such a prefix. Additionally,
+        // the following common abbreviations are recognized - only as a name prefix, since they
+        // are too ambiguous for the contains-matching of the general detection (e.g. 'GRAN' is
+        // contained in 'Grand' and 'ORG' in 'Forge').
+        CATEGORY_PREFIX_LOOKUP.putAll (CATEGORY_LOOKUP);
+        CATEGORY_PREFIX_LOOKUP.put ("BRAS", CATEGORY_BRASS);
+        CATEGORY_PREFIX_LOOKUP.put ("DRM", CATEGORY_DRUM);
+        CATEGORY_PREFIX_LOOKUP.put ("FLUT", CATEGORY_PIPE);
+        CATEGORY_PREFIX_LOOKUP.put ("GRAN", CATEGORY_SYNTH);
+        CATEGORY_PREFIX_LOOKUP.put ("ORG", CATEGORY_ORGAN);
+        CATEGORY_PREFIX_LOOKUP.put ("PERC", CATEGORY_PERCUSSION);
+        CATEGORY_PREFIX_LOOKUP.put ("PHYS", CATEGORY_SYNTH);
+        CATEGORY_PREFIX_LOOKUP.put ("PLUK", CATEGORY_PLUCK);
+        CATEGORY_PREFIX_LOOKUP.put ("POLY", CATEGORY_SYNTH);
+        CATEGORY_PREFIX_LOOKUP.put ("REES", CATEGORY_BASS);
+        CATEGORY_PREFIX_LOOKUP.put ("STRG", CATEGORY_STRINGS);
+        CATEGORY_PREFIX_LOOKUP.put ("SWEP", CATEGORY_SYNTH);
+        CATEGORY_PREFIX_LOOKUP.put ("VOC", CATEGORY_VOCAL);
+
         Arrays.asList (KEYWORDS).forEach (value -> KEYWORD_LOOKUP.put (value.toUpperCase (Locale.US), value));
 
         // Normalize and sort words by descending length for camel case method
@@ -557,7 +580,22 @@ public class TagDetector
      */
     public static String detectCategory (final String [] texts)
     {
-        return detect (texts, CATEGORY_LOOKUP, CATEGORY_UNKNOWN);
+        return detectCategory (Arrays.asList (texts), false);
+    }
+
+
+    /**
+     * Detect a category in the given strings.
+     *
+     * @param texts The texts
+     * @param categoryFromNamePrefix If true, a category tag at the very start of one of the texts
+     *            declares the category and takes precedence over keyword matches anywhere in the
+     *            texts
+     * @return The detected tag
+     */
+    public static String detectCategory (final String [] texts, final boolean categoryFromNamePrefix)
+    {
+        return detectCategory (Arrays.asList (texts), categoryFromNamePrefix);
     }
 
 
@@ -569,7 +607,53 @@ public class TagDetector
      */
     public static String detectCategory (final Collection<String> texts)
     {
+        return detectCategory (texts, false);
+    }
+
+
+    /**
+     * Detect a category in the given strings.
+     *
+     * @param texts The texts
+     * @param categoryFromNamePrefix If true, a category tag at the very start of one of the texts
+     *            declares the category and takes precedence over keyword matches anywhere in the
+     *            texts
+     * @return The detected tag
+     */
+    public static String detectCategory (final Collection<String> texts, final boolean categoryFromNamePrefix)
+    {
+        if (categoryFromNamePrefix)
+        {
+            final String category = detectCategoryByNamePrefix (texts);
+            if (category != null)
+                return category;
+        }
         return detect (texts, CATEGORY_LOOKUP, CATEGORY_UNKNOWN);
+    }
+
+
+    /**
+     * Detect a category from a category tag at the very start of a text (e.g. 'PAD Solina' or
+     * 'BASS Growler'). Such a prefix declares the intended category explicitly and therefore takes
+     * precedence over keyword matches anywhere in the texts, which can otherwise win accidentally
+     * (e.g. 'BELL Vibrato Strings' would be detected as Strings instead of Bell).
+     *
+     * @param texts The texts, the most specific (e.g. the preset name) first
+     * @return The category or null if the first word of none of the texts is a category tag
+     */
+    private static String detectCategoryByNamePrefix (final Collection<String> texts)
+    {
+        for (final String text: texts)
+        {
+            final String [] tokens = text.trim ().toUpperCase (Locale.US).split ("[ _-]+");
+            if (tokens.length > 1)
+            {
+                final String category = CATEGORY_PREFIX_LOOKUP.get (tokens[0]);
+                if (category != null)
+                    return category;
+            }
+        }
+        return null;
     }
 
 
