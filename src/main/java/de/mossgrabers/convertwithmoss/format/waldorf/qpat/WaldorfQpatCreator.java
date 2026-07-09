@@ -268,19 +268,19 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // shows a sample start/end of -1). Treat an unset start/stop as the full sample.
                 final double startFrame = zone.getStart () < 0 ? 0 : zone.getStart ();
                 final double stopFrame = zone.getStop () <= 0 ? numSampleFrames : zone.getStop ();
-                sb.append (formatMapDouble (startFrame / numSampleFrames)).append ('\t');
-                sb.append (formatMapDouble (stopFrame / numSampleFrames)).append ('\t');
+                sb.append (formatMapPosition (startFrame, numSampleFrames)).append ('\t');
+                sb.append (formatMapPosition (stopFrame, numSampleFrames)).append ('\t');
 
                 // Loop mode, start, stop
                 final List<ISampleLoop> loops = zone.getLoops ();
                 if (loops.isEmpty ())
-                    sb.append ("0\t0\t").append (formatMapDouble (stopFrame / numSampleFrames)).append ('\t');
+                    sb.append ("0\t0\t").append (formatMapPosition (stopFrame, numSampleFrames)).append ('\t');
                 else
                 {
                     final ISampleLoop loop = loops.get (0);
                     sb.append (loop.getType () == LoopType.ALTERNATING ? 2 : 1).append ('\t');
-                    sb.append (formatMapDouble (loop.getStart () / numSampleFrames)).append ('\t');
-                    sb.append (formatMapDouble (loop.getEnd () / numSampleFrames)).append ('\t');
+                    sb.append (formatMapPosition (loop.getStart (), numSampleFrames)).append ('\t');
+                    sb.append (formatMapPosition (loop.getEnd (), numSampleFrames)).append ('\t');
                 }
 
                 // Direction
@@ -767,6 +767,23 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static String formatMapDouble (final double value)
     {
         return String.format (Locale.US, "%.8f", Double.valueOf (value));
+    }
+
+
+    /**
+     * Formats a sample position as a fraction of the number of frames of the sample. The device
+     * expects positions in the range [0..1], so the fraction is clamped: source formats may
+     * reference positions beyond the length of the audio data, e.g. loop points authored for the
+     * original sample but stored with a lossy-compressed file which decodes to a slightly shorter
+     * length.
+     *
+     * @param frames The position in sample frames
+     * @param numSampleFrames The number of frames of the sample
+     * @return The formatted position
+     */
+    private static String formatMapPosition (final double frames, final double numSampleFrames)
+    {
+        return formatMapDouble (Math.clamp (frames / numSampleFrames, 0, 1));
     }
 
 
