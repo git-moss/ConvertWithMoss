@@ -33,6 +33,8 @@
   * Fixed: FLAC or OGG samples stored inside a ZIP archive (e.g. discoDSP Bliss or DecentSampler libraries) could fail to decompress.
   * Fixed: Stereo (multi-channel) samples stored in a compressed format were truncated to half their length when decompressed while writing to an uncompressed destination.
   * Fixed: Implemented workaround for converting 32-bit FLAC files (might not always work).
+  * Fixed: The number of sample frames (and the bit resolution) of an OGG file was reported as -1, since Vorbis does not store them in its header. Every destination format that works with the sample length wrote corrupt values for OGG sources - e.g. a Waldorf Quantum/Iridium preset converted from an SFZ with OGG samples wrote its loop points as large negative numbers instead of [0..1] fractions, so the device could not resolve the sample maps and showed the "Locate Samples" screen. The frame count is now read from the granule position of the last Ogg page (thanks to Douglas Carmichael).
+  * Fixed: Decoding an OGG file dropped the final Vorbis block (about 10ms for a 44.1kHz file): the Java Sound wrapper around the decoder stops draining it at the last whole block and ignores the end-of-stream length trim. Every converted sample came out slightly short and sample loops ending at (or near) the end of the file lost their loop end. OGG files are now decoded with a direct decoder that drives the same underlying engine but emits all sample frames - the output length matches the granule position of the last Ogg page, so sample positions and loop points are sample-exact (thanks to Douglas Carmichael).
 * Maschine 1
   * Fixed: File version number was always written as 0.
 * Maschine 2/3 (thanks to Douglas Carmichael)
@@ -58,6 +60,7 @@
   * Fixed: An amplitude envelope with no attack and no decay that sustains below full level popped at the start of every note - the device snapped to the 100% attack peak and instantly dropped to the sustain level. Such an envelope is now written flat (full sustain) with the sustain level folded into the sample gain, so the loudness is unchanged but the discontinuity is gone.
   * Fixed: A sample zone without an explicit start/end (e.g. converted from a format that stores only loop points) was written with a sample start and end of -1; the whole sample is now used.
   * Fixed: A preset created from a single sample played at a fixed pitch instead of following the keyboard, because the Particle oscillator was not switched to its "Normal" sample mode (thanks to Douglas Carmichael).
+  * Fixed: Sample start/end and loop positions are now clamped to the [0..1] range expected by the device. Source formats may reference positions slightly beyond the length of the audio data, e.g. loop points authored for the original sample but shipped with a lossy-compressed file that decodes to a marginally shorter length.
 
 ## 18.1.1
 
