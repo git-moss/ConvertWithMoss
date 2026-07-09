@@ -24,18 +24,21 @@ import javafx.scene.layout.Pane;
  */
 public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
 {
-    private static final String PREFER_FOLDER_NAME = "PreferFolderName";
-    private static final String DEFAULT_CREATOR    = "DefaultCreator";
-    private static final String TAG_CREATORS       = "Creators";
+    private static final String PREFER_FOLDER_NAME       = "PreferFolderName";
+    private static final String CATEGORY_FROM_NAME_PREFIX = "CategoryFromNamePrefix";
+    private static final String DEFAULT_CREATOR           = "DefaultCreator";
+    private static final String TAG_CREATORS              = "Creators";
 
     private TitledSeparator     separator;
     protected final String      prefix;
 
     private CheckBox            preferFolderNameCheckBox;
+    private CheckBox            categoryFromNamePrefixCheckBox;
     private TextField           defaultCreatorField;
     private TextField           creatorsField;
 
     private boolean             preferFolderName;
+    private boolean             categoryFromNamePrefix;
     private String              defaultCreator;
     private String []           creators;
 
@@ -70,6 +73,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
     {
         this.separator = panel.createSeparator ("@IDS_METADATA_HEADER");
         this.preferFolderNameCheckBox = panel.createCheckBox ("@IDS_METADATA_PREFER_FOLDER");
+        this.categoryFromNamePrefixCheckBox = panel.createCheckBox ("@IDS_METADATA_CATEGORY_FROM_NAME_PREFIX");
         this.defaultCreatorField = panel.createField ("@IDS_METADATA_DEFAULT_CREATOR");
         this.creatorsField = panel.createField ("@IDS_METADATA_CREATORS", "@IDS_NOTIFY_COMMA", -1);
     }
@@ -80,6 +84,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
     public void loadSettings (final BasicConfig configuration)
     {
         this.preferFolderNameCheckBox.setSelected (configuration.getBoolean (this.prefix + PREFER_FOLDER_NAME, false));
+        this.categoryFromNamePrefixCheckBox.setSelected (configuration.getBoolean (this.prefix + CATEGORY_FROM_NAME_PREFIX, false));
         this.defaultCreatorField.setText (configuration.getProperty (this.prefix + DEFAULT_CREATOR, "moss"));
         this.creatorsField.setText (configuration.getProperty (this.prefix + TAG_CREATORS, ""));
     }
@@ -90,6 +95,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
     public void saveSettings (final BasicConfig configuration)
     {
         configuration.setProperty (this.prefix + PREFER_FOLDER_NAME, Boolean.toString (this.preferFolderNameCheckBox.isSelected ()));
+        configuration.setProperty (this.prefix + CATEGORY_FROM_NAME_PREFIX, Boolean.toString (this.categoryFromNamePrefixCheckBox.isSelected ()));
         configuration.setProperty (this.prefix + DEFAULT_CREATOR, this.defaultCreatorField.getText ());
         configuration.setProperty (this.prefix + TAG_CREATORS, this.creatorsField.getText ());
     }
@@ -100,6 +106,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
     public boolean checkSettingsUI (final INotifier notifier)
     {
         this.preferFolderName = this.preferFolderNameCheckBox.isSelected ();
+        this.categoryFromNamePrefix = this.categoryFromNamePrefixCheckBox.isSelected ();
         this.defaultCreator = this.defaultCreatorField.getText ();
         this.creators = StringUtils.splitByComma (this.creatorsField.getText ());
         return true;
@@ -112,6 +119,9 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
     {
         String value = parameters.remove (this.prefix + PREFER_FOLDER_NAME);
         this.preferFolderName = "1".equals (value);
+
+        value = parameters.remove (this.prefix + CATEGORY_FROM_NAME_PREFIX);
+        this.categoryFromNamePrefix = "1".equals (value);
 
         this.defaultCreator = parameters.remove (this.prefix + DEFAULT_CREATOR);
 
@@ -128,6 +138,7 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
         return new String []
         {
             this.prefix + PREFER_FOLDER_NAME,
+            this.prefix + CATEGORY_FROM_NAME_PREFIX,
             this.prefix + DEFAULT_CREATOR,
             this.prefix + TAG_CREATORS
         };
@@ -139,6 +150,14 @@ public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
     public boolean isPreferFolderName ()
     {
         return this.preferFolderName;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isCategoryFromNamePrefix ()
+    {
+        return this.categoryFromNamePrefix;
     }
 
 

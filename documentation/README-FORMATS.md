@@ -13,6 +13,7 @@ The following settings are available in several source and destination formats a
 If there are no metadata fields (category, creator, etc.) specified in the format, information is retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present, ConvertWithMoss can detect from the name and path of the file. The following settings can be used to tweak the detection process:
 
 * Prefer folder name: If enabled the name of the multi-sample will be extracted from the folder instead of the sample names.
+* Category tag at name start declares the category: Many commercial libraries prefix each preset name with its category (e.g. 'PAD Solina', 'BASS Growler'). If enabled, such a tag at the very start of the name declares the category and takes precedence over keyword matches elsewhere in the name (e.g. 'BELL Vibrato Strings' is then detected as Bell instead of Strings). Common abbreviations are recognized as well: BRAS, DRM, FLUT, GRAN, ORG, PERC, PHYS, PLUK, POLY, REES, STRG, SWEP, VOC. Leave it off for libraries which do not follow this naming convention (a name like 'Syn Brass' would otherwise be detected as Synth instead of Brass).
 * Default creator: The name which is set as the creator of the multi-samples, if no creator tag could be found.
 * Creator tag(s): Here you can set a number of creator names, which need to be separated by comma. You can also use this to look up other things. For example, I set the names of the synthesizers which I sampled. My string looks like: "01W,FM8,Pro-53,Virus B,XV" (without the quotes).
 

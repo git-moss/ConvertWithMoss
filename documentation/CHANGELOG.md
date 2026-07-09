@@ -15,6 +15,7 @@
   * New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
   * New: Added support for filter cutoff keyboard-tracking: Ableton Sampler, Akai AKP/AKM, Akai S1000, Bliss, Ensoniq, Omnisphere, SXT, Roland, SFZ, Synthstrom Deluge, TAL Sampler, TX16W, Waldorf, Yamaha YSFC.
   * New: Added several new tags for category detection.
+  * New: Added an opt-in metadata option "Category tag at name start declares the category" (off by default): many commercial libraries prefix each preset name with its category (e.g. 'PAD Solina', 'BASS Growler'). When enabled, such a prefix takes precedence over keyword matches elsewhere in the name, which could otherwise win accidentally (e.g. 'BELL Vibrato Strings' was detected as Strings instead of Bell), and common abbreviations (BRAS, DRM, FLUT, GRAN, ORG, PERC, PHYS, PLUK, POLY, REES, STRG, SWEP, VOC) are recognized as well. Also added 'Reese' as a Bass category tag (thanks to Douglas Carmichael).
   * New: Added an opt-in *Snap loops to zero-crossings* processing option.
   * Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
   * Fixed: Fixed some potential NullPointerExceptions.
